@@ -45,6 +45,8 @@ export interface StaffTracksCtx {
     /** 框架算的：每条要排的轨的真长度、这张纸最长那条（后面补齐的空小节）。 */
     lens: number[];
     paperLen: number;
+    /** 复合拍子里的休止按拍切（简谱建轨时开，五线谱不开）。 */
+    restBeats?: boolean;
 }
 /** 每条要排的轨 → 排版单元 + 谱号 + 八度线（设计稿第 3.3 节第 1 步的五线谱那一半）。rowHost = 声部 2 画在哪一位那行（下标；-1 = 自己一行）。 */
 export declare function staffTracks(rows: StaffRows, c: StaffTracksCtx): {

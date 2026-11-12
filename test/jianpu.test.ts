@@ -264,6 +264,24 @@ describe("简谱数字行", () => {
       assert(lx.length === 3 && Math.abs(lStep / qStep - 1) < 0.1, `第 ${k + 1} 组：「3 – –」一拍 ${lStep.toFixed(1)} ≈「1 2 3」一拍 ${qStep.toFixed(1)}${k % 2 ? "（带换气）" : ""}`);
     }
   });
+  it("复合拍子（6/8、9/8、12/8）的整小节休止 = 一拍（附点四分）一个「0·」（统筹看 5-6 样张后定的、user「0· 0· 可以，确实是数两下」）；3/4、4/4 照旧一拍一个 0", () => {
+    const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
+    const zeros = (beats: number, beatType: number) => {
+      const head = paper.tracks[part]!.map((t) => (t.kind === "time" ? { ...t, beats, beatType } : t)), bar = (TPQ * 4 * beats) / beatType;
+      let id = 3000; const body = [{ kind: "rest", id: id++, dur: bar } as Token, { kind: "note", id: id++, pitch: P("C"), dur: bar, lyric: null } as Token];
+      let s: Song = { ...st0.song, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...head, ...body] } }] };
+      s = setNotation({ ...st0, song: s }, "jianpu").song;
+      const L = engrave(s, { width: 900, sp: 10, locale: "zh", at: { paper: paper.id, part }, parts: [{ id: part, name: "V", first: true }], measure: createTextMeasure((x: string) => x.length * 8), autoBars: true });
+      const rid = body[0]!.id, zs = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && p.s === "0" && p.tok === rid), dots = L.prims.filter((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "") && p.tok === rid);
+      const dx = dots.map((d) => +/M([\d.-]+)/.exec((d as { d: string }).d)![1]!).sort((a, b) => a - b), zx = zs.map((z) => z.x).sort((a, b) => a - b);
+      return { zeros: zs.length, dots: dots.length, dotRight: dx.every((x, i) => x > zx[i]! && (i + 1 >= zx.length || x < zx[i + 1]!)) };   // 每个点紧跟在自己那个 0 后面（不在下一个 0 后面）
+    };
+    eq(JSON.stringify(zeros(6, 8)), JSON.stringify({ zeros: 2, dots: 2, dotRight: true }), "6/8：两个「0·」（原来三个 0，看着像三拍子）");
+    eq(zeros(9, 8).zeros, 3, "9/8：三个「0·」"); eq(zeros(9, 8).dots, 3);
+    eq(zeros(12, 8).zeros, 4, "12/8：四个「0·」");
+    eq(JSON.stringify(zeros(3, 4)), JSON.stringify({ zeros: 3, dots: 0, dotRight: true }), "3/4 照旧三个 0、没有点");
+    eq(zeros(4, 4).zeros, 4, "4/4 照旧四个 0");
+  });
   it("记号（UX 稿第 5 节；第五刀起样子照样张）：跳音 = 实心窄楔形、保持 = 短横、重音 = 描边的 >、次重音细一号、幽灵音小一号、气声 ×、换气 V + 吸、滚奏三道斜线", () => {
     const { L } = lay([
       n(P("C"), TPQ, { art: ["staccato"] }), n(P("D"), TPQ, { art: ["tenuto"] }), n(P("E"), TPQ, { art: ["accent"] }), n(P("F"), TPQ, { art: ["stress"] }),

@@ -206,7 +206,8 @@ export declare function unitsOf(tokens: Token[], o: {
     sp: number;
     ts?: number;
     rhythm?: boolean; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */
-    padFrom?: number; /** 各种单元多宽（画法给的）。 */
+    padFrom?: number; /** 复合拍子里的休止按拍切（简谱）。 */
+    restBeats?: boolean; /** 各种单元多宽（画法给的）。 */
     widths: UnitWidths;
 }): {
     units: Unit[];

@@ -24,5 +24,12 @@ export declare function partAbbr(label: string, o: {
     conceptNames?: readonly string[];
     conceptAbbr?: string;
     voice?: boolean;
+    local?: string;
 }): string;
+/** 谱上显示的声部名（谱面分家 5½，愿望单 W-71，统筹细则：施工单第三节「5½」）：名字就是目录里那件乐器自己的名字（去掉后面的号、不分大小写比）= 换成目录里界面语言那种名字，号接回去；
+ *  对不上（自己起的名字、人声预设这种目录里没有那种语言的名字）= null（照原样显示）。只管显示：歌里按值存的名字、MusicXML 里的名字不动。 */
+export declare function localPartName(label: string, o: {
+    conceptNames?: readonly string[];
+    local?: string;
+}): string | null;
 export {};

@@ -5497,6 +5497,36 @@ export declare const S: {
     readonly 和声: {
         readonly en: "Harmony";
     };
+    readonly "\u4EBA\u58F0##\u8C31\u4E0A\u58F0\u90E8\u540D": {
+        readonly en: "Vocals";
+    };
+    readonly "\u4F34\u5531##\u8C31\u4E0A\u58F0\u90E8\u540D": {
+        readonly en: "Backing Vocals";
+    };
+    readonly "\u5973\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
+        readonly en: "Soprano";
+    };
+    readonly "\u5973\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
+        readonly en: "Alto";
+    };
+    readonly "\u7537\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
+        readonly en: "Tenor";
+    };
+    readonly "\u7537\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
+        readonly en: "Bass";
+    };
+    readonly "\u9F13##\u8C31\u4E0A\u58F0\u90E8\u540D": {
+        readonly en: "Drums";
+    };
+    readonly "\u5408\u6210\u5668\u4E3B\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
+        readonly en: "Synth Lead";
+    };
+    readonly "\u5408\u6210\u5668\u80CC\u666F\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
+        readonly en: "Synth Pad";
+    };
+    readonly "\u4E50\u5668\u76EE\u5F55\u53D6\u4E0D\u5230\uFF1A\u8C31\u4E0A\u7684\u4E50\u5668\u540D\u548C\u7B80\u5199\u8FD9\u6B21\u7167\u6B4C\u91CC\u5B58\u7684\u540D\u5B57\u5370": {
+        readonly en: "Couldn’t load the instrument catalog: instrument names and abbreviations are printed as stored in the song this time";
+    };
     readonly "\u5973\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": {
         readonly en: "Soprano (choir)";
     };

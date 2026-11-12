@@ -44,8 +44,6 @@ export interface ArrangeOpts {
   maxStretch: number;
   /** 一小节里一样长的音等距（顶杆顶开时整小节的弹簧一起放大，不只放大挨着的那一段；简谱 = 是，五线谱 = 否；排版参数表纸一级）。 */
   evenBars?: boolean;
-  /** 折行不留孤行（第六刀第 2 条）：最后一行也按「空了多少」算代价（没写 = 最后一行不算）。 */
-  noOrphan?: boolean;
   /** 一行最后一列不是小节线时，行尾多留多少（sp）。 */
   endPad: number;
   /** 从第 k 列开一行，行首（名字一栏 + 各种行自己的行首）多宽（sp）；first = 这张纸第一行。 */
@@ -91,7 +89,7 @@ export function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonl
         const to = segs[j - 1]!, tight = lineW(from, to, -o.squeeze);
         if (tight > avail + 1e-6 && j > i + 1) break;   // 放不下了（只有一段时照放：上面已经切到放得下）
         const nat = lineW(from, to, 0), last = j === S;
-        const cost = nat > avail ? 400 * ((nat - avail) / avail) ** 2 : last && !o.noOrphan ? 0 : 100 * ((avail - nat) / avail) ** 2;   // noOrphan：最后一行也算空了多少 = 小节匀到几行里
+        const cost = nat > avail ? 400 * ((nat - avail) / avail) ** 2 : last ? 0 : 100 * ((avail - nat) / avail) ** 2;
         if (best[i]! + cost + 2 < best[j]!) { best[j] = best[i]! + cost + 2; prev[j] = i; }
       }
     }

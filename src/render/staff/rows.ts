@@ -94,6 +94,8 @@ export interface StaffTracksCtx {
   song: Song; look: SongView; paper: PaperSeg; lookAt: LookAt; at: Focus; tailOpen: boolean; autoBars: boolean; measure: TextMeasure; sp: number; ts: number;
   /** 框架算的：每条要排的轨的真长度、这张纸最长那条（后面补齐的空小节）。 */
   lens: number[]; paperLen: number;
+  /** 复合拍子里的休止按拍切（简谱建轨时开，五线谱不开）。 */
+  restBeats?: boolean;
 }
 /** 每条要排的轨 → 排版单元 + 谱号 + 八度线（设计稿第 3.3 节第 1 步的五线谱那一半）。rowHost = 声部 2 画在哪一位那行（下标；-1 = 自己一行）。 */
 export function staffTracks(rows: StaffRows, c: StaffTracksCtx): { per: StaffTrack[]; rowHost: number[]; shortBars: number } {
@@ -108,7 +110,7 @@ export function staffTracks(rows: StaffRows, c: StaffTracksCtx): { per: StaffTra
     const gap = c.paperLen - c.lens[pi]!;
     const padT = (dur: number, id: number): Token => ({ kind: "rest", id, dur }) as Token;
     const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;   // 补齐的一段 = 一个长休止（按小节切开画；光标在里面的位置 = 落点 Slot.lead，不进排版）
-    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS });
+    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS, ...(c.restBeats ? { restBeats: true } : {}) });
     shortBars += u.shortBars;
     if (staves === 2) {   // 大谱表：每个音在上还是下（按音高自动 / 手动指定）；光标跟着前一个音
       const stf = staffOfTokens(tokens, 2); let last: Staff = 1;

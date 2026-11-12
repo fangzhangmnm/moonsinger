@@ -34,6 +34,15 @@ export function notate(dur: number): { ratio: [number, number] | null; chunks: {
   return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
 }
 
+/** 复合拍子里的一段休止按拍切（unitsOf 的 restBeats）：拍前那一截（不在拍上起）照常拆，中间一拍一段附点四分，剩下的照常拆。 */
+function beatRest(piece: number, offInBeat: number, beat: number): ReturnType<typeof notate> {
+  const out: { base: number; dotted: boolean; ticks: number }[] = []; let rem = piece;
+  if (offInBeat > 1e-6) { const lead = Math.min(rem, beat - offInBeat); out.push(...notate(lead).chunks); rem -= lead; }
+  while (rem >= beat - 1e-6) { out.push({ base: TPQ, dotted: true, ticks: beat }); rem -= beat; }
+  if (rem > 1e-6) out.push(...notate(rem).chunks);
+  return { ratio: null, chunks: out };
+}
+
 // ── 排版单元的类型（两种画法共用）──
 export interface Chunk {
   kind: "chunk"; index: number; j: number; last: boolean; base: number; dotted: boolean; note: boolean; ratio: [number, number] | null; ticks: number;
@@ -75,7 +84,7 @@ export interface UnitWidths {
 }
 
 export interface Head { key: number; /** 按 C 调看时原来的调。 */ real: number; minor: boolean; time: { beats: number; beatType: number }; bpm: number; idx: Partial<Record<"key" | "time" | "tempo", number>> }
-export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure: TextMeasure; sp: number; ts?: number; rhythm?: boolean; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */ padFrom?: number; /** 各种单元多宽（画法给的）。 */ widths: UnitWidths }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
+export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure: TextMeasure; sp: number; ts?: number; rhythm?: boolean; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */ padFrom?: number; /** 复合拍子里的休止按拍切（简谱）。 */ restBeats?: boolean; /** 各种单元多宽（画法给的）。 */ widths: UnitWidths }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
   const W = o.widths;
   const H = headLen(tokens);
   let fifths = DEFAULT_KEY, real = DEFAULT_KEY, minor = false, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
@@ -135,7 +144,10 @@ export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; 
     while (left > 1e-6) {
       flushFull();
       const piece = o.autoBars ? Math.min(left, len - inBar) : left;
-      const { ratio, chunks } = notate(piece);
+      // restBeats（简谱建轨时开）：复合拍子（一拍 = 附点四分）里的休止按拍切——一拍一段附点四分休止，简谱画成一拍一个「0·」（6/8 整小节 = 两个；
+      //   统筹看 5-6 样张后定的、user「0· 0· 可以，确实是数两下」）；不在拍上的头尾照常拆。五线谱不开（整小节休止照旧画在小节正中）
+      const byBeat = !isNote && !!o.restBeats && Math.abs(beat - TPQ * 1.5) < 1e-6 && piece >= beat - 1e-6;
+      const { ratio, chunks } = byBeat ? beatRest(piece, inBar % beat, beat) : notate(piece);
       const mrest = !isNote && inBar < 1e-6 && Math.abs(piece - len) < 1e-6;   // 整小节休止（刀 3）：这一段正好一个小节、从小节头起
       let off = 0;
       for (const c of chunks) {

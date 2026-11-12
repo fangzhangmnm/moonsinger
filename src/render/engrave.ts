@@ -403,7 +403,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       for (let k = 0; k <= n; k++) { keyAtCol.push(new Map(now)); if (k < n) for (const { track, entry } of merged[k]!.members) if (entry.ref.kind === "key") now.set(per0[track]!.p.id, entry.ref.fifths); } }
     const headAt = (k: number, first: boolean) => { const keys = keyAtCol[k]!, base = (first ? ind0 : indN) + MARGIN; return Math.max(...per0.map((q, i) => DRAWERS[kinds[i]!].lineStart(q, keys.get(q.p.id)!, first, base, kScale(kinds[i]!)))); };
     const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };   // 音距跟版式（参数表纸一级；v0.16.43 user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧」）：舒适 = 摸主旋律和歌词，紧凑 = 配器
-    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...(PPAR.evenBars ? { evenBars: true } : {}), ...(PPAR.noOrphan ? { noOrphan: true } : {}), endPad: BAR_W, lineStart: headAt });   // 横卷 = 不折行
+    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...(PPAR.evenBars ? { evenBars: true } : {}), endPad: BAR_W, lineStart: headAt });   // 横卷 = 不折行
     const { lineFrom, sysStarts } = ar, nSys = lineFrom.length, sysKeys = lineFrom.map((k) => new Map(keyAtCol[k]!));
     // 摆的结果（单独一张表：每一列的横坐标 / 宽 / 第几行）
     const cols = merged.map((c, k) => ({ tick: c.tick, slot: c.slot, n: c.n, x: ar.xs[k]!, w: ar.ws[k]!, system: ar.system[k]!, bar: c.bar, units: c.members.map((m) => m.entry.ref) }));

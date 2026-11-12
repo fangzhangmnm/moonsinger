@@ -36,8 +36,11 @@ describe("排版参数表", () => {
       assert(Math.abs(cap[s]! - nat[s]! * 1.3) < 0.05, `上限 1.3：第 ${s + 1} 行 ${cap[s]} = 自然 ${nat[s]} × 1.3`);
     }
   });
-  it("简谱的纸 = 最多 1.3 倍；五线谱的纸 = 不设上限（第六刀才改）", () => {
-    for (const d of ["cozy", "compact"] as const) { eq(PAPER_PARAMS.jianpu[d].maxStretch, 1.3); eq(PAPER_PARAMS.staff[d].maxStretch, Infinity); }
+  it("两种谱的纸：一行最多拉宽 1.3 倍、让位时整小节一起放宽（第六刀，user 看了对照后定的；折行可以留孤行 = 没有那个开关）", () => {
+    for (const n of ["jianpu", "staff"] as const) for (const d of ["cozy", "compact"] as const) {
+      eq(PAPER_PARAMS[n][d].maxStretch, 1.3, `${n} ${d}`); eq(PAPER_PARAMS[n][d].evenBars, true, `${n} ${d}`);
+      eq("noOrphan" in PAPER_PARAMS[n][d], false, "「折行不留孤行」user 不要，没有这个参数");
+    }
   });
   it("行身从画法的竖向锚点来（不假设 0–4）；数字行的行高按数字行自己的那一行参数", () => {
     const st = DRAWERS.staff.anchors(0, 0.5), jp = DRAWERS.jianpu.anchors(0, 0.5);

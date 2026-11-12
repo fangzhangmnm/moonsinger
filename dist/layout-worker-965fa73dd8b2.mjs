@@ -4927,12 +4927,12 @@ var JP_COMPACT = 3 / (2.5 * 1.25);
 var mockSpring = (q) => (5 + 6.8 * Math.log2(1 + 4 * q)) * 2.5 / 22;
 var jianpuSprings = (k) => [[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]].map(([t, w]) => [t, w * k]);
 var PAPER_PARAMS = {
-  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
-  // 第六刀的三条（maxStretch 1.3 / noOrphan / evenBars）五线谱默认都关 = 现在的样子；出对照给 user，点头才改
+  // 五线谱（第六刀，user 看了对照后定的，纪要第 91 节）：一行最多拉宽约 1.3 倍、放不满就让右边空着；让位时整小节一起放宽（和简谱一致）。折行可以留孤行（user「我觉得可以留」「倾向紧凑」）
+  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
   //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
   //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，text/style.ts LYRIC_LOOK）
-  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, noOrphan: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, noOrphan: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } }
+  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } }
   // 名字：正文字号 1.36 线间距 × 字的尺子（紧凑 1.4）
 };
 var jianpuRow = (k, v) => ({ above: v.above * k, rowH: v.rowH * k, rowHNoLyric: v.rowHNoLyric * k, graveUpper: v.graveUpper * k, lyricBelow: v.lyricBelow * k, clear: v.clear * k, scale: k, barNoPad: v.barNoPad * k });
@@ -5207,6 +5207,21 @@ function notate(dur) {
   }
   return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
 }
+function beatRest(piece, offInBeat, beat) {
+  const out = [];
+  let rem = piece;
+  if (offInBeat > 1e-6) {
+    const lead = Math.min(rem, beat - offInBeat);
+    out.push(...notate(lead).chunks);
+    rem -= lead;
+  }
+  while (rem >= beat - 1e-6) {
+    out.push({ base: TPQ, dotted: true, ticks: beat });
+    rem -= beat;
+  }
+  if (rem > 1e-6) out.push(...notate(rem).chunks);
+  return { ratio: null, chunks: out };
+}
 function unitsOf(tokens, o) {
   const W2 = o.widths;
   const H = headLen(tokens);
@@ -5309,7 +5324,8 @@ function unitsOf(tokens, o) {
     while (left > 1e-6) {
       flushFull();
       const piece = o.autoBars ? Math.min(left, len - inBar) : left;
-      const { ratio, chunks } = notate(piece);
+      const byBeat = !isNote && !!o.restBeats && Math.abs(beat - TPQ * 1.5) < 1e-6 && piece >= beat - 1e-6;
+      const { ratio, chunks } = byBeat ? beatRest(piece, inBar % beat, beat) : notate(piece);
       const mrest = !isNote && inBar < 1e-6 && Math.abs(piece - len) < 1e-6;
       let off = 0;
       for (const c of chunks) {
@@ -5601,7 +5617,7 @@ function staffTracks(rows, c) {
     const gap = c.paperLen - c.lens[pi];
     const padT = (dur, id) => ({ kind: "rest", id, dur });
     const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;
-    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS });
+    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS, ...c.restBeats ? { restBeats: true } : {} });
     shortBars += u.shortBars;
     if (staves === 2) {
       const stf = staffOfTokens(tokens, 2);
@@ -7536,7 +7552,7 @@ var NOTATIONS2 = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边一条竖线 = families "line"），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
   //   有叠音的声部 = 数字竖着叠（数字行）；鼓 = X 行；固定敲一个键的 = 数字 + ×；简谱的歌里没有五线谱的行（第五刀 5-4 ⑨ 过渡退场）。
-  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf, families: "line" }
+  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: (rows, c) => staffTracks(rows, { ...c, restBeats: true }) }, rowKindOf: jianpuRowOf, families: "line" }
 };
 
 // src/render/frame/lanes.ts
@@ -7602,7 +7618,7 @@ function arrangeColumns(cols, tracks, o) {
         const to = segs[j - 1], tight = lineW(from, to, -o.squeeze);
         if (tight > avail + 1e-6 && j > i + 1) break;
         const nat = lineW(from, to, 0), last = j === S2;
-        const cost = nat > avail ? 400 * ((nat - avail) / avail) ** 2 : last && !o.noOrphan ? 0 : 100 * ((avail - nat) / avail) ** 2;
+        const cost = nat > avail ? 400 * ((nat - avail) / avail) ** 2 : last ? 0 : 100 * ((avail - nat) / avail) ** 2;
         if (best[i] + cost + 2 < best[j]) {
           best[j] = best[i] + cost + 2;
           prev[j] = i;
@@ -7888,7 +7904,7 @@ function engrave(song, o) {
       return Math.max(...per0.map((q, i) => DRAWERS[kinds[i]].lineStart(q, keys.get(q.p.id), first, base, kScale(kinds[i]))));
     };
     const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
-    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, ...PPAR.noOrphan ? { noOrphan: true } : {}, endPad: BAR_W, lineStart: headAt });
+    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, endPad: BAR_W, lineStart: headAt });
     const { lineFrom, sysStarts } = ar, nSys = lineFrom.length, sysKeys = lineFrom.map((k) => new Map(keyAtCol[k]));
     const cols = merged.map((c, k) => ({ tick: c.tick, slot: c.slot, n: c.n, x: ar.xs[k], w: ar.ws[k], system: ar.system[k], bar: c.bar, units: c.members.map((m) => m.entry.ref) }));
     const at = /* @__PURE__ */ new Map();
@@ -8379,4 +8395,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-e2ce5cab1543.mjs.map
+//# sourceMappingURL=layout-worker-965fa73dd8b2.mjs.map
