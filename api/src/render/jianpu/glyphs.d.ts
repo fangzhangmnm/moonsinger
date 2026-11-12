@@ -111,11 +111,20 @@ export declare const supAccEm: (gk?: number) => number;
 export declare const HEAD_CH_EM: Readonly<Record<string, number>>;
 /** 这串字在这个字号下多宽（同字号的单位）；表里没有的字按 0.6。 */
 export declare const headTextW: (s: string, size: number) => number;
-/** 数字行上几个不是数字的字的墨迹框（第八刀守卫 2：盒子报的边 = 真墨迹）：[左, 下, 右, 上]（字号的倍数，y 往上为正、从基线算）+ 前进宽。
- *  vendor 那款字 Noto Sans SC 量的（test/jianpu-cells.test.ts 用同一款字量墨核着盒子）。CJK 小字（「吸」「深吸」）按「一个字一个字宽、基线下 0.08 上 0.83」。 */
+/** 数字行上的字的墨迹框（第八刀守卫 2：盒子报的边 = 真墨迹）：[左, 下, 右, 上]（字号的倍数，y 往上为正、从基线算）+ 前进宽。
+ *  vendor 那款字 Noto Sans SC 量的（test/jianpu-cells.test.ts 拿同一款字逐个核）。
+ *  **墨和占位宽分开**（8-7，统筹 2026-11-12）：这张表是「墨」——贴身的东西贴它、不相撞看它、「4 倍」那条规矩量它；
+ *  一个数字占多宽是另一回事（DIGIT_W、letterW，一律同宽、只定列宽，同样时值的一串数字再挤也等距），不从这张表来。 */
 export declare const GLYPH_INK: Readonly<Record<string, readonly [number, number, number, number, number]>>;
 /** 一个字（表里的）画在 (x, y)（y = 基线）、字号 size、按 anchor 对齐时的墨迹框（局部：y 往下为正）。表里没有的 = 按数字算。 */
 export declare function glyphInk(ch: string, x: number, y: number, size: number, anchor: "start" | "middle"): {
+    x0: number;
+    x1: number;
+    y0: number;
+    y1: number;
+};
+/** 一串字（表里的；字母谱右下角的八度数字「4」「10」「-1」）从 x 起往右写、基线 y、字号 size 时的墨迹框：一个字一个字按前进宽排，各自的墨并起来。 */
+export declare function textInkRun(s: string, x: number, y: number, size: number): {
     x0: number;
     x1: number;
     y0: number;

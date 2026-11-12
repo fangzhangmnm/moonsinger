@@ -675,8 +675,11 @@ export declare function removePart(st: EditorState, partId: string): EditorState
  *  **补在哪**（第八刀 8-7，统筹 2026-11-12 定）：第一个音前面紧挨着的那一串曲级记号（渐强渐弱、渐到、风格、力度）的最前面——同一个音前面力度在渐强渐弱前面（挪记号那条老规矩）。
  *  v0.10.39 起补在了第一个音紧前面：那一串里本来有渐强渐弱时就成了「渐强渐弱、力度、音」，渐强渐弱和它的终点（补的力度）之间一个音都没有 = 出声上不起作用，谱上发夹从力度字底下起。
  *  **理顺**：那一串里力度排在别的记号后面 = 把力度挪到这一串最前面（别的先后不变）；只理第一个音前面这一串，别处不碰。这种反顺序只可能是上面那一步自己造出来的（界面上挪记号永远把力度放前面），理它不算改人写的东西。
- *  返回补了哪几处 + 理顺了哪几处（纸 / 歌手 / 下标）。纯函数：main 在每次改谱（update）和打开歌时过一遍。 */
-export declare function ensureStartDyns(song: Song, nextId: number): {
+ *  返回补了哪几处 + 理顺了哪几处（纸 / 歌手 / 下标）。纯函数：main 在每次改谱（update）和打开歌时过一遍；**理顺只在打开歌时**（o.reorder，统筹定「读进来时理过来」）——
+ *  改谱的时候不动别的记号的先后（光标前放风格记号再开它的小菜单，靠的就是刚放的那个在原处；E2E groove 抓到的）。 */
+export declare function ensureStartDyns(song: Song, nextId: number, o?: {
+    reorder?: boolean;
+}): {
     song: Song;
     nextId: number;
     added: {

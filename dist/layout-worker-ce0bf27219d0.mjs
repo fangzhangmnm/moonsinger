@@ -7195,6 +7195,24 @@ var supAccEm = (gk = 1) => ACC_GLYPH_EM * (SCRIPT_K * DIGIT_EM * gk) * SUP_ACC_F
 var HEAD_CH_EM = { "0": 0.555, "1": 0.555, "2": 0.555, "3": 0.555, "4": 0.555, "5": 0.555, "6": 0.555, "7": 0.555, "8": 0.555, "9": 0.555, "=": 0.555, "/": 0.392, A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
 var headTextW = (s2, size) => [...s2].reduce((w, c) => w + (HEAD_CH_EM[c] ?? 0.6), 0) * size;
 var GLYPH_INK = {
+  "0": [0.05, -0.013, 0.506, 0.746, 0.555],
+  "1": [0.088, 0, 0.49, 0.733, 0.555],
+  "2": [0.04, 0, 0.505, 0.746, 0.555],
+  "3": [0.029, -0.013, 0.499, 0.746, 0.555],
+  "4": [0.02, 0, 0.524, 0.733, 0.555],
+  "5": [0.027, -0.013, 0.502, 0.733, 0.555],
+  "6": [0.056, -0.013, 0.512, 0.746, 0.555],
+  "7": [0.049, 0, 0.508, 0.733, 0.555],
+  "8": [0.046, -0.013, 0.509, 0.744, 0.555],
+  "9": [0.044, -0.013, 0.501, 0.746, 0.555],
+  A: [4e-3, 0, 0.604, 0.733, 0.608],
+  B: [0.101, 0, 0.612, 0.733, 0.657],
+  C: [0.058, -0.013, 0.602, 0.746, 0.638],
+  D: [0.101, 0, 0.629, 0.733, 0.688],
+  E: [0.101, 0, 0.534, 0.733, 0.589],
+  F: [0.101, 0, 0.523, 0.733, 0.552],
+  G: [0.058, -0.013, 0.615, 0.746, 0.689],
+  "-": [0.046, 0.245, 0.303, 0.315, 0.347],
   "\xD7": [0.178, 0.054, 0.822, 0.698, 1],
   V: [1e-3, 0, 0.575, 0.733, 0.575],
   X: [0.017, 0, 0.557, 0.733, 0.573],
@@ -7212,6 +7230,18 @@ var GLYPH_INK = {
 function glyphInk(ch, x, y, size, anchor) {
   const g = GLYPH_INK[ch] ?? [0.03, 0, 0.525, DIGIT_H / DIGIT_EM, DIGIT_W / DIGIT_EM], ox = anchor === "middle" ? x - g[4] * size / 2 : x;
   return { x0: ox + g[0] * size, x1: ox + g[2] * size, y0: y - g[3] * size, y1: y - g[1] * size };
+}
+function textInkRun(s2, x, y, size) {
+  let cx = x, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const ch of s2) {
+    const k = glyphInk(ch, cx, y, size, "start");
+    x0 = Math.min(x0, k.x0);
+    x1 = Math.max(x1, k.x1);
+    y0 = Math.min(y0, k.y0);
+    y1 = Math.max(y1, k.y1);
+    cx += (GLYPH_INK[ch]?.[4] ?? DIGIT_W / DIGIT_EM) * size;
+  }
+  return { x0, x1, y0, y1 };
 }
 var LETTER_EM = { A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
 var letterW = (step) => (LETTER_EM[step] ?? 0.66) * DIGIT_W / 0.555;
@@ -7290,10 +7320,10 @@ function cell() {
       let dx, dy;
       if (side === "above" || side === "below") {
         dx = crossOf(c.x0, c.x1, k.x0, k.x1, o);
-        dy = side === "above" ? edges.above - o.gap - k.y1 : edges.below + o.gap - k.y0;
+        dy = side === "above" ? (o.from ?? edges.above) - o.gap - k.y1 : (o.from ?? edges.below) + o.gap - k.y0;
       } else {
         dy = crossOf(c.y0, c.y1, k.y0, k.y1, o);
-        dx = side === "left" ? edges.left - o.gap - k.x1 : edges.right + o.gap - k.x0;
+        dx = side === "left" ? (o.from ?? edges.left) - o.gap - k.x1 : (o.from ?? edges.right) + o.gap - k.x0;
       }
       const got = put(part2, dx, dy);
       if (side === "above") edges.above = Math.min(edges.above, got.y0);
@@ -7398,7 +7428,7 @@ function noteCell(a) {
   const nUL = underlines(u);
   const ulBot = nUL ? (a.ulY ?? coreBottom(u, q, mode, aux) + UL_DROP) + (nUL - 1) * UL_GAP + UL_W / 2 : 0;
   const head = cell();
-  const digitPart = (x, y, s2, cls, k = gk) => part(s2 === "x" ? glyphInk("x", x, y, DIGIT_EM * k, "middle") : textInk(x - DIGIT_W * k / 2, x + DIGIT_W * k / 2, y - DIGIT_H * k, y), [{ ...T2, t: "text", x, y, s: s2, cls, size: DIGIT_EM * k, anchor: "middle" }]);
+  const digitPart = (x, y, s2, cls, k = gk) => part(glyphInk(s2, x, y, DIGIT_EM * k, "middle"), [{ ...T2, t: "text", x, y, s: s2, cls, size: DIGIT_EM * k, anchor: "middle" }]);
   const dashPart = (x) => part({ x0: x - DASH_L / 2, x1: x + DASH_L / 2, y0: DASH_Y - DASH_W / 2, y1: DASH_Y + DASH_W / 2 }, [{ ...T2, t: "line", x1: x - DASH_L / 2, y1: DASH_Y, x2: x + DASH_L / 2, y2: DASH_Y, w: DASH_W, cls: "jp-dash" }]);
   const step = a.step ?? DASH_PITCH;
   const lFirst = lt ? Math.max(x0 + DIGIT_W / 2 + step, x0 + glyphW + DASH_L / 2 + 0.5) : 0;
@@ -7453,20 +7483,20 @@ function noteCell(a) {
         members.push({ i, yb: bases[k] });
       });
     } else {
-      const accInks = [], accPrims = [];
+      const accs2 = [];
       order.forEach((i, k) => {
         const yb = bases[k], d = dg[i], dots = dotsOf[i], pp = ps[i], prims = [], inks = [];
         if (lt) {
           const lp = letterParts(pp, q.letters), xs = x0 + (letterW(pp.step) + SCRIPT_GAP) * gk, ss = DIGIT_EM * SCRIPT_K * gk, cls = (small ? "jp-digit jp-letter art-ghost" : "jp-digit jp-letter") + mute(i);
           prims.push({ ...T2, t: "text", x: x0, y: yb, s: lp.letter, cls, size: DIGIT_EM * gk, anchor: "start" });
-          inks.push(textInk(x0, x0 + letterW(pp.step) * gk, yb - DIGIT_H * gk, yb));
+          inks.push(glyphInk(lp.letter, x0, yb, DIGIT_EM * gk, "start"));
           if (lp.acc) {
             const gs = accGlyphsOfText(lp.acc), em = supAccEm(gk), r = accRun(gs, em, xs + accRunW(gs, em), yb + SUP_DY * gk - 0.75 * ss, "jp-acc jp-letter-sup" + mute(i), T2, DIGIT_EM * gk);
             prims.push(...r.prims);
             inks.push(r.ink);
           }
           prims.push({ ...T2, t: "text", x: xs, y: yb + SUB_DY * gk, s: lp.oct, cls: "jp-digit jp-letter-sub" + mute(i), size: ss, anchor: "start" });
-          inks.push(textInk(xs, xs + lp.oct.length * SCRIPT_K * DIGIT_W * gk, yb + SUB_DY * gk - SCRIPT_K * DIGIT_H * gk, yb + SUB_DY * gk));
+          inks.push(textInkRun(lp.oct, xs, yb + SUB_DY * gk, ss));
         } else {
           const dp = digitPart(cx, yb, String(d.degree), (small ? "jp-digit art-ghost" : "jp-digit") + mute(i));
           prims.push(...dp.prims);
@@ -7485,12 +7515,16 @@ function noteCell(a) {
         head.core(part(unionInk(inks), prims));
         if (!lt && accs[i] !== null && accs[i] !== void 0) {
           const r = accRun(accGlyphs(d.acc), ACC_GLYPH_EM * gk, 0, yb - DIGIT_H * gk - ACC_RISE, "jp-acc" + mute(i), T2, DIGIT_EM * gk);
-          accPrims.push(...r.prims);
-          accInks.push(r.ink);
+          accs2.push({ part: part(r.ink, r.prims), from: inks[0].x0 });
         }
         members.push({ i, yb });
       });
-      if (accPrims.length) stick("acc", part(unionInk(accInks), accPrims), { cross: 0 });
+      if (accs2.length) {
+        const g = groupOf("acc"), gap = gapOf("acc", count[g] ?? 0);
+        count[g] = (count[g] ?? 0) + 1;
+        leftGap ??= gap;
+        for (const a2 of accs2) head.attach("left", a2.part, { gap, cross: 0, from: a2.from });
+      }
       if (hasArp(u)) stick("arpeggio", arpPart(hiBase - DIGIT_H - 0.2, bases[0] + 0.2, T2, art2("arpeggio", "arpeggio jp-arp")), { cross: 0 });
       if (hiDots > 0) {
         const ps2 = [];
@@ -7620,7 +7654,7 @@ function measureJianpu(q, k = 1, mode = "digits", aux) {
     if (u.pad) return [];
     const nc = noteCell({ u, q, mode, ...aux ? { aux } : {}, fifths, base: 0, step: null }), b = nc.cell.box(), gw = nc.glyphW;
     const fd = mode === "digits" ? foldOf(u, aux) : void 0, lt = lettersOf(q, u, mode, aux);
-    const left = -b.x0 * k, right = Math.max(0, (core(u, fd || lt && gw > DIGIT_W ? gw : 0) + 0.1 + Math.max(0, b.x1 - (nc.x0 + gw))) * k - SP_DEFAULTS.pad);
+    const left = -Math.min(b.x0, nc.x0) * k, right = Math.max(0, (core(u, fd || lt && gw > DIGIT_W ? gw : 0) + 0.1 + Math.max(0, b.x1 - (nc.x0 + gw))) * k - SP_DEFAULTS.pad);
     inkL.set(u, Math.max(0, left));
     const out = [{ row: 0, left, right, dur: u.ticks, inkR: b.x1 * k, ...nc.leftGap !== void 0 ? { clear: LEFT_CLEAR * nc.leftGap * k } : {} }];
     const cx = (0.1 + gw / 2) * k;
@@ -9028,4 +9062,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-85a42ff8aa99.mjs.map
+//# sourceMappingURL=layout-worker-ce0bf27219d0.mjs.map

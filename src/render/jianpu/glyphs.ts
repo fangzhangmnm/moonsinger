@@ -113,9 +113,15 @@ export const supAccEm = (gk = 1): number => (ACC_GLYPH_EM * (SCRIPT_K * DIGIT_EM
 export const HEAD_CH_EM: Readonly<Record<string, number>> = { "0": 0.555, "1": 0.555, "2": 0.555, "3": 0.555, "4": 0.555, "5": 0.555, "6": 0.555, "7": 0.555, "8": 0.555, "9": 0.555, "=": 0.555, "/": 0.392, A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
 /** 这串字在这个字号下多宽（同字号的单位）；表里没有的字按 0.6。 */
 export const headTextW = (s: string, size: number): number => [...s].reduce((w, c) => w + (HEAD_CH_EM[c] ?? 0.6), 0) * size;
-/** 数字行上几个不是数字的字的墨迹框（第八刀守卫 2：盒子报的边 = 真墨迹）：[左, 下, 右, 上]（字号的倍数，y 往上为正、从基线算）+ 前进宽。
- *  vendor 那款字 Noto Sans SC 量的（test/jianpu-cells.test.ts 用同一款字量墨核着盒子）。CJK 小字（「吸」「深吸」）按「一个字一个字宽、基线下 0.08 上 0.83」。 */
+/** 数字行上的字的墨迹框（第八刀守卫 2：盒子报的边 = 真墨迹）：[左, 下, 右, 上]（字号的倍数，y 往上为正、从基线算）+ 前进宽。
+ *  vendor 那款字 Noto Sans SC 量的（test/jianpu-cells.test.ts 拿同一款字逐个核）。
+ *  **墨和占位宽分开**（8-7，统筹 2026-11-12）：这张表是「墨」——贴身的东西贴它、不相撞看它、「4 倍」那条规矩量它；
+ *  一个数字占多宽是另一回事（DIGIT_W、letterW，一律同宽、只定列宽，同样时值的一串数字再挤也等距），不从这张表来。 */
 export const GLYPH_INK: Readonly<Record<string, readonly [number, number, number, number, number]>> = {
+  "0": [0.05, -0.013, 0.506, 0.746, 0.555], "1": [0.088, 0, 0.49, 0.733, 0.555], "2": [0.04, 0, 0.505, 0.746, 0.555], "3": [0.029, -0.013, 0.499, 0.746, 0.555], "4": [0.02, 0, 0.524, 0.733, 0.555],
+  "5": [0.027, -0.013, 0.502, 0.733, 0.555], "6": [0.056, -0.013, 0.512, 0.746, 0.555], "7": [0.049, 0, 0.508, 0.733, 0.555], "8": [0.046, -0.013, 0.509, 0.744, 0.555], "9": [0.044, -0.013, 0.501, 0.746, 0.555],
+  A: [0.004, 0, 0.604, 0.733, 0.608], B: [0.101, 0, 0.612, 0.733, 0.657], C: [0.058, -0.013, 0.602, 0.746, 0.638], D: [0.101, 0, 0.629, 0.733, 0.688], E: [0.101, 0, 0.534, 0.733, 0.589],
+  F: [0.101, 0, 0.523, 0.733, 0.552], G: [0.058, -0.013, 0.615, 0.746, 0.689], "-": [0.046, 0.245, 0.303, 0.315, 0.347],
   "×": [0.178, 0.054, 0.822, 0.698, 1], V: [0.001, 0, 0.575, 0.733, 0.575], X: [0.017, 0, 0.557, 0.733, 0.573], x: [0.015, 0, 0.483, 0.543, 0.498],
   "●": [0.05, -0.07, 0.95, 0.83, 1], "⊗": [0.13, 0.01, 0.87, 0.75, 1], "◇": [0.012, -0.108, 0.988, 0.868, 1], "△": [0.03, 0.012, 0.97, 0.826, 1], "▽": [0.03, -0.066, 0.97, 0.748, 1],
   "□": [0.1, -0.02, 0.9, 0.78, 1], "+": [0.038, 0.116, 0.518, 0.622, 0.555], "/": [0.011, -0.179, 0.377, 0.794, 0.392], "⊘": [0.13, 0.01, 0.87, 0.75, 1],
@@ -124,6 +130,12 @@ export const GLYPH_INK: Readonly<Record<string, readonly [number, number, number
 export function glyphInk(ch: string, x: number, y: number, size: number, anchor: "start" | "middle"): { x0: number; x1: number; y0: number; y1: number } {
   const g = GLYPH_INK[ch] ?? [0.03, 0, 0.525, DIGIT_H / DIGIT_EM, DIGIT_W / DIGIT_EM], ox = anchor === "middle" ? x - (g[4] * size) / 2 : x;
   return { x0: ox + g[0] * size, x1: ox + g[2] * size, y0: y - g[3] * size, y1: y - g[1] * size };
+}
+/** 一串字（表里的；字母谱右下角的八度数字「4」「10」「-1」）从 x 起往右写、基线 y、字号 size 时的墨迹框：一个字一个字按前进宽排，各自的墨并起来。 */
+export function textInkRun(s: string, x: number, y: number, size: number): { x0: number; x1: number; y0: number; y1: number } {
+  let cx = x, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const ch of s) { const k = glyphInk(ch, cx, y, size, "start"); x0 = Math.min(x0, k.x0); x1 = Math.max(x1, k.x1); y0 = Math.min(y0, k.y0); y1 = Math.max(y1, k.y1); cx += (GLYPH_INK[ch]?.[4] ?? DIGIT_W / DIGIT_EM) * size; }
+  return { x0, x1, y0, y1 };
 }
 /** 升降号的字（相对这个调的调内音：+1 = ♯、−1 = ♭、0 = ♮）。 */
 export const accText = (rel: number): string => (rel > 0 ? "♯".repeat(rel) : rel < 0 ? "♭".repeat(-rel) : "♮");

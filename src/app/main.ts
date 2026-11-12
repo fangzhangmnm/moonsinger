@@ -891,8 +891,8 @@ function update(next: EditorState, gesture?: string): void {
   if (fixed && c.ok) info(_t("这一段定成了大谱表（手动分的上下行要存得下）；想回到自动，点行首谱号选「自动」"));
 }
 /** 每张纸（曲段）开头没写力度的补上（song.ts ensureStartDyns：补的是那里本来就生效的那个）；补在光标那条、光标前面 = 光标挪到它后面（接着写的音在力度后面）。 */
-function withStartDyns(s: EditorState): EditorState {
-  const r = ensureStartDyns(s.song, s.nextId); if (!r.added.length && !r.reordered.length) return s;   // 理顺只换那一串里的先后、个数不变，光标不用挪
+function withStartDyns(s: EditorState, o: { reorder?: boolean } = {}): EditorState {
+  const r = ensureStartDyns(s.song, s.nextId, o); if (!r.added.length && !r.reordered.length) return s;   // 理顺（只在开歌时）只换那一串里的先后、个数不变，光标不用挪
   let caret = s.caret, sel = s.sel;
   for (const a of r.added) if (a.paper === s.at.paper && a.part === s.at.part) { if (a.index <= caret) caret++; if (sel) sel = { from: sel.from + (a.index <= sel.from ? 1 : 0), to: sel.to + (a.index < sel.to ? 1 : 0) }; }
   return { ...s, song: r.song, nextId: r.nextId, caret, sel };
@@ -2809,9 +2809,9 @@ function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean;
   legacyMp3Note = null;   // 上一首的那句话不带到这一首
   ui.close(); closeInstPage();
   H.load(o.home, { stem: o.stem, named: o.named }); coverTouched = false;   // 换家（歌库 → 别处 = 放下 es 的身份；指针 / store 的「谁开着」在 onHome 里）
-  const st0 = initState(song), sd = ensureStartDyns(st0.song, st0.nextId), startDyns = sd.added.length, reordered = sd.reordered.length;
+  const st0 = initState(song), sd = ensureStartDyns(st0.song, st0.nextId, { reorder: true }), startDyns = sd.added.length, reordered = sd.reordered.length;
   encodedSnap = null;   // 换了一份文档：还在路上的那一轮保存取的快照是上一份的，不许落到这份头上（见 es 的 onSaved）
-  D.load(withStartDyns(st0), o.extras);   // 换歌 / 云端覆盖重载 = 另一首的历史；基线 = 打开的样子（v0.10.39：老歌每张纸开头没写力度 = 补上，不标脏、不进 undo，下次存时一起写进去）
+  D.load(withStartDyns(st0, { reorder: true }), o.extras);   // 补 + 理顺（同 sd，那份只拿来数几处、说一句）   // 换歌 / 云端覆盖重载 = 另一首的历史；基线 = 打开的样子（v0.10.39：老歌每张纸开头没写力度 = 补上，不标脏、不进 undo，下次存时一起写进去）
   const d = o.view ? unserializeDesk(o.view) : freshDesk();
   applyDesk(d);
   // 打开 = 上次存时的模式；谱里已经有音 = 键盘先收着，点一下才开（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」「或者默认键盘是关的，点一下才会开。」）。空的新歌照旧开着键盘

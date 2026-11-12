@@ -10,7 +10,7 @@ import { SIGNS } from "../src/render/signs.ts";
 import { harmonyTheory } from "../src/theory/index.ts";
 import { rangeBase, fewestDotsBase } from "../src/score/degree.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
-import { CHORD_CH_EM } from "../src/render/jianpu/glyphs.ts";
+import { CHORD_CH_EM, GLYPH_INK } from "../src/render/jianpu/glyphs.ts";
 import { parseTtf } from "../src/export/ttf.ts";
 import { isPrinted } from "../src/export/score-pdf.ts";
 // node 的内置模块照 pdf-wysiwyg.test.ts 的取法（类型检查不带 node 的类型）
@@ -390,16 +390,17 @@ describe("简谱数字行", () => {
     const ds = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "") && p.tok !== undefined);
     const ids = ds.map((p) => p.tok!).filter((t, i, a) => a.indexOf(t) === i).slice(-5), digitOf = (id: number) => ds.find((p) => p.tok === id)!;
     const [low, ul1, , hi, low2] = ids as [number, number, number, number, number];
-    const u = digitOf(low).size! / 2.5, base = digitOf(low).y;   // 一个单位 = 数字字号 / FS；数字的锚点 = 基线
-    const gapLow = (byTok(low)[0]! - base) / u, gapHi = (digitOf(hi).y - byTok(hi)[0]!) / u;
-    // 高点中心在基线上 数字高 + DOT_GAP + DOT_R；低点中心在基线下 DOT_GAP + DOT_R —— 两个差一个数字高（BASE_Y − DIGIT_TOP = 1.8）
-    assert(Math.abs(gapHi - gapLow - 1.8) < 0.02, `低点离数字底 = 高点离数字顶（${gapLow.toFixed(3)} vs ${(gapHi - 1.8).toFixed(3)}）`);
+    const u = digitOf(low).size! / 2.5;   // 一个单位 = 数字字号 / FS
+    // 8-7（墨和占位宽分开）：点贴数字的墨——量也从墨量（字形表 GLYPH_INK：[左, 下, 右, 上]，字号的倍数，往上为正）
+    const inkBot = (d: Extract<Prim, { t: "text" }>) => d.y - GLYPH_INK[d.s]![1] * d.size!, inkTop = (d: Extract<Prim, { t: "text" }>) => d.y - GLYPH_INK[d.s]![3] * d.size!;
+    const gapLow = (byTok(low)[0]! - inkBot(digitOf(low))) / u, gapHi = (inkTop(digitOf(hi)) - byTok(hi)[0]!) / u;
+    assert(Math.abs(gapHi - gapLow) < 0.02, `低点离数字的墨底 = 高点离数字的墨顶（${gapLow.toFixed(3)} vs ${gapHi.toFixed(3)}）`);
     const ul = L.prims.filter((p): p is Extract<Prim, { t: "line" }> => p.t === "line" && p.cls === "jp-ul" && Math.min(p.x1, p.x2) <= digitOf(ul1).x && Math.max(p.x1, p.x2) >= digitOf(ul1).x);
     eq(ul.length, 1, "八分音符一条下划线");
     const ulBottom = ul[0]!.y1 + ul[0]!.w / 2, gapUl = (byTok(ul1)[0]! - ulBottom) / u;
     assert(Math.abs(gapUl - gapLow) < 0.02, `有下划线：点离下划线底的间隙 = 没下划线时离数字底的间隙（${gapUl.toFixed(3)} vs ${gapLow.toFixed(3)}）`);
     const two = byTok(low2); eq(two.length, 2, "低低 6：两个点");
-    assert(Math.abs((two[0]! - base) / u - gapLow) < 0.02 && Math.abs((two[1]! - two[0]!) / u - 0.227 * 2.5) < 0.02, "第一个点同一个位置、第二个往下一步");
+    assert(Math.abs((two[0]! - inkBot(digitOf(low2))) / u - gapLow) < 0.02 && Math.abs((two[1]! - two[0]!) / u - 0.227 * 2.5) < 0.02, "第一个点同一个位置、第二个往下一步");
   });
   it("几何表（谱面只查它；统筹审接口第 2 条）：数字行没有「纵向 = 音高」；鬼音符 = 数字 + 升降 + 照这一行八度基准的点；光标在数字行的上下沿之间", () => {
     assert(!GEOMETRY.jianpu.pitchAxis && !!GEOMETRY.staff.pitchAxis, "数字行不提供竖着拖改音高");

@@ -7443,7 +7443,7 @@ function removePart(st2, partId) {
   const at3 = st2.at.part === partId ? { paper: st2.at.paper, part: song.parts[0].id } : st2.at;
   return setFocus({ ...st2, song }, at3.paper, at3.part, st2.at.part === partId ? void 0 : st2.caret);
 }
-function ensureStartDyns(song, nextId) {
+function ensureStartDyns(song, nextId, o10 = {}) {
   let id2 = nextId;
   const added = [], reordered = [], last = /* @__PURE__ */ new Map();
   const LEAD = /* @__PURE__ */ new Set(["dyn", "hairpin", "groove"]);
@@ -7464,7 +7464,7 @@ function ensureStartDyns(song, nextId) {
           break;
         }
       }
-      if (has2) {
+      if (has2 && o10.reorder) {
         let f2 = -1;
         for (let i10 = headLen(t10); i10 < t10.length; i10++) if (t10[i10].kind === "note") {
           f2 = i10;
@@ -13648,6 +13648,24 @@ var supAccEm = (gk = 1) => ACC_GLYPH_EM * (SCRIPT_K * DIGIT_EM * gk) * SUP_ACC_F
 var HEAD_CH_EM = { "0": 0.555, "1": 0.555, "2": 0.555, "3": 0.555, "4": 0.555, "5": 0.555, "6": 0.555, "7": 0.555, "8": 0.555, "9": 0.555, "=": 0.555, "/": 0.392, A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
 var headTextW = (s10, size) => [...s10].reduce((w2, c10) => w2 + (HEAD_CH_EM[c10] ?? 0.6), 0) * size;
 var GLYPH_INK = {
+  "0": [0.05, -0.013, 0.506, 0.746, 0.555],
+  "1": [0.088, 0, 0.49, 0.733, 0.555],
+  "2": [0.04, 0, 0.505, 0.746, 0.555],
+  "3": [0.029, -0.013, 0.499, 0.746, 0.555],
+  "4": [0.02, 0, 0.524, 0.733, 0.555],
+  "5": [0.027, -0.013, 0.502, 0.733, 0.555],
+  "6": [0.056, -0.013, 0.512, 0.746, 0.555],
+  "7": [0.049, 0, 0.508, 0.733, 0.555],
+  "8": [0.046, -0.013, 0.509, 0.744, 0.555],
+  "9": [0.044, -0.013, 0.501, 0.746, 0.555],
+  A: [4e-3, 0, 0.604, 0.733, 0.608],
+  B: [0.101, 0, 0.612, 0.733, 0.657],
+  C: [0.058, -0.013, 0.602, 0.746, 0.638],
+  D: [0.101, 0, 0.629, 0.733, 0.688],
+  E: [0.101, 0, 0.534, 0.733, 0.589],
+  F: [0.101, 0, 0.523, 0.733, 0.552],
+  G: [0.058, -0.013, 0.615, 0.746, 0.689],
+  "-": [0.046, 0.245, 0.303, 0.315, 0.347],
   "\xD7": [0.178, 0.054, 0.822, 0.698, 1],
   V: [1e-3, 0, 0.575, 0.733, 0.575],
   X: [0.017, 0, 0.557, 0.733, 0.573],
@@ -13665,6 +13683,18 @@ var GLYPH_INK = {
 function glyphInk(ch2, x2, y2, size, anchor) {
   const g3 = GLYPH_INK[ch2] ?? [0.03, 0, 0.525, DIGIT_H / DIGIT_EM, DIGIT_W / DIGIT_EM], ox2 = anchor === "middle" ? x2 - g3[4] * size / 2 : x2;
   return { x0: ox2 + g3[0] * size, x1: ox2 + g3[2] * size, y0: y2 - g3[3] * size, y1: y2 - g3[1] * size };
+}
+function textInkRun(s10, x2, y2, size) {
+  let cx2 = x2, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const ch2 of s10) {
+    const k2 = glyphInk(ch2, cx2, y2, size, "start");
+    x0 = Math.min(x0, k2.x0);
+    x1 = Math.max(x1, k2.x1);
+    y0 = Math.min(y0, k2.y0);
+    y1 = Math.max(y1, k2.y1);
+    cx2 += (GLYPH_INK[ch2]?.[4] ?? DIGIT_W / DIGIT_EM) * size;
+  }
+  return { x0, x1, y0, y1 };
 }
 var accText = (rel) => rel > 0 ? "\u266F".repeat(rel) : rel < 0 ? "\u266D".repeat(-rel) : "\u266E";
 var LETTER_EM = { A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
@@ -13744,10 +13774,10 @@ function cell() {
       let dx, dy;
       if (side === "above" || side === "below") {
         dx = crossOf(c10.x0, c10.x1, k2.x0, k2.x1, o10);
-        dy = side === "above" ? edges.above - o10.gap - k2.y1 : edges.below + o10.gap - k2.y0;
+        dy = side === "above" ? (o10.from ?? edges.above) - o10.gap - k2.y1 : (o10.from ?? edges.below) + o10.gap - k2.y0;
       } else {
         dy = crossOf(c10.y0, c10.y1, k2.y0, k2.y1, o10);
-        dx = side === "left" ? edges.left - o10.gap - k2.x1 : edges.right + o10.gap - k2.x0;
+        dx = side === "left" ? (o10.from ?? edges.left) - o10.gap - k2.x1 : (o10.from ?? edges.right) + o10.gap - k2.x0;
       }
       const got2 = put2(part2, dx, dy);
       if (side === "above") edges.above = Math.min(edges.above, got2.y0);
@@ -13852,7 +13882,7 @@ function noteCell(a10) {
   const nUL = underlines(u2);
   const ulBot = nUL ? (a10.ulY ?? coreBottom(u2, q2, mode, aux) + UL_DROP) + (nUL - 1) * UL_GAP + UL_W / 2 : 0;
   const head = cell();
-  const digitPart = (x2, y2, s10, cls, k2 = gk) => part(s10 === "x" ? glyphInk("x", x2, y2, DIGIT_EM * k2, "middle") : textInk(x2 - DIGIT_W * k2 / 2, x2 + DIGIT_W * k2 / 2, y2 - DIGIT_H * k2, y2), [{ ...T3, t: "text", x: x2, y: y2, s: s10, cls, size: DIGIT_EM * k2, anchor: "middle" }]);
+  const digitPart = (x2, y2, s10, cls, k2 = gk) => part(glyphInk(s10, x2, y2, DIGIT_EM * k2, "middle"), [{ ...T3, t: "text", x: x2, y: y2, s: s10, cls, size: DIGIT_EM * k2, anchor: "middle" }]);
   const dashPart = (x2) => part({ x0: x2 - DASH_L / 2, x1: x2 + DASH_L / 2, y0: DASH_Y - DASH_W / 2, y1: DASH_Y + DASH_W / 2 }, [{ ...T3, t: "line", x1: x2 - DASH_L / 2, y1: DASH_Y, x2: x2 + DASH_L / 2, y2: DASH_Y, w: DASH_W, cls: "jp-dash" }]);
   const step = a10.step ?? DASH_PITCH;
   const lFirst = lt2 ? Math.max(x0 + DIGIT_W / 2 + step, x0 + glyphW + DASH_L / 2 + 0.5) : 0;
@@ -13907,20 +13937,20 @@ function noteCell(a10) {
         members.push({ i: i10, yb: bases[k2] });
       });
     } else {
-      const accInks = [], accPrims = [];
+      const accs2 = [];
       order.forEach((i10, k2) => {
         const yb = bases[k2], d3 = dg[i10], dots = dotsOf[i10], pp = ps[i10], prims = [], inks = [];
         if (lt2) {
           const lp2 = letterParts(pp, q2.letters), xs = x0 + (letterW(pp.step) + SCRIPT_GAP) * gk, ss2 = DIGIT_EM * SCRIPT_K * gk, cls = (small ? "jp-digit jp-letter art-ghost" : "jp-digit jp-letter") + mute(i10);
           prims.push({ ...T3, t: "text", x: x0, y: yb, s: lp2.letter, cls, size: DIGIT_EM * gk, anchor: "start" });
-          inks.push(textInk(x0, x0 + letterW(pp.step) * gk, yb - DIGIT_H * gk, yb));
+          inks.push(glyphInk(lp2.letter, x0, yb, DIGIT_EM * gk, "start"));
           if (lp2.acc) {
             const gs = accGlyphsOfText(lp2.acc), em2 = supAccEm(gk), r10 = accRun(gs, em2, xs + accRunW(gs, em2), yb + SUP_DY * gk - 0.75 * ss2, "jp-acc jp-letter-sup" + mute(i10), T3, DIGIT_EM * gk);
             prims.push(...r10.prims);
             inks.push(r10.ink);
           }
           prims.push({ ...T3, t: "text", x: xs, y: yb + SUB_DY * gk, s: lp2.oct, cls: "jp-digit jp-letter-sub" + mute(i10), size: ss2, anchor: "start" });
-          inks.push(textInk(xs, xs + lp2.oct.length * SCRIPT_K * DIGIT_W * gk, yb + SUB_DY * gk - SCRIPT_K * DIGIT_H * gk, yb + SUB_DY * gk));
+          inks.push(textInkRun(lp2.oct, xs, yb + SUB_DY * gk, ss2));
         } else {
           const dp = digitPart(cx2, yb, String(d3.degree), (small ? "jp-digit art-ghost" : "jp-digit") + mute(i10));
           prims.push(...dp.prims);
@@ -13939,12 +13969,16 @@ function noteCell(a10) {
         head.core(part(unionInk(inks), prims));
         if (!lt2 && accs[i10] !== null && accs[i10] !== void 0) {
           const r10 = accRun(accGlyphs(d3.acc), ACC_GLYPH_EM * gk, 0, yb - DIGIT_H * gk - ACC_RISE, "jp-acc" + mute(i10), T3, DIGIT_EM * gk);
-          accPrims.push(...r10.prims);
-          accInks.push(r10.ink);
+          accs2.push({ part: part(r10.ink, r10.prims), from: inks[0].x0 });
         }
         members.push({ i: i10, yb });
       });
-      if (accPrims.length) stick("acc", part(unionInk(accInks), accPrims), { cross: 0 });
+      if (accs2.length) {
+        const g3 = groupOf("acc"), gap = gapOf("acc", count[g3] ?? 0);
+        count[g3] = (count[g3] ?? 0) + 1;
+        leftGap ??= gap;
+        for (const a22 of accs2) head.attach("left", a22.part, { gap, cross: 0, from: a22.from });
+      }
       if (hasArp(u2)) stick("arpeggio", arpPart(hiBase - DIGIT_H - 0.2, bases[0] + 0.2, T3, art2("arpeggio", "arpeggio jp-arp")), { cross: 0 });
       if (hiDots > 0) {
         const ps2 = [];
@@ -14074,7 +14108,7 @@ function measureJianpu(q2, k2 = 1, mode = "digits", aux) {
     if (u2.pad) return [];
     const nc2 = noteCell({ u: u2, q: q2, mode, ...aux ? { aux } : {}, fifths, base: 0, step: null }), b3 = nc2.cell.box(), gw = nc2.glyphW;
     const fd2 = mode === "digits" ? foldOf(u2, aux) : void 0, lt2 = lettersOf(q2, u2, mode, aux);
-    const left = -b3.x0 * k2, right = Math.max(0, (core(u2, fd2 || lt2 && gw > DIGIT_W ? gw : 0) + 0.1 + Math.max(0, b3.x1 - (nc2.x0 + gw))) * k2 - SP_DEFAULTS.pad);
+    const left = -Math.min(b3.x0, nc2.x0) * k2, right = Math.max(0, (core(u2, fd2 || lt2 && gw > DIGIT_W ? gw : 0) + 0.1 + Math.max(0, b3.x1 - (nc2.x0 + gw))) * k2 - SP_DEFAULTS.pad);
     inkL.set(u2, Math.max(0, left));
     const out = [{ row: 0, left, right, dur: u2.ticks, inkR: b3.x1 * k2, ...nc2.leftGap !== void 0 ? { clear: LEFT_CLEAR * nc2.leftGap * k2 } : {} }];
     const cx2 = (0.1 + gw / 2) * k2;
@@ -33755,7 +33789,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-85a42ff8aa99.mjs");
+      return pick(() => "layout-worker-ce0bf27219d0.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-edb3eb8e03e8.mjs");
   }
@@ -44012,7 +44046,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "e69122ed39173cca" : "dev";
+var CORE_HASH = true ? "02a88863560c8701" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -58659,8 +58693,8 @@ function update(next2, gesture) {
   const c10 = D3.commit({ st: next2 }, { gesture });
   if (fixed && c10.ok) info(_t("\u8FD9\u4E00\u6BB5\u5B9A\u6210\u4E86\u5927\u8C31\u8868\uFF08\u624B\u52A8\u5206\u7684\u4E0A\u4E0B\u884C\u8981\u5B58\u5F97\u4E0B\uFF09\uFF1B\u60F3\u56DE\u5230\u81EA\u52A8\uFF0C\u70B9\u884C\u9996\u8C31\u53F7\u9009\u300C\u81EA\u52A8\u300D"));
 }
-function withStartDyns(s10) {
-  const r10 = ensureStartDyns(s10.song, s10.nextId);
+function withStartDyns(s10, o10 = {}) {
+  const r10 = ensureStartDyns(s10.song, s10.nextId, o10);
   if (!r10.added.length && !r10.reordered.length) return s10;
   let caret = s10.caret, sel = s10.sel;
   for (const a10 of r10.added) if (a10.paper === s10.at.paper && a10.part === s10.at.part) {
@@ -61642,9 +61676,9 @@ function loadDocInner(song, o10) {
   closeInstPage();
   H2.load(o10.home, { stem: o10.stem, named: o10.named });
   coverTouched = false;
-  const st0 = initState(song), sd2 = ensureStartDyns(st0.song, st0.nextId), startDyns = sd2.added.length, reordered = sd2.reordered.length;
+  const st0 = initState(song), sd2 = ensureStartDyns(st0.song, st0.nextId, { reorder: true }), startDyns = sd2.added.length, reordered = sd2.reordered.length;
   encodedSnap = null;
-  D3.load(withStartDyns(st0), o10.extras);
+  D3.load(withStartDyns(st0, { reorder: true }), o10.extras);
   const d3 = o10.view ? unserializeDesk(o10.view) : freshDesk();
   applyDesk(d3);
   ws.mode = d3.mode;
@@ -63836,4 +63870,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0759aece2566.mjs.map
+//# sourceMappingURL=moonsinger-43cce405be08.mjs.map

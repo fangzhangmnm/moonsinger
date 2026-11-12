@@ -15,8 +15,10 @@ export interface Part { ink: Ink; prims: Prim[] }
 /** 贴的时候：离这一边现在的边缘多远（gap）；另一个方向怎么对齐——
  *  align（默认 center）对的是核的框：贴上 / 下时 start = 左边齐、end = 右边齐；贴左 / 右时 start = 顶齐、end = 底齐。
  *  cross = 另一个方向直接给锚点的位置（字形表里本来就定了高度的，如附点在基线上多高；给了就不看 align）。
- *  （钉住的接口里没有 cross：实现时加的，施工单第 8 节已回写。） */
-export interface AttachOpts { gap: number; align?: "center" | "start" | "end"; cross?: number }
+ *  （钉住的接口里没有 cross：实现时加的，施工单第 8 节已回写。）
+ *  from = 不贴这一边现在的边缘，贴这个位置（它自己那一小块墨的边）：和弦里每个音的升降号贴它自己那个数字的墨，不贴整摞里最靠外的那个（8-7，墨和占位宽分开）。
+ *  这一边照样往外长（后面再贴的东西在它外面）。 */
+export interface AttachOpts { gap: number; align?: "center" | "start" | "end"; cross?: number; from?: number }
 export interface Cell {
   /** 放一个核（数字 / 字母 / 和弦里的一个音 / X / 0 / 横线）：at = 它的锚点放在哪（默认原点）。核要在贴东西之前放完。 */
   core(part: Part, at?: { x: number; y: number }): void;
@@ -60,10 +62,10 @@ export function cell(): Cell {
       let dx: number, dy: number;
       if (side === "above" || side === "below") {
         dx = crossOf(c.x0, c.x1, k.x0, k.x1, o);
-        dy = side === "above" ? edges.above - o.gap - k.y1 : edges.below + o.gap - k.y0;
+        dy = side === "above" ? (o.from ?? edges.above) - o.gap - k.y1 : (o.from ?? edges.below) + o.gap - k.y0;
       } else {
         dy = crossOf(c.y0, c.y1, k.y0, k.y1, o);
-        dx = side === "left" ? edges.left - o.gap - k.x1 : edges.right + o.gap - k.x0;
+        dx = side === "left" ? (o.from ?? edges.left) - o.gap - k.x1 : (o.from ?? edges.right) + o.gap - k.x0;
       }
       const got = put(part, dx, dy);
       if (side === "above") edges.above = Math.min(edges.above, got.y0);

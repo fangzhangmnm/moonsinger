@@ -36,12 +36,8 @@ const ALLOWED: { name: string; ok: (a: Prim, b: Prim) => boolean }[] = [
   { name: "五线谱：幽灵音的括号符头 × 它的加线", ok: (a, b) => a.t === "glyph" && has(a, "ghost") && b.t === "line" && has(b, "ghost") },
   { name: "五线谱：符尾 / 附点挨着符头", ok: (a, b) => a.t === "glyph" && b.t === "glyph" && !a.cls && has(b, "note") },
 ];
-/** 查出来了、等统筹定谁让谁：按「谁和谁」认。第八刀 8-5（不印的提示最后贴、只躲不推）之后 7-K 的 ⑥ ⑦ 三条都没了；8-7 加了一条 7-V 的。 */
-const PENDING: Record<string, string> = {
-  // 7-V（统筹 2026-11-12 记的，等 user 定）：一行（用全的测试歌十个声部叠成一行）比一页还高，跑出纸底、压到下一页的第一行——只在分页 / 印的视图里。
-  //   8-7 起夹具先过「开头补力度」，几行各高了一点，跑出去的那截正好压到下一页第一行「2.」那个房子的字。不是数字行自己的相叠，归 7-V。
-  "text:jp-digit.jp-letter × text:nav-mark": "7-V：一行比一页高，跑出纸底压到下一页第一行（分页 / 印）",
-};
+/** 查出来了、等统筹定谁让谁：按「谁和谁」认。第八刀 8-5（不印的提示最后贴、只躲不推）之后 7-K 的 ⑥ ⑦ 三条都没了。 */
+const PENDING: Record<string, string> = {};   // 8-7 ① 时字母谱有过一条 7-V 的（一行比一页高跑出纸底，压到下一页第一行的「2.」），8-7 (A) 数字报墨之后行高变了、碰不到了，划掉；7-V 本身没修
 /** 五线谱查出来的（这一串只报不修；施工单第六节 7-K「五线谱只报不修」）。 */
 const STAFF_KNOWN: Record<string, string> = {
   "path:brace × rect:cat-bar.ann.cat-1": "花括号压着编辑器的色条", "path:brace × rect:cat-bar.ann.cat-4": "花括号压着编辑器的色条",

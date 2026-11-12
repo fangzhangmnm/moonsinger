@@ -6,5 +6,5 @@ import { ensureStartDyns, type Song } from "../../../src/score/song.ts";
 export function asOpened(song: Song): Song {
   let max = 0;
   for (const pp of song.papers) for (const t of Object.values(pp.tracks)) for (const k of t) if (k.id > max) max = k.id;
-  return ensureStartDyns(song, max + 1).song;
+  return ensureStartDyns(song, max + 1, { reorder: true }).song;
 }
