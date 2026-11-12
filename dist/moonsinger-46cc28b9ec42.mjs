@@ -4427,8 +4427,9 @@ var S = {
   "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": { en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands \u2014 crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Defaults: drums 12, pitched 14 (per second)." },
   "\u6EDA\u594F\u7684\u53D8\u5316\uFF08\u8BD5\u9A8C\uFF09": { en: "Roll variation (trial)" },
   "\u6CA1\u6709\uFF08\u5747\u5300\uFF09": { en: "None (even)" },
-  "\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A": { en: "Alternating hands + small randomness" },
-  "\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A = \u53CC\u6570\u4E0B\uFF08\u53E6\u4E00\u53EA\u624B\uFF09\u8F7B {hand}%\uFF0C\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u518D\u968F\u673A \xB1{vel}%\u3001\u8D77\u70B9\u968F\u673A\u632A\u4E00\u4E0B\u95F4\u9694\u7684 \xB1{time}%\uFF08\u7B2C\u4E00\u4E0B\u4E0D\u632A\uFF09\uFF1B\u968F\u673A\u6309\u8FD9\u4E2A\u97F3\u5B9A\uFF0C\u540C\u4E00\u9996\u6BCF\u6B21\u653E\u51FA\u6765\u4E00\u6837\u3002": { en: "Alternating hands + small randomness = every second stroke (the other hand) is {hand}% softer, each stroke's velocity varies randomly by \xB1{vel}%, and its start moves randomly by \xB1{time}% of the stroke spacing (the first stroke stays put); the randomness is fixed per note, so the same song sounds the same every time." },
+  "\u5C0F##\u53D8\u5316": { en: "Small" },
+  "\u660E\u663E##\u53D8\u5316": { en: "Clear" },
+  "\u5C0F\u3001\u660E\u663E = \u5DE6\u53F3\u624B\u4EA4\u66FF + \u968F\u673A\uFF1A\u53CC\u6570\u4E0B\uFF08\u53E6\u4E00\u53EA\u624B\uFF09\u8F7B {hand}%\uFF1B\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u518D\u968F\u673A \xB1{v1}%\uFF08\u660E\u663E \xB1{v2}%\uFF09\u3001\u8D77\u70B9\u968F\u673A\u632A\u4E00\u4E0B\u95F4\u9694\u7684 \xB1{t1}%\uFF08\u660E\u663E \xB1{t2}%\uFF09\uFF0C\u7B2C\u4E00\u4E0B\u4E0D\u632A\uFF1B\u968F\u673A\u6309\u8FD9\u4E2A\u97F3\u5B9A\uFF0C\u540C\u4E00\u9996\u6BCF\u6B21\u653E\u51FA\u6765\u4E00\u6837\u3002": { en: "Small and Clear = alternating hands + randomness: every second stroke (the other hand) is {hand}% softer; each stroke's velocity varies randomly by \xB1{v1}% (Clear \xB1{v2}%) and its start moves randomly by \xB1{t1}% of the stroke spacing (Clear \xB1{t2}%), the first stroke stays put; the randomness is fixed per note, so the same song sounds the same every time." },
   "\u8BD5\u9A8C\uFF1A\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u3001\u4E0D\u8FDB\u64A4\u9500\uFF0C\u6362\u6B4C\u5C31\u56DE\u5230\u300C\u6CA1\u6709\u300D\uFF1B\u542C\u548C\u5BFC\u51FA\u90FD\u5E26\u4E0A\u3002\u5F00\u7740\u7684\u65F6\u5019\u5BFC\u51FA\u4E0D\u7528\u3001\u4E5F\u4E0D\u8BB0\u6E32\u67D3\u7F13\u5B58\uFF08\u7F13\u5B58\u53EA\u8BA4\u6587\u4EF6\u91CC\u7684\u5185\u5BB9\uFF09\u3002": { en: "Trial: only for this session \u2014 not saved in the song, not in undo, back to \u201CNone\u201D when you switch songs; playback and export both use it. While it's on, export doesn't use or store the render cache (the cache only knows what's in the file)." },
   "\u97F3\u5185\u8D77\u4F0F\u591A\u6DF1": { en: "In-note swell depth" },
   "\u6D45\u4E00\u70B9\uFF08\u22123 dB\uFF09": { en: "Shallower (\u22123 dB)" },
@@ -34191,15 +34192,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-6d5b6b4a3acf.mjs");
+      return pick(() => "singer-worker-0df789f2585c.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-8bd43e8fcf51.mjs");
+      return pick(() => "layout-worker-818247966e17.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-dd2de9961c67.mjs");
+      return pick(() => "encode-worker-9c9cf2c0a035.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -40498,7 +40499,10 @@ var tsukuyomi = registerPerformer({
 });
 
 // src/engine/roll-variation.ts
-var ROLL_HANDS = { hand: 0.03, vel: 0.04, time: 0.03 };
+var ROLL_VARIATION = {
+  small: { hand: 0.03, vel: 0.04, time: 0.03 },
+  clear: { hand: 0.03, vel: 0.1, time: 0.08 }
+};
 function rollRand(seed, i10, lane) {
   let h2 = (Math.imul(seed | 0, 2654435761) ^ Math.imul(i10 + 1, 2246822519) ^ Math.imul(lane + 1, 3266489917)) >>> 0;
   h2 ^= h2 >>> 16;
@@ -40509,8 +40513,9 @@ function rollRand(seed, i10, lane) {
   return (h2 >>> 0) / 4294967296;
 }
 function varyRoll(hits, seed, mode) {
-  if (mode !== "hands" || hits.length < 2) return hits.slice();
-  const R2 = ROLL_HANDS, d3 = (hits[hits.length - 1].t1 - hits[0].t0) / hits.length;
+  const R2 = ROLL_VARIATION[mode];
+  if (!R2 || hits.length < 2) return hits.slice();
+  const d3 = (hits[hits.length - 1].t1 - hits[0].t0) / hits.length;
   const t0s = hits.map((h2, i10) => i10 === 0 ? h2.t0 : h2.t0 + R2.time * d3 * (2 * rollRand(seed, i10, 1) - 1));
   return hits.map((h2, i10) => {
     const out = { ...h2, t0: t0s[i10], t1: i10 + 1 < hits.length ? t0s[i10 + 1] : h2.t1 };
@@ -43252,8 +43257,8 @@ function createInstSettings(el2, h2) {
     ))(activePerfSpec(h2.extras(), role).rollHz, rollDefaultOf(role)) : "") + // 滚奏的「变化」（7-N 第三批，试验；user「默认没有变化，我试了之后告诉你该sunset变化还是默认变化」）：只在这次打开里有效、不进歌；数照 src/engine/roll-variation.ts 那一处说
     (plug?.honors.includes("roll") ? ((tv2) => row2(
       _t("\u6EDA\u594F\u7684\u53D8\u5316\uFF08\u8BD5\u9A8C\uFF09"),
-      chip("rollvar:none", _t("\u6CA1\u6709\uFF08\u5747\u5300\uFF09"), !tv2) + chip("rollvar:hands", _t("\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A"), tv2 === "hands"),
-      _t("\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A = \u53CC\u6570\u4E0B\uFF08\u53E6\u4E00\u53EA\u624B\uFF09\u8F7B {hand}%\uFF0C\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u518D\u968F\u673A \xB1{vel}%\u3001\u8D77\u70B9\u968F\u673A\u632A\u4E00\u4E0B\u95F4\u9694\u7684 \xB1{time}%\uFF08\u7B2C\u4E00\u4E0B\u4E0D\u632A\uFF09\uFF1B\u968F\u673A\u6309\u8FD9\u4E2A\u97F3\u5B9A\uFF0C\u540C\u4E00\u9996\u6BCF\u6B21\u653E\u51FA\u6765\u4E00\u6837\u3002", { hand: Math.round(ROLL_HANDS.hand * 100), vel: Math.round(ROLL_HANDS.vel * 100), time: Math.round(ROLL_HANDS.time * 100) }) + `<br>${_t("\u8BD5\u9A8C\uFF1A\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u3001\u4E0D\u8FDB\u64A4\u9500\uFF0C\u6362\u6B4C\u5C31\u56DE\u5230\u300C\u6CA1\u6709\u300D\uFF1B\u542C\u548C\u5BFC\u51FA\u90FD\u5E26\u4E0A\u3002\u5F00\u7740\u7684\u65F6\u5019\u5BFC\u51FA\u4E0D\u7528\u3001\u4E5F\u4E0D\u8BB0\u6E32\u67D3\u7F13\u5B58\uFF08\u7F13\u5B58\u53EA\u8BA4\u6587\u4EF6\u91CC\u7684\u5185\u5BB9\uFF09\u3002")}`
+      chip("rollvar:none", _t("\u6CA1\u6709\uFF08\u5747\u5300\uFF09"), !tv2) + chip("rollvar:small", _t("\u5C0F##\u53D8\u5316"), tv2 === "small") + chip("rollvar:clear", _t("\u660E\u663E##\u53D8\u5316"), tv2 === "clear"),
+      _t("\u5C0F\u3001\u660E\u663E = \u5DE6\u53F3\u624B\u4EA4\u66FF + \u968F\u673A\uFF1A\u53CC\u6570\u4E0B\uFF08\u53E6\u4E00\u53EA\u624B\uFF09\u8F7B {hand}%\uFF1B\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u518D\u968F\u673A \xB1{v1}%\uFF08\u660E\u663E \xB1{v2}%\uFF09\u3001\u8D77\u70B9\u968F\u673A\u632A\u4E00\u4E0B\u95F4\u9694\u7684 \xB1{t1}%\uFF08\u660E\u663E \xB1{t2}%\uFF09\uFF0C\u7B2C\u4E00\u4E0B\u4E0D\u632A\uFF1B\u968F\u673A\u6309\u8FD9\u4E2A\u97F3\u5B9A\uFF0C\u540C\u4E00\u9996\u6BCF\u6B21\u653E\u51FA\u6765\u4E00\u6837\u3002", { hand: Math.round(ROLL_VARIATION.small.hand * 100), v1: Math.round(ROLL_VARIATION.small.vel * 100), v2: Math.round(ROLL_VARIATION.clear.vel * 100), t1: Math.round(ROLL_VARIATION.small.time * 100), t2: Math.round(ROLL_VARIATION.clear.time * 100) }) + `<br>${_t("\u8BD5\u9A8C\uFF1A\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u3001\u4E0D\u8FDB\u64A4\u9500\uFF0C\u6362\u6B4C\u5C31\u56DE\u5230\u300C\u6CA1\u6709\u300D\uFF1B\u542C\u548C\u5BFC\u51FA\u90FD\u5E26\u4E0A\u3002\u5F00\u7740\u7684\u65F6\u5019\u5BFC\u51FA\u4E0D\u7528\u3001\u4E5F\u4E0D\u8BB0\u6E32\u67D3\u7F13\u5B58\uFF08\u7F13\u5B58\u53EA\u8BA4\u6587\u4EF6\u91CC\u7684\u5185\u5BB9\uFF09\u3002")}`
     ))(h2.rollTrial()) : "") + // 音内起伏多深（7-N，2026-11-12；user「上了音内渐强是从-6db开始的还是从0开始的这个我也没法配置」）：swellDb，一档 3 dB，3–24，默认 6；按力度敲的旁边写约几档力度
     (plug?.honors.includes("swellGrow") || plug?.honors.includes("swellFade") ? ((D4) => row2(
       _t("\u97F3\u5185\u8D77\u4F0F\u591A\u6DF1"),
@@ -43309,7 +43314,8 @@ function createInstSettings(el2, h2) {
       h2.commit(withCalibration(h2.extras(), role, next2, hum), _t("\u300C{rn}\u300D\u54CD\u5EA6\u6821\u51C6 {next} dB", { rn: rn2, next: next2 }), "cal");
     } else if (v.startsWith("hum:")) h2.setHum(v.slice(4));
     else if (v.startsWith("rollvar:")) {
-      h2.setRollTrial(v === "rollvar:hands" ? "hands" : null);
+      const m2 = v.slice(8);
+      h2.setRollTrial(m2 === "small" || m2 === "clear" ? m2 : null);
       return;
     } else {
       const ch2 = performerOf(h2.engine())?.onInspector?.(v, inspectorCtx(role));
@@ -44528,7 +44534,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "a83e2eb51ad10e5e" : "dev";
+var CORE_HASH = true ? "33797b3bf89d8df3" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -64478,4 +64484,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5a530f58c02b.mjs.map
+//# sourceMappingURL=moonsinger-46cc28b9ec42.mjs.map

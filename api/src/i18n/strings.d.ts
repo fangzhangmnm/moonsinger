@@ -3397,11 +3397,14 @@ export declare const S: {
     readonly "\u6CA1\u6709\uFF08\u5747\u5300\uFF09": {
         readonly en: "None (even)";
     };
-    readonly "\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A": {
-        readonly en: "Alternating hands + small randomness";
+    readonly "\u5C0F##\u53D8\u5316": {
+        readonly en: "Small";
     };
-    readonly "\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A = \u53CC\u6570\u4E0B\uFF08\u53E6\u4E00\u53EA\u624B\uFF09\u8F7B {hand}%\uFF0C\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u518D\u968F\u673A \u00B1{vel}%\u3001\u8D77\u70B9\u968F\u673A\u632A\u4E00\u4E0B\u95F4\u9694\u7684 \u00B1{time}%\uFF08\u7B2C\u4E00\u4E0B\u4E0D\u632A\uFF09\uFF1B\u968F\u673A\u6309\u8FD9\u4E2A\u97F3\u5B9A\uFF0C\u540C\u4E00\u9996\u6BCF\u6B21\u653E\u51FA\u6765\u4E00\u6837\u3002": {
-        readonly en: "Alternating hands + small randomness = every second stroke (the other hand) is {hand}% softer, each stroke's velocity varies randomly by ±{vel}%, and its start moves randomly by ±{time}% of the stroke spacing (the first stroke stays put); the randomness is fixed per note, so the same song sounds the same every time.";
+    readonly "\u660E\u663E##\u53D8\u5316": {
+        readonly en: "Clear";
+    };
+    readonly "\u5C0F\u3001\u660E\u663E = \u5DE6\u53F3\u624B\u4EA4\u66FF + \u968F\u673A\uFF1A\u53CC\u6570\u4E0B\uFF08\u53E6\u4E00\u53EA\u624B\uFF09\u8F7B {hand}%\uFF1B\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u518D\u968F\u673A \u00B1{v1}%\uFF08\u660E\u663E \u00B1{v2}%\uFF09\u3001\u8D77\u70B9\u968F\u673A\u632A\u4E00\u4E0B\u95F4\u9694\u7684 \u00B1{t1}%\uFF08\u660E\u663E \u00B1{t2}%\uFF09\uFF0C\u7B2C\u4E00\u4E0B\u4E0D\u632A\uFF1B\u968F\u673A\u6309\u8FD9\u4E2A\u97F3\u5B9A\uFF0C\u540C\u4E00\u9996\u6BCF\u6B21\u653E\u51FA\u6765\u4E00\u6837\u3002": {
+        readonly en: "Small and Clear = alternating hands + randomness: every second stroke (the other hand) is {hand}% softer; each stroke's velocity varies randomly by ±{v1}% (Clear ±{v2}%) and its start moves randomly by ±{t1}% of the stroke spacing (Clear ±{t2}%), the first stroke stays put; the randomness is fixed per note, so the same song sounds the same every time.";
     };
     readonly "\u8BD5\u9A8C\uFF1A\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u3001\u4E0D\u8FDB\u64A4\u9500\uFF0C\u6362\u6B4C\u5C31\u56DE\u5230\u300C\u6CA1\u6709\u300D\uFF1B\u542C\u548C\u5BFC\u51FA\u90FD\u5E26\u4E0A\u3002\u5F00\u7740\u7684\u65F6\u5019\u5BFC\u51FA\u4E0D\u7528\u3001\u4E5F\u4E0D\u8BB0\u6E32\u67D3\u7F13\u5B58\uFF08\u7F13\u5B58\u53EA\u8BA4\u6587\u4EF6\u91CC\u7684\u5185\u5BB9\uFF09\u3002": {
         readonly en: "Trial: only for this session — not saved in the song, not in undo, back to “None” when you switch songs; playback and export both use it. While it's on, export doesn't use or store the render cache (the cache only knows what's in the file).";
