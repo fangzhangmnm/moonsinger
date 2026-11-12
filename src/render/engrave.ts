@@ -347,7 +347,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     Object.assign(virtualOut, rowsS.virtualOut);
     const { absorbed, lowOf, drumNames, loIds, parts } = rowsS;
     // 展开着的那几家（一家里有人在写）：括号画在哪几行（主人 → 这张纸上看得见的最后一位房客）
-    const openFams = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p) => p.id) }));
+    const famShown = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p) => p.id) }));
+    //   这种谱叠不叠一家（谱种的表）：叠的 = 展开着的那几家给编辑器一条能点的括号；不叠的（简谱）= 每一家左边一条印出来的竖线（第五刀 5-4），没有「叠回去」
+    const famLine = NOTATIONS[songLook.notation].families === "line", openFams = famLine ? [] : famShown, lineFams = famLine ? famShown : [];
     const trackOf = (id: string): Token[] => rowsS.virt.get(id) ?? paper.tracks[id];
     // 隐藏的声部（刀 1，施工单 §4 第 5 条；user 11-08「我建议不留空 可以，但是如果是页面模式的话wysiwyg，排版要对齐，要不你换一个UI？」）：
     //   当它不存在——不排行、不留高度，连续和分页一样，预览的版面 = PDF 的版面。提醒归覆盖层：曲段名那一条上一颗不占位的「隐藏 N」（hiddenParts 锚点）。
@@ -562,6 +564,11 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         const rs = fam.ids.map((id) => per.findIndex((q) => q.p.id === id)).filter((i) => i >= 0); if (rs.length < 2) continue;
         const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 1.55), y0 = anc(rowOf(s, r0, 0)).top - P(0.6), y1 = anc(rowOf(s, r1, per[r1].staves - 1)).bottom + P(0.6);
         families.push({ paper: paper.id, host: fam.host, x: x - P(0.6), y: y0, w: P(1.3), h: y1 - y0 });
+      }
+      for (const fam of lineFams) {   // 简谱：同一家左边一条竖线包住（UX 稿第 7 节）：从这一家第一位那一行的上沿到最后一位那一行的下沿，在色条和左边连着的竖线之间（印）
+        const rs = fam.ids.map((id) => per.findIndex((q) => q.p.id === id)).filter((i) => i >= 0); if (rs.length < 2) continue;
+        const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 0.35);
+        prims.push({ t: "line", x1: x, y1: anc(rowOf(s, r0, 0)).top, x2: x, y2: anc(rowOf(s, r1, per[r1].staves - 1)).bottom, w: P(0.25), cls: "family-line" });
       }
       if (nRowsSys > 1) prims.push({ t: "line", x1: P(MARGIN + ind), y1: anc(rowOf(s, 0, 0)).top, x2: P(MARGIN + ind), y2: anc(rowOf(s, nR - 1, per[nR - 1].staves - 1)).bottom, w: P(SYSTEM_LINE_W), cls: "bar" });
     } };

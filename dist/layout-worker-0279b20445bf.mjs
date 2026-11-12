@@ -7139,10 +7139,10 @@ var DRAWERS = {
 var jianpuCan = (q) => !q.vrt && !q.v2 && !q.hasV2 && !q.p.xHead;
 var jianpuRowOf = (q) => !jianpuCan(q) ? "staff" : q.pmode || q.p.perc ? "jianpuX" : "jianpu";
 var NOTATIONS2 = {
-  staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff" },
+  staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
   //   有叠音的声部、鼓仍排五线谱的行（第五刀后面几步退场；那时候单元宽也按这一种给）
-  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf }
+  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf, families: "line" }
 };
 
 // src/render/frame/lanes.ts
@@ -7433,7 +7433,8 @@ function engrave(song, o) {
     const rowsS = BUILD.rows(paper, visible, fold, lookAt);
     Object.assign(virtualOut, rowsS.virtualOut);
     const { absorbed, lowOf, drumNames, loIds, parts } = rowsS;
-    const openFams = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p) => p.id) }));
+    const famShown = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p) => p.id) }));
+    const famLine = NOTATIONS2[songLook.notation].families === "line", openFams = famLine ? [] : famShown, lineFams = famLine ? famShown : [];
     const trackOf = (id) => rowsS.virt.get(id) ?? paper.tracks[id];
     if (!parts.length) {
       drawPaperTitle(T(hiddenParts.length ? 0 : 3.2));
@@ -7688,6 +7689,12 @@ function engrave(song, o) {
           if (rs.length < 2) continue;
           const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 1.55), y02 = anc(rowOf(s2, r0, 0)).top - P(0.6), y1 = anc(rowOf(s2, r1, per[r1].staves - 1)).bottom + P(0.6);
           families.push({ paper: paper.id, host: fam.host, x: x - P(0.6), y: y02, w: P(1.3), h: y1 - y02 });
+        }
+        for (const fam of lineFams) {
+          const rs = fam.ids.map((id) => per.findIndex((q) => q.p.id === id)).filter((i) => i >= 0);
+          if (rs.length < 2) continue;
+          const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 0.35);
+          prims.push({ t: "line", x1: x, y1: anc(rowOf(s2, r0, 0)).top, x2: x, y2: anc(rowOf(s2, r1, per[r1].staves - 1)).bottom, w: P(0.25), cls: "family-line" });
         }
         if (nRowsSys > 1) prims.push({ t: "line", x1: P(MARGIN + ind), y1: anc(rowOf(s2, 0, 0)).top, x2: P(MARGIN + ind), y2: anc(rowOf(s2, nR - 1, per[nR - 1].staves - 1)).bottom, w: P(SYSTEM_LINE_W), cls: "bar" });
       }
@@ -7958,4 +7965,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-449535243c31.mjs.map
+//# sourceMappingURL=layout-worker-0279b20445bf.mjs.map

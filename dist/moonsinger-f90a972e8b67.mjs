@@ -13508,10 +13508,10 @@ var GEOMETRY = {
 var jianpuCan = (q2) => !q2.vrt && !q2.v2 && !q2.hasV2 && !q2.p.xHead;
 var jianpuRowOf = (q2) => !jianpuCan(q2) ? "staff" : q2.pmode || q2.p.perc ? "jianpuX" : "jianpu";
 var NOTATIONS2 = {
-  staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff" },
+  staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
   //   有叠音的声部、鼓仍排五线谱的行（第五刀后面几步退场；那时候单元宽也按这一种给）
-  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf }
+  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf, families: "line" }
 };
 
 // src/render/frame/lanes.ts
@@ -13802,7 +13802,8 @@ function engrave(song, o10) {
     const rowsS = BUILD.rows(paper, visible, fold, lookAt);
     Object.assign(virtualOut, rowsS.virtualOut);
     const { absorbed, lowOf, drumNames, loIds, parts } = rowsS;
-    const openFams = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p2) => p2.id) }));
+    const famShown = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p2) => p2.id) }));
+    const famLine = NOTATIONS2[songLook.notation].families === "line", openFams = famLine ? [] : famShown, lineFams = famLine ? famShown : [];
     const trackOf2 = (id2) => rowsS.virt.get(id2) ?? paper.tracks[id2];
     if (!parts.length) {
       drawPaperTitle(T2(hiddenParts.length ? 0 : 3.2));
@@ -14057,6 +14058,12 @@ function engrave(song, o10) {
           if (rs2.length < 2) continue;
           const r02 = Math.min(...rs2), r14 = Math.max(...rs2), x2 = P2(MARGIN + ind - 1.55), y02 = anc(rowOf(s10, r02, 0)).top - P2(0.6), y1 = anc(rowOf(s10, r14, per[r14].staves - 1)).bottom + P2(0.6);
           families.push({ paper: paper.id, host: fam.host, x: x2 - P2(0.6), y: y02, w: P2(1.3), h: y1 - y02 });
+        }
+        for (const fam of lineFams) {
+          const rs2 = fam.ids.map((id2) => per.findIndex((q2) => q2.p.id === id2)).filter((i10) => i10 >= 0);
+          if (rs2.length < 2) continue;
+          const r02 = Math.min(...rs2), r14 = Math.max(...rs2), x2 = P2(MARGIN + ind - 0.35);
+          prims.push({ t: "line", x1: x2, y1: anc(rowOf(s10, r02, 0)).top, x2, y2: anc(rowOf(s10, r14, per[r14].staves - 1)).bottom, w: P2(0.25), cls: "family-line" });
         }
         if (nRowsSys > 1) prims.push({ t: "line", x1: P2(MARGIN + ind), y1: anc(rowOf(s10, 0, 0)).top, x2: P2(MARGIN + ind), y2: anc(rowOf(s10, nR2 - 1, per[nR2 - 1].staves - 1)).bottom, w: P2(SYSTEM_LINE_W), cls: "bar" });
       }
@@ -32535,7 +32542,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-449535243c31.mjs");
+      return pick(() => "layout-worker-0279b20445bf.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-2a6526a1e852.mjs");
   }
@@ -62171,4 +62178,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-43621d7e1625.mjs.map
+//# sourceMappingURL=moonsinger-f90a972e8b67.mjs.map

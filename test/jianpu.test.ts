@@ -136,6 +136,12 @@ describe("简谱数字行", () => {
     eq(Object.keys(Lj.virtual).join(","), "", "简谱：没有虚拟轨（哪一家都不叠）");
     eq(Lj.sharedRows.length, 0, "简谱：没有只读的叠起来的行");
     for (const id of ["X", "Y"]) assert(Lj.systems.some((r) => r.paper === "pa" && r.part === id), `简谱：${id} 有自己的行`);
+    // 一家左边一条竖线包住（第五刀 5-4 ③，UX 稿第 7 节）：印出来的；没有「叠回去」的括号（简谱不叠）
+    const famLines = Lj.prims.filter((p): p is Extract<Prim, { t: "line" }> => p.t === "line" && /family-line/.test(p.cls ?? ""));
+    const rowX = Lj.systems.find((r) => r.paper === "pa" && r.part === "X")!, rowY = Lj.systems.find((r) => r.paper === "pa" && r.part === "Y")!;
+    assert(famLines.some((l) => l.y1 <= rowX.staffTop + 1e-6 + 30 && l.y1 >= rowX.top - 1e-6 && l.y2 >= rowY.staffTop && l.y2 <= rowY.bottom + 1e-6), "简谱：X、Y 那一家左边一条竖线，从 X 那一行到 Y 那一行");
+    eq(Lj.families.length, 0, "简谱：没有「叠回去」的括号");
+    eq(Ls.prims.filter((p) => /family-line/.test(p.cls ?? "")).length, 0, "五线谱：没有这条竖线（叠 / 展开括号照旧）");
   });
   it("力度 = p / f 字母（和五线谱同一套字形，不分界面语言；user 11-11 夜纪要第 88 节「中文的字确实有点太抢眼了」）；中文叫法在说明栏里", () => {
     const body = [{ kind: "dyn", value: "mf" } as Omit<Token, "id">, n(P("C")), { kind: "dyn", value: "pp" } as Omit<Token, "id">, n(P("D"))];

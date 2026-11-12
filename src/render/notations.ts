@@ -76,13 +76,15 @@ export interface Build {
   tracks: typeof staffTracks;
 }
 /** 一种谱：这种谱里怎么建轨、一条轨用哪种行；home = 这种谱的主行（一行都没有的纸按它留高）。 */
-export interface Notation { readonly id: NotationId; readonly home: RowKind; readonly build: Build; rowKindOf(q: Track): RowKind }
+export interface Notation { readonly id: NotationId; readonly home: RowKind; readonly build: Build; rowKindOf(q: Track): RowKind;
+  /** 合租的一家怎么露：fold = 没人在写就叠成一行，展开着时编辑器里一条能点的括号（点 = 叠回去）；line = 不叠，一家左边一条印出来的竖线包住（简谱，UX 稿第 7 节）。 */
+  readonly families: "fold" | "line" }
 /** 数字行画得了的：有音高（叠音 = 竖叠，第五刀 5-4）、不是叠起来的一家（虚拟轨）/ 声部 2、台上那位不是固定敲一个键（× 符头）。鼓 = X 行。别的照旧五线谱的行（第五刀后面几步退场）。 */
 const jianpuCan = (q: Track): boolean => !q.vrt && !q.v2 && !q.hasV2 && !q.p.xHead;
 const jianpuRowOf = (q: Track): RowKind => (!jianpuCan(q) ? "staff" : q.pmode || q.p.perc ? "jianpuX" : "jianpu");
 export const NOTATIONS: Readonly<Record<NotationId, Notation>> = {
-  staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff" },
+  staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
   //   有叠音的声部、鼓仍排五线谱的行（第五刀后面几步退场；那时候单元宽也按这一种给）
-  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf },
+  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf, families: "line" },
 };
