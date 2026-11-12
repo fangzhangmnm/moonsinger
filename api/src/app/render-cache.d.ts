@@ -34,6 +34,11 @@ export interface RenderMeta {
         hash: string;
     };
 }
+/** 这一遍是旧版本的渲染核心渲的（7-S，2026-11-12；user「以及加一个删旧渲染缓存和删缓存的功能」）：判法 = 记录里的核心哈希和现在的不一样。
+ *  旧的照样能听（歌库里「当年的声音不用太焦虑」），只是标出来、能一键删；不自动删（自动只许拦、不许替人管）。 */
+export declare const renderedByOldCore: (meta: Pick<RenderMeta, "core">, core: {
+    hash: string;
+}) => boolean;
 /** 歌库里的一个身份挂在哪条记录上。home = 哪个家（网盘 = "default"，文件夹 = 它的 id；同名的歌在两个家里不是一回事）。 */
 export interface RenderLink {
     home: string;
@@ -97,6 +102,20 @@ export interface RenderCache {
     }[];
     /** 删一条（字节 + 挂在它名下的名字一起）。 */
     remove(key: string): Promise<void>;
+    /** 旧版本的渲染核心渲的有几条、共多大（renderedByOldCore；设置页那颗钮上写）。同步。 */
+    oldStats(core: {
+        hash: string;
+    }): {
+        count: number;
+        bytes: number;
+    };
+    /** 一键删掉旧版本的渲染核心渲的（字节 + 挂名一起）；回删了几条、多大。 */
+    removeOld(core: {
+        hash: string;
+    }): Promise<{
+        count: number;
+        bytes: number;
+    }>;
     clear(): Promise<void>;
     /** 索引变了（多了一条 / 丢了一条 / 挂名变了）→ 回调（歌库卡片上的 ▶ 跟着重算）。 */
     onChange(fn: () => void): () => void;

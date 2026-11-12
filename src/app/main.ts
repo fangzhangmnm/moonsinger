@@ -123,7 +123,7 @@ import { createDocument, type SavedMark } from "./document.ts";
 import { createHome, assertNever, type Home } from "./home.ts";
 import { createEditLock, type LockStore } from "./edit-lock.ts";
 import { initEditLockDoor } from "./edit-lock-door.ts";
-import { createRenderCache, stampOf, MANIFEST_ENTRY, type RenderMeta } from "./render-cache.ts";
+import { createRenderCache, stampOf, MANIFEST_ENTRY, renderedByOldCore, type RenderMeta } from "./render-cache.ts";
 import { idbRenderStore } from "./render-cache-idb.ts";
 import { createInputGate, keyOwner, type NoWrite } from "./input-gate.ts";
 import { monoDown, monoUp, type MonoHeld } from "./mono-voice.ts";
@@ -1388,9 +1388,13 @@ function openSettings(): void {
   let rcKeys: string[] = [];
   const refreshRc = async (): Promise<void> => {
     await renders.ready();
-    const all = renders.list(), st = renders.stats(); rcKeys = all.map((x) => x.meta.key);
+    const all = renders.list(), st = renders.stats(), old = renders.oldStats(coreInfo()); rcKeys = all.map((x) => x.meta.key);
     rcList.innerHTML = !all.length ? `<div class="set-row"><span class="set-note">${_t("还没有记着的")}</span></div>`
-      : `<div class="set-row"><span>${_t("{n} 首 · {size}", { n: st.count, size: sizeText(st.bytes) })}</span></div>` + all.map((x, i) => `<div class="set-row"><span>${esc(_t("{title} · {secs} 秒 · {size} · {date}", { title: x.meta.title, secs: x.meta.secs.toFixed(0), size: sizeText(x.meta.size), date: new Date(x.meta.at).toLocaleDateString() }))}${x.links.length ? `<small class="set-note"> ${esc(_t("歌库里：{names}", { names: x.links.map((l) => stemOfId(l.identifier)).join("、") }))}</small>` : ""}</span><button class="btn" data-v="rc:del:${i}">${_t("删")}</button></div>`).join("");
+      : `<div class="set-row"><span>${_t("{n} 首 · {size}", { n: st.count, size: sizeText(st.bytes) })}</span>${old.count ? `<button class="btn" data-v="rc:old">${_t("删掉旧版本渲的（{n} 条，共 {size}）", { n: old.count, size: sizeText(old.bytes) })}</button>` : ""}</div>` +
+        all.map((x, i) => `<div class="set-row"><span>${esc(_t("{title} · {secs} 秒 · {size} · {date}", { title: x.meta.title, secs: x.meta.secs.toFixed(0), size: sizeText(x.meta.size), date: new Date(x.meta.at).toLocaleDateString() }))}` +
+          // 7-S（2026-11-12）：这一条是不是这一版的渲染核心渲的（判法 = 记录里的核心哈希；旧的照样能听，只是标出来）
+          `<small class="set-note rc-core${renderedByOldCore(x.meta, coreInfo()) ? " is-old" : ""}"> ${esc(renderedByOldCore(x.meta, coreInfo()) ? _t("旧版本渲的（渲染核心 {v}）", { v: x.meta.core?.version ?? "?" }) : _t("这一版渲的"))}</small>` +
+          `${x.links.length ? `<small class="set-note"> ${esc(_t("歌库里：{names}", { names: x.links.map((l) => stemOfId(l.identifier)).join("、") }))}</small>` : ""}</span><button class="btn" data-v="rc:del:${i}">${_t("删")}</button></div>`).join("");
   };
   void refreshRc();
   midiRowSync = (s) => { const el = box.querySelector<HTMLElement>("#midiSt"); if (el) el.innerHTML = midiStatusHtml(s); if (s.k !== "off" && s.k !== "denied") box.querySelector('[data-v="midi:connect"]')?.remove(); };
@@ -1425,6 +1429,7 @@ function openSettings(): void {
       prepare: async () => { H.release(); singer.restart(); if (hasStore()) await detachStore(); },   // 放下身份（es 不再写）、关掉举着念缓存库的 worker、dispose store；不 drain、不造逃生副本（说明 sheet 已经说清）
       clearShell: () => shell.clearOwnShell(), info, report: (e, level) => reportError(e, level) }); }
     else if (v === "rc:clear") void renders.clear().then(() => { void refreshRc(); info(_t("全清了（要听再渲）")); });
+    else if (v === "rc:old") void renders.removeOld(coreInfo()).then((r) => { void refreshRc(); info(_t("删了 {n} 条旧版本渲的（{size}）：歌库里要听再渲", { n: r.count, size: sizeText(r.bytes) })); });   // 7-S：不自动删，人点了才删
     else if (v?.startsWith("rc:del:")) { const k = rcKeys[Number(v.slice(7))]; if (k) void renders.remove(k).then(() => { void refreshRc(); info(_t("删了这一遍（要听再渲）")); }); }
     else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => { refreshSpeech(); info(_t("念缓存清空了（念过的句子要重念）")); });
     else if (v === "eng:restart") { singer.restart(); diagNote("resource", "manual restart of singer lanes"); refreshRes(); info(_t("小月相引擎重开了，内存还回去了（念过的句子存在这台设备上，不用重念）")); }
@@ -4277,12 +4282,13 @@ setTimeout(() => schedulePrewarm(), 1200);
 // 乐器和小月相的强弱改成 SoundFont 的放法、和标准播放器对齐（施工单第 9 节 / 9-2 / 9-4，2026-11-12；user「立刻最先修」「按照SoundFont对齐，然后小月相也应该对齐」
 //   「真正该对齐的是：我们的引擎和标准播放器 对齐」）：更新之后第一次打开说一次（这台设备只说一次；不问、不留旧模式）。
 //   "1" = 第 9 节那一句；"2" = 9-2 两样一起说；"3" = 9-4（看过 "2" 的只说这次又变了什么，没看过的说合起来的现状）。数 = 施工记录 9-4 那张对照（GS 28 件，mf 上中位数轻 2.6 dB）。
-{ const said = deviceKvGet(KV_SF_VELOCITY_SAID);
-  if (said !== "3") {
-    deviceKvSet(KV_SF_VELOCITY_SAID, "3");
-    if (ranBefore) showNotice({ id: "sf-velocity", level: "info", text: said === "2"
+//   "4" = 7-S 加的一句（施工单「9-4 更新后的那一次提示加一句」）：歌库里记着的声音是旧放法渲的、设置里能一键删；看过 "3" 的设备只补这一句。
+{ const said = deviceKvGet(KV_SF_VELOCITY_SAID), cacheLine = _t("歌库里这台设备记着的声音是之前的引擎渲的：封面上标「旧」、照样能听，播放条上「重新渲染」用现在的引擎重渲；设置「渲染缓存」里可以一键删掉旧的。");
+  if (said !== "4") {
+    deviceKvSet(KV_SF_VELOCITY_SAID, "4");
+    if (ranBefore) showNotice({ id: "sf-velocity", level: "info", text: said === "3" ? cacheLine : (said === "2"
       ? _t("SoundFont 乐器又和标准播放器（FluidSynth）对了一次齐：每件乐器按库里给它写的力度曲线走——多数乐器 ppp 到 fff 的差别从 36 dB 收到 30 dB，风琴这类库里定成不随力度的就按多重都一样响；库里写的初始衰减也照标准算。在 mf 上多数乐器又轻了 0–9 dB（中位数约 3 dB），乐器之间的轻重会挪。小月相和元音版的强弱也收到同样的幅度（她的 mf 比上一版响 1.3 dB）。旧歌的平衡要重新调。")
-      : _t("乐器和小月相的强弱改成了 SoundFont 的放法，和标准播放器（FluidSynth）一样：每件乐器按库里给它写的力度曲线走（多数乐器 ppp 到 fff 差 30 dB；风琴这类库里定成不随力度的，按多重都一样响），库里写的初始衰减也照标准算。整首会变轻、乐器之间的轻重会挪；小月相和元音版的强弱也按同一条曲线。旧歌的平衡要重新调。"),
+      : _t("乐器和小月相的强弱改成了 SoundFont 的放法，和标准播放器（FluidSynth）一样：每件乐器按库里给它写的力度曲线走（多数乐器 ppp 到 fff 差 30 dB；风琴这类库里定成不随力度的，按多重都一样响），库里写的初始衰减也照标准算。整首会变轻、乐器之间的轻重会挪；小月相和元音版的强弱也按同一条曲线。旧歌的平衡要重新调。")) + " " + cacheLine,
       actions: [{ label: _t("知道了"), primary: true, onClick: () => closeNotice("sf-velocity") }] });
   } }
 void midi.resume();   // 浏览器记住了「允许」= 静默接上 MIDI 键盘（没记住不弹框，等顶栏「MIDI」或设置里点「连接」；W-42）   // 启动时打开的那首歌（歌库 / 上次的）也预热   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响

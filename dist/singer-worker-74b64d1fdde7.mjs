@@ -358,6 +358,16 @@ var S = {
   "\u8FD8\u6CA1\u6709\u8BB0\u7740\u7684": { en: "Nothing kept yet" },
   "{n} \u9996 \xB7 {size}": { en: "{n} {n|song|songs} \xB7 {size}" },
   "{title} \xB7 {secs} \u79D2 \xB7 {size} \xB7 {date}": { en: "{title} \xB7 {secs} s \xB7 {size} \xB7 {date}" },
+  "\u5220\u6389\u65E7\u7248\u672C\u6E32\u7684\uFF08{n} \u6761\uFF0C\u5171 {size}\uFF09": { en: "Delete ones rendered by an older version ({n}, {size} total)" },
+  "\u65E7\u7248\u672C\u6E32\u7684\uFF08\u6E32\u67D3\u6838\u5FC3 {v}\uFF09": { en: "rendered by an older version (render core {v})" },
+  "\u8FD9\u4E00\u7248\u6E32\u7684": { en: "rendered by this version" },
+  "\u5220\u4E86 {n} \u6761\u65E7\u7248\u672C\u6E32\u7684\uFF08{size}\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8981\u542C\u518D\u6E32": { en: "Deleted {n} rendered by an older version ({size}): render again in the library to listen" },
+  "\u64AD\u653E\u6E32\u67D3\u7F13\u5B58\u91CC\u7684\u8FD9\u4E00\u904D\uFF08\u65E7\u7248\u672C\u7684\u5F15\u64CE\u6E32\u7684\uFF0C{p} \u79D2\uFF09": { en: "Play the copy in the render cache (rendered by an older engine, {p} s)" },
+  "\u6E32\u67D3\u7F13\u5B58\u91CC\u90A3\u4E00\u904D\u662F\u6539\u4E4B\u524D\u3001\u7528\u65E7\u7248\u672C\u7684\u5F15\u64CE\uFF08\u6E32\u67D3\u6838\u5FC3 {v}\uFF09\u6E32\u7684\uFF1A\u7167\u6837\u80FD\u542C\uFF1B\u64AD\u653E\u6761\u4E0A\u300C\u91CD\u65B0\u6E32\u67D3\u300D\u6309\u73B0\u5728\u7684\u6837\u5B50\u3001\u7528\u73B0\u5728\u7684\u5F15\u64CE\u91CD\u6E32": { en: "The copy in the render cache was rendered before later edits, by an older engine (render core {v}): you can still play it; \u201CRender again\u201D on the player bar re-renders the song as it is now with the current engine" },
+  "\u6E32\u67D3\u7F13\u5B58\u91CC\u90A3\u4E00\u904D\u662F\u65E7\u7248\u672C\u7684\u5F15\u64CE\uFF08\u6E32\u67D3\u6838\u5FC3 {v}\uFF09\u6E32\u7684\uFF1A\u7167\u6837\u80FD\u542C\uFF1B\u64AD\u653E\u6761\u4E0A\u300C\u91CD\u65B0\u6E32\u67D3\u300D\u7528\u73B0\u5728\u7684\u5F15\u64CE\u91CD\u6E32": { en: "The copy in the render cache was rendered by an older engine (render core {v}): you can still play it; \u201CRender again\u201D on the player bar re-renders it with the current engine" },
+  "{stem} \xB7 \u65E7\uFF08\u65E7\u7248\u672C\u7684\u5F15\u64CE\u6E32\u7684\uFF09": { en: "{stem} \xB7 old (rendered by an older engine)" },
+  "\u8FD9\u4E00\u904D\u662F\u65E7\u7248\u672C\u7684\u5F15\u64CE\u6E32\u7684\uFF1A\u7528\u73B0\u5728\u7684\u5F15\u64CE\u91CD\u65B0\u6E32\u4E00\u904D\uFF0C\u6362\u6389\u5B83": { en: "This copy was rendered by an older engine: render it again with the current engine to replace it" },
+  "\u6B4C\u5E93\u91CC\u8FD9\u53F0\u8BBE\u5907\u8BB0\u7740\u7684\u58F0\u97F3\u662F\u4E4B\u524D\u7684\u5F15\u64CE\u6E32\u7684\uFF1A\u5C01\u9762\u4E0A\u6807\u300C\u65E7\u300D\u3001\u7167\u6837\u80FD\u542C\uFF0C\u64AD\u653E\u6761\u4E0A\u300C\u91CD\u65B0\u6E32\u67D3\u300D\u7528\u73B0\u5728\u7684\u5F15\u64CE\u91CD\u6E32\uFF1B\u8BBE\u7F6E\u300C\u6E32\u67D3\u7F13\u5B58\u300D\u91CC\u53EF\u4EE5\u4E00\u952E\u5220\u6389\u65E7\u7684\u3002": { en: "Songs this device has kept for the library were rendered by the previous engine: their covers are marked \u201Cold\u201D and they still play; \u201CRender again\u201D on the player bar re-renders with the current engine, and Settings \u2192 Render cache can delete all the old ones at once." },
   "\u6B4C\u5E93\u91CC\uFF1A{names}": { en: "In the library: {names}" },
   "\u5220": { en: "Delete" },
   "\u58F0\u97F3\u91CD\u542F\u4E86": { en: "Audio restarted" },
@@ -10606,4 +10616,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-66bada2b5849.mjs.map
+//# sourceMappingURL=singer-worker-74b64d1fdde7.mjs.map

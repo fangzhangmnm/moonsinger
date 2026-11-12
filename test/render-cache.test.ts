@@ -1,6 +1,6 @@
 // 这台设备上记着的渲好的声音（src/app/render-cache.ts）：两层钥匙、上限、挂名、字节没了就作废。全用内存里的存储口。created 2026-11-10 by Claude Fable 5.2
 import { describe, it, eq, assert } from "./runner.mjs";
-import { createRenderCache, memoryRenderStore, type RenderCacheStore } from "../src/app/render-cache.ts";
+import { createRenderCache, memoryRenderStore, renderedByOldCore, type RenderCacheStore } from "../src/app/render-cache.ts";
 
 const core = { version: "1", hash: "abc" };
 const base = (fp: string, o: { quality?: string; parts?: string[]; title?: string } = {}) => ({ fingerprint: fp, quality: o.quality ?? "standard", parts: o.parts ?? ["P1"], roles: ["r1"], secs: 12.5, kbps: 192, stereo: true, title: o.title ?? "小星星", app: "v0", core });
@@ -85,5 +85,19 @@ describe("渲染缓存", () => {
     await c.link("default", "x.mxl", m.key, "s"); assert(n > afterPut);
     const before = n; await c.link("default", "x.mxl", m.key, "s"); eq(n, before, "同一个挂名再挂一次不叫");
     await c.clear(); eq(c.stats().count, 0); eq(c.linkOf("default", "x.mxl"), null);
+  });
+  it("旧版本的渲染核心渲的（7-S）：按核心哈希认；能数、能一键删（挂名一起走），这一版渲的留着；没有旧的 = 删 0 条、不报变化", async () => {
+    const { c } = make({ max: 10 });
+    const oldCore = { version: "0.2.1", hash: "old" }, now = { hash: "abc" };
+    const a = await c.put({ ...base("f1"), core: oldCore }, mp3(100)), b = await c.put(base("f2"), mp3(50)), d = await c.put({ ...base("f3", { title: "x" }), core: oldCore }, mp3(30));
+    await c.link("default", "a.mxl", a.key, "s1"); await c.link("default", "b.mxl", b.key, "s2");
+    assert(renderedByOldCore(a, now) && !renderedByOldCore(b, now), "按哈希认");
+    eq(JSON.stringify(c.oldStats(now)), JSON.stringify({ count: 2, bytes: 130 }));
+    let n = 0; c.onChange(() => n++);
+    eq(JSON.stringify(await c.removeOld(now)), JSON.stringify({ count: 2, bytes: 130 }));
+    assert(c.find(a.key) === null && c.find(d.key) === null && c.find(b.key) !== null, "旧的删了、新的留着");
+    eq(c.linkOf("default", "a.mxl"), null, "挂在旧的上面的名一起走"); assert(c.linkOf("default", "b.mxl") !== null);
+    eq(n, 1, "删了 = 报一次变化");
+    eq(JSON.stringify(await c.removeOld(now)), JSON.stringify({ count: 0, bytes: 0 })); eq(n, 1, "没有旧的 = 不报");
   });
 });

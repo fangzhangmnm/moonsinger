@@ -21,7 +21,8 @@ import { coverHtml, placeholderHtml } from "./ui/song-cover.ts";
 import { deviceKvGet, deviceKvSet } from "./device-kv.ts";
 import { reportError, diagNote } from "./app/report-error.ts";
 import { createSongPlayer } from "./app/song-player.ts";
-import { stampOf, MANIFEST_ENTRY, type RenderCache } from "./app/render-cache.ts";
+import { stampOf, MANIFEST_ENTRY, renderedByOldCore, type RenderCache } from "./app/render-cache.ts";
+import { coreInfo } from "./core/version.ts";
 import { stampedCopy } from "./app/names.ts";
 
 export interface GalleryHostDeps {
@@ -148,7 +149,8 @@ export function initGalleryHost(d: GalleryHostDeps) {
       tilePlaceholderHtml: (id) => placeholderHtml(identifiers.parse(id)?.stem ?? id),
       tileOverlayHtml: (id: string, item?: TileInfo, facts?: unknown) => coverHtml(identifiers.parse(id)?.stem ?? id, {
         // 大小不印在封面上（v0.16.104：卡片下面那行已经有「时间 · 大小」；底栏右端让给 ▶）
-        ...((src) => (src?.k === "device" && src.stale ? { tag: _t("旧"), tagTitle: _t("渲染缓存里那一遍是改之前渲的（之后改过）") } : {}))((void renderTick.value, soundOf(id, factsOf(facts)))),
+        //   「旧」两种（7-S，2026-11-12）：之后改过（戳对不上）/ 旧版本的引擎渲的（核心哈希对不上）——同一种待遇：照样能听、标出来、播放条上「重新渲染」用现在的引擎重渲
+        ...((src) => (src?.k === "device" && (src.stale || src.old) ? { tag: _t("旧"), tagTitle: staleText(src) } : {}))((void renderTick.value, soundOf(id, factsOf(facts)))),
         editedText: item?.lastModified ? _t("改于 {lastModified}", { lastModified: new Date(item.lastModified).toLocaleString() }) : undefined,
       }),
       // 有声音可听的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；这台设备没记着、文件里也没带 = 不画。
@@ -162,7 +164,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
         const src = soundOf(id, factsOf(facts));
         if (!src) return { icon: "play", title: _t("渲染缓存里还没有这首：点 = 渲染（之后封面上能直接听）"), state: "unknown" };   // 不能用 "none"：图库库约定 none = 不画这颗钮（gallery-screen.js）   // v0.16.101：卡片说实话（user 11-11「歌库卡片说实话 对，可以渲染」）
         return player.playing() === id ? { icon: "pause", title: _t("暂停（底边播放条上也能控）"), state: "ready" }
-          : { icon: "play", title: src.k === "device" ? (src.stale ? _t("播放渲染缓存里上次渲的那一遍（之后改过，{p} 秒）", { p: src.secs.toFixed(0) }) : _t("播放渲染缓存里的这一遍（{p} 秒）", { p: src.secs.toFixed(0) })) : _t("听歌里带着的那份 mp3（{p} 秒）", { p: src.secs.toFixed(0) }), state: "ready" };
+          : { icon: "play", title: src.k === "device" ? (src.stale ? _t("播放渲染缓存里上次渲的那一遍（之后改过，{p} 秒）", { p: src.secs.toFixed(0) }) : src.old ? _t("播放渲染缓存里的这一遍（旧版本的引擎渲的，{p} 秒）", { p: src.secs.toFixed(0) }) : _t("播放渲染缓存里的这一遍（{p} 秒）", { p: src.secs.toFixed(0) })) : _t("听歌里带着的那份 mp3（{p} 秒）", { p: src.secs.toFixed(0) }), state: "ready" };
       },
     },
     policy: {
@@ -189,14 +191,21 @@ export function initGalleryHost(d: GalleryHostDeps) {
     try { final = parseFinalRecord((JSON.parse(text) as { final?: unknown }).final); } catch { /* 总目录读不懂：只有戳 */ }
     return { stamp: stampOf(text), final };
   }
+  /** 「旧」那一小标的说明（7-S）：之后改过 / 旧版本的引擎渲的 / 两样都有。 */
+  function staleText(src: DeviceSound): string {
+    return src.stale && src.old ? _t("渲染缓存里那一遍是改之前、用旧版本的引擎（渲染核心 {v}）渲的：照样能听；播放条上「重新渲染」按现在的样子、用现在的引擎重渲", { v: src.core })
+      : src.old ? _t("渲染缓存里那一遍是旧版本的引擎（渲染核心 {v}）渲的：照样能听；播放条上「重新渲染」用现在的引擎重渲", { v: src.core })
+      : _t("渲染缓存里那一遍是改之前渲的（之后改过）");
+  }
   /** 这张卡现在有什么声音可听：这台设备上记着的那一遍（挂名的戳 = 这个文件此刻的戳）优先；否则文件里还带着的那份（老文件）；都没有 = null。 */
-  function soundOf(id: string, f: SongFacts): { k: "device"; key: string; secs: number; stale: boolean; loop: { start: number; end: number } | null } | { k: "embedded"; secs: number } | null {
+  function soundOf(id: string, f: SongFacts): DeviceSound | { k: "embedded"; secs: number } | null {
     const link = d.renders.linkOf(storeKey(), id);
-    if (link && f?.stamp) return { k: "device", key: link.key, secs: link.meta.secs, stale: link.stamp !== f.stamp, loop: link.meta.loop ?? null };   // loop = 循环那一圈（2026-11-11 起渲的才有）   // 戳对不上 = 文件之后改过（v0.16.101：标「旧」、照样能听；之前是当没有）
+    if (link && f?.stamp) return { k: "device", key: link.key, secs: link.meta.secs, stale: link.stamp !== f.stamp, old: renderedByOldCore(link.meta, coreInfo()), core: link.meta.core?.version ?? "?", loop: link.meta.loop ?? null };   // old = 旧版本的渲染核心渲的（7-S）   // loop = 循环那一圈（2026-11-11 起渲的才有）   // 戳对不上 = 文件之后改过（v0.16.101：标「旧」、照样能听；之前是当没有）
     return f?.final ? { k: "embedded", secs: f.final.secs } : null;
   }
   // ── 迷你播放条（歌库底边）：|▶ 从头放、▶ / ⏸、歌名、时间、循环、✕。出声 = src/app/song-player.ts（<audio> + 系统媒体控件：主屏 PWA 锁屏照放，锁屏 / 控制中心 / 耳机键能控）──
   //   user 2026-10-16「至少在gallery侧能做到锁屏播放吗（可以选择是否loop）」「歌库里面可以设置循环与否」：循环 = 播放条上的开关，这次打开有效，锁屏下照样绕回开头。
+  type DeviceSound = { k: "device"; key: string; secs: number; stale: boolean; old: boolean; core: string; loop: { start: number; end: number } | null };
   const playerEl = document.createElement("div");
   playerEl.className = "ms-player"; playerEl.hidden = true;
   playerEl.innerHTML = `<button type="button" class="btn" data-p="restart" title="${_t("从头放（锁屏 / 耳机的「上一首」也是）")}">${iconHtml("play-from-start")}</button>` +   // user 2026-10-17「gallery播放没有从头再来的功能，我有时候想从头听」：加键不做手势（歌库只有接着 / 从头两样，藏进手势就找不到）
@@ -209,16 +218,16 @@ export function initGalleryHost(d: GalleryHostDeps) {
   fullEl.append(playerEl);
   const appIcon = (file: string, sizes: string) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
-  let barTitle = "", barBlob: Blob | null = null, barStale = false, barNoSpan = false;   // 正在放的那份 mp3（分享 / 下载用）；barNoSpan = 这一遍没记循环那一圈（之前渲的 / 老文件里的）
+  let barTitle = "", barBlob: Blob | null = null, barStale = false, barOld = false, barNoSpan = false;   // barOld = 旧版本的引擎渲的（7-S）   // 正在放的那份 mp3（分享 / 下载用）；barNoSpan = 这一遍没记循环那一圈（之前渲的 / 老文件里的）
   const fmtTime = (s: number) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "0:00");
   function drawPlayer(): void {
     const s = player.state();
     playerEl.hidden = s.key == null;
     if (s.key == null) return;
-    playerEl.querySelector<HTMLElement>(".ms-player-title")!.textContent = barStale ? _t("{stem} · 旧（之后改过）", { stem: barTitle }) : barTitle;
+    playerEl.querySelector<HTMLElement>(".ms-player-title")!.textContent = barStale ? _t("{stem} · 旧（之后改过）", { stem: barTitle }) : barOld ? _t("{stem} · 旧（旧版本的引擎渲的）", { stem: barTitle }) : barTitle;
     const rerender = playerEl.querySelector<HTMLElement>(".ms-player-rerender")!;
-    rerender.hidden = !(barStale || (s.loop && barNoSpan));   // 开着循环、这一遍又没记循环那一圈 = 循环要等余音放完：给一个重渲的口（2026-11-11）
-    rerender.title = barStale ? _t("按现在的样子重新渲一遍") : _t("这一遍是之前渲的：循环要等余音放完才回到开头。重新渲一遍，循环就按谱切（和编辑器里一样）");
+    rerender.hidden = !(barStale || barOld || (s.loop && barNoSpan));   // 开着循环、这一遍又没记循环那一圈 = 循环要等余音放完：给一个重渲的口（2026-11-11）；旧引擎渲的同样给（7-S）
+    rerender.title = barStale ? _t("按现在的样子重新渲一遍") : barOld ? _t("这一遍是旧版本的引擎渲的：用现在的引擎重新渲一遍，换掉它") : _t("这一遍是之前渲的：循环要等余音放完才回到开头。重新渲一遍，循环就按谱切（和编辑器里一样）");
     playerEl.querySelector<HTMLElement>(".ms-player-time")!.textContent = `${fmtTime(s.time)} / ${fmtTime(s.duration)}`;
     playerEl.querySelector<HTMLElement>(".ms-player-toggle")!.innerHTML = iconHtml(s.paused ? "play" : "pause");
     const loopBtn = playerEl.querySelector<HTMLElement>(".ms-player-loop")!;
@@ -253,7 +262,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
       if (!got) { status(NO_SOUND()); return; }
       const cover = (await gallery?.thumbs?.read(id).catch(() => null))?.blob ?? null;   // 锁屏上的图 = 歌库缓存着的封面（没有 = app 图标）
       const loopSpan = src.k === "device" ? src.loop : null;
-      barTitle = stem; barBlob = got.blob; barStale = src.k === "device" && src.stale; barNoSpan = !loopSpan;
+      barTitle = stem; barBlob = got.blob; barStale = src.k === "device" && src.stale; barOld = src.k === "device" && src.old; barNoSpan = !loopSpan;
       const r = await player.play({ key: id, blob: got.blob, title: stem, artist: "MoonSinger", album: got.album, cover, loopSpan });
       if (r === "blocked") status(_t("没能自己开始放：点底边播放条上的 ▶"));
       diagNote("gallery", `play ${src.k} ${id} (${got.blob.size} B) → ${r}`);

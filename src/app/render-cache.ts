@@ -42,6 +42,9 @@ export interface RenderMeta {
   /** 渲的时候的 app 版本和渲染核心。 */
   app: string; core: { version: string; hash: string };
 }
+/** 这一遍是旧版本的渲染核心渲的（7-S，2026-11-12；user「以及加一个删旧渲染缓存和删缓存的功能」）：判法 = 记录里的核心哈希和现在的不一样。
+ *  旧的照样能听（歌库里「当年的声音不用太焦虑」），只是标出来、能一键删；不自动删（自动只许拦、不许替人管）。 */
+export const renderedByOldCore = (meta: Pick<RenderMeta, "core">, core: { hash: string }): boolean => meta.core?.hash !== core.hash;
 /** 歌库里的一个身份挂在哪条记录上。home = 哪个家（网盘 = "default"，文件夹 = 它的 id；同名的歌在两个家里不是一回事）。 */
 export interface RenderLink { home: string; identifier: string; key: string; stamp: string }
 /** 存储口（浏览器 = IndexedDB；测试 = 内存）。 */
@@ -80,6 +83,10 @@ export interface RenderCache {
   list(): { meta: RenderMeta; links: RenderLink[] }[];
   /** 删一条（字节 + 挂在它名下的名字一起）。 */
   remove(key: string): Promise<void>;
+  /** 旧版本的渲染核心渲的有几条、共多大（renderedByOldCore；设置页那颗钮上写）。同步。 */
+  oldStats(core: { hash: string }): { count: number; bytes: number };
+  /** 一键删掉旧版本的渲染核心渲的（字节 + 挂名一起）；回删了几条、多大。 */
+  removeOld(core: { hash: string }): Promise<{ count: number; bytes: number }>;
   clear(): Promise<void>;
   /** 索引变了（多了一条 / 丢了一条 / 挂名变了）→ 回调（歌库卡片上的 ▶ 跟着重算）。 */
   onChange(fn: () => void): () => void;
@@ -169,6 +176,14 @@ export function createRenderCache(store: RenderCacheStore, o: { max: number; now
     stats: () => { let bytes = 0; for (const m of metas.values()) bytes += m.size; return { count: metas.size, bytes, max: o.max }; },
     list: () => [...metas.values()].sort((a, b) => b.used - a.used).map((meta) => ({ meta, links: [...links.values()].filter((l) => l.key === meta.key) })),
     async remove(key) { await ready(); if (!metas.has(key)) return; await drop(key); changed(); },
+    oldStats: (core) => { let count = 0, bytes = 0; for (const m of metas.values()) if (renderedByOldCore(m, core)) { count++; bytes += m.size; } return { count, bytes }; },
+    async removeOld(core) {
+      await ready();
+      const old = [...metas.values()].filter((m) => renderedByOldCore(m, core)), bytes = old.reduce((s, m) => s + m.size, 0);
+      for (const m of old) await drop(m.key);
+      if (old.length) changed();
+      return { count: old.length, bytes };
+    },
     async clear() { await ready(); metas.clear(); links.clear(); await store.clear(); changed(); },
     onChange: (fn) => { fns.add(fn); return () => fns.delete(fn); },
   };

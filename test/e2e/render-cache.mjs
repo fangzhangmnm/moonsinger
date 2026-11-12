@@ -185,6 +185,48 @@ await p.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await saved
   check((await rc()).stats.count === before + 1, "设备上那份还在（清了能重来，但没清）"); }
 check(Object.keys(await folderFiles(p)).every((f) => !/\.mp3$/.test(f)), "文件夹里没有多出任何 mp3 文件");
 
+// ── 7-S（2026-11-12；user「以及加一个删旧渲染缓存和删缓存的功能」）：旧版本的引擎渲的 = 标出来、照样能听、播放条上重渲；设置里一键删旧（不自动删）──
+await openGallery();
+await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(500);
+await fakeSinger();
+await p.click("#score", { position: { x: 600, y: 200 } });
+for (const k of ["Digit2", "Digit4", "Digit6"]) { await p.keyboard.press(k); await p.waitForTimeout(40); }
+await p.waitForFunction((was) => !!window.__moonsinger.identifier() && !was.includes(window.__moonsinger.identifier()), [id, id2, OLD]); await saved();
+const id3 = await p.evaluate(() => window.__moonsinger.identifier());
+await exportOnce(); await rcUntil((r) => !!r.link && !!r.hit);
+/** 把这首挂着的那条记录改成旧版本的渲染核心渲的（索引里的记录就是这个对象；字节不动）。 */
+const ageIt = () => p.evaluate(() => { const l = window.__moonsinger.renders().link; if (!l) return false; l.meta.core = { version: "0.2.1", hash: "0ld0ld0ld0ld0ld0" }; return true; });
+check(await ageIt() && !(await rc()).hit, "造一条旧引擎渲的：导出时不再直接拿它（核心变了要重渲）");
+await openGallery();
+check(await hasPlay(id3) && (await p.$eval(tileOf(id3), (e) => e.querySelector(".ms-cover-tag")?.textContent ?? "")) === "旧"
+  && /旧版本的引擎渲的/.test(await p.$eval(`${tileOf(id3)} .gallery-tile-action`, (e) => e.getAttribute("title") ?? e.getAttribute("aria-label") ?? "")),
+  "歌库：旧引擎渲的照样有 ▶、封面印「旧」、▶ 的提示说是旧版本的引擎渲的");
+check(/旧版本的引擎/.test(await p.$eval(`${tileOf(id3)} .ms-cover-tag`, (e) => e.getAttribute("title") ?? "")), "「旧」的说明写着是旧版本的引擎（和「之后改过」分得开）");
+await p.click(`${tileOf(id3)} .gallery-tile-action`); await p.waitForTimeout(900);
+check(/旧版本的引擎渲的/.test(await p.$eval(".ms-player-title", (e) => e.textContent ?? "")) && !(await p.$eval(".ms-player-rerender", (e) => e.hidden)), "放的是旧引擎渲的：播放条写出来，有「重新渲染」");
+{ const n0 = (await rc()).stats.count;
+  await p.click('.ms-player [data-p="rerender"]');
+  const fresh = async () => { for (let i = 0; i < 120; i++) { const t = await p.$eval(".ms-player-title", (e) => e.textContent ?? "").catch(() => ""); if (t && !/旧/.test(t) && !(await p.$eval(".ms-player", (e) => e.hidden))) return true; await p.waitForTimeout(250); } return false; };
+  check(await fresh(), "重新渲染完：接着放，播放条上不再写「旧」");
+  check((await rc()).stats.count === n0 && !(await p.$(`${tileOf(id3)} .ms-cover-tag`)) && !!(await rc()).hit, "用现在的引擎渲的换掉了那一条（内容没变 = 同一条，份数不变）；封面上的「旧」没了", `${n0} → ${(await rc()).stats.count}`);
+  await p.click('.ms-player [data-p="close"]'); await p.waitForTimeout(100); }
+// 设置里一键删旧：每条标「这一版渲的 / 旧版本渲的」，钮上写几条、多大；删完旧的没了、这一版渲的留着
+await p.click(tileOf(id3)); await p.waitForTimeout(800); await later();   // 回到编辑器（设置在三条杠里）
+check(await ageIt(), "再造一条旧的");
+await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card"); await p.click('.set-tabs [data-tab="sound"]'); await p.waitForTimeout(150);   // 渲染缓存在「音源与缓存」那一页
+const rcText = async () => { for (let i = 0; i < 40; i++) { const t = await p.$eval("#rcList", (e) => e.textContent ?? "").catch(() => ""); if (t && t !== "…") return t; await p.waitForTimeout(100); } return ""; };
+{ const t = await rcText(), oldRows = (t.match(/旧版本渲的（渲染核心/g) ?? []).length, newRows = (t.match(/这一版渲的/g) ?? []).length, n0 = (await rc()).stats.count;
+  const btn = await p.$eval('#rcList [data-v="rc:old"]', (e) => e.textContent ?? "").catch(() => "");
+  check(oldRows >= 1 && newRows >= 1 && oldRows + newRows === n0 && /渲染核心 0\.2\.1/.test(t), "设置的渲染缓存列表：每条标「这一版渲的 / 旧版本渲的（渲染核心 …）」", `旧 ${oldRows} · 新 ${newRows} · 共 ${n0}`);
+  check(new RegExp(`删掉旧版本渲的（${oldRows} 条，共 `).test(btn), "有「删掉旧版本渲的（N 条，共多大）」，N = 标旧的条数", btn);
+  await p.click('#rcList [data-v="rc:old"]');
+  let after = ""; for (let i = 0; i < 40; i++) { after = await rcText(); if (!/旧版本渲的（渲染核心/.test(after)) break; await p.waitForTimeout(100); }
+  check(!/旧版本渲的（渲染核心/.test(after) && !(await p.$('#rcList [data-v="rc:old"]')) && (await rc()).stats.count === n0 - oldRows, "点了：旧的都删了、钮没了，这一版渲的留着", `${n0} → ${(await rc()).stats.count}`); }
+await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
+await openGallery();
+{ const a = await p.$eval(`${tileOf(id3)} .gallery-tile-action`, (e) => e.className).catch(() => "");
+  check(!!a && !/\bready\b/.test(a) && await hasPlay(id), "歌库：删掉的那首回到「还没渲」（点了能渲）；别的照旧有 ▶", a); }
+
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\nrender-cache: ${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);

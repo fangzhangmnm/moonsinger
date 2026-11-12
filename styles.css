@@ -1227,4 +1227,5 @@ body.doc-locked .parts-mgr .pm-card :is(button, input, select):not([data-v^="mor
 @media (prefers-reduced-motion: reduce) { .pad-tools .btn.impro-pad.nudge { animation: none; outline: 2px solid currentColor; } }
 
 /* 歌库封面上「旧」（v0.16.101）：这台设备记着的声音是改之前渲的；和日期同一行、小一号 */
+.set-note.rc-core.is-old { color: var(--warn); }   /* 设置 → 渲染缓存：旧版本的引擎渲的那几条（7-S） */
 .ms-cover-tag { margin-left: .4em; padding: 0 .35em; border-radius: 4px; background: rgba(0, 0, 0, .28); color: #fff; font-size: .82em; }
