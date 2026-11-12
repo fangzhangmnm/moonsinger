@@ -12040,7 +12040,7 @@ var JP_COZY = 3.6 / (2.5 * 1.75);
 var JP_COMPACT = 3 / (2.5 * 1.25);
 var mockSpring = (q2) => (5 + 6.8 * Math.log2(1 + 4 * q2)) * 2.5 / 22;
 var jianpuSprings = (k2) => [[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]].map(([t10, w2]) => [t10, w2 * k2]);
-var LAST_MERGE = { short: 0.3, squeeze: 0.3 };
+var LAST_MERGE = { short: 0.3, squeeze: 0.35 };
 var JIANPU_PAPER = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } };
 var PAPER_PARAMS = {
   // 五线谱（第六刀，user 看了对照后定的，纪要第 91 节）：一行最多拉宽约 1.3 倍、放不满就让右边空着；让位时整小节一起放宽（和简谱一致）。折行可以留孤行（user「我觉得可以留」「倾向紧凑」）
@@ -15519,7 +15519,7 @@ function arrangeColumns(cols, tracks, o10) {
   let mergedLast = false;
   if (brk !== Infinity && o10.lastMerge && lineFrom.length >= 2) {
     const k2 = lineFrom.length - 1, from = lineFrom[k2 - 1], last = lineFrom[k2], M3 = o10.lastMerge;
-    const oneBar = segs.filter((e10) => e10 > last).length <= 1, short = oneBar || lineW(last, n10, 0) < M3.short * (brk - o10.lineStart(last, false));
+    const effN = effTo(last, n10), oneBar = segs.filter((e10) => e10 > last && e10 <= effN).length <= 1, short = oneBar || lineW(last, n10, 0) < M3.short * (brk - o10.lineStart(last, false));
     if (short && lineW(from, n10, -M3.squeeze) <= brk - o10.lineStart(from, from === 0) + 1e-6) {
       lineFrom.pop();
       mergedLast = true;
@@ -34280,7 +34280,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-23eab1edf660.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-292bf52eb0aa.mjs");
+      return pick(() => "layout-worker-aaeb4088e06b.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-d2043b8a4b39.mjs");
   }
@@ -64592,4 +64592,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f3d3f8d9a622.mjs.map
+//# sourceMappingURL=moonsinger-3987230548fa.mjs.map

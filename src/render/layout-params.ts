@@ -26,8 +26,9 @@ const JP_COZY = 3.6 / (2.5 * 1.75), JP_COMPACT = 3.0 / (2.5 * 1.25);
 const mockSpring = (q: number): number => ((5 + 6.8 * Math.log2(1 + 4 * q)) * 2.5) / 22;
 const jianpuSprings = (k: number): SpringPts => ([[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]] as const).map(([t, w]) => [t, w * k] as const);
 /** 简谱的纸一级参数（字母谱同一份）。 */
-/** 最后一行很短时并进上一行的两个数（7-F，两种谱一样；Claude Opus 5.5 起的，user 看了成品再说）：短 = 不到行宽三成（或者只有一小节）；并的那一行弹簧最多压到 70%。 */
-const LAST_MERGE = { short: 0.3, squeeze: 0.3 } as const;
+/** 最后一行很短时并进上一行的两个数（7-F，两种谱一样）：短 = 不到行宽三成（或者只有一小节）；并的那一行弹簧最多压到六成五（squeeze 0.35）。
+ *  起先七成（Claude Opus 5.5 起的）；统筹 2026-11-12 看了全歌库的图改成六成五（团子中文填词五线谱那一处要压到约六成八才并得上，并了歌词不挤）；只压到刚好放得下，别的行不会更紧。user 说太挤就退回七成。 */
+const LAST_MERGE = { short: 0.3, squeeze: 0.35 } as const;
 const JIANPU_PAPER: Readonly<Record<Density, PaperParams>> = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: (0.727 * 2.5 * JP_COZY) / (1.6 * 1), nameScale: (0.545 * 2.5 * JP_COZY) / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: (0.727 * 2.5 * JP_COMPACT) / (1.6 * 1.15), nameScale: (0.545 * 2.5 * JP_COMPACT) / (1.36 * 1.4) } };   // 名字：正文字号 1.36 线间距 × 字的尺子（紧凑 1.4）
 export const PAPER_PARAMS: Readonly<Record<NotationId, Readonly<Record<Density, PaperParams>>>> = {
   // 五线谱（第六刀，user 看了对照后定的，纪要第 91 节）：一行最多拉宽约 1.3 倍、放不满就让右边空着；让位时整小节一起放宽（和简谱一致）。折行可以留孤行（user「我觉得可以留」「倾向紧凑」）

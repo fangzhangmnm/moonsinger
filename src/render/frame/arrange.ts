@@ -108,7 +108,7 @@ export function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonl
   let mergedLast = false;
   if (brk !== Infinity && o.lastMerge && lineFrom.length >= 2) {
     const k = lineFrom.length - 1, from = lineFrom[k - 1]!, last = lineFrom[k]!, M = o.lastMerge;
-    const oneBar = segs.filter((e) => e > last).length <= 1, short = oneBar || lineW(last, n, 0) < M.short * (brk - o.lineStart(last, false));
+    const effN = effTo(last, n), oneBar = segs.filter((e) => e > last && e <= effN).length <= 1, short = oneBar || lineW(last, n, 0) < M.short * (brk - o.lineStart(last, false));   // 段数只数到最后一个音为止（同 effTo：写字头这种零宽的列在最后一根小节线后面自成一段，不算一小节——不然光标在不在尾巴会改变并不并）
     if (short && lineW(from, n, -M.squeeze) <= brk - o.lineStart(from, from === 0) + 1e-6) { lineFrom.pop(); mergedLast = true; }
   }
   for (const k of lineFrom) sysStarts.push(o.lineStart(k, k === 0));

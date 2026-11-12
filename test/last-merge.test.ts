@@ -63,7 +63,7 @@ describe("最后一行很短并进上一行（7-F，框架）", () => {
     const w2 = widthFor(10, [8, 2]);
     if (w2 !== null) { const r = lay(10, w2, true), natLast = lay(10, w2, false).ends[1]!; if (natLast < LM.short * w2) eq(r.per.join(","), "10"); }
   });
-  it("参数：两种谱都开、两档都开（短 = 三成、并的那一行弹簧最多压到七成）", () => {
-    for (const k of ["staff", "jianpu"] as const) for (const d of ["cozy", "compact"] as const) eq(JSON.stringify(PAPER_PARAMS[k][d].lastMerge), JSON.stringify({ short: 0.3, squeeze: 0.3 }), `${k} ${d}`);
+  it("参数：两种谱都开、两档都开（短 = 三成、并的那一行弹簧最多压到六成五）", () => {
+    for (const k of ["staff", "jianpu"] as const) for (const d of ["cozy", "compact"] as const) eq(JSON.stringify(PAPER_PARAMS[k][d].lastMerge), JSON.stringify({ short: 0.3, squeeze: 0.35 }), `${k} ${d}`);
   });
 });

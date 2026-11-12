@@ -5128,7 +5128,7 @@ var JP_COZY = 3.6 / (2.5 * 1.75);
 var JP_COMPACT = 3 / (2.5 * 1.25);
 var mockSpring = (q) => (5 + 6.8 * Math.log2(1 + 4 * q)) * 2.5 / 22;
 var jianpuSprings = (k) => [[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]].map(([t, w]) => [t, w * k]);
-var LAST_MERGE = { short: 0.3, squeeze: 0.3 };
+var LAST_MERGE = { short: 0.3, squeeze: 0.35 };
 var JIANPU_PAPER = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } };
 var PAPER_PARAMS = {
   // 五线谱（第六刀，user 看了对照后定的，纪要第 91 节）：一行最多拉宽约 1.3 倍、放不满就让右边空着；让位时整小节一起放宽（和简谱一致）。折行可以留孤行（user「我觉得可以留」「倾向紧凑」）
@@ -8415,7 +8415,7 @@ function arrangeColumns(cols, tracks, o) {
   let mergedLast = false;
   if (brk !== Infinity && o.lastMerge && lineFrom.length >= 2) {
     const k = lineFrom.length - 1, from = lineFrom[k - 1], last = lineFrom[k], M = o.lastMerge;
-    const oneBar = segs.filter((e) => e > last).length <= 1, short = oneBar || lineW(last, n2, 0) < M.short * (brk - o.lineStart(last, false));
+    const effN = effTo(last, n2), oneBar = segs.filter((e) => e > last && e <= effN).length <= 1, short = oneBar || lineW(last, n2, 0) < M.short * (brk - o.lineStart(last, false));
     if (short && lineW(from, n2, -M.squeeze) <= brk - o.lineStart(from, from === 0) + 1e-6) {
       lineFrom.pop();
       mergedLast = true;
@@ -9340,4 +9340,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-292bf52eb0aa.mjs.map
+//# sourceMappingURL=layout-worker-aaeb4088e06b.mjs.map
