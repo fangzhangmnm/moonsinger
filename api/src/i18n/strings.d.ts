@@ -595,8 +595,20 @@ export declare const S: {
     readonly 按音高画在五条线上: {
         readonly en: "Pitches drawn on the five lines";
     };
-    readonly "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09\uFF1B\u6709\u53E0\u97F3\u7684\u58F0\u90E8\u3001\u9F13\u548C\u5408\u79DF\u53E0\u8D77\u6765\u7684\u90A3\u4E00\u884C\u6682\u65F6\u8FD8\u753B\u6210\u4E94\u7EBF\u8C31": {
-        readonly en: "Digits 1–7 (movable do); parts with stacked notes, drums and shared rows are still drawn as staff for now";
+    readonly "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09": {
+        readonly en: "Digits 1–7 (movable do)";
+    };
+    readonly 字母谱: {
+        readonly en: "Letter names";
+    };
+    readonly "\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C4\uFF09": {
+        readonly en: "Actual note names C D E F G A B, sharp/flat at the top right, octave at the bottom right (middle C = C4)";
+    };
+    readonly "\u4E2D\u592E C \u53EB C{n}": {
+        readonly en: "Middle C = C{n}";
+    };
+    readonly "\u5B57\u6BCD\u8C31\u5199\u7684\u662F\u5B9E\u9645\u7684\u97F3\u540D\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002": {
+        readonly en: "Letter-name notation already writes the actual notes, so “View in C” doesn’t apply; your choice is kept and comes back when you switch to the staff.";
     };
     readonly "\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002": {
         readonly en: "Numbered notation is already movable-do (1 = the key's tonic), so “Read in C” doesn't apply; your choice is kept and works again on staff.";

@@ -17,3 +17,5 @@ export const PAPER_H = 3.4, PAPER_GAP = 1.6;
 export const CTL_H = 3.0;   // 曲段名那一条里纸上小控件的高（不印）
 /** 一张纸几条谱左边连着的那根竖线多粗（sp；框架的家具，和谱种无关）= Bravura 细小节线 0.16 × 1.4（第四刀从 staff/glyphs.ts 挪来，数值逐位一样）。 */
 export const SYSTEM_LINE_W = 0.16 * 1.4;
+/** 歌词离这一行左右边界至少多远（sp；7-E）：字的前进宽度（含字形自带的留白）不越过「边界往里这么多」。 */
+export const LYRIC_EDGE = 0.25;

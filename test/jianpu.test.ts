@@ -370,6 +370,25 @@ describe("简谱数字行", () => {
     eq(SIGNS["dyn:mf"].draw.staff.kind, "glyph", "五线谱那一栏照旧是 Bravura 字形"); eq(SIGNS["art:sfz"].draw.jianpu.kind, "text", "sfz / fp 在简谱上也是字");
     const st = textStyleOf("dyn jp-dyn"); assert(st.italic && st.weight === 400 && st.face === textStyleOf("jp-digit").face, "细（常规粗细）、斜体、和数字同一款字");
   });
+  it("低八度的点和高八度的点对称（7-D）：没下划线 = 离数字底和高点离数字顶一样远；有下划线 = 贴着最下面一条下划线、间隙一样；点之间同一个步长", () => {
+    // 一四分低 6、两个八分低 6 5（一条下划线）、一四分高 1、一四分低低 6（两个点）；八度基准钉在 C4（音域 C4–C5）
+    const { L } = lay([n(P("A", 3)), n(P("A", 3), TPQ / 2), n(P("G", 3), TPQ / 2), n(P("C", 5)), n(P("A", 2))], undefined, { range: { lo: 60, hi: 72 } });
+    const cy = (p: Prim) => +/^M[-\d.]+,([-\d.]+)/.exec((p as { d: string }).d)![1]!;
+    const dots = L.prims.filter((p) => p.t === "path" && p.cls === "jp-dot" && p.tok !== undefined), byTok = (id: number) => dots.filter((p) => p.tok === id).map(cy).sort((a, b) => a - b);
+    const ds = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "") && p.tok !== undefined);
+    const ids = ds.map((p) => p.tok!).filter((t, i, a) => a.indexOf(t) === i).slice(-5), digitOf = (id: number) => ds.find((p) => p.tok === id)!;
+    const [low, ul1, , hi, low2] = ids as [number, number, number, number, number];
+    const u = digitOf(low).size! / 2.5, base = digitOf(low).y;   // 一个单位 = 数字字号 / FS；数字的锚点 = 基线
+    const gapLow = (byTok(low)[0]! - base) / u, gapHi = (digitOf(hi).y - byTok(hi)[0]!) / u;
+    // 高点中心在基线上 数字高 + DOT_GAP + DOT_R；低点中心在基线下 DOT_GAP + DOT_R —— 两个差一个数字高（BASE_Y − DIGIT_TOP = 1.8）
+    assert(Math.abs(gapHi - gapLow - 1.8) < 0.02, `低点离数字底 = 高点离数字顶（${gapLow.toFixed(3)} vs ${(gapHi - 1.8).toFixed(3)}）`);
+    const ul = L.prims.filter((p): p is Extract<Prim, { t: "line" }> => p.t === "line" && p.cls === "jp-ul" && Math.min(p.x1, p.x2) <= digitOf(ul1).x && Math.max(p.x1, p.x2) >= digitOf(ul1).x);
+    eq(ul.length, 1, "八分音符一条下划线");
+    const ulBottom = ul[0]!.y1 + ul[0]!.w / 2, gapUl = (byTok(ul1)[0]! - ulBottom) / u;
+    assert(Math.abs(gapUl - gapLow) < 0.02, `有下划线：点离下划线底的间隙 = 没下划线时离数字底的间隙（${gapUl.toFixed(3)} vs ${gapLow.toFixed(3)}）`);
+    const two = byTok(low2); eq(two.length, 2, "低低 6：两个点");
+    assert(Math.abs((two[0]! - base) / u - gapLow) < 0.02 && Math.abs((two[1]! - two[0]!) / u - 0.227 * 2.5) < 0.02, "第一个点同一个位置、第二个往下一步");
+  });
   it("几何表（谱面只查它；统筹审接口第 2 条）：数字行没有「纵向 = 音高」；鬼音符 = 数字 + 升降 + 照这一行八度基准的点；光标在数字行的上下沿之间", () => {
     assert(!GEOMETRY.jianpu.pitchAxis && !!GEOMETRY.staff.pitchAxis, "数字行不提供竖着拖改音高");
     const { L } = lay([n(P("C")), n(P("E")), n(P("G"))]);
@@ -385,7 +404,28 @@ describe("简谱数字行", () => {
     const cs = GEOMETRY.jianpu.caretSpan(row, 5), a = DRAWERS.jianpu.anchors(row.staffTop, 5 * (row.scale ?? 1));   // 行身按这一行的尺寸比例取（第五刀 5-0c）
     assert(cs.y1 < a.top + 1e-6 && cs.y2 > a.bottom - 1e-6, "光标盖住行身");
   });
-  it("弧线：延音线（数据里的 tie）、圆滑线（一串连着的一条）；连音 = 组上方一个小数字；反复小节线带点", () => {
+  it("连音放在下面（7-H，user 11-11「三连音的逻辑错了吧，不是说好了放下面吗」）：连成一条下划线 = 小数字压在线上、线断开让位；没连成一条 = 最低的墨下面一道带钩的细括号、数字在中间", () => {
+    const t3 = TPQ / 3;
+    const { L } = lay([n(P("C")), n(P("D"), t3), n(P("E"), t3), n(P("F"), t3), n(P("G"), (2 * TPQ) / 3), n(P("A", 3), t3), n(P("C"))], undefined, { range: { lo: 60, hi: 72 } });   // 八分三连（一条下划线）、四分三连 + 八分三连（低 6，带一个低八度点）
+    const tup = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-tuplet/.test(p.cls ?? "")).sort((a, b) => a.x - b.x);
+    eq(tup.map((p) => p.s).join(","), "3,3", "两组各一个「3」");
+    const dig = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "")), base = dig[0]!.y, u = dig[0]!.size! / 2.5;   // 一个单位 = 数字字号 / FS
+    const uls = L.prims.filter((p): p is Extract<Prim, { t: "line" }> => p.t === "line" && p.cls === "jp-ul"), cap = 1.8 * (1.1 / 2.5) * u;   // 小数字的字高
+    // ① 八分三连：数字的竖直中心落在下划线上；那条线在数字那儿断开（数字左右各一截，中间不画）
+    const a = tup[0]!, line = uls.filter((l) => Math.abs(l.y1 - (a.y - cap / 2)) < 0.05 * u && Math.min(l.x1, l.x2) < (a.x + tup[1]!.x) / 2);   // 第一组那几个音的范围里（按线的左端）
+    assert(a.y > base, "数字在音的下面");
+    eq(line.length, 2, "压数字的那条下划线断成两截");
+    assert(line.every((l) => Math.max(l.x1, l.x2) <= a.x - 0.3 * u || Math.min(l.x1, l.x2) >= a.x + 0.3 * u), "数字那儿没有线");
+    // ② 四分三连 + 八分三连：括号在这组最低的墨（低 6 的点、八分的下划线）下面、钩朝上，数字压在括号线上
+    const b = tup[1]!, br = L.prims.filter((p): p is Extract<Prim, { t: "path" }> => p.t === "path" && /tuplet-bracket/.test(p.cls ?? ""));
+    eq(br.length, 1, "没连成一条下划线的那组一道括号");
+    const ys = [...br[0]!.d.matchAll(/[ML]([-\d.]+),([-\d.]+)/g)].map((m) => +m[2]!), lineY = Math.max(...ys);
+    assert(ys[0]! < lineY && ys[ys.length - 1]! < lineY, "两头的钩朝上");
+    assert(Math.abs(b.y - cap / 2 - lineY) < 0.05 * u, "数字压在括号线上");
+    const dotsBelow = L.prims.filter((p) => p.t === "path" && p.cls === "jp-dot").map((p) => +/^M[-\d.]+,([-\d.]+)/.exec((p as { d: string }).d)![1]!), ulBelow = Math.max(...uls.map((l) => l.y1));
+    assert(lineY - cap / 2 > Math.max(...dotsBelow, ulBelow), "数字的顶在这组最低的墨（低八度点、下划线）下面");
+  });
+  it("弧线：延音线（数据里的 tie）、圆滑线（一串连着的一条）；连音一组一个数字（摆在哪见上一条）；反复小节线带点", () => {
     const tr = TPQ / 3;
     const { L } = lay([
       n(P("C")), n(P("C"), TPQ, { tie: true }), n(P("D"), TPQ, { slur: true }), n(P("E"), TPQ, { slur: true }), n(P("F")),

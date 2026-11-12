@@ -81,8 +81,9 @@ export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits"
     const fd = mode === "digits" ? foldOf(u, aux) : undefined, lt = lettersOf(q, u, mode, aux), gw = fd ? chordNameW(fd.name) + (fd.ambiguous ? CHORD_AMB_W : 0) : lt ? lt.w : DIGIT_W;   // 字母谱：字母 + 角标那一栏   // 折成和弦名 = 按名字的宽占位（UX 稿第 7 节；有歧义的小三角也让出来），不写升降号
     const n = extraGlyphs(u), acc = mode === "digits" && !fd && !lt && accsOf(u).some((a) => a !== null);   // 字母谱：升降号在右上角，左边不让   // 和弦：哪个音要写升降号，这一列就往左让出升降号的地方（和弦竖叠，宽不变）
     const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;   // 换气的 V（+「吸 / 深吸」）画在音后面：留出来，不压下一个音
+    const xMarkW = u.note && (u.whisper || (mode === "digits" && q.p.xHead)) ? 0.05 * DIGIT_W + ACC_W : 0;   // 气声 / 固定敲一个键的 ×：画在字形右边（draw.ts），同样留出来（7-K ④；× 的宽 = 升降号那一列的宽，同一个字号）
     //   左边挂的东西（升降号、琶音）= 这个音往左的最小占地：前面有空就不挪，会撞上前一个音 / 小节线才推这一个音（UX 稿第 7 节；间距那一套本来就这样顶）
-    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = Math.max(0, (core(u, fd || (lt && gw > DIGIT_W) ? gw : 0) + 0.1 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k - SP_DEFAULTS.pad);   // 顶杆 = 前一个的右伸 + 后一个的左伸（−0.1）+ 缝：右伸按样张这一列至少多宽倒推
+    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = Math.max(0, (core(u, fd || (lt && gw > DIGIT_W) ? gw : 0) + 0.1 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW + xMarkW) * k - SP_DEFAULTS.pad);   // 顶杆 = 前一个的右伸 + 后一个的左伸（−0.1）+ 缝：右伸按样张这一列至少多宽倒推
     inkL.set(u, Math.max(0, left));
     const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks }];
     const cx = (0.1 + gw / 2) * k;

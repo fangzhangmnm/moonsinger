@@ -16,7 +16,7 @@
 //   小节线、调号、拍号是各声部自己的画法（契约 §7.8）；速度只画在第一个声部上面；歌手牌（声部名）在每张纸第一行各条谱的左边。
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
-import { TEXT_STYLES, lyricSizePx, hyphens, LYRIC_MIN_SX, isBlockScript, textPx, type TextRole, fitLyrics, lyricBlockSx, LYRIC_SPACE, HYPHEN_SX, type LyricFit, type LyricItem, type LyricGaps, type TextMeasure, lyricLook, lyricWidth } from "./text/index.ts";
+import { TEXT_STYLES, lyricSizePx, hyphens, LYRIC_MIN_SX, isBlockScript, textPx, type TextRole, fitLyrics, lyricBlockSx, LYRIC_SPACE, HYPHEN_SX, type LyricFit, type LyricItem, type LyricGaps, type LyricBounds, type TextMeasure, lyricLook, lyricWidth } from "./text/index.ts";
 import { _tIn, type Lang } from "../i18n/index.ts";
 import { type Song, type PaperSeg, type Token, type Focus, type Staff, isTimed, tempoOwner, sheetEndBpm, DEFAULT_KEY } from "../score/song.ts";
 import { parseArrangement } from "../score/arrange.ts";
@@ -27,7 +27,7 @@ import { Skyline, primInk, shiftPrim } from "./skyline.ts";
 import { songInC } from "../score/view-in-c.ts";
 import { songViewOf } from "../score/song-view.ts";
 import { type HarmonyRead } from "../theory/index.ts";
-import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SYSTEM_LINE_W } from "./frame/params.ts";
+import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SYSTEM_LINE_W, LYRIC_EDGE } from "./frame/params.ts";
 import { PAPER_PARAMS, ROW_PARAMS } from "./layout-params.ts";   // 排版参数表（纸一级按谱种、行一级按行的种类）
 import { wrapTitle } from "./frame/furniture.ts";
 // 五线谱这一种：只从它的入口拿（施工单 1b-9 守卫 1：框架不直接 import 字形表、符干、谱号模块）
@@ -436,7 +436,11 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const lyrUnit = (str: string) => lyricWidth(o.measure, str, sp, ts) * LS;   // lyricWidth 给的是线间距（和 sp 无关）：字号乘多少，宽就乘多少   // 这一档歌词字号 / 平常宽度下这串字的前进宽度（sp）
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
     const lyrGaps: LyricGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };   // 定义见 LyricGaps；底线按档（样式表）
-    if (songLook.lyricFit === "rhythm") per.forEach((q, r) => {
+    // 这一行歌词能摆到哪（7-E，user 11-11「排版炸了，文字跑到线前面了」）：左 = 这一行谱的起点（名字一栏的缩进右边，多声部时那根竖线），右 = 这一行的右端；各留 LYRIC_EDGE。
+    //   数字行一开头就是音、没有谱号调号垫着，长词的左半截会伸出去；五线谱行尾的长词同理。两种谱都走这一道（框架的事），音的位置不动。
+    const lyrEdge = (s: number): LyricBounds => ({ left: MARGIN + (s === 0 ? ind0 : indN) + LYRIC_EDGE, right: right - LYRIC_EDGE });
+    const outOf = (items: readonly LyricItem[], b: LyricBounds) => items.some((it) => it.cx - it.w / 2 < b.left - 1e-9 || it.cx + it.w / 2 > b.right + 1e-9);
+    per.forEach((q, r) => {
       if (!lyricsOf[r]) return;
       const bySys = new Map<number, (LyricItem & { index: number })[]>();
       for (const u of DRAWERS[kinds[r]!].lyricAnchors(q, kScale(kinds[r]!), aux[r])) {   // 每个带字的音在哪（这种行的画法给的锚点）
@@ -445,8 +449,13 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       }
       // 方块字整段统一一个宽度（user 11-09「甚至是整篇曲段统一宽度，算一个最大的允许宽度」）：先每行算要压到多宽，整段（这张纸 × 这位歌手）取最窄的，再按它摆
       for (const items of bySys.values()) items.sort((a, b) => a.cx - b.cx);
-      const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps)));
-      for (const items of bySys.values()) fitLyrics(items, blockSx, LYRIC_MIN_SX, lyrGaps).forEach((f, k) => lyrPlan.set(`${r}:${items[k].index}`, { ...f, hw: (items[k].w * f.sx) / 2 }));
+      const plan = (items: (LyricItem & { index: number })[], fits: LyricFit[]) => fits.forEach((f, k) => lyrPlan.set(`${r}:${items[k].index}`, { ...f, hw: (items[k].w * f.sx) / 2 }));
+      if (songLook.lyricFit !== "rhythm") {   // 按歌词排：音距本来就按字留够了，只有越了这一行的边界才走一遍让路（同一个解法：收进来、和旁边的字不撞），别的字照原样
+        for (const [s, items] of bySys) { const b = lyrEdge(s); if (outOf(items, b)) plan(items, fitLyrics(items, 1, LYRIC_MIN_SX, lyrGaps, b)); }
+        return;
+      }
+      const blockSx = Math.min(1, ...[...bySys].map(([s, items]) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps, lyrEdge(s))));
+      for (const [s, items] of bySys) plan(items, fitLyrics(items, blockSx, LYRIC_MIN_SX, lyrGaps, lyrEdge(s)));
     });
     // 画的时候每一行都在自己的局部坐标里（第五线 = 0）；每个图元记着自己在哪一行（primRow，put / 贴挂件时记），定了行距按行整行挪（施工单 1b-6c，原来垫 row × 8192 的临时高度、最后按 round(y / 8192) 认行）。
     //   点击框按自己的 system 挪；画的行和 system 不同的（歌词：点击框归音那一行、画在歌词那一行）另记 hitRowOf。

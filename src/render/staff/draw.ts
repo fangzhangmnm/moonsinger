@@ -107,7 +107,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
   const ornCache = new Map<number, OrnCtx>();
   const ornOf = (q: StaffTrack, r: number, noteEnd?: (ch: Chunk) => number): OrnCtx => {
     const hit = ornCache.get(r); if (hit && !noteEnd) return hit;
-    const oc: OrnCtx = { song, paper, o, notation: "staff", P, tx, TR, RS, mw, sp, prims, dyns, marks, placeAbove, attach, right, tokens: q.tokens, units: q.units, row: (sy) => rowOf(sy, r, 0),
+    const oc: OrnCtx = { song, paper, o, notation: "staff", P, tx, TR, RS, mw, sp, prims, dyns, marks, placeAbove, attach, right, left: (sy) => P(MARGIN + (sy === 0 ? ind0 : indN)), tokens: q.tokens, units: q.units, row: (sy) => rowOf(sy, r, 0),
       noteX: (ch) => P(ch.x + 0.35), noteEnd: noteEnd ?? ((ch) => P(ch.x + 0.35)), dynOff: dynOverridden(q.tokens), navMute: (i) => (navWhy(song, paper, q.p.id, q.tokens[i]!) ? " art-mute" : "") };
     ornCache.set(r, oc); return oc;
   };

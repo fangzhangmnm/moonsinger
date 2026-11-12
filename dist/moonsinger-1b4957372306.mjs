@@ -10366,13 +10366,19 @@ var HYPHEN_SX = 0.8;
 var GAP_MIN = 0.5;
 var GAP_FLOOR = 0.2;
 var DEFAULT_GAPS = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
-function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
+function solveLyrics(items, blockSx, minSx, gaps, widen = true, bounds) {
   const n10 = items.length, f2 = items.map((it2) => it2.block ? blockSx : 1), tight = /* @__PURE__ */ new Set();
   if (!n10) return { pos: [], f: f2, tight };
   const c10 = items.map((it2) => it2.cx);
   const w2 = items.map((it2) => it2.w), halfL = c10.map((x2, i10) => i10 > 0 ? Math.abs(c10[i10 - 1] - x2) / 2 : Infinity), halfR = c10.map((x2, i10) => i10 < n10 - 1 ? Math.abs(c10[i10 + 1] - x2) / 2 : Infinity);
   const gb = items.slice(0, -1).map((it2, i10) => gaps.space + (it2.hy && !(it2.block || items[i10 + 1].block) ? gaps.hyphen : 0));
-  const lo2 = (i10) => c10[i10] - Math.max(0.2, Math.min(w2[i10] * f2[i10] / 2 - 0.15, halfL[i10])), hi = (i10) => c10[i10] + Math.max(0.2, Math.min(w2[i10] * f2[i10] / 2 - 0.15, halfR[i10]));
+  const aLo = (i10) => c10[i10] - Math.max(0.2, Math.min(w2[i10] * f2[i10] / 2 - 0.15, halfL[i10])), aHi = (i10) => c10[i10] + Math.max(0.2, Math.min(w2[i10] * f2[i10] / 2 - 0.15, halfR[i10]));
+  const bL = bounds?.left ?? -Infinity, bR = bounds?.right ?? Infinity;
+  const edge = (i10, x2) => {
+    const a10 = bL + w2[i10] * f2[i10] / 2, b3 = bR - w2[i10] * f2[i10] / 2;
+    return a10 > b3 ? a10 : Math.min(Math.max(x2, a10), b3);
+  };
+  const lo2 = (i10) => edge(i10, aLo(i10)), hi = (i10) => edge(i10, aHi(i10));
   const G3 = new Array(Math.max(0, n10 - 1)).fill(1), floor = gaps.floor ?? GAP_FLOOR;
   const d3 = (i10) => (w2[i10] * f2[i10] + w2[i10 + 1] * f2[i10 + 1]) / 2 + Math.max(floor, gb[i10] * Math.min(f2[i10], f2[i10 + 1]) * G3[i10]);
   const L2 = new Array(n10), start = new Array(n10);
@@ -10532,10 +10538,10 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
   for (let i10 = 1; i10 < n10; i10++) if (!tight.has(i10) && pos[i10] < pos[i10 - 1] + d3(i10 - 1) - 1e-6) pos[i10] = pos[i10 - 1] + d3(i10 - 1);
   return { pos, f: f2, tight };
 }
-function lyricBlockSx(items, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS) {
+function lyricBlockSx(items, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS, bounds) {
   if (!items.some((it2) => it2.block)) return 1;
   const badBlocks = (t10) => {
-    const r10 = solveLyrics(items, t10, minSx, gaps, false);
+    const r10 = solveLyrics(items, t10, minSx, gaps, false, bounds);
     let k2 = 0;
     for (const i10 of r10.tight) if (items[i10].block) k2++;
     return k2;
@@ -10550,8 +10556,8 @@ function lyricBlockSx(items, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS) {
   }
   return best;
 }
-function fitLyrics(items, blockSx = 1, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS) {
-  const r10 = solveLyrics(items, blockSx, minSx, gaps);
+function fitLyrics(items, blockSx = 1, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS, bounds) {
+  const r10 = solveLyrics(items, blockSx, minSx, gaps, true, bounds);
   return items.map((it2, i10) => ({ dx: r10.pos[i10] - it2.cx, sx: r10.f[i10], tight: r10.tight.has(i10) }));
 }
 function hyphens(syls, hyphenW, lonely) {
@@ -11119,6 +11125,7 @@ var PAPER_H = 3.4;
 var PAPER_GAP = 1.6;
 var CTL_H = 3;
 var SYSTEM_LINE_W = 0.16 * 1.4;
+var LYRIC_EDGE = 0.25;
 
 // src/render/layout-params.ts
 var JP_COZY = 3.6 / (2.5 * 1.75);
@@ -12449,7 +12456,7 @@ function layDynamics(c10) {
   const wedgeKey = (index, sy2) => `${c10.row(sy2)}|w${index}:${sy2}`;
   const inkOf = (u2) => dynOf(u2.value).ink;
   const wedgeItems = (index, dir, s02, startX, s12, endX, ramp, k0, k1, tail) => {
-    const leftOf2 = (sy2) => Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((ch2) => c10.noteX(ch2)), P2(right)) - P2(1);
+    const leftOf2 = (sy2) => Math.max(Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((ch2) => c10.noteX(ch2)), P2(right)) - P2(1), c10.left(sy2));
     const segs = [];
     for (let sy2 = s02; sy2 <= s12; sy2++) segs.push([sy2, sy2 === s02 ? startX : leftOf2(sy2), sy2 === s12 ? endX : P2(right) - P2(0.3)]);
     const total = segs.reduce((n10, [, a10, b3]) => n10 + Math.max(0, b3 - a10), 0) || 1, H3 = P2(0.5), long = total > P2(right - MARGIN);
@@ -12758,6 +12765,7 @@ function drawStaff(c10, mine) {
       placeAbove,
       attach: attach2,
       right,
+      left: (sy2) => P2(MARGIN + (sy2 === 0 ? ind0 : indN)),
       tokens: q2.tokens,
       units: q2.units,
       row: (sy2) => rowOf(sy2, r10, 0),
@@ -13265,8 +13273,8 @@ var UL_W = 0.059 * FS;
 var DOT_R = 0.082 * FS;
 var DOT_GAP = DIGIT_TOP - (BASE_Y - 0.9 * FS) - 0.082 * FS;
 var DOT_STEP = 0.227 * FS;
-var lowDotY = (nUL, j2) => UL_Y0 + 0.273 * FS + nUL * UL_GAP + j2 * DOT_STEP;
-var LOW_DOT_UNDER = 0.273 * FS;
+var lowDotY = (nUL, j2) => (nUL ? UL_Y0 + (nUL - 1) * UL_GAP + UL_W / 2 : BASE_Y) + DOT_GAP + DOT_R + j2 * DOT_STEP;
+var LOW_DOT_UNDER = DOT_GAP + DOT_R;
 var ACC_EM = 0.59 * FS;
 var ACC_DX = 0.465 * FS;
 var ACC_Y = BASE_Y - 0.364 * FS;
@@ -13410,7 +13418,8 @@ function measureJianpu(q2, k2 = 1, mode = "digits", aux) {
     const fd2 = mode === "digits" ? foldOf(u2, aux) : void 0, lt2 = lettersOf(q2, u2, mode, aux), gw = fd2 ? chordNameW(fd2.name) + (fd2.ambiguous ? CHORD_AMB_W : 0) : lt2 ? lt2.w : DIGIT_W;
     const n10 = extraGlyphs(u2), acc = mode === "digits" && !fd2 && !lt2 && accsOf(u2).some((a10) => a10 !== null);
     const breathW = u2.note && u2.breath ? BREATH_W + (u2.inhale ? INHALE_W : 0) : 0;
-    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u2) ? ARP_W : 0)) * k2, right = Math.max(0, (core(u2, fd2 || lt2 && gw > DIGIT_W ? gw : 0) + 0.1 + n10 * DASH_PITCH + (hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k2 - SP_DEFAULTS.pad);
+    const xMarkW = u2.note && (u2.whisper || mode === "digits" && q2.p.xHead) ? 0.05 * DIGIT_W + ACC_W : 0;
+    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u2) ? ARP_W : 0)) * k2, right = Math.max(0, (core(u2, fd2 || lt2 && gw > DIGIT_W ? gw : 0) + 0.1 + n10 * DASH_PITCH + (hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW + xMarkW) * k2 - SP_DEFAULTS.pad);
     inkL.set(u2, Math.max(0, left));
     const out = [{ row: 0, left, right, dur: u2.ticks }];
     const cx2 = (0.1 + gw / 2) * k2;
@@ -13560,9 +13569,11 @@ function drawJianpu(c10, mine, mode = "digits") {
       placeAbove,
       attach: c10.attach,
       right: c10.right,
+      left: (sy2) => P2(MARGIN + (sy2 === 0 ? ind0 : c10.indN)) + Q2(0.6),
       tokens,
       units,
       row: (sy2) => rowOf(sy2, r10, 0),
+      // left = jianpuLineStart（行首竖线往右 0.6）
       glyphScale: jk,
       noteX: (ch2) => P2(ch2.x) + Q2(0.1),
       noteEnd: (ch2) => P2(ch2.x) + Q2(0.1 + DIGIT_W),
@@ -13600,7 +13611,7 @@ function drawJianpu(c10, mine, mode = "digits") {
     c10.attach(row0, "tempo", () => placeAbove(row0, 0.5 * jk, (y2) => {
       const kw = P2(headW(keyS)), tw2 = P2(headW(timeS));
       const kt = q2.head.idx.key !== void 0 ? tokens[q2.head.idx.key]?.id : void 0, tt2 = q2.head.idx.time !== void 0 ? tokens[q2.head.idx.time]?.id : void 0;
-      if (mode === "x" || letters) keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q2.head.idx.key ?? 0, x: hx, y: y2, size: tx2("key-hint"), s: keyS });
+      if (mode === "x" || letters) keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q2.head.idx.key ?? 0, x: letters ? hx + tw2 : hx, y: y2, size: tx2("key-hint"), s: keyS });
       else {
         put2(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y: y2, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
         keyDots(row0, hx, y2, hs, keyS, kt);
@@ -13612,9 +13623,9 @@ function drawJianpu(c10, mine, mode = "digits") {
         const t10 = tokens[i10];
         if (t10.kind === "note" || t10.kind === "rest") break;
         if (t10.kind !== "clef") continue;
-        const lw2 = Q2(2.6), lx2 = hx - Q2(0.4);
-        put2(row0, { tok: t10.id, t: "text", x: lx2, y: y2, s: _tIn(o10.locale, "\u8C31\u53F7"), cls: "jp-staffonly ann", size: Q2(1), anchor: "end" });
-        c10.clefs.push({ kind: "mid", paper: paper.id, part: q2.p.id, index: i10, system: row0, x: lx2 - lw2, y: y2 - Q2(1.2), w: lw2, h: Q2(1.6) });
+        const lw2 = Q2(2.6), ly2 = y2 - hs;
+        put2(row0, { tok: t10.id, t: "text", x: hx, y: ly2, s: _tIn(o10.locale, "\u8C31\u53F7"), cls: "jp-staffonly ann", size: Q2(1), anchor: "start" });
+        c10.clefs.push({ kind: "mid", paper: paper.id, part: q2.p.id, index: i10, system: row0, x: hx, y: ly2 - Q2(1.2), w: lw2, h: Q2(1.6) });
         break;
       }
       if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row0, x: hx + kw - Q2(0.3), y: y2 - hs, w: tw2, h: hs * 1.4 });
@@ -13787,7 +13798,10 @@ function drawJianpu(c10, mine, mode = "digits") {
             }
             top = ya;
           }
-          arcAt.set(u2, { row: row2, cx: cx2, top });
+          {
+            const ulBot = nUL0 ? UL_Y0 + (nUL0 - 1) * UL_GAP + UL_W / 2 + (letters ? SUB_DROP : 0) : BASE_Y + (lt2 ? SUB_DROP : 0);
+            arcAt.set(u2, { row: row2, cx: cx2, top, bot: lowDots < 0 ? lowDotY(nUL0, -lowDots - 1) + DOT_R : ulBot });
+          }
           const strong = ["accent", "marcato", "stress", "unstress"].filter((x2) => u2.art.includes(x2));
           const chev = (a10, yb, st2) => {
             const x02 = cx2 - Q2(CHEV_W / 2), x1 = cx2 + Q2(CHEV_W / 2), ym = yb - Q2(CHEV_H / 2), yt = yb - Q2(CHEV_H), t10 = Q2(st2) * 0.54;
@@ -13804,7 +13818,7 @@ function drawJianpu(c10, mine, mode = "digits") {
           });
           const swl = u2.j === 0 ? swellOf(tokens[u2.index]) : void 0, atk = ["sfz", "fp"].filter((x2) => u2.art.includes(x2));
           if (swl || atk.length) layNoteDynamics(orn, row2, u2, { cx: cx2, x0, w: P2(u2.w), tok, cls: void 0, ign, swl, atk });
-          if (u2.whisper || xHead) put2(row2, { ...T3, t: "text", x: cx2 + Q2(DIGIT_W * 0.55), y: Y2(row2, hiBase - DIGIT_H + 0.5), s: "\xD7", cls: u2.whisper ? artCls("whisper", "jp-acc whisper") : "jp-acc xhead", size: Q2(ACC_EM), anchor: "start" });
+          if (u2.whisper || xHead) put2(row2, { ...T3, t: "text", x: x0 + Q2(glyphW + 0.05 * DIGIT_W), y: Y2(row2, hiBase - DIGIT_H + 0.5), s: "\xD7", cls: u2.whisper ? artCls("whisper", "jp-acc whisper") : "jp-acc xhead", size: Q2(ACC_EM), anchor: "start" });
           if (u2.art.includes("roll")) for (let k2 = 0; k2 < 3; k2++) {
             const yy = (nUL0 ? UL_Y0 + nUL0 * UL_GAP : BASE_Y) + 0.35 + (Math.min(0, lowDots) ? -lowDots * DOT_STEP + 0.2 : 0) + k2 * 0.28;
             put2(row2, { ...T3, t: "line", x1: cx2 - Q2(0.4), y1: Y2(row2, yy + 0.18), x2: cx2 + Q2(0.4), y2: Y2(row2, yy - 0.18), w: Q2(0.11), cls: artCls("roll", "jp-roll") });
@@ -13824,57 +13838,14 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
       if (nUL) {
         const bar0 = u2.tick - u2.inBar, uh = fd2 || lt2 ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
-        ul2.push({ row: row2, x0: cx2 - Q2(uh), x1: cx2 + Q2(uh), level: nUL, group: `${u2.system}|${bar0}|${Math.floor((u2.inBar + 1e-6) / u2.beat)}`, tok });
+        ul2.push({ row: row2, x0: cx2 - Q2(uh), x1: cx2 + Q2(uh), level: nUL, group: `${u2.system}|${bar0}|${Math.floor((u2.inBar + 1e-6) / u2.beat)}`, tok, ch: u2 });
       }
     }
-    const maxL = Math.max(0, ...ul2.map((e10) => e10.level));
-    for (let L2 = 1; L2 <= maxL; L2++) {
-      let i10 = 0;
-      while (i10 < ul2.length) {
-        if (ul2[i10].level < L2) {
-          i10++;
-          continue;
-        }
-        let j2 = i10;
-        while (j2 + 1 < ul2.length && ul2[j2 + 1].level >= L2 && ul2[j2 + 1].group === ul2[i10].group) j2++;
-        const a10 = ul2[i10], b3 = ul2[j2], y2 = Y2(a10.row, UL_Y0 + (L2 - 1) * UL_GAP + (letters ? SUB_DROP : 0));
-        put2(a10.row, { ...i10 === j2 && a10.tok !== void 0 ? { tok: a10.tok } : {}, t: "line", x1: a10.x0, y1: y2, x2: b3.x1, y2, w: Q2(UL_W), cls: "jp-ul" });
-        i10 = j2 + 1;
-      }
-    }
-    const arc = (a10, b3, cls, lift) => {
-      const seg = (row2, x1, x2, top) => {
-        const y2 = Y2(row2, top - lift), len = Math.abs(x2 - x1), h2 = Math.min(len * 0.25, Math.max(Q2(0.4), Math.min(Q2(1.2), len * 0.12)));
-        put2(row2, { t: "path", d: `M${x1},${y2}Q${(x1 + x2) / 2},${y2 - h2} ${x2},${y2}`, cls });
-      };
-      if (a10.row === b3.row) seg(a10.row, a10.cx + Q2(0.3), b3.cx - Q2(0.3), Math.min(a10.top, b3.top));
-      else {
-        seg(a10.row, a10.cx + Q2(0.3), P2(c10.right) - Q2(0.2), a10.top);
-        seg(b3.row, b3.cx - Q2(2.4), b3.cx - Q2(0.3), b3.top);
-      }
-    };
-    const chunks2 = units.filter((v) => v.kind === "chunk" && v.note && !v.pad && arcAt.has(v));
-    for (let i10 = 1; i10 < chunks2.length; i10++) {
-      const b3 = chunks2[i10], a10 = chunks2[i10 - 1];
-      if (b3.j > 0 && b3.index === a10.index || b3.j === 0 && b3.tie) arc(arcAt.get(a10), arcAt.get(b3), "tie jp-tie", 0.2);
-    }
-    for (let i10 = 0; i10 < chunks2.length; i10++) {
-      const a10 = chunks2[i10];
-      if (a10.j !== 0 || !tokens[a10.index]?.slur) continue;
-      let j2 = i10;
-      while (j2 + 1 < chunks2.length && (tokens[chunks2[j2].index]?.slur || chunks2[j2 + 1].index === chunks2[j2].index)) j2++;
-      if (j2 > i10) arc(arcAt.get(a10), arcAt.get(chunks2[j2]), artCls("slur", "slur jp-slur"), 0.75);
-      i10 = j2;
-    }
+    const tups = [];
     {
       let run2 = [], acc = 0, minBase = Infinity;
       const flush2 = () => {
-        if (run2.length && run2[0].ratio) {
-          const first = run2[0], last = run2[run2.length - 1], row2 = rowOf(first.system, r10, 0), x1 = P2(first.x) + Q2(0.1), x2 = last.system === first.system ? P2(last.x) + Q2(0.1 + DIGIT_W) : P2(c10.right), mid = (x1 + x2) / 2;
-          const top = Math.min(...run2.map((v) => arcAt.get(v)?.top ?? DIGIT_TOP)) - 0.35, num2 = String(first.ratio[0]);
-          put2(row2, { t: "text", x: mid, y: Y2(row2, top), s: num2, cls: "tuplet jp-tuplet", size: Q2(1.1), anchor: "middle" });
-          if (!run2.some((v) => underlines(v))) put2(row2, { t: "path", d: `M${x1},${Y2(row2, top - 0.1)}L${x1},${Y2(row2, top - 0.45)}L${mid - Q2(0.45)},${Y2(row2, top - 0.45)}M${mid + Q2(0.45)},${Y2(row2, top - 0.45)}L${x2},${Y2(row2, top - 0.45)}L${x2},${Y2(row2, top - 0.1)}`, cls: "tuplet-bracket" });
-        }
+        if (run2.length && run2[0].ratio) tups.push({ run: run2, num: String(run2[0].ratio[0]) });
         run2 = [];
         acc = 0;
         minBase = Infinity;
@@ -13893,6 +13864,71 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
       flush2();
     }
+    const NUM_EM = 1.1, numCap = DIGIT_H * (NUM_EM / DIGIT_EM), GAP_HALF = 0.45, HOOK = 0.35;
+    const ulY = (L2) => UL_Y0 + (L2 - 1) * UL_GAP + (letters ? SUB_DROP : 0);
+    const ulOf = new Map(ul2.map((e10) => [e10.ch, e10]));
+    const gaps = [];
+    const tupDraw = [];
+    for (const { run: run2, num: num2 } of tups) {
+      const first = run2[0], last = run2[run2.length - 1], row2 = rowOf(first.system, r10, 0), x1 = P2(first.x) + Q2(0.1), x2 = last.system === first.system ? P2(last.x) + Q2(0.1 + glyphWOf(last, c10.aux[r10], q2)) : P2(c10.right), mid = (x1 + x2) / 2;
+      const Ls = Math.min(...run2.map((v) => ulOf.get(v)?.level ?? 0)), g0 = ulOf.get(first)?.group, onLine = Ls >= 1 && last.system === first.system && run2.every((v) => ulOf.get(v)?.group === g0);
+      if (onLine) {
+        gaps.push({ row: row2, level: Ls, x0: mid - Q2(GAP_HALF), x1: mid + Q2(GAP_HALF) });
+        tupDraw.push(() => put2(row2, { t: "text", x: mid, y: Y2(row2, ulY(Ls) + numCap / 2), s: num2, cls: "tuplet jp-tuplet", size: Q2(NUM_EM), anchor: "middle" }));
+      } else {
+        const yl = Math.max(...run2.map((v) => arcAt.get(v)?.bot ?? BASE_Y)) + DOT_GAP + numCap / 2;
+        tupDraw.push(() => {
+          put2(row2, { t: "text", x: mid, y: Y2(row2, yl + numCap / 2), s: num2, cls: "tuplet jp-tuplet", size: Q2(NUM_EM), anchor: "middle" });
+          put2(row2, { t: "path", d: `M${x1},${Y2(row2, yl - HOOK)}L${x1},${Y2(row2, yl)}L${mid - Q2(GAP_HALF)},${Y2(row2, yl)}M${mid + Q2(GAP_HALF)},${Y2(row2, yl)}L${x2},${Y2(row2, yl)}L${x2},${Y2(row2, yl - HOOK)}`, cls: "tuplet-bracket" });
+        });
+      }
+    }
+    const maxL = Math.max(0, ...ul2.map((e10) => e10.level));
+    for (let L2 = 1; L2 <= maxL; L2++) {
+      let i10 = 0;
+      while (i10 < ul2.length) {
+        if (ul2[i10].level < L2) {
+          i10++;
+          continue;
+        }
+        let j2 = i10;
+        while (j2 + 1 < ul2.length && ul2[j2 + 1].level >= L2 && ul2[j2 + 1].group === ul2[i10].group) j2++;
+        const a10 = ul2[i10], b3 = ul2[j2], y2 = Y2(a10.row, ulY(L2));
+        let xs = a10.x0;
+        const cuts = gaps.filter((gp) => gp.row === a10.row && gp.level <= L2 && gp.x1 > a10.x0 && gp.x0 < b3.x1).sort((p2, q22) => p2.x0 - q22.x0);
+        for (const gp of cuts) {
+          if (gp.x0 > xs) put2(a10.row, { ...i10 === j2 && a10.tok !== void 0 && xs === a10.x0 ? { tok: a10.tok } : {}, t: "line", x1: xs, y1: y2, x2: gp.x0, y2, w: Q2(UL_W), cls: "jp-ul" });
+          xs = Math.max(xs, gp.x1);
+        }
+        if (b3.x1 > xs) put2(a10.row, { ...i10 === j2 && a10.tok !== void 0 && xs === a10.x0 ? { tok: a10.tok } : {}, t: "line", x1: xs, y1: y2, x2: b3.x1, y2, w: Q2(UL_W), cls: "jp-ul" });
+        i10 = j2 + 1;
+      }
+    }
+    const arc = (a10, b3, cls, lift) => {
+      const seg = (row2, x1, x2, top) => {
+        const y2 = Y2(row2, top - lift), len = Math.abs(x2 - x1), h2 = Math.min(len * 0.25, Math.max(Q2(0.4), Math.min(Q2(1.2), len * 0.12)));
+        put2(row2, { t: "path", d: `M${x1},${y2}Q${(x1 + x2) / 2},${y2 - h2} ${x2},${y2}`, cls });
+      };
+      if (a10.row === b3.row) seg(a10.row, a10.cx + Q2(0.3), b3.cx - Q2(0.3), Math.min(a10.top, b3.top));
+      else {
+        seg(a10.row, a10.cx + Q2(0.3), P2(c10.right) - Q2(0.2), a10.top);
+        seg(b3.row, Math.max(b3.cx - Q2(2.4), orn.left(rows[b3.row].sys)), b3.cx - Q2(0.3), b3.top);
+      }
+    };
+    const chunks2 = units.filter((v) => v.kind === "chunk" && v.note && !v.pad && arcAt.has(v));
+    for (let i10 = 1; i10 < chunks2.length; i10++) {
+      const b3 = chunks2[i10], a10 = chunks2[i10 - 1];
+      if (b3.j > 0 && b3.index === a10.index || b3.j === 0 && b3.tie) arc(arcAt.get(a10), arcAt.get(b3), "tie jp-tie", 0.2);
+    }
+    for (let i10 = 0; i10 < chunks2.length; i10++) {
+      const a10 = chunks2[i10];
+      if (a10.j !== 0 || !tokens[a10.index]?.slur) continue;
+      let j2 = i10;
+      while (j2 + 1 < chunks2.length && (tokens[chunks2[j2].index]?.slur || chunks2[j2 + 1].index === chunks2[j2].index)) j2++;
+      if (j2 > i10) arc(arcAt.get(a10), arcAt.get(chunks2[j2]), artCls("slur", "slur jp-slur"), 0.75);
+      i10 = j2;
+    }
+    for (const f2 of tupDraw) f2();
     if (mode === "digits" && c10.harmony) {
       const theory = harmonyTheory(), placed = new Map((c10.harmony.get(q2.p.id) ?? []).map((x2) => [x2.index, x2])), fs = tx2("chord-tag"), mineSet = new Set(mine);
       for (const u2 of units) {
@@ -14360,7 +14396,9 @@ function engrave(song, o10) {
     const lyrUnit = (str2) => lyricWidth(o10.measure, str2, sp2, ts2) * LS;
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
     const lyrGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };
-    if (songLook.lyricFit === "rhythm") per.forEach((q2, r10) => {
+    const lyrEdge = (s10) => ({ left: MARGIN + (s10 === 0 ? ind0 : indN) + LYRIC_EDGE, right: right - LYRIC_EDGE });
+    const outOf = (items, b3) => items.some((it2) => it2.cx - it2.w / 2 < b3.left - 1e-9 || it2.cx + it2.w / 2 > b3.right + 1e-9);
+    per.forEach((q2, r10) => {
       if (!lyricsOf[r10]) return;
       const bySys = /* @__PURE__ */ new Map();
       for (const u2 of DRAWERS[kinds[r10]].lyricAnchors(q2, kScale(kinds[r10]), aux[r10])) {
@@ -14369,8 +14407,16 @@ function engrave(song, o10) {
         arr.push({ index: u2.index, cx: u2.cx, w: lyrUnit(lyricShow(u2.lyric)), hy: u2.hyph, block: isBlockScript(u2.lyric) && [...lyricShow(u2.lyric)].length <= 1 });
       }
       for (const items of bySys.values()) items.sort((a10, b3) => a10.cx - b3.cx);
-      const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps)));
-      for (const items of bySys.values()) fitLyrics(items, blockSx, LYRIC_MIN_SX, lyrGaps).forEach((f2, k2) => lyrPlan.set(`${r10}:${items[k2].index}`, { ...f2, hw: items[k2].w * f2.sx / 2 }));
+      const plan = (items, fits) => fits.forEach((f2, k2) => lyrPlan.set(`${r10}:${items[k2].index}`, { ...f2, hw: items[k2].w * f2.sx / 2 }));
+      if (songLook.lyricFit !== "rhythm") {
+        for (const [s10, items] of bySys) {
+          const b3 = lyrEdge(s10);
+          if (outOf(items, b3)) plan(items, fitLyrics(items, 1, LYRIC_MIN_SX, lyrGaps, b3));
+        }
+        return;
+      }
+      const blockSx = Math.min(1, ...[...bySys].map(([s10, items]) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps, lyrEdge(s10))));
+      for (const [s10, items] of bySys) plan(items, fitLyrics(items, blockSx, LYRIC_MIN_SX, lyrGaps, lyrEdge(s10)));
     });
     const put2 = (row2, p2) => {
       const n02 = prims.length;
@@ -33037,7 +33083,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-4cc237ecc0b1.mjs");
+      return pick(() => "layout-worker-ca7136677ee7.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-2a99dcc81359.mjs");
   }
@@ -62735,4 +62781,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f51d83629bf4.mjs.map
+//# sourceMappingURL=moonsinger-1b4957372306.mjs.map

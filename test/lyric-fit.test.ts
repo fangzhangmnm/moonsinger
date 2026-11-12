@@ -105,3 +105,37 @@ describe("连字符摆哪（hyphens，2026-11-09 从排版器抽出来：src/ren
     eq(J(hyphens([{ x: 5, hy: true, cjk: false, row: 0 }], 1, 3)[0]), J({ x: 8, hf: 1 }));
   });
 });
+
+// 7-E（user 11-11「排版炸了，文字跑到线前面了」）：歌词不越过这一行的左右边界——左 = 这一行谱的起点（多声部时那根竖线），右 = 这一行的右端；音的位置不动。两种谱、两种歌词排法都管（框架的事）。
+import { addPart } from "../src/score/song.ts";
+import { setNotation } from "../src/score/song-view.ts";
+import { primInk } from "../src/render/skyline.ts";
+import { MARGIN, LYRIC_EDGE } from "../src/render/frame/params.ts";
+describe("歌词不越过这一行的左右边界（7-E）", () => {
+  const W = 900, SP = 10, raw = (s: string, px: number) => s.length * px * 0.55, M = createTextMeasure(raw);
+  /** 两位歌手（第一位带词：每个四分音符一个短词，first / last 换成长词）→ 排一遍，回每个字的墨 [x0, x1]、它在第几行、那一行左边那根竖线。 */
+  const run = (notation: "staff" | "jianpu", rhythm: boolean, words: (i: number, n: number) => string) => {
+    let st = initState(); st = addPart(st, { id: "P2", role: "r2", mic: "m2" }, st.song.papers[0]!.id);
+    const N = 40; let id = 8100;
+    const body = Array.from({ length: N }, (_, i): Token => ({ kind: "note", id: id++, pitch: { step: "E", alter: 0, octave: 5 }, dur: TPQ, lyric: words(i, N) }) as Token);
+    const p0 = st.song.papers[0]!, a = st.song.parts[0]!.id;
+    let song = { ...st.song, ...(rhythm ? {} : { lyricFit: "lyrics" as const }), papers: [{ ...p0, tracks: { ...p0.tracks, [a]: [...p0.tracks[a]!.slice(0, 3), ...body] } }] };
+    song = setNotation({ ...st, song }, notation).song;
+    const L = engrave(song, { width: W, sp: SP, at: { paper: p0.id, part: a }, parts: [{ id: a, name: "Voice", first: true }, { id: "P2", name: "Cello" }], locale: "zh", measure: M } as never);
+    const sysLines = L.prims.filter((p): p is Extract<typeof p, { t: "line" }> => p.t === "line" && p.cls === "bar" && p.x1 === p.x2 && p.y2 - p.y1 > 6 * SP).sort((p, q) => p.y1 - q.y1);
+    const ink = (p: (typeof L.prims)[number]) => { let r: [number, number] = [0, 0]; primInk(p.t === "text" && !p.anchor ? { ...p, anchor: "middle" } : p, SP, (s, size) => M.widthPx(s, size, SP, 1), (x0, x1) => { r = [x0, x1]; }); return r; };   // 歌词不写 anchor = 居中（SVG / PDF 都这么画）
+    const ly = L.lyrics.map((h) => { const p = L.prims.find((q) => q.t === "text" && /^lyric\b/.test(q.cls ?? "") && Math.abs((q as { x: number }).x - h.x) < 1e-6 && Math.abs((q as { y: number }).y - h.y) < 1e-6)!; return { sys: L.systems[h.system]!.sys, ink: ink(p), tight: !!h.tight }; });
+    return { L, ly, left: (sys: number) => sysLines[sys]!.x1 + LYRIC_EDGE * SP, right: W - (MARGIN + LYRIC_EDGE) * SP };
+  };
+  const longEdges = (i: number, n: number) => (i === 0 || i === n - 1 || i % 7 === 6 ? "Fromtheskyabove" : "la");
+  for (const notation of ["jianpu", "staff"] as const) for (const rhythm of [true, false]) {
+    it(`${notation === "jianpu" ? "简谱" : "五线谱"} · ${rhythm ? "按节奏排" : "按歌词排"}：每个字的左缘 ≥ 这一行的左边界、右缘 ≤ 右边界（行首 / 行尾放长词）`, () => {
+      const { L, ly, left, right } = run(notation, rhythm, longEdges);
+      assert(L.systems.some((r) => r.sys > 0), "排出了好几行");
+      for (const l of ly) assert(l.ink[0] >= left(l.sys) - 0.5 && l.ink[1] <= right + 0.5, `第 ${l.sys + 1} 行的字 [${l.ink.map((v) => v.toFixed(1))}] 越过了 [${left(l.sys).toFixed(1)}, ${right.toFixed(1)}]${l.tight ? "（挤）" : ""} 同行：${ly.filter((m) => m.sys === l.sys).map((m) => m.ink.map((v) => v.toFixed(0)).join("-") + (m.tight ? "!" : "")).join(" ")}`);
+    });
+  }
+  it("按节奏排：收进边界不动音（长词换短词，每个音的位置一样）", () => {
+    for (const notation of ["jianpu", "staff"] as const) eq(run(notation, true, longEdges).L.notes.map((h) => Math.round(h.x * 100)).join(","), run(notation, true, () => "la").L.notes.map((h) => Math.round(h.x * 100)).join(","), notation);
+  });
+});

@@ -21,6 +21,7 @@ export declare const jianpuBandTop: (row: JianpuRowData, half: number) => number
  *  字和排版里的数字同一款（字体属性写在元素上：鬼音符那一层不在 .staff-svg 里，套不上谱的样式表）。 */
 export declare function jianpuGhost(row: JianpuRowData & {
     octBase?: number;
+    middleC?: number;
 }, x: number, notes: readonly GhostNote[], half: number): string;
 /** 鼓的 X 行的鬼音符（第五刀 5-4）：x 处一个淡的「X」，几个（同时敲的几件）= 往上一个叠一个（同 stackBases，没有八度点）。 */
 export declare function jianpuXGhost(row: JianpuRowData, x: number, notes: readonly GhostNote[], half: number): string;

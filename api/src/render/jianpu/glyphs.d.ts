@@ -4,7 +4,9 @@ export declare const DIGIT_EM = 2.5, DIGIT_W: number;
 export declare const BASE_Y = 2.95, DIGIT_TOP = 1.15, DIGIT_MID = 2.05;
 /** 下划线：第一条在基线下 0.27 FS、条与条之间 0.18 FS、粗 0.059 FS（样张）；八度点：半径 0.082 FS、高八度的点中心在基线上 0.9 FS、点与点之间 0.227 FS（样张）。 */
 export declare const UL_Y0: number, UL_GAP: number, UL_W: number, DOT_R: number, DOT_GAP: number, DOT_STEP: number;
-/** 低八度的点（样张）：最下面那个数字的，第一个点中心在下划线（没有下划线也照这个位置）再往下 0.27 FS、每多一层下划线再往下一层；叠在上面的数字的，贴着它自己的基线往下 0.27 FS。 */
+/** 低八度的点（7-D，user「为什么最下面一个点间距这么开」「有下划线的时候点更低」）：和高八度的点对称——没有下划线 = 贴着数字的底（间隙 DOT_GAP，和高八度的点离数字顶一样）；
+ *  有下划线 = 贴着最下面一条下划线的底（同样的间隙）。原来照样张脚本：先给下划线留位置、点放在留的位置下面（没下划线时在基线下 0.55 FS、有下划线再往下），
+ *  样张本身的数偏大，app 照抄了。叠在上面的数字（和弦里不是最低的那几个）没有下划线：贴着自己的基线往下。 */
 export declare const lowDotY: (nUL: number, j: number) => number;
 export declare const LOW_DOT_UNDER: number;
 /** 升降号（挂在数字左上）：字号 0.59 FS、中心离数字中心往左 0.465 FS、基线在数字基线上 0.364 FS；占多宽（光标让开它，样张这一列多 0.41 FS）。 */
@@ -62,3 +64,31 @@ export declare const CARET_Y0: number, CARET_Y1: number;
 export declare const dotPath: (cx: number, cy: number, r: number) => string;
 /** 升降号的字（相对这个调的调内音：+1 = ♯、−1 = ♭、0 = ♮）。 */
 export declare const accText: (rel: number) => string;
+export declare const letterW: (step: string) => number;
+export declare const SCRIPT_K = 0.6, SCRIPT_GAP: number;
+/** 上标（升降号）的基线、下标（八度数字）的基线：离字母基线多远（数字行的单位；上 = 负）。 */
+export declare const SUP_DY: number, SUB_DY: number;
+/** 字母谱的行上，字母底下多让出的那一截（下标比基线低多少）：下划线、低处的东西照着往下让。 */
+export declare const SUB_DROP: number, SUP_RISE: number;
+/** 一个音的字母和两个角标：acc = 右上角（没有升降 = 空）、oct = 右下角的八度数字（写的八度 − 4 + 中央 C 叫 C 几）。 */
+export declare const letterParts: (p: {
+    step: string;
+    alter: number;
+    octave: number;
+}, middleC: number) => {
+    letter: string;
+    acc: string;
+    oct: string;
+};
+/** 角标那一栏多宽（升降号和数字取宽的；升降号照简谱升降号的宽 ACC_W 按字号折算）。 */
+export declare const scriptW: (p: {
+    step: string;
+    alter: number;
+    octave: number;
+}, middleC: number) => number;
+/** 一个音（或竖着叠的几个）多宽（sp，数字原大起；叠着的取最宽的）。 */
+export declare const letterNoteW: (ps: readonly {
+    step: string;
+    alter: number;
+    octave: number;
+}[], middleC: number) => number;

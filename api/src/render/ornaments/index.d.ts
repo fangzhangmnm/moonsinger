@@ -50,6 +50,8 @@ export interface OrnCtx {
     attach: (row: number, lane: LaneKind, run: () => void) => void;
     /** 这一行的右边界（sp）。 */
     right: number;
+    /** 这一行内容最左能到哪（px；7-K ⑤）：五线谱 = 行首竖线；数字行 = 行首竖线往右它自己的行首（同 jianpuLineStart）。挂件续到下一行时从不早于这里起，不越过竖线。 */
+    left: (s: number) => number;
     /** 这一行字形的尺寸比例（力度字、突强 / 强后弱）：数字行 = 排版参数表行一级的 scale（第五刀 5-0c）；五线谱不给 = 原样。 */
     glyphScale?: number;
     tokens: Token[];

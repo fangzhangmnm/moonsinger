@@ -29,6 +29,10 @@ export type FormatFile = keyof typeof FORMAT;
  *  · 大谱表那一段里的谱号记号：这一版起照写照读（<clef number="1">，musicxml.ts）——原来写的时候跳过，选过大谱表再存一次就悄悄没了。画大谱表时仍然不看它。
  *  · 没有标准名的和弦种类（7sus4 / add9 / 6/9 / 7♭9…）在 <kind text="…">other</kind> 里写的字 = 一张冻住的表（theory/western.ts XML_OTHER_TEXT），和谱上显示的字分开。
  *  · 没有改 major，也没有改 minor：补的都是「读得更多 / 不再丢」，v0.16.88–90 那一天存的歌照样开。 */
+/** score minor 6（7-B 字母谱，2026-11-11 Claude Opus 5.5（MoonSinger小弟）；user「字母版本的变体的，别人还在等着要用呢」「下标放数字上标放升降号」，统筹细则 = 施工单第三½节 7-B）：
+ *  顶层 notation 多一个值 "letters"（字母谱 = 简谱的变体：大写字母 + 右上角升降号 + 右下角八度数字）；顶层多一个可选的 middleC（整数，字母谱里中央 C 叫 C 几；只写不是 4 的，没写 = C4，冻住）。
+ *  旧版本画不出来 = 缺功能：minor +1、让旧版本提示一次；旧版本（minor 5）读到 notation 照旧原样带回（字符串、不认识的值原样带回）、画的时候按五线谱；middleC 是未知键、原样带回。
+ *  冻结样本 = test/fixtures/format/minor/score-6/。归修改锁的「看法」（锁着能切、锁着期间不写）。 */
 /** score minor 5（谱面分家第三刀，2026-11-11 Claude Opus 5.5；user 11-11 夜「可以」= 把四样显示设置存进歌文件、都可选、没写就按默认、小版本号加一）：
  *  这首歌怎么看 = 顶层 notation（谱种，只写不是五线谱的；不认识的值原样带回）/ chordTags（只写 false = 不标和弦级数）/ viewInC（只写 true = 按 C 调看）+ parts[].chords（这条轨的和弦选项，
  *  只写不是 auto 的："stacked" = 只认叠在一起的、"fold" = 折叠成和弦名；不认识的值原样带回）。读 / 改 / 没写的意思只在 src/score/song-view.ts（没写 = 五线谱 / 标 / 不按 / auto，冻住不变）。
@@ -135,6 +139,8 @@ export interface ScoreExtV2 {
     notation?: string;
     chordTags?: false;
     viewInC?: true;
+    /** score minor 6（7-B）：字母谱里中央 C 叫 C 几（只写不是 4 的；没写 = C4）。 */
+    middleC?: number;
 }
 export interface ManifestV1 {
     format: "moonsinger";

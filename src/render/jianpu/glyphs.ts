@@ -14,9 +14,11 @@ export const DIGIT_EM = FS, DIGIT_W = 0.62 * FS;
 export const BASE_Y = 2.95, DIGIT_TOP = 1.15, DIGIT_MID = 2.05;
 /** 下划线：第一条在基线下 0.27 FS、条与条之间 0.18 FS、粗 0.059 FS（样张）；八度点：半径 0.082 FS、高八度的点中心在基线上 0.9 FS、点与点之间 0.227 FS（样张）。 */
 export const UL_Y0 = BASE_Y + 0.273 * FS, UL_GAP = 0.18 * FS, UL_W = 0.059 * FS, DOT_R = 0.082 * FS, DOT_GAP = DIGIT_TOP - (BASE_Y - 0.9 * FS) - 0.082 * FS, DOT_STEP = 0.227 * FS;
-/** 低八度的点（样张）：最下面那个数字的，第一个点中心在下划线（没有下划线也照这个位置）再往下 0.27 FS、每多一层下划线再往下一层；叠在上面的数字的，贴着它自己的基线往下 0.27 FS。 */
-export const lowDotY = (nUL: number, j: number): number => UL_Y0 + 0.273 * FS + nUL * UL_GAP + j * DOT_STEP;
-export const LOW_DOT_UNDER = 0.273 * FS;
+/** 低八度的点（7-D，user「为什么最下面一个点间距这么开」「有下划线的时候点更低」）：和高八度的点对称——没有下划线 = 贴着数字的底（间隙 DOT_GAP，和高八度的点离数字顶一样）；
+ *  有下划线 = 贴着最下面一条下划线的底（同样的间隙）。原来照样张脚本：先给下划线留位置、点放在留的位置下面（没下划线时在基线下 0.55 FS、有下划线再往下），
+ *  样张本身的数偏大，app 照抄了。叠在上面的数字（和弦里不是最低的那几个）没有下划线：贴着自己的基线往下。 */
+export const lowDotY = (nUL: number, j: number): number => (nUL ? UL_Y0 + (nUL - 1) * UL_GAP + UL_W / 2 : BASE_Y) + DOT_GAP + DOT_R + j * DOT_STEP;
+export const LOW_DOT_UNDER = DOT_GAP + DOT_R;
 /** 升降号（挂在数字左上）：字号 0.59 FS、中心离数字中心往左 0.465 FS、基线在数字基线上 0.364 FS；占多宽（光标让开它，样张这一列多 0.41 FS）。 */
 export const ACC_EM = 0.59 * FS, ACC_DX = 0.465 * FS, ACC_Y = BASE_Y - 0.364 * FS, ACC_W = 0.41 * FS;
 /** 增时线（长音的「–」）：长 0.545 FS、粗 0.073 FS、在基线上 0.32 FS（样张）；两条之间至少隔一列的最小宽（样张 0.756 FS；放得开时一拍一条，按这一列的宽分）。附点：中心离数字中心 0.5 FS、半径 0.091 FS、在基线上 0.3 FS（样张）。 */

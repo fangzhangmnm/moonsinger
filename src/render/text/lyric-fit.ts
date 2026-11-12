@@ -4,6 +4,8 @@ import { LYRIC_MIN_SX } from "./style.ts";
 
 export interface LyricFit { dx: number; /** 宽度倍数（乘在这一档平常的宽度上；1 = 不收）。 */ sx: number; tight: boolean }
 export interface LyricItem { cx: number; w: number; hy?: boolean; /** 方块字：宽度跟整段统一（不各收各的）。 */ block?: boolean }
+/** 这一行歌词能摆的左右边界（sp，和 cx 同一个坐标；7-E，user 11-11「排版炸了，文字跑到线前面了」）：字的左缘不小于 left、右缘不大于 right。 */
+export interface LyricBounds { left: number; right: number }
 /** 歌词之间的缝怎么算（v0.16.48；user 11-09「空格要不要用就是零点七五个字距。就是空格本来默认就挤一点」「先把这个空格的定义是什么搞清楚，每个字每个字形把它给理清楚」）：
  *  · 字宽 w = 这个音节按字形量出来的前进宽度（含字形自带的左右留白；宿主按这一档的字号 / 平常宽度量好传进来）；
  *  · 空格 space = 这款字里空格字符「 」的前进宽度 × 0.6（默认就比正常空格紧；user「连字符和空格都可以默认省一点…只要能勉强看出节奏就行了」），中英文同一个定义；
@@ -20,16 +22,21 @@ export const DEFAULT_GAPS: LyricGaps = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen
  *  ① 对齐（「跑到外面」的定义）：音还在字底下（|x_i − c_i| ≤ 半宽 − 0.15）且没越过和邻居音的中点（≤ 到邻居音的一半）；短字至少能挪 0.2。
  *  ② 不叠：x_{i+1} − x_i ≥ (w_i f_i + w_{i+1} f_{i+1}) / 2 + (空格 + 有连字符时连字符的地方) × min(f_i, f_{i+1})（定义见 LyricGaps）。
  *  ③ 目标：字尽量宽（少收），一样宽时离自己的音最近。
+ *  ④（7-E）给了这一行的左右边界：字不越过它（|左缘| ≥ 左界、右缘 ≤ 右界），和 ① 冲突时边界优先。
  *  解法（够用、不求完美）：从左往右推（一条链 = 能不能放得下推一遍就知道）；推到放不下的那一串，只把这一串里能收的字一起二分到刚好放得下；
  *  收到 minSx 还放不下 = 标 tight（照写，歌词框说「挤了」）。宽度定了以后，位置 = 在「不叠、不跑出去」的范围里离自己的音最近（保序回归）。纯函数。 */
-function solveLyrics(items: readonly LyricItem[], blockSx: number, minSx: number, gaps: LyricGaps, widen = true): { pos: number[]; f: number[]; tight: Set<number> } {
+function solveLyrics(items: readonly LyricItem[], blockSx: number, minSx: number, gaps: LyricGaps, widen = true, bounds?: LyricBounds): { pos: number[]; f: number[]; tight: Set<number> } {
   const n = items.length, f = items.map((it) => (it.block ? blockSx : 1)), tight = new Set<number>();
   if (!n) return { pos: [], f, tight };
   const c = items.map((it) => it.cx);
   // 不随宽度变的先算好（性能，v0.16.69；算式和原来逐项相同 = 结果逐位相同）：字宽、到左右邻居音的一半、每道缝的底宽（空格 + 有连字符时连字符的地方）
   const w = items.map((it) => it.w), halfL = c.map((x, i) => (i > 0 ? Math.abs(c[i - 1] - x) / 2 : Infinity)), halfR = c.map((x, i) => (i < n - 1 ? Math.abs(c[i + 1] - x) / 2 : Infinity));
   const gb = items.slice(0, -1).map((it, i) => gaps.space + (it.hy && !(it.block || items[i + 1].block) ? gaps.hyphen : 0));
-  const lo = (i: number) => c[i] - Math.max(0.2, Math.min((w[i] * f[i]) / 2 - 0.15, halfL[i])), hi = (i: number) => c[i] + Math.max(0.2, Math.min((w[i] * f[i]) / 2 - 0.15, halfR[i]));
+  const aLo = (i: number) => c[i] - Math.max(0.2, Math.min((w[i] * f[i]) / 2 - 0.15, halfL[i])), aHi = (i: number) => c[i] + Math.max(0.2, Math.min((w[i] * f[i]) / 2 - 0.15, halfR[i]));
+  // ④ 不越过这一行的左右边界（7-E）：字的中心夹在 [左界 + 半宽, 右界 − 半宽] 里；和 ① 冲突时边界说了算（贴着边界摆）。没给边界 = ±∞ = 和原来逐位相同。
+  const bL = bounds?.left ?? -Infinity, bR = bounds?.right ?? Infinity;
+  const edge = (i: number, x: number) => { const a = bL + (w[i] * f[i]) / 2, b = bR - (w[i] * f[i]) / 2; return a > b ? a : Math.min(Math.max(x, a), b); };   // 字比整行还宽 = 贴左边
+  const lo = (i: number) => edge(i, aLo(i)), hi = (i: number) => edge(i, aHi(i));
   const G = new Array<number>(Math.max(0, n - 1)).fill(1), floor = gaps.floor ?? GAP_FLOOR;   // 每道缝压到几成（挤了先压它）；缝的底线
   const d = (i: number) => (w[i] * f[i] + w[i + 1] * f[i + 1]) / 2 + Math.max(floor, gb[i] * Math.min(f[i], f[i + 1]) * G[i]);
   const L = new Array<number>(n), start = new Array<number>(n);   // L = 从左推过来最靠左能放哪；start = 这一串被推着走的从哪个字开始
@@ -102,17 +109,17 @@ function solveLyrics(items: readonly LyricItem[], blockSx: number, minSx: number
   return { pos, f, tight };
 }
 /** 这一行的方块字至少要压到多宽才不挤（1、0.95…minSx 里取最宽的那个；压到底也救不了 = 救得最多的那个）。整段取各行里最窄的 = 整段统一的宽度。 */
-export function lyricBlockSx(items: readonly LyricItem[], minSx = LYRIC_MIN_SX, gaps: LyricGaps = DEFAULT_GAPS): number {
+export function lyricBlockSx(items: readonly LyricItem[], minSx = LYRIC_MIN_SX, gaps: LyricGaps = DEFAULT_GAPS, bounds?: LyricBounds): number {
   if (!items.some((it) => it.block)) return 1;
-  const badBlocks = (t: number) => { const r = solveLyrics(items, t, minSx, gaps, false); let k = 0; for (const i of r.tight) if (items[i].block) k++; return k; };
+  const badBlocks = (t: number) => { const r = solveLyrics(items, t, minSx, gaps, false, bounds); let k = 0; for (const i of r.tight) if (items[i].block) k++; return k; };
   let best = 1, bestN = badBlocks(1);
   for (let t = 0.95; bestN && t >= minSx - 1e-9; t = Math.round((t - 0.05) * 100) / 100) { const k = badBlocks(t); if (k < bestN) { best = t; bestN = k; } }
   return best;
 }
 /** 歌词按节奏排的让路（v0.9.40 立；v0.16.43 整行一起缩；v0.16.44 字高不动、只收宽度；v0.16.47 改成上面那个小优化问题——见 solveLyrics）。
  *  items 按 cx 排好；blockSx = 方块字整段统一的宽度（宿主按 lyricBlockSx 对整段取最窄）；gaps = 空格 / 连字符按字形量的宽度（LyricGaps）。纯函数。 */
-export function fitLyrics(items: readonly LyricItem[], blockSx = 1, minSx = LYRIC_MIN_SX, gaps: LyricGaps = DEFAULT_GAPS): LyricFit[] {
-  const r = solveLyrics(items, blockSx, minSx, gaps);
+export function fitLyrics(items: readonly LyricItem[], blockSx = 1, minSx = LYRIC_MIN_SX, gaps: LyricGaps = DEFAULT_GAPS, bounds?: LyricBounds): LyricFit[] {
+  const r = solveLyrics(items, blockSx, minSx, gaps, true, bounds);
   return items.map((it, i) => ({ dx: r.pos[i] - it.cx, sx: r.f[i], tight: r.tight.has(i) }));
 }
 /** 连字符要摆的一个音节（按谱上的先后）。x = 字的中心；hw = 让路之后的半宽、sx = 让路之后的宽度倍数（没走让路 = 都不给）；

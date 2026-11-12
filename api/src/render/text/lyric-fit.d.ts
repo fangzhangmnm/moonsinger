@@ -9,6 +9,11 @@ export interface LyricItem {
     hy?: boolean; /** 方块字：宽度跟整段统一（不各收各的）。 */
     block?: boolean;
 }
+/** 这一行歌词能摆的左右边界（sp，和 cx 同一个坐标；7-E，user 11-11「排版炸了，文字跑到线前面了」）：字的左缘不小于 left、右缘不大于 right。 */
+export interface LyricBounds {
+    left: number;
+    right: number;
+}
 /** 歌词之间的缝怎么算（v0.16.48；user 11-09「空格要不要用就是零点七五个字距。就是空格本来默认就挤一点」「先把这个空格的定义是什么搞清楚，每个字每个字形把它给理清楚」）：
  *  · 字宽 w = 这个音节按字形量出来的前进宽度（含字形自带的左右留白；宿主按这一档的字号 / 平常宽度量好传进来）；
  *  · 空格 space = 这款字里空格字符「 」的前进宽度 × 0.6（默认就比正常空格紧；user「连字符和空格都可以默认省一点…只要能勉强看出节奏就行了」），中英文同一个定义；
@@ -25,10 +30,10 @@ export declare const LYRIC_SPACE = 0.6, HYPHEN_SX = 0.8, GAP_MIN = 0.5;
 export declare const GAP_FLOOR = 0.2;
 export declare const DEFAULT_GAPS: LyricGaps;
 /** 这一行的方块字至少要压到多宽才不挤（1、0.95…minSx 里取最宽的那个；压到底也救不了 = 救得最多的那个）。整段取各行里最窄的 = 整段统一的宽度。 */
-export declare function lyricBlockSx(items: readonly LyricItem[], minSx?: number, gaps?: LyricGaps): number;
+export declare function lyricBlockSx(items: readonly LyricItem[], minSx?: number, gaps?: LyricGaps, bounds?: LyricBounds): number;
 /** 歌词按节奏排的让路（v0.9.40 立；v0.16.43 整行一起缩；v0.16.44 字高不动、只收宽度；v0.16.47 改成上面那个小优化问题——见 solveLyrics）。
  *  items 按 cx 排好；blockSx = 方块字整段统一的宽度（宿主按 lyricBlockSx 对整段取最窄）；gaps = 空格 / 连字符按字形量的宽度（LyricGaps）。纯函数。 */
-export declare function fitLyrics(items: readonly LyricItem[], blockSx?: number, minSx?: number, gaps?: LyricGaps): LyricFit[];
+export declare function fitLyrics(items: readonly LyricItem[], blockSx?: number, minSx?: number, gaps?: LyricGaps, bounds?: LyricBounds): LyricFit[];
 /** 连字符要摆的一个音节（按谱上的先后）。x = 字的中心；hw = 让路之后的半宽、sx = 让路之后的宽度倍数（没走让路 = 都不给）；
  *  cjk = 这个音节是方块字（中日韩：旁边的连字符挂在缝里、不占地方）；row = 在哪一行（跨行的连字符挂在左边那个字后面）。单位随宿主，全用同一个就行。 */
 export interface HyphenSyl {

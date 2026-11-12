@@ -38,6 +38,8 @@ export interface OrnCtx {
   attach: (row: number, lane: LaneKind, run: () => void) => void;
   /** 这一行的右边界（sp）。 */
   right: number;
+  /** 这一行内容最左能到哪（px；7-K ⑤）：五线谱 = 行首竖线；数字行 = 行首竖线往右它自己的行首（同 jianpuLineStart）。挂件续到下一行时从不早于这里起，不越过竖线。 */
+  left: (s: number) => number;
   /** 这一行字形的尺寸比例（力度字、突强 / 强后弱）：数字行 = 排版参数表行一级的 scale（第五刀 5-0c）；五线谱不给 = 原样。 */
   glyphScale?: number;
   tokens: Token[]; units: Unit[];
@@ -160,7 +162,7 @@ export function layDynamics(c: OrnCtx): void {
   // 发夹（或太长时的「cresc. - - -」）从 (s0, startX) 到 (s1, endX)：跨行每行一段，每段是力度那一层的一块；index = 点它开哪个记号的小菜单；
   //   k0 = 第一段连着谁（前面紧挨着的力度字），k1 = 最后一段连着谁（终点的字 / 下一个发夹）；tail = 最后一段画完再画的（推定的灰字，注解）。ramp = 渐到画的（虚线）。
   const wedgeItems = (index: number, dir: "cresc" | "dim", s0: number, startX: number, s1: number, endX: number, ramp: boolean, k0?: string, k1?: string, tail?: (base: number) => void) => {
-    const leftOf = (sy: number) => Math.min(...units.filter((u): u is Chunk => u.kind === "chunk" && u.system === sy).map((ch) => c.noteX(ch)), P(right)) - P(1);
+    const leftOf = (sy: number) => Math.max(Math.min(...units.filter((u): u is Chunk => u.kind === "chunk" && u.system === sy).map((ch) => c.noteX(ch)), P(right)) - P(1), c.left(sy));   // 不越过行首竖线（7-K ⑤）
     const segs: [number, number, number][] = [];
     for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf(sy), sy === s1 ? endX : P(right) - P(0.3)]);
     const total = segs.reduce((n, [, a, b]) => n + Math.max(0, b - a), 0) || 1, H = P(0.5), long = total > P(right - MARGIN);
