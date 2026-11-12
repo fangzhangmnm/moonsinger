@@ -897,7 +897,7 @@ export class ScoreView {
   private syncZoom(): void {
     const want = this.zoomPhys === null ? this.defMul() : this.clampMul(this.mulOf(this.zoomPhys));
     if (Math.abs(want - this.zoom) < 1e-3) return;
-    this.zoom = want; this.sheet.style.zoom = want === 1 ? "" : String(want);   // CSS zoom 照旧以自动大小为 1
+    this.zoom = want; this.sheet.style.zoom = want === 1 ? "" : String(want); this.sheet.style.setProperty("--ov-z", String(want));   // CSS zoom 照旧以自动大小为 1；--ov-z 给覆盖层按屏幕像素算手指点击区（styles.css）
     this.paintZoomUi();
   }
   private paintZoomUi(): void {
@@ -947,7 +947,7 @@ export class ScoreView {
     const def = this.defMul(); z = this.clampMul(z); if (Math.abs(z - def) < 0.02 * def) z = def;   // 回到默认大小附近 = 吸到默认
     const a = anchor ?? this.centerAnchor();
     const r = this.el.getBoundingClientRect();
-    this.zoom = z; this.sheet.style.zoom = z === 1 ? "" : String(z);
+    this.zoom = z; this.sheet.style.zoom = z === 1 ? "" : String(z); this.sheet.style.setProperty("--ov-z", String(z));
     this.el.classList.toggle("zoomed", z !== 1 && this.paperW * z > this.el.clientWidth + 1);   // 比屏幕宽了才靠左 + 横着滚（窄的照旧居中；v0.10.30 缩小 / 大屏上放大一点也居中）
     this.zoomBtn.hidden = z === def;   // 离开默认大小 = 露读数（点 = 回默认）
     this.zoomBtn.textContent = `${Math.round(this.physOf(z) * 100)}%`;

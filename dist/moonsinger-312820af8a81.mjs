@@ -15668,10 +15668,10 @@ function engrave(song, o10) {
         dx += ws2[k2] + sepW;
         return r10;
       });
-      statusHints.push({ system, x: all.x, y: all.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 } });
+      statusHints.push({ system, x: all.x, y: all.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 }, room: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 } });
       return;
     }
-    placeHints(busy, list2.map((_2, k2) => hint2(ws2[k2])), P2(0.3)).forEach((pl, k2) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list2[k2], dx: 0, w: ws2[k2] }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
+    placeHints(busy, list2.map((_2, k2) => hint2(ws2[k2])), P2(0.3)).forEach((pl, k2) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list2[k2], dx: 0, w: ws2[k2] }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }, room: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
   };
   let shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
@@ -16328,6 +16328,7 @@ function engrave(song, o10) {
       const down = Math.min(downMax, extra - up);
       up = Math.min(upMax, extra - down);
       ln3.hit = { y0: t02 - up, y1: t12 + down };
+      ln3.room = { y0: t02 - (upMax === Infinity ? 2 * H3 : upMax / 2), y1: t12 + (downMax === Infinity ? 2 * H3 : downMax / 2) };
     }
   }
   const pages = [];
@@ -18446,6 +18447,7 @@ var ScoreView = class {
     if (Math.abs(want - this.zoom) < 1e-3) return;
     this.zoom = want;
     this.sheet.style.zoom = want === 1 ? "" : String(want);
+    this.sheet.style.setProperty("--ov-z", String(want));
     this.paintZoomUi();
   }
   paintZoomUi() {
@@ -18512,6 +18514,7 @@ var ScoreView = class {
     const r10 = this.el.getBoundingClientRect();
     this.zoom = z2;
     this.sheet.style.zoom = z2 === 1 ? "" : String(z2);
+    this.sheet.style.setProperty("--ov-z", String(z2));
     this.el.classList.toggle("zoomed", z2 !== 1 && this.paperW * z2 > this.el.clientWidth + 1);
     this.zoomBtn.hidden = z2 === def;
     this.zoomBtn.textContent = `${Math.round(this.physOf(z2) * 100)}%`;
@@ -19562,7 +19565,7 @@ var ScoreOverlay = class {
     }
     const ST = textStyleOf("key-hint");
     for (const ln3 of L2.statusHints) {
-      const top = boxTopFor(ln3.y, ln3.size, faceMetrics(ST)), hit2 = `--hit-up:${px(Math.max(0, top - ln3.hit.y0))};--hit-down:${px(Math.max(0, ln3.hit.y1 - (top + ln3.size)))}`;
+      const top = boxTopFor(ln3.y, ln3.size, faceMetrics(ST)), hit2 = `--hit-up:${px(Math.max(0, top - ln3.hit.y0))};--hit-down:${px(Math.max(0, ln3.hit.y1 - (top + ln3.size)))};--room-up:${px(Math.max(0, top - ln3.room.y0))};--room-down:${px(Math.max(0, ln3.room.y1 - (top + ln3.size)))};--txt-h:${px(ln3.size)}`;
       ln3.items.forEach((it2, k2) => {
         if (k2 > 0) {
           const a10 = ln3.items[k2 - 1].dx + ln3.items[k2 - 1].w;
@@ -34256,7 +34259,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-23eab1edf660.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-4e5f1abb51fd.mjs");
+      return pick(() => "layout-worker-a0604b2338e2.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-d2043b8a4b39.mjs");
   }
@@ -60240,7 +60243,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "f4a4514913f4",
+  cssHash: "312621a7d4f8",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -64568,4 +64571,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-026ce4eb898a.mjs.map
+//# sourceMappingURL=moonsinger-312820af8a81.mjs.map

@@ -157,7 +157,8 @@ export class ScoreOverlay {
     //   user 11-12「折叠八十…又不好懂，而且位置也错了，又还和别人打架」）。点了做的事和原来一样。点击区按排版给的上下扩到至少 3 个线间距（--hit-up / --hit-down，CSS 的 ::before）
     const ST = textStyleOf("key-hint");
     for (const ln of L.statusHints) {
-      const top = boxTopFor(ln.y, ln.size, faceMetrics(ST)), hit = `--hit-up:${px(Math.max(0, top - ln.hit.y0))};--hit-down:${px(Math.max(0, ln.hit.y1 - (top + ln.size)))}`;
+      // 手指（styles.css 里 pointer: coarse）：点击区在屏幕上至少 30 px 高，按谱面的缩放（--ov-z，score-view 设）现算，不超过 room（到邻居空当的一半），也不比 hit 小
+      const top = boxTopFor(ln.y, ln.size, faceMetrics(ST)), hit = `--hit-up:${px(Math.max(0, top - ln.hit.y0))};--hit-down:${px(Math.max(0, ln.hit.y1 - (top + ln.size)))};--room-up:${px(Math.max(0, top - ln.room.y0))};--room-down:${px(Math.max(0, ln.room.y1 - (top + ln.size)))};--txt-h:${px(ln.size)}`;
       ln.items.forEach((it, k) => {
         // 分隔点画在排版留的那一段（量的是「空格·空格」）正中间：HTML 会吞掉开头的空格，按原样放点就贴着前一条字
         if (k > 0) { const a = ln.items[k - 1]!.dx + ln.items[k - 1]!.w; add(`st-sep:${ln.system}:${k}`, "div", "ov-key-hint ov-status-sep", text(ln.x + (a + it.dx) / 2, ln.y, ln.size, "middle", ST), esc(ln.sep.trim())); }

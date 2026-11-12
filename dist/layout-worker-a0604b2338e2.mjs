@@ -8564,10 +8564,10 @@ function engrave(song, o) {
         dx += ws[k] + sepW;
         return r;
       });
-      statusHints.push({ system, x: all.x, y: all.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 } });
+      statusHints.push({ system, x: all.x, y: all.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 }, room: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 } });
       return;
     }
-    placeHints(busy, list.map((_, k) => hint(ws[k])), P(0.3)).forEach((pl, k) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list[k], dx: 0, w: ws[k] }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
+    placeHints(busy, list.map((_, k) => hint(ws[k])), P(0.3)).forEach((pl, k) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list[k], dx: 0, w: ws[k] }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }, room: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
   };
   let shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
@@ -9224,6 +9224,7 @@ function engrave(song, o) {
       const down = Math.min(downMax, extra - up);
       up = Math.min(upMax, extra - down);
       ln.hit = { y0: t0 - up, y1: t1 + down };
+      ln.room = { y0: t0 - (upMax === Infinity ? 2 * H : upMax / 2), y1: t1 + (downMax === Infinity ? 2 * H : downMax / 2) };
     }
   }
   const pages = [];
@@ -9318,4 +9319,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-4e5f1abb51fd.mjs.map
+//# sourceMappingURL=layout-worker-a0604b2338e2.mjs.map

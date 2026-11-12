@@ -267,7 +267,9 @@ export interface StatusHintItem {
     w: number;
     paper?: string;
 }
-/** 一行状态提示：x / y = 第一条字的左端和基线（px），size = 字号；items 之间用 sep 隔开（各点各的）；hit = 点击区的上下（px）：至少 3 个线间距高，往上下扩时不盖到别的点得到的东西。 */
+/** 一行状态提示：x / y = 第一条字的左端和基线（px），size = 字号；items 之间用 sep 隔开（各点各的）；hit = 点击区的上下（px）：至少 3 个线间距高，往上下扩时不盖到别的点得到的东西。
+ *  room = 手指点的时候点击区最多扩到哪（px）：每边到最近的点得到的东西之间空当的一半（盖得到就各让一半；统筹 2026-11-12），那边没东西 = 两个控件高。
+ *  手指的点击区在屏幕上至少 30 px 高，按屏幕算要知道纸缩了多少，所以由谱面层（score-overlay + styles.css）拿 room 现算，排版只交上限。 */
 export interface StatusHintLine {
     system: number;
     x: number;
@@ -276,6 +278,10 @@ export interface StatusHintLine {
     sep: string;
     items: StatusHintItem[];
     hit: {
+        y0: number;
+        y1: number;
+    };
+    room: {
         y0: number;
         y1: number;
     };

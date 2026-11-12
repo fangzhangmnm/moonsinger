@@ -131,8 +131,10 @@ export interface Box { x: number; y: number; w: number; h: number }
 /** 不印的状态提示的一条：hiddenPapers = 隐藏了 N 段（全部视图）、hiddenParts = 隐藏了 N 个声部（只有一张纸、曲段名那一条没画时；paper = 哪张纸）、expr = 演奏法和表情：不显示。 */
 export type StatusHintKind = "hiddenPapers" | "hiddenParts" | "expr";
 export interface StatusHintItem { kind: StatusHintKind; s: string; /** 这一条在这一行里从 x 起多远、多宽（px）。 */ dx: number; w: number; paper?: string }
-/** 一行状态提示：x / y = 第一条字的左端和基线（px），size = 字号；items 之间用 sep 隔开（各点各的）；hit = 点击区的上下（px）：至少 3 个线间距高，往上下扩时不盖到别的点得到的东西。 */
-export interface StatusHintLine { system: number; x: number; y: number; size: number; sep: string; items: StatusHintItem[]; hit: { y0: number; y1: number } }
+/** 一行状态提示：x / y = 第一条字的左端和基线（px），size = 字号；items 之间用 sep 隔开（各点各的）；hit = 点击区的上下（px）：至少 3 个线间距高，往上下扩时不盖到别的点得到的东西。
+ *  room = 手指点的时候点击区最多扩到哪（px）：每边到最近的点得到的东西之间空当的一半（盖得到就各让一半；统筹 2026-11-12），那边没东西 = 两个控件高。
+ *  手指的点击区在屏幕上至少 30 px 高，按屏幕算要知道纸缩了多少，所以由谱面层（score-overlay + styles.css）拿 room 现算，排版只交上限。 */
+export interface StatusHintLine { system: number; x: number; y: number; size: number; sep: string; items: StatusHintItem[]; hit: { y0: number; y1: number }; room: { y0: number; y1: number } }
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   /** 字的尺子（px）= sp × textScale（刀 2）：覆盖层的钮、提示字、虚线框的字按它，紧凑档不跟着谱缩。 */
@@ -311,10 +313,10 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const [all] = placeHints(busy, [hint(W)], P(0.3));
     if (all!.ok || list.length === 1) {
       let dx = 0; const items = list.map((it, k) => { const r = { ...it, dx, w: ws[k]! }; dx += ws[k]! + sepW; return r; });
-      statusHints.push({ system, x: all!.x, y: all!.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all!.y - fs * 0.8, y1: all!.y + fs * 0.2 } });
+      statusHints.push({ system, x: all!.x, y: all!.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all!.y - fs * 0.8, y1: all!.y + fs * 0.2 }, room: { y0: all!.y - fs * 0.8, y1: all!.y + fs * 0.2 } });
       return;
     }
-    placeHints(busy, list.map((_, k) => hint(ws[k]!)), P(0.3)).forEach((pl, k) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list[k]!, dx: 0, w: ws[k]! }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
+    placeHints(busy, list.map((_, k) => hint(ws[k]!)), P(0.3)).forEach((pl, k) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list[k]!, dx: 0, w: ws[k]! }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }, room: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
   };
   let shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
@@ -839,6 +841,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       }
       let up = Math.min(upMax, extra / 2); const down = Math.min(downMax, extra - up); up = Math.min(upMax, extra - down);
       ln.hit = { y0: t0 - up, y1: t1 + down };
+      ln.room = { y0: t0 - (upMax === Infinity ? 2 * H : upMax / 2), y1: t1 + (downMax === Infinity ? 2 * H : downMax / 2) };   // 手指的上限：空当的一半（各让一半）
     }
   }
   // 分页：页框（压在最底下）+ 页码；高 = 最后一页的底

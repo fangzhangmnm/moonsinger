@@ -118,6 +118,14 @@ describe("不印的状态提示不和别人打架（7-G 重做 → 统筹 2026-1
         boxes.forEach((b2, j) => { if (j > i) assert(!hit(b2), `${tag}：第 ${i + 1}、${j + 1} 条叠在一起`); });
       });
       for (const ln of L.statusHints) assert(ln.hit.y0 <= ln.y - ln.size * 0.8 + 1e-6 && ln.hit.y1 >= ln.y + ln.size * 0.2 - 1e-6, `${tag}：点击区比字还小`);
+      // 手指的上限（room：屏幕上要 30 px 时最多扩到哪）包住字、不盖别的点得到的东西（盖得到就各让一半 = 到空当的一半为止）
+      for (const ln of L.statusHints) {
+        assert(ln.room.y0 <= ln.y - ln.size * 0.8 + 1e-6 && ln.room.y1 >= ln.y + ln.size * 0.2 - 1e-6, `${tag}：手指的上限比字还小`);
+        const x0 = ln.x, x1 = ln.x + ln.items.at(-1)!.dx + ln.items.at(-1)!.w, band = { x0, x1, y0: ln.room.y0, y1: ln.room.y1 };
+        const over = (b: { x: number; y: number; w: number; h: number }) => band.x0 < b.x + b.w - EPS && b.x < band.x1 - EPS && band.y0 < b.y + b.h - EPS && b.y < band.y1 - EPS;
+        const others = [L.title, ...(L.credits ? [L.credits] : []), ...L.marks, ...L.dyns, ...L.clefs, ...L.papers.filter((pp) => pp.title.shown).map((pp) => ({ x: 0, y: pp.title.y, w: L.width, h: pp.title.h }))];
+        assert(!others.some(over), `${tag}：手指的上限盖到了别的点得到的东西`);
+      }
       }
     }
   });

@@ -455,6 +455,17 @@ body:not(.print-look) .staff-svg .part-name.focus { fill: var(--accent); }      
    点击区 = 字上下各扩 --hit-up / --hit-down（排版算好的：至少 3 个线间距高、不盖别的点得到的东西）；中间的「·」不接点 */
 .ov-status-hint, .ov-status-hint.ov-hidden { padding: 0; width: auto; height: auto; font-weight: inherit; border: 0; background: none; color: var(--muted); }
 .ov-status-hint::before { content: ""; position: absolute; left: 0; right: 0; top: calc(-1 * var(--hit-up, 0px)); bottom: calc(-1 * var(--hit-down, 0px)); }
+/* 手指点的时候点击区在屏幕上至少 30 px 高（统筹 2026-11-12：手指的点击区按屏幕上的大小算；不盖别的点得到的东西，盖得到就各让一半 = 每边不超过 --room-*，
+   即到邻居之间空当的一半，排版给）。--ov-z = 谱面现在的缩放（score-view 设在 .sheet 上；覆盖层在 .sheet 里，1 个 CSS px = --ov-z 个屏幕 px）。
+   --st-e = 还差多高；先两边各一半，一边到了上限、差的那截给另一边（同排版给 --hit-* 时的分法）；不比排版给的 --hit-* 小。 */
+@media (pointer: coarse) {
+  .ov-status-hint {
+    --st-e: calc(30px / var(--ov-z, 1) - var(--txt-h, 0px));
+    --st-up: min(var(--room-up, 0px), max(var(--st-e) / 2, var(--st-e) - var(--room-down, 0px)));
+    --st-down: min(var(--room-down, 0px), max(var(--st-e) / 2, var(--st-e) - var(--st-up)));
+  }
+  .ov-status-hint::before { top: calc(-1 * max(var(--hit-up, 0px), var(--st-up))); bottom: calc(-1 * max(var(--hit-down, 0px), var(--st-down))); }
+}
 .ov-status-sep { pointer-events: none; }
 .finder.is-playing .prov-b [data-v="play"] { display: none; }   /* 放着歌的时候不给「听开头」（v0.16.35；user 11-09） */
 .ctx-menu.hidden-papers .hidp-row { display: flex; align-items: center; gap: .3em; }   /* 「隐藏 N 段」点开的一行：名字 + 去看 + 放出来（v0.16.34） */
