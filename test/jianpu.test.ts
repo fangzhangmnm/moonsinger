@@ -109,7 +109,7 @@ describe("简谱数字行", () => {
     eq(oneL.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-x/.test(p.cls ?? "")).map((p) => p.s).join(""), "XX", "只有一件鼓的行照旧一律 X");
     // 图例（5-6，统筹裁定 (c)）：整套鼓这张纸上第一次有敲击的那一行，行首名字下面一行一种字（名字宿主按界面语言给）；从上往下 = 五线鼓谱上的高低；只印一次；印出来（PDF 也有）
     const names = { 36: "大鼓", 38: "小鼓", 42: "脚踏钹（闭镲）", 46: "脚踏钹（开镲）", 49: "碎音钹" };
-    const many = Array.from({ length: 40 }, (_, i) => (i % 2 ? n(M(42), TPQ, { chord: [M(38), M(36)] }) : n(M(46))));
+    const many = Array.from({ length: 120 }, (_, i) => (i % 2 ? n(M(42), TPQ, { chord: [M(38), M(36)] }) : n(M(46))));
     const lgL = lay(many, undefined, { ...kit, kitNames: names }).L, legend = lgL.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-legend/.test(p.cls ?? ""));
     assert(lgL.systems.length >= 2, "排了好几行");
     eq(legend.map((p) => p.s).join(" | "), "⊗ 脚踏钹（开镲） | × 脚踏钹（闭镲） | ● 小鼓 / 大鼓", "一行一种字，按五线鼓谱上的高低从上往下（踩镲在上、鼓在下；一样高 = 先出现的在前），同一种字的几件写在一起、也是上面的先写");

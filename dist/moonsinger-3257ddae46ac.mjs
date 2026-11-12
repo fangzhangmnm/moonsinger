@@ -11101,10 +11101,11 @@ var mockSpring = (q2) => (5 + 6.8 * Math.log2(1 + 4 * q2)) * 2.5 / 22;
 var jianpuSprings = (k2) => [[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]].map(([t10, w2]) => [t10, w2 * k2]);
 var PAPER_PARAMS = {
   staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
+  // 第六刀的三条（maxStretch 1.3 / noOrphan / evenBars）五线谱默认都关 = 现在的样子；出对照给 user，点头才改
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
   //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
   //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，text/style.ts LYRIC_LOOK）
-  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } }
+  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, noOrphan: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, noOrphan: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } }
   // 名字：正文字号 1.36 线间距 × 字的尺子（紧凑 1.4）
 };
 var jianpuRow = (k2, v) => ({ above: v.above * k2, rowH: v.rowH * k2, rowHNoLyric: v.rowHNoLyric * k2, graveUpper: v.graveUpper * k2, lyricBelow: v.lyricBelow * k2, clear: v.clear * k2, scale: k2, barNoPad: v.barNoPad * k2 });
@@ -13958,7 +13959,7 @@ function arrangeColumns(cols, tracks, o10) {
         const to2 = segs[j2 - 1], tight = lineW(from, to2, -o10.squeeze);
         if (tight > avail2 + 1e-6 && j2 > i10 + 1) break;
         const nat2 = lineW(from, to2, 0), last = j2 === S3;
-        const cost = nat2 > avail2 ? 400 * ((nat2 - avail2) / avail2) ** 2 : last ? 0 : 100 * ((avail2 - nat2) / avail2) ** 2;
+        const cost = nat2 > avail2 ? 400 * ((nat2 - avail2) / avail2) ** 2 : last && !o10.noOrphan ? 0 : 100 * ((avail2 - nat2) / avail2) ** 2;
         if (best[i10] + cost + 2 < best[j2]) {
           best[j2] = best[i10] + cost + 2;
           prev[j2] = i10;
@@ -14244,7 +14245,7 @@ function engrave(song, o10) {
       return Math.max(...per0.map((q2, i10) => DRAWERS[kinds[i10]].lineStart(q2, keys.get(q2.p.id), first, base2, kScale(kinds[i10]))));
     };
     const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
-    const ar2 = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o10.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, endPad: BAR_W, lineStart: headAt });
+    const ar2 = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o10.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, ...PPAR.noOrphan ? { noOrphan: true } : {}, endPad: BAR_W, lineStart: headAt });
     const { lineFrom, sysStarts } = ar2, nSys = lineFrom.length, sysKeys = lineFrom.map((k2) => new Map(keyAtCol[k2]));
     const cols = merged.map((c10, k2) => ({ tick: c10.tick, slot: c10.slot, n: c10.n, x: ar2.xs[k2], w: ar2.ws[k2], system: ar2.system[k2], bar: c10.bar, units: c10.members.map((m2) => m2.entry.ref) }));
     const at2 = /* @__PURE__ */ new Map();
@@ -32949,7 +32950,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-f37b33f794df.mjs");
+      return pick(() => "layout-worker-1e666b1953bc.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-dbf4137da628.mjs");
   }
@@ -62609,4 +62610,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-868d505b43c7.mjs.map
+//# sourceMappingURL=moonsinger-3257ddae46ac.mjs.map

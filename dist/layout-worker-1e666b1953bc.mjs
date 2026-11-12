@@ -4918,10 +4918,11 @@ var mockSpring = (q) => (5 + 6.8 * Math.log2(1 + 4 * q)) * 2.5 / 22;
 var jianpuSprings = (k) => [[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]].map(([t, w]) => [t, w * k]);
 var PAPER_PARAMS = {
   staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
+  // 第六刀的三条（maxStretch 1.3 / noOrphan / evenBars）五线谱默认都关 = 现在的样子；出对照给 user，点头才改
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
   //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
   //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，text/style.ts LYRIC_LOOK）
-  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } }
+  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, noOrphan: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, noOrphan: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } }
   // 名字：正文字号 1.36 线间距 × 字的尺子（紧凑 1.4）
 };
 var jianpuRow = (k, v) => ({ above: v.above * k, rowH: v.rowH * k, rowHNoLyric: v.rowHNoLyric * k, graveUpper: v.graveUpper * k, lyricBelow: v.lyricBelow * k, clear: v.clear * k, scale: k, barNoPad: v.barNoPad * k });
@@ -7591,7 +7592,7 @@ function arrangeColumns(cols, tracks, o) {
         const to = segs[j - 1], tight = lineW(from, to, -o.squeeze);
         if (tight > avail + 1e-6 && j > i + 1) break;
         const nat = lineW(from, to, 0), last = j === S2;
-        const cost = nat > avail ? 400 * ((nat - avail) / avail) ** 2 : last ? 0 : 100 * ((avail - nat) / avail) ** 2;
+        const cost = nat > avail ? 400 * ((nat - avail) / avail) ** 2 : last && !o.noOrphan ? 0 : 100 * ((avail - nat) / avail) ** 2;
         if (best[i] + cost + 2 < best[j]) {
           best[j] = best[i] + cost + 2;
           prev[j] = i;
@@ -7877,7 +7878,7 @@ function engrave(song, o) {
       return Math.max(...per0.map((q, i) => DRAWERS[kinds[i]].lineStart(q, keys.get(q.p.id), first, base, kScale(kinds[i]))));
     };
     const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
-    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, endPad: BAR_W, lineStart: headAt });
+    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, ...PPAR.noOrphan ? { noOrphan: true } : {}, endPad: BAR_W, lineStart: headAt });
     const { lineFrom, sysStarts } = ar, nSys = lineFrom.length, sysKeys = lineFrom.map((k) => new Map(keyAtCol[k]));
     const cols = merged.map((c, k) => ({ tick: c.tick, slot: c.slot, n: c.n, x: ar.xs[k], w: ar.ws[k], system: ar.system[k], bar: c.bar, units: c.members.map((m) => m.entry.ref) }));
     const at = /* @__PURE__ */ new Map();
@@ -8368,4 +8369,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-f37b33f794df.mjs.map
+//# sourceMappingURL=layout-worker-1e666b1953bc.mjs.map
