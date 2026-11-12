@@ -133,7 +133,7 @@ import { freshDesk, freshPartView, serializeDesk, unserializeDesk, serializeFind
 import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
 import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongLooks, type ResolvedLook } from "../score/clef.ts";
 import type { ClefHit } from "../render/engrave.ts";
-import { TAB20, partColorIndices, partAbbr } from "../ui/part-colors.ts";
+import { TAB20, partColorIndices, partAbbr, localPartName } from "../ui/part-colors.ts";
 
 installTouchTips();
 applyDocumentLang();   // <html lang> + CSS 里写死的几句：第一个做，后面画界面都已经是这个语言
@@ -2033,17 +2033,21 @@ function lyricReadingAt(i: number): LyricReading | null {
   return { parts, at: plan.entryOf.get(t.id) ?? -1, note: s.LANG === "zh" ? _t("小月相念成（音素 + 声调）：") : _t("小月相念成：") };
 }
 /** 每位歌手的类别色（tab20 下标）和谱前简写（v0.9.31；user「乐手名和颜色同意」）。简写要目录（仓鼠 v12 的 abbr）：没载就先缩名字，载好了重画。 */
-function partLooks(): { colors: number[]; abbrs: string[] } {
+function partLooks(): { colors: number[]; abbrs: string[]; names: string[] } {
   const labels = partLabels(D.st.song, D.extras), sounds = D.st.song.parts.map((p) => roleSound(D.extras, p.role));
   const colors = partColorIndices(sounds);
   const needCat = !catalogNow && D.st.song.parts.some((p) => !!(D.extras.lounge[p.role] as { concept?: unknown } | undefined)?.concept);
   if (needCat) void loadCatalog().then((c) => { catalogNow = c; view.render(); }).catch(() => undefined);
+  // 谱上显示的名字（谱面分家 5½）：界面不是英文时，名字就是目录里那件乐器自己的名字 = 换成目录里界面语言的名字（没有 = 原样）；简写跟着照定宽规矩缩。只管显示，数据不动
+  const ui = lang(), names: string[] = [];
   const abbrs = D.st.song.parts.map((p, k) => {
     const ids = (D.extras.lounge[p.role] as { concept?: { ids?: { wikidata?: string | null; local?: string | null } } } | undefined)?.concept?.ids;
     const c = catalogNow && ids ? (ids.wikidata ? catalogNow.byId.get(ids.wikidata) : undefined) ?? (ids.local ? catalogNow.byId.get(ids.local) ?? catalogNow.byId.get(`x:${ids.local}`) : undefined) : undefined;
-    return partAbbr(labels[k], { ...(c ? { conceptNames: [...(c.scoreName?.en ? [c.scoreName.en] : []), c.names.en, c.names.zh], ...(c.abbr?.en ? { conceptAbbr: c.abbr.en } : {}) } : {}), voice: sounds[k].startsWith("voice.") });
+    const conceptNames = c ? [...(c.scoreName?.en ? [c.scoreName.en] : []), c.names.en, c.names.zh] : undefined, local = c && ui !== "en" ? (c.names as Record<string, string | undefined>)[ui] : undefined;
+    names.push(localPartName(labels[k], { ...(conceptNames ? { conceptNames } : {}), ...(local ? { local } : {}) }) ?? labels[k]);
+    return partAbbr(labels[k], { ...(c ? { conceptNames: conceptNames!, ...(c.abbr?.en ? { conceptAbbr: c.abbr.en } : {}), ...(local ? { local } : {}) } : {}), voice: sounds[k].startsWith("voice.") });
   });
-  return { colors, abbrs };
+  return { colors, abbrs, names };
 }
 /** 整套鼓这位在整首里用到的鼓件（GM 鼓键）→ 名字（鼓谱表里烤好的中 / 英名，按界面语言挑；查不到的不写）。简谱整套鼓的图例用（谱面分家 5-6）。 */
 function kitNamesOf(partId: string): Record<number, string> {
@@ -2065,7 +2069,7 @@ function partViews(): PartView[] {
     // 台上那位的音域（简谱的八度基准按它定；人声 = 插件自报，乐器 = 目录里角色那件乐器的；鼓 / 固定敲一个键的不要；目录没载 = 先没有，partLooks 载好了会重画）
     const nota = plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}, rg = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p.role);
     const kitNames = nota.perc?.kind === "kit" ? kitNamesOf(p.id) : undefined;   // 整套鼓：用到的鼓件 → 名字（按界面语言；简谱的图例印）
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), ...(rg ? { range: { lo: rg.lo, hi: rg.hi } } : {}), ...(kitNames ? { kitNames } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), ...(rg ? { range: { lo: rg.lo, hi: rg.hi } } : {}), ...(kitNames ? { kitNames } : {}), id: p.id, name: looks.names[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -4221,6 +4225,7 @@ Object.assign((window as unknown as { __moonsinger: Record<string, unknown> })._
   threadKinds: () => Object.fromEntries((["singer-worker", "mp3-worker", "studio-worklet", "layout-worker", "encode-worker"] as const).map((n) => [n, threadUrls(n).map((u) => u.slice(0, u.indexOf(":")))])),
   mp3Test: (samples = 44100) => encodeMp3(new Float32Array(samples).map((_, i) => Math.sin(i / 10) * 0.3), null, 44100, 64).then((b) => b.length),
   availability: () => availability(),
+  saveBytes: () => Array.from(bytesNow()),   // 这首歌现在存下去的 .mxl 字节（谱面分家 5½：切界面语言前后文件字节不变）
 });
 diagNote("boot", `deployment ${deployment()} · storage ${availability()}`);
 // 派生缓存库改了名（带 GUID，家族工单 A2 ⑤）：老的 moonsinger-thumbs / facts / speech 不搬，空闲片里探到就删（一页一次；被别的标签页占着 = 下次再来）

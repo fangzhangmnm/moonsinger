@@ -1,6 +1,6 @@
 // 歌手的类别色 + 谱前简写（v0.9.31；user「我希望有非常克制的color coding， mpl的 tab20？ 然后不同颜色默认绑不同乐器类别」「乐手名和颜色同意」）。created 2026-10-10 by Claude Opus 5.5
 import { describe, it, eq, assert } from "./runner.mjs";
-import { categoryOfSound, partColorIndices, partAbbr, shortName, TAB20, fitAbbr, dispWidth, ABBR_W } from "../src/ui/part-colors.ts";
+import { categoryOfSound, partColorIndices, partAbbr, shortName, TAB20, fitAbbr, dispWidth, ABBR_W, localPartName } from "../src/ui/part-colors.ts";
 
 describe("类别色", () => {
   it("sound id 的前缀 = 类别；同一类都用深的那个（v0.10.43；原来第二位用浅的——user「二号同样乐器不要用弱颜色，宁愿用和一号一样的」）", () => {
@@ -34,5 +34,14 @@ describe("谱前简写：大小写 + 定宽（v0.9.41；仓鼠查出的 bug + us
   it("没有目录简写 / 自己起的名字：先缩、再按定宽裁", () => {
     eq(partAbbr("Helicopter", {}), "Hel."); eq(partAbbr("My Lead Synth 2", {}), "MLS. 2"); eq(partAbbr("小提琴手", {}), "小提"); eq(partAbbr("つくよみちゃん", {}), "つく");
     assert(dispWidth(partAbbr("Supercalifragilistic Expialidocious Orchestra Hit 12", {})) <= ABBR_W);
+  });
+  it("界面语言的名字（谱面分家 5½）：名字就是目录里那件乐器自己的名字 = 换成那种语言的名字、号接回去；自己起的 / 没有那种语言的名字 = 原样；简写照定宽规矩缩", () => {
+    const flute = { conceptNames: ["Flute", "flute", "长笛"], local: "长笛" };
+    eq(localPartName("Flute", flute), "长笛"); eq(localPartName("flute 2", flute), "长笛 2", "不分大小写、号接回去");
+    eq(localPartName("My Flute", flute), null, "自己起的名字原样"); eq(localPartName("Flute", { conceptNames: flute.conceptNames }), null, "没有那种语言的名字 = 原样");
+    eq(localPartName("Vocals", {}), null, "没有目录里的乐器（人声预设）= 原样");
+    eq(partAbbr("Flute", { ...flute, conceptAbbr: "Fl." }), "长笛", "简写：中文名放得下原样（不用英文的 Fl.）");
+    eq(partAbbr("Santoor 2", { conceptNames: ["Santoor"], conceptAbbr: "San.", local: "桑图尔琴" }), "桑图 2", "放不下截到那一栏的宽（号算在宽里）");
+    eq(partAbbr("Flute", { conceptNames: flute.conceptNames, conceptAbbr: "Fl." }), "Fl.", "英文界面（不给 local）照旧");
   });
 });

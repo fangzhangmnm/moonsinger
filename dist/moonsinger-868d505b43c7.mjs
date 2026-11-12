@@ -15576,9 +15576,15 @@ function fitAbbr(base2, num2 = "", W3 = ABBR_W) {
 }
 function partAbbr(label, o10) {
   const m2 = / (\d+)$/.exec(label), base2 = m2 ? label.slice(0, -m2[0].length) : label, num2 = m2 ? ` ${m2[1]}` : "", low = base2.toLowerCase();
+  if (o10.local && o10.conceptNames?.some((n10) => n10.toLowerCase() === low)) return fitAbbr(o10.local, num2);
   if (o10.conceptAbbr && o10.conceptNames?.some((n10) => n10.toLowerCase() === low)) return fitAbbr(o10.conceptAbbr, num2);
   if (o10.voice && VOICE_ABBR[base2]) return fitAbbr(VOICE_ABBR[base2], num2);
   return fitAbbr(shortName(base2), num2);
+}
+function localPartName(label, o10) {
+  if (!o10.local) return null;
+  const m2 = / (\d+)$/.exec(label), base2 = m2 ? label.slice(0, -m2[0].length) : label, num2 = m2 ? ` ${m2[1]}` : "", low = base2.toLowerCase();
+  return o10.conceptNames?.some((n10) => n10.toLowerCase() === low) ? o10.local + num2 : null;
 }
 
 // src/ui/score-view.ts
@@ -59265,12 +59271,15 @@ function partLooks() {
     catalogNow = c10;
     view.render();
   }).catch(() => void 0);
+  const ui3 = lang(), names = [];
   const abbrs = D3.st.song.parts.map((p2, k2) => {
     const ids = D3.extras.lounge[p2.role]?.concept?.ids;
     const c10 = catalogNow && ids ? (ids.wikidata ? catalogNow.byId.get(ids.wikidata) : void 0) ?? (ids.local ? catalogNow.byId.get(ids.local) ?? catalogNow.byId.get(`x:${ids.local}`) : void 0) : void 0;
-    return partAbbr(labels[k2], { ...c10 ? { conceptNames: [...c10.scoreName?.en ? [c10.scoreName.en] : [], c10.names.en, c10.names.zh], ...c10.abbr?.en ? { conceptAbbr: c10.abbr.en } : {} } : {}, voice: sounds[k2].startsWith("voice.") });
+    const conceptNames = c10 ? [...c10.scoreName?.en ? [c10.scoreName.en] : [], c10.names.en, c10.names.zh] : void 0, local = c10 && ui3 !== "en" ? c10.names[ui3] : void 0;
+    names.push(localPartName(labels[k2], { ...conceptNames ? { conceptNames } : {}, ...local ? { local } : {} }) ?? labels[k2]);
+    return partAbbr(labels[k2], { ...c10 ? { conceptNames, ...c10.abbr?.en ? { conceptAbbr: c10.abbr.en } : {}, ...local ? { local } : {} } : {}, voice: sounds[k2].startsWith("voice.") });
   });
-  return { colors, abbrs };
+  return { colors, abbrs, names };
 }
 function kitNamesOf(partId) {
   const zh2 = lang().startsWith("zh"), out = {};
@@ -59294,7 +59303,7 @@ function partViews() {
     const ly2 = plug?.lyrics, noLyrics = ly2 === "hum" || ly2 === "none" ? _t("{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220", { p: labels[k2], p2: ly2 === "hum" ? _t("\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC") : _t("\u4E0D\u5531\u6B4C\u8BCD") }) : "";
     const nota = plug?.notation?.({ extras: D3.extras, role: p2.role }) ?? {}, rg2 = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p2.role);
     const kitNames = nota.perc?.kind === "kit" ? kitNamesOf(p2.id) : void 0;
-    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, ...rg2 ? { range: { lo: rg2.lo, hi: rg2.hi } } : {}, ...kitNames ? { kitNames } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p2.role) };
+    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, ...rg2 ? { range: { lo: rg2.lo, hi: rg2.hi } } : {}, ...kitNames ? { kitNames } : {}, id: p2.id, name: looks.names[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p2.role) };
   });
 }
 function afterViewChange() {
@@ -62542,7 +62551,9 @@ Object.assign(window.__moonsinger, {
   readSite: (path, sha256) => getBytes(path, sha256 ? { sha256 } : {}).then((b3) => b3.length),
   threadKinds: () => Object.fromEntries(["singer-worker", "mp3-worker", "studio-worklet", "layout-worker", "encode-worker"].map((n10) => [n10, threadUrls(n10).map((u2) => u2.slice(0, u2.indexOf(":")))])),
   mp3Test: (samples = 44100) => encodeMp3(new Float32Array(samples).map((_2, i10) => Math.sin(i10 / 10) * 0.3), null, 44100, 64).then((b3) => b3.length),
-  availability: () => availability()
+  availability: () => availability(),
+  saveBytes: () => Array.from(bytesNow())
+  // 这首歌现在存下去的 .mxl 字节（谱面分家 5½：切界面语言前后文件字节不变）
 });
 diagNote("boot", `deployment ${deployment()} \xB7 storage ${availability()}`);
 {
@@ -62598,4 +62609,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ac81bdc46ab3.mjs.map
+//# sourceMappingURL=moonsinger-868d505b43c7.mjs.map
