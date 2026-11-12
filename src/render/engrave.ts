@@ -128,6 +128,11 @@ export interface RestHit { index: number; system: number; x: number; y: number; 
 /** 纸面最上面的歌名那一条（点了就地改）。 */
 export interface TitleHit { x: number; y: number; w: number; h: number; baseline: number; size: number }
 export interface Box { x: number; y: number; w: number; h: number }
+/** 不印的状态提示的一条：hiddenPapers = 隐藏了 N 段（全部视图）、hiddenParts = 隐藏了 N 个声部（只有一张纸、曲段名那一条没画时；paper = 哪张纸）、expr = 演奏法和表情：不显示。 */
+export type StatusHintKind = "hiddenPapers" | "hiddenParts" | "expr";
+export interface StatusHintItem { kind: StatusHintKind; s: string; /** 这一条在这一行里从 x 起多远、多宽（px）。 */ dx: number; w: number; paper?: string }
+/** 一行状态提示：x / y = 第一条字的左端和基线（px），size = 字号；items 之间用 sep 隔开（各点各的）；hit = 点击区的上下（px）：至少 3 个线间距高，往上下扩时不盖到别的点得到的东西。 */
+export interface StatusHintLine { system: number; x: number; y: number; size: number; sep: string; items: StatusHintItem[]; hit: { y0: number; y1: number } }
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   /** 字的尺子（px）= sp × textScale（刀 2）：覆盖层的钮、提示字、虚线框的字按它，紧凑档不跟着谱缩。 */
@@ -158,7 +163,9 @@ export interface Layout {
   /** s = 写什么（「1=C」/ 小调「6=A」；v0.16.83）。 */
   /** 「演奏法和表情：不显示」的淡提示（7-G 重做，user 11-12：原来的「折叠 N」小标「又不好懂，而且位置也错了，又还和别人打架」）：整首一个，第一行谱头那一行的右端；
    *  不印的提示（只躲不推、躲开歌名 / 作者栏 / 曲段名那一条）；覆盖层照它画字，点了 = 页面设置「看谱」页落在那一项。只在不显示、整首确有收起来的记号时有。 */
-  foldHint: { system: number; x: number; y: number; size: number; s: string } | null;
+  /** 不印的状态提示（统筹 2026-11-12「不印的状态提示都住同一个地方、同一种样子」；原来「演奏法和表情：不显示」一条 + 歌名那一条上的「隐藏 N」「隐藏 N 段」小标）：
+   *  淡字一串，摆在第一张画出来的纸的第一行谱头那一行右端（只躲不推；整串放不下走后备位置，还放不下一条一行）。见 StatusHintLine。 */
+  statusHints: StatusHintLine[];
   keyHints: { system: number; index: number; /** 它指的那个调号 token 的 id（守卫 4：编辑器里的提示也算画出来了，第五刀 5-3）。 */ tok?: number; x: number; y: number; size: number; s: string }[];
   /** 整首最下面留的那一条（chrome.tail 给了才有）：覆盖层在里面画「＋ 新曲段」。 */
   tail: (Box & { paper: string }) | null;
@@ -293,7 +300,22 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
 const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: Layout["names"] = [], keyHints: Layout["keyHints"] = [];
   // 「演奏法和表情：不显示」的淡提示：不显示、并且看得见的声部里确有收起来的记号才要（整首一个，放在第一张画出来的纸上）
   const foldHintWanted = !!foldedPapers && [...foldedPapers.values()].some((pp) => o.parts.some((v) => !v.hidden && foldedCount([pp.tracks[v.id]]) > 0));
-  let foldHint: Layout["foldHint"] = null;
+  const statusHints: StatusHintLine[] = [];
+  const hidPaperCount = o.onlyPaper ? 0 : song.papers.filter((p) => p.hidden).length;   // 「隐藏了 N 段」：全部视图里隐藏着的整张纸（本段视图不算，同原来的小标）
+  let statusDone = false;
+  /** 摆一串不印的状态提示（只躲不推）：整串先试 tries(宽)；放不下（往上爬也不行）= 一条一行，各自试同一组位置。 */
+  const STATUS_SEP = " · ";
+  const placeStatus = (system: number, list: { kind: StatusHintKind; s: string; paper?: string }[], triesFor: (w: number) => { x: number; y: number }[], busy: Ink[]) => {
+    const fs = tx("key-hint"), ws = list.map((it) => P(mw("key-hint", it.s))), sepW = P(mw("key-hint", STATUS_SEP)), W = ws.reduce((a, b) => a + b, 0) + sepW * (list.length - 1);
+    const hint = (w: number) => ({ part: { ink: { x0: 0, x1: w, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [] }, tries: triesFor(w), climb: fs * 1.1 });
+    const [all] = placeHints(busy, [hint(W)], P(0.3));
+    if (all!.ok || list.length === 1) {
+      let dx = 0; const items = list.map((it, k) => { const r = { ...it, dx, w: ws[k]! }; dx += ws[k]! + sepW; return r; });
+      statusHints.push({ system, x: all!.x, y: all!.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all!.y - fs * 0.8, y1: all!.y + fs * 0.2 } });
+      return;
+    }
+    placeHints(busy, list.map((_, k) => hint(ws[k]!)), P(0.3)).forEach((pl, k) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list[k]!, dx: 0, w: ws[k]! }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
+  };
   let shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
   const rowAbove = new Map<number, number>(), lyricOff = new Map<number, number>();   // 行号 → 谱上面留多少（sp）/ 歌词基线在第一线下多少（sp）。刀 4b 起力度 / 反复 / 速度 / 风格 / 八度线不再有「行 → y」的表：每一样各自贴天际线
@@ -767,27 +789,57 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const at = placeHints(printed, hints, P(0.15));
       hints.forEach((h, k) => { const { x, y } = at[k]!; for (const pr of h.part.prims) { const q = { ...pr }; movePrim(q, x, y); prims.push(q); } h.onPlace?.(x, y); });
     }
-    // 「演奏法和表情：不显示」的淡提示（7-G 重做）：这张纸是第一张画出来的、还没摆过 = 摆在第一行谱头那一行（速度 / 「1=C」那一行）的右端；
-    //   放不下 → 它上面靠右 → 第一行左上。只躲不推：躲开这里所有的墨（印的、不印的、行首的淡提示）+ 歌名 / 作者栏 / 曲段名那一条（覆盖层的钮在那儿）
-    if (foldHintWanted && !foldHint) {
+    // 不印的状态提示（7-G 的「演奏法和表情：不显示」→ 统筹 2026-11-12 收成一串，加上原来歌名那一条上的「隐藏 N」「隐藏 N 段」小标）：
+    //   这张纸是第一张画出来的、还没摆过 = 摆在第一行谱头那一行（速度 / 「1=C」那一行）的右端；放不下 → 它上面靠右 → 第一行左上（整串）；还放不下 = 一条一行。
+    //   只躲不推：躲开这里所有的墨（印的、不印的、行首的淡提示）+ 歌名 / 作者栏 / 曲段名那一条（覆盖层的钮在那儿）
+    const statusList = statusDone ? [] : [
+      ...(hidPaperCount ? [{ kind: "hiddenPapers" as const, s: _tIn(o.locale, "隐藏了 {n} 段", { n: hidPaperCount }) }] : []),
+      ...(song.papers.length === 1 && !pTitle.shown && hiddenParts.length ? [{ kind: "hiddenParts" as const, s: _tIn(o.locale, "隐藏了 {n} 个声部", { n: hiddenParts.length }), paper: paper.id }] : []),   // 只有一张纸、曲段名那一条没画：原来挂在「⋯」右边的那颗（画了曲段名那一条的照旧在那一条里）
+      ...(foldHintWanted ? [{ kind: "expr" as const, s: _tIn(o.locale, "演奏法和表情：不显示") }] : []),
+    ];
+    if (statusList.length) {
       const r0 = rows.findIndex((r) => r.paper === paper.id);
       if (r0 >= 0) {
-        const sys = rows[r0]!, s = _tIn(o.locale, "演奏法和表情：不显示"), fs = tx("key-hint"), w = P(mw("key-hint", s));
+        statusDone = true;
+        const sys = rows[r0]!, fs = tx("key-hint");
         let base = sys.top + fs;   // 没有速度 / 谱头的字 = 这一行顶上
         for (let i = p0.p; i < prims.length; i++) { const p = prims[i]!; if (p.t === "text" && /(^|\s)(tempo-word|jp-head)(\s|$)/.test(p.cls ?? "") && p.y >= sys.top - P(2) && p.y <= sys.staffTop + P(0.5)) base = Math.max(base === sys.top + fs ? -Infinity : base, p.y); }
-        const tries = [{ x: P(right) - w, y: base }, { x: P(right) - w, y: base - fs * 1.3 }, { x: P(MARGIN), y: sys.top - fs * 0.2 }];
-        const ys = tries.map((t) => t.y), lo = Math.min(...ys) - P(12), hi = Math.max(...ys) + P(12), busy: Ink[] = [];
+        const triesFor = (w: number) => [{ x: P(right) - w, y: base }, { x: P(right) - w, y: base - fs * 1.3 }, { x: P(MARGIN), y: sys.top - fs * 0.2 }];
+        const ys = triesFor(0).map((t) => t.y), lo = Math.min(...ys) - P(12), hi = Math.max(...ys) + P(12), busy: Ink[] = [];
         for (const p of prims) { const y = primY(p); if (y < lo || y > hi) continue; primInk(p, sp, textW, (x0, x1, y0, y1) => busy.push({ x0, x1, y0, y1 })); }
         for (const k of keyHints) if (k.system === r0) busy.push({ x0: k.x, x1: k.x + P(mw("key-hint", k.s)), y0: k.y - k.size * 0.8, y1: k.y + k.size * 0.2 });
         busy.push({ x0: title.x, x1: title.x + title.w, y0: title.y, y1: title.y + title.h });   // 歌名那一条（两边是覆盖层的「⋯」和页面设置钮）
         if (credits) busy.push({ x0: credits.x, x1: credits.x + credits.w, y0: credits.y, y1: credits.y + credits.h });
         else busy.push({ x0: o.width - P(MARGIN + 6), x1: o.width - P(MARGIN), y0: y0Credits - cs * 1.1, y1: y0Credits + cs * 0.3 });   // 作者栏空着 = 覆盖层的「作者」占位
         if (pTitle.shown) busy.push({ x0: P(MARGIN), x1: o.width - P(MARGIN), y0: pTitle.y, y1: pTitle.y + pTitle.h });   // 曲段名那一条（右边是曲段控件）
-        const [pl] = placeHints(busy, [{ part: { ink: { x0: 0, x1: w, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [] }, tries, climb: fs * 1.1 }], P(0.3));
-        foldHint = { system: r0, x: pl!.x, y: pl!.y, size: fs, s };
+        placeStatus(r0, statusList, triesFor, busy);
       }
     }
     papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(note ? { note } : {}), ...foldedHit(paper.id, visible) });
+  }
+  // 一张纸都没画出来（全隐藏着）也要说：状态提示摆在歌名那一块下面靠左（只躲不推）
+  if (!statusDone && hidPaperCount) {
+    const fs = tx("key-hint"), busy: Ink[] = [{ x0: title.x, x1: title.x + title.w, y0: title.y, y1: title.y + title.h }];
+    if (credits) busy.push({ x0: credits.x, x1: credits.x + credits.w, y0: credits.y, y1: credits.y + credits.h });
+    if (arrangement) busy.push({ x0: arrangement.x, x1: arrangement.x + arrangement.w, y0: arrangement.y, y1: arrangement.y + arrangement.h });
+    placeStatus(-1, [{ kind: "hiddenPapers", s: _tIn(o.locale, "隐藏了 {n} 段", { n: hidPaperCount }) }], () => [{ x: P(MARGIN), y: Math.max(title.y + title.h, arrangement ? arrangement.y + arrangement.h : 0) + fs }], busy);
+  }
+  // 状态提示的点击区：淡字本身矮，上下扩到至少 3 个线间距高（同别的谱上控件）；往上 / 往下扩时碰到别的点得到的东西就停在它边上，差的那截给另一边（统筹 2026-11-12）
+  if (statusHints.length) {
+    const clickables: Box[] = [...marks, ...dyns, ...clefs, ...chordTagsOut, title, ...(credits ? [credits] : []), ...(arrangement ? [arrangement] : []),
+      ...papersHit.filter((pp) => pp.title.shown).map((pp) => ({ x: 0, y: pp.title.y, w: o.width, h: pp.title.h })),
+      ...keyHints.map((k) => ({ x: k.x, y: k.y - k.size * 0.8, w: P(mw("key-hint", k.s)), h: k.size })), ...notes.map((nt) => ({ x: nt.x, y: nt.y - P(1), w: nt.w, h: P(2) }))];
+    const H = P(CTL_H);
+    for (const ln of statusHints) {
+      const x0 = ln.x, x1 = ln.x + (ln.items.at(-1)!.dx + ln.items.at(-1)!.w), t0 = ln.hit.y0, t1 = ln.hit.y1, extra = Math.max(0, H - (t1 - t0));
+      let upMax = Infinity, downMax = Infinity;
+      for (const b of [...clickables, ...statusHints.filter((o2) => o2 !== ln).map((o2) => ({ x: o2.x, y: o2.hit.y0, w: o2.items.at(-1)!.dx + o2.items.at(-1)!.w, h: o2.hit.y1 - o2.hit.y0 }))]) {
+        if (b.x + b.w <= x0 || b.x >= x1) continue;
+        if (b.y + b.h <= t0) upMax = Math.min(upMax, t0 - (b.y + b.h)); else if (b.y >= t1) downMax = Math.min(downMax, b.y - t1);
+      }
+      let up = Math.min(upMax, extra / 2); const down = Math.min(downMax, extra - up); up = Math.min(upMax, extra - down);
+      ln.hit = { y0: t0 - up, y1: t1 + down };
+    }
   }
   // 分页：页框（压在最底下）+ 页码；高 = 最后一页的底
   const pages: Layout["pages"] = [];
@@ -802,7 +854,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     prims.unshift(...frames);
   }
   const height = PG ? Math.max(pageTopY(pageNo) + P(PG.h), tailBottom) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, tp: sp * ts, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, foldHint, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)) };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, tp: sp * ts, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, statusHints, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)) };
 }
 
 export type { Token };

@@ -3,7 +3,7 @@
 //   每个图元的墨迹框两两比（test/fixtures/layout/collide.ts：字用仓里那款黑体逐个字形取真的墨迹框，排版也用这款字量 = PDF 印出来的；调号的淡提示也算）。
 //   相叠分三张明着的单子：ALLOWED（本来就该叠）、PENDING（查出来了、等统筹定谁让谁）、STAFF_KNOWN（五线谱查出来的，这一串只报不修）。
 //   单子之外的相叠 = 红。以后加新的画法 / 记号，撞了这里自己会报。单子里的条目没再出现 = 也红（修好了就从单子里划掉，单子不留死条目）。
-import { describe, it, assert } from "./runner.mjs";
+import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave, type EngraveOpts, type Layout, type Prim } from "../src/render/engrave.ts";
 import { printOpts, textEm } from "../src/export/score-pdf.ts";
 import { parseTtf } from "../src/export/ttf.ts";
@@ -86,24 +86,42 @@ describe("版面上不许叠在一起（7-K）", () => {
   });
 });
 
-describe("「演奏法和表情：不显示」的淡提示不和别人打架（7-G 重做；user「位置也错了，又还和别人打架」）", () => {
+describe("不印的状态提示不和别人打架（7-G 重做 → 统筹 2026-11-12 收成一串：隐藏了 N 段 · 隐藏了 N 个声部 · 演奏法和表情：不显示）", () => {
   const LONG = "一个很长很长的歌名用来测试两行的标题会不会和谱头那一行右端的提示打架以及作者栏";
-  for (const notation of ["staff", "jianpu", "letters"] as const) it(`${notation}：两行的长歌名 + 作者栏 + 多段，提示不压任何墨、歌名、作者栏、曲段名那一条（曲段控件），也不出这一行右端`, () => {
-    const s0 = { ...asFrozen(fullSong()), notation, title: LONG, credits: "词：某某\n曲：某某", expressions: false } as Song;
-    for (const v of FULL_VIEWS.filter((x) => ["edit-all", "edit-pages", "print"].includes(x.name))) {
-      const o = { ...v.opts(s0), measure: real } as EngraveOpts, L = engrave(s0, o), fh = L.foldHint;
-      assert(!!fh, `${v.name}：有提示`);
-      const w = real.widthPx(fh!.s, fh!.size, L.sp, o.textScale ?? 1), box = { x0: fh!.x, x1: fh!.x + w, y0: fh!.y - fh!.size * 0.8, y1: fh!.y + fh!.size * 0.2 };
-      const hit = (b: { x0: number; x1: number; y0: number; y1: number }) => box.x0 < b.x1 - EPS && b.x0 < box.x1 - EPS && box.y0 < b.y1 - EPS && b.y0 < box.y1 - EPS;
-      const bad = inkOf(L, (t, size) => real.widthPx(t, size, L.sp, o.textScale ?? 1), (p) => p.t === "rect" && has(p, "page"), font).filter(hit).map((k) => kindOf(allPrims(L)[k.i]!));
-      assert(!bad.length, `${v.name}：压到了 ${[...new Set(bad)].join(" ")}`);
-      const t = L.title; assert(!hit({ x0: t.x, x1: t.x + t.w, y0: t.y, y1: t.y + t.h }), `${v.name}：压到歌名那一条`);
-      for (const pp of L.papers) if (pp.title.shown) assert(!hit({ x0: 0, x1: L.width, y0: pp.title.y, y1: pp.title.y + pp.title.h }), `${v.name}：压到曲段名那一条（曲段控件）`);
-      assert(box.x1 <= L.width - L.pageX.left * 0 + 1 && box.x1 <= o.width + 1, `${v.name}：出了这一行右端`);
+  /** 两种组合（三条凑不到一起：「隐藏了 N 段」只在几张纸的全部视图里有，「隐藏了 N 个声部」只在一张纸、曲段名那一条没画时有）。 */
+  const combos = (notation: "staff" | "jianpu" | "letters") => {
+    const base = { ...asFrozen(fullSong()), notation, title: LONG, credits: "词：某某\n曲：某某", expressions: false } as Song;
+    const multi = { ...base, papers: base.papers.map((p, k) => (k === 1 ? { ...p, hidden: true } : p)) } as Song;   // 藏一张纸 → 隐藏了 1 段 + 演奏法
+    const one = { ...base, papers: [{ ...base.papers[0]!, name: "" }] } as Song;   // 只有一张纸、没名字 → 隐藏了 N 个声部 + 演奏法
+    return [{ name: "隐藏了 N 段 + 演奏法", song: multi, hide: false, want: ["hiddenPapers", "expr"] }, { name: "隐藏了 N 个声部 + 演奏法", song: one, hide: true, want: ["hiddenParts", "expr"] }];
+  };
+  for (const notation of ["staff", "jianpu", "letters"] as const) it(`${notation}：两行的长歌名 + 作者栏，两种组合 × 编辑 / 分页 / 印 / 窄屏：提示不压任何墨、歌名、作者栏、曲段名那一条，不出右端，几条之间不叠；点击区不比字小`, () => {
+    for (const c of combos(notation)) {
+      const labels = c.song.parts.map((p) => p.id), hide = new Set(c.hide ? [c.song.parts[1]!.id] : []);   // 单纸那种：藏第二位（用全的测试歌的视图参数要第二张纸，这里用通用的编辑 / 印参数）
+      const vs: [string, EngraveOpts][] = c.hide
+        ? [["编辑", editorBase(c.song, labels, hide)], ["印", printOpts(c.song, SP, views(c.song, labels, false, hide), real, true) as EngraveOpts]]
+        : FULL_VIEWS.filter((x) => ["edit-all", "edit-pages", "print"].includes(x.name)).map((v) => [v.name, v.opts(c.song) as EngraveOpts]);
+      for (const [vn, o0] of vs) for (const narrow of [false, true]) {
+      const o = { ...o0, measure: real, ...(narrow ? { width: 360 } : {}) } as EngraveOpts, L = engrave(c.song, o), tag = `${c.name} · ${vn}${narrow ? " · 窄屏" : ""}`;
+      const kinds = L.statusHints.flatMap((ln) => ln.items.map((it) => it.kind));
+      eq(kinds.join(","), c.want.join(","), `${tag}：该有的几条都在、先后对`);
+      const boxes = L.statusHints.flatMap((ln) => ln.items.map((it) => { const w = real.widthPx(it.s, ln.size, L.sp, o.textScale ?? 1); return { x0: ln.x + it.dx, x1: ln.x + it.dx + w, y0: ln.y - ln.size * 0.8, y1: ln.y + ln.size * 0.2 }; }));
+      const ink = inkOf(L, (t, size) => real.widthPx(t, size, L.sp, o.textScale ?? 1), (p) => p.t === "rect" && has(p, "page"), font), AP = allPrims(L);
+      boxes.forEach((box, i) => {
+        const hit = (b: { x0: number; x1: number; y0: number; y1: number }) => box.x0 < b.x1 - EPS && b.x0 < box.x1 - EPS && box.y0 < b.y1 - EPS && b.y0 < box.y1 - EPS;
+        const bad = ink.filter(hit).map((k) => kindOf(AP[k.i]!));
+        assert(!bad.length, `${tag} · 第 ${i + 1} 条：压到了 ${[...new Set(bad)].join(" ")}`);
+        const t = L.title; assert(!hit({ x0: t.x, x1: t.x + t.w, y0: t.y, y1: t.y + t.h }), `${tag}：压到歌名那一条`);
+        if (L.credits) assert(!hit({ x0: L.credits.x, x1: L.credits.x + L.credits.w, y0: L.credits.y, y1: L.credits.y + L.credits.h }), `${tag}：压到作者栏`);
+        for (const pp of L.papers) if (pp.title.shown) assert(!hit({ x0: 0, x1: L.width, y0: pp.title.y, y1: pp.title.y + pp.title.h }), `${tag}：压到曲段名那一条（曲段控件）`);
+        assert(box.x1 <= o.width + 1, `${tag}：出了右端`);
+        boxes.forEach((b2, j) => { if (j > i) assert(!hit(b2), `${tag}：第 ${i + 1}、${j + 1} 条叠在一起`); });
+      });
+      for (const ln of L.statusHints) assert(ln.hit.y0 <= ln.y - ln.size * 0.8 + 1e-6 && ln.hit.y1 >= ln.y + ln.size * 0.2 - 1e-6, `${tag}：点击区比字还小`);
+      }
     }
   });
 });
-
 
 describe("段尾的力度在行尾挤住了：挪到外面一道（统筹 2026-11-12 裁定：力度不占横向、不开口子）", () => {
   // 一个音的滚奏写「ppp < fff」放在一行的最后（7-N「变到」放的 fff 挂在这一段结尾、后面没有音）：前面 n 个八分音符把这一行挤到不同程度——

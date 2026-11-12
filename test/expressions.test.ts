@@ -74,7 +74,7 @@ describe("演奏法和表情不显示（7-G）· 淡提示什么时候有", () =
   it("不显示、但整首没有一个能收起来的记号 = 不出提示（没收起来什么，就不打扰）", () => {
     const s = mapNotes(fullSong(), (t) => { const n = { ...t }; delete n.art; delete n.slur; delete n.inhale; return n; });
     const bare = { ...s, papers: s.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).map(([k, ts]) => [k, ts.filter((t) => t.kind !== "dyn" && t.kind !== "hairpin")])) })) };
-    eq(lay(hide(bare)).foldHint, null);
+    eq(lay(hide(bare)).statusHints.some((ln) => ln.items.some((it) => it.kind === "expr")), false);
   });
 });
 
@@ -95,8 +95,9 @@ describe("演奏法和表情不显示（7-G）· 排版", () => {
       }
       assert(B.papers.some((p) => (p.folded ?? 0) > 0), "测试歌里有折叠的");
       assert(A.papers.every((p) => p.folded === undefined), "显示时没有「折叠 N」");
-      assert(!!B.foldHint && A.foldHint === null, "「演奏法和表情：不显示」的淡提示：不显示时有一个、显示时没有（7-G 重做）");
-      eq(B.foldHint!.system, B.systems.findIndex((r) => r.paper === B.papers.find((p) => !p.hidden)!.id), "在第一张画出来的纸的第一行");
+      const ex = (L: typeof A) => L.statusHints.filter((ln) => ln.items.some((it) => it.kind === "expr"));
+      assert(ex(B).length === 1 && ex(A).length === 0, "「演奏法和表情：不显示」的淡提示：不显示时有一个、显示时没有（7-G 重做；2026-11-12 起是状态提示里的一条）");
+      eq(ex(B)[0]!.system, B.systems.findIndex((r) => r.paper === B.papers.find((p) => !p.hidden)!.id), "在第一张画出来的纸的第一行");
     });
     it(`${nota}：只含零宽记号的歌——行一一对应、每行不高于显示时、墨的上沿不更高，力度撑高了的行变矮；音的横坐标、在哪一行都不变`, () => {
       const s = zeroWidthOnly(withNotation(fullSong(), nota)), A = lay(s), B = lay(hide(s));

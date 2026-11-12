@@ -451,6 +451,11 @@ body:not(.print-look) .staff-svg .part-name.focus { fill: var(--accent); }      
 .ov-ph-arr { overflow: hidden; text-overflow: ellipsis; }
 .ov-arr-empty { color: var(--muted); opacity: .6; }
 .ov-key-hint { background: none; border: 0; padding: 0; color: var(--muted); opacity: .6; }   /* 专业模式 C 调的「1=C」 */
+/* 不印的状态提示（统筹 2026-11-12：隐藏了 N 段 · 隐藏了 N 个声部 · 演奏法和表情：不显示，同一种淡字、同一个位置）：不是小钮（压掉 .ov-hidden 的虚线框），
+   点击区 = 字上下各扩 --hit-up / --hit-down（排版算好的：至少 3 个线间距高、不盖别的点得到的东西）；中间的「·」不接点 */
+.ov-status-hint, .ov-status-hint.ov-hidden { padding: 0; width: auto; height: auto; font-weight: inherit; border: 0; background: none; color: var(--muted); }
+.ov-status-hint::before { content: ""; position: absolute; left: 0; right: 0; top: calc(-1 * var(--hit-up, 0px)); bottom: calc(-1 * var(--hit-down, 0px)); }
+.ov-status-sep { pointer-events: none; }
 .finder.is-playing .prov-b [data-v="play"] { display: none; }   /* 放着歌的时候不给「听开头」（v0.16.35；user 11-09） */
 .ctx-menu.hidden-papers .hidp-row { display: flex; align-items: center; gap: .3em; }   /* 「隐藏 N 段」点开的一行：名字 + 去看 + 放出来（v0.16.34） */
 .ctx-menu.hidden-papers .hidp-name { flex: 1; padding: 0 .6em; font-weight: 600; white-space: nowrap; }

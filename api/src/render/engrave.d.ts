@@ -258,6 +258,28 @@ export interface Box {
     w: number;
     h: number;
 }
+/** 不印的状态提示的一条：hiddenPapers = 隐藏了 N 段（全部视图）、hiddenParts = 隐藏了 N 个声部（只有一张纸、曲段名那一条没画时；paper = 哪张纸）、expr = 演奏法和表情：不显示。 */
+export type StatusHintKind = "hiddenPapers" | "hiddenParts" | "expr";
+export interface StatusHintItem {
+    kind: StatusHintKind;
+    s: string; /** 这一条在这一行里从 x 起多远、多宽（px）。 */
+    dx: number;
+    w: number;
+    paper?: string;
+}
+/** 一行状态提示：x / y = 第一条字的左端和基线（px），size = 字号；items 之间用 sep 隔开（各点各的）；hit = 点击区的上下（px）：至少 3 个线间距高，往上下扩时不盖到别的点得到的东西。 */
+export interface StatusHintLine {
+    system: number;
+    x: number;
+    y: number;
+    size: number;
+    sep: string;
+    items: StatusHintItem[];
+    hit: {
+        y0: number;
+        y1: number;
+    };
+}
 export interface Layout {
     prims: Prim[];
     width: number;
@@ -342,13 +364,9 @@ export interface Layout {
     /** s = 写什么（「1=C」/ 小调「6=A」；v0.16.83）。 */
     /** 「演奏法和表情：不显示」的淡提示（7-G 重做，user 11-12：原来的「折叠 N」小标「又不好懂，而且位置也错了，又还和别人打架」）：整首一个，第一行谱头那一行的右端；
      *  不印的提示（只躲不推、躲开歌名 / 作者栏 / 曲段名那一条）；覆盖层照它画字，点了 = 页面设置「看谱」页落在那一项。只在不显示、整首确有收起来的记号时有。 */
-    foldHint: {
-        system: number;
-        x: number;
-        y: number;
-        size: number;
-        s: string;
-    } | null;
+    /** 不印的状态提示（统筹 2026-11-12「不印的状态提示都住同一个地方、同一种样子」；原来「演奏法和表情：不显示」一条 + 歌名那一条上的「隐藏 N」「隐藏 N 段」小标）：
+     *  淡字一串，摆在第一张画出来的纸的第一行谱头那一行右端（只躲不推；整串放不下走后备位置，还放不下一条一行）。见 StatusHintLine。 */
+    statusHints: StatusHintLine[];
     keyHints: {
         system: number;
         index: number; /** 它指的那个调号 token 的 id（守卫 4：编辑器里的提示也算画出来了，第五刀 5-3）。 */

@@ -119,9 +119,8 @@ export class ScoreOverlay {
           ...(v.edit ? [`<button class="ov-i ov-chip ov-menu" data-ov="menu" data-paper="${pid}" title="${esc(_t("这一段的菜单"))}">⋯</button>`] : []),
         ];
         add(`nav:${pp.id}:${k}:${papers.length}:${segOn}:${v.edit}:${pp.hiddenParts.join(",")}`, "div", "ov-nav", `right:${px(-L.content.right)};top:${px(y)};height:${px(h)};--ctl:${px(h)};--ctl-glyph:${px(CTL_GLYPH * sp)};--ctl-text:${px(CTL_TEXT * sp)}`, kids.join(""));
-      } else if (pp.hiddenParts.length) {   // 单纸：曲段名那一条（画了）右边 / 歌名那一条左边（「⋯」后面）
-        if (pp.title.shown) hiddenChip(pp.id, pp.hiddenParts, `right:${px(-(L.content.right - (CTL_H + 0.6) * sp))};top:${px(y)};height:${px(h)};font-size:${px(CTL_TEXT * sp)}`);
-        else hiddenChip(pp.id, pp.hiddenParts, `left:${px(L.content.left + (v.edit ? (CTL_H + 1.2) * sp : 0))};top:${px(L.title.y + 0.5 * sp)};height:${px(h)};font-size:${px(CTL_TEXT * sp)}`);
+      } else if (pp.hiddenParts.length && pp.title.shown) {   // 单纸、曲段名那一条画了：「隐藏 N」在那一条右边（没画 = 进下面 ⑥½ 的状态提示「隐藏了 N 个声部」；统筹 2026-11-12）
+        hiddenChip(pp.id, pp.hiddenParts, `right:${px(-(L.content.right - (CTL_H + 0.6) * sp))};top:${px(y)};height:${px(h)};font-size:${px(CTL_TEXT * sp)}`);
       }
       // 空着的曲段名 / 折叠的隐藏纸（名字 + 说明）/ 本段视图里隐藏纸的说明 / 没有声部的纸
       if (pp.title.shown && !paper.name && !pp.hidden) add(`ph-paper:${pp.id}`, "div", "ov-placeholder ov-ph-paper", text(pp.title.x, pp.title.baseline, pp.title.size), esc(_t("曲段名")));
@@ -136,14 +135,8 @@ export class ScoreOverlay {
         } else add(`add:${pp.id}:part`, "button", "ov-i ov-add", `${box(u.x, u.y, u.w, u.h)};${fs}`, esc(_t("＋ 声部")), { "data-ov": "add", "data-paper": pp.id, "data-kind": "part" });
       }
     }
-    // ③½ 「隐藏 N 段」（v0.16.34）：全部视图里隐藏的整张纸不排、不占地方（屏幕 = 印出来），提醒挂在歌名那一条左边、不占位
-    const hidPapers = L.papers.filter((pp) => pp.hidden).map((pp) => pp.id);
-    if (hidPapers.length && !v.onlyPaper) {
-      const h = CTL_H * sp, x = L.content.left + (!multi && v.edit ? (CTL_H + 1.2) * sp : 0);
-      add(`hidp:${hidPapers.join(",")}`, "button", "ov-i ov-chip ov-hidden ov-hidden-papers", `left:${px(x)};top:${px(L.title.y + 0.5 * sp)};height:${px(h)};font-size:${px(CTL_TEXT * sp)}`, esc(_t("隐藏 {n} 段", { n: hidPapers.length })),
-        { "data-ov": "hidpapers", title: _t("有 {n} 段隐藏着（不放、不印、不占地方）：点开去看或放出来", { n: hidPapers.length }) });
-    }
-    this.hiddenPapers = hidPapers;
+    // ③½ 全部视图里隐藏着的整张纸（v0.16.34）：提醒 = 下面 ⑥½ 状态提示里的「隐藏了 N 段」（原来歌名那一条左边的小标，统筹 2026-11-12 收进状态提示）
+    this.hiddenPapers = L.papers.filter((pp) => pp.hidden).map((pp) => pp.id);
     if (L.tail && v.edit) add("add:tail", "button", "ov-i ov-add", `${box(L.tail.x, L.tail.y, L.tail.w, L.tail.h)};font-size:${px(1.15 * sp)}`, esc(_t("＋ 新曲段")), { "data-ov": "add", "data-paper": L.tail.paper, "data-kind": "paper" });
     // ⑤ 空着的歌名 / 作者栏 / 编排（歌名、编排点了照旧是谱面的就地改——这几个字不接点；作者栏空着没有点击框 = 字本身接）
     if (!song.title) add("ph-title", "div", "ov-placeholder ov-ph-title", text((L.content.left + L.content.right) / 2, L.title.baseline, L.title.size * 0.8, "middle"), esc(_t("歌名")));
@@ -159,9 +152,21 @@ export class ScoreOverlay {
       add(`kh:${kh.system}:${kh.index}`, v.marks ? "button" : "div", `${v.marks ? "ov-i " : ""}ov-key-hint`, text(kh.x, kh.y, kh.size, "start", textStyleOf("key-hint")), kh.s,
         v.marks ? { "data-ov": "keyhint", "data-paper": sys.paper, "data-part": sys.part.replace(/~.*$/, ""), "data-index": String(kh.index), title: kh.s.startsWith("6=") ? _t("小调：和弦级数从 la 数。点 = 谱号 / 调号 / 拍号 / 速度") : _t("这里是 C 调（没有升降号）：点 = 谱号 / 调号 / 拍号 / 速度") } : {});
     }
-    // ⑥½ 「演奏法和表情：不显示」（7-G 重做；user 11-12「折叠八十…又不好懂，而且位置也错了，又还和别人打架」）：整首一个，排版挑好的地方（第一行谱头那一行右端，只躲不推）；
-    //   字 = 页面设置里那一项的名字和状态，淡色、不印；点了 = 开页面设置「看谱」页落在那一项
-    if (L.foldHint) { const fh = L.foldHint; add(`foldhint:${fh.system}`, "button", "ov-i ov-key-hint ov-fold-hint", text(fh.x, fh.y, fh.size, "start", textStyleOf("key-hint")), esc(_t("演奏法和表情：不显示")), { "data-ov": "folded", title: _t("演奏法和表情现在不显示（页面设置「看谱」里关着；播放照写的来）：点开去打开") }); }
+    // ⑥½ 不印的状态提示（统筹 2026-11-12「不印的状态提示都住同一个地方、同一种样子」）：排版挑好的地方（第一行谱头那一行右端，只躲不推），淡色、不印；
+    //   一行里几条用「·」隔开、各点各的：隐藏了 N 段（= 原来的「隐藏 N 段」小标）· 隐藏了 N 个声部（= 原来「⋯」右边的「隐藏 N」）· 演奏法和表情：不显示（7-G 重做；
+    //   user 11-12「折叠八十…又不好懂，而且位置也错了，又还和别人打架」）。点了做的事和原来一样。点击区按排版给的上下扩到至少 3 个线间距（--hit-up / --hit-down，CSS 的 ::before）
+    const ST = textStyleOf("key-hint");
+    for (const ln of L.statusHints) {
+      const top = boxTopFor(ln.y, ln.size, faceMetrics(ST)), hit = `--hit-up:${px(Math.max(0, top - ln.hit.y0))};--hit-down:${px(Math.max(0, ln.hit.y1 - (top + ln.size)))}`;
+      ln.items.forEach((it, k) => {
+        // 分隔点画在排版留的那一段（量的是「空格·空格」）正中间：HTML 会吞掉开头的空格，按原样放点就贴着前一条字
+        if (k > 0) { const a = ln.items[k - 1]!.dx + ln.items[k - 1]!.w; add(`st-sep:${ln.system}:${k}`, "div", "ov-key-hint ov-status-sep", text(ln.x + (a + it.dx) / 2, ln.y, ln.size, "middle", ST), esc(ln.sep.trim())); }
+        const st = `${text(ln.x + it.dx, ln.y, ln.size, "start", ST)};${hit}`;
+        if (it.kind === "hiddenPapers") add(`st-hidp:${this.hiddenPapers.join(",")}`, "button", "ov-i ov-key-hint ov-status-hint ov-hidden-papers", st, esc(it.s), { "data-ov": "hidpapers", title: _t("有 {n} 段隐藏着（不放、不印、不占地方）：点开去看或放出来", { n: this.hiddenPapers.length }) });
+        else if (it.kind === "hiddenParts") add(`st-hid:${it.paper}`, "button", "ov-i ov-key-hint ov-status-hint ov-hidden", st, esc(it.s), { "data-ov": "hidden", "data-paper": it.paper!, title: _t("这一段有 {n} 位隐藏着（不排、不占地方）：点开看是谁、放出来", { n: this.hiddenOf.get(it.paper!)?.length ?? 0 }) });
+        else add(`st-expr:${ln.system}`, "button", "ov-i ov-key-hint ov-status-hint ov-fold-hint", st, esc(it.s), { "data-ov": "folded", title: _t("演奏法和表情现在不显示（页面设置「看谱」里关着；播放照写的来）：点开去打开") });
+      });
+    }
     // ⑦ 合租展开着的一家：括号（点 = 光标挪出这一家，叠回去）
     for (const f of L.families) add(`fam:${f.paper}:${f.host}`, "button", "ov-i ov-family", box(f.x, f.y, f.w, f.h), "<i></i>", { "data-ov": "family", "data-paper": f.paper, "data-host": f.host, title: _t("这一家展开着：点 = 叠回去（光标挪到下一位）") });
 

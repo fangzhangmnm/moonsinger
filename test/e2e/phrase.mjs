@@ -62,7 +62,7 @@ try {
   const L1 = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), id = m.state().song.papers[1].id, pp = L.papers.find((x) => x.id === id); return { sys: L.systems.filter((s) => s.paper === id).length, top: pp.top, bottom: pp.bottom }; });
   check(L1.sys === 0 && L1.top === L1.bottom, "全部视图：隐藏的纸不排、不占地方（v0.16.34，屏幕 = 打印）", JSON.stringify(L1));
   const chip = await p.$("#score .score-overlay .ov-hidden-papers");
-  check(!!chip && /隐藏 1 段/.test(await chip.textContent()), "歌名那一条上一颗「隐藏 1 段」");
+  check(!!chip && /隐藏了 1 段/.test(await chip.textContent()), "第一行谱头那一行的状态提示里有「隐藏了 1 段」（统筹 2026-11-12：原来歌名那一条上的小标）");
   await chip.click(); await p.waitForTimeout(150);
   check(!!(await p.$('.ctx-menu.hidden-papers [data-v^="go:"]')) && !!(await p.$('.ctx-menu.hidden-papers [data-v^="show:"]')), "点开 = 一行：去看 / 放出来");
   await p.click('.ctx-menu.hidden-papers [data-v^="show:"]'); await p.waitForTimeout(150);

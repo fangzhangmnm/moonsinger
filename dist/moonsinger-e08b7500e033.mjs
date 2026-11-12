@@ -5082,6 +5082,8 @@ var S = {
   "\u5199\u4E0D\u8FDB\u5B58\u50A8\u4E86\uFF08{why}\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u4E4B\u540E\u7684\u8BBE\u7F6E\u53EA\u7559\u5728\u5185\u5B58\u91CC": { en: "Can't write to storage ({why}): settings from now on stay in memory only" },
   "\u7F16\u6392\u3000": { en: "Arrangement\u2002" },
   " \u7B49 {n} \u5904": { en: " at {n} places" },
+  "\u9690\u85CF\u4E86 {n} \u6BB5": { en: "{n} {n|section|sections} hidden" },
+  "\u9690\u85CF\u4E86 {n} \u4E2A\u58F0\u90E8": { en: "{n} {n|part|parts} hidden" },
   "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A": { en: "Articulations & dynamics: hidden" },
   "\u65E0\u8C03": { en: "no key" },
   "\u6781\u5F31": { en: "very very soft" },
@@ -5484,13 +5486,12 @@ var S = {
   "\u8FD9\u4E00\u6BB5\u9690\u85CF\u7740\uFF1A\u4E0D\u653E\u3001\u4E0D\u5370\uFF08\u300C\u22EF\u300D\u91CC\u80FD\u653E\u51FA\u6765\uFF09": { en: "This section is hidden: not played, not printed (unhide it from \u201C\u22EF\u201D)" },
   "\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u6CA1\u6709\u58F0\u90E8\uFF09": { en: "(no parts on this sheet)" },
   "\uFF0B \u65B0\u66F2\u6BB5": { en: "\uFF0B New section" },
-  "\u9690\u85CF {n} \u6BB5": { en: "{n} hidden {n|section|sections}" },
-  "\u6709 {n} \u6BB5\u9690\u85CF\u7740\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u53BB\u770B\u6216\u653E\u51FA\u6765": { en: "{n} hidden {n|section|sections} (not played, not printed, no space taken): open to go to one or unhide it" },
   "\u6B4C\u540D": { en: "Title" },
   "\u4F5C\u8005": { en: "Author" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D\uFF08\u4F8B\uFF1A\u524D\u594F (A A1)\xD73 A A2 [\u526F\u6B4C]\uFF09": { en: "Empty = each sheet plays once in order (e.g. Intro (A A1)\xD73 A A2 [Chorus])" },
   "\u5C0F\u8C03\uFF1A\u548C\u5F26\u7EA7\u6570\u4ECE la \u6570\u3002\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6": { en: "Minor: chord degrees count from la. Tap = clef / key / time / tempo" },
   "\u8FD9\u91CC\u662F C \u8C03\uFF08\u6CA1\u6709\u5347\u964D\u53F7\uFF09\uFF1A\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6": { en: "C major here (no sharps or flats): tap = clef / key / time / tempo" },
+  "\u6709 {n} \u6BB5\u9690\u85CF\u7740\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u53BB\u770B\u6216\u653E\u51FA\u6765": { en: "{n} hidden {n|section|sections} (not played, not printed, no space taken): open to go to one or unhide it" },
   "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF08\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u91CC\u5173\u7740\uFF1B\u64AD\u653E\u7167\u5199\u7684\u6765\uFF09\uFF1A\u70B9\u5F00\u53BB\u6253\u5F00": { en: "Articulations & dynamics are hidden right now (turned off under Page settings \u203A Reading; playback follows what's written): tap to change" },
   "\u8FD9\u4E00\u5BB6\u5C55\u5F00\u7740\uFF1A\u70B9 = \u53E0\u56DE\u53BB\uFF08\u5149\u6807\u632A\u5230\u4E0B\u4E00\u4F4D\uFF09": { en: "This family is spread out: tap = fold it back (the cursor moves to the next part)" },
   "\u73B0\u5728\u7684\u7F29\u653E\uFF08100% = \u7EB8\u7684\u5B9E\u9645\u5C3A\u5BF8\uFF09\uFF1B\u70B9 = \u56DE\u5230\u81EA\u52A8\u5927\u5C0F\uFF08Ctrl / \u2318 + 0\uFF09\u3002Ctrl / \u2318 + \u6EDA\u8F6E\u3001\u634F\u5408 = \u7F29\u653E\uFF1BCtrl / \u2318 + = / \u2212 = \u4E00\u6863\u4E00\u6863": { en: "Current zoom (100% = the paper's real size); tap = back to auto size (Ctrl / \u2318 + 0). Ctrl / \u2318 + wheel or pinch = zoom; Ctrl / \u2318 + = / \u2212 = step by step" },
@@ -15652,7 +15653,26 @@ function engrave(song, o10) {
   const rows = [], notes = [], slots = [], heads = [], lyrics = [], marks = [], dyns = [], rests = [], clefs = [];
   const partsHit = [], papersHit = [], names = [], keyHints = [];
   const foldHintWanted = !!foldedPapers && [...foldedPapers.values()].some((pp) => o10.parts.some((v) => !v.hidden && foldedCount([pp.tracks[v.id]]) > 0));
-  let foldHint = null;
+  const statusHints = [];
+  const hidPaperCount = o10.onlyPaper ? 0 : song.papers.filter((p2) => p2.hidden).length;
+  let statusDone = false;
+  const STATUS_SEP = " \xB7 ";
+  const placeStatus = (system, list2, triesFor, busy) => {
+    const fs = tx2("key-hint"), ws2 = list2.map((it2) => P2(mw("key-hint", it2.s))), sepW = P2(mw("key-hint", STATUS_SEP)), W3 = ws2.reduce((a10, b3) => a10 + b3, 0) + sepW * (list2.length - 1);
+    const hint2 = (w2) => ({ part: { ink: { x0: 0, x1: w2, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [] }, tries: triesFor(w2), climb: fs * 1.1 });
+    const [all] = placeHints(busy, [hint2(W3)], P2(0.3));
+    if (all.ok || list2.length === 1) {
+      let dx = 0;
+      const items = list2.map((it2, k2) => {
+        const r10 = { ...it2, dx, w: ws2[k2] };
+        dx += ws2[k2] + sepW;
+        return r10;
+      });
+      statusHints.push({ system, x: all.x, y: all.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 } });
+      return;
+    }
+    placeHints(busy, list2.map((_2, k2) => hint2(ws2[k2])), P2(0.3)).forEach((pl, k2) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list2[k2], dx: 0, w: ws2[k2] }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
+  };
   let shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
   const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map();
@@ -16243,17 +16263,24 @@ function engrave(song, o10) {
         h2.onPlace?.(x2, y2);
       });
     }
-    if (foldHintWanted && !foldHint) {
+    const statusList = statusDone ? [] : [
+      ...hidPaperCount ? [{ kind: "hiddenPapers", s: _tIn(o10.locale, "\u9690\u85CF\u4E86 {n} \u6BB5", { n: hidPaperCount }) }] : [],
+      ...song.papers.length === 1 && !pTitle.shown && hiddenParts.length ? [{ kind: "hiddenParts", s: _tIn(o10.locale, "\u9690\u85CF\u4E86 {n} \u4E2A\u58F0\u90E8", { n: hiddenParts.length }), paper: paper.id }] : [],
+      // 只有一张纸、曲段名那一条没画：原来挂在「⋯」右边的那颗（画了曲段名那一条的照旧在那一条里）
+      ...foldHintWanted ? [{ kind: "expr", s: _tIn(o10.locale, "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A") }] : []
+    ];
+    if (statusList.length) {
       const r02 = rows.findIndex((r10) => r10.paper === paper.id);
       if (r02 >= 0) {
-        const sys = rows[r02], s10 = _tIn(o10.locale, "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A"), fs = tx2("key-hint"), w2 = P2(mw("key-hint", s10));
+        statusDone = true;
+        const sys = rows[r02], fs = tx2("key-hint");
         let base2 = sys.top + fs;
         for (let i10 = p0.p; i10 < prims.length; i10++) {
           const p2 = prims[i10];
           if (p2.t === "text" && /(^|\s)(tempo-word|jp-head)(\s|$)/.test(p2.cls ?? "") && p2.y >= sys.top - P2(2) && p2.y <= sys.staffTop + P2(0.5)) base2 = Math.max(base2 === sys.top + fs ? -Infinity : base2, p2.y);
         }
-        const tries = [{ x: P2(right) - w2, y: base2 }, { x: P2(right) - w2, y: base2 - fs * 1.3 }, { x: P2(MARGIN), y: sys.top - fs * 0.2 }];
-        const ys = tries.map((t10) => t10.y), lo2 = Math.min(...ys) - P2(12), hi = Math.max(...ys) + P2(12), busy = [];
+        const triesFor = (w2) => [{ x: P2(right) - w2, y: base2 }, { x: P2(right) - w2, y: base2 - fs * 1.3 }, { x: P2(MARGIN), y: sys.top - fs * 0.2 }];
+        const ys = triesFor(0).map((t10) => t10.y), lo2 = Math.min(...ys) - P2(12), hi = Math.max(...ys) + P2(12), busy = [];
         for (const p2 of prims) {
           const y2 = primY(p2);
           if (y2 < lo2 || y2 > hi) continue;
@@ -16264,11 +16291,44 @@ function engrave(song, o10) {
         if (credits) busy.push({ x0: credits.x, x1: credits.x + credits.w, y0: credits.y, y1: credits.y + credits.h });
         else busy.push({ x0: o10.width - P2(MARGIN + 6), x1: o10.width - P2(MARGIN), y0: y0Credits - cs2 * 1.1, y1: y0Credits + cs2 * 0.3 });
         if (pTitle.shown) busy.push({ x0: P2(MARGIN), x1: o10.width - P2(MARGIN), y0: pTitle.y, y1: pTitle.y + pTitle.h });
-        const [pl] = placeHints(busy, [{ part: { ink: { x0: 0, x1: w2, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [] }, tries, climb: fs * 1.1 }], P2(0.3));
-        foldHint = { system: r02, x: pl.x, y: pl.y, size: fs, s: s10 };
+        placeStatus(r02, statusList, triesFor, busy);
       }
     }
     papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p2) => p2.id), ...note2 ? { note: note2 } : {}, ...foldedHit(paper.id, visible) });
+  }
+  if (!statusDone && hidPaperCount) {
+    const fs = tx2("key-hint"), busy = [{ x0: title.x, x1: title.x + title.w, y0: title.y, y1: title.y + title.h }];
+    if (credits) busy.push({ x0: credits.x, x1: credits.x + credits.w, y0: credits.y, y1: credits.y + credits.h });
+    if (arrangement) busy.push({ x0: arrangement.x, x1: arrangement.x + arrangement.w, y0: arrangement.y, y1: arrangement.y + arrangement.h });
+    placeStatus(-1, [{ kind: "hiddenPapers", s: _tIn(o10.locale, "\u9690\u85CF\u4E86 {n} \u6BB5", { n: hidPaperCount }) }], () => [{ x: P2(MARGIN), y: Math.max(title.y + title.h, arrangement ? arrangement.y + arrangement.h : 0) + fs }], busy);
+  }
+  if (statusHints.length) {
+    const clickables = [
+      ...marks,
+      ...dyns,
+      ...clefs,
+      ...chordTagsOut,
+      title,
+      ...credits ? [credits] : [],
+      ...arrangement ? [arrangement] : [],
+      ...papersHit.filter((pp) => pp.title.shown).map((pp) => ({ x: 0, y: pp.title.y, w: o10.width, h: pp.title.h })),
+      ...keyHints.map((k2) => ({ x: k2.x, y: k2.y - k2.size * 0.8, w: P2(mw("key-hint", k2.s)), h: k2.size })),
+      ...notes.map((nt2) => ({ x: nt2.x, y: nt2.y - P2(1), w: nt2.w, h: P2(2) }))
+    ];
+    const H3 = P2(CTL_H);
+    for (const ln3 of statusHints) {
+      const x0 = ln3.x, x1 = ln3.x + (ln3.items.at(-1).dx + ln3.items.at(-1).w), t02 = ln3.hit.y0, t12 = ln3.hit.y1, extra = Math.max(0, H3 - (t12 - t02));
+      let upMax = Infinity, downMax = Infinity;
+      for (const b3 of [...clickables, ...statusHints.filter((o22) => o22 !== ln3).map((o22) => ({ x: o22.x, y: o22.hit.y0, w: o22.items.at(-1).dx + o22.items.at(-1).w, h: o22.hit.y1 - o22.hit.y0 }))]) {
+        if (b3.x + b3.w <= x0 || b3.x >= x1) continue;
+        if (b3.y + b3.h <= t02) upMax = Math.min(upMax, t02 - (b3.y + b3.h));
+        else if (b3.y >= t12) downMax = Math.min(downMax, b3.y - t12);
+      }
+      let up = Math.min(upMax, extra / 2);
+      const down = Math.min(downMax, extra - up);
+      up = Math.min(upMax, extra - down);
+      ln3.hit = { y0: t02 - up, y1: t12 + down };
+    }
   }
   const pages = [];
   if (PG) {
@@ -16282,7 +16342,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? Math.max(pageTopY(pageNo) + P2(PG.h), tailBottom) : yCur + P2(MX.b);
-  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, tp: sp2 * ts2, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, foldHint, tail, creditsLine: { x: rx2, y: y0, size: cs2 }, content: { left: P2(MARGIN), right: o10.width - P2(MARGIN) }, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, shortBars, lyricYs: rows.map((_2, r10) => lyricY(r10)) };
+  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, tp: sp2 * ts2, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, statusHints, tail, creditsLine: { x: rx2, y: y0, size: cs2 }, content: { left: P2(MARGIN), right: o10.width - P2(MARGIN) }, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, shortBars, lyricYs: rows.map((_2, r10) => lyricY(r10)) };
 }
 
 // src/render/svg.ts
@@ -19460,9 +19520,8 @@ var ScoreOverlay = class {
           ...v.edit ? [`<button class="ov-i ov-chip ov-menu" data-ov="menu" data-paper="${pid}" title="${esc3(_t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355"))}">\u22EF</button>`] : []
         ];
         add(`nav:${pp.id}:${k2}:${papers.length}:${segOn}:${v.edit}:${pp.hiddenParts.join(",")}`, "div", "ov-nav", `right:${px(-L2.content.right)};top:${px(y2)};height:${px(h2)};--ctl:${px(h2)};--ctl-glyph:${px(CTL_GLYPH * sp2)};--ctl-text:${px(CTL_TEXT * sp2)}`, kids2.join(""));
-      } else if (pp.hiddenParts.length) {
-        if (pp.title.shown) hiddenChip(pp.id, pp.hiddenParts, `right:${px(-(L2.content.right - (CTL_H2 + 0.6) * sp2))};top:${px(y2)};height:${px(h2)};font-size:${px(CTL_TEXT * sp2)}`);
-        else hiddenChip(pp.id, pp.hiddenParts, `left:${px(L2.content.left + (v.edit ? (CTL_H2 + 1.2) * sp2 : 0))};top:${px(L2.title.y + 0.5 * sp2)};height:${px(h2)};font-size:${px(CTL_TEXT * sp2)}`);
+      } else if (pp.hiddenParts.length && pp.title.shown) {
+        hiddenChip(pp.id, pp.hiddenParts, `right:${px(-(L2.content.right - (CTL_H2 + 0.6) * sp2))};top:${px(y2)};height:${px(h2)};font-size:${px(CTL_TEXT * sp2)}`);
       }
       if (pp.title.shown && !paper.name && !pp.hidden) add(`ph-paper:${pp.id}`, "div", "ov-placeholder ov-ph-paper", text2(pp.title.x, pp.title.baseline, pp.title.size), esc3(_t("\u66F2\u6BB5\u540D")));
       if (pp.note) add(`hp-note:${pp.id}`, "div", "ov-stub ov-note", `${box(pp.note.x, pp.note.y, pp.note.w, pp.note.h)};font-size:${px(1.1 * sp2)}`, `<span>${esc3(_t("\u8FD9\u4E00\u6BB5\u9690\u85CF\u7740\uFF1A\u4E0D\u653E\u3001\u4E0D\u5370\uFF08\u300C\u22EF\u300D\u91CC\u80FD\u653E\u51FA\u6765\uFF09"))}</span>`);
@@ -19475,19 +19534,7 @@ var ScoreOverlay = class {
         } else add(`add:${pp.id}:part`, "button", "ov-i ov-add", `${box(u2.x, u2.y, u2.w, u2.h)};${fs}`, esc3(_t("\uFF0B \u58F0\u90E8")), { "data-ov": "add", "data-paper": pp.id, "data-kind": "part" });
       }
     }
-    const hidPapers = L2.papers.filter((pp) => pp.hidden).map((pp) => pp.id);
-    if (hidPapers.length && !v.onlyPaper) {
-      const h2 = CTL_H2 * sp2, x2 = L2.content.left + (!multi && v.edit ? (CTL_H2 + 1.2) * sp2 : 0);
-      add(
-        `hidp:${hidPapers.join(",")}`,
-        "button",
-        "ov-i ov-chip ov-hidden ov-hidden-papers",
-        `left:${px(x2)};top:${px(L2.title.y + 0.5 * sp2)};height:${px(h2)};font-size:${px(CTL_TEXT * sp2)}`,
-        esc3(_t("\u9690\u85CF {n} \u6BB5", { n: hidPapers.length })),
-        { "data-ov": "hidpapers", title: _t("\u6709 {n} \u6BB5\u9690\u85CF\u7740\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u53BB\u770B\u6216\u653E\u51FA\u6765", { n: hidPapers.length }) }
-      );
-    }
-    this.hiddenPapers = hidPapers;
+    this.hiddenPapers = L2.papers.filter((pp) => pp.hidden).map((pp) => pp.id);
     if (L2.tail && v.edit) add("add:tail", "button", "ov-i ov-add", `${box(L2.tail.x, L2.tail.y, L2.tail.w, L2.tail.h)};font-size:${px(1.15 * sp2)}`, esc3(_t("\uFF0B \u65B0\u66F2\u6BB5")), { "data-ov": "add", "data-paper": L2.tail.paper, "data-kind": "paper" });
     if (!song.title) add("ph-title", "div", "ov-placeholder ov-ph-title", text2((L2.content.left + L2.content.right) / 2, L2.title.baseline, L2.title.size * 0.8, "middle"), esc3(_t("\u6B4C\u540D")));
     if (!song.credits) add("ph-credits", "button", "ov-i ov-placeholder ov-ph-credits", text2(L2.creditsLine.x, L2.creditsLine.y, L2.creditsLine.size, "end"), esc3(_t("\u4F5C\u8005")), { "data-ov": "credits" });
@@ -19513,9 +19560,19 @@ var ScoreOverlay = class {
         v.marks ? { "data-ov": "keyhint", "data-paper": sys.paper, "data-part": sys.part.replace(/~.*$/, ""), "data-index": String(kh.index), title: kh.s.startsWith("6=") ? _t("\u5C0F\u8C03\uFF1A\u548C\u5F26\u7EA7\u6570\u4ECE la \u6570\u3002\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6") : _t("\u8FD9\u91CC\u662F C \u8C03\uFF08\u6CA1\u6709\u5347\u964D\u53F7\uFF09\uFF1A\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6") } : {}
       );
     }
-    if (L2.foldHint) {
-      const fh = L2.foldHint;
-      add(`foldhint:${fh.system}`, "button", "ov-i ov-key-hint ov-fold-hint", text2(fh.x, fh.y, fh.size, "start", textStyleOf("key-hint")), esc3(_t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A")), { "data-ov": "folded", title: _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF08\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u91CC\u5173\u7740\uFF1B\u64AD\u653E\u7167\u5199\u7684\u6765\uFF09\uFF1A\u70B9\u5F00\u53BB\u6253\u5F00") });
+    const ST = textStyleOf("key-hint");
+    for (const ln3 of L2.statusHints) {
+      const top = boxTopFor(ln3.y, ln3.size, faceMetrics(ST)), hit2 = `--hit-up:${px(Math.max(0, top - ln3.hit.y0))};--hit-down:${px(Math.max(0, ln3.hit.y1 - (top + ln3.size)))}`;
+      ln3.items.forEach((it2, k2) => {
+        if (k2 > 0) {
+          const a10 = ln3.items[k2 - 1].dx + ln3.items[k2 - 1].w;
+          add(`st-sep:${ln3.system}:${k2}`, "div", "ov-key-hint ov-status-sep", text2(ln3.x + (a10 + it2.dx) / 2, ln3.y, ln3.size, "middle", ST), esc3(ln3.sep.trim()));
+        }
+        const st2 = `${text2(ln3.x + it2.dx, ln3.y, ln3.size, "start", ST)};${hit2}`;
+        if (it2.kind === "hiddenPapers") add(`st-hidp:${this.hiddenPapers.join(",")}`, "button", "ov-i ov-key-hint ov-status-hint ov-hidden-papers", st2, esc3(it2.s), { "data-ov": "hidpapers", title: _t("\u6709 {n} \u6BB5\u9690\u85CF\u7740\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u53BB\u770B\u6216\u653E\u51FA\u6765", { n: this.hiddenPapers.length }) });
+        else if (it2.kind === "hiddenParts") add(`st-hid:${it2.paper}`, "button", "ov-i ov-key-hint ov-status-hint ov-hidden", st2, esc3(it2.s), { "data-ov": "hidden", "data-paper": it2.paper, title: _t("\u8FD9\u4E00\u6BB5\u6709 {n} \u4F4D\u9690\u85CF\u7740\uFF08\u4E0D\u6392\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u770B\u662F\u8C01\u3001\u653E\u51FA\u6765", { n: this.hiddenOf.get(it2.paper)?.length ?? 0 }) });
+        else add(`st-expr:${ln3.system}`, "button", "ov-i ov-key-hint ov-status-hint ov-fold-hint", st2, esc3(it2.s), { "data-ov": "folded", title: _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF08\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u91CC\u5173\u7740\uFF1B\u64AD\u653E\u7167\u5199\u7684\u6765\uFF09\uFF1A\u70B9\u5F00\u53BB\u6253\u5F00") });
+      });
     }
     for (const f2 of L2.families) add(`fam:${f2.paper}:${f2.host}`, "button", "ov-i ov-family", box(f2.x, f2.y, f2.w, f2.h), "<i></i>", { "data-ov": "family", "data-paper": f2.paper, "data-host": f2.host, title: _t("\u8FD9\u4E00\u5BB6\u5C55\u5F00\u7740\uFF1A\u70B9 = \u53E0\u56DE\u53BB\uFF08\u5149\u6807\u632A\u5230\u4E0B\u4E00\u4F4D\uFF09") });
     this.commit(items);
@@ -34193,15 +34250,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-0df789f2585c.mjs");
+      return pick(() => "singer-worker-227492ff780e.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-9b5c6ca3be7f.mjs");
+      return pick(() => "layout-worker-4e5f1abb51fd.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-9c9cf2c0a035.mjs");
+      return pick(() => "encode-worker-d2043b8a4b39.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -60157,7 +60214,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "fe6d8e215b34",
+  cssHash: "f4a4514913f4",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -64485,4 +64542,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-7c51aebfcfac.mjs.map
+//# sourceMappingURL=moonsinger-e08b7500e033.mjs.map

@@ -5362,6 +5362,12 @@ export declare const S: {
     readonly " \u7B49 {n} \u5904": {
         readonly en: " at {n} places";
     };
+    readonly "\u9690\u85CF\u4E86 {n} \u6BB5": {
+        readonly en: "{n} {n|section|sections} hidden";
+    };
+    readonly "\u9690\u85CF\u4E86 {n} \u4E2A\u58F0\u90E8": {
+        readonly en: "{n} {n|part|parts} hidden";
+    };
     readonly "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A": {
         readonly en: "Articulations & dynamics: hidden";
     };
@@ -6568,12 +6574,6 @@ export declare const S: {
     readonly "\uFF0B \u65B0\u66F2\u6BB5": {
         readonly en: "＋ New section";
     };
-    readonly "\u9690\u85CF {n} \u6BB5": {
-        readonly en: "{n} hidden {n|section|sections}";
-    };
-    readonly "\u6709 {n} \u6BB5\u9690\u85CF\u7740\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u53BB\u770B\u6216\u653E\u51FA\u6765": {
-        readonly en: "{n} hidden {n|section|sections} (not played, not printed, no space taken): open to go to one or unhide it";
-    };
     readonly 歌名: {
         readonly en: "Title";
     };
@@ -6588,6 +6588,9 @@ export declare const S: {
     };
     readonly "\u8FD9\u91CC\u662F C \u8C03\uFF08\u6CA1\u6709\u5347\u964D\u53F7\uFF09\uFF1A\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6": {
         readonly en: "C major here (no sharps or flats): tap = clef / key / time / tempo";
+    };
+    readonly "\u6709 {n} \u6BB5\u9690\u85CF\u7740\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u53BB\u770B\u6216\u653E\u51FA\u6765": {
+        readonly en: "{n} hidden {n|section|sections} (not played, not printed, no space taken): open to go to one or unhide it";
     };
     readonly "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF08\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u91CC\u5173\u7740\uFF1B\u64AD\u653E\u7167\u5199\u7684\u6765\uFF09\uFF1A\u70B9\u5F00\u53BB\u6253\u5F00": {
         readonly en: "Articulations & dynamics are hidden right now (turned off under Page settings › Reading; playback follows what's written): tap to change";
