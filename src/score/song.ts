@@ -1446,6 +1446,30 @@ export function moveMarkToEnd(st: EditorState, from: number): { st: EditorState;
 }
 /** 这个力度记号是不是已经挂在这一段最后一个音后面（后面没有音 / 休止了）。 */
 export const markAtEnd = (toks: readonly Token[], i: number): boolean => toks[i]?.kind === "dyn" && !toks.slice(i + 1).some(isTimed);
+/** 渐强渐弱（手写的发夹）「变到」：把终点的力度写到这条发夹现在结束的地方（7-N 补，统筹 2026-11-12；user「怎么样在后面加一个符号？」）。
+ *  终点 = 后面第一个力度记号 / 下一条发夹 / 这一段结尾（同 perform.ts hairpinEnd）。target：
+ *  · 一档力度：结束在力度记号上 = 改它的值（changed）；结束在下一条发夹前 = 在那儿放一个（beforeHairpin）；结束在这一段结尾 = 挂在最后一个音后面（end，同「挪到这一段结尾」那一种）。
+ *  · null = 走一档（没写终点的做法）：终点是挂在这一段结尾的力度记号 = 去掉它（removed）；终点是还管着后面音的力度记号 = 不动（blocked：去掉它会改到别的音，要用它自己的菜单）。
+ *  不加新的存法：终点就是一个普通的力度记号。纯函数，一步。 */
+export function setHairpinTarget(st: EditorState, i: number, target: Dyn | null): { st: EditorState; did: "changed" | "beforeHairpin" | "end" | "removed" | "none" | "blocked" } {
+  const toks = tr(st), h = toks[i];
+  if (!h || h.kind !== "hairpin") return { st, did: "none" };
+  let j = i + 1; while (j < toks.length && toks[j]!.kind !== "dyn" && toks[j]!.kind !== "hairpin") j++;
+  const endTok = j < toks.length ? toks[j]! : null;
+  if (target === null) {
+    if (!endTok || endTok.kind !== "dyn") return { st, did: "none" };
+    if (!markAtEnd(toks, j)) return { st, did: "blocked" };
+    const nt = toks.slice(); nt.splice(j, 1);
+    return { st: next(st, nt, { caret: st.caret - (j < st.caret ? 1 : 0), sel: null }), did: "removed" };
+  }
+  if (endTok && endTok.kind === "dyn") return endTok.value === target ? { st, did: "none" } : { st: editMarkAt(st, j, { value: target }), did: "changed" };
+  const nt = toks.slice(), dyn = { kind: "dyn", id: st.nextId, value: target } as Token;
+  let at: number;
+  if (endTok) at = j;   // 下一条发夹前面
+  else { let last = -1; nt.forEach((t, k) => { if (isTimed(t)) last = k; }); at = last + 1; while (at < nt.length && (nt[at]!.kind === "dyn" || nt[at]!.kind === "hairpin")) at++; }
+  nt.splice(at, 0, dyn);
+  return { st: next(st, nt, { nextId: st.nextId + 1, caret: st.caret + (at < st.caret ? 1 : 0), sel: null }), did: endTok ? "beforeHairpin" : "end" };
+}
 /** 点力度记号 / 渐强渐弱的小菜单：改成别的力度 / 换方向；null = 删掉（光标跟着）。 */
 export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | { style: string } | { amount: number } | { shift: boolean } | { nav: Exclude<NavWhat, "ending"> } | { nums: number[] } | null): EditorState {
   const toks = tr(st), m = toks[i];

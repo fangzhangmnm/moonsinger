@@ -50,7 +50,7 @@ export interface OrnCtx {
   /** 被紧跟着的强后即弱盖掉的力度记号（画灰）；不起作用的跳转（画灰的 class 后缀）。 */
   dynOff: ReadonlySet<number>; navMute: (i: number) => string;
   /** 不印的提示交给框架最后贴、只躲不推（第八刀 8-5；数字行给，五线谱不给 = 照旧当场画）：part 的图元 / 墨相对锚点，tries = 依次试的锚点（这一行局部 px）。 */
-  hint?: (row: number, h: { part: { ink: { x0: number; x1: number; y0: number; y1: number }; prims: Prim[] }; tries: readonly { x: number; y: number }[]; climb?: number }) => void;
+  hint?: (row: number, h: { part: { ink: { x0: number; x1: number; y0: number; y1: number }; prims: Prim[] }; tries: readonly { x: number; y: number }[]; climb?: number; /** 摆好之后（落点 = 字的锚点）：登记点击框之类。 */ onPlace?: (x: number, y: number) => void }) => void;
 }
 
 /** 速度记号一共多宽（sp）：词 + 四分音符 + 数（同 tempoAt 的摆法）。不印的提示（8-5）找「速度后面」那个位置用。 */
@@ -154,13 +154,28 @@ export function layDynamics(c: OrnCtx): void {
     return { ink: [d.ink[0] * g, d.ink[1] * g, d.ink[2] * g, d.ink[3] * g] as const, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls, size: P(4 * g) }) };
   };
   const dynItems: { row: number; x0: number; keys: string[]; draw: (base: number) => void }[] = [];
+  // 挂在这一段结尾的力度（后面没有音了：7-N 的「挪到这一段结尾」/「变到」放的，常见 = 一个音的滚奏 ppp < fff）是一条发夹的终点、又离发夹起点太近：
+  //   往右让到发夹最短也画得出为止（7-N 补查出来的：原来 fff 叠在 ppp 后面、发夹被盖住看不见）。只挪这种结尾的字；后面还有音的力度照旧和那个音对齐
+  const tailDynX = new Map<Unit, number>();
+  { const lastC = units.reduce((m, u, k) => (u.kind === "chunk" ? k : m), -1);
+    units.forEach((h, hi) => {
+      if (h.kind !== "hairpin") return;
+      const ei = units.findIndex((u, k) => k > hi && (u.kind === "dyn" || u.kind === "hairpin")), endU = ei >= 0 ? units[ei]! : null;
+      if (!endU || endU.kind !== "dyn" || ei < lastC || endU.system !== h.system) return;
+      const prevU = units[hi - 1], before = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
+      const startX = Math.max(P(h.x + 0.3), before ? (tailDynX.get(before) ?? P(before.x + 0.3)) + P(dynOf(before.value).ink[1] + PIN_GAP) : 0);
+      const need = startX + P(PIN_MIN + PIN_GAP - dynOf(endU.value).ink[0]);
+      if (need > P(endU.x + 0.3)) tailDynX.set(endU, need);
+    }); }
+  const dynX = (u: Unit) => tailDynX.get(u) ?? P(u.x + 0.3);
   // 力度：谱上方、和后面那个音左对齐；挂件第 4 样（刀 4b：和用发夹连着的一串共用一条基线，贴它们自己那几段天际线往上 0.4；挨得近的两个 = 后摆的那个自然叠上去）
   for (const u of units) {
     if (u.kind !== "dyn") continue;
     const dr = c.row(u.system), ui = units.indexOf(u), dd = dynOf(u.value), [il, ir, iu, id] = dd.ink;
-    dynItems.push({ row: dr, x0: P(u.x + 0.3 + il), keys: [`${dr}|d${ui}`], draw: (dy) => {
-      dd.draw(P(u.x + 0.3), dy, tokens[u.index]!.id, "dyn" + (dynOff.has(u.index) ? " art-mute" : ""));
-      dyns.push({ index: u.index, kind: "dyn", system: dr, x: P(u.x + 0.3 + il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
+    const X = dynX(u);
+    dynItems.push({ row: dr, x0: X + P(il), keys: [`${dr}|d${ui}`], draw: (dy) => {
+      dd.draw(X, dy, tokens[u.index]!.id, "dyn" + (dynOff.has(u.index) ? " art-mute" : ""));
+      dyns.push({ index: u.index, kind: "dyn", system: dr, x: X + P(il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
     } });
   }
   // 渐强渐弱（v0.7.6 起是记号）：从它那儿画到终点——下一个力度记号 / 下一个渐强渐弱 / 纸尾（没有终点 = 后面灰字「(f)」= 走一档推定的终点）。跨行 = 每行画它那一份开口（按横向长度分）。
@@ -224,13 +239,13 @@ export function layDynamics(c: OrnCtx): void {
     // 紧挨在前面的力度记号（mp < 这种）：从它的字后面起画，别压在字上
     const prevU = units[hi - 1];
     const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
-    const startX = Math.max(P(h.x + 0.3), dynBefore ? P(dynBefore.x + 0.3 + inkOf(dynBefore)[1] + PIN_GAP) : 0), s0 = h.system;
+    const startX = Math.max(P(h.x + 0.3), dynBefore ? dynX(dynBefore) + P(inkOf(dynBefore)[1] + PIN_GAP) : 0), s0 = h.system;
     const endU = units.slice(hi + 1).find((u) => u.kind === "dyn" || u.kind === "hairpin");
     // 终点的力度和方向反着（渐弱后面更强 / 一样）= 方向说了算：走一档、到那儿突变（perform.ts dynLevels）→ 发夹末端照样画灰字推定的那一档，让开它（2026-10-08 user「同意」）
     let curDyn: string = "mf"; for (let j = h.index - 1; j >= 0; j--) { const t = tokens[j]!; if (t.kind === "dyn") { curDyn = t.value; break; } }
     const ci = LEVELS.indexOf(curDyn as (typeof LEVELS)[number]), against = !!endU && endU.kind === "dyn" && (h.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci : LEVELS.indexOf(endU.value) >= ci);
     const IMPLIED_W = 3;   // 灰字「(mp)」大概多宽（sp，1.3 号斜体）
-    const endX = endU ? P(endU.x + 0.3 + (endU.kind === "dyn" ? inkOf(endU)[0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : c.noteEnd(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;   // 终点的字画在 x + 0.3
+    const endX = endU ? (endU.kind === "dyn" ? dynX(endU) + P(inkOf(endU)[0]) : P(endU.x + 0.3)) - P(PIN_GAP + (against ? IMPLIED_W + 0.4 : 0)) : c.noteEnd(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;   // 终点的字画在 x + 0.3
     if (s1 < s0) return;
     // 太短也照样画（以前不到 1 个间距就整条不画 = 静默没了）：至少 MIN_PIN；灰字放不下就挪到发夹末端上面
     let endXd = endX, labelAbove = false;
@@ -246,8 +261,10 @@ export function layDynamics(c: OrnCtx): void {
       const im: Prim = { t: "text", x: 0, y: 0, s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: tx("dyn-implied"), anchor: "start" }, ix = labelAbove ? endXd - P(1.2) : endXd + P(0.4), iy = base + P(labelAbove ? -1.9 : 0.1);
       if (c.hint) {   // 不印的提示（第八刀 8-5）：最后贴、只躲不推——先试原来的位置，再往上、往右让
         const fs = tx("dyn-implied"), w = P(c.mw("dyn-implied", im.s as string)), rr = c.row(s1);
-        c.hint(rr, { part: { ink: { x0: 0, x1: w, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [im] }, tries: [{ x: ix, y: iy }, { x: ix, y: iy - fs * 1.1 }, { x: ix + P(0.8), y: iy }, { x: ix, y: iy - fs * 2.2 }, { x: endXd - w - P(0.4), y: base - P(1.9) }], climb: fs * 1.1 });
-      } else prims.push({ ...im, x: ix, y: iy });
+        c.hint(rr, { part: { ink: { x0: 0, x1: w, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [im] }, tries: [{ x: ix, y: iy }, { x: ix, y: iy - fs * 1.1 }, { x: ix + P(0.8), y: iy }, { x: ix, y: iy - fs * 2.2 }, { x: endXd - w - P(0.4), y: base - P(1.9) }], climb: fs * 1.1,
+          // 点得到（7-N 补，user「这种渐强渐弱里面那个括号的小字，我们都让它可以手动设置成别的」）：指着这条发夹 = 开同一个菜单（「变到」）；框按字摆好的地方、稍放大，压在发夹的框上面也指同一条
+          onPlace: (x: number, y: number) => { dyns.push({ index: h.index, kind: "hairpin", system: rr, x: x - P(0.3), y: y - fs * 0.9, w: w + P(0.6), h: fs * 1.3 }); } });
+      } else { prims.push({ ...im, x: ix, y: iy }); const fs = tx("dyn-implied"); dyns.push({ index: h.index, kind: "hairpin", system: c.row(s1), x: ix - P(0.3), y: iy - fs * 0.9, w: P(3.6), h: fs * 1.3 }); }
     } : undefined;
     wedgeItems(h.index, h.dir, s0, startX, s1, endXd, false, dynBefore ? dynKey(dynBefore) : undefined, k1, tail);
   });

@@ -3490,6 +3490,16 @@ var S = {
   "\u770B\u8C31": { en: "Reading" },
   "\u9875\u9762\u8BBE\u7F6E": { en: "Page settings" },
   "\u7248\u9762": { en: "Page" },
+  "\u53D8\u5230": { en: "Goes to" },
+  "\u8D70\u4E00\u6863": { en: "One step" },
+  "\u548C\u65B9\u5411\u53CD\u7740\uFF1A\u7167\u65B9\u5411\u5148\u8D70\u4E00\u6863\uFF0C\u5230\u8FD9\u513F\u7A81\u53D8\u6210 {d}\uFF08\u8C31\u4E0A\u7070\u5B57\u8BF4\u660E\uFF09": { en: "Against the direction: it moves one step that way first, then jumps to {d} here (a gray note on the score says so)" },
+  "\u7EC8\u70B9 = {d}": { en: "Ends at {d}" },
+  "\u6CA1\u5199\u7EC8\u70B9\uFF1A\u7167\u65B9\u5411\u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\uFF09": { en: "No written end: moves one step in its direction (gray note on the score)" },
+  "\u7EC8\u70B9\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u7BA1\u7740\u540E\u9762\u7684\u97F3\uFF1A\u8FD9\u91CC\u4E0D\u53BB\u6389\u5B83\uFF08\u8981\u6539\u5B83\u5C31\u70B9\u5B83\uFF09": { en: "The ending dynamic still governs the notes after it, so it isn't removed here (tap it to change it)" },
+  "\u7EC8\u70B9\u6539\u6210\u4E86 {d}\uFF08\u53D1\u5939\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09": { en: "End changed to {d} (the dynamic after the hairpin)" },
+  "\u5728\u4E0B\u4E00\u6761\u6E10\u5F3A\u6E10\u5F31\u524D\u9762\u653E\u4E86 {d}": { en: "Put {d} before the next hairpin" },
+  "\u5728\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\u653E\u4E86 {d}": { en: "Put {d} after the last note of this section" },
+  "\u53BB\u6389\u4E86\u8FD9\u4E00\u6BB5\u7ED3\u5C3E\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1A\u56DE\u5230\u8D70\u4E00\u6863": { en: "Removed the dynamic at the end of this section: back to one step" },
   "\u4E0D\u6309\uFF08\u7167\u5199\u7684\u8C03\uFF09": { en: "No (as written)" },
   "\u4E0D\u6309 C \u8C03\u770B\uFF08\u7167\u5199\u7684\u8C03\uFF09": { en: "Not in C (as written)" },
   "\u6309 C \u8C03\u770B\u3001\u548C\u5F26\u6807\u7EA7\u6570": { en: "Read in C, chord degrees" },
@@ -7764,6 +7774,34 @@ function moveMarkToEnd(st2, from) {
   return { st: next(st2, a10.tokens, { caret: c22 - a10.removed.filter((k2) => k2 < c22).length, sel: null }), removed: a10.removed.length };
 }
 var markAtEnd = (toks, i10) => toks[i10]?.kind === "dyn" && !toks.slice(i10 + 1).some(isTimed);
+function setHairpinTarget(st2, i10, target) {
+  const toks = tr(st2), h2 = toks[i10];
+  if (!h2 || h2.kind !== "hairpin") return { st: st2, did: "none" };
+  let j2 = i10 + 1;
+  while (j2 < toks.length && toks[j2].kind !== "dyn" && toks[j2].kind !== "hairpin") j2++;
+  const endTok = j2 < toks.length ? toks[j2] : null;
+  if (target === null) {
+    if (!endTok || endTok.kind !== "dyn") return { st: st2, did: "none" };
+    if (!markAtEnd(toks, j2)) return { st: st2, did: "blocked" };
+    const nt3 = toks.slice();
+    nt3.splice(j2, 1);
+    return { st: next(st2, nt3, { caret: st2.caret - (j2 < st2.caret ? 1 : 0), sel: null }), did: "removed" };
+  }
+  if (endTok && endTok.kind === "dyn") return endTok.value === target ? { st: st2, did: "none" } : { st: editMarkAt(st2, j2, { value: target }), did: "changed" };
+  const nt2 = toks.slice(), dyn = { kind: "dyn", id: st2.nextId, value: target };
+  let at3;
+  if (endTok) at3 = j2;
+  else {
+    let last = -1;
+    nt2.forEach((t10, k2) => {
+      if (isTimed(t10)) last = k2;
+    });
+    at3 = last + 1;
+    while (at3 < nt2.length && (nt2[at3].kind === "dyn" || nt2[at3].kind === "hairpin")) at3++;
+  }
+  nt2.splice(at3, 0, dyn);
+  return { st: next(st2, nt2, { nextId: st2.nextId + 1, caret: st2.caret + (at3 < st2.caret ? 1 : 0), sel: null }), did: endTok ? "beforeHairpin" : "end" };
+}
 function editMarkAt(st2, i10, change) {
   const toks = tr(st2), m2 = toks[i10];
   if (!m2 || m2.kind !== "dyn" && m2.kind !== "hairpin" && m2.kind !== "groove" && m2.kind !== "nav") return st2;
@@ -13376,12 +13414,27 @@ function layDynamics(c10) {
     return { ink: [d3.ink[0] * g3, d3.ink[1] * g3, d3.ink[2] * g3, d3.ink[3] * g3], draw: (x2, y2, tok, cls) => prims.push({ t: "glyph", x: x2, y: y2, ch: d3.glyph, tok, cls, size: P2(4 * g3) }) };
   };
   const dynItems = [];
+  const tailDynX = /* @__PURE__ */ new Map();
+  {
+    const lastC = units.reduce((m2, u2, k2) => u2.kind === "chunk" ? k2 : m2, -1);
+    units.forEach((h2, hi) => {
+      if (h2.kind !== "hairpin") return;
+      const ei2 = units.findIndex((u2, k2) => k2 > hi && (u2.kind === "dyn" || u2.kind === "hairpin")), endU = ei2 >= 0 ? units[ei2] : null;
+      if (!endU || endU.kind !== "dyn" || ei2 < lastC || endU.system !== h2.system) return;
+      const prevU = units[hi - 1], before = prevU && prevU.kind === "dyn" && prevU.system === h2.system ? prevU : null;
+      const startX = Math.max(P2(h2.x + 0.3), before ? (tailDynX.get(before) ?? P2(before.x + 0.3)) + P2(dynOf(before.value).ink[1] + PIN_GAP) : 0);
+      const need = startX + P2(PIN_MIN + PIN_GAP - dynOf(endU.value).ink[0]);
+      if (need > P2(endU.x + 0.3)) tailDynX.set(endU, need);
+    });
+  }
+  const dynX = (u2) => tailDynX.get(u2) ?? P2(u2.x + 0.3);
   for (const u2 of units) {
     if (u2.kind !== "dyn") continue;
     const dr = c10.row(u2.system), ui3 = units.indexOf(u2), dd = dynOf(u2.value), [il2, ir2, iu2, id2] = dd.ink;
-    dynItems.push({ row: dr, x0: P2(u2.x + 0.3 + il2), keys: [`${dr}|d${ui3}`], draw: (dy) => {
-      dd.draw(P2(u2.x + 0.3), dy, tokens[u2.index].id, "dyn" + (dynOff.has(u2.index) ? " art-mute" : ""));
-      dyns.push({ index: u2.index, kind: "dyn", system: dr, x: P2(u2.x + 0.3 + il2 - 0.3), y: dy - P2(iu2 + 0.4), w: P2(ir2 - il2 + 0.6), h: P2(iu2 + id2 + 0.8) });
+    const X2 = dynX(u2);
+    dynItems.push({ row: dr, x0: X2 + P2(il2), keys: [`${dr}|d${ui3}`], draw: (dy) => {
+      dd.draw(X2, dy, tokens[u2.index].id, "dyn" + (dynOff.has(u2.index) ? " art-mute" : ""));
+      dyns.push({ index: u2.index, kind: "dyn", system: dr, x: X2 + P2(il2 - 0.3), y: dy - P2(iu2 + 0.4), w: P2(ir2 - il2 + 0.6), h: P2(iu2 + id2 + 0.8) });
     } });
   }
   const LEVELS = DYNS;
@@ -13452,7 +13505,7 @@ function layDynamics(c10) {
     if (h2.kind !== "hairpin" || !lastChunk) return;
     const prevU = units[hi - 1];
     const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h2.system ? prevU : null;
-    const startX = Math.max(P2(h2.x + 0.3), dynBefore ? P2(dynBefore.x + 0.3 + inkOf(dynBefore)[1] + PIN_GAP) : 0), s02 = h2.system;
+    const startX = Math.max(P2(h2.x + 0.3), dynBefore ? dynX(dynBefore) + P2(inkOf(dynBefore)[1] + PIN_GAP) : 0), s02 = h2.system;
     const endU = units.slice(hi + 1).find((u2) => u2.kind === "dyn" || u2.kind === "hairpin");
     let curDyn = "mf";
     for (let j2 = h2.index - 1; j2 >= 0; j2--) {
@@ -13464,7 +13517,7 @@ function layDynamics(c10) {
     }
     const ci2 = LEVELS.indexOf(curDyn), against = !!endU && endU.kind === "dyn" && (h2.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci2 : LEVELS.indexOf(endU.value) >= ci2);
     const IMPLIED_W = 3;
-    const endX = endU ? P2(endU.x + 0.3 + (endU.kind === "dyn" ? inkOf(endU)[0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : c10.noteEnd(lastChunk) + P2(0.8), s12 = endU ? endU.system : lastChunk.system;
+    const endX = endU ? (endU.kind === "dyn" ? dynX(endU) + P2(inkOf(endU)[0]) : P2(endU.x + 0.3)) - P2(PIN_GAP + (against ? IMPLIED_W + 0.4 : 0)) : c10.noteEnd(lastChunk) + P2(0.8), s12 = endU ? endU.system : lastChunk.system;
     if (s12 < s02) return;
     let endXd = endX, labelAbove = false;
     const MIN_PIN = P2(PIN_MIN);
@@ -13479,8 +13532,20 @@ function layDynamics(c10) {
       const im2 = { t: "text", x: 0, y: 0, s: `(${LEVELS[k2]})`, cls: "dyn-implied ann", size: tx2("dyn-implied"), anchor: "start" }, ix2 = labelAbove ? endXd - P2(1.2) : endXd + P2(0.4), iy2 = base2 + P2(labelAbove ? -1.9 : 0.1);
       if (c10.hint) {
         const fs = tx2("dyn-implied"), w2 = P2(c10.mw("dyn-implied", im2.s)), rr2 = c10.row(s12);
-        c10.hint(rr2, { part: { ink: { x0: 0, x1: w2, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [im2] }, tries: [{ x: ix2, y: iy2 }, { x: ix2, y: iy2 - fs * 1.1 }, { x: ix2 + P2(0.8), y: iy2 }, { x: ix2, y: iy2 - fs * 2.2 }, { x: endXd - w2 - P2(0.4), y: base2 - P2(1.9) }], climb: fs * 1.1 });
-      } else prims.push({ ...im2, x: ix2, y: iy2 });
+        c10.hint(rr2, {
+          part: { ink: { x0: 0, x1: w2, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [im2] },
+          tries: [{ x: ix2, y: iy2 }, { x: ix2, y: iy2 - fs * 1.1 }, { x: ix2 + P2(0.8), y: iy2 }, { x: ix2, y: iy2 - fs * 2.2 }, { x: endXd - w2 - P2(0.4), y: base2 - P2(1.9) }],
+          climb: fs * 1.1,
+          // 点得到（7-N 补，user「这种渐强渐弱里面那个括号的小字，我们都让它可以手动设置成别的」）：指着这条发夹 = 开同一个菜单（「变到」）；框按字摆好的地方、稍放大，压在发夹的框上面也指同一条
+          onPlace: (x2, y2) => {
+            dyns.push({ index: h2.index, kind: "hairpin", system: rr2, x: x2 - P2(0.3), y: y2 - fs * 0.9, w: w2 + P2(0.6), h: fs * 1.3 });
+          }
+        });
+      } else {
+        prims.push({ ...im2, x: ix2, y: iy2 });
+        const fs = tx2("dyn-implied");
+        dyns.push({ index: h2.index, kind: "hairpin", system: c10.row(s12), x: ix2 - P2(0.3), y: iy2 - fs * 0.9, w: P2(3.6), h: fs * 1.3 });
+      }
     } : void 0;
     wedgeItems(h2.index, h2.dir, s02, startX, s12, endXd, false, dynBefore ? dynKey(dynBefore) : void 0, k1, tail);
   });
@@ -34068,15 +34133,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-2aac6166da7e.mjs");
+      return pick(() => "singer-worker-4e222a546177.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-31697d34d155.mjs");
+      return pick(() => "layout-worker-049706f229e1.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-04fba178662a.mjs");
+      return pick(() => "encode-worker-89f8a0a0048f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -44350,7 +44415,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "094fdc3ce0e0aa18" : "dev";
+var CORE_HASH = true ? "cf063c0b1d4f50cd" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -59972,7 +60037,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "8bda347d5ff1",
+  cssHash: "e5d5e96a1d93",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -61774,7 +61839,25 @@ function openMarkMenu(i10, at3) {
   const offWhy = t10.kind === "dyn" && dynOverridden(toks).has(i10) ? `<div class="ctx-hint">${_t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A {value} \u7BA1\u4E0D\u5230", { value: t10.value })}</div>` : "";
   const rampRow = t10.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t10.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t10.ramp ? " disabled" : ""} title="${_t("\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8")}">${_t("{ramp}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09", { ramp: t10.ramp ? "\u2713 " : "" })}</button>` + (rampWhy ? `<div class="ctx-hint">${t10.ramp ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF1A") : ""}${esc12(rampWhy)}</div>` : "");
   const what = t10.kind === "dyn" ? SIGNS[`dyn:${t10.value}`].says(lang()) + (t10.ramp ? (lang() === "zh" ? "\uFF1B" : "; ") + SIGNS.ramp.says(lang()) : "") : SIGNS[`hairpin:${t10.dir}`].says(lang());
-  box.innerHTML = `<div class="ctx-hint ctx-what">${esc12(what)}</div>${offWhy}<div class="ctx-row ctx-dyn">${row2}</div>${rampRow}<div class="ctx-sep"></div>` + // 挪到这一段结尾（7-N）：「到这里为止变到这个力度」——一直滚 / 渐强到这张纸结束、后面没有音可以挂的时候用；已经在结尾 = 不给
+  const toRow = t10.kind !== "hairpin" ? "" : (() => {
+    let j2 = i10 + 1;
+    while (j2 < toks.length && toks[j2].kind !== "dyn" && toks[j2].kind !== "hairpin") j2++;
+    const endDyn = j2 < toks.length && toks[j2].kind === "dyn" ? toks[j2] : null;
+    let cur = "mf";
+    for (let k2 = i10 - 1; k2 >= 0; k2--) {
+      const x2 = toks[k2];
+      if (x2.kind === "dyn") {
+        cur = x2.value;
+        break;
+      }
+    }
+    const LV = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"], ci2 = LV.indexOf(cur);
+    const against = (d3) => t10.dir === "cresc" ? LV.indexOf(d3) <= ci2 : LV.indexOf(d3) >= ci2;
+    const blocked = !!endDyn && !markAtEnd(toks, j2);
+    const chips = LV.map((d3) => `<button class="btn ctx-chip${endDyn?.value === d3 ? " is-on" : ""}${against(d3) ? " is-against" : ""}" data-v="to:${d3}" title="${against(d3) ? esc12(_t("\u548C\u65B9\u5411\u53CD\u7740\uFF1A\u7167\u65B9\u5411\u5148\u8D70\u4E00\u6863\uFF0C\u5230\u8FD9\u513F\u7A81\u53D8\u6210 {d}\uFF08\u8C31\u4E0A\u7070\u5B57\u8BF4\u660E\uFF09", { d: d3 })) : esc12(_t("\u7EC8\u70B9 = {d}", { d: d3 }))}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("");
+    return `<div class="ctx-sep"></div><div class="ctx-k ctx-to">${_t("\u53D8\u5230")}</div><div class="ctx-row ctx-dyn"><button class="btn ctx-chip${endDyn ? "" : " is-on"}" data-v="to:step"${blocked ? " disabled" : ""} title="${esc12(_t("\u6CA1\u5199\u7EC8\u70B9\uFF1A\u7167\u65B9\u5411\u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\uFF09"))}">${_t("\u8D70\u4E00\u6863")}</button>${chips}</div>` + (blocked ? `<div class="ctx-hint">${_t("\u7EC8\u70B9\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u7BA1\u7740\u540E\u9762\u7684\u97F3\uFF1A\u8FD9\u91CC\u4E0D\u53BB\u6389\u5B83\uFF08\u8981\u6539\u5B83\u5C31\u70B9\u5B83\uFF09")}</div>` : "");
+  })();
+  box.innerHTML = `<div class="ctx-hint ctx-what">${esc12(what)}</div>${offWhy}<div class="ctx-row ctx-dyn">${row2}</div>${rampRow}${toRow}<div class="ctx-sep"></div>` + // 挪到这一段结尾（7-N）：「到这里为止变到这个力度」——一直滚 / 渐强到这张纸结束、后面没有音可以挂的时候用；已经在结尾 = 不给
   (t10.kind === "dyn" && !markAtEnd(toks, i10) ? `<button class="btn ctx-item" data-v="toEnd" title="${_t("\u632A\u5230\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\uFF1A\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u4E00\u76F4\u8D70\u5230\u8FD9\u4E00\u6BB5\u7ED3\u675F")}">${_t("\u632A\u5230\u8FD9\u4E00\u6BB5\u7ED3\u5C3E")}</button>` : "") + `<button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? _t("\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09") : _t("\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31")}">${_t("\u5220\u9664")}</button><div class="ctx-hint">${t10.kind === "dyn" ? _t("\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF09") : _t("\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A")}</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -61807,6 +61890,19 @@ function openMarkMenu(i10, at3) {
       if (r10.removed) info(_t("\u987A\u624B\u53BB\u6389\u4E86 {removed} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { removed: r10.removed }));
     } else if (v.startsWith("dyn:")) update(editMarkAt(D3.st, i10, { value: v.slice(4) }));
     else if (v.startsWith("dir:")) update(editMarkAt(D3.st, i10, { dir: v.slice(4) }));
+    else if (v.startsWith("to:")) {
+      const d3 = v === "to:step" ? null : v.slice(3), r10 = setHairpinTarget(D3.st, i10, d3);
+      if (r10.st !== D3.st) update(r10.st);
+      const msg = {
+        changed: _t("\u7EC8\u70B9\u6539\u6210\u4E86 {d}\uFF08\u53D1\u5939\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09", { d: d3 ?? "" }),
+        beforeHairpin: _t("\u5728\u4E0B\u4E00\u6761\u6E10\u5F3A\u6E10\u5F31\u524D\u9762\u653E\u4E86 {d}", { d: d3 ?? "" }),
+        end: _t("\u5728\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\u653E\u4E86 {d}", { d: d3 ?? "" }),
+        removed: _t("\u53BB\u6389\u4E86\u8FD9\u4E00\u6BB5\u7ED3\u5C3E\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1A\u56DE\u5230\u8D70\u4E00\u6863"),
+        blocked: _t("\u7EC8\u70B9\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u7BA1\u7740\u540E\u9762\u7684\u97F3\uFF1A\u8FD9\u91CC\u4E0D\u53BB\u6389\u5B83\uFF08\u8981\u6539\u5B83\u5C31\u70B9\u5B83\uFF09"),
+        none: ""
+      }[r10.did];
+      if (msg) info(msg);
+    }
     scoreEl.focus();
   });
 }
@@ -64250,4 +64346,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-607eeed65949.mjs.map
+//# sourceMappingURL=moonsinger-05287d34f83a.mjs.map

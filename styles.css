@@ -1026,6 +1026,7 @@ body:not(.print-look) .staff-svg .nav-mark.sel, body:not(.print-look) .staff-svg
 .ctx-menu.groove-menu .ctx-what { color: var(--ink); padding-top: 6px; }
 .pad-key.sym .big.it { font-style: italic; font-size: 16px; }
 .ctx-menu .ctx-chip.is-on { background: var(--accent-soft); border-color: var(--accent); }
+.ctx-menu .ctx-chip.is-against { border-style: dashed; color: var(--muted); }   /* 发夹「变到」里和方向反着的那几档（7-N 补）：标出来、不拦 */
 /* 乐器页「记号怎么演」：这位 by value 的解读表（只读） */
 .dyn-tab { border-collapse: collapse; margin-top: 4px; font-size: 12px; color: var(--ink); }   /* 力度换算表（乐器页「力度」那一行，v0.9.23） */
 .dyn-tab th, .dyn-tab td { padding: 1px 6px; text-align: center; white-space: nowrap; }

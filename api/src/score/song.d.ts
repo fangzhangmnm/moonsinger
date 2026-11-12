@@ -609,6 +609,15 @@ export declare function moveMarkToEnd(st: EditorState, from: number): {
 };
 /** 这个力度记号是不是已经挂在这一段最后一个音后面（后面没有音 / 休止了）。 */
 export declare const markAtEnd: (toks: readonly Token[], i: number) => boolean;
+/** 渐强渐弱（手写的发夹）「变到」：把终点的力度写到这条发夹现在结束的地方（7-N 补，统筹 2026-11-12；user「怎么样在后面加一个符号？」）。
+ *  终点 = 后面第一个力度记号 / 下一条发夹 / 这一段结尾（同 perform.ts hairpinEnd）。target：
+ *  · 一档力度：结束在力度记号上 = 改它的值（changed）；结束在下一条发夹前 = 在那儿放一个（beforeHairpin）；结束在这一段结尾 = 挂在最后一个音后面（end，同「挪到这一段结尾」那一种）。
+ *  · null = 走一档（没写终点的做法）：终点是挂在这一段结尾的力度记号 = 去掉它（removed）；终点是还管着后面音的力度记号 = 不动（blocked：去掉它会改到别的音，要用它自己的菜单）。
+ *  不加新的存法：终点就是一个普通的力度记号。纯函数，一步。 */
+export declare function setHairpinTarget(st: EditorState, i: number, target: Dyn | null): {
+    st: EditorState;
+    did: "changed" | "beforeHairpin" | "end" | "removed" | "none" | "blocked";
+};
 /** 点力度记号 / 渐强渐弱的小菜单：改成别的力度 / 换方向；null = 删掉（光标跟着）。 */
 export declare function editMarkAt(st: EditorState, i: number, change: {
     value: Dyn;

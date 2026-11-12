@@ -16,7 +16,7 @@ import { SIGNS } from "../render/signs.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
-import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
+import { setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
 import { songViewOf, setViewInC, setChordTags, setNotation, setMiddleC, setExpressions, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { foldedMarks, type FoldedMark } from "../render/expressions.ts";   // 演奏法和表情不显示时改到 / 写上了它们：轻轻说一句（7-G）
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
@@ -2692,7 +2692,20 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
     (rampWhy ? `<div class="ctx-hint">${t.ramp ? _t("不起作用：") : ""}${esc(rampWhy)}</div>` : "");
   // 顶上一行「这是什么」（谱面分家第五刀 5-4 ⑧，UX 稿：点一下就说明）：字从记号表来（src/render/signs.ts，和谱上画什么同一张表）；渐到开着 = 再说一句渐到
   const what = t.kind === "dyn" ? SIGNS[`dyn:${t.value}`].says(lang()) + (t.ramp ? (lang() === "zh" ? "；" : "; ") + SIGNS.ramp.says(lang()) : "") : SIGNS[`hairpin:${t.dir}`].says(lang());
-  box.innerHTML = `<div class="ctx-hint ctx-what">${esc(what)}</div>${offWhy}<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div>` +
+  // 「变到」（只给手写的发夹；7-N 补，user「怎么样在后面加一个符号？」「括号的小字…可以手动设置成别的」）：终点写到这条发夹现在结束的地方。
+  //   亮着的 = 现在的终点（后面那个力度记号；没有 = 走一档）；和方向反着的那几档标出来、不拦（照旧方向说了算、谱上灰字）。点末端的推定灰字开的也是这个菜单（同一条发夹）
+  const toRow = t.kind !== "hairpin" ? "" : ((): string => {
+    let j = i + 1; while (j < toks.length && toks[j].kind !== "dyn" && toks[j].kind !== "hairpin") j++;
+    const endDyn = j < toks.length && toks[j].kind === "dyn" ? (toks[j] as Extract<Token, { kind: "dyn" }>) : null;
+    let cur: Dyn = "mf"; for (let k = i - 1; k >= 0; k--) { const x = toks[k]; if (x.kind === "dyn") { cur = x.value; break; } }
+    const LV = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const, ci = LV.indexOf(cur);
+    const against = (d: Dyn) => (t.dir === "cresc" ? LV.indexOf(d) <= ci : LV.indexOf(d) >= ci);
+    const blocked = !!endDyn && !markAtEnd(toks, j);
+    const chips = LV.map((d) => `<button class="btn ctx-chip${endDyn?.value === d ? " is-on" : ""}${against(d) ? " is-against" : ""}" data-v="to:${d}" title="${against(d) ? esc(_t("和方向反着：照方向先走一档，到这儿突变成 {d}（谱上灰字说明）", { d })) : esc(_t("终点 = {d}", { d }))}"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("");
+    return `<div class="ctx-sep"></div><div class="ctx-k ctx-to">${_t("变到")}</div><div class="ctx-row ctx-dyn"><button class="btn ctx-chip${endDyn ? "" : " is-on"}" data-v="to:step"${blocked ? " disabled" : ""} title="${esc(_t("没写终点：照方向走一档（谱上灰字）"))}">${_t("走一档")}</button>${chips}</div>` +
+      (blocked ? `<div class="ctx-hint">${_t("终点那个力度记号还管着后面的音：这里不去掉它（要改它就点它）")}</div>` : "");
+  })();
+  box.innerHTML = `<div class="ctx-hint ctx-what">${esc(what)}</div>${offWhy}<div class="ctx-row ctx-dyn">${row}</div>${rampRow}${toRow}<div class="ctx-sep"></div>` +
     // 挪到这一段结尾（7-N）：「到这里为止变到这个力度」——一直滚 / 渐强到这张纸结束、后面没有音可以挂的时候用；已经在结尾 = 不给
     (t.kind === "dyn" && !markAtEnd(toks, i) ? `<button class="btn ctx-item" data-v="toEnd" title="${_t("挪到这一段最后一个音后面：渐强渐弱 / 渐到一直走到这一段结束")}">${_t("挪到这一段结尾")}</button>` : "") +
     `<button class="btn ctx-item danger" data-v="del" title="${t.kind === "dyn" ? _t("去掉这个力度记号（后面的音回到前一个力度记号）") : _t("去掉这个渐强 / 渐弱")}">${_t("删除")}</button>` +
@@ -2713,6 +2726,13 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
     else if (v === "toEnd") { const r = moveMarkToEnd(D.st, i); update(r.st); if (r.removed) info(_t("顺手去掉了 {removed} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）", { removed: r.removed })); }
     else if (v.startsWith("dyn:")) update(editMarkAt(D.st, i, { value: v.slice(4) as Dyn }));
     else if (v.startsWith("dir:")) update(editMarkAt(D.st, i, { dir: v.slice(4) as "cresc" | "dim" }));
+    else if (v.startsWith("to:")) {   // 「变到」：一步撤销；说一句放在了哪
+      const d = v === "to:step" ? null : (v.slice(3) as Dyn), r = setHairpinTarget(D.st, i, d);
+      if (r.st !== D.st) update(r.st);
+      const msg = { changed: _t("终点改成了 {d}（发夹后面那个力度记号）", { d: d ?? "" }), beforeHairpin: _t("在下一条渐强渐弱前面放了 {d}", { d: d ?? "" }), end: _t("在这一段最后一个音后面放了 {d}", { d: d ?? "" }),
+        removed: _t("去掉了这一段结尾那个力度记号：回到走一档"), blocked: _t("终点那个力度记号还管着后面的音：这里不去掉它（要改它就点它）"), none: "" }[r.did];
+      if (msg) info(msg);
+    }
     scoreEl.focus();
   });
 }

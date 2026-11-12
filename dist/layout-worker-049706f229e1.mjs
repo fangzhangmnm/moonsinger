@@ -513,6 +513,16 @@ var S = {
   "\u770B\u8C31": { en: "Reading" },
   "\u9875\u9762\u8BBE\u7F6E": { en: "Page settings" },
   "\u7248\u9762": { en: "Page" },
+  "\u53D8\u5230": { en: "Goes to" },
+  "\u8D70\u4E00\u6863": { en: "One step" },
+  "\u548C\u65B9\u5411\u53CD\u7740\uFF1A\u7167\u65B9\u5411\u5148\u8D70\u4E00\u6863\uFF0C\u5230\u8FD9\u513F\u7A81\u53D8\u6210 {d}\uFF08\u8C31\u4E0A\u7070\u5B57\u8BF4\u660E\uFF09": { en: "Against the direction: it moves one step that way first, then jumps to {d} here (a gray note on the score says so)" },
+  "\u7EC8\u70B9 = {d}": { en: "Ends at {d}" },
+  "\u6CA1\u5199\u7EC8\u70B9\uFF1A\u7167\u65B9\u5411\u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\uFF09": { en: "No written end: moves one step in its direction (gray note on the score)" },
+  "\u7EC8\u70B9\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u7BA1\u7740\u540E\u9762\u7684\u97F3\uFF1A\u8FD9\u91CC\u4E0D\u53BB\u6389\u5B83\uFF08\u8981\u6539\u5B83\u5C31\u70B9\u5B83\uFF09": { en: "The ending dynamic still governs the notes after it, so it isn't removed here (tap it to change it)" },
+  "\u7EC8\u70B9\u6539\u6210\u4E86 {d}\uFF08\u53D1\u5939\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09": { en: "End changed to {d} (the dynamic after the hairpin)" },
+  "\u5728\u4E0B\u4E00\u6761\u6E10\u5F3A\u6E10\u5F31\u524D\u9762\u653E\u4E86 {d}": { en: "Put {d} before the next hairpin" },
+  "\u5728\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\u653E\u4E86 {d}": { en: "Put {d} after the last note of this section" },
+  "\u53BB\u6389\u4E86\u8FD9\u4E00\u6BB5\u7ED3\u5C3E\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1A\u56DE\u5230\u8D70\u4E00\u6863": { en: "Removed the dynamic at the end of this section: back to one step" },
   "\u4E0D\u6309\uFF08\u7167\u5199\u7684\u8C03\uFF09": { en: "No (as written)" },
   "\u4E0D\u6309 C \u8C03\u770B\uFF08\u7167\u5199\u7684\u8C03\uFF09": { en: "Not in C (as written)" },
   "\u6309 C \u8C03\u770B\u3001\u548C\u5F26\u6807\u7EA7\u6570": { en: "Read in C, chord degrees" },
@@ -6363,12 +6373,27 @@ function layDynamics(c) {
     return { ink: [d.ink[0] * g, d.ink[1] * g, d.ink[2] * g, d.ink[3] * g], draw: (x, y, tok, cls) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls, size: P(4 * g) }) };
   };
   const dynItems = [];
+  const tailDynX = /* @__PURE__ */ new Map();
+  {
+    const lastC = units.reduce((m, u, k) => u.kind === "chunk" ? k : m, -1);
+    units.forEach((h, hi) => {
+      if (h.kind !== "hairpin") return;
+      const ei = units.findIndex((u, k) => k > hi && (u.kind === "dyn" || u.kind === "hairpin")), endU = ei >= 0 ? units[ei] : null;
+      if (!endU || endU.kind !== "dyn" || ei < lastC || endU.system !== h.system) return;
+      const prevU = units[hi - 1], before = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
+      const startX = Math.max(P(h.x + 0.3), before ? (tailDynX.get(before) ?? P(before.x + 0.3)) + P(dynOf(before.value).ink[1] + PIN_GAP) : 0);
+      const need = startX + P(PIN_MIN + PIN_GAP - dynOf(endU.value).ink[0]);
+      if (need > P(endU.x + 0.3)) tailDynX.set(endU, need);
+    });
+  }
+  const dynX = (u) => tailDynX.get(u) ?? P(u.x + 0.3);
   for (const u of units) {
     if (u.kind !== "dyn") continue;
     const dr = c.row(u.system), ui = units.indexOf(u), dd = dynOf(u.value), [il, ir, iu, id] = dd.ink;
-    dynItems.push({ row: dr, x0: P(u.x + 0.3 + il), keys: [`${dr}|d${ui}`], draw: (dy) => {
-      dd.draw(P(u.x + 0.3), dy, tokens[u.index].id, "dyn" + (dynOff.has(u.index) ? " art-mute" : ""));
-      dyns.push({ index: u.index, kind: "dyn", system: dr, x: P(u.x + 0.3 + il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
+    const X = dynX(u);
+    dynItems.push({ row: dr, x0: X + P(il), keys: [`${dr}|d${ui}`], draw: (dy) => {
+      dd.draw(X, dy, tokens[u.index].id, "dyn" + (dynOff.has(u.index) ? " art-mute" : ""));
+      dyns.push({ index: u.index, kind: "dyn", system: dr, x: X + P(il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
     } });
   }
   const LEVELS = DYNS;
@@ -6439,7 +6464,7 @@ function layDynamics(c) {
     if (h.kind !== "hairpin" || !lastChunk) return;
     const prevU = units[hi - 1];
     const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
-    const startX = Math.max(P(h.x + 0.3), dynBefore ? P(dynBefore.x + 0.3 + inkOf(dynBefore)[1] + PIN_GAP) : 0), s0 = h.system;
+    const startX = Math.max(P(h.x + 0.3), dynBefore ? dynX(dynBefore) + P(inkOf(dynBefore)[1] + PIN_GAP) : 0), s0 = h.system;
     const endU = units.slice(hi + 1).find((u) => u.kind === "dyn" || u.kind === "hairpin");
     let curDyn = "mf";
     for (let j = h.index - 1; j >= 0; j--) {
@@ -6451,7 +6476,7 @@ function layDynamics(c) {
     }
     const ci = LEVELS.indexOf(curDyn), against = !!endU && endU.kind === "dyn" && (h.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci : LEVELS.indexOf(endU.value) >= ci);
     const IMPLIED_W = 3;
-    const endX = endU ? P(endU.x + 0.3 + (endU.kind === "dyn" ? inkOf(endU)[0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : c.noteEnd(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;
+    const endX = endU ? (endU.kind === "dyn" ? dynX(endU) + P(inkOf(endU)[0]) : P(endU.x + 0.3)) - P(PIN_GAP + (against ? IMPLIED_W + 0.4 : 0)) : c.noteEnd(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;
     if (s1 < s0) return;
     let endXd = endX, labelAbove = false;
     const MIN_PIN = P(PIN_MIN);
@@ -6466,8 +6491,20 @@ function layDynamics(c) {
       const im = { t: "text", x: 0, y: 0, s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: tx("dyn-implied"), anchor: "start" }, ix = labelAbove ? endXd - P(1.2) : endXd + P(0.4), iy = base + P(labelAbove ? -1.9 : 0.1);
       if (c.hint) {
         const fs = tx("dyn-implied"), w = P(c.mw("dyn-implied", im.s)), rr = c.row(s1);
-        c.hint(rr, { part: { ink: { x0: 0, x1: w, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [im] }, tries: [{ x: ix, y: iy }, { x: ix, y: iy - fs * 1.1 }, { x: ix + P(0.8), y: iy }, { x: ix, y: iy - fs * 2.2 }, { x: endXd - w - P(0.4), y: base - P(1.9) }], climb: fs * 1.1 });
-      } else prims.push({ ...im, x: ix, y: iy });
+        c.hint(rr, {
+          part: { ink: { x0: 0, x1: w, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [im] },
+          tries: [{ x: ix, y: iy }, { x: ix, y: iy - fs * 1.1 }, { x: ix + P(0.8), y: iy }, { x: ix, y: iy - fs * 2.2 }, { x: endXd - w - P(0.4), y: base - P(1.9) }],
+          climb: fs * 1.1,
+          // 点得到（7-N 补，user「这种渐强渐弱里面那个括号的小字，我们都让它可以手动设置成别的」）：指着这条发夹 = 开同一个菜单（「变到」）；框按字摆好的地方、稍放大，压在发夹的框上面也指同一条
+          onPlace: (x, y) => {
+            dyns.push({ index: h.index, kind: "hairpin", system: rr, x: x - P(0.3), y: y - fs * 0.9, w: w + P(0.6), h: fs * 1.3 });
+          }
+        });
+      } else {
+        prims.push({ ...im, x: ix, y: iy });
+        const fs = tx("dyn-implied");
+        dyns.push({ index: h.index, kind: "hairpin", system: c.row(s1), x: ix - P(0.3), y: iy - fs * 0.9, w: P(3.6), h: fs * 1.3 });
+      }
     } : void 0;
     wedgeItems(h.index, h.dir, s0, startX, s1, endXd, false, dynBefore ? dynKey(dynBefore) : void 0, k1, tail);
   });
@@ -9159,4 +9196,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-31697d34d155.mjs.map
+//# sourceMappingURL=layout-worker-049706f229e1.mjs.map

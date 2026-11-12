@@ -586,6 +586,36 @@ export declare const S: {
     readonly 版面: {
         readonly en: "Page";
     };
+    readonly 变到: {
+        readonly en: "Goes to";
+    };
+    readonly 走一档: {
+        readonly en: "One step";
+    };
+    readonly "\u548C\u65B9\u5411\u53CD\u7740\uFF1A\u7167\u65B9\u5411\u5148\u8D70\u4E00\u6863\uFF0C\u5230\u8FD9\u513F\u7A81\u53D8\u6210 {d}\uFF08\u8C31\u4E0A\u7070\u5B57\u8BF4\u660E\uFF09": {
+        readonly en: "Against the direction: it moves one step that way first, then jumps to {d} here (a gray note on the score says so)";
+    };
+    readonly "\u7EC8\u70B9 = {d}": {
+        readonly en: "Ends at {d}";
+    };
+    readonly "\u6CA1\u5199\u7EC8\u70B9\uFF1A\u7167\u65B9\u5411\u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\uFF09": {
+        readonly en: "No written end: moves one step in its direction (gray note on the score)";
+    };
+    readonly "\u7EC8\u70B9\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u7BA1\u7740\u540E\u9762\u7684\u97F3\uFF1A\u8FD9\u91CC\u4E0D\u53BB\u6389\u5B83\uFF08\u8981\u6539\u5B83\u5C31\u70B9\u5B83\uFF09": {
+        readonly en: "The ending dynamic still governs the notes after it, so it isn't removed here (tap it to change it)";
+    };
+    readonly "\u7EC8\u70B9\u6539\u6210\u4E86 {d}\uFF08\u53D1\u5939\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09": {
+        readonly en: "End changed to {d} (the dynamic after the hairpin)";
+    };
+    readonly "\u5728\u4E0B\u4E00\u6761\u6E10\u5F3A\u6E10\u5F31\u524D\u9762\u653E\u4E86 {d}": {
+        readonly en: "Put {d} before the next hairpin";
+    };
+    readonly "\u5728\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\u653E\u4E86 {d}": {
+        readonly en: "Put {d} after the last note of this section";
+    };
+    readonly "\u53BB\u6389\u4E86\u8FD9\u4E00\u6BB5\u7ED3\u5C3E\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1A\u56DE\u5230\u8D70\u4E00\u6863": {
+        readonly en: "Removed the dynamic at the end of this section: back to one step";
+    };
     readonly "\u4E0D\u6309\uFF08\u7167\u5199\u7684\u8C03\uFF09": {
         readonly en: "No (as written)";
     };

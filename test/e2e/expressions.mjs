@@ -20,7 +20,7 @@ await p.evaluate(() => {
 await p.waitForTimeout(300);
 await p.evaluate(() => document.querySelector(".notice-stack")?.replaceChildren());
 const S = () => p.evaluate(() => window.__moonsinger.state());
-const dynHits = () => p.evaluate(() => window.__moonsinger.layout().dyns.filter((d) => d.kind === "dyn" || d.kind === "hairpin").length);
+const dynHits = () => p.evaluate(() => new Set(window.__moonsinger.layout().dyns.filter((d) => d.kind === "dyn" || d.kind === "hairpin").map((d) => d.index)).size);   // 指着几个记号（发夹末端的推定灰字另有一块框、指同一条发夹，7-N 补）
 const chip = () => p.evaluate(() => { const c = document.querySelector("#score .score-overlay .ov-folded"); return c ? c.textContent : null; });
 const toasts = () => p.evaluate(() => [...document.querySelectorAll(".notice-stack [data-notice-id], .notice-stack .toast")].map((n) => n.textContent ?? "").join(" | "));
 const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };

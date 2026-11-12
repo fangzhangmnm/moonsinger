@@ -79,7 +79,8 @@ export interface OrnCtx {
             x: number;
             y: number;
         }[];
-        climb?: number;
+        climb?: number; /** 摆好之后（落点 = 字的锚点）：登记点击框之类。 */
+        onPlace?: (x: number, y: number) => void;
     }) => void;
 }
 /** 速度记号一共多宽（sp）：词 + 四分音符 + 数（同 tempoAt 的摆法）。不印的提示（8-5）找「速度后面」那个位置用。 */
