@@ -128,8 +128,8 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
           if (q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });   // 调号（谱号那一块归谱号，v0.9.28）
           // 「1=X」（v0.16.10）：按 C 调看 = 写原来的调；专业模式没有升降号 = 淡的「1=C」提示（不占宽）。字也能点（同调号）
           //   小调（v0.16.83）= 每一处都写淡的「6=X」（按 C 调看 = 照印），哪里从 la 数一眼看得见
-          const lab = k === 0 && !pm && q.head.idx.key !== undefined ? (look.viewInC ? q.head.real : fk === 0 || q.head.minor ? fk : null) : null;
-          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !look.viewInC, q.head.idx.key!, q.head.minor);
+          const lab = k === 0 && !pm && q.head.idx.key !== undefined ? (look.inCActive ? q.head.real : fk === 0 || q.head.minor ? fk : null) : null;
+          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !look.inCActive, q.head.idx.key!, q.head.minor);
           if (fk) hx += 0.8;
           const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
           if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
@@ -246,7 +246,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
             // 换到同一个调、又没有升降号（C → C）：什么都画不出来 → 写个小字，免得成了看不见的记号（印）。按 C 调看 = 每一处写原来的调；
             //   专业模式换成 C（画了还原号）= 淡的「1=C」提示（v0.16.10，不印）
             if (k === 0) {
-              if (look.viewInC) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
+              if (look.inCActive) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
               else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor);
               else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor);
             }

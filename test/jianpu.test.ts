@@ -5,6 +5,7 @@ import { engrave, type Prim } from "../src/render/engrave.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 import { initState, TPQ, type Song, type Token } from "../src/score/song.ts";
 import { setNotation } from "../src/score/song-view.ts";
+import { GEOMETRY, DRAWERS } from "../src/render/notations.ts";
 
 const P = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", octave = 4, alter = 0) => ({ step, alter, octave });
 /** 一条声部、给定的音（谱头照 initState）→ 简谱排一遍。 */
@@ -69,6 +70,21 @@ describe("简谱数字行", () => {
     const x = L.prims.find((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && p.tok === toks[i]!.id && p.s === "x");
     assert(x !== undefined && /(^|\s)ghost(\s|$)/.test(x.cls ?? ""), "灰色 x");
     assert(L.notes.some((h) => h.index === i), "点得到");
+  });
+  it("几何表（谱面只查它；统筹审接口第 2 条）：数字行没有「纵向 = 音高」；鬼音符 = 数字 + 升降 + 照这一行八度基准的点；光标在数字行的上下沿之间", () => {
+    assert(!GEOMETRY.jianpu.pitchAxis && !!GEOMETRY.staff.pitchAxis, "数字行不提供竖着拖改音高");
+    const { L } = lay([n(P("C")), n(P("E")), n(P("G"))]);
+    const row = L.systems.find((r) => r.kind === "jianpu")!;
+    assert(typeof row.octBase === "number", "数字行带着八度基准");
+    const g = (p: ReturnType<typeof P>, shown: number | null) => GEOMETRY.jianpu.ghost(row, 100, [{ p, shown, shift: 0, fifths: 0 }], 5, true);
+    const dots = (svg: string) => (svg.match(/<path /g) ?? []).length, digit = (svg: string) => /middle">(\d)<\/text>/.exec(svg)?.[1];
+    eq([digit(g(P("C"), null)), dots(g(P("C"), null))].join(","), "1,0", "和这一行同一个八度的 1：不加点");
+    eq([digit(g(P("C", 5), null)), dots(g(P("C", 5), null))].join(","), "1,1", "高八度：一个点");
+    eq([digit(g(P("A", 3), null)), dots(g(P("A", 3), null))].join(","), "6,1", "低八度的 6：一个点");
+    assert(g(P("F", 4, 1), 1).includes("♯") && digit(g(P("F", 4, 1), 1)) === "4", "♯4：画升号（shown 不是 null）");
+    assert(!g(P("F", 4, 1), null).includes("♯"), "shown = null 不画升降（同排版的规矩）");
+    const cs = GEOMETRY.jianpu.caretSpan(row, 5), a = DRAWERS.jianpu.anchors(row.staffTop, 5);
+    assert(cs.y1 < a.top + 1e-6 && cs.y2 > a.bottom - 1e-6, "光标盖住行身");
   });
   it("弧线：延音线（数据里的 tie）、圆滑线（一串连着的一条）；连音 = 组上方一个小数字；反复小节线带点", () => {
     const tr = TPQ / 3;

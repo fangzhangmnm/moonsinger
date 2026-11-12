@@ -32,8 +32,10 @@ export interface SongView {
   readonly notation: NotationId;
   /** 叠音的和弦上方写级数（乐理模块 src/theory/）。 */
   readonly chordTags: boolean;
-  /** 按 C 调看（辅助）：谱换到 C 调画、每个调号上方写「1=原来的调」、键上大字写级数；拖音高 / 鬼音符按显示的换回实际的。 */
+  /** 按 C 调看（辅助）：谱换到 C 调画、每个调号上方写「1=原来的调」、键上大字写级数；拖音高 / 鬼音符按显示的换回实际的。= 存着的值（设置面板亮哪个钮）。 */
   readonly viewInC: boolean;
+  /** 按 C 调看此刻起不起作用 = 存着开 ∧ 这种谱是按绝对音高记的（简谱本来就是首调：开关变灰、存着的值不动；施工单第三节「4」）。排版、谱面、键上的大字都看这个。 */
+  readonly inCActive: boolean;
   /** 这条轨的和弦选项。 */
   chordsOf(part: string): ChordsMode;
   /** 版式（舒适 / 紧凑）：谱多大、音距、行距（排版参数表按它挑一行）。存在纸里（Song.paper.density）。 */
@@ -45,16 +47,20 @@ export interface SongView {
 }
 
 const isNotation = (v: unknown): v is NotationId => (NOTATIONS as readonly unknown[]).includes(v);
+/** 这种谱是不是首调（「1」= 这个调的主音）：首调的谱上「按 C 调看」没有意义。 */
+export const MOVABLE_DO: Readonly<Record<NotationId, boolean>> = { staff: false, jianpu: true };
 const isChords = (v: unknown): v is ChordsMode => (CHORDS_MODES as readonly unknown[]).includes(v);
 
 /** 歌 → 这首歌怎么看（纯函数；不读设备、不读界面语言、不读时钟）。 */
 export function songViewOf(song: Song): SongView {
   const chords = new Map<string, ChordsMode>();
   for (const p of song.parts) if (isChords(p.chords)) chords.set(p.id, p.chords);
+  const notation = isNotation(song.notation) ? song.notation : UNWRITTEN.notation, viewInC = song.viewInC === true ? true : UNWRITTEN.viewInC;
   return {
-    notation: isNotation(song.notation) ? song.notation : UNWRITTEN.notation,
+    notation,
     chordTags: song.chordTags === false ? false : UNWRITTEN.chordTags,
-    viewInC: song.viewInC === true ? true : UNWRITTEN.viewInC,
+    viewInC,
+    inCActive: viewInC && !MOVABLE_DO[notation],
     chordsOf: (part) => chords.get(part) ?? UNWRITTEN.chords,
     density: densityOf(song.paper ?? paperOf(DEFAULT_PAPER)),
     lyricFit: song.lyricFit === "lyrics" ? "lyrics" : UNWRITTEN.lyricFit,

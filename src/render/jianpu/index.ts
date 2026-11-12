@@ -2,4 +2,4 @@
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-2）。形状和 staff/index.ts 一样：量 / 行首 / 歌词锚点 / 画 / 道的先后 / 几何纯函数。
 export { measureJianpu, jianpuLineStart, jianpuLyricAnchors, type JianpuTrack } from "./measure.ts";
 export { drawJianpu, JIANPU_LANES, type JianpuDrawCtx } from "./draw.ts";
-export { jianpuCaretSpan, jianpuPreviewAt, jianpuBandTop, jianpuAnchors, type JianpuRowData } from "./geometry.ts";
+export { jianpuCaretSpan, jianpuPreviewAt, jianpuBandTop, jianpuAnchors, jianpuGhost, type JianpuRowData } from "./geometry.ts";

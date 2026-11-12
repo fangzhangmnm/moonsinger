@@ -52,7 +52,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[]): { lyricPa
   const Y = (row: number, v: number) => staffTop(row) + P(v);   // 局部 y（sp）→ px（框架还没定行距：staffTop 是这一行的临时原点）
   for (const r of mine) {
     const q = per[r]!, units = q.units, tokens = q.tokens;
-    for (let s = 0; s < nSys; s++) { const row = rowOf(s, r, 0); if (rows[row]) rows[row]!.x1 = P(staffEnd[s]!); }
+    for (let s = 0; s < nSys; s++) { const row = rowOf(s, r, 0); if (rows[row]) rows[row]!.x1 = P(staffEnd[s]!); }   // 八度基准下面算好再记进每一行（鬼音符要）
     const tokOf = (u: Chunk): number | undefined => (u.index >= 0 && !u.pad ? tokens[u.index]?.id : undefined);
     // 共用挂件（力度那一串、风格、跳转房子、速度；ornaments/index.ts）：音的锚点 = 数字的左右缘
     const orn: OrnCtx = { song, paper, o, notation: "jianpu", P, tx, TR: c.TR, RS: c.RS, mw: c.mw, sp: c.sp, prims: c.prims, dyns: c.dyns, marks, placeAbove, attach: c.attach, right: c.right, tokens, units, row: (sy) => rowOf(sy, r, 0),
@@ -61,6 +61,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[]): { lyricPa
     let f0 = q.head.key; const shifts: number[] = [];
     for (const u of units) { if (u.kind === "key") f0 = u.fifths; else if (u.kind === "chunk" && u.note && u.pitch && !u.pad) shifts.push(toDegree(u.pitch, f0).shift); }
     const base = fewestDotsBase(shifts);
+    for (let s = 0; s < nSys; s++) { const row = rowOf(s, r, 0); if (rows[row]) rows[row]!.octBase = base; }
     // 谱头（UX 稿第 3 节）：第一行上方「1=C  4/4」，字也能点（= 调号 / 拍号的点击框，开谱头面板）
     const row0 = rowOf(0, r, 0), hx = P(MARGIN + ind0 + 0.6);
     const keyS = keyHead(q.head.key, q.head.minor), timeS = `${q.head.time.beats}/${q.head.time.beatType}`, hs = tx("tempo-num");

@@ -6,8 +6,11 @@ import type { NotationId } from "../score/song-view.ts";
 import type { ColEntry } from "./frame/arrange.ts";
 import type { LaneKind } from "./frame/lanes.ts";
 import type { LyricPart } from "./frame/lyric-spots.ts";
-import { staffLooks, staffRows, staffTracks, measureTrack, lineStartWidth, lyricAnchors, drawStaff, STAFF_LANES, anchors, type StaffTrack, type StaffDrawCtx, type Unit, type Chunk } from "./staff/index.ts";
-import { measureJianpu, jianpuLineStart, jianpuLyricAnchors, drawJianpu, JIANPU_LANES, jianpuAnchors } from "./jianpu/index.ts";
+import { staffLooks, staffRows, staffTracks, measureTrack, lineStartWidth, lyricAnchors, drawStaff, STAFF_LANES, anchors, caretSpan, bandTop, pitchAxis, staffGhost, type StaffTrack, type StaffDrawCtx, type Unit, type Chunk } from "./staff/index.ts";
+import { measureJianpu, jianpuLineStart, jianpuLyricAnchors, drawJianpu, JIANPU_LANES, jianpuAnchors, jianpuCaretSpan, jianpuBandTop, jianpuGhost } from "./jianpu/index.ts";
+import type { SystemBox } from "./engrave.ts";
+import type { GhostNote } from "./frame/ghost.ts";
+export type { GhostNote } from "./frame/ghost.ts";
 export type { FoldFamily, StaffTrack, StaffDrawCtx, Unit, Chunk } from "./staff/index.ts";
 
 /** 一行用哪种画法（SystemBox.kind，每一行都写）。 */
@@ -39,6 +42,24 @@ export const DRAWERS: Readonly<Record<RowKind, RowDrawer>> = {
   staff: { kind: "staff", measure: measureTrack, lineStart: lineStartWidth, lyricAnchors, draw: (c, mine) => drawStaff(c, mine), lanes: STAFF_LANES, anchors },
   // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
   jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors },
+};
+
+/** 一种行在主线程上的几何（设计稿第 3.3 节末；统筹审第四刀接口第 2 条：和 DRAWERS 并排、按行的种类查）。谱面（score-view）只查这张表，不写「如果是简谱」。
+ *  row = 排好的那一行（Layout.systems[行]），half = 半个线间距（px）。 */
+export interface RowGeometry {
+  /** 光标长什么样：一根竖线从哪画到哪（px）。 */
+  caretSpan(row: SystemBox, half: number): { y1: number; y2: number };
+  /** 选区带的上沿（px）。 */
+  bandTop(row: SystemBox, half: number): number;
+  /** 鬼音符：x = 那个音的位置（atCaret = 光标处，下一个音要写进去的地方）；交回盖在谱上的 svg 片段（不占排版）。 */
+  ghost(row: SystemBox, x: number, notes: readonly GhostNote[], half: number, atCaret: boolean): string;
+  /** 纵向 = 音高（可选）：这个 y 是第几级、竖着拖了 dy 是几级。没有 = 谱面不提供竖着拖改音高、鬼音符不看谱号位移（数字行）。 */
+  readonly pitchAxis?: { stepAt(row: SystemBox, y: number, half: number): number; stepsOfDrag(dy: number, half: number): number };
+}
+export const GEOMETRY: Readonly<Record<RowKind, RowGeometry>> = {
+  // 五线谱：光标处的鬼音符往右挪 0.35 个线间距（= 下一个音的符头在那儿；原来写在 score-view 里）
+  staff: { caretSpan, bandTop, ghost: (row, x, notes, half, atCaret) => staffGhost(row, atCaret ? x + 0.7 * half : x, notes, half), pitchAxis },
+  jianpu: { caretSpan: jianpuCaretSpan, bandTop: jianpuBandTop, ghost: (row, x, notes, half) => jianpuGhost(row, x, notes, half) },
 };
 
 /** 一种谱：这种谱里一条轨用哪种行；home = 这种谱的主行（一行都没有的纸按它留高）。 */

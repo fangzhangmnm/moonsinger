@@ -23,7 +23,7 @@ import { _t, workerOptions, lang } from "../i18n/index.ts";
 import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, pageGeoOf, textScaleOf } from "../score/paper.ts";
 import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
-import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
+import { fromDiatonic, keySpell, type Pitch } from "../score/pitch.ts";
 import { toC, stepsToC, trackInC } from "../score/view-in-c.ts";
 import { songViewOf } from "../score/song-view.ts";
 import type { HarmonyRead } from "../theory/index.ts";
@@ -32,7 +32,7 @@ import { engrave, type EngraveOpts, type Layout, type PartView, type HitNote, ty
 import { toSvgParts } from "../render/svg.ts";
 import { createTextMeasure, canvasMeasure, type RawMeasure } from "../render/text/index.ts";
 import type { LayoutJob, LayoutReply, SvgParts } from "../render/layout-worker.ts";
-import { caretSpan, previewAt, pitchAxis, bandTop } from "../render/staff/index.ts";   // 五线谱这一种行的几何（谱面分家第二刀）
+import { GEOMETRY, type GhostNote } from "../render/notations.ts";   // 每种行的几何（谱面分家第四刀：按这一行的种类查表，谱面不认是哪种谱）
 /** 这一次排版用的几何（谱大小 / 纸宽 / 严格按纸 / 分页 / 边距 / 横卷）。 */
 type FrameNow = { sp: number; width: number; strict: boolean; page: { h: number; l: number; r: number; t: number; b: number } | null; margins: { l: number; r: number; t: number; b: number }; hscroll: boolean };
 import { span, record } from "./perf-trace.ts";
@@ -157,7 +157,7 @@ export class ScoreView {
   readonly overlayRoot: HTMLDivElement;
   private ctx = document.createElement("canvas").getContext("2d")!;
   /** wait = 鼠标：长按到点之前不拖（v0.9.39；user 2026-10-10「这样吧，还是普通拖动，音也是，但是鼠标的时候也需要长按」——拖动太容易误触）。 */
-  private drag: null | { index: number; d0: number; dur0: number; x0: number; y0: number; axis: "" | "x" | "y"; pid: number; heard: number; wait?: boolean } = null;
+  private drag: null | { index: number; d0: number; dur0: number; x0: number; y0: number; axis: "" | "x" | "y"; pid: number; heard: number; wait?: boolean; /** 竖着拖了 dy 是几级（这一行有「纵向 = 音高」才有）。 */ steps?: (dy: number, half: number) => number } = null;
   private finger: null | { pid: number; y0: number; top0: number; x: number; y: number; moved: boolean; shift: boolean; x0: number; left0: number; ov?: boolean } = null;   // ov = 这根手指按在覆盖层的钮上（点 / 长按归覆盖层，这里只管滚）
   /** 框选 = 鼠标短按就拖（v0.9.39；user「不，框选是普通短按拖动，这样才能有差别」「不然我框选会误触拖动」）：从空白、音、记号、字上短按拖都是框选；长按之后拖才是拿起来挪。
    *  last = 上一次框出来的结果（没变就不重设 = 不重排；user「鼠标框选有点卡」）；raf = 合并到每帧一次。 */
@@ -484,31 +484,25 @@ export class ScoreView {
     const st = this.host.get(), one = singleSel(st), sp = L.sp;
     /** 这一行谱号的位移：看这一行上随便一个音（命中框里 y 带位移、d 不带）。 */
     const hd = this.head();
-    const half = sp * 0.5, stepAt = (row: number, y: number) => pitchAxis.stepAt(L.systems[row]!, y, half);   // 纵向 = 音高（五线谱这一种行的几何，staff/geometry.ts）
-    const shiftOn = (row: number) => { const n = L.notes.find((h) => h.system === row); return n ? stepAt(row, n.y) - n.d : hd?.system === row ? hd.shift : 0; };
-    let row: number, x: number, shift: number;
+    const half = sp * 0.5, geo = (row: number) => GEOMETRY[L.systems[row]!.kind];   // 这一行的几何（按行的种类查表）
+    /** 这一行谱号的位移（只有「纵向 = 音高」的行有）：看这一行上随便一个音（命中框里 y 带位移、d 不带）。 */
+    const shiftAt = (row: number, n: { y: number; d: number }) => { const ax = geo(row).pitchAxis; return ax ? ax.stepAt(L.systems[row]!, n.y, half) - n.d : 0; };
+    const shiftOn = (row: number) => { const n = L.notes.find((h) => h.system === row); return n ? shiftAt(row, n) : hd?.system === row ? hd.shift : 0; };
+    let row: number, x: number, shift: number, atCaret = false;
     if (one >= 0) {
       const n = L.notes.find((h) => h.index === one && this.onTrack(h)), r = n ? null : L.rests.find((h) => h.index === one && this.onTrack(h));
-      if (n) { row = n.system; x = n.x; shift = stepAt(row, n.y) - n.d; }
+      if (n) { row = n.system; x = n.x; shift = shiftAt(row, n); }
       else if (r) { row = r.system; x = r.x; shift = shiftOn(row); }
       else { clear(); return; }
-    } else if (hd) { row = hd.system; x = hd.x + 0.35 * sp; shift = hd.shift; }
+    } else if (hd) { row = hd.system; x = hd.x; shift = hd.shift; atCaret = true; }
     else { clear(); return; }
     const NS = "http://www.w3.org/2000/svg", g = (this.ghostEl ??= document.createElementNS(NS, "svg"));
     g.setAttribute("class", "ghost-preview"); g.setAttribute("width", String(L.width)); g.setAttribute("height", String(L.height));
-    const fs = 4 * sp, nh = 1.18 * sp, ext = 0.4 * sp, parts: string[] = [];
     // 升降号和真写下去的那个音一样（v0.10.23）：拼法按那里的调号（同 writePitch 的 keySpell），画不画按调号 + 这一小节前面的临时记号（shownAccAt，和排版同一个规矩）
     const toks = tr(st), at = one >= 0 ? one : st.caret, fifths = keyAt(toks, at);
-    const inC = songViewOf(this.host.get().song).viewInC, shownToks = inC ? trackInC(toks) : toks;   // 按 C 调看：鬼音符也换到 C、按显示出来的谱算升降号
-    for (const p0 of this.ghostP) {
-      const p = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths), shown = shownAccAt(shownToks, at, p);
-      const d = diatonicIndex(p) + shift, pv = previewAt(L.systems[row]!, d, half), y = pv.y;   // 鬼音符长什么样（符头的 y + 加线）= 行的几何
-      for (const ly of pv.ledgers) parts.push(`<line x1="${x - ext}" x2="${x + nh + ext}" y1="${ly}" y2="${ly}" stroke-width="${0.16 * sp}"/>`);
-      parts.push(`<text x="${x}" y="${y}" font-family="Bravura" font-size="${fs}">\u{E0A4}</text>`);
-      const acc = shown === null ? "" : shown === 1 ? "\u{E262}" : shown === -1 ? "\u{E260}" : shown === 2 ? "\u{E263}" : shown === -2 ? "\u{E264}" : "\u{E261}";   // 0 = 还原号
-      if (acc) parts.push(`<text x="${x - 1.2 * sp}" y="${y}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
-    }
-    g.innerHTML = parts.join("");
+    const inC = songViewOf(this.host.get().song).inCActive, shownToks = inC ? trackInC(toks) : toks;   // 按 C 调看（起作用时）：鬼音符也换到 C、按显示出来的谱算升降号
+    const notes = this.ghostP.map((p0): GhostNote => { const p = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths); return { p, shown: shownAccAt(shownToks, at, p), shift, fifths: inC ? 0 : fifths }; });
+    g.innerHTML = geo(row).ghost(L.systems[row]!, x, notes, half, atCaret);   // 鬼音符长什么样 = 这一行的几何
     if (!g.isConnected) this.ink.appendChild(g);
   }
   private playheadEl: HTMLDivElement | null = null;
@@ -790,7 +784,7 @@ export class ScoreView {
     const NS = "http://www.w3.org/2000/svg", g = (this.caretEl ??= document.createElementNS(NS, "svg"));
     g.setAttribute("class", "ink-caret"); g.setAttribute("width", String(L.width)); g.setAttribute("height", String(L.height));
     const x = h.x + 0.1 * L.sp;
-    const cs = caretSpan(L.systems[h.system]!, L.sp * 0.5);   // 光标长什么样 = 行的几何
+    const cs = GEOMETRY[L.systems[h.system]!.kind].caretSpan(L.systems[h.system]!, L.sp * 0.5);   // 光标长什么样 = 这一行的几何
     g.innerHTML = `<line class="caret" x1="${x}" y1="${cs.y1}" x2="${x}" y2="${cs.y2}" stroke-width="${0.16 * L.sp}"/>`;
     if (!g.isConnected) this.ink.appendChild(g);
   }
@@ -812,7 +806,7 @@ export class ScoreView {
     for (const h of L.dyns) take(h);
     for (const h of L.marks) take(h);
     for (const { a, b, rows } of acc.values()) {
-      const top = bandTop(L.systems[rows[0]!]!, sp * 0.5), bottom = L.lyricYs[rows[rows.length - 1]!]! + 0.8 * sp;   // 选区带：上沿 = 行的几何，下沿 = 歌词基线
+      const top = GEOMETRY[L.systems[rows[0]!]!.kind].bandTop(L.systems[rows[0]!]!, sp * 0.5), bottom = L.lyricYs[rows[rows.length - 1]!]! + 0.8 * sp;   // 选区带：上沿 = 行的几何，下沿 = 歌词基线
       const d = document.createElement("div"); d.className = "selbox";
       Object.assign(d.style, { left: `${a}px`, top: `${top}px`, width: `${b - a}px`, height: `${bottom - top}px` });
       this.ink.insertBefore(d, this.ink.firstChild); this.selEls.push(d);
@@ -1046,8 +1040,8 @@ export class ScoreView {
       const st0 = this.host.get();
       if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
       const t = tr(this.host.get())[hit.index] as NoteTok;
-      const d0 = songViewOf(this.host.get().song).viewInC && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;   // 按 C 调看：显示的第几级 → 实际的第几级（往上拖几格 = 实际往上几格）
-      if (this.rules.noteDrag) this.drag = { index: hit.index, d0, dur0: t.dur, x0: p.x, y0: p.y, axis: "", pid: e.pointerId, heard: d0, ...(e.pointerType === "mouse" ? { wait: true } : {}) };   // 拖音 = 只在「音」里；鼠标要先长按
+      const ax = GEOMETRY[this.layout!.systems[hit.system]!.kind].pitchAxis, d0 = !ax ? NaN : songViewOf(this.host.get().song).inCActive && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;   // 没有「纵向 = 音高」的行（数字行）= 只能横着拖改时值；按 C 调看：显示的第几级 → 实际的第几级
+      if (this.rules.noteDrag) this.drag = { index: hit.index, d0, dur0: t.dur, x0: p.x, y0: p.y, axis: "", pid: e.pointerId, heard: d0, ...(e.pointerType === "mouse" ? { wait: true } : {}), ...(ax ? { steps: ax.stepsOfDrag } : {}) };   // 拖音 = 只在「音」里；鼠标要先长按
       this.el.setPointerCapture(e.pointerId);   // 按下不响（轻点 = 光标，不预览；user 2026-10-08「光标点选不标蓝音的话那么也不用 preview 吧」）；开始拖音高才响
       this.armPress(e, p, hit);
       return;
@@ -1471,12 +1465,12 @@ export class ScoreView {
     const p = this.local(e), dx = p.x - g.x0, dy = p.y - g.y0;
     if (!g.axis) {
       if (Math.hypot(dx, dy) < 6) return;
-      g.axis = Number.isNaN(g.d0) ? "x" : Math.abs(dy) >= Math.abs(dx) ? "y" : "x";   // 休止没有音高：只能横着拖改时值
+      g.axis = Number.isNaN(g.d0) || !g.steps ? "x" : Math.abs(dy) >= Math.abs(dx) ? "y" : "x";   // 休止没有音高、数字行没有「纵向 = 音高」：只能横着拖改时值
       if (g.axis === "y") this.host.sound?.audition(g.index, true);   // 拖音高：从这一下起一直响、换到新音高就换（改时长不出声）
     }
     const st = this.host.get();
     if (g.axis === "y") {
-      const d = g.d0 + pitchAxis.stepsOfDrag(dy, L.sp * 0.5);   // 竖着拖了多远是几级 = 行的几何（只有纵向 = 音高的画法有）
+      const d = g.d0 + g.steps!(dy, L.sp * 0.5);   // 竖着拖了多远是几级 = 这一行的几何（只有「纵向 = 音高」的行会走到这里）
       if (d === g.heard) return;   // 还在同一个音高：不重画、不重新起音
       g.heard = d;
       this.host.set(setNote(st, g.index, { pitch: fromDiatonic(d, keyAt(tr(st), g.index)) }), { gesture: "drag" });

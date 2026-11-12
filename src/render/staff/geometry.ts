@@ -1,6 +1,8 @@
 // geometry.ts —— 五线谱这一种行的纵向（设计稿第 3.3 节末「行的画法另外给的几何纯函数」）：第几级 ↔ y、这一行的竖向锚点。只吃平数据（这一行第五线的 y、半个线间距）。
 //   created 2026-11-11 by Claude Opus 5.5（谱面分家施工单 1b-7：从 engrave.ts 的 yOf / dOf 原样抽出，浮点运算的先后不变）。
 import { TOP_LINE, MID_LINE, BOTTOM_LINE } from "./glyphs.ts";
+import { diatonicIndex } from "../../score/pitch.ts";
+import type { GhostNote } from "../frame/ghost.ts";
 
 /** 第 d 级（第五线 = 38、中线 34、第一线 30；每级半个线间距）在这一行的 y（px）。staffTop = 这一行第五线的 y，half = 半个线间距（px）。 */
 export const yAt = (staffTop: number, d: number, half: number): number => staffTop + (TOP_LINE - d) * half;
@@ -21,6 +23,18 @@ export const previewAt = (row: StaffRowData, d: number, half: number): { y: numb
   for (let k = 40; k <= d; k += 2) ledgers.push(yAt(row.staffTop, k, half));
   return { y: yAt(row.staffTop, d, half), ledgers };
 };
+/** 五线谱的鬼音符（谱面分家第四刀 4-6 从 score-view 搬来，画法不变）：x 处一个符头 + 加线 + 升降号（svg 片段，盖在谱上、不占排版）。 */
+export function staffGhost(row: StaffRowData, x: number, notes: readonly GhostNote[], half: number): string {
+  const sp = 2 * half, fs = 4 * sp, nh = 1.18 * sp, ext = 0.4 * sp, parts: string[] = [];
+  for (const n of notes) {
+    const d = diatonicIndex(n.p) + n.shift, pv = previewAt(row, d, half), y = pv.y;   // 符头的 y + 加线
+    for (const ly of pv.ledgers) parts.push(`<line x1="${x - ext}" x2="${x + nh + ext}" y1="${ly}" y2="${ly}" stroke-width="${0.16 * sp}"/>`);
+    parts.push(`<text x="${x}" y="${y}" font-family="Bravura" font-size="${fs}">\u{E0A4}</text>`);
+    const acc = n.shown === null ? "" : n.shown === 1 ? "\u{E262}" : n.shown === -1 ? "\u{E260}" : n.shown === 2 ? "\u{E263}" : n.shown === -2 ? "\u{E264}" : "\u{E261}";   // 0 = 还原号
+    if (acc) parts.push(`<text x="${x - 1.2 * sp}" y="${y}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
+  }
+  return parts.join("");
+}
 /** 纵向 = 音高（五线谱有、简谱没有）：这个 y 是第几级；竖着拖了 dy（px，往下为正）是几级（半个线间距一级）。 */
 export const pitchAxis = {
   stepAt: (row: StaffRowData, y: number, half: number): number => dAt(row.staffTop, y, half),

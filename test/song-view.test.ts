@@ -24,6 +24,10 @@ describe("这首歌怎么看：没写的意思冻住", () => {
     { const v = songViewOf(initState().song); eq([v.density, v.lyricFit, v.barNumbers].join(","), "cozy,rhythm,true", "版式 / 歌词排法 / 小节号没写 = 舒适 / 按节奏 / 每行开头印");
       const w = songViewOf({ ...initState().song, lyricFit: "lyrics", barNumbers: "off", paper: { ...initState().song.paper ?? paperOf(DEFAULT_PAPER), density: "compact" } });
       eq([w.density, w.lyricFit, w.barNumbers].join(","), "compact,lyrics,false", "写了 = 照写的读"); }
+    { const st = setViewInC(initState(), true);
+      eq([songViewOf(st.song).viewInC, songViewOf(st.song).inCActive].join(","), "true,true", "五线谱：按 C 调看起作用");
+      const j = setNotation(st, "jianpu");
+      eq([songViewOf(j.song).viewInC, songViewOf(j.song).inCActive].join(","), "true,false", "简谱（首调）：存着的值不动，但不起作用"); }
     const st = initState();
     for (const k of ["notation", "chordTags", "viewInC"]) assert(!(k in st.song), `新建的歌不写 ${k}`);
     assert(st.song.parts.every((p) => !("chords" in p)), "新建的歌不写声部的 chords");

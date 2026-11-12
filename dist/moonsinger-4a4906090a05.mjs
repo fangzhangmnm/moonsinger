@@ -9040,14 +9040,17 @@ var NOTATIONS = ["staff", "jianpu"];
 var CHORDS_MODES = ["stacked", "auto", "fold"];
 var UNWRITTEN = Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true });
 var isNotation = (v) => NOTATIONS.includes(v);
+var MOVABLE_DO = { staff: false, jianpu: true };
 var isChords = (v) => CHORDS_MODES.includes(v);
 function songViewOf(song) {
   const chords = /* @__PURE__ */ new Map();
   for (const p2 of song.parts) if (isChords(p2.chords)) chords.set(p2.id, p2.chords);
+  const notation = isNotation(song.notation) ? song.notation : UNWRITTEN.notation, viewInC = song.viewInC === true ? true : UNWRITTEN.viewInC;
   return {
-    notation: isNotation(song.notation) ? song.notation : UNWRITTEN.notation,
+    notation,
     chordTags: song.chordTags === false ? false : UNWRITTEN.chordTags,
-    viewInC: song.viewInC === true ? true : UNWRITTEN.viewInC,
+    viewInC,
+    inCActive: viewInC && !MOVABLE_DO[notation],
     chordsOf: (part) => chords.get(part) ?? UNWRITTEN.chords,
     density: densityOf(song.paper ?? paperOf(DEFAULT_PAPER)),
     lyricFit: song.lyricFit === "lyrics" ? "lyrics" : UNWRITTEN.lyricFit,
@@ -12411,6 +12414,17 @@ var previewAt = (row2, d3, half2) => {
   for (let k2 = 40; k2 <= d3; k2 += 2) ledgers.push(yAt(row2.staffTop, k2, half2));
   return { y: yAt(row2.staffTop, d3, half2), ledgers };
 };
+function staffGhost(row2, x2, notes, half2) {
+  const sp2 = 2 * half2, fs = 4 * sp2, nh2 = 1.18 * sp2, ext = 0.4 * sp2, parts = [];
+  for (const n10 of notes) {
+    const d3 = diatonicIndex(n10.p) + n10.shift, pv2 = previewAt(row2, d3, half2), y2 = pv2.y;
+    for (const ly2 of pv2.ledgers) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${ly2}" y2="${ly2}" stroke-width="${0.16 * sp2}"/>`);
+    parts.push(`<text x="${x2}" y="${y2}" font-family="Bravura" font-size="${fs}">\uE0A4</text>`);
+    const acc = n10.shown === null ? "" : n10.shown === 1 ? "\uE262" : n10.shown === -1 ? "\uE260" : n10.shown === 2 ? "\uE263" : n10.shown === -2 ? "\uE264" : "\uE261";
+    if (acc) parts.push(`<text x="${x2 - 1.2 * sp2}" y="${y2}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
+  }
+  return parts.join("");
+}
 var pitchAxis = {
   stepAt: (row2, y2, half2) => dAt(row2.staffTop, y2, half2),
   stepsOfDrag: (dy, half2) => Math.round(-dy / half2)
@@ -12514,8 +12528,8 @@ function drawStaff(c10, mine) {
         hx += Math.abs(fk) * 1.05;
         if (s10 === 0) {
           if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row2, x: P2(keyX0 - 0.3), ...staffHit(row2), w: P2(Math.max(1.2, hx - keyX0 + 0.3)) });
-          const lab = k2 === 0 && !pm && q2.head.idx.key !== void 0 ? look.viewInC ? q2.head.real : fk === 0 || q2.head.minor ? fk : null : null;
-          if (lab !== null) keyLabel2(row2, keyX0 - 0.1, lab, !look.viewInC, q2.head.idx.key, q2.head.minor);
+          const lab = k2 === 0 && !pm && q2.head.idx.key !== void 0 ? look.inCActive ? q2.head.real : fk === 0 || q2.head.minor ? fk : null : null;
+          if (lab !== null) keyLabel2(row2, keyX0 - 0.1, lab, !look.inCActive, q2.head.idx.key, q2.head.minor);
           if (fk) hx += 0.8;
           const cw2 = drawTime(row2, hx, q2.head.time.beats, q2.head.time.beatType, "timesig");
           if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(cw2 + 0.6) });
@@ -12656,7 +12670,7 @@ function drawStaff(c10, mine) {
               for (let j2 = 0; j2 < Math.abs(u2.prev); j2++) put2(rr2, { t: "glyph", x: P2(u2.x + 0.4 + j2 * 0.8), y: yOf(rr2, pos[j2] - (sh2 ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
             } else drawKeySig(rr2, u2.x + 0.4, u2.fifths, cls, clef);
             if (k2 === 0) {
-              if (look.viewInC) keyLabel2(rr2, u2.x + 0.2, u2.real, false, u2.index, u2.minor);
+              if (look.inCActive) keyLabel2(rr2, u2.x + 0.2, u2.real, false, u2.index, u2.minor);
               else if (u2.fifths === 0 && u2.prev === 0) keyLabel2(rr2, u2.x + 0.2, 0, false, u2.index, u2.minor);
               else if (u2.fifths === 0 || u2.minor) keyLabel2(rr2, u2.x + 0.2, u2.fifths, true, u2.index, u2.minor);
             }
@@ -12992,6 +13006,8 @@ var MID_TEXT_EM = 1.4;
 var MID_TEXT_CH = 0.62;
 var BREATH_W = 0.35 + 0.9;
 var INHALE_W = 2.2;
+var CARET_Y0 = 0.6;
+var CARET_Y1 = 3.9;
 var dotPath = (cx2, cy2, r10) => {
   const k2 = 0.5523 * r10, f2 = (v) => (Math.round(v * 100) / 100).toString();
   return `M${f2(cx2 + r10)},${f2(cy2)}C${f2(cx2 + r10)},${f2(cy2 + k2)} ${f2(cx2 + k2)},${f2(cy2 + r10)} ${f2(cx2)},${f2(cy2 + r10)}C${f2(cx2 - k2)},${f2(cy2 + r10)} ${f2(cx2 - r10)},${f2(cy2 + k2)} ${f2(cx2 - r10)},${f2(cy2)}C${f2(cx2 - r10)},${f2(cy2 - k2)} ${f2(cx2 - k2)},${f2(cy2 - r10)} ${f2(cx2)},${f2(cy2 - r10)}C${f2(cx2 + k2)},${f2(cy2 - r10)} ${f2(cx2 + r10)},${f2(cy2 - k2)} ${f2(cx2 + r10)},${f2(cy2)}Z`;
@@ -13115,6 +13131,10 @@ function drawJianpu(c10, mine) {
       else if (u2.kind === "chunk" && u2.note && u2.pitch && !u2.pad) shifts.push(toDegree(u2.pitch, f0).shift);
     }
     const base2 = fewestDotsBase(shifts);
+    for (let s10 = 0; s10 < nSys; s10++) {
+      const row2 = rowOf(s10, r10, 0);
+      if (rows[row2]) rows[row2].octBase = base2;
+    }
     const row0 = rowOf(0, r10, 0), hx = P2(MARGIN + ind0 + 0.6);
     const keyS = keyHead(q2.head.key, q2.head.minor), timeS = `${q2.head.time.beats}/${q2.head.time.beatType}`, hs = tx2("tempo-num");
     const tempoHere = q2.p.id === c10.owner && q2.head.idx.tempo !== void 0;
@@ -13335,6 +13355,19 @@ function drawJianpu(c10, mine) {
 }
 
 // src/render/jianpu/geometry.ts
+var jianpuCaretSpan = (row2, half2) => ({ y1: row2.staffTop + CARET_Y0 * 2 * half2, y2: row2.staffTop + CARET_Y1 * 2 * half2 });
+var jianpuPreviewAt = (row2, x2, half2) => ({ x: x2 + (0.1 + DIGIT_W / 2) * 2 * half2, y: row2.staffTop + BASE_Y * 2 * half2, size: DIGIT_EM * 2 * half2 });
+var jianpuBandTop = (row2, half2) => row2.staffTop + CARET_Y0 * 2 * half2;
+function jianpuGhost(row2, x2, notes, half2) {
+  const sp2 = 2 * half2, pv2 = jianpuPreviewAt(row2, x2, half2), face = TEXT_FACES[TEXT_STYLES["jp-digit"].face], parts = [];
+  notes.forEach((n10, k2) => {
+    const d3 = toDegree(n10.p, n10.fifths), dots = d3.shift - (row2.octBase ?? 0), dy = -k2 * 2.4 * sp2, Y2 = (v) => row2.staffTop + v * sp2 + dy;
+    parts.push(`<text x="${pv2.x}" y="${pv2.y + dy}" font-family='${face}' font-size="${pv2.size}" text-anchor="middle">${d3.degree}</text>`);
+    if (n10.shown !== null) parts.push(`<text x="${pv2.x - ACC_DX * sp2}" y="${Y2(ACC_Y)}" font-family='${face}' font-size="${ACC_EM * sp2}" text-anchor="middle">${accText(d3.acc)}</text>`);
+    for (let j2 = 0; j2 < Math.abs(dots); j2++) parts.push(`<path d="${dotPath(pv2.x, Y2(dots > 0 ? DIGIT_TOP - DOT_GAP - DOT_R - j2 * DOT_STEP : BASE_Y + DOT_GAP + DOT_R + j2 * DOT_STEP), DOT_R * sp2)}"/>`);
+  });
+  return parts.join("");
+}
 var jianpuAnchors = (origin, half2) => ({ top: origin + JP_BODY.top * 2 * half2, mid: origin + (JP_BODY.top + JP_BODY.bottom) / 2 * 2 * half2, bottom: origin + JP_BODY.bottom * 2 * half2 });
 
 // src/render/notations.ts
@@ -13342,6 +13375,11 @@ var DRAWERS = {
   staff: { kind: "staff", measure: measureTrack, lineStart: lineStartWidth, lyricAnchors, draw: (c10, mine) => drawStaff(c10, mine), lanes: STAFF_LANES, anchors },
   // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
   jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c10, mine) => drawJianpu(c10, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors }
+};
+var GEOMETRY = {
+  // 五线谱：光标处的鬼音符往右挪 0.35 个线间距（= 下一个音的符头在那儿；原来写在 score-view 里）
+  staff: { caretSpan, bandTop, ghost: (row2, x2, notes, half2, atCaret) => staffGhost(row2, atCaret ? x2 + 0.7 * half2 : x2, notes, half2), pitchAxis },
+  jianpu: { caretSpan: jianpuCaretSpan, bandTop: jianpuBandTop, ghost: (row2, x2, notes, half2) => jianpuGhost(row2, x2, notes, half2) }
 };
 var jianpuCan = (q2) => !q2.vrt && !q2.v2 && !q2.hasV2 && !q2.pmode && !q2.p.perc && !q2.p.xHead && !q2.tokens.some((t10) => t10.kind === "note" && !!t10.chord?.length);
 var NOTATIONS2 = {
@@ -13453,7 +13491,7 @@ function engrave(song, o10) {
   if (!o10.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   const lookAt = BUILD.looks(song, new Set(o10.parts.filter((p2) => p2.perc || p2.xHead).map((p2) => p2.id)));
   const songLook = songViewOf(song);
-  if (songLook.viewInC && songLook.notation !== "jianpu") {
+  if (songLook.inCActive) {
     const perc = new Set(o10.parts.filter((p2) => p2.perc).map((p2) => p2.id));
     song = songInC(song, (id2) => perc.has(id2));
   }
@@ -15515,18 +15553,22 @@ var ScoreView = class {
     }
     const st2 = this.host.get(), one = singleSel(st2), sp2 = L2.sp;
     const hd = this.head();
-    const half2 = sp2 * 0.5, stepAt = (row3, y2) => pitchAxis.stepAt(L2.systems[row3], y2, half2);
+    const half2 = sp2 * 0.5, geo = (row3) => GEOMETRY[L2.systems[row3].kind];
+    const shiftAt2 = (row3, n10) => {
+      const ax2 = geo(row3).pitchAxis;
+      return ax2 ? ax2.stepAt(L2.systems[row3], n10.y, half2) - n10.d : 0;
+    };
     const shiftOn = (row3) => {
       const n10 = L2.notes.find((h2) => h2.system === row3);
-      return n10 ? stepAt(row3, n10.y) - n10.d : hd?.system === row3 ? hd.shift : 0;
+      return n10 ? shiftAt2(row3, n10) : hd?.system === row3 ? hd.shift : 0;
     };
-    let row2, x2, shift;
+    let row2, x2, shift, atCaret = false;
     if (one >= 0) {
       const n10 = L2.notes.find((h2) => h2.index === one && this.onTrack(h2)), r10 = n10 ? null : L2.rests.find((h2) => h2.index === one && this.onTrack(h2));
       if (n10) {
         row2 = n10.system;
         x2 = n10.x;
-        shift = stepAt(row2, n10.y) - n10.d;
+        shift = shiftAt2(row2, n10);
       } else if (r10) {
         row2 = r10.system;
         x2 = r10.x;
@@ -15537,8 +15579,9 @@ var ScoreView = class {
       }
     } else if (hd) {
       row2 = hd.system;
-      x2 = hd.x + 0.35 * sp2;
+      x2 = hd.x;
       shift = hd.shift;
+      atCaret = true;
     } else {
       clear2();
       return;
@@ -15547,18 +15590,13 @@ var ScoreView = class {
     g3.setAttribute("class", "ghost-preview");
     g3.setAttribute("width", String(L2.width));
     g3.setAttribute("height", String(L2.height));
-    const fs = 4 * sp2, nh2 = 1.18 * sp2, ext = 0.4 * sp2, parts = [];
     const toks = tr(st2), at2 = one >= 0 ? one : st2.caret, fifths = keyAt(toks, at2);
-    const inC = songViewOf(this.host.get().song).viewInC, shownToks = inC ? trackInC(toks) : toks;
-    for (const p0 of this.ghostP) {
-      const p2 = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths), shown2 = shownAccAt(shownToks, at2, p2);
-      const d3 = diatonicIndex(p2) + shift, pv2 = previewAt(L2.systems[row2], d3, half2), y2 = pv2.y;
-      for (const ly2 of pv2.ledgers) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${ly2}" y2="${ly2}" stroke-width="${0.16 * sp2}"/>`);
-      parts.push(`<text x="${x2}" y="${y2}" font-family="Bravura" font-size="${fs}">\uE0A4</text>`);
-      const acc = shown2 === null ? "" : shown2 === 1 ? "\uE262" : shown2 === -1 ? "\uE260" : shown2 === 2 ? "\uE263" : shown2 === -2 ? "\uE264" : "\uE261";
-      if (acc) parts.push(`<text x="${x2 - 1.2 * sp2}" y="${y2}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
-    }
-    g3.innerHTML = parts.join("");
+    const inC = songViewOf(this.host.get().song).inCActive, shownToks = inC ? trackInC(toks) : toks;
+    const notes = this.ghostP.map((p0) => {
+      const p2 = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths);
+      return { p: p2, shown: shownAccAt(shownToks, at2, p2), shift, fifths: inC ? 0 : fifths };
+    });
+    g3.innerHTML = geo(row2).ghost(L2.systems[row2], x2, notes, half2, atCaret);
     if (!g3.isConnected) this.ink.appendChild(g3);
   }
   playheadEl = null;
@@ -15993,7 +16031,7 @@ var ScoreView = class {
     g3.setAttribute("width", String(L2.width));
     g3.setAttribute("height", String(L2.height));
     const x2 = h2.x + 0.1 * L2.sp;
-    const cs2 = caretSpan(L2.systems[h2.system], L2.sp * 0.5);
+    const cs2 = GEOMETRY[L2.systems[h2.system].kind].caretSpan(L2.systems[h2.system], L2.sp * 0.5);
     g3.innerHTML = `<line class="caret" x1="${x2}" y1="${cs2.y1}" x2="${x2}" y2="${cs2.y2}" stroke-width="${0.16 * L2.sp}"/>`;
     if (!g3.isConnected) this.ink.appendChild(g3);
   }
@@ -16028,7 +16066,7 @@ var ScoreView = class {
     for (const h2 of L2.dyns) take(h2);
     for (const h2 of L2.marks) take(h2);
     for (const { a: a10, b: b3, rows } of acc.values()) {
-      const top = bandTop(L2.systems[rows[0]], sp2 * 0.5), bottom = L2.lyricYs[rows[rows.length - 1]] + 0.8 * sp2;
+      const top = GEOMETRY[L2.systems[rows[0]].kind].bandTop(L2.systems[rows[0]], sp2 * 0.5), bottom = L2.lyricYs[rows[rows.length - 1]] + 0.8 * sp2;
       const d3 = document.createElement("div");
       d3.className = "selbox";
       Object.assign(d3.style, { left: `${a10}px`, top: `${top}px`, width: `${b3 - a10}px`, height: `${bottom - top}px` });
@@ -16332,8 +16370,8 @@ var ScoreView = class {
       const st0 = this.host.get();
       if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
       const t10 = tr(this.host.get())[hit.index];
-      const d0 = songViewOf(this.host.get().song).viewInC && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;
-      if (this.rules.noteDrag) this.drag = { index: hit.index, d0, dur0: t10.dur, x0: p2.x, y0: p2.y, axis: "", pid: e10.pointerId, heard: d0, ...e10.pointerType === "mouse" ? { wait: true } : {} };
+      const ax2 = GEOMETRY[this.layout.systems[hit.system].kind].pitchAxis, d0 = !ax2 ? NaN : songViewOf(this.host.get().song).inCActive && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;
+      if (this.rules.noteDrag) this.drag = { index: hit.index, d0, dur0: t10.dur, x0: p2.x, y0: p2.y, axis: "", pid: e10.pointerId, heard: d0, ...e10.pointerType === "mouse" ? { wait: true } : {}, ...ax2 ? { steps: ax2.stepsOfDrag } : {} };
       this.el.setPointerCapture(e10.pointerId);
       this.armPress(e10, p2, hit);
       return;
@@ -16976,12 +17014,12 @@ var ScoreView = class {
     const p2 = this.local(e10), dx = p2.x - g3.x0, dy = p2.y - g3.y0;
     if (!g3.axis) {
       if (Math.hypot(dx, dy) < 6) return;
-      g3.axis = Number.isNaN(g3.d0) ? "x" : Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
+      g3.axis = Number.isNaN(g3.d0) || !g3.steps ? "x" : Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
       if (g3.axis === "y") this.host.sound?.audition(g3.index, true);
     }
     const st2 = this.host.get();
     if (g3.axis === "y") {
-      const d3 = g3.d0 + pitchAxis.stepsOfDrag(dy, L2.sp * 0.5);
+      const d3 = g3.d0 + g3.steps(dy, L2.sp * 0.5);
       if (d3 === g3.heard) return;
       g3.heard = d3;
       this.host.set(setNote(st2, g3.index, { pitch: fromDiatonic(d3, keyAt(tr(st2), g3.index)) }), { gesture: "drag" });
@@ -32364,7 +32402,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-5bba2a4e9cbb.mjs");
+      return pick(() => "layout-worker-c089127a3465.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-5e3dbb54a643.mjs");
   }
@@ -42294,7 +42332,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "333a88130cccd2b5" : "dev";
+var CORE_HASH = true ? "a9e90a42a281ba36" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -56859,10 +56897,10 @@ var padHost = createPadHost(padEl, {
   showPad: (on2) => showPad(on2)
 });
 var pad3 = padHost.pad;
-var shownInC = songViewOf(D3.st.song).viewInC;
+var shownInC = songViewOf(D3.st.song).inCActive;
 pad3.setBigLabel(shownInC ? "deg" : "abs");
 function syncSongLook() {
-  const inC = songViewOf(D3.st.song).viewInC;
+  const inC = songViewOf(D3.st.song).inCActive;
   if (inC === shownInC) return;
   shownInC = inC;
   pad3.setBigLabel(inC ? "deg" : "abs");
@@ -61995,4 +62033,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5cc3340322d9.mjs.map
+//# sourceMappingURL=moonsinger-4a4906090a05.mjs.map

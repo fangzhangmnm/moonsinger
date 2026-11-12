@@ -840,9 +840,9 @@ const padHost = createPadHost(padEl, {
 });
 const pad = padHost.pad;
 /** 键上的大字跟着这首歌怎么看走：按 C 调看 = 级数，不按 = 音名（换歌 / 切 / 撤销都在 paintNow 里对一次）。 */
-let shownInC = songViewOf(D.st.song).viewInC;
+let shownInC = songViewOf(D.st.song).inCActive;
 pad.setBigLabel(shownInC ? "deg" : "abs");
-function syncSongLook(): void { const inC = songViewOf(D.st.song).viewInC; if (inC === shownInC) return; shownInC = inC; pad.setBigLabel(inC ? "deg" : "abs"); ghostSync(); }
+function syncSongLook(): void { const inC = songViewOf(D.st.song).inCActive; if (inC === shownInC) return; shownInC = inC; pad.setBigLabel(inC ? "deg" : "abs"); ghostSync(); }
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
 /** 弹（只响不写）：开关在 pad 第一排「收起」左边（user 2026-10-08「弹这个锁还是放键盘上吧放在第一row，收起键盘的左边」）；快捷键 ` 照旧。找人视图里一直是弹、拨不动。 */

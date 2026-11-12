@@ -93,7 +93,9 @@ export interface EngraveOpts {
 /** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。staffTop / staff = 五线谱这一行自己的数据（staff/geometry.ts StaffRowData；挪成行的 data 归第二刀）。 */
 export interface SystemBox { top: number; staffTop: number; bottom: number; paper: string; part: string; sys: number; staff: Staff; /** 这一行用哪种画法（谱面分家第四刀；每一行都写）：staffTop = 这一行的原点（五线谱 = 第五线）。 */ kind: RowKind; /** 五线谱右端（px；播放时的小节底色右边界用，v0.10.12）。 */ x1?: number;
   /** 这一行谱上真有墨的上下沿（px）：音（含叠着的房客）、符干、跳音 / 重音、力度那几道、八度线、歌词；不含速度 / 风格记号（那是整张谱的）。播放的灰块按这个（v0.10.26）。 */
-  inkTop?: number; inkBottom?: number }   // staff = 大谱表里是上（1）还是下（2）
+  inkTop?: number; inkBottom?: number;
+  /** 数字行的八度基准（第几个八度的音不加点；谱面分家第四刀 4-6：鬼音符照它加点）。五线谱的行没有。 */
+  octBase?: number }   // staff = 大谱表里是上（1）还是下（2）
 export interface HitNote { index: number; system: number; x: number; y: number; w: number; d: number; /** 合租的声部 2（v0.10.28）：下标指这条虚拟 track（`…~v2`），不是这一行那一位的。 */ part?: string }
 export interface Slot { caret: number; system: number; x: number; end?: true; /** 补齐的淡色小节的开头：点这里 = 光标在尾巴 + 先补这么长（tick）的休止再写（v0.10.6）。 */ lead?: number }   // end = 行末那个落点（光标在下一行开头的那个位置，点在这一行行末时画在这儿）
 /** 光标画在哪（W-17 第 1 刀：排版不认光标，只给出每个 caret 位置该画的地方，score-view 按 EditorState 挑）：老规矩 = 同一 tick 上排在小节线 / 记号后面、音前面；
@@ -169,7 +171,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   // 每张纸每个声部怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段；自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳。鼓 / 固定敲一个键的不自动变大谱表
   const lookAt = BUILD.looks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   const songLook = songViewOf(song);   // 这首歌怎么看（谱面分家第三刀：歌里的设置，只此一处读；按 C 调看的换算之前读）
-  if (songLook.viewInC && songLook.notation !== "jianpu") { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
+  if (songLook.inCActive) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
   const sp = o.sp, P = (v: number) => v * sp, ts = o.textScale ?? 1, T = (v: number) => v * sp * ts;   // P = 谱的尺子；T = 字的尺子（刀 2：紧凑档 ts = 1.4，字和它周围留的地方照舒适档）
   const density = songLook.density;
   const PPAR = PAPER_PARAMS[songLook.notation][density];   // 排版参数表（layout-params.ts）：纸一级按这首歌的谱种；行一级（rowPar）按这一行的种类

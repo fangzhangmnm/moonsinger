@@ -86,14 +86,16 @@ describe("谱面排版：结构和语言", () => {
     const v = FULL_VIEWS.find((x) => x.name === "edit-all")!, song = fullSong(), D = engrave(song, v.opts(song)) as unknown as Record<string, unknown>;
     for (const k of Object.keys(D)) assert(typeof D[k] !== "function", `排版交出去的 ${k} 是函数（worker 原样回它）`);
   });
-  it("结构（守卫 1 谱面这一半，第二刀）：谱面（谱面视图 + 它开的歌词框 / 记号框 / 标题框 + 上面那一层）不碰键盘、不认乐器是谁（设计稿第 3.1 节：谱面「不许知道：键；乐器是谁」）；五线谱只经过 staff/index.ts", () => {
+  it("结构（守卫 1 谱面这一半，第二刀 / 第四刀）：谱面（谱面视图 + 它开的歌词框 / 记号框 / 标题框 + 上面那一层）不碰键盘、不认乐器是谁（设计稿第 3.1 节：谱面「不许知道：键；乐器是谁」）；行的几何只查谱种表旁边那张几何表（notations.ts GEOMETRY），不直接 import 哪一种画法、不按谱种分支（统筹审第四刀接口第 2 条）", () => {
     const UI = new URL("../src/ui/", import.meta.url), readUi = (f: string) => fs.readFileSync(new URL(f, UI), "utf8") as string;
     const SURFACE = ["score-view.ts", "lyric-editor.ts", "mark-editor.ts", "title-editor.ts", "score-overlay.ts"];
     for (const f of SURFACE) for (const p of importsOf(readUi(f))) {
       assert(!/(^|\/)keyboard\//.test(p), `谱面 ${f} import 了键盘模块 ${p}`);
       assert(!/(^|\/)(performers|gm|singer)\//.test(p), `谱面 ${f} import 了 ${p}（乐器是谁由宿主告诉它）`);
-      if (p.includes("render/staff/")) assert(p === "../render/staff/index.ts", `谱面 ${f} 绕过五线谱的入口 import 了 ${p}`);
+      assert(!/render\/(staff|jianpu)\//.test(p), `谱面 ${f} 直接 import 了一种画法 ${p}（行的几何只查 notations.ts 的 GEOMETRY）`);
     }
+    const noComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+    for (const f of SURFACE) assert(!/jianpu|GEOMETRY\.(staff|jianpu)|\.kind\s*[!=]==?\s*"(staff|jianpu)"/.test(noComments(readUi(f))), `谱面 ${f} 按谱种分支了（只许按这一行的种类查 GEOMETRY）`);
   });
   it("结构（小控件）：src/widgets/ 是叶子——里面的文件不 import src/ 里别的文件夹，谁都可以 import 它（统筹裁定 2026-11-11：滚轮不属于键盘也不属于谱面）", () => {
     const W = new URL("../src/widgets/", import.meta.url), files = fs.readdirSync(W).filter((f) => f.endsWith(".ts"));
