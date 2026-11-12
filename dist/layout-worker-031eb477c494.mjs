@@ -6922,6 +6922,8 @@ function stackBases(dots) {
   return out;
 }
 var X_EM = 0.8;
+var KIT_CHAR = { normal: "\u25CF", x: "\xD7", "circle-x": "\u2297", diamond: "\u25C7", "triangle-up": "\u25B3", "triangle-down": "\u25BD", ti: "\u25BD", la: "\u25A1", plus: "+", slash: "/", slashed1: "\u2298", slashed2: "\u2298" };
+var KIT_EM = 0.62;
 var CHORD_EM = 2;
 var CHORD_SX = 0.82;
 var CHORD_H = 1.45;
@@ -7050,7 +7052,7 @@ function drawJianpu(c, mine, mode = "digits") {
   const jk = c.scale ?? 1, Q = (v) => P(v * jk);
   const Y = (row, v) => staffTop(row) + Q(v);
   for (const r of mine) {
-    const q = per[r], units = q.units, tokens = q.tokens, xHead = mode === "digits" && !!q.p.xHead;
+    const q = per[r], units = q.units, tokens = q.tokens, xHead = mode === "digits" && !!q.p.xHead, kit = q.p.perc?.kind === "kit";
     for (let s2 = 0; s2 < nSys; s2++) {
       const row = rowOf(s2, r, 0);
       if (rows[row]) rows[row].x1 = P(staffEnd[s2]);
@@ -7238,6 +7240,13 @@ function drawJianpu(c, mine, mode = "digits") {
             for (let y = yBot, k = 0; y > yTop; y -= st, k++) dd += `Q${ax + (k % 2 ? -amp : amp) * 2},${y - st / 2} ${ax},${Math.max(yTop, y - st)}`;
             put(row, { ...T2, t: "path", d: dd, cls: artCls("arpeggio", "arpeggio jp-arp") });
           }
+        } else if (mode === "x" && kit) {
+          const hits = ps.map((pp, i) => ({ i, pi: percOf(128, 0, midiOf(pp)) })).sort((a, b) => (b.pi?.line ?? 4) - (a.pi?.line ?? 4) || b.i - a.i);
+          hits.forEach(({ i, pi }, k) => {
+            put(row, { ...T2, t: "text", x: cx, y: Y(row, bases[k] - DIGIT_H * 0.12), s: KIT_CHAR[pi?.head ?? "normal"] ?? "\u25CF", cls: small ? "jp-digit jp-x jp-kit art-ghost" : "jp-digit jp-x jp-kit", size: Q(DIGIT_EM * KIT_EM * (small ? GHOST_K : 1)), anchor: "middle" });
+            if (i > 0 && u.j === 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, bases[k] - DIGIT_H / 2), w: Q(DIGIT_W) });
+          });
+          for (let k = 1; k <= n2; k++) dash(gx(k));
         } else if (mode === "x") {
           order.forEach((i, k) => {
             put(row, { ...T2, t: "text", x: cx, y: Y(row, bases[k]), s: small ? "x" : "X", cls: small ? "jp-digit jp-x art-ghost" : "jp-digit jp-x", size: Q(small ? DIGIT_EM * GHOST_K : DIGIT_EM * X_EM), anchor: "middle" });
@@ -8273,4 +8282,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-32ce74e97d1c.mjs.map
+//# sourceMappingURL=layout-worker-031eb477c494.mjs.map

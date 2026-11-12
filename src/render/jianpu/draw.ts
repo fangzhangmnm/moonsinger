@@ -7,7 +7,8 @@ import { TPQ, swellOf, type Song, type PaperSeg, type NoteTok, type OttavaTok } 
 import { _tIn } from "../../i18n/index.ts";
 import { SIGNS } from "../signs.ts";
 import { harmonyTheory, type PlacedTag } from "../../theory/index.ts";
-import { keyText } from "../../score/pitch.ts";
+import { keyText, midiOf } from "../../score/pitch.ts";
+import { percOf } from "../../gm/percussion.ts";
 import { toDegree, fewestDotsBase, rangeBase } from "../../score/degree.ts";
 import type { SongView } from "../../score/song-view.ts";
 import type { Prim, EngraveOpts, HitNote, RestHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox, Layout } from "../engrave.ts";
@@ -22,7 +23,7 @@ import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, midTextW, accsOf, hasArp, contDash as isContDash } from "./measure.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_DX, AUG_R,
-  BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, BREATH_W, INHALE_W, ACC_W, ARP_W, DIGIT_H, X_EM, AUG_Y, lowDotY, LOW_DOT_UNDER, GHOST_K, HEAD_EM, MARK_GAP, MARK_GAP2, STACC_W, STACC_H, STACC_STEP, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, TEN_L, TEN_W, TEN_DY, TEN_STEP, MARCATO_EM, UNSTRESS_EM, BREATH_EM, BREATH_Y, MID_TEXT_CH, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, accText } from "./glyphs.ts";
+  BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, BREATH_W, INHALE_W, ACC_W, ARP_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, AUG_Y, lowDotY, LOW_DOT_UNDER, GHOST_K, HEAD_EM, MARK_GAP, MARK_GAP2, STACC_W, STACC_H, STACC_STEP, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, TEN_L, TEN_W, TEN_DY, TEN_STEP, MARCATO_EM, UNSTRESS_EM, BREATH_EM, BREATH_Y, MID_TEXT_CH, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, accText } from "./glyphs.ts";
 
 /** 简谱数字行贴挂件的先后（从数字往上：演奏法 → 音的修饰 → 力度道 → 跳转 → 速度 → 风格 → 小节号 → 和弦级数；歌词在下面）。和五线谱同一张道名表（frame/lanes.ts）。 */
 export const JIANPU_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics"];
@@ -61,7 +62,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
   const jk = c.scale ?? 1, Q = (v: number) => P(v * jk);   // 行里的尺寸比例（排版参数表行一级，第五刀 5-0c）：数字行自己的尺寸 / 偏移走 Q，框架给的位置（u.x、右边界、行首）走 P
   const Y = (row: number, v: number) => staffTop(row) + Q(v);   // 局部 y（数字行的单位）→ px（框架还没定行距：staffTop 是这一行的临时原点）
   for (const r of mine) {
-    const q = per[r]!, units = q.units, tokens = q.tokens, xHead = mode === "digits" && !!q.p.xHead;   // 台上固定敲一个键（数字行上每个数字 + ×）
+    const q = per[r]!, units = q.units, tokens = q.tokens, xHead = mode === "digits" && !!q.p.xHead, kit = q.p.perc?.kind === "kit";   // 台上固定敲一个键（数字行上每个数字 + ×）；整套鼓（X 行按件换字）
     for (let s = 0; s < nSys; s++) { const row = rowOf(s, r, 0); if (rows[row]) rows[row]!.x1 = P(staffEnd[s]!); }   // 八度基准下面算好再记进每一行（鬼音符要）
     const tokOf = (u: Chunk): number | undefined => (u.index >= 0 && !u.pad ? tokens[u.index]?.id : undefined);
     // 共用挂件（力度那一串、风格、跳转房子、速度；ornaments/index.ts）：音的锚点 = 数字的左右缘
@@ -194,7 +195,14 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
             let dd = `M${ax},${yBot}`; for (let y = yBot, k = 0; y > yTop; y -= st, k++) dd += `Q${ax + (k % 2 ? -amp : amp) * 2},${y - st / 2} ${ax},${Math.max(yTop, y - st)}`;
             put(row, { ...T, t: "path", d: dd, cls: artCls("arpeggio", "arpeggio jp-arp") });
           }
-        } else if (mode === "x") {   // 鼓 = X、鼓的幽灵音 = 小 x（UX 稿第 7 节）；同时敲的几件 = 往上一个叠一个（没有八度点，贴紧）
+        } else if (mode === "x" && kit) {   // 整套鼓：每一下按五线鼓谱的符头种类换字（glyphs.ts KIT_CHAR）；同时敲的几件按五线鼓谱上的高低叠（谱上低的在下）；幽灵音 = 小一号
+          const hits = ps.map((pp, i) => ({ i, pi: percOf(128, 0, midiOf(pp)) })).sort((a, b) => (b.pi?.line ?? 4) - (a.pi?.line ?? 4) || b.i - a.i);   // line 往下 +1（0 = 最上面那条线）
+          hits.forEach(({ i, pi }, k) => {
+            put(row, { ...T, t: "text", x: cx, y: Y(row, bases[k]! - DIGIT_H * 0.12), s: KIT_CHAR[pi?.head ?? "normal"] ?? "●", cls: small ? "jp-digit jp-x jp-kit art-ghost" : "jp-digit jp-x jp-kit", size: Q(DIGIT_EM * KIT_EM * (small ? GHOST_K : 1)), anchor: "middle" });
+            if (i > 0 && u.j === 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, bases[k]! - DIGIT_H / 2), w: Q(DIGIT_W) });
+          });
+          for (let k = 1; k <= n; k++) dash(gx(k));
+        } else if (mode === "x") {   // 只有一件鼓（一线谱的那种）= X、幽灵音 = 小 x（UX 稿第 7 节）；同时敲的几下 = 往上一个叠一个（没有八度点，贴紧）
           order.forEach((i, k) => {
             put(row, { ...T, t: "text", x: cx, y: Y(row, bases[k]!), s: small ? "x" : "X", cls: small ? "jp-digit jp-x art-ghost" : "jp-digit jp-x", size: Q(small ? DIGIT_EM * GHOST_K : DIGIT_EM * X_EM), anchor: "middle" });
             if (i > 0 && u.j === 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, bases[k]! - DIGIT_H / 2), w: Q(DIGIT_W) });

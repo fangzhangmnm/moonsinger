@@ -13257,6 +13257,8 @@ function stackBases(dots) {
   return out;
 }
 var X_EM = 0.8;
+var KIT_CHAR = { normal: "\u25CF", x: "\xD7", "circle-x": "\u2297", diamond: "\u25C7", "triangle-up": "\u25B3", "triangle-down": "\u25BD", ti: "\u25BD", la: "\u25A1", plus: "+", slash: "/", slashed1: "\u2298", slashed2: "\u2298" };
+var KIT_EM = 0.62;
 var CHORD_EM = 2;
 var CHORD_SX = 0.82;
 var CHORD_H = 1.45;
@@ -13389,7 +13391,7 @@ function drawJianpu(c10, mine, mode = "digits") {
   const jk = c10.scale ?? 1, Q2 = (v) => P2(v * jk);
   const Y2 = (row2, v) => staffTop(row2) + Q2(v);
   for (const r10 of mine) {
-    const q2 = per[r10], units = q2.units, tokens = q2.tokens, xHead = mode === "digits" && !!q2.p.xHead;
+    const q2 = per[r10], units = q2.units, tokens = q2.tokens, xHead = mode === "digits" && !!q2.p.xHead, kit = q2.p.perc?.kind === "kit";
     for (let s10 = 0; s10 < nSys; s10++) {
       const row2 = rowOf(s10, r10, 0);
       if (rows[row2]) rows[row2].x1 = P2(staffEnd[s10]);
@@ -13577,6 +13579,13 @@ function drawJianpu(c10, mine, mode = "digits") {
             for (let y2 = yBot, k2 = 0; y2 > yTop; y2 -= st2, k2++) dd += `Q${ax2 + (k2 % 2 ? -amp : amp) * 2},${y2 - st2 / 2} ${ax2},${Math.max(yTop, y2 - st2)}`;
             put2(row2, { ...T3, t: "path", d: dd, cls: artCls("arpeggio", "arpeggio jp-arp") });
           }
+        } else if (mode === "x" && kit) {
+          const hits = ps.map((pp, i10) => ({ i: i10, pi: percOf(128, 0, midiOf(pp)) })).sort((a10, b3) => (b3.pi?.line ?? 4) - (a10.pi?.line ?? 4) || b3.i - a10.i);
+          hits.forEach(({ i: i10, pi }, k2) => {
+            put2(row2, { ...T3, t: "text", x: cx2, y: Y2(row2, bases[k2] - DIGIT_H * 0.12), s: KIT_CHAR[pi?.head ?? "normal"] ?? "\u25CF", cls: small ? "jp-digit jp-x jp-kit art-ghost" : "jp-digit jp-x jp-kit", size: Q2(DIGIT_EM * KIT_EM * (small ? GHOST_K : 1)), anchor: "middle" });
+            if (i10 > 0 && u2.j === 0) chordHeads.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, bases[k2] - DIGIT_H / 2), w: Q2(DIGIT_W) });
+          });
+          for (let k2 = 1; k2 <= n10; k2++) dash(gx(k2));
         } else if (mode === "x") {
           order.forEach((i10, k2) => {
             put2(row2, { ...T3, t: "text", x: cx2, y: Y2(row2, bases[k2]), s: small ? "x" : "X", cls: small ? "jp-digit jp-x art-ghost" : "jp-digit jp-x", size: Q2(small ? DIGIT_EM * GHOST_K : DIGIT_EM * X_EM), anchor: "middle" });
@@ -32848,7 +32857,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-32ce74e97d1c.mjs");
+      return pick(() => "layout-worker-031eb477c494.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-0351db4bb88f.mjs");
   }
@@ -62489,4 +62498,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-cdf1d801736e.mjs.map
+//# sourceMappingURL=moonsinger-16e37861c9ee.mjs.map

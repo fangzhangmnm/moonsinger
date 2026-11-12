@@ -91,12 +91,21 @@ describe("简谱数字行", () => {
     assert(Math.max(...g) - Math.min(...g) < 1e-6, `挤了：这一小节一起放宽，和弦前面一样长的十六分照样等距（${g.map((v) => v.toFixed(2)).join(" ")}）`);
     assert(t1.x[4]! > t0.x[4]! + 1, `挤了：和弦往右让出琶音的地方（${t0.x[4]} → ${t1.x[4]}）`);
   });
-  it("鼓 = X 行（第五刀 5-4，UX 稿第 7 节）：另一种行；音画成 X、幽灵音 = 小 x、同时敲的几件往上叠；节奏的写法同数字行；调号不印、编辑器里淡的「1=D」提示带着它", () => {
+  it("鼓 = X 行（第五刀 5-4，UX 稿第 7 节；5-6 整套鼓按件换字）：另一种行；整套鼓每一下按五线鼓谱的符头种类换字（● × ⊗…）、同时敲的几件按五线鼓谱上的高低叠、幽灵音小一号；只有一件鼓 = X；节奏的写法同数字行；调号不印、编辑器里淡的「1=D」提示带着它", () => {
     const kit = { perc: { kind: "kit" } };
     const { L, toks } = lay([n(P("C", 2)), n(P("D", 2), TPQ, { art: ["ghost"] }), n(P("F", 4, 1), TPQ / 2, { chord: [P("C", 2)] }), n(P("C", 2), TPQ / 2), n(P("C", 2), TPQ)], undefined, kit);
     assert(L.systems.length > 0 && L.systems.every((r) => r.kind === "jianpuX"), "鼓的那一行 = X 行");
     const xs = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-x/.test(p.cls ?? ""));
-    eq(xs.map((p) => p.s).join(""), "XxXXXX", "每一下一个 X；幽灵音 = 小 x；同时敲的两件 = 两个 X");
+    eq(xs.map((p) => p.s).join(""), "●●●●●●", "整套鼓：底鼓 / 军鼓 / 低音天巴 = 普通符头 = ●（五线鼓谱同一张表）；同时敲的两件 = 两个");
+    assert(xs[1]!.size! < xs[0]!.size!, "幽灵音 = 小一号");
+    // 按件换字 + 按五线鼓谱上的高低叠：踩镲（×，最上面）+ 军鼓（●）+ 底鼓（●，最下面）同时敲；开的踩镲 = ⊗；吊镲（×）
+    const M = (m: number) => P((["C", "C", "D", "D", "E", "F", "F", "G", "G", "A", "A", "B"] as const)[m % 12]!, Math.floor(m / 12) - 1, [1, 3, 6, 8, 10].includes(m % 12) ? 1 : 0);
+    const kitL = lay([n(M(42), TPQ, { chord: [M(38), M(36)] }), n(M(46)), n(M(49))], undefined, kit).L;
+    const ks = kitL.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-kit/.test(p.cls ?? ""));
+    eq(ks.slice(0, 3).sort((a, b) => b.y - a.y).map((p) => p.s).join(""), "●●×", "从下往上：底鼓、军鼓、踩镲（五线鼓谱上的高低）");
+    eq(ks.slice(3).map((p) => p.s).join(""), "⊗×", "开的踩镲 = ⊗、吊镲 = ×");
+    const oneL = lay([n(M(38)), n(M(38))], undefined, { perc: { kind: "one", key: 38, info: { staff: 1, line: 0, head: "normal", stem: "up" } } }).L;
+    eq(oneL.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-x/.test(p.cls ?? "")).map((p) => p.s).join(""), "XX", "只有一件鼓的行照旧一律 X");
     assert(!L.prims.some((p) => p.t === "text" && /jp-acc/.test(p.cls ?? "")) && !L.prims.some((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")), "没有升降号、没有八度点");
     eq(L.prims.filter((p) => p.t === "line" && /jp-ul/.test(p.cls ?? "")).length, 1, "两个八分连一条下划线（节奏写法同数字行）");
     assert(!L.prims.some((p) => p.t === "text" && /jp-head/.test(p.cls ?? "") && (p as { s: string }).s.startsWith("1=")), "谱头不印「1=」");
