@@ -7,8 +7,8 @@ import { getBytes } from "../resources.ts";
 
 export type Mp3Quality = "standard" | "small";
 export const MP3_QUALITY: Record<Mp3Quality, { label: string; note: string; stereo: boolean; kbps: number }> = {
-  standard: { label: _t("标准"), note: _t("立体声 192k，约 1.4 MB / 分钟"), stereo: true, kbps: 192 },   // 2026-10-17 user「标准192同意」（定稿 mp3 查案：ai-docs/20261017-final-mp3-quality.md）
-  small: { label: _t("小文件"), note: _t("单声道 64k，约 0.5 MB / 分钟"), stereo: false, kbps: 64 },
+  standard: { label: _t("立体声 192k"), note: _t("约 1.4 MB / 分钟"), stereo: true, kbps: 192 },   // 2026-10-17 user「标准192同意」（定稿 mp3 查案：ai-docs/20261017-final-mp3-quality.md）
+  small: { label: _t("小文件（单声道 64k）"), note: _t("约 0.5 MB / 分钟"), stereo: false, kbps: 64 },
 };
 
 /** 立体声（right 给了）或单声道。样本拷一份再转移给 worker，原样本（缓存里的）不动。 */

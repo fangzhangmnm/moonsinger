@@ -158,6 +158,9 @@ export interface Layout {
   content: { left: number; right: number };
   /** 调号位置上没有升降号的那几处（刀 1 锚点；专业模式，按 C 调看时没有）：覆盖层在这里写淡的「1=C」，点它 = 谱头面板。x / y = 字的起点和基线（px）。 */
   /** s = 写什么（「1=C」/ 小调「6=A」；v0.16.83）。 */
+  /** 「演奏法和表情：不显示」的淡提示（7-G 重做，user 11-12：原来的「折叠 N」小标「又不好懂，而且位置也错了，又还和别人打架」）：整首一个，第一行谱头那一行的右端；
+   *  不印的提示（只躲不推、躲开歌名 / 作者栏 / 曲段名那一条）；覆盖层照它画字，点了 = 页面设置「看谱」页落在那一项。只在不显示、整首确有收起来的记号时有。 */
+  foldHint: { system: number; x: number; y: number; size: number; s: string } | null;
   keyHints: { system: number; index: number; /** 它指的那个调号 token 的 id（守卫 4：编辑器里的提示也算画出来了，第五刀 5-3）。 */ tok?: number; x: number; y: number; size: number; s: string }[];
   /** 整首最下面留的那一条（chrome.tail 给了才有）：覆盖层在里面画「＋ 新曲段」。 */
   tail: (Box & { paper: string }) | null;
@@ -252,7 +255,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   // 作者栏：标题下面靠右，照写的一行一行显示（纯文本，不认格式；user「嗯所见即所得」）；空着 = 什么都不画（覆盖层写浅色提示）
   const lines = song.credits ? song.credits.split("\n") : [];
   let credits: Box | null = null;
-  const cs = tx("credits"), rx = o.width - P(MARGIN), y0 = TOP + T(TITLE_H + 1.0) + titleExtra;
+  const cs = tx("credits"), rx = o.width - P(MARGIN), y0 = TOP + T(TITLE_H + 1.0) + titleExtra, y0Credits = y0;
   if (lines.length) {
     lines.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: "credits", size: cs, anchor: "end" }));
     const w = Math.max(...lines.map((s) => P(mw("credits", s)))) + T(0.6);
@@ -290,6 +293,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const sharedRows: number[] = [], virtualOut: Record<string, Token[]> = {}, measures: Layout["measures"] = [], families: Layout["families"] = [];   // 合租叠起来的那几行（只读：点了不写、不放光标；v0.10.25）
   const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], heads: CaretHead[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [], clefs: ClefHit[] = [];
 const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: Layout["names"] = [], keyHints: Layout["keyHints"] = [];
+  // 「演奏法和表情：不显示」的淡提示：不显示、并且看得见的声部里确有收起来的记号才要（整首一个，放在第一张画出来的纸上）
+  const foldHintWanted = !!foldedPapers && [...foldedPapers.values()].some((pp) => o.parts.some((v) => !v.hidden && foldedCount([pp.tracks[v.id]]) > 0));
+  let foldHint: Layout["foldHint"] = null;
   let shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
   const rowAbove = new Map<number, number>(), lyricOff = new Map<number, number>();   // 行号 → 谱上面留多少（sp）/ 歌词基线在第一线下多少（sp）。刀 4b 起力度 / 反复 / 速度 / 风格 / 八度线不再有「行 → y」的表：每一样各自贴天际线
@@ -763,6 +769,26 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const at = placeHints(printed, hints, P(0.15));
       hints.forEach((h, k) => { const { x, y } = at[k]!; for (const pr of h.part.prims) { const q = { ...pr }; movePrim(q, x, y); prims.push(q); } h.onPlace?.(x, y); });
     }
+    // 「演奏法和表情：不显示」的淡提示（7-G 重做）：这张纸是第一张画出来的、还没摆过 = 摆在第一行谱头那一行（速度 / 「1=C」那一行）的右端；
+    //   放不下 → 它上面靠右 → 第一行左上。只躲不推：躲开这里所有的墨（印的、不印的、行首的淡提示）+ 歌名 / 作者栏 / 曲段名那一条（覆盖层的钮在那儿）
+    if (foldHintWanted && !foldHint) {
+      const r0 = rows.findIndex((r) => r.paper === paper.id);
+      if (r0 >= 0) {
+        const sys = rows[r0]!, s = _tIn(o.locale, "演奏法和表情：不显示"), fs = tx("key-hint"), w = P(mw("key-hint", s));
+        let base = sys.top + fs;   // 没有速度 / 谱头的字 = 这一行顶上
+        for (let i = p0.p; i < prims.length; i++) { const p = prims[i]!; if (p.t === "text" && /(^|\s)(tempo-word|jp-head)(\s|$)/.test(p.cls ?? "") && p.y >= sys.top - P(2) && p.y <= sys.staffTop + P(0.5)) base = Math.max(base === sys.top + fs ? -Infinity : base, p.y); }
+        const tries = [{ x: P(right) - w, y: base }, { x: P(right) - w, y: base - fs * 1.3 }, { x: P(MARGIN), y: sys.top - fs * 0.2 }];
+        const ys = tries.map((t) => t.y), lo = Math.min(...ys) - P(12), hi = Math.max(...ys) + P(12), busy: Ink[] = [];
+        for (const p of prims) { const y = primY(p); if (y < lo || y > hi) continue; primInk(p, sp, textW, (x0, x1, y0, y1) => busy.push({ x0, x1, y0, y1 })); }
+        for (const k of keyHints) if (k.system === r0) busy.push({ x0: k.x, x1: k.x + P(mw("key-hint", k.s)), y0: k.y - k.size * 0.8, y1: k.y + k.size * 0.2 });
+        busy.push({ x0: title.x, x1: title.x + title.w, y0: title.y, y1: title.y + title.h });   // 歌名那一条（两边是覆盖层的「⋯」和页面设置钮）
+        if (credits) busy.push({ x0: credits.x, x1: credits.x + credits.w, y0: credits.y, y1: credits.y + credits.h });
+        else busy.push({ x0: o.width - P(MARGIN + 6), x1: o.width - P(MARGIN), y0: y0Credits - cs * 1.1, y1: y0Credits + cs * 0.3 });   // 作者栏空着 = 覆盖层的「作者」占位
+        if (pTitle.shown) busy.push({ x0: P(MARGIN), x1: o.width - P(MARGIN), y0: pTitle.y, y1: pTitle.y + pTitle.h });   // 曲段名那一条（右边是曲段控件）
+        const [pl] = placeHints(busy, [{ part: { ink: { x0: 0, x1: w, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [] }, tries, climb: fs * 1.1 }], P(0.3));
+        foldHint = { system: r0, x: pl!.x, y: pl!.y, size: fs, s };
+      }
+    }
     papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(note ? { note } : {}), ...foldedHit(paper.id, visible) });
   }
   // 分页：页框（压在最底下）+ 页码；高 = 最后一页的底
@@ -778,7 +804,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     prims.unshift(...frames);
   }
   const height = PG ? Math.max(pageTopY(pageNo) + P(PG.h), tailBottom) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, tp: sp * ts, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)) };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, tp: sp * ts, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, foldHint, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)) };
 }
 
 export type { Token };

@@ -6,7 +6,7 @@
 //   拿掉什么 = 记号表（signs.ts）里的全部：演奏法 art:*（含呼吸、气声、幽灵音、音内起伏、琶音、滚奏）、力度 dyn:*、渐强 / 渐弱、渐到；
 //   再加记号表没收、在键盘「演奏法」页上的两样：圆滑线（音上的 slur）、出声的换气（音上的 inhale，跟着呼吸）。不另抄一份名单：
 //   test/expressions.test.ts 核「键盘两页上的每个键都落在这里」。照旧画的：音、休止、时值、八度、升降号、歌词、小节线、连音线（时值）、反复 / 房子 / 跳转、调号、拍号、速度、风格、句号、小节号。
-//   这是「显示 = 全量、不静默」（仓说明，user 11-11）的例外：不静默——曲段控件里「折叠 N」小标（foldedCount）、PDF 面板一句、改到 / 写上时轻轻说一句（宿主）。
+//   这是「显示 = 全量、不静默」（仓说明，user 11-11）的例外：不静默——第一行谱头那一行右端一行淡字「演奏法和表情：不显示」（排版的 Layout.foldHint，不印；11-12 起取代曲段控件上的「折叠 N」小标）、PDF 面板一句、改到 / 写上时轻轻说一句（宿主）。
 //   只管画：播放照写的来，歌里的记号一个不动。
 import type { Song, Token, NoteTok, Art } from "../score/song.ts";
 import { SIGNS, type SignId } from "./signs.ts";
@@ -58,5 +58,5 @@ export function foldedMarks(tokens: readonly Token[]): FoldedMark[] {
   }
   return out;
 }
-/** 这几条轨一共折叠了几处（曲段控件里的「折叠 N」）。 */
+/** 这几条轨一共折叠了几处（排版记在 PaperHit.folded：测试核数用；界面上不再写数字，user 11-12「折叠八十…又不好懂」）。 */
 export const foldedCount = (tracks: readonly (readonly Token[] | undefined)[]): number => tracks.reduce((n, t) => n + (t ? foldedMarks(t).length : 0), 0);

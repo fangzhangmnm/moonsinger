@@ -15,7 +15,7 @@ export interface Paper { kind: PaperKind | "other"; widthMm: number; heightMm: n
 
 /** 五线谱高（四个线间距）mm：7 mm = 一个线间距 1.75 mm（打谱软件的常用大小）= 舒适档；紧凑 5 mm。 */
 export const STAFF_MM = 7, STAFF_MM_COMPACT = 5;
-export const DENSITIES: { id: Density; label: string; note: string }[] = [{ id: "cozy", label: _t("舒适"), note: _t("谱大、音距正常：摸主旋律、写歌词") }, { id: "compact", label: _t("紧凑"), note: _t("谱小、音距紧、行距再卷一点：配器；歌名和声部名照大的，歌词用小字") }]   // v0.16.43：音距跟版式（user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧、字也可以紧」）;
+export const DENSITIES: { id: Density; label: string; note: string }[] = [{ id: "cozy", label: _t("舒适"), note: _t("音符大，一页放得少") }, { id: "compact", label: _t("紧凑"), note: _t("音符小，一页放得多（歌名和声部名照大的，歌词用小字）") }]   // v0.16.43：音距跟版式（user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧、字也可以紧」）;
 export const densityOf = (p: Paper): Density => p.density ?? "cozy";
 export const staffMmOf = (p: Paper): number => p.staffMm ?? (densityOf(p) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
 /** 一个线间距 mm（按这张纸的谱大小）。 */

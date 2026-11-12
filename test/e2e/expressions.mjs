@@ -21,21 +21,21 @@ await p.waitForTimeout(300);
 await p.evaluate(() => document.querySelector(".notice-stack")?.replaceChildren());
 const S = () => p.evaluate(() => window.__moonsinger.state());
 const dynHits = () => p.evaluate(() => new Set(window.__moonsinger.layout().dyns.filter((d) => d.kind === "dyn" || d.kind === "hairpin").map((d) => d.index)).size);   // 指着几个记号（发夹末端的推定灰字另有一块框、指同一条发夹，7-N 补）
-const chip = () => p.evaluate(() => { const c = document.querySelector("#score .score-overlay .ov-folded"); return c ? c.textContent : null; });
+const chip = () => p.evaluate(() => { const c = document.querySelector("#score .score-overlay .ov-fold-hint"); return c ? c.textContent : null; });   // 「演奏法和表情：不显示」的淡提示（7-G 重做；原来的「折叠 N」小标）
 const toasts = () => p.evaluate(() => [...document.querySelectorAll(".notice-stack [data-notice-id], .notice-stack .toast")].map((n) => n.textContent ?? "").join(" | "));
 const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
 const closeSheet = async () => { await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
 
-check((await dynHits()) === 2 && (await chip()) === null, "显示着：力度 / 渐强渐弱有点击框、没有「折叠 N」", `${await dynHits()} / ${await chip()}`);
+check((await dynHits()) === 2 && (await chip()) === null, "显示着：力度 / 渐强渐弱有点击框、没有淡提示", `${await dynHits()} / ${await chip()}`);
 await openSheet();
 check((await ddValue(p, '.settings-card [data-pg="expr"]')) === "on", "页面设置「看谱」页有「演奏法和表情」，默认显示");
 await pickOnPage(p, '.settings-card [data-pg="expr"]', "off"); await p.waitForTimeout(250);
 check((await S()).song.expressions === false, "选「不显示」= 歌里记着 expressions: false");
 await closeSheet();
 check((await dynHits()) === 0, "谱上没有力度 / 渐强渐弱的点击框（不交给排版）", String(await dynHits()));
-check((await chip()) === "折叠 5", "曲段控件上「折叠 5」（mp、渐强、重音、跳音、一串连线）", String(await chip()));
-await p.click("#score .score-overlay .ov-folded"); await p.waitForTimeout(250);
-check(await p.evaluate(() => { const pg = document.querySelector('.settings-card .set-page[data-page="look"]'); return !!pg && !pg.hidden && !!pg.querySelector('[data-pg="expr"]'); }), "点「折叠 N」= 开页面设置、停在「看谱」页（开关就在那儿）");
+check((await chip()) === "演奏法和表情：不显示", "第一行谱头那一行右端：淡字「演奏法和表情：不显示」（不写数字）", String(await chip()));
+await p.click("#score .score-overlay .ov-fold-hint"); await p.waitForTimeout(250);
+check(await p.evaluate(() => { const pg = document.querySelector('.settings-card .set-page[data-page="look"]'), dd = pg?.querySelector('[data-pg="expr"]'); return !!pg && !pg.hidden && !!dd && dd.closest(".set-item").classList.contains("is-target") && document.activeElement === dd; }), "点淡提示 = 开页面设置「看谱」页、落在「演奏法和表情」那一项（高亮、焦点在它的下拉上）");
 await closeSheet();
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
 check((await S()).song.expressions === undefined && (await chip()) === null && (await dynHits()) === 2, "撤销 = 回到显示、小标没了、点击框回来了");

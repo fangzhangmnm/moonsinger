@@ -713,7 +713,7 @@ const overlayHost: import("../ui/score-overlay.ts").OverlayHost = {
     void paper;
     ctxMenu("hidden-list", `<div class="tc-sec">${_t("隐藏着的（点 = 放出来）")}</div>${rows}`, at, (v) => { showPart(v); });
   },
-  onFolded: () => openPaperSheet(),   // 「折叠 N」（7-G）：开页面设置（默认就是「看谱」页，那个开关在那儿）
+  onFolded: () => openPaperSheet("expr"),   // 「演奏法和表情：不显示」的淡提示（7-G 重做）：开页面设置「看谱」页、落在那一项
   onHiddenPapers: (ids, at) => {   // 「隐藏 N 段」（v0.16.34）：每段一行 = 名字 + 「去看」（本段视图翻过去）+「放出来」（取消隐藏，能撤销）
     const rows = ids.map((id) => `<div class="hidp-row"><span class="hidp-name">${esc(paperLabel(id))}</span><button class="btn ctx-item" data-v="go:${esc(id)}">${_t("去看")}</button><button class="btn ctx-item" data-v="show:${esc(id)}">${_t("放出来")}</button></div>`).join("");
     ctxMenu("hidden-papers", `<div class="tc-sec">${_t("隐藏着的曲段（不放、不印）")}</div>${rows}`, at, (v) => {
@@ -1364,7 +1364,7 @@ function openSettings(): void {
       item(_t("版权与署名"), look("doc:top", _t("看…")), _t("小月相的署名与使用条款、乐器目录图标的作者与许可，合在一篇里看")) +
     `</div>` +
     `<div class="set-page" data-page="a11y">` +
-      item(_t("按 C 调看、和弦标级数"), "", "", `<div class="offer-msg">${_t("搬到了页面设置里（谱右上角那颗钮 →「看谱」）：现在跟着每首歌走、存在歌里，以前在这台设备上调过的不带过去。")}</div>`) +
+      item(_t("移调辅助、和弦辅助"), "", "", `<div class="offer-msg">${_t("搬到了页面设置里（谱右上角那颗钮 →「看谱」）：现在跟着每首歌走、存在歌里，以前在这台设备上调过的不带过去。")}</div>`) +
     `</div>` +
     `<div class="set-page" data-page="sound">` +
       item(_t("模型来源"), "", _t("先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。") + (inFolder ? `<br>${FOLDER_TEXT.models}` : ""),
@@ -1954,7 +1954,7 @@ function openCreditsSheet(): void {
  *  页签 + 一项一行 + 长说明进「?」），选项一律是下拉（界面零件库的下拉标准件，7-T）。曲段的列表拿掉了：增删、改名、隐藏、挪、移调是改这首歌，
  *  谱上每一段名字右边的「⋯」、「隐藏 N 段」小标、本段视图翻进隐藏的段都做得到（7-C 核过，没有只在列表里才能做的）。
  *  每一项的「?」里写清它存在哪：跟着这首歌（进歌、能撤销、PDF 照着印）/ 跟着这首歌的视图（存时顺手带，不算改动）/ 只在这次打开里。 */
-function openPaperSheet(): void {
+function openPaperSheet(focus?: "expr"): void {
   ui.close();
   const box = document.createElement("div");
   box.className = "offer";
@@ -1973,24 +1973,28 @@ function openPaperSheet(): void {
     const lookPage =
       setItem(_t("谱种"), sel("nota", [["staff", _t("五线谱")], ["jianpu", _t("简谱")], ["letters", _t("字母谱")]], look.notation),
         defs([[_t("五线谱"), _t("按音高画在五条线上")], [_t("简谱"), _t("数字 1–7（首调）")], [_t("字母谱"), _t("实际的音名 C D E F G A B，右上角写升降号、右下角写八度（中央 C = C4）")]]) + IN_SONG) +
-      // 名字写这件事本身、默认那一项也说出它是什么（user 11-12 看截图：「这个看谱方式比较让人难以理解它是干什么的」；统筹：不用「方式」「专业」这类要猜的词）
-      setItem(_t("按 C 调看"), sel("inc", [["off", _t("不按（照写的调）")], ["on", _t("按 C 调看")]], look.viewInC ? "on" : "off", movable),
-        (movable ? (MOVABLE_DO[look.notation] ? _t("简谱本来就是首调（1 = 这个调的主音），用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。") : _t("字母谱写的是实际的音名，用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。"))
-          : defs([[_t("不按（照写的调）"), _t("按实际的调画谱，键上大字写音名")], [_t("按 C 调看"), _t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")]])) + IN_SONG) +
+      // 名字写这件事本身、默认那一项也说出它是什么（user 11-12 看截图：「这个看谱方式比较让人难以理解它是干什么的」；统筹：不用「方式」「专业」这类要猜的词）；
+      //   叫「移调辅助」（user 11-12「我记得我们一开始定的语义是辅助功能啊…这几个看谱里面…主要就都是一些辅助功能」，统筹定名）
+      setItem(_t("移调辅助"), sel("inc", [["off", _t("不用（照写的调）")], ["on", _t("按 C 调看")]], look.viewInC ? "on" : "off", movable),
+        (movable ? (MOVABLE_DO[look.notation] ? _t("简谱本来就是首调（1 = 这个调的主音），用不上「移调辅助」；存着的选择不动，切回五线谱照旧。") : _t("字母谱写的是实际的音名，用不上「移调辅助」；存着的选择不动，切回五线谱照旧。"))
+          : defs([[_t("不用（照写的调）"), _t("按实际的调画谱，键上大字写音名")], [_t("按 C 调看"), _t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")]])) + IN_SONG) +
       // 字母谱：中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；只在字母谱时显示）
-      (look.notation === "letters" ? setItem(_t("中央 C 叫"), sel("mc", MIDDLE_C_NAMES.map((n) => [String(n), n === 4 ? `C${n}（${_t("默认")}）` : `C${n}`] as const), String(look.middleC)), _t("字母谱右下角的八度数字从哪儿数。") + IN_SONG) : "") +
-      setItem(_t("和弦"), sel("ct", [["on", _t("标级数")], ["off", _t("不标")]], look.chordTags ? "on" : "off"), _t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选") + IN_SONG) +
+      (look.notation === "letters" ? setItem(_t("中央 C 叫"), sel("mc", MIDDLE_C_NAMES.map((n) => [String(n), n === 4 ? _t("C{n}（国际通用）", { n }) : `C${n}`] as const), String(look.middleC)), _t("字母谱右下角的八度数字从哪儿数。") + IN_SONG) : "") +
+      setItem(_t("和弦辅助"), sel("ct", [["on", _t("标级数")], ["off", _t("不标")]], look.chordTags ? "on" : "off"), _t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选") + IN_SONG) +
       // 演奏法和表情（7-G；user 11-11 深夜「显示里面再加一个不显示articulation和表情的选项。打印时也许会用，相当于前面讨论的不overwhelm小孩和初学者」）
       setItem(_t("演奏法和表情"), sel("expr", [["on", _t("显示")], ["off", _t("不显示")]], look.expressions ? "on" : "off"),
-        _t("不显示 = 键盘「演奏法」「力度」两页上的东西都不画、不占地方（跳音、重音、连线、呼吸、力度、渐强渐弱…），行跟着变矮；每一段的曲段控件上一个灰色的「折叠 N」说这一段收起了几处。只管画：播放照写的来，歌里的记号一个不动；PDF 照眼前的样子印。") + IN_SONG) +
+        _t("不显示 = 键盘「演奏法」「力度」两页上的东西都不画、不占地方（跳音、重音、连线、呼吸、力度、渐强渐弱…），行跟着变矮；第一行谱头那一行的右端有一行淡字「演奏法和表情：不显示」（不印），点它回到这里。只管画：播放照写的来，歌里的记号一个不动；PDF 照眼前的样子印。") + IN_SONG) +
       // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」；和歌手牌那个是同一个开关
       (one ? setItem(_t("只看一号轨"), sel("only1", [["off", _t("都看")], ["on", _t("只看「{song}」", { song: partLabels(D.st.song, D.extras)[0] ?? "" })]], only1 ? "on" : "off"), _t("速度、风格、反复写在最上面那位身上；别的声部缩成细行。") + IN_VIEW) : "");
     const layoutPage =
       setItem(_t("纸张"), sel("paper", [...PAPER_KINDS.map((k) => [k, _t("{paper}（{note}）", { paper: PAPER_LABEL[k], note: PAPER_NOTE[k] })] as const), ...(p.kind === "other" ? [["other", _t("{paper}（{note}）", { paper: _t("其他"), note: paperSizeText(p) })] as const] : [])], p.kind),
         _t("整首歌一张纸。纸越大一行放的小节越多；屏幕放得下就照纸排。不打印的时候不分页。") + IN_SONG) +
-      // 别家文件写的谱高不是我们两档里的任何一档：如实显示成单独一项，不说成舒适或紧凑（统筹 2026-11-12）；选它 = 不动
-      setItem(_t("版式"), sel("density", [...DENSITIES.map((z) => [z.id, z.label] as const), ...(fileMm !== null ? [["file", _t("照文件里的 {mm} 毫米", { mm: +fileMm.toFixed(2) })] as const] : [])], fileMm !== null ? "file" : look.density),
-        defs(DENSITIES.map((z) => [z.label, z.note] as const)) + "<br>" + _t("紧凑 = 谱小一号、行距和谱距收紧、没写歌词的声部不留歌词位。存进 MusicXML 的 scaling 和行距，别的软件打开也一样。") + IN_SONG) +
+      // 音符密度（user 11-12「嗯，那么叫音符密度」；原来叫「版式」）。别家文件写的谱高不是我们两档里的任何一档：如实叫「自定义（N 毫米）」（user「应该有一个选项是相当于自定义，得如实那么说」），选它 = 不动。
+      //   每个选项得到什么写进问号（下拉的项只有一行字，不把选项撑长）；问号里只说「常用」，不说「应该」（统筹 2026-11-12）
+      setItem(_t("音符密度"), sel("density", [...DENSITIES.map((z) => [z.id, z.label] as const), ...(fileMm !== null ? [["file", _t("自定义（{mm} 毫米）", { mm: +fileMm.toFixed(2) })] as const] : [])], fileMm !== null ? "file" : look.density),
+        _t("同一张纸上排得松还是密：音符多大、行距、音和音之间的距离一起变。") + "<br>" +
+        defs([...DENSITIES.map((z) => [z.label, z.note] as const), ...(fileMm !== null ? [[_t("自定义"), _t("别的软件存的谱带着自己的谱高，照它排")] as const] : [])]) + "<br>" +
+        _t("单行的谱、给新手看的常用舒适；声部多的总谱常用紧凑。存进 MusicXML 的 scaling 和行距，别的软件打开也一样。") + IN_SONG) +
       setItem(_t("排法"), sel("flow", [["cont", _t("连续")], ["pages", _t("分页")], ["scroll", _t("横卷")]], scrollFlow ? "scroll" : pageFlow ? "pages" : "cont"),
         defs([[_t("连续"), _t("不断页，每一行和分页一样")], [_t("分页"), _t("按纸（A4 / A5）的真实高度断页，预览打印")], [_t("横卷"), _t("每张纸一行、一直往右，横着滚；声部名钉在左边")]]) + IN_VIEW) +
       setItem(_t("屏幕放不下纸的时候"), sel("reflow", [["fit", _t("不折行")], ["reflow", _t("折行")]], reflow ? "reflow" : "fit"),
@@ -2008,6 +2012,10 @@ function openPaperSheet(): void {
   const showPage = wireSetPages(box, (pg) => { page = pg as typeof page; });
   draw();
   document.body.append(box);
+  if (focus) {   // 落在那一项：高亮一下、滚到它、焦点放在它的下拉上（「演奏法和表情：不显示」的淡提示点进来的）
+    const dd = box.querySelector<HTMLButtonElement>(`[data-pg="${focus}"]`), it = dd?.closest<HTMLElement>(".set-item");
+    if (it) { it.classList.add("is-target"); it.scrollIntoView({ block: "nearest" }); dd!.focus(); setTimeout(() => it.classList.remove("is-target"), 1600); }
+  }
   const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
@@ -2017,13 +2025,13 @@ function openPaperSheet(): void {
   box.addEventListener("change", (e) => {
     const el = e.target as HTMLButtonElement, k = el.dataset.pg, v = el.value; if (!k) return;
     if (k === "nota") setSongLook(setNotation(D.st, v as NotationId), v === "jianpu" ? _t("简谱") : v === "letters" ? _t("字母谱") : _t("五线谱"));
-    else if (k === "inc") setSongLook(setViewInC(D.st, v === "on"), v === "on" ? _t("按 C 调看") : _t("不按 C 调看（照写的调）"));
+    else if (k === "inc") setSongLook(setViewInC(D.st, v === "on"), `${_t("移调辅助")} ${v === "on" ? _t("按 C 调看") : _t("不用（照写的调）")}`);
     else if (k === "mc") { const n = Number(v); setSongLook(setMiddleC(D.st, n), _t("中央 C 叫 C{n}", { n })); }
-    else if (k === "ct") setSongLook(setChordTags(D.st, v === "on"), v === "on" ? _t("和弦标级数") : _t("和弦不标级数"));
+    else if (k === "ct") setSongLook(setChordTags(D.st, v === "on"), `${_t("和弦辅助")} ${v === "on" ? _t("标级数") : _t("不标")}`);
     else if (k === "expr") setSongLook(setExpressions(D.st, v === "on"), v === "on" ? _t("显示演奏法和表情") : _t("不显示演奏法和表情"));
     else if (k === "only1") { const one = D.st.song.parts[0]; if (one) { for (const q of D.st.song.parts) setPv(q.id, { only: v === "on" && q === one }); afterViewChange(); } }
     else if (k === "paper") { if ((PAPER_KINDS as string[]).includes(v)) setPageLook(setPaper(D.st, v as PaperKind), { kind: "paperSize", label: `${_t("纸张")} ${PAPER_LABEL[v as PaperKind]}` }); }
-    else if (k === "density" && v !== "file") setPageLook(setDensity(D.st, v as Density), { kind: "density", label: `${_t("版式")} ${DENSITIES.find((z) => z.id === v)?.label ?? v}` });
+    else if (k === "density" && v !== "file") setPageLook(setDensity(D.st, v as Density), { kind: "density", label: `${_t("音符密度")} ${DENSITIES.find((z) => z.id === v)?.label ?? v}` });
     else if (k === "flow") { pageFlow = v === "pages"; scrollFlow = v === "scroll"; view.render(); view.followNow(); }
     else if (k === "reflow") { reflow = v === "reflow"; view.render(); }
     else if (k === "bn") setPageLook(setBarNumbers(D.st, v === "on"), { kind: "barNumbers", label: `${_t("小节号")} ${v === "on" ? _t("每行开头") : _t("不印")}` });

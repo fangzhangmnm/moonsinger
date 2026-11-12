@@ -85,3 +85,22 @@ describe("版面上不许叠在一起（7-K）", () => {
     assert(!gone.length, `单子上这几条已经没有了（从 PENDING 里划掉）：${gone.join("；")}`);
   });
 });
+
+describe("「演奏法和表情：不显示」的淡提示不和别人打架（7-G 重做；user「位置也错了，又还和别人打架」）", () => {
+  const LONG = "一个很长很长的歌名用来测试两行的标题会不会和谱头那一行右端的提示打架以及作者栏";
+  for (const notation of ["staff", "jianpu", "letters"] as const) it(`${notation}：两行的长歌名 + 作者栏 + 多段，提示不压任何墨、歌名、作者栏、曲段名那一条（曲段控件），也不出这一行右端`, () => {
+    const s0 = { ...asFrozen(fullSong()), notation, title: LONG, credits: "词：某某\n曲：某某", expressions: false } as Song;
+    for (const v of FULL_VIEWS.filter((x) => ["edit-all", "edit-pages", "print"].includes(x.name))) {
+      const o = { ...v.opts(s0), measure: real } as EngraveOpts, L = engrave(s0, o), fh = L.foldHint;
+      assert(!!fh, `${v.name}：有提示`);
+      const w = real.widthPx(fh!.s, fh!.size, L.sp, o.textScale ?? 1), box = { x0: fh!.x, x1: fh!.x + w, y0: fh!.y - fh!.size * 0.8, y1: fh!.y + fh!.size * 0.2 };
+      const hit = (b: { x0: number; x1: number; y0: number; y1: number }) => box.x0 < b.x1 - EPS && b.x0 < box.x1 - EPS && box.y0 < b.y1 - EPS && b.y0 < box.y1 - EPS;
+      const bad = inkOf(L, (t, size) => real.widthPx(t, size, L.sp, o.textScale ?? 1), (p) => p.t === "rect" && has(p, "page"), font).filter(hit).map((k) => kindOf(allPrims(L)[k.i]!));
+      assert(!bad.length, `${v.name}：压到了 ${[...new Set(bad)].join(" ")}`);
+      const t = L.title; assert(!hit({ x0: t.x, x1: t.x + t.w, y0: t.y, y1: t.y + t.h }), `${v.name}：压到歌名那一条`);
+      for (const pp of L.papers) if (pp.title.shown) assert(!hit({ x0: 0, x1: L.width, y0: pp.title.y, y1: pp.title.y + pp.title.h }), `${v.name}：压到曲段名那一条（曲段控件）`);
+      assert(box.x1 <= L.width - L.pageX.left * 0 + 1 && box.x1 <= o.width + 1, `${v.name}：出了这一行右端`);
+    }
+  });
+});
+

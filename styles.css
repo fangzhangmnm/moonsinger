@@ -274,6 +274,7 @@ body.listen-mode .ink-caret { display: none; }
 .set-item > .set-row { margin: 6px 0 0; }
 .set-item .row-help { padding: 2px 0 4px; }
 .set-item .set-where { display: inline-block; margin-top: 3px; }   /* 页面设置「?」里那一句「存在哪」（7-C） */
+.set-item.is-target { background: var(--accent-soft); border-radius: 6px; transition: background .4s; }   /* 从谱上的淡提示点进来时，落在那一项（7-G 重做） */
 /* 长文弹窗（版权与署名 / 诊断日志；v0.16.90）：盖在设置上面，正文能滚、能选中复制 */
 .doc-layer { position: fixed; inset: 0; z-index: var(--z-menu); background: rgba(0, 0, 0, .28); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .doc-card { width: min(640px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; }

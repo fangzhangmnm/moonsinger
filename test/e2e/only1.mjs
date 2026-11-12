@@ -37,11 +37,11 @@ await pickOnPage(p, '[data-pg="bn"]', "off"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === "off" && (await p.$$eval("#score text.bar-no", (e) => e.length)) === 0, "选「不印」= 歌里记着、谱上没有小节号");
 await pickOnPage(p, '[data-pg="bn"]', "on"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === undefined, "再选「每行开头」= 回到默认");
-// 别家文件写的谱高（统筹 2026-11-12）：版式下拉如实显示「照文件里的 6.5 毫米」；换纸带着它；选了版式才换
+// 别家文件写的谱高（统筹 2026-11-12）：音符密度下拉如实显示「自定义（6.5 毫米）」（user「得如实那么说」）；换纸带着它；选了舒适 / 紧凑才换
 await p.keyboard.press("Escape"); await p.mouse.click(5, 880); await p.waitForTimeout(150);
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, song: { ...s.song, paper: { kind: "A5", widthMm: 148, heightMm: 210, marginMm: { l: 16, r: 16, t: 16, b: 16 }, staffMm: 6.5 } } }); }); await p.waitForTimeout(250);
 await openSheet(); await p.click('[data-tab="layout"]'); await p.waitForTimeout(100);
-check((await ddValue(p, '[data-pg="density"]')) === "file" && (await ddOptions(p, '[data-pg="density"]').catch(() => [])).some((o) => o.value === "file" && /6\.5/.test(o.label)), "版式下拉 = 「照文件里的 6.5 毫米」（不说成舒适 / 紧凑）");
+check((await ddValue(p, '[data-pg="density"]')) === "file" && (await ddOptions(p, '[data-pg="density"]').catch(() => [])).some((o) => o.value === "file" && /^自定义（6\.5 毫米）$/.test(o.label)), "音符密度下拉 = 「自定义（6.5 毫米）」（不说成舒适 / 紧凑）");
 await pickOnPage(p, '[data-pg="paper"]', "A4"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.paper)).staffMm === 6.5, "换成 A4：谱高带着走");
 check((await p.$$eval(".popup-menu [data-id]", () => 0), true) && !/（[^）]*（/.test(await p.$eval('[data-pg="paper"]', (e) => e.textContent ?? "")), "纸张那一项没有括号套括号");
