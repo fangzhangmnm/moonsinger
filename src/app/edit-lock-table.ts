@@ -12,9 +12,10 @@
 //
 // **标签不能当证据**：一个操作自己报「我是看法」，写入口放行之前还要用这里的 `verify` 核一遍——这一步除了它该动的那个地方，别的一个引用都没变。
 //   说是看法、实际动了别的 = 当内容拒（设计稿 14.2 第 1 条）。
-// 零依赖（只 import 类型）、纯数据 + 纯函数：node 直测（test/edit-lock.test.ts）。
+// 纯数据 + 纯函数：node 直测（test/edit-lock.test.ts）。只 import 类型、两张常量表和纸的默认值（paper.ts 的 paperOf：「歌里没写纸 = 默认纸」要和写了的比）。
 import type { Song } from "../score/song.ts";
-import { SONG_VIEW_KEYS, PART_VIEW_KEYS } from "../score/song-view.ts";   // 只 import 两张常量表（「这首歌怎么看」住在哪几个键），song-view.ts 本身零依赖
+import { SONG_VIEW_KEYS, PART_VIEW_KEYS } from "../score/song-view.ts";   // 两张常量表（「这首歌怎么看」住在哪几个键）
+import { paperOf, DEFAULT_PAPER, type Paper } from "../score/paper.ts";
 
 /** 一类「看法」。 */
 export interface LookOp {
@@ -70,6 +71,25 @@ function sameList(xs: readonly object[], ys: readonly object[], skip: readonly s
   return true;
 }
 
+/** 两首歌除了纸（Song.paper）上的这几样字段之外一模一样。歌里没写纸 = 默认纸（A5 舒适；setPaper / setDensity 回到默认时会把整个 paper 键删掉）。
+ *  纸上的字段按值比（paperOf 每次给新对象，边距是个小对象）；歌的别的键按引用比。 */
+function sameExceptPaperFields(a: Song, b: Song, allow: readonly (keyof Paper)[]): boolean {
+  if (!sameModulo(a, b, { song: ["paper"] })) return false;
+  if (a.paper === b.paper) return true;
+  const pa = (a.paper ?? paperOf(DEFAULT_PAPER)) as unknown as Record<string, unknown>, pb = (b.paper ?? paperOf(DEFAULT_PAPER)) as unknown as Record<string, unknown>;
+  const keys = new Set([...Object.keys(pa), ...Object.keys(pb)]); for (const k of allow) keys.delete(k);
+  for (const k of keys) if (JSON.stringify(pa[k]) !== JSON.stringify(pb[k])) return false;
+  return true;
+}
+/** 纸张（A3 横 / A4 / A5 / A6）：纸的种类、尺寸、边距；staffMm 也算（setPaper 换纸时不带别家文件里写的谱高，见施工单 7-C 记录）。版式（density）不许跟着变。 */
+export const sameExceptPaperSize = (a: Song, b: Song): boolean => sameExceptPaperFields(a, b, ["kind", "widthMm", "heightMm", "marginMm", "staffMm"]);
+/** 版式（舒适 / 紧凑）：纸上的 density（和它决定的谱高 staffMm）。纸的种类、尺寸、边距不许跟着变。 */
+export const sameExceptDensity = (a: Song, b: Song): boolean => sameExceptPaperFields(a, b, ["density", "staffMm"]);
+/** 小节号印不印：歌顶层的 barNumbers。 */
+export const sameExceptBarNumbers = (a: Song, b: Song): boolean => sameModulo(a, b, { song: ["barNumbers"] });
+/** 歌词排法（按节奏 / 按歌词）：歌顶层的 lyricFit。 */
+export const sameExceptLyricFit = (a: Song, b: Song): boolean => sameModulo(a, b, { song: ["lyricFit"] });
+
 /** 看法的明文名单。加一类 = 这里加一行 + src/score/history.ts 的 LocusKind 加这个词 + 它的调用点带上这个类别
  *  （test/edit-lock-guard.test.mjs 钉：名单里的词必须真有写入口的调用点在用；带这个类别的调用点不许带 gesture）。 */
 export const LOOK_OPS: Readonly<Record<string, LookOp>> = Object.freeze({
@@ -78,6 +98,12 @@ export const LOOK_OPS: Readonly<Record<string, LookOp>> = Object.freeze({
   // 这首歌怎么看（谱面分家第三刀，2026-11-11；设计稿第 3.7 节「这些设置归『看法』那一类」）：谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项。存在歌文件里；
   //   锁着能切、锁着期间一个字节都不写，导出和打印跟着眼前的样子（别人的歌锁着打开、切着看、关掉，文件没动）
   songLook: { inFile: true, verify: sameExceptSongView },
+  // 页面设置「版面」页里走写入口的四样（7-C，2026-11-12；user「页面设置是视图」，统筹按「视图都不拦」办）：纸张 / 版式 / 小节号 / 歌词排法。存在歌文件里、决定怎么印；
+  //   锁着能切、锁着期间一个字节都不写。各带只认自己那几个字段的核验（顺手动了别的 = 当内容拒）。音距没有写入口（v0.16.43 起跟着版式走，setSpacing 没人调），不列。
+  paperSize: { inFile: true, verify: sameExceptPaperSize },
+  density: { inFile: true, verify: sameExceptDensity },
+  barNumbers: { inFile: true, verify: sameExceptBarNumbers },
+  lyricFit: { inFile: true, verify: sameExceptLyricFit },
 });
 
 const has = (kind: string | null | undefined): kind is string => kind != null && Object.prototype.hasOwnProperty.call(LOOK_OPS, kind);
@@ -92,4 +118,6 @@ export function effectiveKind<K extends string>(claimed: K, fallback: K, prev: S
   return !extrasChanged && LOOK_OPS[claimed]!.verify(prev, next) ? claimed : fallback;
 }
 /** 两首歌只差「看法」（表里所有进文件的看法合起来）吗。脏分成两种时用：只差看法 = looks，别的 = content。 */
-export function sameModuloLooks(a: Song, b: Song): boolean { return sameModulo(a, b, { song: SONG_VIEW_KEYS, paper: ["hidden"], part: PART_VIEW_KEYS }); }   // 表里的看法合起来：曲段隐藏 + 这首歌怎么看；加了别的看法这里要跟着合
+export function sameModuloLooks(a: Song, b: Song): boolean { return sameModulo(a, b, { song: [...SONG_VIEW_KEYS, ...PAGE_LOOK_KEYS], paper: ["hidden"], part: PART_VIEW_KEYS }); }   // 表里的看法合起来：曲段隐藏 + 这首歌怎么看 + 版面四样；加了别的看法这里要跟着合
+/** 版面四样住在歌顶层的哪几个键（纸张和版式都在 paper 里：Paper 上只有纸和版式的字段，整个键都是看法）。 */
+const PAGE_LOOK_KEYS = ["paper", "barNumbers", "lyricFit"] as const;

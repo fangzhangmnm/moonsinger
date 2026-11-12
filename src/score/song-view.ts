@@ -1,6 +1,6 @@
 // song-view.ts —— 「这首歌怎么看」：歌文件里的显示设置读成一个对象——只此一处。第三刀收的四样（谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项）读、改都走这里；
-//   第四刀 4-5 又收了原来就有的三样（版式 / 歌词排法 / 小节号）的读（它们的改照旧在 song.ts 的 setDensity / setLyricFit / setBarNumbers：那三样是内容，不归修改锁的「看法」，
-//   算不算看法要 user 定 = 愿望单 W-68）。音距不单收：v0.16.43 起音距跟着版式走（排版参数表按版式挑），歌里的 spacing 键没人读、只原样存回。
+//   第四刀 4-5 又收了原来就有的三样（版式 / 歌词排法 / 小节号）的读（它们的改照旧在 song.ts 的 setDensity / setLyricFit / setBarNumbers；7-C 起和纸张一起归修改锁的「看法」，
+//   类别 density / lyricFit / barNumbers / paperSize，见 src/app/edit-lock-table.ts）。音距不单收：v0.16.43 起音距跟着版式走（排版参数表按版式挑），歌里的 spacing 键没人读、只原样存回。
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第三刀；设计稿 ai-docs/20261111-score-surface-architecture.md 第 3.7 节、施工单第三节「3」）。
 //   user 11-11 夜拍了这四样存进歌文件（「可以」）。它们决定这首歌怎么印：进撤销、会标脏；归修改锁的「看法」那一类（src/app/edit-lock-table.ts songLook：锁着能切，锁着期间不写文件）。
 //   以前「和弦标级数」「按 C 调看」存在设备上（device-kv chord-tags / view-in-c）：这一刀起不再读那两个键，也不删；不把设备上的旧值搬进歌（user 同一条消息听过这个后果）。

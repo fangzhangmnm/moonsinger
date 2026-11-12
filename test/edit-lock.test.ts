@@ -1,20 +1,21 @@
 // 修改锁（家族「源文件原则上只读：手动解锁才能改」）的纯逻辑：分类表 / 「这首锁着吗」/ 写入口 / 撤销重做 / 脏分两种 / 家的写回 / 编辑会话的保存。
 //   created 2026-11-10 by Claude Fable 5.2（设计稿 = 家族根 ai-docs/20261109-moonsinger-edit-lock-design.md 第八节 + 第十四节补遗）。全是假的 ports，零 DOM、零持久化。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { LOOK_OPS, isLookOp, lookOpInFile, sameExceptPaperHidden, sameExceptSongView, sameModuloLooks, effectiveKind } from "../src/app/edit-lock-table.ts";
+import { LOOK_OPS, isLookOp, lookOpInFile, sameExceptPaperHidden, sameExceptSongView, sameModuloLooks, effectiveKind, sameExceptPaperSize, sameExceptDensity, sameExceptBarNumbers, sameExceptLyricFit } from "../src/app/edit-lock-table.ts";
 import { setNotation, setChordTags, setViewInC, setPartChords } from "../src/score/song-view.ts";
 import { createEditLock, type LockHome, type LockStore } from "../src/app/edit-lock.ts";
 import { createDocument, type DocHooks } from "../src/app/document.ts";
 import { createHome, type Home, type HomePorts } from "../src/app/home.ts";
 import { createEditorSession, type EditorAdapter, type StoreLike } from "../src/editor-session/editor-session.ts";
-import { initState, addPaper, setPaperHidden, type EditorState } from "../src/score/song.ts";
+import { initState, addPaper, setPaperHidden, setPaper, setDensity, setBarNumbers, setLyricFit, setTitle, type EditorState } from "../src/score/song.ts";
 import { emptyExtras } from "../src/format/project.ts";
 import type { LocusKind } from "../src/score/history.ts";
 import type { FileHandle } from "../src/app/doc-file.ts";
 
 describe("修改锁 · 分类表", () => {
-  it("表里现在两类看法（曲段隐藏、这首歌怎么看），都进文件；没列的 / 没给的一律不是看法", () => {
-    eq(Object.keys(LOOK_OPS).join(","), "paperHidden,songLook");
+  it("表里现在六类看法（曲段隐藏、这首歌怎么看、版面四样：纸张 / 版式 / 小节号 / 歌词排法），都进文件；没列的 / 没给的一律不是看法", () => {
+    eq(Object.keys(LOOK_OPS).join(","), "paperHidden,songLook,paperSize,density,barNumbers,lyricFit");
+    for (const k of ["paperSize", "density", "barNumbers", "lyricFit"]) assert(isLookOp(k) && lookOpInFile(k), `${k}：存在歌里、锁着能切（7-C）`);
     assert(isLookOp("paperHidden") && lookOpInFile("paperHidden"));
     assert(isLookOp("songLook") && lookOpInFile("songLook"), "这首歌怎么看（谱面分家第三刀）：存在歌里、锁着能切");
     for (const k of ["score", "paper", "lounge", "studio", "cover", "final", "toString", "", undefined, null]) assert(!isLookOp(k as string), String(k));
@@ -40,6 +41,32 @@ describe("修改锁 · 分类表", () => {
     const both = setPaperHidden(look, a.papers[1]!.id, true).song;
     assert(sameModuloLooks(a, both) && !sameExceptSongView(a, both) && !sameExceptPaperHidden(a, both), "两类看法一起动 = 只差看法");
     assert(!sameModuloLooks(a, { ...both, credits: "x" }));
+  });
+  it("版面四样（7-C）各自只认自己的字段：真 setter 过；调回原来的值 = 歌和调之前一模一样；顺手动了别的（含版面里的另一样）= 不过；四样合起来 = sameModuloLooks", () => {
+    const st = addPaper(initState()), a = st.song;
+    const ops: [string, (a: typeof st.song, b: typeof st.song) => boolean, (s: EditorState) => EditorState, (s: EditorState) => EditorState][] = [
+      ["纸张", sameExceptPaperSize, (s) => setPaper(s, "A4"), (s) => setPaper(s, "A5")],
+      ["版式", sameExceptDensity, (s) => setDensity(s, "compact"), (s) => setDensity(s, "cozy")],
+      ["小节号", sameExceptBarNumbers, (s) => setBarNumbers(s, false), (s) => setBarNumbers(s, true)],
+      ["歌词排法", sameExceptLyricFit, (s) => setLyricFit(s, "lyrics"), (s) => setLyricFit(s, "rhythm")],
+    ];
+    for (const [name, same, go, back] of ops) {
+      const b = go(st);
+      assert(b.song !== a && same(a, b.song) && same(b.song, a), `${name}：切一下 = 只差它`);
+      eq(JSON.stringify(back(b).song), JSON.stringify(a), `${name}：调回原来的值 = 和调之前一模一样`);
+      assert(!same(a, setTitle(b, "偷改").song), `${name}：顺手改歌名 = 不过`);
+      for (const [other, , go2] of ops) if (other !== name) assert(!same(a, go2(b).song), `${name} 的核验不认「${other}」`);
+      assert(sameModuloLooks(a, b.song), `${name} 算看法（sameModuloLooks）`);
+    }
+    // 纸张和版式都住在 Song.paper 里：从紧凑的 A5 换 A4 = 版式不跟着变；在 A4 上切版式 = 纸不跟着变
+    const comp = setDensity(st, "compact"), a4c = setPaper(comp, "A4");
+    assert(sameExceptPaperSize(comp.song, a4c.song) && a4c.song.paper?.density === "compact", "紧凑的歌换纸：版式留着");
+    assert(sameExceptDensity(a4c.song, setDensity(a4c, "cozy").song) && setDensity(a4c, "cozy").song.paper?.kind === "A4", "A4 上切舒适：纸留着");
+    assert(!sameExceptDensity(a, { ...a, paper: { kind: "A4", widthMm: 210, heightMm: 297, marginMm: { l: 15, r: 15, t: 15, b: 15 }, density: "compact" } }), "说是版式、实际连纸也换了 = 不过");
+    const all = setLyricFit(setBarNumbers(setPaper(setDensity(st, "compact"), "A6"), false), "lyrics");
+    assert(sameModuloLooks(a, all.song) && !sameModuloLooks(a, { ...all.song, credits: "x" }), "四样一起动 = 只差看法；再动作者栏 = 不是");
+    eq(effectiveKind<LocusKind>("density", "score", a, setDensity(st, "compact").song, false), "density");
+    eq(effectiveKind<LocusKind>("density", "score", a, setPaper(setDensity(st, "compact"), "A4").song, false), "score", "自称版式、实际换了纸 = 当内容");
   });
   it("自己报的类别要核：真的只动了看法 = 原样；动了别的 / 连 extras 一起动 = 当内容", () => {
     const st = addPaper(initState()), pid = st.song.papers[1]!.id, hid = setPaperHidden(st, pid, true).song;

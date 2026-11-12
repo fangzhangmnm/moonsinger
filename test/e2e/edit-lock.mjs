@@ -177,6 +177,41 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
   check(await openFile(), "再开"); await p.waitForTimeout(400);
   check((await tags()) === 0 && (await p.evaluate(() => window.__moonsinger.state().song.chordTags)) === false, "再开还是不标"); }
 
+// ── 页面设置「版面」那几样走真文件（7-C：纸张 / 版式 / 小节号 / 歌词排法 = 看法）：锁着都切得动、门不闪、存不进、重开原样；解了切紧凑、存 = 文件里是紧凑 ──
+{ const chip = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
+  const close = async () => { await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
+  const song = () => p.evaluate(() => { const s = window.__moonsinger.state().song; return { paper: s.paper?.kind ?? "A5", density: s.paper?.density ?? "cozy", bn: s.barNumbers ?? "on", lyr: s.lyricFit ?? "rhythm" }; });
+  const rowsY = () => p.evaluate(() => window.__moonsinger.layout().systems.map((r) => `${Math.round(r.staffTop)}-${Math.round(r.bottom)}`).join(","));   // 每行谱的上沿 / 下沿（紧凑 = 谱小、行距收）
+  const fileXml = async () => { const arr = await p.evaluate(async (name) => { const f = await (await (await navigator.storage.getDirectory()).getFileHandle(name)).getFile(); return [...new Uint8Array(await f.arrayBuffer())]; }, FILE);
+    const z = unzipSync(new Uint8Array(arr)); return z["score.musicxml"] ? strFromU8(z["score.musicxml"]) : ""; };
+  const s0 = await song(), y0 = await rowsY(), sigC = await fileSig();
+  check((await lk()).locked && s0.density === "cozy" && s0.paper === "A5" && s0.bn === "on" && s0.lyr === "rhythm", "锁着；版面四样都是默认", JSON.stringify(s0));
+  await chip(); await armFlash();
+  await pickOnPage(p, '.settings-card [data-pg="density"]', "compact"); await p.waitForTimeout(200);
+  { const d = (await song()).density, y1 = await rowsY(), f = await flashed(); check(d === "compact" && y1 !== y0 && !f, "锁着切「紧凑」：切了、谱上变了、门不闪", `${d} ${y0} → ${y1} flash=${f}`); }
+  await pickOnPage(p, '.settings-card [data-pg="paper"]', "A4"); await p.waitForTimeout(150);
+  await pickOnPage(p, '.settings-card [data-pg="bn"]', "off"); await p.waitForTimeout(150);
+  await pickOnPage(p, '.settings-card [data-pg="lyr"]', "lyrics"); await p.waitForTimeout(150);
+  const s1 = await song();
+  check(s1.paper === "A4" && s1.density === "compact" && s1.bn === "off" && s1.lyr === "lyrics" && !(await flashed()), "锁着切纸张 A4 / 小节号不印 / 按歌词：都切得动（纸张换了版式不跟着变）、门不闪", JSON.stringify(s1));
+  await close();
+  const k1 = await lk();
+  check(k1.dirtyKind === "looks" && !k1.owes, "脏的还是「看法」、没有要存的东西", JSON.stringify(k1));
+  await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
+  check((await fileSig()) === sigC, "锁着按「存」：文件一个字节都没变");
+  await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
+  check((await song()).lyr === "rhythm", "撤销：翻回去（看法那一格锁着也能翻）");
+  check(await openFile(), "关掉重开"); await p.waitForTimeout(400);
+  const s2 = await song();
+  check((await lk()).locked && JSON.stringify(s2) === JSON.stringify(s0) && (await rowsY()) === y0 && (await fileSig()) === sigC, "重开 = 文件里的原样（舒适、A5、印小节号、按节奏）", JSON.stringify(s2));
+  await p.click('#lockBar [data-v="continue"]'); await p.waitForTimeout(200);
+  await chip(); await pickOnPage(p, '.settings-card [data-pg="density"]', "compact"); await p.waitForTimeout(200); await close();
+  await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(400);
+  const xml = await fileXml();
+  check(/<staff-distance>50<\/staff-distance>/.test(xml) && (await fileSig()) !== sigC, "解了切「紧凑」、存 = 文件的 score.musicxml 里是紧凑的谱距（50）", (xml.match(/<staff-distance>\d+<\/staff-distance>/) ?? [""])[0]);
+  check(await openFile(), "再开"); await p.waitForTimeout(400);
+  check((await song()).density === "compact", "再开还是紧凑"); }
+
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\nedit-lock: ${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);

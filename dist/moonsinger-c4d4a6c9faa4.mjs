@@ -44242,7 +44242,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "02a88863560c8701" : "dev";
+var CORE_HASH = true ? "9354fc9ab8eee0ab" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -57113,12 +57113,31 @@ function sameList(xs, ys, skip) {
   }
   return true;
 }
+function sameExceptPaperFields(a10, b3, allow) {
+  if (!sameModulo(a10, b3, { song: ["paper"] })) return false;
+  if (a10.paper === b3.paper) return true;
+  const pa = a10.paper ?? paperOf(DEFAULT_PAPER), pb = b3.paper ?? paperOf(DEFAULT_PAPER);
+  const keys = /* @__PURE__ */ new Set([...Object.keys(pa), ...Object.keys(pb)]);
+  for (const k2 of allow) keys.delete(k2);
+  for (const k2 of keys) if (JSON.stringify(pa[k2]) !== JSON.stringify(pb[k2])) return false;
+  return true;
+}
+var sameExceptPaperSize = (a10, b3) => sameExceptPaperFields(a10, b3, ["kind", "widthMm", "heightMm", "marginMm", "staffMm"]);
+var sameExceptDensity = (a10, b3) => sameExceptPaperFields(a10, b3, ["density", "staffMm"]);
+var sameExceptBarNumbers = (a10, b3) => sameModulo(a10, b3, { song: ["barNumbers"] });
+var sameExceptLyricFit = (a10, b3) => sameModulo(a10, b3, { song: ["lyricFit"] });
 var LOOK_OPS = Object.freeze({
   // 曲段的隐藏 / 放出来（user 11-09：「曲段的隐藏和显示锁着的时候当然能解。」）：影响放哪几段、印哪几段，存在歌文件里
   paperHidden: { inFile: true, verify: sameExceptPaperHidden },
   // 这首歌怎么看（谱面分家第三刀，2026-11-11；设计稿第 3.7 节「这些设置归『看法』那一类」）：谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项。存在歌文件里；
   //   锁着能切、锁着期间一个字节都不写，导出和打印跟着眼前的样子（别人的歌锁着打开、切着看、关掉，文件没动）
-  songLook: { inFile: true, verify: sameExceptSongView }
+  songLook: { inFile: true, verify: sameExceptSongView },
+  // 页面设置「版面」页里走写入口的四样（7-C，2026-11-12；user「页面设置是视图」，统筹按「视图都不拦」办）：纸张 / 版式 / 小节号 / 歌词排法。存在歌文件里、决定怎么印；
+  //   锁着能切、锁着期间一个字节都不写。各带只认自己那几个字段的核验（顺手动了别的 = 当内容拒）。音距没有写入口（v0.16.43 起跟着版式走，setSpacing 没人调），不列。
+  paperSize: { inFile: true, verify: sameExceptPaperSize },
+  density: { inFile: true, verify: sameExceptDensity },
+  barNumbers: { inFile: true, verify: sameExceptBarNumbers },
+  lyricFit: { inFile: true, verify: sameExceptLyricFit }
 });
 var has = (kind) => kind != null && Object.prototype.hasOwnProperty.call(LOOK_OPS, kind);
 function isLookOp(kind) {
@@ -57129,8 +57148,9 @@ function effectiveKind(claimed, fallback, prev, next2, extrasChanged) {
   return !extrasChanged && LOOK_OPS[claimed].verify(prev, next2) ? claimed : fallback;
 }
 function sameModuloLooks(a10, b3) {
-  return sameModulo(a10, b3, { song: SONG_VIEW_KEYS, paper: ["hidden"], part: PART_VIEW_KEYS });
+  return sameModulo(a10, b3, { song: [...SONG_VIEW_KEYS, ...PAGE_LOOK_KEYS], paper: ["hidden"], part: PART_VIEW_KEYS });
 }
+var PAGE_LOOK_KEYS = ["paper", "barNumbers", "lyricFit"];
 
 // src/app/document.ts
 var LOCK_WHAT = { score: _t("\u8C31 / \u6B4C\u540D / \u4F5C\u8005\u680F"), paper: _t("\u7EB8"), paperHidden: _t("\u7EB8"), lounge: _t("\u58F0\u90E8 / \u4E50\u5668"), studio: _t("\u6DF7\u97F3"), cover: _t("\u5C01\u9762") };
@@ -59010,6 +59030,7 @@ function locusText(at3, l10) {
   if (l10.kind === "score") return `${at3.song.papers.length > 1 ? paperName + " \xB7 " : ""}${at3.song.parts.length > 1 ? partName + " \xB7 " : ""}${l10.label}`;
   if (l10.kind === "paper" || l10.kind === "paperHidden") return `${paperName} \xB7 ${l10.label}`;
   if (l10.kind === "songLook") return `${_t("\u770B\u8C31")} \xB7 ${l10.label}`;
+  if (l10.kind === "paperSize" || l10.kind === "density" || l10.kind === "barNumbers" || l10.kind === "lyricFit") return `${_t("\u7248\u9762")} \xB7 ${l10.label}`;
   return `${l10.kind === "lounge" ? _t("\u4F11\u606F\u5BA4") : l10.kind === "studio" ? _t("\u6DF7\u97F3\u53F0") : _t("\u5C01\u9762")} \xB7 ${l10.label}`;
 }
 function renderUndo() {
@@ -59458,6 +59479,9 @@ function openChordInfo(r10, at3, where) {
 }
 function setSongLook(next2, label) {
   if (next2 !== D3.st) D3.commit({ st: next2 }, { locus: { kind: "songLook", label } });
+}
+function setPageLook(next2, locus) {
+  if (next2 !== D3.st) D3.commit({ st: next2 }, { locus });
 }
 var settingsPage = "ui";
 var SET_PAGES = () => [["ui", _t("\u754C\u9762##\u9875\u7B7E")], ["a11y", _t("\u4E50\u7406\u52A9\u624B##\u9875\u7B7E")], ["sound", _t("\u97F3\u6E90\u4E0E\u7F13\u5B58##\u9875\u7B7E")], ["midi", "MIDI"], ["dev", _t("\u5F00\u53D1\u8005##\u9875\u7B7E")]];
@@ -60616,8 +60640,8 @@ function openPaperSheet() {
         afterViewChange();
       }
     } else if (k2 === "paper") {
-      if (PAPER_KINDS.includes(v)) update(setPaper(D3.st, v));
-    } else if (k2 === "density") update(setDensity(D3.st, v));
+      if (PAPER_KINDS.includes(v)) setPageLook(setPaper(D3.st, v), { kind: "paperSize", label: `${_t("\u7EB8\u5F20")} ${PAPER_LABEL[v]}` });
+    } else if (k2 === "density") setPageLook(setDensity(D3.st, v), { kind: "density", label: `${_t("\u7248\u5F0F")} ${DENSITIES.find((z2) => z2.id === v)?.label ?? v}` });
     else if (k2 === "flow") {
       pageFlow = v === "pages";
       scrollFlow = v === "scroll";
@@ -60626,8 +60650,8 @@ function openPaperSheet() {
     } else if (k2 === "reflow") {
       reflow = v === "reflow";
       view.render();
-    } else if (k2 === "bn") update(setBarNumbers(D3.st, v === "on"));
-    else if (k2 === "lyr") update(setLyricFit(D3.st, v === "rhythm" ? "rhythm" : "lyrics"));
+    } else if (k2 === "bn") setPageLook(setBarNumbers(D3.st, v === "on"), { kind: "barNumbers", label: `${_t("\u5C0F\u8282\u53F7")} ${v === "on" ? _t("\u6BCF\u884C\u5F00\u5934") : _t("\u4E0D\u5370")}` });
+    else if (k2 === "lyr") setPageLook(setLyricFit(D3.st, v === "rhythm" ? "rhythm" : "lyrics"), { kind: "lyricFit", label: `${_t("\u6B4C\u8BCD\u6392\u6CD5")} ${v === "rhythm" ? _t("\u6309\u8282\u594F") : _t("\u6309\u6B4C\u8BCD")}` });
     draw();
   });
 }
@@ -64096,4 +64120,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0d62005ee101.mjs.map
+//# sourceMappingURL=moonsinger-c4d4a6c9faa4.mjs.map

@@ -11,6 +11,14 @@ export interface LookOp {
 export declare function sameExceptPaperHidden(a: Song, b: Song): boolean;
 /** 两首歌除了「这首歌怎么看」的那几样（歌顶层的 notation / chordTags / viewInC / middleC + 每个声部的 chords；src/score/song-view.ts）之外一模一样。按引用比；完全没变也算。 */
 export declare function sameExceptSongView(a: Song, b: Song): boolean;
+/** 纸张（A3 横 / A4 / A5 / A6）：纸的种类、尺寸、边距；staffMm 也算（setPaper 换纸时不带别家文件里写的谱高，见施工单 7-C 记录）。版式（density）不许跟着变。 */
+export declare const sameExceptPaperSize: (a: Song, b: Song) => boolean;
+/** 版式（舒适 / 紧凑）：纸上的 density（和它决定的谱高 staffMm）。纸的种类、尺寸、边距不许跟着变。 */
+export declare const sameExceptDensity: (a: Song, b: Song) => boolean;
+/** 小节号印不印：歌顶层的 barNumbers。 */
+export declare const sameExceptBarNumbers: (a: Song, b: Song) => boolean;
+/** 歌词排法（按节奏 / 按歌词）：歌顶层的 lyricFit。 */
+export declare const sameExceptLyricFit: (a: Song, b: Song) => boolean;
 /** 看法的明文名单。加一类 = 这里加一行 + src/score/history.ts 的 LocusKind 加这个词 + 它的调用点带上这个类别
  *  （test/edit-lock-guard.test.mjs 钉：名单里的词必须真有写入口的调用点在用；带这个类别的调用点不许带 gesture）。 */
 export declare const LOOK_OPS: Readonly<Record<string, LookOp>>;

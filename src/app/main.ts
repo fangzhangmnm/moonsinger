@@ -969,6 +969,7 @@ function locusText(at: EditorState, l: Locus): string {
   if (l.kind === "score") return `${at.song.papers.length > 1 ? paperName + " · " : ""}${at.song.parts.length > 1 ? partName + " · " : ""}${l.label}`;
   if (l.kind === "paper" || l.kind === "paperHidden") return `${paperName} · ${l.label}`;
   if (l.kind === "songLook") return `${_t("看谱")} · ${l.label}`;
+  if (l.kind === "paperSize" || l.kind === "density" || l.kind === "barNumbers" || l.kind === "lyricFit") return `${_t("版面")} · ${l.label}`;
   return `${l.kind === "lounge" ? _t("休息室") : l.kind === "studio" ? _t("混音台") : _t("封面")} · ${l.label}`;
 }
 function renderUndo(): void { $<HTMLButtonElement>("undoBtn").disabled = !D.history.past.length; $<HTMLButtonElement>("redoBtn").disabled = !D.history.future.length; }
@@ -1285,6 +1286,9 @@ function openChordInfo(r: HarmonyRead, at: { x: number; y: number }, where: { pa
 /** 改「这首歌怎么看」（谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项）：**调用点只许走这里**，带着 songLook 这个类别（修改锁的「看法」：锁着也能切，锁着期间不写文件；
  *  进撤销、会标脏；test/edit-lock-guard.test.mjs 钉）。next = src/score/song-view.ts 的 setter 算好的。 */
 function setSongLook(next: EditorState, label: string): void { if (next !== D.st) D.commit({ st: next }, { locus: { kind: "songLook", label } }); }
+/** 改页面设置「版面」页里走写入口的四样（纸张 / 版式 / 小节号 / 歌词排法；7-C）：**调用点只许走这里**，各带自己的类别（修改锁的「看法」：锁着能切、锁着期间不写文件；
+ *  写入口按 src/app/edit-lock-table.ts 的核验核过才放行）。调用点把类别写成字面量（test/edit-lock-guard.test.mjs 按字面量找调用点）。 */
+function setPageLook(next: EditorState, locus: { kind: "paperSize" | "density" | "barNumbers" | "lyricFit"; label: string }): void { if (next !== D.st) D.commit({ st: next }, { locus }); }
 
 /** 设置分五页（v0.16.80，总表第 10 条：界面 / 辅助功能 / 音源与缓存 / MIDI / 开发者）；记住这次运行里上次看的那页。 */
 type SetPage = "ui" | "a11y" | "sound" | "midi" | "dev";
@@ -1988,12 +1992,12 @@ function openPaperSheet(): void {
     else if (k === "mc") { const n = Number(v); setSongLook(setMiddleC(D.st, n), _t("中央 C 叫 C{n}", { n })); }
     else if (k === "ct") setSongLook(setChordTags(D.st, v === "on"), v === "on" ? _t("和弦标级数") : _t("和弦不标级数"));
     else if (k === "only1") { const one = D.st.song.parts[0]; if (one) { for (const q of D.st.song.parts) setPv(q.id, { only: v === "on" && q === one }); afterViewChange(); } }
-    else if (k === "paper") { if ((PAPER_KINDS as string[]).includes(v)) update(setPaper(D.st, v as PaperKind)); }
-    else if (k === "density") update(setDensity(D.st, v as Density));
+    else if (k === "paper") { if ((PAPER_KINDS as string[]).includes(v)) setPageLook(setPaper(D.st, v as PaperKind), { kind: "paperSize", label: `${_t("纸张")} ${PAPER_LABEL[v as PaperKind]}` }); }
+    else if (k === "density") setPageLook(setDensity(D.st, v as Density), { kind: "density", label: `${_t("版式")} ${DENSITIES.find((z) => z.id === v)?.label ?? v}` });
     else if (k === "flow") { pageFlow = v === "pages"; scrollFlow = v === "scroll"; view.render(); view.followNow(); }
     else if (k === "reflow") { reflow = v === "reflow"; view.render(); }
-    else if (k === "bn") update(setBarNumbers(D.st, v === "on"));
-    else if (k === "lyr") update(setLyricFit(D.st, v === "rhythm" ? "rhythm" : "lyrics"));   // 歌词怎么排（v0.9.40）：进歌里、能撤销；PDF 跟着
+    else if (k === "bn") setPageLook(setBarNumbers(D.st, v === "on"), { kind: "barNumbers", label: `${_t("小节号")} ${v === "on" ? _t("每行开头") : _t("不印")}` });
+    else if (k === "lyr") setPageLook(setLyricFit(D.st, v === "rhythm" ? "rhythm" : "lyrics"), { kind: "lyricFit", label: `${_t("歌词排法")} ${v === "rhythm" ? _t("按节奏") : _t("按歌词")}` });   // 歌词怎么排（v0.9.40）：进歌里、能撤销；PDF 跟着
     draw();
   });
 }
