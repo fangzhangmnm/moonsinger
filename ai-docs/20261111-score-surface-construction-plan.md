@@ -593,7 +593,7 @@ export interface Ink { x0: number; x1: number; y0: number; y1: number }   // 相
 export interface Part { ink: Ink; prims: Prim[] }                          // 一样东西：自己的墨迹框 + 图元（原点在它自己的锚点）
 export interface Cell {
   core(part: Part, at?: { x: number; y: number }): void;                   // 核（可以放几次：和弦一个音一次）
-  attach(side: Side, part: Part, o: { gap: number; align?: "center" | "start" | "end" }): Ink;   // 贴在这一边现在的边缘外面；回它落在哪
+  attach(side: Side, part: Part, o: { gap: number; align?: "center" | "start" | "end"; cross?: number }): Ink;   // 贴在这一边现在的边缘外面；回它落在哪（cross = 另一个方向直接给锚点位置，字形表里定了高度的用；8-1 实现时加的，小弟回写）
   reserve(side: Side, to: number): void;                                   // 这一边至少长到 to（成组的东西用：先对齐再贴）
   edge(side: Side): number;                                                // 这一边现在到哪了
   box(): Ink;                                                              // 整个盒子：量宽度、进天际线、点击框都用它
@@ -1666,3 +1666,7 @@ user 提的（愿望单 W-71）。
   | 帽子（重音 / 强音 / 次重音 / 弱化）、音的修饰（sfz / fp / 音内起伏）、力度、速度、风格、跳转、小节号、和弦级数、反复的「×3」 | 挂件，贴天际线 | — | 挂件（照旧） |
   - **量和画对不上的**（结构问题第 2 条的实例）：换气 V（量的时候一律加宽、画的时候夹回去）；琶音的左边（两处各算一遍）；× 的宽（量的是升降号那一列的宽，画的是一个字）；中途换调的字（按字数估宽）；谱头三样（按字数估宽）。
   - **两个装不进五类的，问统筹**（写在第五节「小弟问」）；问的时候不停，8-1 是纯几何，先做。
+- 2026-11-12 · 第八刀 8-1 盒子（MoonSinger小弟）
+  - `src/render/frame/cell.ts`：照钉住的接口（核 / 贴 / reserve / 边 / box / 画）。四个边各长各的（往左贴的升降号不把上面的跳音顶高）；贴的时候另一个方向按核的框对齐（start / end / center）；**加了 `cross`**（另一个方向直接给锚点的位置：附点、换气这类在字形表里本来就定了高度的用），已回写到第 8 节的接口。核要在贴东西之前放完（贴过再放 = 报错）。`box()` = 所有墨迹框之并，reserve 出来的空不算墨。画 = 每次一份新的拷贝整块平移。
+  - `src/render/skyline.ts movePrim(p, dx, dy)`：横竖都挪（原来的 `shiftPrim` 只挪 y），路径里负数 / 小数 / 科学计数法都认。
+  - 测试 `test/cell.test.ts`（8 条，登记了）。`npm run check` 1562 全过。这一步还没人用盒子（8-2 起接上），版面不变。

@@ -21,5 +21,8 @@ export declare function primInk(p: Prim, sp: number, measure: (s: string, size: 
 export declare function pathPolys(d: string): [number, number][][];
 /** 把图元上下挪 dy（px）。路径里每一对「x,y」的 y 都挪（排版器的路径只有绝对坐标：逗号后面那个数就是 y）。 */
 export declare function shiftPrim(p: Prim, dy: number): void;
+/** 把图元横竖挪（px）：y 照 shiftPrim；x = 路径里每一对「x,y」逗号前那个数（排版器的路径只有绝对坐标）。
+ *  第八刀 8-1（2026-11-12 Claude Opus 5.5）：一个音的盒子（frame/cell.ts）整块平移到位用。 */
+export declare function movePrim(p: Prim, dx: number, dy: number): void;
 /** 图元的一个代表 y（px）：认它是哪一行的。 */
 export declare function primY(p: Prim): number;

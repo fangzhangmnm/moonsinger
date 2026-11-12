@@ -108,6 +108,17 @@ export function shiftPrim(p: Prim, dy: number): void {
     default: { const never: never = p; throw new Error(`shiftPrim: unknown prim ${JSON.stringify(never)}`); }   // 穷举守卫（Fable 11-09 审三刀留的小尾巴）：加了新图元没在这里挪 = 类型检查红
   }
 }
+/** 把图元横竖挪（px）：y 照 shiftPrim；x = 路径里每一对「x,y」逗号前那个数（排版器的路径只有绝对坐标）。
+ *  第八刀 8-1（2026-11-12 Claude Opus 5.5）：一个音的盒子（frame/cell.ts）整块平移到位用。 */
+export function movePrim(p: Prim, dx: number, dy: number): void {
+  if (dx) switch (p.t) {
+    case "glyph": case "text": case "rect": p.x += dx; break;
+    case "line": p.x1 += dx; p.x2 += dx; break;
+    case "path": p.d = p.d.replace(/(-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?),/g, (_m, n: string) => `${Number(n) + dx},`); break;
+    default: { const never: never = p; throw new Error(`movePrim: unknown prim ${JSON.stringify(never)}`); }
+  }
+  shiftPrim(p, dy);
+}
 /** 图元的一个代表 y（px）：认它是哪一行的。 */
 export function primY(p: Prim): number {
   switch (p.t) {
