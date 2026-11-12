@@ -6,6 +6,7 @@
 //   谱面分家第三刀（2026-11-11）：「按 C 调看」是这首歌的设置，在纸的设置「看谱」里（原来在设置「乐理助手」、存在设备上）——写进歌里（viewInC: true）、能撤销，设备上不再记。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/view-in-c.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pick } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -27,7 +28,7 @@ check((await bigAbs()) === true, "专业：键上大字写音名");
 const hint = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-key-hint")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
 await p.mouse.click(hint.x, hint.y); await p.waitForTimeout(250);
 check(await p.evaluate(() => !!document.querySelector(".ctx-menu.header-panel")), "点「1=C」= 谱头面板");
-await p.selectOption('.header-panel [data-hp="key"]', "-1"); await p.waitForTimeout(150); await closeAll();
+await pick(p, '.header-panel [data-hp="key"]', "-1"); await p.waitForTimeout(150); await closeAll();
 check((await labels()) === "", "改成 1=F（有降号了）= 提示没了", await labels());
 await p.click('.pad-key[data-k="0"]'); await p.waitForTimeout(150);   // 键盘跟谱：1 = F
 const n0 = await firstNote();

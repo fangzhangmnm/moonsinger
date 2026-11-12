@@ -7,6 +7,7 @@
 //   然后峰值放在卡片的顶部一条细线，所有插件模式都有…然后不同模式下面具体用哪个插件显示模式可以下拉。然后basic模式下如果有advanced的和basic preset不一样的情况需要披露」→「12都同意」）：
 //   页签 = 混音的顺序（基础 = 增益 / 声像 / 静音独奏 → EQ → 压缩 → 发送 → 链 = 全部插件格）；EQ / 压缩页每张卡片直接摊开那一格的控件（一键 / 全量下拉，全部卡片一起换）；
 //   每张卡片顶上一条峰值细线（所有页都有；录音房只在混音台开着时报）。加混音轨在页签那一行的「⋯」里（user「混音轨不要用一个单独的空页面，可以在混音台的顶栏上面加一个...的目录，里面有加混音轨。然后混音轨之间还可以排序。然后歌手卡片的排序还是以五线谱为准」）。
+import { dropdownHtml, mountDropdowns } from "./dropdown.ts";
 import { _t } from "../i18n/index.ts";
 import type { FxV2 } from "../format/contract.ts";
 import { eqResponseDb } from "../engine/fx.ts";
@@ -346,7 +347,7 @@ export class Studio {
     else if (t.dataset.pan !== undefined) { this.host.setPan(id, v); if (out) out.textContent = panText(v); }
   }
   private onChange(e: Event): void {
-    const t = e.target as HTMLSelectElement & HTMLInputElement, strip = t.closest<HTMLElement>(".strip")?.dataset.id, tg = this.targetOf(t);
+    const t = e.target as HTMLButtonElement & HTMLInputElement, strip = t.closest<HTMLElement>(".strip")?.dataset.id, tg = this.targetOf(t);
     if (strip && t.dataset.out !== undefined) { this.host.setOutTo(strip, t.value); this.render(); return; }
     if (strip && t.dataset.sendadd !== undefined && t.value) { this.host.setSends(strip, [...this.host.sends(strip), { to: t.value, gainDb: -12 }], _t("发给 {value}", { value: this.trackName(t.value) })); this.render(); return; }
     if (strip && t.classList.contains("bus-name")) { const name = t.value.trim(); if (name) this.host.renameBus(strip, name); this.render(); return; }
@@ -424,7 +425,7 @@ export class Studio {
   private controlsHtml(tg: Target, fx: FxV2, mode: "simple" | "full"): string {
     const bus = this.onBus(tg.track), p = paramsOf(fx), view = viewOfFx(fx, bus), read = view?.read(p) ?? null;
     const keyOpts = fx.kind === "comp" ? this.host.keyTracks(tg.track) : [];
-    const keyRow = keyOpts.length ? row(_t("被谁压"), HINT.key, "", `<select data-key><option value="">${_t("不用（自己压自己）")}</option>${keyOpts.map((x) => `<option value="${esc(x.id)}"${fx.key === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select>`) : "";
+    const keyRow = keyOpts.length ? row(_t("被谁压"), HINT.key, "", dropdownHtml([{ value: "", label: _t("不用（自己压自己）") }, ...keyOpts.map((x) => ({ value: x.id, label: x.name }))], keyOpts.some((x) => x.id === fx.key) ? fx.key! : "", { attrs: "data-key" })) : "";   // 下拉 = 界面零件库的标准件（7-T）
     if (mode === "simple" && view) {
       // 在全量里调过（落不到一键公式上）= 一键锁着、旋钮不摆出来（user「没法用一键的时候那些一键的invalid slider可以不显示哈哈」），要改先点「改成最接近的一键」（v0.10.14；user「basic模式下应该有一个project to basic模式的功能，不然的话basic模式会是被锁住，免得不小心override」）
       const fp = freshParams(fx.kind, bus), fresh = view.read(fp) ?? view.project(fp), locked = !read, cur = read ?? {};
@@ -457,10 +458,10 @@ export class Studio {
   /** 出到 + 发送（歌手轨和路由轨都有；总轨没有）。 */
   private routeHtml(track: string): string {
     const out = this.host.outTo(track), tg = this.host.targets(track), sends = this.host.sends(track), name = (id: string) => esc(this.trackName(id));
-    const outSel = row(_t("出到"), HINT.out, "", `<select data-out>${[{ id: "master", name: _t("总轨") }, ...tg].map((x) => `<option value="${esc(x.id)}"${out === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}${out !== "master" && !tg.some((x) => x.id === out) ? `<option value="${esc(out)}" selected>${_t("{out}（接不上）", { out: name(out) })}</option>` : ""}</select>`, "strip-row");
+    const outSel = row(_t("出到"), HINT.out, "", dropdownHtml([...[{ id: "master", name: _t("总轨") }, ...tg].map((x) => ({ value: x.id, label: x.name })), ...(out !== "master" && !tg.some((x) => x.id === out) ? [{ value: out, label: _t("{out}（接不上）", { out: name(out) }) }] : [])], out, { attrs: "data-out" }), "strip-row");
     const rows = sends.map((sd) => `<div class="strip-send">${row(_t("发给 {to}", { to: this.trackName(sd.to) }), HINT.send, `<output>${dbText(sd.gainDb)}</output>`, slider({ min: -40, max: 6, step: 0.5, value: sd.gainDb, attrs: `data-send="${esc(sd.to)}"`, def: -12, defText: "−12 dB" }), "strip-row")}<button class="btn" data-v="sendx" data-to="${esc(sd.to)}" title="${_t("不再发给它")}">✕</button></div>`).join("");
     const free = tg.filter((x) => !sends.some((sd) => sd.to === x.id));
-    const add = free.length ? `<select class="send-add" data-sendadd title="${_t("推子之后发一份到一条混音轨（混响 / 延迟这类放在混音轨上，几条轨共用）")}"><option value="">${_t("＋ 发送到…")}</option>${free.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select>` : (tg.length ? "" : `<div class="fx-dim">${_t("还没有混音轨（顶栏「＋ 混音轨」加）")}</div>`);
+    const add = free.length ? dropdownHtml([{ value: "", label: _t("＋ 发送到…") }, ...free.map((x) => ({ value: x.id, label: x.name }))], "", { cls: "send-add", attrs: "data-sendadd", title: _t("推子之后发一份到一条混音轨（混响 / 延迟这类放在混音轨上，几条轨共用）") }) : (tg.length ? "" : `<div class="fx-dim">${_t("还没有混音轨（顶栏「＋ 混音轨」加）")}</div>`);
     // 出到一条带全湿效果的混音轨 = 原声没了：明说（v0.10.10；user「开了混响结果铃声都哑掉了」）
     const wet = out !== "master" ? this.host.chain(out).find(fullyWet) : undefined;
     const warn = wet ? `<div class="fx-note">${_t("「{out}」上的{kind}是全湿的：出到它 = 原声没了，只剩{kind2}。要原声加{kind3}：出到总轨，用下面的「发送」。", { out: name(out), kind: esc(pluginName(wet.kind)), kind2: esc(pluginName(wet.kind)), kind3: esc(pluginName(wet.kind)) })}</div>` : "";
@@ -487,7 +488,7 @@ export class Studio {
       this.clipBtns(o, fx) +
       (isDefault ? "" : `<button class="btn cand danger" data-v="fxdel" title="${_t("从这条轨上拿掉（能撤销）")}">${_t("拿掉")}</button>`) +
       `<button class="btn" data-v="fxclose" title="${_t("收起")}">✕</button></div>`;
-    box.innerHTML = head + `<div class="fx-body">${this.controlsHtml(o, fx, this.modeOf(o))}</div>`; box.hidden = false;
+    box.innerHTML = head + `<div class="fx-body">${this.controlsHtml(o, fx, this.modeOf(o))}</div>`; box.hidden = false; mountDropdowns(box);
   }
   private renderBar(): void {
     const bar = this.el.querySelector<HTMLElement>(".mix-tabbar")!;
@@ -579,7 +580,7 @@ export class Studio {
       const ms = `<span class="strip-ms"><button class="btn${s.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("静音（这位不出声；和谱上声部名下面的「静」是同一个）")}">${_t("静")}</button><button class="btn${s.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("独奏（只听独奏的几位；和谱上的「独」是同一个）")}">${_t("独")}</button></span>`;
       return this.card(s.id, "", `<div class="strip-head">${nameDiv(s.name)}${ms}</div>`, s.performer, body, s.color);
     }).join("");
-    box.innerHTML = master + busCards + singers;
+    box.innerHTML = master + busCards + singers; mountDropdowns(box);
     this.watchCards();   // 卡片重画了：重新看哪些在屏幕里
     this.renderPanel();
     this.fitHeight();

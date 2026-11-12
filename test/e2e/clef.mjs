@@ -3,6 +3,7 @@
 //   （user「谱号的显示模式跟着谱号而不是乐器」「默认自动同意」「加格式同意」「铃铛会很高。8va可以做了吗」；账本 wishlist「点谱号就能做…每一行的谱号应该都可以点」）
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/clef.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pick, ddOptions } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -27,7 +28,7 @@ check(await p.$$eval("#score svg .ottava", (es) => es.length) >= 1, "谱上画�
 // 3. 插谱号：低音
 await p.click('.pad-head [data-sympage="mark"]').catch(() => {}); await p.waitForTimeout(80);
 await p.click('.pad-grid.symbols [data-sym="clef"]'); await p.waitForTimeout(150);   // v0.16.8：开谱头面板，谱号是第一个下拉
-await p.selectOption('.header-panel [data-hp="clef"]', "F"); await p.waitForTimeout(200);
+await pick(p, '.header-panel [data-hp="clef"]', "F"); await p.waitForTimeout(200);
 await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
 check((await track()).includes("clef:F"), "插了低音谱号记号", await track());
 check(await p.$$eval("#score svg .clef.cue", (es) => es.length) === 1 || (await track()).startsWith("clef:F"), "行中间画了小一号的谱号（正好在行首 = 行首那个就是它）");
@@ -38,18 +39,18 @@ const clefAt = async () => p.evaluate(() => { const m = window.__moonsinger, L =
 let c0 = await clefAt();
 check(!!c0 && c0.index === -1, "行首谱号有点击区域，管它的是声部自己的谱号");
 await p.mouse.click(c0.x, c0.y); await p.waitForTimeout(200);
-const first = await p.$eval('.header-panel [data-hp="clef"]', (s) => ({ v: s.value, t: s.options[0].textContent })).catch(() => null);
+const first = await (async () => ({ v: await p.$eval('.header-panel [data-hp="clef"]', (b) => b.value), t: (await ddOptions(p, '.header-panel [data-hp="clef"]'))[0]?.label }))().catch(() => null);
 check(!!first && first.v === "auto" && first.t.startsWith("自动（现在："), "点行首谱号 = 谱头面板，谱号停在「自动（现在：…）」（v0.16.88 按段）", JSON.stringify(first));
 await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
 // v0.16.16 搬家 A：「这位的谱」（默认谱号 / 自动八度线…）从歌手名小卡搬进谱头面板（点行首谱号）
 await p.mouse.click(c0.x, c0.y); await p.waitForTimeout(250);
 check(!(await p.$('.header-panel [data-hp="pclef"]')) && !(await p.$('.header-panel [data-hp="staves"]')), "「整首都算」那里没有默认谱号 / 谱表了（搬到上面按段选，v0.16.88）");
 check((await p.$eval('.header-panel [data-hp="ao"]', (s) => s.value).catch(() => null)) === "on", "谱头面板：这一段的自动八度线「开」");
-await p.selectOption('.header-panel [data-hp="clef"]', "F8vb"); await p.waitForTimeout(200);
+await pick(p, '.header-panel [data-hp="clef"]', "F8vb"); await p.waitForTimeout(200);
 check((await partClef()) === "F8vb", "选「低音 8vb」= 这一段的谱号改了", await partClef());
 check(await p.$$eval("#score svg .clef", (es) => es.some((e) => e.textContent === "\u{E064}")), "谱上画成低音 8vb 的字形");
 if (!(await p.$('.header-panel [data-hp="clef"]'))) { const c1 = await clefAt(); await p.mouse.click(c1.x, c1.y); await p.waitForTimeout(250); }
-await p.selectOption('.header-panel [data-hp="clef"]', "auto"); await p.waitForTimeout(200);
+await pick(p, '.header-panel [data-hp="clef"]', "auto"); await p.waitForTimeout(200);
 check(!(await p.$('.track-card [data-v="clef:auto"]')), "歌手名小卡里不再有谱号（搬走了）");
 await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
 check((await partClef()) === "auto", "再点选「自动」= 回到自动");
@@ -63,7 +64,7 @@ await p.keyboard.press("Control+z"); await p.waitForTimeout(120);
 check((await partClef()) === "F8vb", "撤销 = 回到上一步（低音 8vb）");
 // 7. 大谱表上手写的八度线现在不起作用：谱上画灰（不印），点开说明（谱面分家第五刀 5-3，统筹裁定；真做 = 愿望单 W-73）
 { const c2 = await clefAt(); await p.mouse.click(c2.x, c2.y); await p.waitForTimeout(250); }
-await p.selectOption('.header-panel [data-hp="clef"]', "grand"); await p.waitForTimeout(200);
+await pick(p, '.header-panel [data-hp="clef"]', "grand"); await p.waitForTimeout(200);
 await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
 check((await partClef()) === "grand", "这一段换成大谱表", await partClef());
 check(await p.$$eval("#score svg .ottava.off", (es) => es.length) >= 1 && await p.$$eval("#score svg .ottava-line.off", (es) => es.length) >= 1, "大谱表上的 8va 照样画出来、画灰");

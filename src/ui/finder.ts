@@ -2,6 +2,7 @@
 // created 2026-10-07 by Claude Fable 5.1。user 2026-10-07「找人视图同意，然后最好是全屏的而不是弹出窗口，类似gallery，然后能用这个音乐键盘」「默认按年代排哈哈哈」
 //   「试听不生成演奏者」（试听台 = 临时槽；只在「上场」时才 by value 造演奏者）「顺序本来就是先选概念再选演奏者」。
 // 数据 = src/gm/catalog.ts（vendor/instruments/ 的两张表 + 图标 sprite）；音频 / 选角归 host（src/app/main.ts）。
+import { dropdownHtml, mountDropdowns, setDropdown } from "./dropdown.ts";
 import { conceptName, conceptAlt, defLabel, zhOnly } from "../gm/catalog-i18n.ts";
 import { freshFinderMemo, type FinderMemo } from "../score/desk.ts";
 import { _t, lang } from "../i18n/index.ts";
@@ -85,18 +86,19 @@ export class Finder {
     this.el = document.createElement("div"); this.el.className = "finder"; this.el.hidden = true;
     this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="${_t("回到谱（Esc）")}">${_t("← 谱")}</button><span class="finder-title"></span>` +
       `<input class="finder-q" type="search" placeholder="${_t("搜乐器（中 / 英 / 日）")}" spellcheck="false" autocomplete="off" />` +
-      `<select class="finder-sort">${(Object.keys(SORT_LABEL) as SortMode[]).map((m) => `<option value="${m}">${SORT_LABEL[m]}</option>`).join("")}</select>` +
+      dropdownHtml((Object.keys(SORT_LABEL) as SortMode[]).map((m) => ({ value: m, label: SORT_LABEL[m] })), this.mode, { cls: "finder-sort" }) +   // 下拉 = 界面零件库的标准件（7-T）
       `<button class="btn finder-file" data-v="ownsf2" title="${_t("自己的 .sf2 文件：选中的那一件切出来留在这台设备上，歌里只记来源")}" hidden>${_t("打开 .sf2…")}</button>` +   // v0.16.36：从预设那一排挪到顶条（user 11-09「自己的 SF2 的入口感觉不应该放在这儿」）
       `<button class="btn finder-pad" data-v="pad" title="${_t("试听键盘：开 / 关")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("键盘")}</span></button></div>` +
       `<div class="finder-hint">${HINT}</div><div class="finder-pins" hidden></div><div class="finder-used" hidden></div>` +
-      `<div class="finder-jump" hidden><span class="finder-jump-go"><span>${_t("跳到")}</span><select class="finder-jump-sel" title="${_t("列表滚到这一组")}"></select></span>` +
+      `<div class="finder-jump" hidden><span class="finder-jump-go"><span>${_t("跳到")}</span>${dropdownHtml([], "0", { cls: "finder-jump-sel", title: _t("列表滚到这一组") })}</span>` +
       `<button class="btn finder-hide" aria-pressed="false">${_t("隐藏找不到的")}</button></div>` +   // 开关放第二排右端（v0.16.56）：顶条在窄屏 / 英文已经满了
       `<div class="finder-list"><div class="finder-empty">${_t("加载目录…")}</div></div>`;
     parent.append(this.el);   // 位置由 #stage 的 grid 命名区域钉死（.finder 占 main、pad 占 pad），和节点顺序无关（user「keyboard不应该用flex，这是一个很固定的有着很严密逻辑的东西」）
     this.el.querySelector<HTMLInputElement>(".finder-q")!.addEventListener("input", (e) => { this.q = (e.target as HTMLInputElement).value; this.render(); });
-    this.el.querySelector<HTMLSelectElement>(".finder-sort")!.addEventListener("change", (e) => { this.mode = (e.target as HTMLSelectElement).value as SortMode; this.render(); });
+    mountDropdowns(this.el);
+    this.el.querySelector<HTMLButtonElement>(".finder-sort")!.addEventListener("change", (e) => { this.mode = (e.target as HTMLButtonElement).value as SortMode; this.render(); });
     this.el.querySelector<HTMLElement>(".finder-hide")!.addEventListener("click", (e) => { e.stopPropagation(); this.hideNone = !this.hideNone; deviceKvSet("finder-hide-none", this.hideNone ? null : "0"); this.render(); });
-    this.el.querySelector<HTMLSelectElement>(".finder-jump-sel")!.addEventListener("change", (e) => this.jumpTo(Number((e.target as HTMLSelectElement).value)));
+    this.el.querySelector<HTMLButtonElement>(".finder-jump-sel")!.addEventListener("change", (e) => this.jumpTo(Number((e.target as HTMLButtonElement).value)));
     this.el.addEventListener("click", (e) => { if (this.swallow) { this.swallow = false; e.preventDefault(); e.stopPropagation(); return; } void this.onClick(e); });
     // 长按（手指 / 笔）或右键：常用一格 = 换成… / 拿掉；列表里一件乐器 = 置顶 / 取消置顶（v0.16.36）
     this.el.addEventListener("contextmenu", (e) => { const t = this.pinTarget(e.target as HTMLElement); if (!t) return; e.preventDefault(); this.pinMenu(t); });
@@ -131,7 +133,7 @@ export class Finder {
     this.memos[ctx] = m ?? freshFinderMemo();
     if (ctx !== this.ctx) return;
     this.unstash();
-    if (this.isOpen && this.cat) { this.el.querySelector<HTMLSelectElement>(".finder-sort")!.value = this.mode; this.render(); this.el.querySelector<HTMLElement>(".finder-list")!.scrollTop = this.scrollY; this.markJump(); }
+    if (this.isOpen && this.cat) { setDropdown(this.el.querySelector<HTMLElement>(".finder-sort")!, { value: this.mode }); this.render(); this.el.querySelector<HTMLElement>(".finder-list")!.scrollTop = this.scrollY; this.markJump(); }
   }
   /** 顶条「键盘」钮亮不亮（宿主在键盘开 / 关时告诉它）。 */
   setPadShown(on: boolean): void { this.el.querySelector(".finder-pad")?.classList.toggle("is-on", on); }
@@ -142,7 +144,7 @@ export class Finder {
     this.el.querySelector(".finder-title")!.textContent = this.playOnly ? _t("乐器目录（弹着玩）") : _t("找人给「{p}」", { p: this.host.roleName() });
     this.el.querySelector('[data-v="back"]')!.textContent = this.playOnly ? _t("← 歌库") : _t("← 谱");
     this.el.querySelector(".finder-hint")!.textContent = this.playOnly ? _t("点一件乐器 → 挑谁来演 → 用键盘弹着玩。要给歌里的声部选乐器：开一首歌，点谱前面的声部名。") : HINT;
-    this.el.querySelector<HTMLSelectElement>(".finder-sort")!.value = this.mode;
+    setDropdown(this.el.querySelector<HTMLElement>(".finder-sort")!, { value: this.mode });
     this.el.querySelector<HTMLElement>(".finder-file")!.hidden = this.playOnly || !this.host.ownSf2;
     if (!this.cat) {
       this.loading ??= (async () => {
@@ -312,7 +314,7 @@ export class Finder {
     // 类级跳转（user 2026-10-08「分类能不能有一个类级别的跳转功能，不然一个一个下拉很累」）：一组一项，选了列表滚到那组；只有一组就不出。
     //   做成下拉（user 同日「category选项能做成下拉而不是滑动吗」；原来是横着滑的一排粒）
     jump.hidden = false; jump.querySelector<HTMLElement>(".finder-jump-go")!.hidden = groups.length < 2;   // 这一排一直在（右端是「隐藏找不到的」）；只有一组 / 搜索时只藏「跳到」
-    jump.querySelector("select")!.innerHTML = groups.map((g, k) => `<option value="${k}">${_t("{label} · {n} 件", { label: esc(g.label), n: g.items.length })}</option>`).join("");
+    setDropdown(jump.querySelector<HTMLElement>(".finder-jump-sel")!, { items: groups.map((g, k) => ({ value: String(k), label: _t("{label} · {n} 件", { label: g.label, n: g.items.length }) })), value: "0" });
     const own = this.ownHtml();
     if (!groups.length) { list.innerHTML = own + (own ? "" : `<div class="finder-empty">${hiddenIds.size ? _t("没有叫「{q}」的能演的乐器（藏着 {n} 件没有谁能演的：关掉「隐藏找不到的」能看到）", { q: esc(this.q), n: hiddenIds.size }) : _t("没有叫「{q}」的", { q: esc(this.q) })}</div>`); return; }
     // 多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」）：每组里的行放进自适应网格（styles.css .finder-items：每格至少 320 px，窄屏一列）；
@@ -392,12 +394,12 @@ export class Finder {
   /** 跳转下拉显示「现在在哪一组」（组头顶到列表顶的最后一组）。滚到底时：最后几组短、组头顶不到列表顶——人刚选的那组比算出来的靠后就留着它，不往回弹。 */
   private markJump(): void {
     const list = this.el.querySelector<HTMLElement>(".finder-list")!, jump = this.el.querySelector<HTMLElement>(".finder-jump")!; if (jump.hidden || jump.querySelector<HTMLElement>(".finder-jump-go")!.hidden) return;
-    const sel = jump.querySelector("select")!, top = list.getBoundingClientRect().top + 1;
+    const sel = jump.querySelector<HTMLButtonElement>(".finder-jump-sel")!, top = list.getBoundingClientRect().top + 1;
     let cur = 0;
     for (const g of list.querySelectorAll<HTMLElement>("[data-g]")) { if (g.getBoundingClientRect().top <= top) cur = Number(g.dataset.g); else break; }
     const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
     if (atBottom && Number(sel.value) > cur) return;
-    if (sel.value !== String(cur)) sel.value = String(cur);
+    if (sel.value !== String(cur)) setDropdown(sel, { value: String(cur) });
   }
   private rowHtml(e: Entry, groupId: string): string {
     const cat = this.cat!, c = e.concept, pk = e.preset ? gmKey(e.preset) : "", o = `${groupId}::${c.id}${pk ? `::${pk}` : ""}`, open = this.opened === o, icon = c.icon?.id;

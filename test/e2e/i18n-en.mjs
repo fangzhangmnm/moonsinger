@@ -4,6 +4,7 @@
 //             ② 控件里的字没有超出控件（字的实际宽度 > 控件内宽 = 撑爆）
 //   跑：npm run build → npm run serve（8710）→ node test/e2e/i18n-en.mjs；加 --verbose 打印全部。
 import { chromium } from "./pw.mjs";
+import { pick } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const BASE = process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/";
@@ -193,11 +194,11 @@ for (const [, v] of seenOver) console.log(`      撑爆 ${v}`);
   const p = await ctx.newPage();
   await p.goto(BASE); await p.waitForTimeout(700);
   await p.click("#setBtn"); await p.click('button:has-text("Settings…")'); await p.waitForTimeout(150);
-  await Promise.all([p.waitForNavigation(), p.selectOption('[data-set="lang"]', "zh")]); await p.waitForTimeout(700);
+  await Promise.all([p.waitForNavigation(), pick(p, '[data-set="lang"]', "zh")]); await p.waitForTimeout(700);
   check(await p.evaluate(() => document.documentElement.lang) === "zh-CN", "设置里选中文：重载后 <html lang> = zh-CN");
   check((await p.$eval(".mode-seg [data-mode=notes]", (e) => e.title)).startsWith("音"), "选了中文：英文系统上界面也是中文");
   await p.click("#setBtn"); await p.click('button:has-text("设置…")'); await p.waitForTimeout(150);
-  await Promise.all([p.waitForNavigation(), p.selectOption('[data-set="lang"]', "auto")]); await p.waitForTimeout(700);
+  await Promise.all([p.waitForNavigation(), pick(p, '[data-set="lang"]', "auto")]); await p.waitForTimeout(700);
   check(await p.evaluate(() => document.documentElement.lang) === "en", "跟系统：回到英文");
   await ctx.close();
 }

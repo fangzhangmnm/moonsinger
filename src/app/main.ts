@@ -7,6 +7,7 @@
 // UX-2（账本 §9¾）：选中 = 改、光标 = 写；歌词在谱下面点进去写（底部歌词栏拿掉了）；「弹」= 即兴只唱不写。
 // 调号 / 拍号 / 速度是谱里的记号 token，点谱上的记号就地改，pad「＋」在光标处插——顶栏不再有全局的调号 / 拍号 / 速度。
 
+import { dropdownHtml, mountDropdowns, setDropdown, inDropdownList, keyForList, isDropdown } from "../ui/dropdown.ts";
 import { iconHtml } from "../ui/icon.ts";
 import { installTouchTips } from "../ui/touch-tip.ts";
 import { conceptName, zhOnly } from "../gm/catalog-i18n.ts";
@@ -423,7 +424,8 @@ padTab.addEventListener("click", () => showPad(ws.mode === "listen" ? !studio.is
 //   user 2026-10-10「模式切换不是下拉，回到之前的四个排一起的按钮，然后模式切换，曲段和声部选择这三个不是在顶栏，而是顶栏下面创建一个类似tab的往下的东西，可以遮挡屏幕」
 //   （v0.10.2 那版 = 三个下拉挤在顶栏左上角，user 原话「我希望有一个快速选择看全部或者哪个曲段，以及快速看全部或者哪个声部的下拉框」「模式收到下拉框里面」）。
 const viewTab = document.createElement("div"); viewTab.className = "view-tab";
-viewTab.innerHTML = `<select id="paperSel" class="vt-sel" title="${_t("看哪一段：全部 / 只看这一段")}"></select><select id="partSel" class="vt-sel" title="${_t("看哪个声部：全部 / 只看这一个")}"></select>`;
+viewTab.innerHTML = dropdownHtml([], "all", { id: "paperSel", cls: "vt-sel", title: _t("看哪一段：全部 / 只看这一段") }) + dropdownHtml([], "all", { id: "partSel", cls: "vt-sel", title: _t("看哪个声部：全部 / 只看这一个") });   // 下拉 = 界面零件库的标准件（7-T）；选项跟着歌在 renderTopSels 里换
+mountDropdowns(viewTab);
 stageEl.append(viewTab);
 // 选区条（2026-10-08 改的手感；src/ui/sel-bar.ts）：有选区时挂在胶囊下面；剪贴板两层 = app 内 token（clip）+ 系统剪贴板一行简谱文字（clipText）
 const selBar = new SelBar(stageEl, { verb: (v) => { void selVerb(v); } });
@@ -434,18 +436,18 @@ let chromeReady = false;
 /** 挂签上「看哪一段 / 看哪位歌手」两个下拉（v0.10.2 起；v0.10.3 搬进挂签）：选项跟着歌（纸 / 歌手的名字）重画，值跟着视图（本段 / 全部、只看它）。 */
 let topSelsSig = "";
 function renderTopSels(): void {
-  const ps = $("paperSel") as HTMLSelectElement | null, qs = $("partSel") as HTMLSelectElement | null; if (!ps || !qs) return;
+  const ps = $("paperSel") as HTMLButtonElement | null, qs = $("partSel") as HTMLButtonElement | null; if (!ps || !qs) return;
   const labels = partLabels(D.st.song, D.extras), only = D.st.song.parts.filter((p) => pv(p.id).only);
   const paperOpts = [["all", _t("全部曲段")], ...D.st.song.papers.map((p, k) => [p.id, `${p.name || _t("第 {p} 段", { p: k + 1 })}${p.hidden ? _t("（隐藏）") : ""}`])] as const;
   const partOpts = [["all", _t("全部声部")], ...D.st.song.parts.map((p, k) => [p.id, labels[k] ?? p.id])] as const;
   const sig = JSON.stringify([paperOpts, partOpts]);
   if (sig !== topSelsSig) {
     topSelsSig = sig;
-    ps.innerHTML = paperOpts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
-    qs.innerHTML = partOpts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
+    setDropdown(ps, { items: paperOpts.map(([value, label]) => ({ value, label })) });
+    setDropdown(qs, { items: partOpts.map(([value, label]) => ({ value, label })) });
   }
-  ps.value = viewScope === "all" ? "all" : D.st.at.paper;
-  qs.value = only.length === 1 ? only[0].id : "all";
+  setDropdown(ps, { value: viewScope === "all" ? "all" : D.st.at.paper });
+  setDropdown(qs, { value: only.length === 1 ? only[0].id : "all" });
   ps.hidden = D.st.song.papers.length < 2; qs.hidden = D.st.song.parts.length < 2;   // 只有一段 / 一位 = 不用选
 }
 function updateChrome(): void {
@@ -458,7 +460,7 @@ function updateChrome(): void {
   padTab.classList.toggle("is-on", dockOpen);
   { const lab = ws.mode === "listen" ? _t("混音台") : _t("键盘"), ic = ws.mode === "listen" ? "#sliders" : "#piano-keys", u = padTab.querySelector("use"); if (u && u.getAttribute("href") !== ic) u.setAttribute("href", ic); padTab.setAttribute("aria-label", lab); padTab.title = `${ws.mode === "listen" ? _t("混音台") : _t("键盘（pad）")}：${dockOpen ? _t("点 = 收起") : _t("点 = 打开")}`; }
   renderTopSels();   // 「词 / 听」没有键盘：不露「键盘」tab
-  viewTab.hidden = over || (($("paperSel") as HTMLSelectElement).hidden && ($("partSel") as HTMLSelectElement).hidden);   // 挂签只剩看哪一段 / 哪位：都不用选 = 不挂
+  viewTab.hidden = over || ($("paperSel").hidden && $("partSel").hidden);   // 挂签只剩看哪一段 / 哪位：都不用选 = 不挂
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n = D.st.sel ? D.st.sel.to - D.st.sel.from : 0;
@@ -1071,7 +1073,7 @@ function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: 
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8; let y = at.y + 10; if (y + h > innerHeight - m) y = at.y - h - 10;
   box.style.left = `${Math.max(m, Math.min(at.x + 6, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, y)}px`;
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !inDropdownList(e.target)) close(); };
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "menu", close });
@@ -1099,7 +1101,7 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
   const b = btn.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, m = 8;
   box.style.left = `${Math.max(m, Math.min(b.left, innerWidth - w - m))}px`;
   box.style.top = `${b.bottom + 4 + h <= innerHeight - m ? b.bottom + 4 : Math.max(m, b.top - h - 4)}px`;   // 底座边上那个：下面放不下 = 往上开
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !btn.contains(e.target as Node)) close(); };
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !btn.contains(e.target as Node) && !inDropdownList(e.target)) close(); };
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "menu", close });
@@ -1133,12 +1135,12 @@ dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.
 }));   // 用符号格时点「音」= 已经在「音」里，不换键盘
 // 看哪一段 / 看哪位歌手（v0.10.2）：全部 = 都看；选一段 = 本段视图跳到它；选一位 = 「只看它」（别的缩成细行），再选「全部」= 都看
 $("paperSel").addEventListener("change", (e) => {
-  const v = (e.target as HTMLSelectElement).value; (e.target as HTMLSelectElement).blur();
+  const v = (e.target as HTMLButtonElement).value; (e.target as HTMLButtonElement).blur();
   if (v === "all") viewScope = "all"; else { viewScope = "segment"; if (v !== D.st.at.paper) navPaperTo(v); }
   view.render(); updateChrome();
 });
 $("partSel").addEventListener("change", (e) => {
-  const v = (e.target as HTMLSelectElement).value; (e.target as HTMLSelectElement).blur();
+  const v = (e.target as HTMLButtonElement).value; (e.target as HTMLButtonElement).blur();
   for (const p of D.st.song.parts) setPv(p.id, { only: v !== "all" && p.id === v });
   afterViewChange(); updateChrome();
 });
@@ -1290,7 +1292,7 @@ let settingsPage: SetPage = "ui";
 const SET_PAGES = (): [SetPage, string][] => [["ui", _t("界面")], ["a11y", _t("乐理助手")], ["sound", _t("音源与缓存")], ["midi", "MIDI"], ["dev", _t("开发者")]];
 /** 设置里的一个下拉框（原来一排小按钮，user 嫌难看 → 下拉框）：data-set = 哪一项，改了走 openSettings 的 change。 */
 const setSel = (k: string, opts: [string, string][], cur: string): string =>
-  `<select class="hp-sel set-sel" data-set="${k}">${opts.map(([v, label]) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(label)}</option>`).join("")}</select>`;
+  dropdownHtml(opts.map(([value, label]) => ({ value, label })), cur, { cls: "hp-sel set-sel", attrs: `data-set="${k}"` });   // 界面零件库的下拉标准件（7-T）；openSettings 里 mountDropdowns 接上
 /** 长文弹窗（v0.16.90）：盖在设置上面的一层，一个标题 + 能滚的正文 + 「好」；jump = 滚到正文里 id="doc-<jump>" 的那一节。收起 = 回到设置原样。 */
 function openDocLayer(host: HTMLElement, title: string, html: string, jump?: string): void {
   const layer = document.createElement("div"); layer.className = "doc-layer";
@@ -1352,6 +1354,7 @@ function openSettings(): void {
     `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
   document.body.append(box);
   // 五页：点页签换页（这次运行里记住）；下拉框改了马上生效（语言 = 存 + 重载）
+  mountDropdowns(box);   // 设置里的下拉（setSel）
   const showPage = (pg: SetPage): void => {
     settingsPage = pg;
     box.querySelectorAll<HTMLElement>(".set-page").forEach((el) => { el.hidden = el.dataset.page !== pg; });
@@ -1360,7 +1363,7 @@ function openSettings(): void {
   showPage(settingsPage);
   box.querySelector(".set-tabs")!.addEventListener("click", (e) => { const t = (e.target as HTMLElement).closest<HTMLElement>("[data-tab]"); if (t) showPage(t.dataset.tab as SetPage); });
   box.addEventListener("change", (e) => {
-    const el = e.target as HTMLSelectElement, k = el.dataset.set; if (!k) return;
+    const el = e.target as HTMLButtonElement, k = el.dataset.set; if (!k) return;
     if (k === "lang") { saveLang(el.value === "auto" ? null : (el.value as Lang)); location.reload(); }
     else if (k === "feel") { feelAlways = el.value === "on"; deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null); diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`); }
     else if (k === "primer") { const on = el.value === "on"; setPrimer(on); deviceKvSet(KV_PRIMER, on ? null : "0"); }
@@ -2311,7 +2314,7 @@ function openAddPartMenu(paperId: string, at: { x: number; y: number }): void {
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   box.style.left = `${Math.max(m, Math.min(at.x - w / 2, innerWidth - w - m))}px`;
   box.style.top = `${Math.max(m, at.y - h - 6 >= m ? at.y - h - 6 : Math.min(at.y + 6, innerHeight - h - m))}px`;
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !inDropdownList(e.target)) close(); };
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "menu", close });
@@ -2356,7 +2359,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     else { x = at.right + 10; y = (at.top + at.bottom) / 2 - h / 2; }   // 上下都放不下（矮窗口）：放名字右边，别把名字本身盖住
   }
   box.style.left = `${Math.max(m, Math.min(x, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };   // 非模态：点外面就收，那一下照常落到谱上
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !inDropdownList(e.target)) close(); };   // 非模态：点外面就收，那一下照常落到谱上
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "card", close, redraw: draw });
@@ -2393,7 +2396,7 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
   let x = at.x + 6, y = at.y + 10;
   if (y + h > innerHeight - m) y = at.y - h - 10;
   box.style.left = `${Math.max(m, Math.min(x, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !inDropdownList(e.target)) close(); };
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "menu", close });
@@ -2436,7 +2439,7 @@ function ctxMenu(cls: string, html: string, at: { x: number; y: number }, pick: 
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
   box.style.left = `${Math.max(m, Math.min(at.x - w / 2, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !inDropdownList(e.target)) close(); };
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "menu", close });
@@ -2609,7 +2612,7 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
   box.style.left = `${Math.max(m, Math.min(at.x - w / 2, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !inDropdownList(e.target)) close(); };
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); view.setSpan(null); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "menu", close });
@@ -2657,7 +2660,7 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
   box.style.left = `${Math.max(m, Math.min(at.x - w / 2, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !inDropdownList(e.target)) close(); };
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); view.setSpan(null); };   // 收起 = 不再染
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "menu", close });
@@ -2712,7 +2715,7 @@ function openSelMenu(at: { x: number; y: number }): void {
     box.style.left = `${Math.max(m, Math.min(at.x, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
   };
   place();
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !inDropdownList(e.target)) close(); };
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "menu", close });
@@ -3176,7 +3179,7 @@ function openMainMenu(): void {
   document.body.append(box);
   const r = $("setBtn").getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, m = 8;
   box.style.left = `${Math.max(m, Math.min(r.right - w, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(r.bottom + 6, innerHeight - h - m))}px`;
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !$("setBtn").contains(e.target as Node)) close(); };
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !$("setBtn").contains(e.target as Node) && !inDropdownList(e.target)) close(); };
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "menu", close });
@@ -4109,18 +4112,18 @@ window.addEventListener("keydown", (e) => {
   const fileAct = !galleryOpen && mod && !e.altKey && /^[so]$/i.test(e.key) ? route(e, whereNow(), "write") : null;
   const owner = keyOwner({
     galleryOpen, finderShown: finderShown(), finderOpen: finder.isOpen, fileCombo: fileAct?.k === "file",
-    composing: e.isComposing || e.keyCode === 229, escape: esc, mod, typing, ownField,
-    formControl: !!t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !ownField)),
+    composing: e.isComposing || e.keyCode === 229, listOpen: keyForList(e), escape: esc, mod, typing, ownField,
+    formControl: !!t && (isDropdown(t) || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !ownField)),   // 下拉 = 界面零件库的标准件（一颗按钮，7-T）
     instShown: instShown(), inRef: !!t?.closest?.("wp-reference-window"),
     studioOpen: studio.isOpen, inStudio: !!t?.closest?.(".studio"),
     escFree: !D.st.sel && !view.lyrics.open && !view.marks.open && !ui.overlay, listen: listenOn(),
   });
   switch (owner) {
     case "galleryFinder": case "finder": if (esc) { e.preventDefault(); closeFinder(); } else finderKey(e); return;   // 乐器目录（歌库上面的 / 歌里的）：Esc 收起；音键只弹不写（pad 的触屏键照常）
-    case "gallery": case "ime": case "field": case "ref": case "control": return;   // 歌库没有「回到谱」（gallery-first）：出口 = 打开一首 / 新建；参考窗 Ctrl / ⌘+V 进窗、Esc 它自己交回谱
+    case "gallery": case "ime": case "field": case "ref": case "control": case "list": return;   // list = 下拉列表开着，键归它（7-T）   // 歌库没有「回到谱」（gallery-first）：出口 = 打开一首 / 新建；参考窗 Ctrl / ⌘+V 进窗、Esc 它自己交回谱
     case "file": e.preventDefault(); run(fileAct!, e.repeat, e.code); return;
     case "inst": {   // 乐器页：只认 Esc（回谱）和撤销 / 重做；输入框里的照常打字
-      const inField = t?.closest("input, select, textarea");
+      const inField = t?.closest("input, textarea, .dd");
       if (esc) { e.preventDefault(); closeInstPage(); }
       else if (!inField && mod && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) redoNow(); else undoNow(); }
       else if (!inField && mod && e.key.toLowerCase() === "y") { e.preventDefault(); redoNow(); }

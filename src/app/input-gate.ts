@@ -76,6 +76,7 @@ export type KeyOwner =
   | "galleryFinder"   // 歌库上面的乐器目录（只弹着玩）：Esc 回歌库，音键 = 弹
   | "gallery"         // 歌库开着：键盘归它
   | "file"            // 存 / 另存（导出）/ 打开：不管哪一页开着、焦点在谁身上，都是这首歌的事
+  | "list"            // 下拉列表开着（界面零件库的弹层，7-T）：上下 / 回车 / Esc 都归它，Esc 只收列表、不连面板一起收
   | "ime"             // 输入法正在拼字（空格是选字）：不接
   | "field"           // 打字的框拿着焦点：键归框（谱自己的歌词框 / 记号框除外，它们走键表）
   | "finder"          // 乐器目录开着：Esc + 音键只弹不写
@@ -95,6 +96,8 @@ export interface KeyFacts {
   /** Ctrl / ⌘ + S / Shift+S / O，且键表认它是文件动作。 */
   fileCombo: boolean;
   composing: boolean;
+  /** 这一下按下时有下拉列表开着（src/ui/dropdown.ts keyForList：在库的弹层监听之前记下的）。 */
+  listOpen: boolean;
   escape: boolean;
   /** Ctrl / ⌘ 按着。 */
   mod: boolean;
@@ -102,7 +105,7 @@ export interface KeyFacts {
   typing: boolean;
   /** 那个框是谱自己的歌词框 / 记号框。 */
   ownField: boolean;
-  /** 焦点在 SELECT / TEXTAREA / 不是 ownField 的 INPUT 上。 */
+  /** 焦点在下拉那颗按钮（界面零件库的标准件，7-T）/ TEXTAREA / 不是 ownField 的 INPUT 上。 */
   formControl: boolean;
   instShown: boolean;
   /** 焦点在参考窗里。 */
@@ -118,6 +121,7 @@ export function keyOwner(f: KeyFacts): KeyOwner {
   if (f.finderShown && f.galleryOpen) return "galleryFinder";
   if (f.galleryOpen) return "gallery";
   if (f.fileCombo) return "file";
+  if (f.listOpen) return "list";
   if (f.composing) return "ime";
   if (!f.escape && f.typing && !f.ownField) return "field";
   if (f.finderOpen) return "finder";

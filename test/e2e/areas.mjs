@@ -8,7 +8,7 @@
 /** 区 → E2E 文件名（不带 .mjs）。 */
 export const AREAS = {
   // 谱面：手势（点 / 长按 / 拖 / 框选 / 把手）、排版、显示、谱上记号
-  score: ["layout-count", "header-hit", "header-panel", "minor-key", "credits-listen", "chord-pick", "clef-section", "pad-paradigm", "select", "finger", "rest", "row-pin", "lift", "sel-tweak", "top-sels", "undo", "caret-end", "clef", "auto-ottava", "shared-staff", "hscroll", "only1",
+  score: ["layout-count", "header-hit", "header-panel", "dropdown", "minor-key", "credits-listen", "chord-pick", "clef-section", "pad-paradigm", "select", "finger", "rest", "row-pin", "lift", "sel-tweak", "top-sels", "undo", "caret-end", "clef", "auto-ottava", "shared-staff", "hscroll", "only1",
     "zoom", "ctrl-zoom", "dock-zoom", "scroll", "swell-art", "phrase", "repeat", "transpose", "arrange", "pad-ghost", "listen-ghost", "start-dyn",
     "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow", "title-keys", "overlay-touch", "jianpu", "part-names"],
   // 键盘（pad）：音键 / 符号格 / 几种锁 / 歌词框 / 记号菜单
@@ -48,7 +48,7 @@ export const SLOW = {
 export function slowFor(paths) { return Object.entries(SLOW).filter(([, v]) => paths.some((p) => v.when.test(p))).map(([k]) => k); }
 
 /** 不是测试的 E2E 目录成员（运行器和分区守卫都跳过）。 */
-export const HELPERS = ["fake-fsa", "pw", "cloud-bridge", "run", "areas"];
+export const HELPERS = ["fake-fsa", "pw", "cloud-bridge", "run", "areas", "dd"];
 
 /** 源码路径 → 区。从上往下第一条匹配的算（正则按仓根相对路径匹配）。"all" = 整套；[] = 没有 E2E 管它（只跑单元 / 冒烟）。
  *  "smoke" 不是 E2E 区：命中 = 运行器提醒你跑 npm run smoke（壳 / 文件逃生口在那里守）。 */

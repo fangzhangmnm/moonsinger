@@ -4,6 +4,7 @@
 //   点开关 = 全列出来；刷新后还记得（记在这台设备上）；再点 = 又藏起来。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/finder-hide.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pick } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const NONE = ["Q8094", "Q83301", "Q47521", "Q7925", "Q3196"];   // 风 / 雷 / 溪流 / 雨 / 火：目录里没有谁能演
@@ -17,7 +18,7 @@ const openFinder = async () => {
   await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300);
   await p.click('.ip-btns [data-v="finder"]'); await p.waitForSelector(".finder-list .finder-group-h"); await p.waitForTimeout(300);
 };
-const firstGroupIds = async () => { await p.selectOption(".finder-sort", "year"); await p.waitForTimeout(150); if (!(await p.$('.finder-group[data-g="0"].is-open'))) { await p.click('.finder-group[data-g="0"] > .finder-group-h'); await p.waitForTimeout(150); }   // 手风琴：已经开着就别再点（再点 = 收起）
+const firstGroupIds = async () => { await pick(p, ".finder-sort", "year"); await p.waitForTimeout(150); if (!(await p.$('.finder-group[data-g="0"].is-open'))) { await p.click('.finder-group[data-g="0"] > .finder-group-h'); await p.waitForTimeout(150); }   // 手风琴：已经开着就别再点（再点 = 收起）
   return p.evaluate(() => [...document.querySelectorAll('.finder-group[data-g="0"] .inst-row')].map((r) => r.dataset.c)); };
 const hideOn = () => p.evaluate(() => document.querySelector(".finder-hide")?.classList.contains("is-on"));
 const search = async (q) => { await p.fill(".finder-q", q); await p.waitForTimeout(200); };

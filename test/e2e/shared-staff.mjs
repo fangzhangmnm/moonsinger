@@ -2,6 +2,7 @@
 // created 2026-10-10 by Claude Opus 5.5（user「合租还是有主人吧，这样钢琴小花可以挂钢琴上」「…主要就是总览监视用。所以撞一起就撞」）
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/shared-staff.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pick } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -18,8 +19,8 @@ const focus = () => p.evaluate(() => window.__moonsinger.state().at.part);
 // 先把光标放到 Violin（别让 Flute 是现在在写的那位——在写的那位拆开）
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { ...s.at, part: "P3" } }); }); await p.waitForTimeout(150);
 await p.evaluate(() => window.__moonsinger.openHeader("P2")); await p.waitForTimeout(250);   // v0.16.16 搬家 A：合租在谱头面板「这位的谱」里（v0.16.21 起从谱号开，小卡里没有了）
-check(!!(await p.$('.header-panel select[data-hp="host"]')), "Flute 的「谱怎么画…」里有「合租」");
-await p.selectOption('.header-panel select[data-hp="host"]', "P1"); await p.waitForTimeout(250);
+check(!!(await p.$('.header-panel [data-hp="host"]')), "Flute 的「谱怎么画…」里有「合租」");
+await pick(p, '.header-panel [data-hp="host"]', "P1"); await p.waitForTimeout(250);
 await p.keyboard.press("Escape"); await p.mouse.click(1380, 840); await p.waitForTimeout(150);
 // 一家里有谁在写 = 整家拆开（user「host也应该只读，只有展开时才能编辑」）：去 Violin 那儿写 = Piano + Flute 叠成一行
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { ...s.at, part: "P3" } }); }); await p.waitForTimeout(200);

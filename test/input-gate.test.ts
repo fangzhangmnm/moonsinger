@@ -135,9 +135,15 @@ mark.commit|mark:commit|mark:commit`.trim();
 });
 
 describe("键盘总闸：这一下按键归谁（先后顺序就是规矩）", () => {
-  const base: KeyFacts = { galleryOpen: false, finderShown: false, finderOpen: false, fileCombo: false, composing: false, escape: false, mod: false, typing: false, ownField: false, formControl: false, instShown: false, inRef: false, studioOpen: false, inStudio: false, escFree: true, listen: false };
+  const base: KeyFacts = { galleryOpen: false, finderShown: false, finderOpen: false, fileCombo: false, composing: false, listOpen: false, escape: false, mod: false, typing: false, ownField: false, formControl: false, instShown: false, inRef: false, studioOpen: false, inStudio: false, escFree: true, listen: false };
   const own = (f: Partial<KeyFacts>): KeyOwner => keyOwner({ ...base, ...f });
   it("什么都没开 = 谱", () => eq(own({}), "score"));
+  it("下拉列表开着（7-T，界面零件库的弹层）：键归列表——Esc 只收列表，不连乐器页 / 混音台 / 面板一起收；空格不放、上下键不挪光标；只有存 / 开照旧是这首歌的", () => {
+    for (const f of [{}, { escape: true, instShown: true }, { escape: true, studioOpen: true, inStudio: true }, { finderOpen: true, finderShown: true }, { listen: true }, { formControl: true }, { typing: true }, { composing: true }] as Partial<KeyFacts>[])
+      eq(own({ ...f, listOpen: true }), "list", JSON.stringify(f));
+    eq(own({ listOpen: true, fileCombo: true, mod: true }), "file", "列表开着时 Ctrl+S 照样存");
+    eq(own({ listOpen: true, galleryOpen: true }), "gallery", "歌库开着：歌库自己管它的弹层");
+  });
   it("歌库开着：键盘归它；歌库上面的乐器目录 = 只弹着玩", () => {
     eq(own({ galleryOpen: true, typing: true, formControl: true, listen: true }), "gallery");
     eq(own({ galleryOpen: true, finderShown: true }), "galleryFinder");

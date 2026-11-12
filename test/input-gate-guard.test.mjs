@@ -21,6 +21,7 @@ describe("键盘总闸守卫", () => {
       "src/app/reference-host.ts": 1,    // 参考窗的 Esc = 焦点回谱
       "src/keyboard/pad.ts": 1,          // 键盘候选排开着时的 Esc = 收起
       "src/widgets/drum.ts": 1,          // 滚轮（drum = 竖直滚轮小控件，不是鼓）的 Esc = 收起
+      "src/ui/dropdown.ts": 1,           // 只做记号：这一下按下时有下拉列表开着（捕获阶段、库的弹层监听之前），全局监听据此交给 keyOwner 的 list——自己不处理键、不写谱（7-T）
     };
     const found = {};
     // 这里不用 code()：有的文件里有 "image/*" 这样的字符串，会被当成块注释的开头。整行是注释的不算，别的原样数。

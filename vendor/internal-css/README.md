@@ -1,1 +1,1 @@
-workbench-elements.css ← @internal/workbench-elements 0.1.2（notice / popup-menu 的样式；包只用 var()，token 值在 styles.css）。收货时随包一起更新（pull-package 后手动拷，同 CatsUp vendor/internal-css/）。2026-10-07 Claude Opus 5.5
+workbench-elements.css ← @internal/workbench-elements 0.3.0（2026-11-12 收：多了浮窗的壳、下拉标准件 .select-field*；本机收货，库没打标签——pull-package.sh 只认有标签的版本，照它的步骤手动收）；原 0.1.2（notice / popup-menu 的样式；包只用 var()，token 值在 styles.css）。收货时随包一起更新（pull-package 后手动拷，同 CatsUp vendor/internal-css/）。2026-10-07 Claude Opus 5.5

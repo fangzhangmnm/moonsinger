@@ -48,6 +48,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
   touch-action: pan-x pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }   /* pan-x pan-y（不是 manipulation）= 哪儿都不许捏合缩放网页（Chromium 系触屏；WebKit 另有 gesturestart 拦）；谱面自己的捏合在 .score 上（touch-action: none）。2026-10-21 */
 [hidden] { display: none !important; }
 button, input, select { font: inherit; color: inherit; }
+/* 下拉框（7-T，2026-11-12）= 界面零件库的下拉标准件（src/ui/dropdown.ts：一颗按钮，排版和右下角小三角归库的 .select-field）。这里只给一个「像输入框」的底子，
+   优先级为零（:where）——各处原来写在类上的皮（.hp-sel / .vt-sel / .finder-sort / .ip-part …）照样盖过它。 */
+:where(button.dd) { height: 32px; min-width: 0; max-width: 100%; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font-size: 14px; padding: 0 14px 0 8px; }
+:where(button.dd:disabled) { opacity: .55; cursor: default; }
 
 /* 列宽 minmax(0, 1fr)：里面的内容（谱面 SVG 按上一次的宽度画的）不许把整页撑宽——转屏 / PWA 启动时会卡在宽的那次（2026-10-07 user 截图「pwa的时候好像宽度超了」）；
    border-box：安全区的内边距算在 100% 里面（PWA 全屏时不再多出一截） */
@@ -617,12 +621,12 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .fx-row { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
 .fx-row output { color: var(--ink); font-variant-numeric: tabular-nums; }
 .fx-row input[type="range"] { width: 100%; }
-.fx-row select { height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; }
+.fx-row .dd { height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; }
 .fx-row .btn { align-self: flex-start; }
 .fx-note { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
 .fx-dim { color: var(--muted); }
 /* 路由轨（v0.10.9）：混音轨卡片 + 出到 / 发送 + 「＋ 混音轨」 */
-.strip select { height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; min-width: 0; }
+.strip .dd { height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; min-width: 0; }
 .strip-send { display: flex; align-items: flex-end; gap: 4px; }
 .strip-send .strip-row { flex: 1; min-width: 0; }
 .strip-send .btn { height: 26px; min-width: 26px; padding: 0 6px; }
@@ -659,7 +663,7 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
   .strip-row, .strip-who { font-size: 11px; }
   .strip .btn { height: 26px; min-width: 26px; padding: 0 7px; font-size: 12px; }
   .strip .fx-seg .btn { padding: 0 6px; }
-  .strip select { height: 26px; font-size: 12px; }
+  .strip .dd { height: 26px; font-size: 12px; }
 }
 .fx-inline { display: flex; flex-direction: column; gap: 6px; }
 .fx-inline.off .fx-body { opacity: .5; }

@@ -1,6 +1,7 @@
 // inst-settings.ts —— 乐器设置页（台上是谁 + 这位怎么演 + 记号表 + 谱上叫什么）：全屏占 #stage 的 main，pad 留着当试听键盘。
 // created 2026-11-09 by Claude Opus 5.5：从 main.ts 原样搬出来（施工单 ai-docs/20261109-work-order-instrument-pick-vs-tune.md §6「这一页搬出 main.ts…照 header-panel.ts 的形状」；
 //   审计风险 2「主程序里一张一张手糊的面板」）。宿主给一组访问器 + 动作，页面自己管画和点击；行为和搬之前一样。各段的来历见段内注释（原注释照搬）。
+import { dropdownHtml, mountDropdowns } from "../../ui/dropdown.ts";
 import { _t, lang } from "../../i18n/index.ts";
 import { roleName, roleSound, activeId, gmCandidates, activeCandidateName, partLabels, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withSwellDb, withCalibration, GAP_MAX_SEC, SWELL_DB_MIN, SWELL_DB_MAX, type Extras, type Engine } from "../../format/project.ts";
 import { UNWRITTEN_CALIBRATION_DB, ROLL_HZ_MIN, ROLL_HZ_MAX, MARK_DEFAULTS } from "../../format/performance.ts";
@@ -195,7 +196,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     const keepScroll = el.querySelector<HTMLElement>(".ip-body")?.scrollTop ?? 0;
     el.innerHTML =
       `<div class="ip-bar"><button class="btn" data-v="back" title="${_t("回到谱（Esc）")}">${_t("← 谱")}</button><span class="ip-title">${_t("乐器")}</span>` +
-      (parts.length > 1 ? `<select class="ip-part" title="${_t("换一个声部")}">${parts.map((x) => `<option value="${esc(x.p.id)}"${x.p.id === h.at().part ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc(parts[0]?.label ?? rn)}</span>`) +
+      (parts.length > 1 ? dropdownHtml(parts.map((x) => ({ value: x.p.id, label: x.label })), h.at().part, { cls: "ip-part", title: _t("换一个声部") }) : `<span class="ip-part-one">${esc(parts[0]?.label ?? rn)}</span>`) +   // 下拉 = 界面零件库的标准件（7-T）
       `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${h.padHidden() ? "" : " is-on"}" data-v="pad" title="${_t("试听键盘：开 / 关")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("键盘")}</span></button></div>` +
       `<div class="ip-body"><div class="ip-cols">` +
       // 谁来演 = 一行：台上是谁 + 声音在哪 + 换（v0.16.18 搬家 C：用过的候选、退掉、从 GS 选都搬进乐器目录顶上；这页只留配置）
@@ -209,7 +210,8 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       `</div></div>`;
     if (keepScroll) el.querySelector<HTMLElement>(".ip-body")!.scrollTop = keepScroll;
     el.querySelector<HTMLDetailsElement>("details.ip-adv")?.addEventListener("toggle", (e) => { instAdvOpen = (e.target as HTMLDetailsElement).open; });
-    el.querySelector<HTMLSelectElement>(".ip-part")?.addEventListener("change", (e) => { h.setPart((e.target as HTMLSelectElement).value); draw(); });
+    mountDropdowns(el);
+    el.querySelector<HTMLButtonElement>(".ip-part")?.addEventListener("change", (e) => { h.setPart((e.target as HTMLButtonElement).value); draw(); });
   }
 
   el.addEventListener("click", (e) => {

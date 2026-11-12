@@ -5,6 +5,7 @@
 //   选「跟谱」= 回去、小标收起。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/pad-key-auto.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pick } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -20,7 +21,7 @@ check((await knob()).tag === null && (await knob()).label.startsWith("1=C"), "C 
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, caret: 3 }); }); await p.waitForTimeout(100);
 const keyBox = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), k = L.marks.find((x) => x.kind === "key" && x.system === 0); return { x: sc.left + L.pageX.left + k.x + k.w / 2, y: sc.top + k.y + k.h / 2 }; });
 await p.mouse.click(keyBox.x, keyBox.y); await p.waitForTimeout(250);
-await p.selectOption('.header-panel [data-hp="key"]', "2"); await p.waitForTimeout(150);
+await pick(p, '.header-panel [data-hp="key"]', "2"); await p.waitForTimeout(150);
 await p.keyboard.press("Escape"); await p.waitForTimeout(100); await p.mouse.click(5, 300); await p.waitForTimeout(150);
 const k1 = await knob();
 check(k1.label.startsWith("1=D") && k1.tag === null, "谱头改成 D 大调 = 键盘跟成 1=D、没有小标", JSON.stringify(k1));

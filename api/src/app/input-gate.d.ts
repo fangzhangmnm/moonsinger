@@ -41,7 +41,7 @@ export interface InputGate {
     mayToggle(): boolean;
 }
 export declare function createInputGate(p: InputGatePorts): InputGate;
-export type KeyOwner = "galleryFinder" | "gallery" | "file" | "ime" | "field" | "finder" | "inst" | "ref" | "studioEsc" | "studio" | "listen" | "control" | "score";
+export type KeyOwner = "galleryFinder" | "gallery" | "file" | "list" | "ime" | "field" | "finder" | "inst" | "ref" | "studioEsc" | "studio" | "listen" | "control" | "score";
 export interface KeyFacts {
     galleryOpen: boolean;
     /** 乐器目录那一页开着（歌库上面的 / 歌里的都算）。 */
@@ -51,6 +51,8 @@ export interface KeyFacts {
     /** Ctrl / ⌘ + S / Shift+S / O，且键表认它是文件动作。 */
     fileCombo: boolean;
     composing: boolean;
+    /** 这一下按下时有下拉列表开着（src/ui/dropdown.ts keyForList：在库的弹层监听之前记下的）。 */
+    listOpen: boolean;
     escape: boolean;
     /** Ctrl / ⌘ 按着。 */
     mod: boolean;
@@ -58,7 +60,7 @@ export interface KeyFacts {
     typing: boolean;
     /** 那个框是谱自己的歌词框 / 记号框。 */
     ownField: boolean;
-    /** 焦点在 SELECT / TEXTAREA / 不是 ownField 的 INPUT 上。 */
+    /** 焦点在下拉那颗按钮（界面零件库的标准件，7-T）/ TEXTAREA / 不是 ownField 的 INPUT 上。 */
     formControl: boolean;
     instShown: boolean;
     /** 焦点在参考窗里。 */

@@ -6,6 +6,7 @@
 //   ③ 关掉再开 = 回到上次翻到的地方、点开的那件还开着、静音还在（F-197，user 11-05「选乐器应该能记住上次翻到哪里了」）。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/finder-memory.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pick, ddOptions } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const NOBODY = "Q207691", VOICE = "Q7390";   // 特雷门琴（目录里没有谁能演）/ 人声（点开有小月相）
@@ -30,7 +31,7 @@ await p.evaluate(() => { const e = window.__moonsinger.engine; window.__aud = []
 const press = async (k) => { const n = await p.evaluate(() => window.__aud.length); await p.keyboard.press(k); await p.waitForTimeout(150); return (await p.evaluate(() => window.__aud.length)) - n; };
 
 // ① 默认按年代、下拉第一项就是它
-const sort = await p.$eval(".finder-sort", (s) => ({ v: s.value, first: s.options[0].value }));
+const sort = { v: await p.$eval(".finder-sort", (b) => b.value), first: (await ddOptions(p, ".finder-sort"))[0]?.value };
 check(sort.v === "year" && sort.first === "year", "默认按年代（下拉第一项也是）", JSON.stringify(sort));
 
 // ② 什么都没点 = 默认的哼（出声）；点开没人能演的那件 = 静音
@@ -65,7 +66,7 @@ check(await p.$('.inst-row.is-open[data-c="Q9530"] + .inst-prov .prov-none') !==
 // ⑤ 翻到哪记进这首歌的文件（v0.16.6，user 11-07「乐器列表记录滚动位置的话，是每个文件自己记录，不是用户设置」）：换一首 = 那首自己的；开回来 = 回到原位
 await p.keyboard.press("Escape"); await p.waitForTimeout(200); await p.keyboard.press("Escape"); await p.waitForTimeout(200);   // 目录 → 乐器页 → 谱
 await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300); await openFinder();
-await p.selectOption(".finder-sort", "family"); await p.waitForTimeout(150);
+await pick(p, ".finder-sort", "family"); await p.waitForTimeout(150);
 await p.click('.finder-group[data-g="2"] > .finder-group-h'); await p.waitForTimeout(150);
 await p.evaluate(() => { const l = document.querySelector(".finder-list"); l.scrollTop += 120; }); await p.waitForTimeout(100);
 const want = await p.evaluate(() => ({ gid: document.querySelector('.finder-group.is-open').dataset.gid, y: document.querySelector(".finder-list").scrollTop }));

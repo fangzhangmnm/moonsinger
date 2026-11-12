@@ -4,6 +4,7 @@
 //   清掉搜索 = 回到手风琴、展开的是搜索时点开的那件所在的组；关掉再开 = 还是那一组；每种排序各记各的。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/finder-accordion.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pick } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -27,7 +28,7 @@ await head(2); await p.waitForTimeout(150); s = await state();
 check(s.open.join() === "2", "再点第 3 组 = 第 2 组自动收起（只能开一组）", JSON.stringify(s));
 await head(2); await p.waitForTimeout(150); s = await state();
 check(s.open.length === 0 && s.rows === 0, "再点同一组 = 收起", JSON.stringify(s));
-await p.selectOption(".finder-jump-sel", "3"); await p.waitForTimeout(200); s = await state();
+await pick(p, ".finder-jump-sel", "3"); await p.waitForTimeout(200); s = await state();
 check(s.open.join() === "3", "「跳到」第 4 组 = 展开它", JSON.stringify(s));
 
 // 搜索：全露出来；在搜索里点开一件 → 清掉搜索 = 展开的是它那一组
@@ -40,9 +41,9 @@ const openGid = await p.evaluate(() => [...document.querySelectorAll(".finder-gr
 check(s.acc === s.groups && openGid === fluteGroup && !!(await p.$('.inst-row.is-open[data-c="Q209554"]')), "清掉搜索 = 回到手风琴，展开的是长笛那一组、长笛还点开着", `${openGid} / ${fluteGroup}`);
 
 // 换排序：各记各的（按曲风还没开过 = 全收）；换回来 = 还是长笛那组
-await p.selectOption(".finder-sort", "style"); await p.waitForTimeout(200); s = await state();
+await pick(p, ".finder-sort", "style"); await p.waitForTimeout(200); s = await state();
 check(s.open.length === 0, "换到按曲风：这种排序还没开过 = 全收着", JSON.stringify(s));
-await p.selectOption(".finder-sort", "year"); await p.waitForTimeout(200);
+await pick(p, ".finder-sort", "year"); await p.waitForTimeout(200);
 check((await p.evaluate(() => [...document.querySelectorAll(".finder-group.is-open")].map((g) => g.dataset.gid).join())) === fluteGroup, "换回按年代 = 还是长笛那一组展开着");
 
 // 关掉再开

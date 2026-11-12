@@ -2,6 +2,7 @@
 //   点它 = 小菜单（固定成手写的 / 这位不要自动）；歌手名小卡里开关（v0.16.8 前在谱号小菜单）；谱号仍然自动（临时冒出去几个音不换谱号）。created 2026-10-10 by Claude Opus 5.5
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/auto-ottava.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pick } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -33,7 +34,7 @@ check((await manualToks()) === "" && (await autos()) === 2, "撤销 = 回到自�
 // 自动八度线 关：v0.16.16 起在谱头面板「这位的谱」里（搬家 A）；歌手名小卡里「谱怎么画…」直达
 await p.evaluate(() => window.__moonsinger.openHeader(window.__moonsinger.state().at.part)); await p.waitForTimeout(250);   // v0.16.21：小卡里不再有「谱怎么画」，点谱号开谱头面板
 check((await p.$eval('.header-panel [data-hp="ao"]', (s) => s.value).catch(() => null)) === "on", "谱头面板「这位的谱」：自动八度线默认开");
-await p.selectOption('.header-panel [data-hp="ao"]', "off"); await p.waitForTimeout(250);
+await pick(p, '.header-panel [data-hp="ao"]', "off"); await p.waitForTimeout(250);
 check((await autos()) === 0, "关了 = 不画自动的");
 check((await p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers.find((x) => x.id === s.at.paper).looks?.[s.at.part]?.autoOttava; })) === false, "记在这一段上（存进 score.json 的 papers[]，v0.16.88 按段）");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));

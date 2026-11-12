@@ -3,6 +3,7 @@
 // 守：调号下拉框写一对（1=C · 6=A）；下面两格总有一格亮；点「a 小调」= 级数从 la 数（Am → i）、调号上方淡字「6=A」、音不动；一步撤销回来；换调号不换大小调。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/minor-key.mjs
 import { chromium } from "./pw.mjs";
+import { pick, ddLabel } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -24,7 +25,7 @@ check((await tags()) === "vi III", "C 大调：Am = vi、E = III", await tags())
 const n0 = await pitches();
 const keyBox = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), k = L.marks.find((x) => x.kind === "key" && x.system === 0); return { x: sc.left + L.pageX.left + k.x + k.w / 2, y: sc.top + k.y + k.h / 2 }; });
 await p.mouse.click(keyBox.x, keyBox.y); await p.waitForTimeout(250);
-const opt0 = await p.$eval('.header-panel [data-hp="key"]', (s) => s.options[s.selectedIndex].textContent).catch(() => null);
+const opt0 = await ddLabel(p, '.header-panel [data-hp="key"]').catch(() => null);
 check(!!opt0 && opt0.startsWith("1=C · 6=A"), "调号下拉框写一对关系大小调", String(opt0));
 check((await seg()) === "C 大调* | a 小调", "下面两格：C 大调亮着", await seg());
 await p.click('.header-panel [data-v="minor"]'); await p.waitForTimeout(250);
@@ -33,7 +34,7 @@ check((await seg()) === "C 大调 | a 小调*", "面板不收，亮的换成 a �
 check((await tags()) === "i V", "级数从 la 数：Am = i、E = V", await tags());
 check((await hint()).includes("6=A"), "调号上方淡字「6=A」", await hint());
 check((await pitches()) === n0, "音一个没动");
-await p.selectOption('.header-panel [data-hp="key"]', "1"); await p.waitForTimeout(200);
+await pick(p, '.header-panel [data-hp="key"]', "1"); await p.waitForTimeout(200);
 check((await key()) === "1m" && (await seg()) === "G 大调 | e 小调*", "换调号（一个升号）= 还是小调（e 小调）", `${await key()} ${await seg()}`);
 await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(150);
 await p.keyboard.press("Control+z"); await p.waitForTimeout(150);

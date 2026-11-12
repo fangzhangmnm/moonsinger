@@ -1821,3 +1821,12 @@ user 提的（愿望单 W-71）。
   - 反证：列宽改回按墨 = 列距那条红（宽 611 时 9.04 / 8.55）；升降号贴整摞的边 = 和弦那条红；数字的盒子回到前进宽 = 守卫 2 两条 + 4 倍那条红。
   - **8-7 ① 补的一处**：理顺原来在每次改谱时也跑——光标放在补的 mf 前面再放风格记号（「风格、mf、音」）会被理成「mf、风格、音」，刚放的那个挪了位置，接着开它的小菜单就落空（整套 E2E `groove` 抓到，c1e1c949 单跑也红）。改成只在开歌时理顺（`ensureStartDyns(…, { reorder })`，统筹原话就是「读进来时理过来」）；改谱时只管补在哪。夹具 `asOpened` 照样理顺。`start-dyns` 加一条「改谱时不理」。
   - 字母谱那条 7-V 的相叠（8-7 ① 时进的 PENDING）这一步之后碰不到了，划掉；五线谱那条还在。`npm run check` 1587 全过；五线谱底本没变。
+- 2026-11-12 · 7-T 下拉框全换成界面零件库的下拉标准件（MoonSinger小弟）
+  - **库**（`../20260909 internal-workbench-elements`）0.2.0 → 0.3.0，本机提交 91af34f、本机标签 v0.3.0（统筹定：标签只在本机），都没推、没建发布页；家族周账 F-263 第 ② 条填了。第六件 `select-field` = 画画软件 v0.14.86 那份搬进来，语义和接口名字不改；Vue 的包装、取自画画软件 icon.ts 的小三角留在那边（这里内联同一枚形状）。门牌多 `mountSelectField / createSelectField / selectMenuItems`；CSS 多 `.select-field*`（只管排版）；库测试 +3（26 全过）。
+  - **收货**：先手动收了一遍（那会儿没标签，pull-package.sh 不收），统筹定照脚本收 → 库仓建本机标签后照 pull-package.sh 重收：package.json、package-lock、装进去的包逐文件和手动的相同，唯一不同 = 脚本把旧的 0.1.3 包删了（对的）。包的 CSS 照旧手动拷进 `vendor/internal-css/`。
+  - **本仓的接法** `src/ui/dropdown.ts`：下拉 = 一颗 `<button class="dd">`，当前值在它的 value 上；选了 = 改 value + 冒泡 change——原来「听 change、读 value / dataset」的代码一行没改。`dropdownHtml`（写进 innerHTML，选项跟着元素走）+ `mountDropdowns`（innerHTML 之后接上）+ `setDropdown`（代码里改值 / 换选项）。弹层一律压在面板那一层上面（band modal）。
+  - **15 个原生下拉全换了**（施工单写 14 处，挂签那处是两个）：谱头面板 6（谱号、自动八度线、调号、拍号、分解和弦、合租）、混音台 3（被谁压、出到、加发送）、乐器目录 2（排序、跳到）、乐器页 1（换声部）、挂签 2（看哪一段 / 哪位）、设置 1 种（`setSel`，语言等几处共用）。
+  - **原生下拉框自带、换了之后要明着做的三样**（都查出来修了）：① 面板「点外面就收」——列表挂在 body 上，选一项会被当成点了外面、面板先收了 → 十处「点外面就收」都改成「按在列表上不算外面」（`inDropdownList`）。② 列表开着时的键——原生的浏览器自己吃；现在库的弹层只 preventDefault，Esc 会连面板 / 乐器页一起收、上下键会挪谱上的光标 → `dropdown.ts` 在捕获阶段、库的监听之前记下「这一下按下时列表开着」，键盘总闸 `keyOwner` 加一条 `list`（排在存 / 开之后、别的之前），归它 = 宿主不接。③ 焦点在下拉那颗按钮上按空格 = 播放 → 「表单控件拿着焦点」认 `.dd`。键盘总闸守卫的白名单登记了 dropdown.ts 那一个监听（只做记号）。
+  - **守卫**：`test/no-native-select.test.ts`（src 和 index.html 里不许有原生下拉框的元素；反证：塞一行进去 = 红）；`input-gate.test` 加 `list` 那条；E2E `test/e2e/dropdown.mjs`（17 条：列表盖在面板上、点外面的规矩、上下键不挪光标、Esc 只收列表、空格不播放、选一项面板还开着）——反证两条都红（键不归列表 / 按在列表上算外面）。E2E 里 17 份用 playwright selectOption 的改走帮手 `test/e2e/dd.mjs`（pick / ddOptions / ddLabel），登记成帮手。
+  - **没做 / 要你定**：谱号的下拉没配图标（图标库里没有谱号的图标；要配得登记六七枚新图标）；谱种 / 排法的下拉归 7-C。本仓 `CLAUDE.md`「界面的规矩」里「现在还有 14 处原生下拉」那句过时了，归你改（我没动）。顺带：`api/src/render/jianpu/place.d.ts` 是 85c1590a 漏重打的，这一笔补上。
+  - 测试：`npm run check` 1590 全过；整套 E2E（这一版的工作区）108 全过（并行红、单跑绿的负载 flake 几个，已算过），dropdown.mjs 17/17。

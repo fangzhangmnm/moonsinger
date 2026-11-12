@@ -7,10 +7,10 @@ export interface Placement {
 }
 /** 贴身的东西（一个音一份）。同一边的先后 = 下面的先后。 */
 export declare const PLACE: {
-    /** 升降号 / 还原号：数字左边（和弦 = 每个数字自己的，一起算一块，右边对齐）。 */
+    /** 升降号 / 还原号：数字左边；和弦里每个贴它自己那个数字的墨（8-7，note-cell.ts 用 attach 的 from）。 */
     readonly acc: {
         readonly side: "left";
-        readonly gap: 0.14;
+        readonly gap: 0.22;
     };
     /** 琶音的竖波浪：升降号再左边。 */
     readonly arpeggio: {

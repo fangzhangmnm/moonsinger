@@ -5,6 +5,7 @@
 //   点开一件长名字的乐器（「谁能演」那一块）也不撑宽。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/finder-width.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pick, ddOptions } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const base = process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/";
@@ -30,9 +31,9 @@ async function openFinder(locale, w, h) {
 // iPad 竖屏英文：四种排序逐个量（原来最宽的情形：内容 958 / 屏 820）
 {
   const { ctx, p, errs } = await openFinder("en-US", 820, 1180);
-  const modes = await p.$$eval(".finder-sort option", (os) => os.map((o) => o.value));
+  const modes = (await ddOptions(p, ".finder-sort")).map((o) => o.value);
   for (const m of modes) {
-    await p.selectOption(".finder-sort", m); await p.waitForTimeout(150);
+    await pick(p, ".finder-sort", m); await p.waitForTimeout(150);
     // 手风琴（v0.16.3）：一组一组点开再量（收着的组里的行不画）
     const ng = await p.$$eval(".finder-group", (gs) => gs.length); let worst = { n: 0, sw: 0, cw: 0, out: [] };
     for (let k = 0; k < ng; k++) {
@@ -46,7 +47,7 @@ async function openFinder(locale, w, h) {
   check(st.ox === "hidden" && st.ta === "pan-y", "列表只许竖着滚（overflow-x hidden + touch-action pan-y）", JSON.stringify(st));
   check(st.left === 0, "硬设 scrollLeft = 200 也横不过去", String(st.left));
   // 点开名字最长的那件（按族排），「谁能演」那块也不撑宽
-  await p.selectOption(".finder-sort", modes.includes("family") ? "family" : modes[0]); await p.waitForTimeout(150);
+  await pick(p, ".finder-sort", modes.includes("family") ? "family" : modes[0]); await p.waitForTimeout(150);
   await p.evaluate(() => { const rows = [...document.querySelectorAll(".finder-list .inst-row")]; rows.sort((a, b) => b.textContent.length - a.textContent.length); rows[0].scrollIntoView(); rows[0].click(); });
   await p.waitForSelector(".inst-prov"); await p.waitForTimeout(150);
   const r2 = await measure(p);

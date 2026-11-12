@@ -4,6 +4,7 @@
 // 守：开头那一处改调号 / 拍号（面板不收、每改一下一步撤销）；速度那一行 = 一颗钮，点了 = 原来的速度框（v0.16.12，user「speed没叫你丢之前的窗口啊」），确定才写；拍号「其他…」自己写；中途空地插调号、「删掉这里的变化」；「⋯」里没有插记号的钮了。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/header-panel.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pick, ddOptions } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -20,12 +21,12 @@ const keyBox = await p.evaluate(() => { const m = window.__moonsinger, L = m.lay
 await p.mouse.click(keyBox.x, keyBox.y); await p.waitForTimeout(250);
 check((await panel()) === "clef,ao,key,time,broken" && !!(await p.$('.header-panel [data-v="tempo"]')), "点行首的调号 = 谱头面板：谱号（这一段：自动 / 六个谱号 / 大谱表）+ 这一段的自动八度线 / 调号 / 拍号 + 速度那一颗钮 + 整首都算的只剩分解和弦（v0.16.88）", String(await panel()));
 const h0 = await head();
-await p.selectOption('.header-panel [data-hp="key"]', "2"); await p.waitForTimeout(150);
+await pick(p, '.header-panel [data-hp="key"]', "2"); await p.waitForTimeout(150);
 check((await head()).startsWith("k2 "), "调号改成 1=D（2 个升号）", await head());
 check(!!(await panel()), "改完面板不收（接着改别的）");
-await p.selectOption('.header-panel [data-hp="time"]', "6/8"); await p.waitForTimeout(150);
+await pick(p, '.header-panel [data-hp="time"]', "6/8"); await p.waitForTimeout(150);
 check((await head()).includes("t6/8"), "拍号改成 6/8", await head());
-await p.selectOption('.header-panel [data-hp="time"]', "other"); await p.waitForTimeout(150);
+await pick(p, '.header-panel [data-hp="time"]', "other"); await p.waitForTimeout(150);
 await p.fill('.header-panel [data-hp="timeText"]', "5/8"); await p.press('.header-panel [data-hp="timeText"]', "Enter"); await p.dispatchEvent('.header-panel [data-hp="timeText"]', "change").catch(() => {}); await p.waitForTimeout(150);
 check((await head()).includes("t5/8"), "拍号「其他…」自己写 5/8", await head());
 check((await p.textContent('.header-panel [data-v="tempo"]'))?.startsWith("♩="), "速度那一颗钮写着现在的速度", String(await p.textContent('.header-panel [data-v="tempo"]')));
@@ -44,9 +45,9 @@ check((await head()) === h0, "撤销四步 = 回到原来", `${await head()} / $
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), t = s.song.papers[0].tracks[s.at.part]; const i = t.findIndex((x) => x.kind === "note"); m.set({ ...s, sel: null, caret: i + 2 }); }); await p.waitForTimeout(100);
 const k0 = await kinds();
 if (!(await panel())) { await p.click('.pad-head [data-kbswitch]').catch(() => {}); await p.waitForTimeout(100); await p.click('.pad-head [data-sympage="mark"]').catch(() => {}); await p.waitForTimeout(80); await p.click('.pad-grid.symbols [data-sym="key"]'); await p.waitForTimeout(200); }
-const midFirst = await p.$eval('.header-panel [data-hp="key"]', (s) => s.options[0].textContent).catch(() => null);
+const midFirst = await ddOptions(p, '.header-panel [data-hp="key"]').then((o) => o[0]?.label ?? null).catch(() => null);
 check(!!midFirst && midFirst.startsWith("不变"), "光标在两个音中间 = 中途的一处：每样第一档「不变」", String(midFirst));
-await p.selectOption('.header-panel [data-hp="key"]', "-1"); await p.waitForTimeout(150);
+await pick(p, '.header-panel [data-hp="key"]', "-1"); await p.waitForTimeout(150);
 const k1 = await kinds();
 check(k1.split(" ").length === k0.split(" ").length + 1 && k1.includes("k-1"), "中途插了一个调号（1=F）", `${k0} → ${k1}`);
 await p.click('.header-panel [data-v="del"]'); await p.waitForTimeout(150);

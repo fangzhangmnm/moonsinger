@@ -1,6 +1,7 @@
 // test/e2e/routing.mjs —— 真浏览器 E2E：路由轨（v0.10.9）：加混音轨、发送、出到、总线接总线、不让接成环、删掉后引用改回总轨；被谁压（两位歌手）；离线混音走了路由。
 // created 2026-10-10 by Claude Opus 5.5（user「插件：可以随便插，比如混响也是，你可以做中间的路由轨。比如我可以放两个路由轨然后放混响」「有一个默认总线，就是歌手和输出都是builtin的，但是你可以加混音轨」）
 import { chromium } from "./pw.mjs";
+import { pick, ddOptions } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const N = (s) => `<note><pitch><step>${s}</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>`;
@@ -28,13 +29,13 @@ check(buses.length === 2 && buses[0].name === "混音轨 1" && buses[1].name ===
 const [b1, b2] = buses.map((x) => x.id);
 // 混音轨 1 出到 混音轨 2；混音轨 2 的「出到」里就不能再选混音轨 1（会接成环）
 await tab("send");
-await p.selectOption(`${strip(b1)} select[data-out]`, b2); await p.waitForTimeout(150);
+await pick(p, `${strip(b1)} [data-out]`, b2); await p.waitForTimeout(150);
 check((await tr(b1)).to === b2, "混音轨 1 出到 混音轨 2（总线接总线）");
-const b2opts = await p.$$eval(`${strip(b2)} select[data-out] option`, (os) => os.map((o) => o.value));
+const b2opts = (await ddOptions(p, `${strip(b2)} [data-out]`)).map((o) => o.value);
 check(!b2opts.includes(b1), "混音轨 2 的「出到」里没有混音轨 1（不让接成环）", JSON.stringify(b2opts));
 // A 出到 混音轨 1；混音轨 2 上插一格增益 −6 → 离线混音里 A 那一份减半
 const pk0 = await peak();
-await p.selectOption(`${strip(ids[0].id)} select[data-out]`, b1); await p.waitForTimeout(150);
+await pick(p, `${strip(ids[0].id)} [data-out]`, b1); await p.waitForTimeout(150);
 check((await tr(ids[0].mic)).to === b1, "歌手 A 出到 混音轨 1");
 await tab("chain"); await p.click(`${strip(b2)} [data-v="fxadd"]`); await p.click(`${strip(b2)} [data-v="fxpick"][data-kind="gain"]`); await p.waitForTimeout(150);
 await p.$eval('.fx-panel input[data-c="dB"]', (el) => { el.value = "-40"; el.dispatchEvent(new Event("input", { bubbles: true })); }); await p.waitForTimeout(150);
@@ -50,7 +51,7 @@ await tab("basic"); await p.click(`${strip(b2)} [data-v="busbypass"]`); await p.
 await tab("chain");
 // 发送：B 发给 混音轨 1，−12 dB 起步，拖到 −6
 await tab("send");
-await p.selectOption(`${strip(ids[1].id)} select[data-sendadd]`, b1); await p.waitForTimeout(150);
+await pick(p, `${strip(ids[1].id)} [data-sendadd]`, b1); await p.waitForTimeout(150);
 check(JSON.stringify((await tr(ids[1].mic)).sends) === JSON.stringify([{ to: b1, gainDb: -12 }]), "B 发给 混音轨 1（−12 dB 起步）", JSON.stringify((await tr(ids[1].mic)).sends));
 await p.$eval(`${strip(ids[1].id)} input[data-send="${b1}"]`, (el) => { el.value = "-6"; el.dispatchEvent(new Event("input", { bubbles: true })); }); await p.waitForTimeout(150);
 check((await tr(ids[1].mic)).sends[0].gainDb === -6, "拖发送量 = −6 dB");
@@ -89,15 +90,15 @@ check((await tr(b1)).name === "混响", "混音轨改名");
 // 被谁压：两位歌手 = 能选另一位
 await tab("chain");
 await p.click(`${strip(ids[0].id)} [data-v="fxadd"]`); await p.click(`${strip(ids[0].id)} [data-v="fxpick"][data-kind="comp"]`); await p.waitForTimeout(150);
-await p.selectOption('.fx-panel select[data-key]', ids[1].id); await p.waitForTimeout(150);
+await pick(p, '.fx-panel [data-key]', ids[1].id); await p.waitForTimeout(150);
 check((await tr(ids[0].mic)).chain.find((f) => f.kind === "comp")?.key === ids[1].id, "A 上的压缩「被谁压」= B（侧链）");
 // 侧链让路不补偿（v0.10.15；查 user 的 団子大家族 发现被压的轨平时比推子响 2.8 dB）：换「被谁压」= 一键照旧是一键、「压多少」不变、补偿 0
 { const c = (await tr(ids[0].mic)).chain.find((f) => f.kind === "comp");
   check(c.params.makeupDb === 0 && c.params.thresholdDb === -15 && !(await p.$(".fx-panel .fx-note")) && (await p.textContent(".fx-panel .fx-body")).includes("让多少"), "设了「被谁压」= 补偿 0、阈值不动、一键没锁（旋钮叫「让多少」）", JSON.stringify(c.params));
-  await p.selectOption('.fx-panel select[data-key]', ""); await p.waitForTimeout(150);
+  await pick(p, '.fx-panel [data-key]', ""); await p.waitForTimeout(150);
   const c2 = (await tr(ids[0].mic)).chain.find((f) => f.kind === "comp");
   check(!c2.key && c2.params.makeupDb > 0 && c2.params.thresholdDb === -15, "改回「不用」= 补偿回来（自己压自己那套）", JSON.stringify(c2.params));
-  await p.selectOption('.fx-panel select[data-key]', ids[1].id); await p.waitForTimeout(150); }
+  await pick(p, '.fx-panel [data-key]', ids[1].id); await p.waitForTimeout(150); }
 // 删掉混音轨 1：出到它的、发给它的都改回总轨 / 拿掉
 await tab("basic");
 await p.click(`${strip(b1)} [data-v="delbus"]`); await p.waitForTimeout(150);
