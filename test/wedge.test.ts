@@ -4,7 +4,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, tr, toggleHairpin, TPQ, type Token, type EditorState } from "../src/score/song.ts";
 import { dynLevels, noteVelocities, gainSegments, hairpinEnd } from "../src/score/perform.ts";
-import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
+import { DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { toJianpu, fromJianpu } from "../src/score/clipboard.ts";
 import { apply } from "../src/score/commands.ts";
@@ -19,7 +19,7 @@ const note = () => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, oct
 /** 谱头（调 / 拍 / 速度 90）+ items（"n" = 一个四分音符，别的 = 原样的记号）。 */
 const line = (items: (Token | "n")[]): Token[] => [...tr(initState()).slice(0, 3), ...items.map((x) => (x === "n" ? note() : x))];
 const notes = (toks: Token[]) => toks.flatMap((t, i) => (t.kind === "note" ? [i] : []));
-const sv = { dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, dynamicsVel: { ...DYNAMICS_VEL }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL };
+const sv = { staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, dynamicsVel: { ...DYNAMICS_VEL }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL };
 
 describe("渐强渐弱：编辑（记号）", () => {
   it("放在光标前那个音上（从这个音起；2026-10-08 user「做」）；再点同方向 = 去掉；反方向 = 换；光标还在那个音后面", () => {
@@ -66,13 +66,13 @@ describe("渐强渐弱：力度怎么过渡（dynLevels）", () => {
     const toks = line(["n", pin("cresc"), dyn("f"), "n"]), L = dynLevels(toks, undefined, DYNAMICS_VEL, 80, STEP), [a, b] = notes(toks);
     eq(L.get(a)!.at0, 80); eq(L.get(b)!.at0, 96);
   });
-  it("力度（SoundFont）按音头；dB 那一路一个音里面也走；有力度表 = 音量曲线不再管力度", () => {
+  it("力度（按力度敲的）按音头；音量曲线那一路一个音里面也走；按力度敲的 = 音量曲线不再管力度", () => {
     const toks = line([dyn("mp"), pin("cresc"), "n", "n", dyn("f"), "n"]), V = noteVelocities(toks, undefined, sv, 80 / 127), [a, b, c] = notes(toks);
     eq(Math.round(V.get(a)! * 127), 64); eq(Math.round(V.get(b)! * 127), 80); eq(Math.round(V.get(c)! * 127), 96);
-    const { dynamicsVel: _v, ...dbSpec } = sv, g = gainSegments(toks, undefined, dbSpec)!;
+    const g = gainSegments(toks, undefined, sv)!;
     const inA = g.filter((x) => x.t1 <= 0.67 && x.dB > -100).map((x) => x.dB);
     assert(inA.length > 1 && inA[inA.length - 1] > inA[0], "第一个音里面 dB 往上走");
-    eq(gainSegments(toks, undefined, sv), null, "不双算");
+    eq(gainSegments(toks, undefined, sv, undefined, undefined, true), null, "按力度敲的不双算");
   });
 });
 

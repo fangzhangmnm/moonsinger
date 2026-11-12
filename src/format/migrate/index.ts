@@ -53,10 +53,23 @@ function studioV1toV2(json: Json): Json {
   };
 }
 
+/** 休息室 2 → 3（9-2，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；统筹裁定走大版本，理由见 contract.ts FORMAT 注释）：力度 → 响度全体只有一条（40·log10(力度 ÷ 127)），
+ *  候选按值存的 dynamicsDb 和 articulation.wedgeStepDb 退役——只删这两个键，别的一个字不动（不补 dynamicsVel：没带 = 标准表，project.ts activePerfSpec）。 */
+function loungeV2toV3(json: Json): Json {
+  const cs = json.candidates;
+  if (!Array.isArray(cs)) return json;
+  return { ...json, candidates: cs.map((c0) => {
+    if (!c0 || typeof c0 !== "object" || Array.isArray(c0)) return c0;
+    const { dynamicsDb: _d, ...c } = c0 as Json, a = c.articulation;
+    if (a && typeof a === "object" && !Array.isArray(a) && "wedgeStepDb" in (a as Json)) { const { wedgeStepDb: _w, ...ar } = a as Json; return { ...c, articulation: ar }; }
+    return c;
+  }) };
+}
+
 export const MIGRATIONS: Record<FormatFile, Migration[]> = {
   manifest: [manifestV1toV2],
   score: [scoreV1toV2],
-  lounge: [loungeV1toV2],
+  lounge: [loungeV1toV2, loungeV2toV3],
   studio: [studioV1toV2],
 };
 

@@ -1,7 +1,6 @@
 import { type Token, type TempoMap, type Dyn } from "./song.ts";
 import { ROLL_HZ_MIN, ROLL_HZ_MAX } from "../format/performance.ts";
 export interface PerfSpec {
-    dynamicsDb: Record<Dyn, number>;
     staccatoGate: number;
     accentDb: number;
     marcatoDb?: number;
@@ -10,7 +9,6 @@ export interface PerfSpec {
     breathSec?: number;
     breathShare?: number;
     gapShare?: number;
-    wedgeStepDb?: number;
     wedgeStepVel?: number;
     sfzDb?: number;
     sfzVel?: number;
@@ -24,8 +22,8 @@ export interface PerfSpec {
     unstressVel?: number;
     ghostDb?: number;
     ghostVel?: number;
-    /** 有 = 力度记号 / 重音 / 强音走 MIDI 力度（SoundFont 新候选），音量曲线就不再管它们；没有 = 走 dB（月读 / 元音版 / 旧候选）。 */
-    dynamicsVel?: Record<Dyn, number> | null;
+    /** 力度记号 → 力度（1–127；全体演奏者一张，9-2 起人人都有：按值带的，没带 = 内置的标准表）。重音 / 强音按力度加多少。 */
+    dynamicsVel: Record<Dyn, number>;
     accentVel?: number;
     marcatoVel?: number;
     /** 滚奏每秒敲几下（v0.16.64；演奏者自己的，没写 = 按乐器的默认，rollDefaultHz）。 */
@@ -37,9 +35,15 @@ export interface GainSeg {
     t1: number;
     dB: number;
 }
-/** 一个声部的音量曲线。gateStaccato = 跳音靠收声（月读）。全程 0 dB = null。
+/** 力度 → 响度（施工单第 9 节 / 9-2，2026-11-12；user「按照SoundFont对齐，然后小月相也应该对齐」）：全体演奏者只有这一条——SoundFont 规范的放法，
+ *  音量 = (力度 ÷ 127)² → 响度 = 40·log10(力度 ÷ 127) dB（满力度 = 0）。乐器：力度送进引擎（选录音），引擎照这一条算（gm/tsf-standalone.ts sfNoteOnSquared）；
+ *  小月相 / 元音版没有录音层：音量曲线上的水平就是这一条。不以 mf 为基准、不乘任何数拉回原来的响度（user：「这个就是我绝对无法容忍的那个东西」）。 */
+export declare const velocityDb: (vel: number) => number;
+/** 一个声部的音量曲线。byVelocity = 这位按力度敲（演奏者插件的能力 dynamics: "velocity"）：力度记号 / 渐强渐弱 / 重音都在每个音的力度里（noteVelocities），
+ *  这条曲线只剩强后即弱的「压」和音内起伏；否则（小月相 / 元音版）力度水平、重音、渐强渐弱都在这条曲线上。全程 0 dB = null。
+ *  渐强渐弱 / 渐到只有一种走法（9-2）：在力度上按时间线性，再换成 dB（velocityDb）。
  *  groove = 拍子轻重（下标 → 权重，src/score/groove.ts；已乘过幅度和跟多少）：正的 = 按次重音的量在音头加，负的 = 按弱化的量整个音轻下去（写了音头记号的音不在里面）。 */
-export declare function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>): GainSeg[] | null;
+export declare function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity?: boolean): GainSeg[] | null;
 /** 轻量版 / SoundFont 一个音的结束时刻（秒）：跳音截到 staccatoGate；呼吸（只给元音版）= 收短一口气的空当（同唱法核心的 v：至多 0.16 s / 25%）。 */
 export declare function noteEnd(t0: number, t1: number, art: readonly string[], o: {
     staccatoGate: number;
@@ -66,10 +70,10 @@ export declare function dynLevels(tokens: Token[], map: TempoMap | undefined, ta
  *  而且它也不是渐强渐弱 / 渐到的起点或终点。判法 = 把它换成别的值，除了 fp 那个音以外每个音的力度水平都不变（和出声同一个函数 dynLevels，不另写规则）。
  *  谱上画灰、点开说为什么（纪律「做不到的一律画灰 + 明说」；2026-10-09 user「要不要按纪律把 mf 画灰、说一句？ 要」）。 */
 export declare function dynOverridden(tokens: Token[], bounds?: readonly number[]): Set<number>;
-/** 一个音的 MIDI 力度（0–1，= 力度 ÷ 127；SoundFont 这一路）。有力度表：前面最近的力度记号查表，没有记号 = 演奏者的默认力度（defaultVel，乐器页的旋钮）；
- *  再加重音 / 强音。没有力度表（旧候选）= 一律 defaultVel（力度记号照旧走 dB）。2026-10-08 user「应该send的就是velocity！」「力度就是velocity」。 */
+/** 一个音的 MIDI 力度（0–1，= 力度 ÷ 127；按力度敲的演奏者这一路）：前面最近的力度记号查表，没有记号 = 演奏者的默认力度（defaultVel，乐器页的旋钮）；
+ *  再加重音 / 强音。9-2 起人人有表（没带 = 标准表），10-08 以前的旧 SoundFont 候选也这样敲。2026-10-08 user「应该send的就是velocity！」「力度就是velocity」。 */
 export declare function noteVelocity(tokens: Token[], index: number, art: readonly string[], spec: PerfSpec, defaultVel: number): number;
-/** 一整条的每个音的力度（index → 0–1）：力度记号 + 渐强渐弱（dynLevels，取音头）+ 重音 / 强音 + 拍子轻重（groove，同 gainSegments）。没有力度表 = 一律 defaultVel（拍子轻重走 dB）。 */
+/** 一整条的每个音的力度（index → 0–1）：力度记号 + 渐强渐弱（dynLevels，取音头）+ 重音 / 强音 + 拍子轻重（groove，同 gainSegments）。只给按力度敲的演奏者（调用方按插件的 dynamics 能力分）。 */
 export declare function noteVelocities(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>): Map<number, number>;
 /** 谁认哪些记号（2026-10-08 Opus 5.5；user 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。
  *  这张表必须和上面真做的事一致——跳音：月读 = gainSegments 后半段收声，元音版 / SoundFont = noteEnd 截短；重音、力度：所有引擎走 gainSegments；

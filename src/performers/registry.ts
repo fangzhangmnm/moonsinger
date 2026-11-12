@@ -39,7 +39,7 @@ export type TrackResult = { track: TrackSpec; from?: number } | { unplayable: st
 /** 按键试听（弹 / 写音 / 拖音高的预听）：光标处的力度已算好（vel = MIDI 力度 0–1，有力度表的用；dB = 音量，没有的用）；kana = 这首歌哼的字。 */
 export interface AuditionCtx extends RoleCtx {
   kana: string;
-  dyn: { vel: number | null; dB: number };
+  dyn: { vel: number; dB: number };
   engine: { hasBank(sha: string): boolean; presetIndex(sha: string, bank: number, program: number): number };
   /** 库还没载好：这一下丢掉、顺手去载（试听要即时，迟到的音更烦）。 */
   ensureBank(): void;

@@ -90,7 +90,9 @@ export function sampleExtras(song: Song): Extras {
   return ex;
 }
 /** 比较用：键排序；小节线 / 记号的 id 是编辑器自己的（文件里不存），归零。 */
-export const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon((v as Record<string, unknown>)[k])])) : v;
+/** 规范化（比较用）：对象的键排序；音的演奏法（art）是一个集合、先后不算数——也排序（2026-11-12：音内起伏单独存在 score.json、读回来挂在最后，
+ *  样本歌加了「音内渐强 + 跳音」之后写读的先后对不上；旧的冻结样本里没有带两个以上演奏法的音，排序不影响它们）。 */
+export const canon = (v: unknown, key = ""): unknown => Array.isArray(v) ? (key === "art" && v.every((x) => typeof x === "string") ? [...v].sort() : v.map((x) => canon(x))) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon((v as Record<string, unknown>)[k], k)])) : v;
 const zeroMarks = (ts: Token[]) => ts.map((t) => (t.kind === "note" || t.kind === "rest" ? t : { ...t, id: 0 }));
 /** 第一张纸第一个声部那串（第 1 版样本的 expected.tokens 比的就是它）。 */
 export const canonTokens = (s: Song) => canon(zeroMarks(firstTrack(s)));

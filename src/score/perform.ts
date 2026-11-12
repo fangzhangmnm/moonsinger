@@ -1,5 +1,5 @@
 // perform.ts —— 谱上的「修」→ 出声的数（纯函数，Node 里可测）。created 2026-10-08 by Claude Opus 5.5
-// user 2026-10-08 拍「挂在音上 + 选区条」「月读在那儿换气」。数从哪来：上场那位 by value 带着的力度表（dynamicsDb，mf = 0 dB）和演奏法（articulation：
+// user 2026-10-08 拍「挂在音上 + 选区条」「月读在那儿换气」。数从哪来：上场那位 by value 带着的力度表（dynamicsVel：力度记号 → 力度；9-2 起全体一张、响度 = velocityDb）和演奏法（articulation：
 //   staccatoGate 跳音吃掉时值的多少、accentDb 重音加多少）——契约 CandidateV2，app 改默认动不到旧歌。
 // 怎么出声（各引擎一样的部分在这里，引擎特有的在调用方）：
 //   力度 + 重音 = 一条按时间的音量曲线（谱的时钟，秒），渲染完乘上去（src/audio/mix.ts applyGain）；一个力度 / 重音都没有 = null = 不碰声音（和以前逐样本一样）。
@@ -10,34 +10,48 @@ import { type Token, type NoteTok, type TempoMap, type Dyn, timeline, artOf, swe
 import { MARK_DEFAULTS, ROLL_HZ_MIN, ROLL_HZ_MAX } from "../format/performance.ts";
 const DEFAULT_DYN_KEY: Dyn = DEFAULT_DYN;
 
-export interface PerfSpec { dynamicsDb: Record<Dyn, number>; staccatoGate: number; accentDb: number; marcatoDb?: number;
+export interface PerfSpec { staccatoGate: number; accentDb: number; marcatoDb?: number;
   /** 记号怎么解读的其余的数（候选 articulation by value；没给 = MARK_DEFAULTS）。 */
-  accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; wedgeStepDb?: number; wedgeStepVel?: number;
+  accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; wedgeStepVel?: number;
   sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number; swellDb?: number; canSwell?: boolean;
   stressDb?: number; stressVel?: number; unstressDb?: number; unstressVel?: number; ghostDb?: number; ghostVel?: number;
-  /** 有 = 力度记号 / 重音 / 强音走 MIDI 力度（SoundFont 新候选），音量曲线就不再管它们；没有 = 走 dB（月读 / 元音版 / 旧候选）。 */
-  dynamicsVel?: Record<Dyn, number> | null; accentVel?: number; marcatoVel?: number;
+  /** 力度记号 → 力度（1–127；全体演奏者一张，9-2 起人人都有：按值带的，没带 = 内置的标准表）。重音 / 强音按力度加多少。 */
+  dynamicsVel: Record<Dyn, number>; accentVel?: number; marcatoVel?: number;
   /** 滚奏每秒敲几下（v0.16.64；演奏者自己的，没写 = 按乐器的默认，rollDefaultHz）。 */
   rollHz?: number | null }
 const M = MARK_DEFAULTS;   // 演奏者没写的键用它（= 这一版之前写死的数）
 /** 音量曲线的一段：t0–t1（秒，谱的时钟）这段多少 dB；-Infinity = 静音。 */
 export interface GainSeg { t0: number; t1: number; dB: number }
+/** 力度 → 响度（施工单第 9 节 / 9-2，2026-11-12；user「按照SoundFont对齐，然后小月相也应该对齐」）：全体演奏者只有这一条——SoundFont 规范的放法，
+ *  音量 = (力度 ÷ 127)² → 响度 = 40·log10(力度 ÷ 127) dB（满力度 = 0）。乐器：力度送进引擎（选录音），引擎照这一条算（gm/tsf-standalone.ts sfNoteOnSquared）；
+ *  小月相 / 元音版没有录音层：音量曲线上的水平就是这一条。不以 mf 为基准、不乘任何数拉回原来的响度（user：「这个就是我绝对无法容忍的那个东西」）。 */
+export const velocityDb = (vel: number): number => 40 * Math.log10(Math.max(1, Math.min(127, vel)) / 127);
 
-/** 一个声部的音量曲线。gateStaccato = 跳音靠收声（月读）。全程 0 dB = null。
+/** 一个声部的音量曲线。byVelocity = 这位按力度敲（演奏者插件的能力 dynamics: "velocity"）：力度记号 / 渐强渐弱 / 重音都在每个音的力度里（noteVelocities），
+ *  这条曲线只剩强后即弱的「压」和音内起伏；否则（小月相 / 元音版）力度水平、重音、渐强渐弱都在这条曲线上。全程 0 dB = null。
+ *  渐强渐弱 / 渐到只有一种走法（9-2）：在力度上按时间线性，再换成 dB（velocityDb）。
  *  groove = 拍子轻重（下标 → 权重，src/score/groove.ts；已乘过幅度和跟多少）：正的 = 按次重音的量在音头加，负的 = 按弱化的量整个音轻下去（写了音头记号的音不在里面）。 */
-export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>): GainSeg[] | null {
+export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity = false): GainSeg[] | null {
   const segs: GainSeg[] = [];
   let any = false;
-  const vel = !!spec.dynamicsVel;   // 力度记号 / 重音 / 强音 / 渐强渐弱走 MIDI 力度（noteVelocities）：这条曲线只剩跳音收声
-  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, spec.wedgeStepDb ?? M.wedgeStepDb, bounds);
-  /** 渐强渐弱：一个音里面的 dB 从 a 走到 b（切成小段；月读一个长音也能渐强）。 */
-  const ramp = (a: number, b: number, s0: number, s1: number) => { const n = Math.max(1, Math.min(32, Math.ceil((s1 - s0) / 0.03))); for (let k = 0; k < n; k++) segs.push({ t0: s0 + ((s1 - s0) * k) / n, t1: s0 + ((s1 - s0) * (k + 1)) / n, dB: a + ((b - a) * (k + 0.5)) / n }); };
+  const vel = byVelocity, tab = spec.dynamicsVel;
+  const levels = vel ? null : dynLevels(tokens, map, tab, tab.mf, spec.wedgeStepVel ?? M.wedgeStepVel, bounds);   // 力度水平（按时间线性）；按力度敲的在 noteVelocities
+  const lv = (v: number | null) => (v === null ? 0 : velocityDb(v));
+  /** s0–s1 这段：力度从 va 线性走到 vb（null = 这位不按曲线走力度 = 0 dB），换成 dB 再加 off 和 add(这一小段中点)。切成小段（月读一个长音也能渐强）。 */
+  const level = (va: number | null, vb: number | null, s0: number, s1: number, off: number, add?: (m: number) => number, fine = false) => {
+    const n = fine ? Math.max(2, Math.min(48, Math.ceil((s1 - s0) / 0.03))) : Math.max(1, Math.min(32, Math.ceil((s1 - s0) / 0.03)));
+    for (let k = 0; k < n; k++) {
+      const a = s0 + ((s1 - s0) * k) / n, b = s0 + ((s1 - s0) * (k + 1)) / n, m = (a + b) / 2, fs = fine ? (m - s0) / Math.max(1e-9, s1 - s0) : (k + 0.5) / n;
+      segs.push({ t0: a, t1: b, dB: lv(va === null ? null : va + ((vb ?? va) - va) * fs) + off + (add ? add(m) : 0) });
+    }
+  };
   for (const { index, tok, t0, t1 } of timeline(tokens, map)) {
     const gw = vel ? 0 : groove?.get(index) ?? 0;   // 拍子轻重（dB 那一路；力度那一路在 noteVel）
     const L = levels?.get(index), soft = tok.kind === "note" && !vel ? (artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : gw < 0 ? -gw * (spec.unstressDb ?? M.unstressDb) : 0) : 0;
-    const base = (L ? L.at0 : 0) + soft, baseEnd = (L ? L.at1 : 0) + soft;   // 弱化 / 幽灵音：整个音轻下去（dB 那一路；力度那一路在 noteVel）
+    const v0 = L ? L.at0 : null, v1 = L ? L.at1 : null;   // 这一个 token 头尾的力度水平（音量曲线这一路）
+    const base = lv(v0) + soft, baseEnd = lv(v1) + soft;   // 弱化 / 幽灵音：整个音轻下去（dB 那一路；力度那一路在 noteVel）
     if (base !== 0 || baseEnd !== 0) any = true;
-    if (tok.kind !== "note") { if (baseEnd !== base) ramp(base, baseEnd, t0, t1); else segs.push({ t0, t1, dB: base }); continue; }
+    if (tok.kind !== "note") { if (v1 !== v0) level(v0, v1, t0, t1, soft); else segs.push({ t0, t1, dB: base }); continue; }
     const art = artOf(tok);
     let cur = t0;
     // 音头那一组（互斥）：重音 / 强音 = 音头一小段加 dB；突强 = 冲高 sfzDb、sfzSec 里落回当下；强后即弱 = 音头这位的 f、fpSec 里落到 p（之后都是 p，dynLevels 管）
@@ -45,30 +59,27 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
     const sw0 = swellOf(tok), sw = sw0 && !(spec.canSwell === false && sw0 !== ">") ? sw0 : null, D = spec.swellDb ?? M.swellDb;
     // 包络只往下乘（v0.9.29；user 2026-10-10「音内减弱渐强和鼓起都是最大值对应的本来原始值，就是乘一个小于一的包罗，而不是大于一的」→「鼓包改」）：
     //   写的力度 = 这个音的最高点；< 从 −D 长到写的力度、> 从写的力度收到 −D、<> 两头 −D 中间回到写的力度。一个音永远不比写的力度更响。
-    const swOff = (fr: number) => (sw === "<" ? -D * (1 - fr) : sw === ">" ? -D * fr : sw === "<>" ? -D * Math.abs(2 * fr - 1) : 0);
-    const shaped = (a0: number, a1: number, s0: number, s1: number) => {   // s0–s1 这段：底下的水平从 a0 走到 a1（按整个音的进度），再叠上音内起伏
-      const n = Math.max(2, Math.min(48, Math.ceil((s1 - s0) / 0.03)));
-      for (let k = 0; k < n; k++) { const a = s0 + ((s1 - s0) * k) / n, b = s0 + ((s1 - s0) * (k + 1)) / n, m = (a + b) / 2, fr = (m - t0) / Math.max(1e-9, t1 - t0), fs = (m - s0) / Math.max(1e-9, s1 - s0);
-        segs.push({ t0: a, t1: b, dB: a0 + (a1 - a0) * fs + swOff(fr) }); }
-      any = true;
-    };
+    const swOff = (m: number) => { const fr = (m - t0) / Math.max(1e-9, t1 - t0); return sw === "<" ? -D * (1 - fr) : sw === ">" ? -D * fr : sw === "<>" ? -D * Math.abs(2 * fr - 1) : 0; };
     if (art.includes("fp")) {
-      const f = spec.dynamicsDb.f ?? 6, p = spec.dynamicsDb.p ?? -12, e = Math.min(t1, t0 + (spec.fpSec ?? M.fpSec));
-      if (vel) ramp(0, p - f, t0, e); else ramp(f, p, t0, e);   // 力度那一路：音头已经按 f 的力度弹了，这里只把它压到 p
+      // 强后即弱：音头按 f、fpSec 里落到 p（在力度上线性，换成 dB）。按力度敲的：音头已经按 f 的力度弹了，这里只把它压下去（相对 f 的 dB）
+      const f = tab.f, p = tab.p, e = Math.min(t1, t0 + (spec.fpSec ?? M.fpSec)), off = vel ? -velocityDb(f) : 0;
+      level(f, p, t0, e, off);
       if (t1 > e) {   // fp 之后再 <（贝多芬常用）：从 p 长回去，最多回到音头的 f（不超过写的）；<> = p → f → p；> = 在 p 上再往下收
-        const lo = vel ? p - f : p, hi = vel ? 0 : f;
-        if (sw === "<") ramp(lo, hi, e, t1);
-        else if (sw === "<>") { const m = (e + t1) / 2; ramp(lo, hi, e, m); ramp(hi, lo, m, t1); }
-        else if (sw) shaped(lo, lo, e, t1); else segs.push({ t0: e, t1, dB: lo });
+        if (sw === "<") level(p, f, e, t1, off);
+        else if (sw === "<>") { const m = (e + t1) / 2; level(p, f, e, m, off); level(f, p, m, t1, off); }
+        else if (sw) level(p, p, e, t1, off, swOff, true); else segs.push({ t0: e, t1, dB: velocityDb(p) + off });
       }
       any = true; continue;
     }
-    if (art.includes("sfz") && !vel) { const e = Math.min(t1, t0 + (spec.sfzSec ?? M.sfzSec)), b = spec.sfzDb ?? M.sfzDb; ramp(base + b, baseEnd === base ? base : base + ((baseEnd - base) * (e - t0)) / Math.max(1e-9, t1 - t0), t0, e); cur = e; any = true; }
+    if (art.includes("sfz") && !vel) {   // 突强：音头冲高 b dB、sfzSec 里线性落回底下的水平
+      const e = Math.min(t1, t0 + (spec.sfzSec ?? M.sfzSec)), b = spec.sfzDb ?? M.sfzDb, ve = v0 === null ? null : v0 + ((v1 ?? v0) - v0) * ((e - t0) / Math.max(1e-9, t1 - t0));
+      level(v0, ve, t0, e, soft, (m) => b * (1 - (m - t0) / Math.max(1e-9, e - t0))); cur = e; any = true;
+    }
     const boost = vel ? 0 : art.includes("marcato") ? (spec.marcatoDb ?? spec.accentDb + 3) : art.includes("accent") ? spec.accentDb : art.includes("stress") ? (spec.stressDb ?? M.stressDb) : gw > 0 ? gw * (spec.stressDb ?? M.stressDb) : 0;   // 强音比重音重、次重音比重音轻；拍子轻重 = 次重音的几分之几
     if (boost) { const e = Math.min(t1, t0 + (spec.accentSec ?? M.accentSec)); segs.push({ t0, t1: e, dB: base + boost }); cur = e; any = true; }
     if (t1 > cur) {
-      const a0 = base + ((baseEnd - base) * (cur - t0)) / Math.max(1e-9, t1 - t0);
-      if (sw) shaped(a0, baseEnd, cur, t1); else if (baseEnd !== base) ramp(a0, baseEnd, cur, t1); else segs.push({ t0: cur, t1, dB: base });
+      const va = v0 === null ? null : v0 + ((v1 ?? v0) - v0) * ((cur - t0) / Math.max(1e-9, t1 - t0));
+      if (sw) { level(va, v1, cur, t1, soft, swOff, true); any = true; } else if (v1 !== va) level(va, v1, cur, t1, soft); else segs.push({ t0: cur, t1, dB: base });
     }
   }
   return any ? segs : null;
@@ -151,22 +162,20 @@ export function dynOverridden(tokens: Token[], bounds?: readonly number[]): Set<
   }
   return out;
 }
-/** 一个音的 MIDI 力度（0–1，= 力度 ÷ 127；SoundFont 这一路）。有力度表：前面最近的力度记号查表，没有记号 = 演奏者的默认力度（defaultVel，乐器页的旋钮）；
- *  再加重音 / 强音。没有力度表（旧候选）= 一律 defaultVel（力度记号照旧走 dB）。2026-10-08 user「应该send的就是velocity！」「力度就是velocity」。 */
+/** 一个音的 MIDI 力度（0–1，= 力度 ÷ 127；按力度敲的演奏者这一路）：前面最近的力度记号查表，没有记号 = 演奏者的默认力度（defaultVel，乐器页的旋钮）；
+ *  再加重音 / 强音。9-2 起人人有表（没带 = 标准表），10-08 以前的旧 SoundFont 候选也这样敲。2026-10-08 user「应该send的就是velocity！」「力度就是velocity」。 */
 export function noteVelocity(tokens: Token[], index: number, art: readonly string[], spec: PerfSpec, defaultVel: number): number {
-  if (!spec.dynamicsVel) return defaultVel;
   const l = dynLevels(tokens, undefined, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel).get(index);
   return noteVel(l ? l.at0 : defaultVel * 127, art, spec);
 }
-/** 一整条的每个音的力度（index → 0–1）：力度记号 + 渐强渐弱（dynLevels，取音头）+ 重音 / 强音 + 拍子轻重（groove，同 gainSegments）。没有力度表 = 一律 defaultVel（拍子轻重走 dB）。 */
+/** 一整条的每个音的力度（index → 0–1）：力度记号 + 渐强渐弱（dynLevels，取音头）+ 重音 / 强音 + 拍子轻重（groove，同 gainSegments）。只给按力度敲的演奏者（调用方按插件的 dynamics 能力分）。 */
 export function noteVelocities(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>): Map<number, number> {
   const out = new Map<number, number>();
-  if (!spec.dynamicsVel) { tokens.forEach((t, i) => { if (t.kind === "note") out.set(i, defaultVel); }); return out; }
   for (const [i, l] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel, bounds)) { const t = tokens[i]; if (t.kind === "note") out.set(i, noteVel(l.at0, artOf(t), spec, groove?.get(i) ?? 0)); }
   return out;
 }
 const noteVel = (v: number, art: readonly string[], spec: PerfSpec, gw = 0) => {
-  if (art.includes("fp")) v = spec.dynamicsVel?.f ?? v;   // 强后即弱：音头按 f 弹（之后 gainSegments 压到 p）
+  if (art.includes("fp")) v = spec.dynamicsVel.f;   // 强后即弱：音头按 f 弹（之后 gainSegments 压到 p）
   else if (art.includes("sfz")) v += spec.sfzVel ?? M.sfzVel;
   else if (art.includes("marcato")) v += spec.marcatoVel ?? 0; else if (art.includes("accent")) v += spec.accentVel ?? 0;
   else if (art.includes("stress")) v += spec.stressVel ?? M.stressVel; else if (art.includes("unstress")) v += spec.unstressVel ?? M.unstressVel; else if (art.includes("ghost")) v += spec.ghostVel ?? M.ghostVel;

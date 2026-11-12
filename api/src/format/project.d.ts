@@ -290,14 +290,13 @@ export declare function withUnpacked(extras: Extras, only?: (subsetSha256: strin
     extras: Extras;
     removed: Map<string, Uint8Array>;
 };
-/** 上场那位的力度表（mf = 0 dB）/ 跳音吃掉多少 / 重音加多少。没有角色快照或字段缺 = app 内置那份（DYNAMICS_DB / ARTICULATION）。 */
+/** 上场那位的力度表（力度记号 → 力度；9-2 起全体一张，没带 = 标准表 DYNAMICS_VEL）/ 跳音吃掉多少 / 重音加多少。没有角色快照或字段缺 = app 内置那份（ARTICULATION…）。 */
 export declare function activePerfSpec(extras: Extras, role: string): {
-    dynamicsDb: Record<Dynamic, number>;
     staccatoGate: number;
     accentDb: number;
     gapSec: number;
     marcatoDb: number;
-    dynamicsVel: Record<Dynamic, number> | null;
+    dynamicsVel: Record<Dynamic, number>;
     accentVel: number;
     marcatoVel: number;
     stressDb: number;
@@ -310,7 +309,6 @@ export declare function activePerfSpec(extras: Extras, role: string): {
     breathSec: number;
     breathShare: number;
     gapShare: number;
-    wedgeStepDb: number;
     wedgeStepVel: number;
     sfzDb: number;
     sfzVel: number;

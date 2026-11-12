@@ -3043,17 +3043,11 @@ export declare const S: {
     readonly "\u529B\u5EA6\u8868\uFF1A{string}": {
         readonly en: "Dynamics table: {string}";
     };
-    readonly "\u97F3\u91CF\uFF1A{dynamicsDb}": {
-        readonly en: "Volume: {dynamicsDb}";
-    };
     readonly 渐强渐弱没写终点: {
         readonly en: "Crescendo / diminuendo with no endpoint";
     };
     readonly "\u8D70\u4E00\u6863 = \u529B\u5EA6 {wedgeStepVel}": {
         readonly en: "One step = velocity {wedgeStepVel}";
-    };
-    readonly "\u8D70\u4E00\u6863 = {wedgeStepDb}": {
-        readonly en: "One step = {wedgeStepDb}";
     };
     readonly 幽灵音: {
         readonly en: "Ghost note";
@@ -3202,9 +3196,6 @@ export declare const S: {
     readonly "MIDI \u529B\u5EA6": {
         readonly en: "MIDI velocity";
     };
-    readonly "\u97F3\u91CF dB": {
-        readonly en: "Volume dB";
-    };
     readonly 第几份录音: {
         readonly en: "Recording #";
     };
@@ -3286,8 +3277,8 @@ export declare const S: {
     readonly "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF0C\u529B\u5EA6\u8DDF\u7740\u5F53\u65F6\u7684\u529B\u5EA6\u548C\u6E10\u5F3A\u6E10\u5F31\u8D70\u3002\u9ED8\u8BA4\uFF1A\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\u3001\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": {
         readonly en: "A note with three slashes on its stem is a roll: the whole note is filled at this rate, following the current dynamic and hairpins. Defaults (per second): snare 20, cymbals 14, kick 12, other drums 16, pitched 14.";
     };
-    readonly "\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A{extras}": {
-        readonly en: "Dynamics = volume (relative to mf, dB); one step of 6 dB ≈ double / half the amplitude. Dynamics have no standard dB value: they're relative, and each performer carries a table. This performer's: {extras}";
+    readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u6807\u51C6\uFF1A\u54CD\u5EA6 = 40\u00B7log10(\u529B\u5EA6 \u00F7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\uFF1B\u8FD9\u4F4D\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}": {
+        readonly en: "Dynamic mark → velocity → loudness, by the same rule as the instruments (the SoundFont standard: loudness = 40·log10(velocity ÷ 127), full velocity = 0 dB); this performer has no recorded layers, only loudness changes: {extras}";
     };
     readonly 哼的字: {
         readonly en: "Hum syllable";
@@ -5011,8 +5002,8 @@ export declare const S: {
     readonly "\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002\u97F3\u91CF = \u529B\u5EA6\u7684\u5E73\u65B9\uFF08SoundFont \u89C4\u8303\uFF1B\u6EE1\u529B\u5EA6 127 = 0 dB\uFF0C\u529B\u5EA6\u51CF\u534A = \u8F7B 12 dB\uFF09\u3002{dynamicsVel}{L}": {
         readonly en: "Notes without a dynamic use this velocity (MIDI 1–127). Volume = velocity squared (the SoundFont standard; full velocity 127 = 0 dB, half the velocity = 12 dB quieter). {dynamicsVel}{L}";
     };
-    readonly "\u4E50\u5668\u7684\u5F3A\u5F31\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\uFF0C\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\u3002\u6700\u54CD\u7684 fff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\uFF0C\u6574\u9996\u4F1A\u53D8\u8F7B\uFF1B\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002": {
-        readonly en: "Instruments now follow the SoundFont standard for dynamics: volume goes with velocity squared, so loud and soft differ twice as much as before. fff is as loud as it was; every other level is quieter (mf is 4 dB quieter), so whole songs get quieter. Older songs need their balance redone.";
+    readonly "\u4E50\u5668\u548C\u5C0F\u6708\u76F8\u7684\u5F3A\u5F31\u90FD\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\u3002\u4E50\u5668\uFF1A\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\uFF0Cfff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\u3002\u5C0F\u6708\u76F8\u548C\u5143\u97F3\u7248\u4E5F\u6309\u8FD9\u540C\u4E00\u6761\u66F2\u7EBF\uFF1A\u548C\u5979\u7684 mf \u6BD4\uFF0Cf \u4EE5\u4E0A\u6CA1\u539F\u6765\u90A3\u4E48\u54CD\u3001p \u548C pp \u6CA1\u539F\u6765\u90A3\u4E48\u8F7B\uFF0C\u5979\u7684 mf \u6BD4\u539F\u6765\u8F7B 8 dB\u3002\u6574\u9996\u4F1A\u53D8\u8F7B\uFF0C\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002": {
+        readonly en: "Instruments and Tsukuyomi-chan now both follow the SoundFont standard for dynamics: volume goes with velocity squared. Instruments: loud and soft differ twice as much as before; fff is as loud as it was, every other level is quieter (mf is 4 dB quieter). Tsukuyomi-chan and the vowel version follow the same curve: compared with her mf, f and above are less loud and p and pp are less soft than before, and her mf is 8 dB quieter than it was. Whole songs get quieter; older songs need their balance redone.";
     };
     readonly "\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{L}": {
         readonly en: "Dynamics follow this performer's velocity table (accent +{accentVel}, marcato +{marcatoVel}; for other marks see “How marks are performed” below): {L}";

@@ -1,6 +1,4 @@
 import type { Credit, Spec, Dynamic } from "./contract.ts";
-/** 力度字母 → dB（相对 mf = 0；§7.7 记号 ↔ 曲线的换算表，by value）。常见打谱软件的默认大致是每档 6 dB。 */
-export declare const DYNAMICS_DB: Record<Dynamic, number>;
 /** 演奏法：跳音 / 保持各吃掉时值的多少（0–1）、重音加多少 dB。 */
 export declare const ARTICULATION: {
     readonly staccatoGate: 0.5;
@@ -16,7 +14,6 @@ export declare const MARK_DEFAULTS: {
     readonly breathSec: 0.16;
     readonly breathShare: 0.25;
     readonly gapShare: 0.25;
-    readonly wedgeStepDb: 6;
     readonly wedgeStepVel: 16;
     readonly sfzDb: 9;
     readonly sfzVel: 32;
@@ -38,9 +35,9 @@ export type SingMark = {
     at: "this" | "next";
 };
 export declare const SING_MARKS: Record<"staccato" | "accent" | "marcato" | "breath" | "sfz" | "fp", SingMark>;
-/** 力度记号 → MIDI 力度（1–127）：SoundFont 演奏者 by value 带的表（2026-10-08 Claude Opus 5.5；user「应该send的就是velocity！」「力度就是velocity」
+/** 力度记号 → MIDI 力度（1–127）：全体演奏者 by value 带的表（9-2 起小月相 / 元音版也是；SoundFont 从 2026-10-08 Claude Opus 5.5 起；user「应该send的就是velocity！」「力度就是velocity」
  *  「mp mf 大于小于号这种，可以preliminary的控制力度。然后跳音强音重音也应该是这个」）。起点 = MuseScore 的经典默认值，好不好听归 user 耳朵。
- *  只给新建的 SoundFont 候选；旧候选没有这张表 = 照旧（力度记号走 dB、力度 0.8），旧歌逐样本不变。GS 很多音色按力度换录音层（仓鼠 v11 velLayers）。 */
+ *  新建候选都抄一份；旧候选没有这张表 = 用这张（9-2：不再有「没表就走 dB」那条路）。GS 很多音色按力度换录音层（仓鼠 v11 velLayers）。 */
 export declare const DYNAMICS_VEL: Record<Dynamic, number>;
 /** 重音 / 强音在力度上加多少（MIDI 格；SoundFont 这一路）。月读 / 元音版这一路是音头加 dB：重音 accentDb、强音 MARCATO_DB。 */
 export declare const ACCENT_VEL = 16, MARCATO_VEL = 28, MARCATO_DB = 7;

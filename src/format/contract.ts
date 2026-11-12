@@ -14,8 +14,15 @@
 
 /** 这一版能读写的各份文件的版本号（改格式 = 这里 +1 + migrate + 冻结样本；守卫测试盯着）。
  *  lounge 2（2026-10-07 深夜，user「现在开始好好做乐器这个数据结构，不要偷懒」）：候选从「月读形状 + 贴字段」改成按引擎分的乐器。
- *  manifest 2 / score 2（2026-10-08，0.5.0 多声部多纸，存法 B）：纸的顺序表 + 声部并集；每张纸一份 MusicXML 正本，score.musicxml 变派生件。 */
-export const FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 } as const;
+ *  manifest 2 / score 2（2026-10-08，0.5.0 多声部多纸，存法 B）：纸的顺序表 + 声部并集；每张纸一份 MusicXML 正本，score.musicxml 变派生件。
+ *  lounge 3（9-2，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「按照SoundFont对齐，然后小月相也应该对齐」，统筹裁定走大版本）：力度 → 响度全体演奏者只有一条
+ *  （响度 = 40·log10(力度 ÷ 127)，SoundFont 规范的放法；score/perform.ts velocityDb）。候选按值存的 dynamicsDb（小月相 / 元音版那张「力度字母 → dB」的表）和
+ *  articulation.wedgeStepDb 退役：迁移 2→3 只删这两个键、别的一个字不动（migrate/index.ts loungeV2toV3）；新建的候选都按值带 dynamicsVel。为什么是大版本不是小版本（统筹的三条）：
+ *  ① 旧版本拿「有没有 dynamicsVel」当分路的开关（gainSegments 里 vel = !!spec.dynamicsVel）：读到带表的小月相会把她当成按力度敲的，音量曲线里不再有力度水平，
+ *     她又不吃力度——她的强弱整个没了。这不是「声音不太一样」，是旧读者把新数据读成了另一个意思。
+ *  ② 这次改的是约定本身（力度记号多响），user 的原话是吃书：新约定下存的歌本来就不该让旧版本去放，明确拒开比提示一次之后放错好。
+ *  ③ 形状守卫「删 / 改字段 → 大版本 + 迁移」照它走。代价：新版本存过的歌，旧版本（当时的正式版 v0.16.105）拒开，直到正式版也更新（统筹告诉 user）。 */
+export const FORMAT = { manifest: 2, score: 2, lounge: 3, studio: 2 } as const;
 export type FormatFile = keyof typeof FORMAT;
 /** 家族格式版本纪律（2026-10-21，家族根 ai-docs/20261021-format-version-discipline.md；user「版本纪律能做成 catsup moonsinger 一样不同 component 有自己的拍子…这个变成全家的版本纪律」「三级语义 同意」）：
  *  `version` = major（整数拍照旧：不可兼容 / 重大安全问题才 +1；老读者只认它，比自己新 = 拒开），再加两个可选整数键 `minor` / `patch`（缺 = 0）：
@@ -57,7 +64,7 @@ export type FormatFile = keyof typeof FORMAT;
  *  歌词的字里可以带标点（MusicXML 的 <lyric><text> 本来就能写；结尾的挂在字后面、开头的挂在字前面），居中只按字、送去唱 / 算读音 / 判唱不唱得出来之前去掉（score/lyrics.ts lyricHang / lyricCore）。
  *  结构没变，变的是读法：minor 6 以前的版本打开会把带标点的字当成唱不出来（画灰、照字送去唱）= 行为有变化那一级：minor +1、让旧版本提示一次；旧版本照样能开能存，字原样带回。
  *  冻结样本 = test/fixtures/format/minor/score-7/（样本歌里「py,」「你。」）。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 7, lounge: 1, studio: 1 };
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 7, lounge: 0, studio: 1 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
@@ -215,12 +222,12 @@ export interface CandidateV2 {
    *  只给少数本身就差八度的音色兜底（GS 32 Guitar Harmonics 高两个八度、18 / 19 风琴听着低一个八度），不自动套用（user「大部分情况不应该动，是worst case兜底」）。 */
   transpose?: number;
   defaults: Record<string, number>;    // 一个音没画曲线时用的默认数（by value）：参数名 → 值，单位同 curves.json 的 units
-  dynamicsDb: Record<Dynamic, number>; // 谱上记号 ↔ 曲线的换算表（by value）：力度字母 → dB
-  /** 2026-10-08 加（可选，不升版本；Claude Opus 5.5）：SoundFont 演奏者的力度记号 → MIDI 力度（1–127）。有这张表 = 力度记号 / 重音 / 强音走力度
-   *  （accentVel / marcatoVel 加在上面），不再走 dB；没有 = 照旧（旧候选）。articulation 同时加了 marcatoDb（强音，dB 那一路）/ accentVel / marcatoVel。 */
+  //   dynamicsDb（谱上记号 ↔ 曲线的换算表，力度字母 → dB）：lounge 3（9-2，2026-11-12）退役——迁移 2→3 删掉，写的时候没有。
+  /** 力度记号 → MIDI 力度（1–127；by value）。2026-10-08 起 SoundFont 候选带（可选，不升版本；Claude Opus 5.5），lounge 3（9-2）起全体演奏者的新候选都带；
+   *  没带 = 内置的标准表（performance.ts DYNAMICS_VEL）。响度全体只有一条 = 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）。accentVel / marcatoVel 加在力度上。 */
   dynamicsVel?: Record<Dynamic, number>;
   articulation: { staccatoGate: number; tenutoGate: number; accentDb: number; gapSec?: number; marcatoDb?: number; accentVel?: number; marcatoVel?: number;
-    accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; wedgeStepDb?: number; wedgeStepVel?: number;
+    accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; /* wedgeStepDb：lounge 3 退役（迁移 2→3 删掉） */ wedgeStepVel?: number;
     sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number; swellDb?: number;
     /** 能不能在一个音里面变强（2026-10-08 加，可选）：false = 按下去就自然衰减（钢琴 / 吉他 / 打击）——音内渐强 / 鼓起画灰、明说；音内渐弱照做。没写 = 能。
      *  SoundFont 新候选按仓鼠 v11 的 sustain（sustained = 能）by value 抄进来。 */

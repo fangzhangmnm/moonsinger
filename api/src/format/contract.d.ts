@@ -1,10 +1,17 @@
 /** 这一版能读写的各份文件的版本号（改格式 = 这里 +1 + migrate + 冻结样本；守卫测试盯着）。
  *  lounge 2（2026-10-07 深夜，user「现在开始好好做乐器这个数据结构，不要偷懒」）：候选从「月读形状 + 贴字段」改成按引擎分的乐器。
- *  manifest 2 / score 2（2026-10-08，0.5.0 多声部多纸，存法 B）：纸的顺序表 + 声部并集；每张纸一份 MusicXML 正本，score.musicxml 变派生件。 */
+ *  manifest 2 / score 2（2026-10-08，0.5.0 多声部多纸，存法 B）：纸的顺序表 + 声部并集；每张纸一份 MusicXML 正本，score.musicxml 变派生件。
+ *  lounge 3（9-2，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「按照SoundFont对齐，然后小月相也应该对齐」，统筹裁定走大版本）：力度 → 响度全体演奏者只有一条
+ *  （响度 = 40·log10(力度 ÷ 127)，SoundFont 规范的放法；score/perform.ts velocityDb）。候选按值存的 dynamicsDb（小月相 / 元音版那张「力度字母 → dB」的表）和
+ *  articulation.wedgeStepDb 退役：迁移 2→3 只删这两个键、别的一个字不动（migrate/index.ts loungeV2toV3）；新建的候选都按值带 dynamicsVel。为什么是大版本不是小版本（统筹的三条）：
+ *  ① 旧版本拿「有没有 dynamicsVel」当分路的开关（gainSegments 里 vel = !!spec.dynamicsVel）：读到带表的小月相会把她当成按力度敲的，音量曲线里不再有力度水平，
+ *     她又不吃力度——她的强弱整个没了。这不是「声音不太一样」，是旧读者把新数据读成了另一个意思。
+ *  ② 这次改的是约定本身（力度记号多响），user 的原话是吃书：新约定下存的歌本来就不该让旧版本去放，明确拒开比提示一次之后放错好。
+ *  ③ 形状守卫「删 / 改字段 → 大版本 + 迁移」照它走。代价：新版本存过的歌，旧版本（当时的正式版 v0.16.105）拒开，直到正式版也更新（统筹告诉 user）。 */
 export declare const FORMAT: {
     readonly manifest: 2;
     readonly score: 2;
-    readonly lounge: 2;
+    readonly lounge: 3;
     readonly studio: 2;
 };
 export type FormatFile = keyof typeof FORMAT;
@@ -300,9 +307,8 @@ export interface CandidateV2 {
      *  只给少数本身就差八度的音色兜底（GS 32 Guitar Harmonics 高两个八度、18 / 19 风琴听着低一个八度），不自动套用（user「大部分情况不应该动，是worst case兜底」）。 */
     transpose?: number;
     defaults: Record<string, number>;
-    dynamicsDb: Record<Dynamic, number>;
-    /** 2026-10-08 加（可选，不升版本；Claude Opus 5.5）：SoundFont 演奏者的力度记号 → MIDI 力度（1–127）。有这张表 = 力度记号 / 重音 / 强音走力度
-     *  （accentVel / marcatoVel 加在上面），不再走 dB；没有 = 照旧（旧候选）。articulation 同时加了 marcatoDb（强音，dB 那一路）/ accentVel / marcatoVel。 */
+    /** 力度记号 → MIDI 力度（1–127；by value）。2026-10-08 起 SoundFont 候选带（可选，不升版本；Claude Opus 5.5），lounge 3（9-2）起全体演奏者的新候选都带；
+     *  没带 = 内置的标准表（performance.ts DYNAMICS_VEL）。响度全体只有一条 = 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）。accentVel / marcatoVel 加在力度上。 */
     dynamicsVel?: Record<Dynamic, number>;
     articulation: {
         staccatoGate: number;
@@ -316,7 +322,6 @@ export interface CandidateV2 {
         breathSec?: number;
         breathShare?: number;
         gapShare?: number;
-        wedgeStepDb?: number;
         wedgeStepVel?: number;
         sfzDb?: number;
         sfzVel?: number;

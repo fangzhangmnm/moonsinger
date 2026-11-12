@@ -2,7 +2,7 @@
   "versions": {
     "manifest": 2,
     "score": 2,
-    "lounge": 2,
+    "lounge": 3,
     "studio": 2
   },
   "shapes": {
@@ -152,7 +152,6 @@
             "tenutoGate": "number",
             "unstressDb": "number",
             "unstressVel": "number",
-            "wedgeStepDb": "number",
             "wedgeStepVel": "number"
           },
           "asCast": "string",
@@ -199,16 +198,6 @@
             "levelContinuous": "number",
             "levelMaxDb": "number",
             "velocity": "number"
-          },
-          "dynamicsDb": {
-            "f": "number",
-            "ff": "number",
-            "fff": "number",
-            "mf": "number",
-            "mp": "number",
-            "p": "number",
-            "pp": "number",
-            "ppp": "number"
           },
           "dynamicsVel": {
             "f": "number",

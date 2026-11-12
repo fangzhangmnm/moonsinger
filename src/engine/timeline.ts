@@ -155,7 +155,8 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const info = inp.info(part);
     if (!info.plugin) { unplayable.push({ part: part.id, why: _t("还没有人上场") }); continue; }
     const groove = grooveWeights(tokens, bounds, gmap, info.follow);
-    const gain: GainSeg[] | null = gainSegments(tokens, map, info.spec, bounds, groove);
+    const byVel = info.plugin.dynamics === "velocity";   // 按力度敲（乐器）/ 按音量曲线（小月相 / 元音版）= 插件的能力（9-2：不再看「有没有力度表」）
+    const gain: GainSeg[] | null = gainSegments(tokens, map, info.spec, bounds, groove, byVel);
     if (info.plugin.sound === "chunks") {   // 慢引擎：按句出块（谁唱由 worker 按插件定；现在只有小月相）
       const plan = sungPlan(tokens, map, bounds, info.chunk, hum);   // 段 + 每段的语言（画灰也走它）
       const noteAt = (a: number) => tl.find((x) => x.index >= a && x.tok.kind === "note")?.t0 ?? 0;
@@ -174,11 +175,11 @@ export function buildTimeline(inp: TimelineInput): Timeline {
       tracks.push(clips);
       continue;
     }
-    const vels = noteVelocities(tokens, map, info.spec, info.velocity, bounds, groove);
+    const vels = byVel ? noteVelocities(tokens, map, info.spec, info.velocity, bounds, groove) : null;   // 按音量曲线的：每个音一样的力度（力度记号在曲线上）
     // 滚奏的密度（v0.16.64）：演奏者写了 = 它；没写 = 按乐器（固定敲一件 = 那一件的键、整套鼓 = 写的音、有音高的 = null）。这位不认滚奏（honors 里没有）= 照一个长音放
     const percKey = (m: number): number | null => (info.gm?.note !== undefined ? info.gm.note : info.hitSec ? m : null);
     const rollHz = info.plugin.honors.includes("roll") ? (m: number) => info.spec.rollHz ?? rollDefaultHz(percKey(m)) : undefined;
-    const notes = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(info.spec), ...(rollHz ? { rollHz } : {}) }, (i) => vels.get(i) ?? info.velocity);
+    const notes = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(info.spec), ...(rollHz ? { rollHz } : {}) }, (i) => vels?.get(i) ?? info.velocity);
     // 快引擎：音符表 → 这位的轨，怎么拼归插件（元音版 / SoundFont 的键 / 着力点都在它自己那里；ADR-0004）
     const built = info.plugin.track?.({ id: part.id, notes, gain, ...(info.chain?.length ? { chain: info.chain } : {}), hum, info });
     if (!built) { unplayable.push({ part: part.id, why: _t("「{label}」不会按音符表出声", { label: info.plugin.label }) }); continue; }

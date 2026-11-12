@@ -1013,10 +1013,8 @@ var S = {
   "\uFF08\u771F\u4EBA\u6E10\u5F31\u4F1A\u53D8\u865A\u3001\u53D8\u6697\uFF0C\u8FD9\u4E2A\u8FD8\u6CA1\u6709\uFF09": { en: " (a real singer's diminuendo gets airier and darker; not modeled yet)" },
   "\u529B\u5EA6\u600E\u4E48\u53D8": { en: "How dynamics change" },
   "\u529B\u5EA6\u8868\uFF1A{string}": { en: "Dynamics table: {string}" },
-  "\u97F3\u91CF\uFF1A{dynamicsDb}": { en: "Volume: {dynamicsDb}" },
   "\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9": { en: "Crescendo / diminuendo with no endpoint" },
   "\u8D70\u4E00\u6863 = \u529B\u5EA6 {wedgeStepVel}": { en: "One step = velocity {wedgeStepVel}" },
-  "\u8D70\u4E00\u6863 = {wedgeStepDb}": { en: "One step = {wedgeStepDb}" },
   "\u5E7D\u7075\u97F3": { en: "Ghost note" },
   "\u529B\u5EA6 {ghostVel}": { en: "Velocity {ghostVel}" },
   "\u6574\u4E2A\u97F3 {ghostDb}": { en: "Whole note {ghostDb}" },
@@ -1066,7 +1064,6 @@ var S = {
   "\u8FD9\u4EF6\u4E50\u5668\uFF1A{what}": { en: "Instrument: {what}" },
   "\u7B2C\u4E8C\u884C\u8D77\u5199 {ab}": { en: "from the 2nd system: {ab}" },
   "MIDI \u529B\u5EA6": { en: "MIDI velocity" },
-  "\u97F3\u91CF dB": { en: "Volume dB" },
   "\u7B2C\u51E0\u4EFD\u5F55\u97F3": { en: "Recording #" },
   "\u54CD\u5EA6 dB": { en: "Loudness dB" },
   "\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08{n}\uFF09{library}": { en: "Sound embedded in the song ({n}){library}" },
@@ -1094,7 +1091,7 @@ var S = {
   "\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09": { en: "Faster roll (2 more hits per second)" },
   "\u56DE\u5230\u8FD9\u4EF6\u4E50\u5668\u7684\u9ED8\u8BA4": { en: "Back to this instrument's default" },
   "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF0C\u529B\u5EA6\u8DDF\u7740\u5F53\u65F6\u7684\u529B\u5EA6\u548C\u6E10\u5F3A\u6E10\u5F31\u8D70\u3002\u9ED8\u8BA4\uFF1A\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\u3001\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": { en: "A note with three slashes on its stem is a roll: the whole note is filled at this rate, following the current dynamic and hairpins. Defaults (per second): snare 20, cymbals 14, kick 12, other drums 16, pitched 14." },
-  "\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A{extras}": { en: "Dynamics = volume (relative to mf, dB); one step of 6 dB \u2248 double / half the amplitude. Dynamics have no standard dB value: they're relative, and each performer carries a table. This performer's: {extras}" },
+  "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u6807\u51C6\uFF1A\u54CD\u5EA6 = 40\xB7log10(\u529B\u5EA6 \xF7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\uFF1B\u8FD9\u4F4D\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}": { en: "Dynamic mark \u2192 velocity \u2192 loudness, by the same rule as the instruments (the SoundFont standard: loudness = 40\xB7log10(velocity \xF7 127), full velocity = 0 dB); this performer has no recorded layers, only loudness changes: {extras}" },
   "\u54FC\u7684\u5B57": { en: "Hum syllable" },
   "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09": { en: "What notes without lyrics sing (one for the whole song)" },
   "\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE": { en: "Advanced: singing core knobs" },
@@ -1669,7 +1666,7 @@ var S = {
   "\u91CD\u4E00\u70B9\uFF08+8\uFF09": { en: "A little harder (+8)" },
   "\u56DE\u5230 {def}": { en: "Back to {def}" },
   "\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002\u97F3\u91CF = \u529B\u5EA6\u7684\u5E73\u65B9\uFF08SoundFont \u89C4\u8303\uFF1B\u6EE1\u529B\u5EA6 127 = 0 dB\uFF0C\u529B\u5EA6\u51CF\u534A = \u8F7B 12 dB\uFF09\u3002{dynamicsVel}{L}": { en: "Notes without a dynamic use this velocity (MIDI 1\u2013127). Volume = velocity squared (the SoundFont standard; full velocity 127 = 0 dB, half the velocity = 12 dB quieter). {dynamicsVel}{L}" },
-  "\u4E50\u5668\u7684\u5F3A\u5F31\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\uFF0C\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\u3002\u6700\u54CD\u7684 fff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\uFF0C\u6574\u9996\u4F1A\u53D8\u8F7B\uFF1B\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002": { en: "Instruments now follow the SoundFont standard for dynamics: volume goes with velocity squared, so loud and soft differ twice as much as before. fff is as loud as it was; every other level is quieter (mf is 4 dB quieter), so whole songs get quieter. Older songs need their balance redone." },
+  "\u4E50\u5668\u548C\u5C0F\u6708\u76F8\u7684\u5F3A\u5F31\u90FD\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\u3002\u4E50\u5668\uFF1A\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\uFF0Cfff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\u3002\u5C0F\u6708\u76F8\u548C\u5143\u97F3\u7248\u4E5F\u6309\u8FD9\u540C\u4E00\u6761\u66F2\u7EBF\uFF1A\u548C\u5979\u7684 mf \u6BD4\uFF0Cf \u4EE5\u4E0A\u6CA1\u539F\u6765\u90A3\u4E48\u54CD\u3001p \u548C pp \u6CA1\u539F\u6765\u90A3\u4E48\u8F7B\uFF0C\u5979\u7684 mf \u6BD4\u539F\u6765\u8F7B 8 dB\u3002\u6574\u9996\u4F1A\u53D8\u8F7B\uFF0C\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002": { en: "Instruments and Tsukuyomi-chan now both follow the SoundFont standard for dynamics: volume goes with velocity squared. Instruments: loud and soft differ twice as much as before; fff is as loud as it was, every other level is quieter (mf is 4 dB quieter). Tsukuyomi-chan and the vowel version follow the same curve: compared with her mf, f and above are less loud and p and pp are less soft than before, and her mf is 8 dB quieter than it was. Whole songs get quieter; older songs need their balance redone." },
   "\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{L}": { en: "Dynamics follow this performer's velocity table (accent +{accentVel}, marcato +{marcatoVel}; for other marks see \u201CHow marks are performed\u201D below): {L}" },
   "\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A{p}": { en: "This performer came on stage earlier: dynamics still only change volume: {p}" },
   "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 {count} \u4E2A\u529B\u5EA6\u5C42{p}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002": { en: "This GS sound has {count} velocity layers{p}: crossing a layer = a different recording, so timbre changes, not just loudness." },
@@ -5275,8 +5272,8 @@ ${bodies.join("\n")}
 }
 
 // src/format/contract.ts
-var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
-var FORMAT_MINOR = { manifest: 1, score: 7, lounge: 1, studio: 1 };
+var FORMAT = { manifest: 2, score: 2, lounge: 3, studio: 2 };
+var FORMAT_MINOR = { manifest: 1, score: 7, lounge: 0, studio: 1 };
 var FORMAT_PATCH = { manifest: 1, score: 0, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
@@ -5425,7 +5422,6 @@ var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3
 var APP_VERSION = "v0.17.0-2026-11-11";
 
 // src/format/performance.ts
-var DYNAMICS_DB = { ppp: -24, pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12, fff: 18 };
 var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
 var MARK_DEFAULTS = {
   accentSec: 0.12,
@@ -5435,9 +5431,8 @@ var MARK_DEFAULTS = {
   // 呼吸：前一个音收短多少（秒），最多占这个音的几分之几（元音版 / 乐器）
   gapShare: 0.25,
   // 连断底色的缝最多吃掉这个音的几分之几
-  wedgeStepDb: 6,
   wedgeStepVel: 16,
-  // 渐强渐弱后面没写力度记号 = 走一档：dB 那一路 / 力度那一路各走多少
+  // 渐强渐弱后面没写力度记号 = 走一档：力度走多少（9-2 起全体一样）
   sfzDb: 9,
   sfzVel: 32,
   sfzSec: 0.2,
@@ -5465,6 +5460,7 @@ var SING_MARKS = {
   fp: { mark: "^", at: "this" }
   // 音头那一组都顿一下（同重音，user「嗯重音也顿」）
 };
+var DYNAMICS_VEL = { ppp: 16, pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112, fff: 126 };
 var MARCATO_DB = 7;
 var DEFAULT_CALIBRATION_DB = -6;
 var TSUKUYOMI_DEFAULTS = { level: 0.8, levelMaxDb: 6, cleanMax: 0.4, breath: 0, levelContinuous: 1 };
@@ -5486,7 +5482,7 @@ var PAPERS = `${DIR}papers/`;
 var paperFile = (id) => `${PAPERS}${id}.musicxml`;
 var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 var CANDIDATE_ID = { full: "c1", light: "c2" };
-var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });
+var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsVel: { ...DYNAMICS_VEL }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });
 function defaultRole(hum, id) {
   return { version: FORMAT.lounge, id, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
     { id: CANDIDATE_ID.full, name: _t("\u5C0F\u6708\u76F8"), instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), sing: structuredClone(SING_MARKS), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
@@ -5757,4 +5753,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-2831cb51d267.mjs.map
+//# sourceMappingURL=encode-worker-c41e646b7693.mjs.map

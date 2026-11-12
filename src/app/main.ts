@@ -57,7 +57,7 @@ import { withCastAs, candidateJson } from "../format/project.ts";
 import type { CandidateV2 } from "../format/contract.ts";
 import { contentFingerprintOf, type LegacyMp3, moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, activePerfSpec, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
-import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
+import { ignoredArts, whyIgnored, dynOverridden, dynLevels, velocityDb, type Mark } from "../score/perform.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
 import { navWhy } from "../score/repeats.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
@@ -505,14 +505,16 @@ let vowelsReady = false, vowelLoading: Promise<void> | null = null;
 /** 元音表进录音房（只下载一次；失败了下次重试）。user「选这个乐器就是意图，然后第一下就响」。 */
 function ensureVowels(): Promise<void> { return (vowelLoading ??= loadVowelTable().then((t) => { engine.vowels(t); vowelsReady = true; }, (e) => { vowelLoading = null; throw e; })); }
 /** 光标那一刻生效的力度（和放的时候同一个状态机 perform.ts dynLevels：力度记号 / 渐强渐弱 / 渐到插值；挂在音上的记号不管）——按键试听用（刀 3；
- *  user「软键盘输入和乐谱里瞎弹时能不能respect这一轨的表情记号…尤其是音量」）。vel = MIDI 力度 0–1（有力度表的 SoundFont）；dB = 音量（月读 / 元音版 / 旧候选）。
+ *  user「软键盘输入和乐谱里瞎弹时能不能respect这一轨的表情记号…尤其是音量」）。vel = MIDI 力度 0–1（按力度敲的；没写力度记号 = 乐器页的旋钮）；dB = 响度（按音量曲线的小月相 / 元音版：
+ *  力度 → velocityDb，没写力度记号 = 表里的 mf；9-2 起全体一张表、一条规矩）。
  *  光标在两个音之间 = 后面那个音的音头；在纸尾 = 前面那个音的尾。 */
-function dynAtCursor(role: string): { vel: number | null; dB: number } {
+function dynAtCursor(role: string): { vel: number; dB: number } {
   const tokens = tr(D.st), i = D.st.sel ? D.st.sel.from : D.st.caret, sp = activePerfSpec(D.extras, role);
   const pick = (m: Map<number, { at0: number; at1: number }>) => { for (let k = i; k < tokens.length; k++) { const l = m.get(k); if (l) return l.at0; } for (let k = Math.min(i, tokens.length) - 1; k >= 0; k--) { const l = m.get(k); if (l) return l.at1; } return null; };
-  const dB = pick(dynLevels(tokens, undefined, sp.dynamicsDb, sp.dynamicsDb.mf ?? 0, sp.wedgeStepDb ?? MARK_DEFAULTS.wedgeStepDb)) ?? 0;
-  const vel = sp.dynamicsVel ? pick(dynLevels(tokens, undefined, sp.dynamicsVel, activeVelocity(D.extras, role) * 127, sp.wedgeStepVel ?? MARK_DEFAULTS.wedgeStepVel)) : null;
-  return { vel: vel === null ? null : Math.max(1, Math.min(127, vel)) / 127, dB };
+  const step = sp.wedgeStepVel ?? MARK_DEFAULTS.wedgeStepVel, tab = sp.dynamicsVel;
+  const vel = pick(dynLevels(tokens, undefined, tab, activeVelocity(D.extras, role) * 127, step)) ?? activeVelocity(D.extras, role) * 127;
+  const dB = velocityDb(pick(dynLevels(tokens, undefined, tab, tab.mf, step)) ?? tab.mf);
+  return { vel: Math.max(1, Math.min(127, vel)) / 127, dB };
 }
 /** 按键试听现在该用谁出声：找人视图 = 试听台上的（GS 预设 / 月读元音）；谱上 = 光标所在那位（SoundFont 走库，别的走元音），走这条通道的增益 / 声像 + 光标处的力度。 */
 function auditionTarget(): { inst: AuditionInst; key: (midi: number) => number; vel: number; gainDb: number; pan: number } | null {
@@ -4272,10 +4274,10 @@ setTimeout(() => schedulePrewarm(), 1200);
 // 从链接打开（`?file=<链接>`）：开机恢复完再问；先把这一段从地址栏拿掉（刷新不再问，问了「算了」也不留着）
 { const raw = linkParam(location.href);
   if (raw) { history.replaceState(history.state, "", withoutLinkParam(location.href)); void openFromLink(raw); } }
-// 乐器的强弱改成 SoundFont 标准的放法（施工单第 9 节，2026-11-12；user「立刻最先修」）：更新之后第一次打开说一次（这台设备只说一次；不问、不留旧模式）
-if (deviceKvGet(KV_SF_VELOCITY_SAID) !== "1") {
-  deviceKvSet(KV_SF_VELOCITY_SAID, "1");
-  if (ranBefore) showNotice({ id: "sf-velocity", level: "info", text: _t("乐器的强弱改成了 SoundFont 标准的放法：音量按力度的平方走，强弱的差别是原来的两倍。最响的 fff 和原来一样，别的档比原来轻（mf 轻 4 dB），整首会变轻；旧歌的平衡要重新调。"),
+// 乐器和小月相的强弱改成 SoundFont 标准的放法（施工单第 9 节 / 9-2，2026-11-12；user「立刻最先修」「按照SoundFont对齐，然后小月相也应该对齐」）：更新之后第一次打开说一次（这台设备只说一次；不问、不留旧模式）
+if (deviceKvGet(KV_SF_VELOCITY_SAID) !== "2") {   // "1" = 第 9 节那一句（只说了乐器）；"2" = 9-2 两样一起说（看过 "1" 的设备再看一次合起来的）
+  deviceKvSet(KV_SF_VELOCITY_SAID, "2");
+  if (ranBefore) showNotice({ id: "sf-velocity", level: "info", text: _t("乐器和小月相的强弱都改成了 SoundFont 标准的放法：音量按力度的平方走。乐器：强弱的差别是原来的两倍，fff 和原来一样，别的档比原来轻（mf 轻 4 dB）。小月相和元音版也按这同一条曲线：和她的 mf 比，f 以上没原来那么响、p 和 pp 没原来那么轻，她的 mf 比原来轻 8 dB。整首会变轻，旧歌的平衡要重新调。"),
     actions: [{ label: _t("知道了"), primary: true, onClick: () => closeNotice("sf-velocity") }] });
 }
 void midi.resume();   // 浏览器记住了「允许」= 静默接上 MIDI 键盘（没记住不弹框，等顶栏「MIDI」或设置里点「连接」；W-42）   // 启动时打开的那首歌（歌库 / 上次的）也预热   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响

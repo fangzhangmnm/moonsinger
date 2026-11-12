@@ -56,7 +56,7 @@ export const soundfont = registerPerformer({
   audition: ({ extras, role, dyn, engine, ensureBank }) => {
     const g = activeGm(extras, role); if (!g) return null;
     if (!engine.hasBank(g.subsetSha256)) { ensureBank(); return null; }
-    return { inst: { kind: "sf", sha: g.subsetSha256, preset: engine.presetIndex(g.subsetSha256, g.bank, g.program) }, key: (m) => sfKey(m, g, activeTranspose(extras, role)), vel: dyn.vel ?? activeVelocity(extras, role), gainDb: dyn.vel === null ? dyn.dB : 0 };
+    return { inst: { kind: "sf", sha: g.subsetSha256, preset: engine.presetIndex(g.subsetSha256, g.bank, g.program) }, key: (m) => sfKey(m, g, activeTranspose(extras, role)), vel: dyn.vel, gainDb: 0 };   // 9-2：人人有力度表，都按力度敲（10-08 以前没带表的旧候选也是）
   },
   /** 乐器页「怎么演」里这位自己的行（原 main.ts drawInst 里按引擎能力 gate 的那几段，原样搬来；2026-10-15 刀 5 之一）。 */
   inspector: ({ extras, role, catalog, esc, chip, dynTable }) => {

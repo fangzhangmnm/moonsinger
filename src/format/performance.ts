@@ -6,9 +6,8 @@ import { CREDIT, SINGER, PACKS } from "../singer/packs.gen.ts";
 import { APP_VERSION } from "../version.ts";
 import type { Credit, Spec, Dynamic } from "./contract.ts";
 
-/** 力度字母 → dB（相对 mf = 0；§7.7 记号 ↔ 曲线的换算表，by value）。常见打谱软件的默认大致是每档 6 dB。 */
-//   ppp / fff（v0.9.23，2026-10-10 user「wishlist: ppp fff，以及帮我科普这些和db的换算关系，然后应该向用户揭露，方便对比」）：顺着一档 6 dB 往外推；旧演奏者的表里没有这两格 = 按它自己的间隔推（project.ts activePerfSpec）。
-export const DYNAMICS_DB: Record<Dynamic, number> = { ppp: -24, pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12, fff: 18 };
+// 力度 → 响度只有一条（施工单第 9 节 / 9-2，2026-11-12）：力度记号查力度表（DYNAMICS_VEL，全体演奏者一张）、响度 = 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）。
+//   原来小月相 / 元音版那张「力度字母 → dB」的表（每档 6 dB）和「走一档 = 6 dB」退役了；旧文件里按值存的由 lounge 迁移 2→3 删掉（migrate/index.ts）。
 /** 演奏法：跳音 / 保持各吃掉时值的多少（0–1）、重音加多少 dB。 */
 export const ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1.0, accentDb: 4 } as const;
 /** 记号怎么解读的其余的数（2026-10-08 Claude Opus 5.5；user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」「先看看记号承重能走多远」）：
@@ -19,7 +18,7 @@ export const MARK_DEFAULTS = {
   accentSec: 0.12,                  // 重音 / 强音：音头加重持续多久（秒；月读 / 元音版 / 旧乐器的 dB 那一路）
   breathSec: 0.16, breathShare: 0.25,   // 呼吸：前一个音收短多少（秒），最多占这个音的几分之几（元音版 / 乐器）
   gapShare: 0.25,                   // 连断底色的缝最多吃掉这个音的几分之几
-  wedgeStepDb: 6, wedgeStepVel: 16, // 渐强渐弱后面没写力度记号 = 走一档：dB 那一路 / 力度那一路各走多少
+  wedgeStepVel: 16,                 // 渐强渐弱后面没写力度记号 = 走一档：力度走多少（9-2 起全体一样）
   sfzDb: 9, sfzVel: 32, sfzSec: 0.2,     // 突强：音头比当下高多少（dB 那一路，sfzSec 里落回来）/ 力度那一路加多少
   fpSec: 0.2,                       // 强后即弱：音头按这位的 f，这么久落到 p（之后的音都是 p）
   arpeggioSec: 0.035,               // 琶音（v0.9.45 / v0.9.48）：旋律（最上面）准时落拍，下面的从低到高每个提早这么多秒（最多摊到这个音一半长）；35 ms = user 定的
@@ -34,9 +33,9 @@ export const SING_MARKS: Record<"staccato" | "accent" | "marcato" | "breath" | "
   staccato: { mark: "^", at: "next" }, accent: { mark: "^", at: "this" }, marcato: { mark: "^", at: "this" }, breath: { mark: "v", at: "next" },
   sfz: { mark: "^", at: "this" }, fp: { mark: "^", at: "this" },   // 音头那一组都顿一下（同重音，user「嗯重音也顿」）
 };
-/** 力度记号 → MIDI 力度（1–127）：SoundFont 演奏者 by value 带的表（2026-10-08 Claude Opus 5.5；user「应该send的就是velocity！」「力度就是velocity」
+/** 力度记号 → MIDI 力度（1–127）：全体演奏者 by value 带的表（9-2 起小月相 / 元音版也是；SoundFont 从 2026-10-08 Claude Opus 5.5 起；user「应该send的就是velocity！」「力度就是velocity」
  *  「mp mf 大于小于号这种，可以preliminary的控制力度。然后跳音强音重音也应该是这个」）。起点 = MuseScore 的经典默认值，好不好听归 user 耳朵。
- *  只给新建的 SoundFont 候选；旧候选没有这张表 = 照旧（力度记号走 dB、力度 0.8），旧歌逐样本不变。GS 很多音色按力度换录音层（仓鼠 v11 velLayers）。 */
+ *  新建候选都抄一份；旧候选没有这张表 = 用这张（9-2：不再有「没表就走 dB」那条路）。GS 很多音色按力度换录音层（仓鼠 v11 velLayers）。 */
 export const DYNAMICS_VEL: Record<Dynamic, number> = { ppp: 16, pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112, fff: 126 };   // ppp 16 / fff 126 = MuseScore 的经典值（v0.9.23）
 /** 重音 / 强音在力度上加多少（MIDI 格；SoundFont 这一路）。月读 / 元音版这一路是音头加 dB：重音 accentDb、强音 MARCATO_DB。 */
 export const ACCENT_VEL = 16, MARCATO_VEL = 28, MARCATO_DB = 7;

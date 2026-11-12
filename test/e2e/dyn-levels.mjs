@@ -20,12 +20,13 @@ check((await p.$$eval("#score text", (ts) => ts.some((t) => t.textContent === "\
 // MusicXML 原生往返
 const xml = await p.evaluate(() => { const m = window.__moonsinger, id = m.state().song.papers[0].id; return m.zipText(m.bytes(), `.moonsinger/papers/${id}.musicxml`); });
 check(xml.includes("<dynamics><fff/></dynamics>"), "MusicXML 写成原生的 <fff/>");
-// 乐器页「力度」那一行（月读 = 音量 dB 那张表，八列）
+// 乐器页「力度」那一行（9-2 起小月相和乐器同一张表：MIDI 力度 + 响度 dB = 40·log10(力度 ÷ 127)，八列）
 await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(100);
 await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300);
 const tab = await p.evaluate(() => { const t = document.querySelector(".dyn-tab"); if (!t) return null; const rows = [...t.querySelectorAll("tr")].map((r) => [...r.children].map((c) => c.textContent.trim())); return rows; });
 check(!!tab && tab[0].length === 9, "乐器页有力度换算表（ppp…fff 八列）", JSON.stringify(tab));
-check(!!tab && tab[1][0] === "音量 dB" && tab[1][1] === "−24" && tab[1][8] === "+18", "月读：音量 dB（ppp −24 … fff +18，一档 6 dB）", JSON.stringify(tab?.[1]));
+check(!!tab && tab[1][0] === "MIDI 力度" && tab[1][1] === "16" && tab[1][8] === "126", "小月相：力度表（ppp 16 … fff 126，和乐器同一张）", JSON.stringify(tab?.[1]));
+check(!!tab && tab[2][0] === "响度 dB" && tab[2][1] === "−36" && tab[2][5] === "−8" && tab[2][8] === "−0.1", "小月相：响度 = 40·log10(力度 ÷ 127)（ppp −36 … mf −8 … fff −0.1）", JSON.stringify(tab?.[2]));
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();

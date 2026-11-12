@@ -3733,10 +3733,8 @@ var S = {
   "\uFF08\u771F\u4EBA\u6E10\u5F31\u4F1A\u53D8\u865A\u3001\u53D8\u6697\uFF0C\u8FD9\u4E2A\u8FD8\u6CA1\u6709\uFF09": { en: " (a real singer's diminuendo gets airier and darker; not modeled yet)" },
   "\u529B\u5EA6\u600E\u4E48\u53D8": { en: "How dynamics change" },
   "\u529B\u5EA6\u8868\uFF1A{string}": { en: "Dynamics table: {string}" },
-  "\u97F3\u91CF\uFF1A{dynamicsDb}": { en: "Volume: {dynamicsDb}" },
   "\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9": { en: "Crescendo / diminuendo with no endpoint" },
   "\u8D70\u4E00\u6863 = \u529B\u5EA6 {wedgeStepVel}": { en: "One step = velocity {wedgeStepVel}" },
-  "\u8D70\u4E00\u6863 = {wedgeStepDb}": { en: "One step = {wedgeStepDb}" },
   "\u5E7D\u7075\u97F3": { en: "Ghost note" },
   "\u529B\u5EA6 {ghostVel}": { en: "Velocity {ghostVel}" },
   "\u6574\u4E2A\u97F3 {ghostDb}": { en: "Whole note {ghostDb}" },
@@ -3786,7 +3784,6 @@ var S = {
   "\u8FD9\u4EF6\u4E50\u5668\uFF1A{what}": { en: "Instrument: {what}" },
   "\u7B2C\u4E8C\u884C\u8D77\u5199 {ab}": { en: "from the 2nd system: {ab}" },
   "MIDI \u529B\u5EA6": { en: "MIDI velocity" },
-  "\u97F3\u91CF dB": { en: "Volume dB" },
   "\u7B2C\u51E0\u4EFD\u5F55\u97F3": { en: "Recording #" },
   "\u54CD\u5EA6 dB": { en: "Loudness dB" },
   "\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08{n}\uFF09{library}": { en: "Sound embedded in the song ({n}){library}" },
@@ -3814,7 +3811,7 @@ var S = {
   "\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09": { en: "Faster roll (2 more hits per second)" },
   "\u56DE\u5230\u8FD9\u4EF6\u4E50\u5668\u7684\u9ED8\u8BA4": { en: "Back to this instrument's default" },
   "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF0C\u529B\u5EA6\u8DDF\u7740\u5F53\u65F6\u7684\u529B\u5EA6\u548C\u6E10\u5F3A\u6E10\u5F31\u8D70\u3002\u9ED8\u8BA4\uFF1A\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\u3001\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": { en: "A note with three slashes on its stem is a roll: the whole note is filled at this rate, following the current dynamic and hairpins. Defaults (per second): snare 20, cymbals 14, kick 12, other drums 16, pitched 14." },
-  "\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A{extras}": { en: "Dynamics = volume (relative to mf, dB); one step of 6 dB \u2248 double / half the amplitude. Dynamics have no standard dB value: they're relative, and each performer carries a table. This performer's: {extras}" },
+  "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u6807\u51C6\uFF1A\u54CD\u5EA6 = 40\xB7log10(\u529B\u5EA6 \xF7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\uFF1B\u8FD9\u4F4D\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}": { en: "Dynamic mark \u2192 velocity \u2192 loudness, by the same rule as the instruments (the SoundFont standard: loudness = 40\xB7log10(velocity \xF7 127), full velocity = 0 dB); this performer has no recorded layers, only loudness changes: {extras}" },
   "\u54FC\u7684\u5B57": { en: "Hum syllable" },
   "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09": { en: "What notes without lyrics sing (one for the whole song)" },
   "\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE": { en: "Advanced: singing core knobs" },
@@ -4389,7 +4386,7 @@ var S = {
   "\u91CD\u4E00\u70B9\uFF08+8\uFF09": { en: "A little harder (+8)" },
   "\u56DE\u5230 {def}": { en: "Back to {def}" },
   "\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002\u97F3\u91CF = \u529B\u5EA6\u7684\u5E73\u65B9\uFF08SoundFont \u89C4\u8303\uFF1B\u6EE1\u529B\u5EA6 127 = 0 dB\uFF0C\u529B\u5EA6\u51CF\u534A = \u8F7B 12 dB\uFF09\u3002{dynamicsVel}{L}": { en: "Notes without a dynamic use this velocity (MIDI 1\u2013127). Volume = velocity squared (the SoundFont standard; full velocity 127 = 0 dB, half the velocity = 12 dB quieter). {dynamicsVel}{L}" },
-  "\u4E50\u5668\u7684\u5F3A\u5F31\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\uFF0C\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\u3002\u6700\u54CD\u7684 fff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\uFF0C\u6574\u9996\u4F1A\u53D8\u8F7B\uFF1B\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002": { en: "Instruments now follow the SoundFont standard for dynamics: volume goes with velocity squared, so loud and soft differ twice as much as before. fff is as loud as it was; every other level is quieter (mf is 4 dB quieter), so whole songs get quieter. Older songs need their balance redone." },
+  "\u4E50\u5668\u548C\u5C0F\u6708\u76F8\u7684\u5F3A\u5F31\u90FD\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\u3002\u4E50\u5668\uFF1A\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\uFF0Cfff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\u3002\u5C0F\u6708\u76F8\u548C\u5143\u97F3\u7248\u4E5F\u6309\u8FD9\u540C\u4E00\u6761\u66F2\u7EBF\uFF1A\u548C\u5979\u7684 mf \u6BD4\uFF0Cf \u4EE5\u4E0A\u6CA1\u539F\u6765\u90A3\u4E48\u54CD\u3001p \u548C pp \u6CA1\u539F\u6765\u90A3\u4E48\u8F7B\uFF0C\u5979\u7684 mf \u6BD4\u539F\u6765\u8F7B 8 dB\u3002\u6574\u9996\u4F1A\u53D8\u8F7B\uFF0C\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002": { en: "Instruments and Tsukuyomi-chan now both follow the SoundFont standard for dynamics: volume goes with velocity squared. Instruments: loud and soft differ twice as much as before; fff is as loud as it was, every other level is quieter (mf is 4 dB quieter). Tsukuyomi-chan and the vowel version follow the same curve: compared with her mf, f and above are less loud and p and pp are less soft than before, and her mf is 8 dB quieter than it was. Whole songs get quieter; older songs need their balance redone." },
   "\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{L}": { en: "Dynamics follow this performer's velocity table (accent +{accentVel}, marcato +{marcatoVel}; for other marks see \u201CHow marks are performed\u201D below): {L}" },
   "\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A{p}": { en: "This performer came on stage earlier: dynamics still only change volume: {p}" },
   "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 {count} \u4E2A\u529B\u5EA6\u5C42{p}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002": { en: "This GS sound has {count} velocity layers{p}: crossing a layer = a different recording, so timbre changes, not just loudness." },
@@ -5785,7 +5782,6 @@ function swellOf(t10) {
   return t10.art.includes("swellUp") ? "<" : t10.art.includes("swellDown") ? ">" : t10.art.includes("swellBoth") ? "<>" : void 0;
 }
 var DYNS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
-var DEFAULT_DYN = "mf";
 var CLEFS = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
 var SPLIT_MIDI = 60;
 var DEFAULT_KEY = 0;
@@ -12096,7 +12092,6 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/format/performance.ts
-var DYNAMICS_DB = { ppp: -24, pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12, fff: 18 };
 var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
 var ROLL_HZ_MIN = 4;
 var ROLL_HZ_MAX = 40;
@@ -12108,9 +12103,8 @@ var MARK_DEFAULTS = {
   // 呼吸：前一个音收短多少（秒），最多占这个音的几分之几（元音版 / 乐器）
   gapShare: 0.25,
   // 连断底色的缝最多吃掉这个音的几分之几
-  wedgeStepDb: 6,
   wedgeStepVel: 16,
-  // 渐强渐弱后面没写力度记号 = 走一档：dB 那一路 / 力度那一路各走多少
+  // 渐强渐弱后面没写力度记号 = 走一档：力度走多少（9-2 起全体一样）
   sfzDb: 9,
   sfzVel: 32,
   sfzSec: 0.2,
@@ -12157,59 +12151,57 @@ var SOUNDFONT_SPEC = { kind: "standard", name: "SoundFont", version: "2.04" };
 var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
 
 // src/score/perform.ts
-var DEFAULT_DYN_KEY = DEFAULT_DYN;
 var M = MARK_DEFAULTS;
-function gainSegments(tokens, map, spec, bounds, groove) {
+var velocityDb = (vel) => 40 * Math.log10(Math.max(1, Math.min(127, vel)) / 127);
+function gainSegments(tokens, map, spec, bounds, groove, byVelocity = false) {
   const segs = [];
   let any = false;
-  const vel = !!spec.dynamicsVel;
-  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, spec.wedgeStepDb ?? M.wedgeStepDb, bounds);
-  const ramp = (a10, b3, s02, s12) => {
-    const n10 = Math.max(1, Math.min(32, Math.ceil((s12 - s02) / 0.03)));
-    for (let k2 = 0; k2 < n10; k2++) segs.push({ t0: s02 + (s12 - s02) * k2 / n10, t1: s02 + (s12 - s02) * (k2 + 1) / n10, dB: a10 + (b3 - a10) * (k2 + 0.5) / n10 });
+  const vel = byVelocity, tab = spec.dynamicsVel;
+  const levels = vel ? null : dynLevels(tokens, map, tab, tab.mf, spec.wedgeStepVel ?? M.wedgeStepVel, bounds);
+  const lv2 = (v) => v === null ? 0 : velocityDb(v);
+  const level = (va, vb, s02, s12, off, add, fine = false) => {
+    const n10 = fine ? Math.max(2, Math.min(48, Math.ceil((s12 - s02) / 0.03))) : Math.max(1, Math.min(32, Math.ceil((s12 - s02) / 0.03)));
+    for (let k2 = 0; k2 < n10; k2++) {
+      const a10 = s02 + (s12 - s02) * k2 / n10, b3 = s02 + (s12 - s02) * (k2 + 1) / n10, m2 = (a10 + b3) / 2, fs = fine ? (m2 - s02) / Math.max(1e-9, s12 - s02) : (k2 + 0.5) / n10;
+      segs.push({ t0: a10, t1: b3, dB: lv2(va === null ? null : va + ((vb ?? va) - va) * fs) + off + (add ? add(m2) : 0) });
+    }
   };
   for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
     const gw = vel ? 0 : groove?.get(index) ?? 0;
     const L2 = levels?.get(index), soft = tok.kind === "note" && !vel ? artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : gw < 0 ? -gw * (spec.unstressDb ?? M.unstressDb) : 0 : 0;
-    const base2 = (L2 ? L2.at0 : 0) + soft, baseEnd = (L2 ? L2.at1 : 0) + soft;
+    const v0 = L2 ? L2.at0 : null, v1 = L2 ? L2.at1 : null;
+    const base2 = lv2(v0) + soft, baseEnd = lv2(v1) + soft;
     if (base2 !== 0 || baseEnd !== 0) any = true;
     if (tok.kind !== "note") {
-      if (baseEnd !== base2) ramp(base2, baseEnd, t02, t12);
+      if (v1 !== v0) level(v0, v1, t02, t12, soft);
       else segs.push({ t0: t02, t1: t12, dB: base2 });
       continue;
     }
     const art2 = artOf(tok);
     let cur = t02;
     const sw0 = swellOf(tok), sw2 = sw0 && !(spec.canSwell === false && sw0 !== ">") ? sw0 : null, D4 = spec.swellDb ?? M.swellDb;
-    const swOff = (fr) => sw2 === "<" ? -D4 * (1 - fr) : sw2 === ">" ? -D4 * fr : sw2 === "<>" ? -D4 * Math.abs(2 * fr - 1) : 0;
-    const shaped = (a02, a12, s02, s12) => {
-      const n10 = Math.max(2, Math.min(48, Math.ceil((s12 - s02) / 0.03)));
-      for (let k2 = 0; k2 < n10; k2++) {
-        const a10 = s02 + (s12 - s02) * k2 / n10, b3 = s02 + (s12 - s02) * (k2 + 1) / n10, m2 = (a10 + b3) / 2, fr = (m2 - t02) / Math.max(1e-9, t12 - t02), fs = (m2 - s02) / Math.max(1e-9, s12 - s02);
-        segs.push({ t0: a10, t1: b3, dB: a02 + (a12 - a02) * fs + swOff(fr) });
-      }
-      any = true;
+    const swOff = (m2) => {
+      const fr = (m2 - t02) / Math.max(1e-9, t12 - t02);
+      return sw2 === "<" ? -D4 * (1 - fr) : sw2 === ">" ? -D4 * fr : sw2 === "<>" ? -D4 * Math.abs(2 * fr - 1) : 0;
     };
     if (art2.includes("fp")) {
-      const f2 = spec.dynamicsDb.f ?? 6, p2 = spec.dynamicsDb.p ?? -12, e10 = Math.min(t12, t02 + (spec.fpSec ?? M.fpSec));
-      if (vel) ramp(0, p2 - f2, t02, e10);
-      else ramp(f2, p2, t02, e10);
+      const f2 = tab.f, p2 = tab.p, e10 = Math.min(t12, t02 + (spec.fpSec ?? M.fpSec)), off = vel ? -velocityDb(f2) : 0;
+      level(f2, p2, t02, e10, off);
       if (t12 > e10) {
-        const lo2 = vel ? p2 - f2 : p2, hi = vel ? 0 : f2;
-        if (sw2 === "<") ramp(lo2, hi, e10, t12);
+        if (sw2 === "<") level(p2, f2, e10, t12, off);
         else if (sw2 === "<>") {
           const m2 = (e10 + t12) / 2;
-          ramp(lo2, hi, e10, m2);
-          ramp(hi, lo2, m2, t12);
-        } else if (sw2) shaped(lo2, lo2, e10, t12);
-        else segs.push({ t0: e10, t1: t12, dB: lo2 });
+          level(p2, f2, e10, m2, off);
+          level(f2, p2, m2, t12, off);
+        } else if (sw2) level(p2, p2, e10, t12, off, swOff, true);
+        else segs.push({ t0: e10, t1: t12, dB: velocityDb(p2) + off });
       }
       any = true;
       continue;
     }
     if (art2.includes("sfz") && !vel) {
-      const e10 = Math.min(t12, t02 + (spec.sfzSec ?? M.sfzSec)), b3 = spec.sfzDb ?? M.sfzDb;
-      ramp(base2 + b3, baseEnd === base2 ? base2 : base2 + (baseEnd - base2) * (e10 - t02) / Math.max(1e-9, t12 - t02), t02, e10);
+      const e10 = Math.min(t12, t02 + (spec.sfzSec ?? M.sfzSec)), b3 = spec.sfzDb ?? M.sfzDb, ve = v0 === null ? null : v0 + ((v1 ?? v0) - v0) * ((e10 - t02) / Math.max(1e-9, t12 - t02));
+      level(v0, ve, t02, e10, soft, (m2) => b3 * (1 - (m2 - t02) / Math.max(1e-9, e10 - t02)));
       cur = e10;
       any = true;
     }
@@ -12221,9 +12213,11 @@ function gainSegments(tokens, map, spec, bounds, groove) {
       any = true;
     }
     if (t12 > cur) {
-      const a02 = base2 + (baseEnd - base2) * (cur - t02) / Math.max(1e-9, t12 - t02);
-      if (sw2) shaped(a02, baseEnd, cur, t12);
-      else if (baseEnd !== base2) ramp(a02, baseEnd, cur, t12);
+      const va = v0 === null ? null : v0 + ((v1 ?? v0) - v0) * ((cur - t02) / Math.max(1e-9, t12 - t02));
+      if (sw2) {
+        level(va, v1, cur, t12, soft, swOff, true);
+        any = true;
+      } else if (v1 !== va) level(va, v1, cur, t12, soft);
       else segs.push({ t0: cur, t1: t12, dB: base2 });
     }
   }
@@ -12320,12 +12314,6 @@ function dynOverridden(tokens, bounds) {
 }
 function noteVelocities(tokens, map, spec, defaultVel, bounds, groove) {
   const out = /* @__PURE__ */ new Map();
-  if (!spec.dynamicsVel) {
-    tokens.forEach((t10, i10) => {
-      if (t10.kind === "note") out.set(i10, defaultVel);
-    });
-    return out;
-  }
   for (const [i10, l10] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel, bounds)) {
     const t10 = tokens[i10];
     if (t10.kind === "note") out.set(i10, noteVel(l10.at0, artOf(t10), spec, groove?.get(i10) ?? 0));
@@ -12333,7 +12321,7 @@ function noteVelocities(tokens, map, spec, defaultVel, bounds, groove) {
   return out;
 }
 var noteVel = (v, art2, spec, gw = 0) => {
-  if (art2.includes("fp")) v = spec.dynamicsVel?.f ?? v;
+  if (art2.includes("fp")) v = spec.dynamicsVel.f;
   else if (art2.includes("sfz")) v += spec.sfzVel ?? M.sfzVel;
   else if (art2.includes("marcato")) v += spec.marcatoVel ?? 0;
   else if (art2.includes("accent")) v += spec.accentVel ?? 0;
@@ -33133,15 +33121,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-715d0db234b9.mjs");
+      return pick(() => "singer-worker-6a81d4bf31e5.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c332a92b253e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-e26d4272a183.mjs");
+      return pick(() => "layout-worker-9faf432db13b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-2831cb51d267.mjs");
+      return pick(() => "encode-worker-c41e646b7693.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35581,8 +35569,8 @@ function readMusicXml(xml, hints) {
 }
 
 // src/format/contract.ts
-var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
-var FORMAT_MINOR = { manifest: 1, score: 7, lounge: 1, studio: 1 };
+var FORMAT = { manifest: 2, score: 2, lounge: 3, studio: 2 };
+var FORMAT_MINOR = { manifest: 1, score: 7, lounge: 0, studio: 1 };
 var FORMAT_PATCH = { manifest: 1, score: 0, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
@@ -35777,10 +35765,23 @@ function studioV1toV2(json) {
     master: { gainDb: Number(m2.gainDb ?? 0), limiter: m2.limiter === void 0 ? true : !!m2.limiter, chain: [] }
   };
 }
+function loungeV2toV3(json) {
+  const cs2 = json.candidates;
+  if (!Array.isArray(cs2)) return json;
+  return { ...json, candidates: cs2.map((c02) => {
+    if (!c02 || typeof c02 !== "object" || Array.isArray(c02)) return c02;
+    const { dynamicsDb: _d, ...c10 } = c02, a10 = c10.articulation;
+    if (a10 && typeof a10 === "object" && !Array.isArray(a10) && "wedgeStepDb" in a10) {
+      const { wedgeStepDb: _w, ...ar2 } = a10;
+      return { ...c10, articulation: ar2 };
+    }
+    return c10;
+  }) };
+}
 var MIGRATIONS2 = {
   manifest: [manifestV1toV2],
   score: [scoreV1toV2],
-  lounge: [loungeV1toV2],
+  lounge: [loungeV1toV2, loungeV2toV3],
   studio: [studioV1toV2]
 };
 function migrate(kind, json) {
@@ -35879,7 +35880,7 @@ var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], t
 var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 var withThumbnail = (extras, png) => ({ ...extras, thumbnail: png });
 var CANDIDATE_ID = { full: "c1", light: "c2" };
-var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });
+var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsVel: { ...DYNAMICS_VEL }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });
 function defaultRole(hum, id2) {
   return { version: FORMAT.lounge, id: id2, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
     { id: CANDIDATE_ID.full, name: _t("\u5C0F\u6708\u76F8"), instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), sing: structuredClone(SING_MARKS), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
@@ -36447,7 +36448,7 @@ function withUnpacked(extras, only) {
   return changed2 ? { extras: pruneSounds({ ...extras, lounge }), removed } : { extras, removed };
 }
 function activePerfSpec(extras, role) {
-  const c10 = activeCandidate(extras, role), d3 = c10?.dynamicsDb ?? {}, a10 = c10?.articulation ?? {};
+  const c10 = activeCandidate(extras, role), a10 = c10?.articulation ?? {};
   const num2 = (v, dflt2) => typeof v === "number" && Number.isFinite(v) ? v : dflt2;
   const ladder = (got2, dflt2, clamp3 = (v) => v) => {
     const o10 = {};
@@ -36456,9 +36457,7 @@ function activePerfSpec(extras, role) {
     o10.fff = clamp3(num2(got2.fff, o10.ff + (o10.ff - o10.f)));
     return o10;
   };
-  const dynamicsDb = ladder(d3, DYNAMICS_DB);
   return {
-    dynamicsDb,
     staccatoGate: Math.max(0.05, Math.min(1, num2(a10.staccatoGate, ARTICULATION.staccatoGate))),
     accentDb: num2(a10.accentDb, ARTICULATION.accentDb),
     gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num2(a10.gapSec, 0))),
@@ -36469,7 +36468,6 @@ function activePerfSpec(extras, role) {
     breathSec: Math.max(0, num2(a10.breathSec, MARK_DEFAULTS.breathSec)),
     breathShare: Math.max(0, Math.min(1, num2(a10.breathShare, MARK_DEFAULTS.breathShare))),
     gapShare: Math.max(0, Math.min(1, num2(a10.gapShare, MARK_DEFAULTS.gapShare))),
-    wedgeStepDb: num2(a10.wedgeStepDb, MARK_DEFAULTS.wedgeStepDb),
     wedgeStepVel: num2(a10.wedgeStepVel, MARK_DEFAULTS.wedgeStepVel),
     sfzDb: num2(a10.sfzDb, MARK_DEFAULTS.sfzDb),
     sfzVel: num2(a10.sfzVel, MARK_DEFAULTS.sfzVel),
@@ -36486,7 +36484,7 @@ function activePerfSpec(extras, role) {
     sing: { ...SING_MARKS, ...c10?.sing ?? {} },
     rollHz: typeof a10.rollHz === "number" && Number.isFinite(a10.rollHz) ? Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, a10.rollHz)) : null,
     // 滚奏每秒几下（v0.16.64）；没写 = 按乐器默认
-    dynamicsVel: c10?.dynamicsVel ? ladder(c10.dynamicsVel, DYNAMICS_VEL, (v) => Math.max(1, Math.min(127, v))) : null
+    dynamicsVel: c10?.dynamicsVel ? ladder(c10.dynamicsVel, DYNAMICS_VEL, (v) => Math.max(1, Math.min(127, v))) : { ...DYNAMICS_VEL }
   };
 }
 var GAP_MAX_SEC = 0.2;
@@ -39308,7 +39306,8 @@ function buildTimeline(inp) {
       continue;
     }
     const groove = grooveWeights(tokens, bounds, gmap, info2.follow);
-    const gain = gainSegments(tokens, map, info2.spec, bounds, groove);
+    const byVel = info2.plugin.dynamics === "velocity";
+    const gain = gainSegments(tokens, map, info2.spec, bounds, groove, byVel);
     if (info2.plugin.sound === "chunks") {
       const plan = sungPlan(tokens, map, bounds, info2.chunk, hum);
       const noteAt = (a10) => tl2.find((x2) => x2.index >= a10 && x2.tok.kind === "note")?.t0 ?? 0;
@@ -39329,10 +39328,10 @@ function buildTimeline(inp) {
       tracks.push(clips);
       continue;
     }
-    const vels = noteVelocities(tokens, map, info2.spec, info2.velocity, bounds, groove);
+    const vels = byVel ? noteVelocities(tokens, map, info2.spec, info2.velocity, bounds, groove) : null;
     const percKey = (m2) => info2.gm?.note !== void 0 ? info2.gm.note : info2.hitSec ? m2 : null;
     const rollHz = info2.plugin.honors.includes("roll") ? (m2) => info2.spec.rollHz ?? rollDefaultHz(percKey(m2)) : void 0;
-    const notes = lightNotes(tokens, map, info2.plugin.poly, { ...lightMarks(info2.spec), ...rollHz ? { rollHz } : {} }, (i10) => vels.get(i10) ?? info2.velocity);
+    const notes = lightNotes(tokens, map, info2.plugin.poly, { ...lightMarks(info2.spec), ...rollHz ? { rollHz } : {} }, (i10) => vels?.get(i10) ?? info2.velocity);
     const built = info2.plugin.track?.({ id: part.id, notes, gain, ...info2.chain?.length ? { chain: info2.chain } : {}, hum, info: info2 });
     if (!built) {
       unplayable.push({ part: part.id, why: _t("\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0", { label: info2.plugin.label }) });
@@ -39735,7 +39734,7 @@ var soundfont = registerPerformer({
       ensureBank();
       return null;
     }
-    return { inst: { kind: "sf", sha: g3.subsetSha256, preset: engine2.presetIndex(g3.subsetSha256, g3.bank, g3.program) }, key: (m2) => sfKey(m2, g3, activeTranspose(extras, role)), vel: dyn.vel ?? activeVelocity(extras, role), gainDb: dyn.vel === null ? dyn.dB : 0 };
+    return { inst: { kind: "sf", sha: g3.subsetSha256, preset: engine2.presetIndex(g3.subsetSha256, g3.bank, g3.program) }, key: (m2) => sfKey(m2, g3, activeTranspose(extras, role)), vel: dyn.vel, gainDb: 0 };
   },
   /** 乐器页「怎么演」里这位自己的行（原 main.ts drawInst 里按引擎能力 gate 的那几段，原样搬来；2026-10-15 刀 5 之一）。 */
   inspector: ({ extras, role, catalog, esc: esc12, chip: chip2, dynTable }) => {
@@ -41740,12 +41739,12 @@ function createInstSettings(el2, h2) {
       const m2 = sp2.sing[k2];
       return m2 ? _t("{p}\u524D\u300C{mark}\u300D{p2}", { p: m2.at === "next" ? _t("\u4E0B\u4E00\u4E2A\u5B57") : _t("\u8FD9\u4E2A\u5B57"), mark: m2.mark, p2: m2.mark === "^" ? _t("\uFF08\u987F\u4E00\u4E0B\uFF0C\u4E0D\u6362\u6C14\uFF09") : m2.mark === "v" ? _t("\uFF08\u6362\u6C14\uFF09") : _t("\uFF08\u5927\u53E3\u6362\u6C14\uFF09") }) : _t("\u4E0D\u53D8\u6210\u5531\u6CD5\u8BB0\u53F7");
     };
-    const vel = !!sp2.dynamicsVel;
+    const vel = performerOf(eng)?.dynamics === "velocity";
     const how = vel ? _t("\u6309\u4E0B\u90A3\u4E00\u4E0B\u7684\u8F7B\u91CD\uFF08MIDI \u529B\u5EA6\uFF09\uFF1A\u6E10\u5F3A\u6E10\u5F31 = \u6BCF\u4E2A\u65B0\u97F3\u4E00\u4E2A\u53F0\u9636\uFF0C\u6309\u4F4F\u7684\u97F3\u4E2D\u95F4\u4E0D\u53D8\uFF1B\u4E00\u4E2A\u97F3\u91CC\u9762\u8981\u53D8\uFF0C\u7528\u97F3\u5185\u8D77\u4F0F{canSwell}", { canSwell: sp2.canSwell ? "" : _t("\uFF08\u8FD9\u4EF6\u4E50\u5668\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF1A\u97F3\u5185\u53EA\u80FD\u53D8\u5F31\uFF09") }) : _t("\u4E00\u6761\u8FDE\u7EED\u7684\u97F3\u91CF\u66F2\u7EBF\uFF08\u4E58\u5728{sung}\u51FA\u6765\u7684\u58F0\u97F3\u4E0A\uFF09\uFF1A\u6E10\u5F3A\u6E10\u5F31\u5728\u4E00\u4E2A\u957F\u97F3\u4E2D\u95F4\u4E5F\u4E00\u76F4\u5728\u53D8\uFF0C\u548C\u97F3\u5185\u8D77\u4F0F\u662F\u540C\u4E00\u79CD\u53D8\u6CD5\uFF1B\u53EA\u53D8\u54CD\u5EA6\u3001\u4E0D\u53D8\u97F3\u8272{sung2}", { sung: sung ? _t("\u5531##\u51FA\u58F0") : _t("\u5F39##\u51FA\u58F0"), sung2: sung ? _t("\uFF08\u771F\u4EBA\u6E10\u5F31\u4F1A\u53D8\u865A\u3001\u53D8\u6697\uFF0C\u8FD9\u4E2A\u8FD8\u6CA1\u6709\uFF09") : "" });
     const rows = [
       [_t("\u529B\u5EA6\u600E\u4E48\u53D8"), "", how],
-      [_t("\u529B\u5EA6\u8BB0\u53F7"), "", vel ? _t("\u529B\u5EA6\u8868\uFF1A{string}", { string: Object.entries(sp2.dynamicsVel).map(([d3, x2]) => `${d3} ${x2}`).join(" \xB7 ") }) : _t("\u97F3\u91CF\uFF1A{dynamicsDb}", { dynamicsDb: Object.entries(sp2.dynamicsDb).map(([d3, x2]) => `${d3} ${db(x2)}`).join(" \xB7 ") })],
-      [_t("\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9"), "", vel ? _t("\u8D70\u4E00\u6863 = \u529B\u5EA6 {wedgeStepVel}", { wedgeStepVel: sp2.wedgeStepVel }) : _t("\u8D70\u4E00\u6863 = {wedgeStepDb}", { wedgeStepDb: db(sp2.wedgeStepDb) })],
+      [_t("\u529B\u5EA6\u8BB0\u53F7"), "", _t("\u529B\u5EA6\u8868\uFF1A{string}", { string: Object.entries(sp2.dynamicsVel).map(([d3, x2]) => `${d3} ${x2}`).join(" \xB7 ") })],
+      [_t("\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9"), "", _t("\u8D70\u4E00\u6863 = \u529B\u5EA6 {wedgeStepVel}", { wedgeStepVel: sp2.wedgeStepVel })],
       [_t("\u5E7D\u7075\u97F3"), "ghost", vel ? _t("\u529B\u5EA6 {ghostVel}", { ghostVel: sp2.ghostVel }) : _t("\u6574\u4E2A\u97F3 {ghostDb}", { ghostDb: db(sp2.ghostDb) })],
       [_t("\u5F31\u5316"), "unstress", vel ? _t("\u529B\u5EA6 {unstressVel}", { unstressVel: sp2.unstressVel }) : _t("\u6574\u4E2A\u97F3 {unstressDb}", { unstressDb: db(sp2.unstressDb) })],
       [_t("\u6B21\u91CD\u97F3"), "stress", vel ? _t("\u529B\u5EA6 +{stressVel}", { stressVel: sp2.stressVel }) : _t("\u97F3\u5934 {accentSec} {stressDb}", { accentSec: ms(sp2.accentSec), stressDb: db(sp2.stressDb) })],
@@ -41799,7 +41798,7 @@ function createInstSettings(el2, h2) {
     const db = (x2) => `${x2 > 0 ? "+" : x2 < 0 ? "\u2212" : ""}${Math.abs(x2)}`;
     const cells = (f2) => DYNS.map((d3) => `<td>${f2(d3)}</td>`).join("");
     const vel = sp2.dynamicsVel;
-    return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d3) => `<th title="${d3}"><span class="smufl">${DYN_GLYPH[d3]}</span></th>`).join("")}</tr>` + (vel ? `<tr><th>${_t("MIDI \u529B\u5EA6")}</th>${cells((d3) => String(vel[d3]))}</tr><tr><th>${_t("\u54CD\u5EA6 dB")}</th>${cells((d3) => db(Math.round(40 * Math.log10(vel[d3] / 127) * 10) / 10))}</tr>` : `<tr><th>${_t("\u97F3\u91CF dB")}</th>${cells((d3) => db(sp2.dynamicsDb[d3]))}</tr>`) + (vel && layers && layers.count > 1 ? `<tr><th>${_t("\u7B2C\u51E0\u4EFD\u5F55\u97F3")}</th>${cells((d3) => {
+    return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d3) => `<th title="${d3}"><span class="smufl">${DYN_GLYPH[d3]}</span></th>`).join("")}</tr><tr><th>${_t("MIDI \u529B\u5EA6")}</th>${cells((d3) => String(vel[d3]))}</tr><tr><th>${_t("\u54CD\u5EA6 dB")}</th>${cells((d3) => db(Math.round(velocityDb(vel[d3]) * 10) / 10))}</tr>` + (layers && layers.count > 1 ? `<tr><th>${_t("\u7B2C\u51E0\u4EFD\u5F55\u97F3")}</th>${cells((d3) => {
       const k2 = layers.ranges.findIndex(([lo2, hi]) => vel[d3] >= lo2 && vel[d3] <= hi);
       return k2 >= 0 ? String(k2 + 1) : "\u2013";
     })}</tr>` : "") + `</table>`;
@@ -41835,7 +41834,7 @@ function createInstSettings(el2, h2) {
       `<b class="ip-val">${esc6(set !== null ? _t("\u6BCF\u79D2 {n} \u4E0B", { n: set }) : d3 !== null ? _t("\u6BCF\u79D2 {n} \u4E0B", { n: d3 }) : _t("\u6309\u9F13\u4EF6"))}</b><button class="btn" data-v="roll:-2" title="${_t("\u6EDA\u594F\u7A00\u4E00\u70B9\uFF08\u6BCF\u79D2\u5C11 2 \u4E0B\uFF09")}">\u22122</button><button class="btn" data-v="roll:2" title="${_t("\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09")}">+2</button>` + (set !== null ? `<button class="btn" data-v="roll:def" title="${_t("\u56DE\u5230\u8FD9\u4EF6\u4E50\u5668\u7684\u9ED8\u8BA4")}">${_t("\u9ED8\u8BA4")}</button>` : ""),
       _t("\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF0C\u529B\u5EA6\u8DDF\u7740\u5F53\u65F6\u7684\u529B\u5EA6\u548C\u6E10\u5F3A\u6E10\u5F31\u8D70\u3002\u9ED8\u8BA4\uFF1A\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\u3001\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002")
     ))(activePerfSpec(h2.extras(), role).rollHz, rollDefaultOf(role)) : "") + ownMain.map(rowOf).join("") + // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
-    (plug?.dynamics === "gain" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), "", _t("\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A{extras}", { extras: dynTable(activePerfSpec(h2.extras(), role), null) })) : "") + ((plug?.lyrics ?? "none") !== "none" ? row2(_t("\u54FC\u7684\u5B57"), HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, hum === v)).join(""), _t("\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09")) : "") + (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") + ownTail.map(rowOf).join("") + (!plug ? row2("", "", _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")) : "");
+    (plug?.dynamics === "gain" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), "", _t("\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u6807\u51C6\uFF1A\u54CD\u5EA6 = 40\xB7log10(\u529B\u5EA6 \xF7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\uFF1B\u8FD9\u4F4D\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}", { extras: dynTable(activePerfSpec(h2.extras(), role), null) })) : "") + ((plug?.lyrics ?? "none") !== "none" ? row2(_t("\u54FC\u7684\u5B57"), HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, hum === v)).join(""), _t("\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09")) : "") + (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") + ownTail.map(rowOf).join("") + (!plug ? row2("", "", _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")) : "");
     const keepScroll = el2.querySelector(".ip-body")?.scrollTop ?? 0;
     el2.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="ip-title">${_t("\u4E50\u5668")}</span>` + (parts.length > 1 ? `<select class="ip-part" title="${_t("\u6362\u4E00\u4E2A\u58F0\u90E8")}">${parts.map((x2) => `<option value="${esc6(x2.p.id)}"${x2.p.id === h2.at().part ? " selected" : ""}>${esc6(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc6(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${h2.padHidden() ? "" : " is-on"}" data-v="pad" title="${_t("\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card ip-who"><h3>${_t("\u53F0\u4E0A")}<small>${_t("\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31")}</small></h3><div class="ip-who-row"><b>${esc6(activeCandidateName(h2.extras(), role) ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</b>${status}</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="${_t("\u4E50\u5668\u76EE\u5F55\uFF1A\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u91CC\u7528\u8FC7\u7684\uFF0C\u4E0B\u9762\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF\u6D4F\u89C8\uFF1B\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u9009\u597D\u5C31\u6362\u4E0A")}">${_t("\u6362\u4E50\u5668\u2026")}</button></div></section><section class="ip-card ip-how"><h3>${_t("{who} \u600E\u4E48\u6F14", { who: esc6(who) })}<small>${_t("\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5")}</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section><div class="ip-what">${_t("\u8C31\u4E0A\u5199\u300C{rn}\u300D", { rn: esc6(rn2) })} \xB7 MusicXML <code>${esc6(rs2)}</code> \xB7 ${_t("\u6539\u540D\u5728\u58F0\u90E8\u7BA1\u7406")}${roleDetail(role)}</div></div></div>`;
     if (keepScroll) el2.querySelector(".ip-body").scrollTop = keepScroll;
@@ -43092,8 +43091,8 @@ ${tg2.fx}`);
 };
 
 // src/core/version.ts
-var CORE_VERSION = "0.2.0";
-var CORE_HASH = true ? "0d647347c1e6f1f9" : "dev";
+var CORE_VERSION = "0.2.1";
+var CORE_HASH = true ? "deae886e6a9de7e5" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -57126,9 +57125,10 @@ function dynAtCursor(role) {
     }
     return null;
   };
-  const dB = pick(dynLevels(tokens, void 0, sp2.dynamicsDb, sp2.dynamicsDb.mf ?? 0, sp2.wedgeStepDb ?? MARK_DEFAULTS.wedgeStepDb)) ?? 0;
-  const vel = sp2.dynamicsVel ? pick(dynLevels(tokens, void 0, sp2.dynamicsVel, activeVelocity(D3.extras, role) * 127, sp2.wedgeStepVel ?? MARK_DEFAULTS.wedgeStepVel)) : null;
-  return { vel: vel === null ? null : Math.max(1, Math.min(127, vel)) / 127, dB };
+  const step = sp2.wedgeStepVel ?? MARK_DEFAULTS.wedgeStepVel, tab = sp2.dynamicsVel;
+  const vel = pick(dynLevels(tokens, void 0, tab, activeVelocity(D3.extras, role) * 127, step)) ?? activeVelocity(D3.extras, role) * 127;
+  const dB = velocityDb(pick(dynLevels(tokens, void 0, tab, tab.mf, step)) ?? tab.mf);
+  return { vel: Math.max(1, Math.min(127, vel)) / 127, dB };
 }
 function auditionTarget() {
   const kana = HUM_KANA[D3.st.song.hum ?? "n"];
@@ -62838,12 +62838,12 @@ setTimeout(() => schedulePrewarm(), 1200);
     void openFromLink(raw);
   }
 }
-if (deviceKvGet(KV_SF_VELOCITY_SAID) !== "1") {
-  deviceKvSet(KV_SF_VELOCITY_SAID, "1");
+if (deviceKvGet(KV_SF_VELOCITY_SAID) !== "2") {
+  deviceKvSet(KV_SF_VELOCITY_SAID, "2");
   if (ranBefore) showNotice({
     id: "sf-velocity",
     level: "info",
-    text: _t("\u4E50\u5668\u7684\u5F3A\u5F31\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\uFF0C\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\u3002\u6700\u54CD\u7684 fff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\uFF0C\u6574\u9996\u4F1A\u53D8\u8F7B\uFF1B\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002"),
+    text: _t("\u4E50\u5668\u548C\u5C0F\u6708\u76F8\u7684\u5F3A\u5F31\u90FD\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\u3002\u4E50\u5668\uFF1A\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\uFF0Cfff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\u3002\u5C0F\u6708\u76F8\u548C\u5143\u97F3\u7248\u4E5F\u6309\u8FD9\u540C\u4E00\u6761\u66F2\u7EBF\uFF1A\u548C\u5979\u7684 mf \u6BD4\uFF0Cf \u4EE5\u4E0A\u6CA1\u539F\u6765\u90A3\u4E48\u54CD\u3001p \u548C pp \u6CA1\u539F\u6765\u90A3\u4E48\u8F7B\uFF0C\u5979\u7684 mf \u6BD4\u539F\u6765\u8F7B 8 dB\u3002\u6574\u9996\u4F1A\u53D8\u8F7B\uFF0C\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002"),
     actions: [{ label: _t("\u77E5\u9053\u4E86"), primary: true, onClick: () => closeNotice("sf-velocity") }]
   });
 }
@@ -62853,4 +62853,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-974003d82fec.mjs.map
+//# sourceMappingURL=moonsinger-6ee69878e577.mjs.map

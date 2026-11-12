@@ -7,6 +7,8 @@
 //   0.1.1（2026-11-08，Claude Fable 5.1）：TinySoundFont 的音量包络从每 64 个采样一级台阶改成块内线性过渡（vendor/tsf/patch-tsf.py）——所有 SoundFont 的音的采样值细微变化。
 //   0.2.0（2026-11-12，Claude Opus 5.5（MoonSinger小弟）；施工单第 9 节，user「立刻最先修」）：SoundFont 照规范放，音量 = (力度 ÷ 127)²（tsf-standalone.ts sfNoteOnSquared）——
 //     强弱的幅度在 dB 上是原来的两倍；fff 几乎不变（−0.07 dB），别的档变轻（mf −4 dB、p −8.3、ppp −18）。所有乐器的音都变；只有这一种放法、不留旧的。设备上记着的渲好的声音因此作废。
-export const CORE_VERSION = "0.2.0";
+//   0.2.1（2026-11-12，Claude Opus 5.5（MoonSinger小弟）；施工单 9-2，user「按照SoundFont对齐，然后小月相也应该对齐」）：小月相 / 元音版的力度记号也按同一条曲线
+//     （响度 = 40·log10(力度 ÷ 127)，渐强渐弱在力度上线性）——她们的音量曲线全变（mf 轻 8 dB）；10-08 以前没带力度表的旧 SoundFont 候选也按标准表的力度敲。
+export const CORE_VERSION = "0.2.1";
 export const CORE_HASH: string = typeof __CORE_HASH__ === "string" ? __CORE_HASH__ : "dev";
 export const coreInfo = (): { version: string; hash: string } => ({ version: CORE_VERSION, hash: CORE_HASH });

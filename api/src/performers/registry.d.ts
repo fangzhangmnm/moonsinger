@@ -56,7 +56,7 @@ export type TrackResult = {
 export interface AuditionCtx extends RoleCtx {
     kana: string;
     dyn: {
-        vel: number | null;
+        vel: number;
         dB: number;
     };
     engine: {
