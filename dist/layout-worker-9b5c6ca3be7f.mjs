@@ -7543,13 +7543,14 @@ function coreBottom(u, q, mode, aux) {
 }
 var UL_DROP = UL_Y0 - BASE_Y;
 function rowGlyphSpan(mode, kit, letters) {
+  const layer = (core2, bottom) => core2 + UL_DROP + UL_W / 2 - bottom;
   if (mode === "x" && kit) {
     const yb = BASE_Y - DIGIT_H * 0.12;
-    return { top: glyphInk(KIT_CHAR.normal, 0, yb, DIGIT_EM * KIT_EM, "middle").y0, bottom: yb };
+    return { top: glyphInk(KIT_CHAR.normal, 0, yb, DIGIT_EM * KIT_EM, "middle").y0, bottom: yb, layer: layer(yb, yb) };
   }
-  if (mode === "x") return { top: glyphInk("X", 0, BASE_Y, DIGIT_EM * X_EM, "middle").y0, bottom: BASE_Y };
-  if (letters) return { top: glyphInk("C", 0, BASE_Y, DIGIT_EM, "start").y0, bottom: BASE_Y + SUB_DY };
-  return { top: DIGIT_TOP, bottom: BASE_Y };
+  if (mode === "x") return { top: glyphInk("X", 0, BASE_Y, DIGIT_EM * X_EM, "middle").y0, bottom: BASE_Y, layer: layer(BASE_Y, BASE_Y) };
+  if (letters) return { top: glyphInk("C", 0, BASE_Y, DIGIT_EM, "start").y0, bottom: BASE_Y, layer: layer(BASE_Y + SUB_DY, BASE_Y) };
+  return { top: DIGIT_TOP, bottom: BASE_Y, layer: layer(BASE_Y, BASE_Y) };
 }
 function accRun(gs, em, xr, top, cls, T2, main) {
   const prims = [], w = accRunW(gs, em), h = Math.max(...gs.map((g) => (g.box[3] - g.box[2]) * em / 4));
@@ -8025,7 +8026,7 @@ function drawJianpu(c, mine, mode = "digits") {
       ulTop.set(k, Math.max(ulTop.get(k) ?? -Infinity, y));
     }
     const botOf = /* @__PURE__ */ new Map();
-    const span = rowGlyphSpan(mode, kit, letters), BAR_PAD = 0.2 * DIGIT_H, BAR_TOP = span.top - BAR_PAD, BAR_BOT = span.bottom + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD;
+    const span = rowGlyphSpan(mode, kit, letters), BAR_TOP = span.top - span.layer, BAR_BOT = span.bottom + span.layer;
     let fifths = q.head.key;
     for (const u of units) {
       if (u.kind === "key") {
@@ -9257,4 +9258,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-818247966e17.mjs.map
+//# sourceMappingURL=layout-worker-9b5c6ca3be7f.mjs.map

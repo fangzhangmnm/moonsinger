@@ -177,10 +177,12 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
     for (const v of units) if (v.kind === "chunk" && !v.pad && underlines(v)) { const k = ulKey(v), y = coreBottom(v, q, mode, c.aux[r]) + UL_DROP; ulTop.set(k, Math.max(ulTop.get(k) ?? -Infinity, y)); }
     /** 每一段盒子的下边（局部 y）：连音的数字 / 括号贴在一组里最低的那个下面。 */
     const botOf = new Map<Chunk, number>();
-    // 小节线 = 固定的短线（7-I，user 2026-11-12「嗯，小节线用三号」）：每一行、每一小节一样高，和这一行里有什么无关——上端 = 这种行一个字的顶（不含上八度点），
-    //   下端 = 字下面两条下划线那么深（第二条的底），上下各多出一点；和弦叠上去的音、第三条下划线、下八度点、帽子、换气、力度都露在线外。数字行 / 字母行 / 鼓的 X 行同一条规矩，各按自己的字高（rowGlyphSpan）。
-    //   试过的另两种（行身那么高的高线、跟着这一行内容兜多高的）删了，不留开关。行身（小节线原来那一段，JP_BODY）没动：名字、色条、歌词、行距照旧按它算
-    const span = rowGlyphSpan(mode, kit, letters), BAR_PAD = 0.2 * DIGIT_H, BAR_TOP = span.top - BAR_PAD, BAR_BOT = span.bottom + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD;
+    // 小节线 = 固定的短线（7-I，user 2026-11-12「嗯，小节线用三号」）：每一行、每一小节一样高，和这一行里有什么无关——以这种行的主字为中心，上下出头一样多 = 各一层
+    //   （下面到第一条下划线的底，上面用同一个数，差不多到一个高八度点的位置；统筹 2026-11-12 改：原来「上到字顶、下到第二条下划线 + 两头各多 0.2 字高」= 下面出头是上面的两倍多，user「小节线为什么上下不一样长」）。
+    //   两头不另留边（不留也不压到点或线：线在小节线那一列，点和下划线在音那一列）。和弦叠上去的音、第二三条下划线、下八度点、帽子、换气、力度都露在线外。
+    //   数字行 / 字母行 / 鼓的 X 行同一条规矩，各按自己的主字（rowGlyphSpan）。试过的另两种（行身那么高的高线、跟着这一行内容兜多高的）删了，不留开关。
+    //   行身（小节线原来那一段，JP_BODY）没动：名字、色条、歌词、行距照旧按它算
+    const span = rowGlyphSpan(mode, kit, letters), BAR_TOP = span.top - span.layer, BAR_BOT = span.bottom + span.layer;
     let fifths = q.head.key;
     for (const u of units) {
       if (u.kind === "key") {   // 中途换调：在那一点写新的「1=D」（UX 稿第 3 节）

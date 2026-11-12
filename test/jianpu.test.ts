@@ -10,7 +10,7 @@ import { SIGNS } from "../src/render/signs.ts";
 import { harmonyTheory } from "../src/theory/index.ts";
 import { rangeBase, fewestDotsBase } from "../src/score/degree.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
-import { CHORD_CH_EM, GLYPH_INK } from "../src/render/jianpu/glyphs.ts";
+import { CHORD_CH_EM, GLYPH_INK, DIGIT_EM as G_DIGIT_EM, DIGIT_H as G_DIGIT_H } from "../src/render/jianpu/glyphs.ts";
 import { parseTtf } from "../src/export/ttf.ts";
 import { isPrinted } from "../src/export/score-pdf.ts";
 // node 的内置模块照 pdf-wysiwyg.test.ts 的取法（类型检查不带 node 的类型）
@@ -534,11 +534,18 @@ describe("简谱小节线 = 固定的短线（7-I，user 2026-11-12 定第 3 种
     assert(ba.length >= 1 && bc.length >= 1 && bd.length >= 1, "有小节线");
     for (const b of [...ba, ...bc, ...bd]) eq(JSON.stringify(b), JSON.stringify(ba[0]), "每一条一样高");
   });
-  it("露在线外的：重音的帽子、和弦叠上去的数字、第三条下划线；线比行身矮", () => {
+  it("以数字为中心上下出头一样多（统筹 2026-11-12）：下端 = 第一条下划线的底，上端出头同样多", () => {
+    const L = lay(songWith(false)), b = bars(L)[0]!;
+    const ul = L.prims.filter((x): x is Extract<Prim, { t: "line" }> => x.t === "line" && /jp-ul/.test(x.cls ?? "")), first = Math.min(...ul.map((x) => x.y1 + x.w / 2));
+    assert(Math.abs(b.y1 - first) < 1e-6, `下端 = 第一条下划线的底：${b.y1} vs ${first}`);
+    const d = L.prims.find((x): x is Extract<Prim, { t: "text" }> => x.t === "text" && /(^|\s)jp-digit(\s|$)/.test(x.cls ?? "") && !/chord-mute/.test(x.cls ?? ""))!, k = (d.size ?? 0) / G_DIGIT_EM, top = d.y - G_DIGIT_H * k;
+    assert(Math.abs((top - b.y0) - (b.y1 - d.y)) < 1e-6, `上面出头 ${(top - b.y0).toFixed(3)} = 下面出头 ${(b.y1 - d.y).toFixed(3)}`);
+  });
+  it("露在线外的：重音的帽子、和弦叠上去的数字、第二三条下划线；线比行身矮", () => {
     const a = lay(songWith(false)), c = lay(songWith(true)), d = lay(songWith(false, "jianpu", true)), b = bars(a)[0]!;
     assert(Math.min(...ys(a, /jp-chev/)) < b.y0, "帽子在线上面");
     assert(Math.min(...ys(c, /jp-digit/)) < b.y0 - 5, "和弦最上面那个数字露在线外");
-    assert(Math.max(...ys(d, /jp-ul/)) > b.y1, "第三条下划线在线下面");
+    assert(Math.max(...ys(d, /jp-ul/)) > b.y1, "第二三条下划线在线下面");
     const s = a.systems[0]!; assert(b.y0 > s.top + 1 && b.y1 < s.bottom, "比行身矮");
   });
   it("字母行按自己的字高：线的下端更深（下划线从右下角八度数字下面起），两端照样每条一样", () => {

@@ -56,14 +56,16 @@ export function coreBottom(u: Chunk, q: JianpuTrack, mode: JianpuMode, aux?: Jia
 }
 /** 第一条下划线离核的下沿多远（中线；样张：数字基线下 0.273 字号）。 */
 export const UL_DROP = UL_Y0 - BASE_Y;
-/** 这一种行一个字的上下（局部 y）：小节线（7-I，user 2026-11-12 定第 3 种「固定的短线」）按它画——上端 = 字的顶，下端 = 核的下沿（下划线从这里往下贴，同 coreBottom）。
- *  数字 = 数字的顶 / 基线；字母谱 = 大写字母的顶 / 右下角八度数字的底；一件鼓 = X 的顶 / 基线；整套鼓 = 件字（●）的顶 / 往上挪过的底。
- *  和弦叠上去的、八度点、右上角的升降号都不算——露在线外（user 定的那一种）。 */
-export function rowGlyphSpan(mode: JianpuMode, kit: boolean, letters: boolean): { top: number; bottom: number } {
-  if (mode === "x" && kit) { const yb = BASE_Y - DIGIT_H * 0.12; return { top: glyphInk(KIT_CHAR.normal!, 0, yb, DIGIT_EM * KIT_EM, "middle").y0, bottom: yb }; }
-  if (mode === "x") return { top: glyphInk("X", 0, BASE_Y, DIGIT_EM * X_EM, "middle").y0, bottom: BASE_Y };
-  if (letters) return { top: glyphInk("C", 0, BASE_Y, DIGIT_EM, "start").y0, bottom: BASE_Y + SUB_DY };
-  return { top: DIGIT_TOP, bottom: BASE_Y };
+/** 这一种行的主字（局部 y）：小节线（7-I，user 2026-11-12 定第 3 种「固定的短线」）以它为中心——top / bottom = 主字的顶和底，layer = 「一层」= 主字的底到第一条下划线的底
+ *  （下划线从核的下沿往下贴，同 coreBottom + UL_DROP）。小节线 = 主字上下各出头一层（统筹 2026-11-12：「以这种行的字为中心，上下出头一样多」；原来下面出头是上面的两倍多）。
+ *  数字 = 数字的顶 / 基线；字母谱 = 大写字母的顶 / 基线，第一条下划线在右下角八度数字下面（一层就大一些）；一件鼓 = X；整套鼓 = 件字（●，往上挪过）。
+ *  和弦叠上去的、八度点、右上角的升降号都不算主字——露在线外（user 定的那一种）。 */
+export function rowGlyphSpan(mode: JianpuMode, kit: boolean, letters: boolean): { top: number; bottom: number; layer: number } {
+  const layer = (core: number, bottom: number) => core + UL_DROP + UL_W / 2 - bottom;   // 主字的底 → 第一条下划线的底
+  if (mode === "x" && kit) { const yb = BASE_Y - DIGIT_H * 0.12; return { top: glyphInk(KIT_CHAR.normal!, 0, yb, DIGIT_EM * KIT_EM, "middle").y0, bottom: yb, layer: layer(yb, yb) }; }
+  if (mode === "x") return { top: glyphInk("X", 0, BASE_Y, DIGIT_EM * X_EM, "middle").y0, bottom: BASE_Y, layer: layer(BASE_Y, BASE_Y) };
+  if (letters) return { top: glyphInk("C", 0, BASE_Y, DIGIT_EM, "start").y0, bottom: BASE_Y, layer: layer(BASE_Y + SUB_DY, BASE_Y) };
+  return { top: DIGIT_TOP, bottom: BASE_Y, layer: layer(BASE_Y, BASE_Y) };
 }
 /** 一串升降号字形（7-P：Bravura）：右边对齐 xr、顶在 top；回图元和墨迹框。 */
 function accRun(gs: readonly { ch: string; box: readonly number[]; dom: number }[], em: number, xr: number, top: number, cls: string, T: { tok?: number }, main: number): { prims: Prim[]; ink: Ink } {

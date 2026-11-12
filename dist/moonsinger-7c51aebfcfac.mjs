@@ -14609,13 +14609,14 @@ function coreBottom(u2, q2, mode, aux) {
 }
 var UL_DROP = UL_Y0 - BASE_Y;
 function rowGlyphSpan(mode, kit, letters) {
+  const layer = (core2, bottom) => core2 + UL_DROP + UL_W / 2 - bottom;
   if (mode === "x" && kit) {
     const yb = BASE_Y - DIGIT_H * 0.12;
-    return { top: glyphInk(KIT_CHAR.normal, 0, yb, DIGIT_EM * KIT_EM, "middle").y0, bottom: yb };
+    return { top: glyphInk(KIT_CHAR.normal, 0, yb, DIGIT_EM * KIT_EM, "middle").y0, bottom: yb, layer: layer(yb, yb) };
   }
-  if (mode === "x") return { top: glyphInk("X", 0, BASE_Y, DIGIT_EM * X_EM, "middle").y0, bottom: BASE_Y };
-  if (letters) return { top: glyphInk("C", 0, BASE_Y, DIGIT_EM, "start").y0, bottom: BASE_Y + SUB_DY };
-  return { top: DIGIT_TOP, bottom: BASE_Y };
+  if (mode === "x") return { top: glyphInk("X", 0, BASE_Y, DIGIT_EM * X_EM, "middle").y0, bottom: BASE_Y, layer: layer(BASE_Y, BASE_Y) };
+  if (letters) return { top: glyphInk("C", 0, BASE_Y, DIGIT_EM, "start").y0, bottom: BASE_Y, layer: layer(BASE_Y + SUB_DY, BASE_Y) };
+  return { top: DIGIT_TOP, bottom: BASE_Y, layer: layer(BASE_Y, BASE_Y) };
 }
 function accRun(gs, em2, xr, top, cls, T3, main) {
   const prims = [], w2 = accRunW(gs, em2), h2 = Math.max(...gs.map((g3) => (g3.box[3] - g3.box[2]) * em2 / 4));
@@ -15091,7 +15092,7 @@ function drawJianpu(c10, mine, mode = "digits") {
       ulTop.set(k2, Math.max(ulTop.get(k2) ?? -Infinity, y2));
     }
     const botOf = /* @__PURE__ */ new Map();
-    const span2 = rowGlyphSpan(mode, kit, letters), BAR_PAD = 0.2 * DIGIT_H, BAR_TOP = span2.top - BAR_PAD, BAR_BOT = span2.bottom + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD;
+    const span2 = rowGlyphSpan(mode, kit, letters), BAR_TOP = span2.top - span2.layer, BAR_BOT = span2.bottom + span2.layer;
     let fifths = q2.head.key;
     for (const u2 of units) {
       if (u2.kind === "key") {
@@ -34198,7 +34199,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-818247966e17.mjs");
+      return pick(() => "layout-worker-9b5c6ca3be7f.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-9c9cf2c0a035.mjs");
   }
@@ -64484,4 +64485,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-46cc28b9ec42.mjs.map
+//# sourceMappingURL=moonsinger-7c51aebfcfac.mjs.map
