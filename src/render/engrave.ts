@@ -626,7 +626,8 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const c0 = q0.units.find((u): u is Chunk => u.kind === "chunk" && u.system === s);
       const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null, row0 = rowOf(s, 0, 0);
       //   往上让开行首的墨（统筹看样张 ⑪）：量天际线时往右多看这一行的 barNoPad（排版参数表行一级）——数字行紧挨在右边的第一个字形比它高就让到它上面；五线谱 = 0（压在谱号上方，照旧）
-      if (num !== null && !(s === 0 && num <= 1)) attach(row0, "barNumber", () => placeAbove(row0, 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" }), rowPar(row0).barNoPad));
+      //   7-K / 7-L：行首那根连着几位歌手的竖线也是印的墨——先记进第一行的天际线（不算行高），小节号就从它顶上让开（原来不在天际线里，数字行的行首空着时小节号会落到竖线顶端下面、压在线上）
+      if (num !== null && !(s === 0 && num <= 1)) attach(row0, "barNumber", () => { if (nRowsSys > 1) sky(row0).ink(MARGIN + ind - SYSTEM_LINE_W / 2, MARGIN + ind + SYSTEM_LINE_W / 2, body(row0).top, body(row0).bottom, false); placeAbove(row0, 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" }), rowPar(row0).barNoPad); });
     }
     // 按行的种类分给各自的画法（谱种的表）：五线谱先画、数字行后画。每种画法只能往分给它的那几条轨的行上画（统筹审第四刀接口第 5 条：put / hitRow / attach / 贴天际线越界 = 报错）
     const kIdx = (k: RowKind) => per.map((_q, i) => i).filter((i) => kinds[i] === k);

@@ -85,11 +85,15 @@ export const accText = (rel: number): string => (rel > 0 ? "♯".repeat(rel) : r
  *  宽按思源黑体的前进宽算（不现场量）：一个音 = 字母 + 角标那一栏（升降号和数字取宽的）。 */
 const LETTER_EM: Readonly<Record<string, number>> = { A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
 export const letterW = (step: string): number => ((LETTER_EM[step] ?? 0.66) * DIGIT_W) / 0.555;
-export const SCRIPT_K = 0.6, SCRIPT_GAP = 0.03 * FS;
+/** 角标多大（字母的几成）：7-L（user 11-12「数字可以大一点再靠的近一点，以及latex是不是subscript用优化可读性的小字了？」）从六成改成七成（LaTeX 下标 = 正文的七成）；
+ *  笔画加粗照小字号专用字的思路做 = 样式表里上下标两种字是半粗（text/style.ts jp-letter-sup / jp-letter-sub，屏幕和 PDF 同一张表）。离字母多近（SCRIPT_GAP）等第八刀一起摆。 */
+export const SCRIPT_K = 0.7, SCRIPT_GAP = 0.03 * FS;
 /** 上标（升降号）的基线、下标（八度数字）的基线：离字母基线多远（数字行的单位；上 = 负）。 */
 export const SUP_DY = -0.45 * FS, SUB_DY = 0.18 * FS;
 /** 字母谱的行上，字母底下多让出的那一截（下标比基线低多少）：下划线、低处的东西照着往下让。 */
-export const SUB_DROP = 0.2 * FS, SUP_RISE = 0.15 * FS;
+export const SUB_DROP = 0.2 * FS;
+/** 上标比字母顶高出多少（和弦竖叠时上面那个字母让开它）：按上标的基线和字号算（字高 = 数字行的字高比例），不另写数（7-L 角标变大时原来写死的 0.15 FS 不够了）。 */
+export const SUP_RISE = Math.max(0, -SUP_DY + SCRIPT_K * DIGIT_H - DIGIT_H);
 /** 一个音的字母和两个角标：acc = 右上角（没有升降 = 空）、oct = 右下角的八度数字（写的八度 − 4 + 中央 C 叫 C 几）。 */
 export const letterParts = (p: { step: string; alter: number; octave: number }, middleC: number): { letter: string; acc: string; oct: string } =>
   ({ letter: p.step, acc: p.alter > 0 ? "♯".repeat(p.alter) : p.alter < 0 ? "♭".repeat(-p.alter) : "", oct: String(p.octave - 4 + middleC) });

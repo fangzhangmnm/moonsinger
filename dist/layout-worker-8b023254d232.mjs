@@ -41,8 +41,9 @@ var TEXT_STYLES = {
   // 简谱数字行（谱面分家第四刀；字号在图元上、宽高查 render/jianpu/glyphs.ts，不现场量）：数字一律不分粗细（UX 稿第 5 节）；谱头「1=C 4/4」和中途换调的字
   "jp-digit": s("sans", 2.5, "staff"),
   "jp-acc": s("sans", 1.3, "staff"),
-  "jp-head": s("sans", TEMPO_EM, "staff"),
-  // 谱头「1=C 3/4」：常规粗细（第五刀起照样张；字号在图元上 = 0.773 个数字字号）
+  "jp-letter-sup": s("sans", 1.75, "staff", 600),
+  "jp-letter-sub": s("sans", 1.75, "staff", 600),
+  // 字母谱的角标（7-L）：半粗，学小字号专用字形的思路——缩小了笔画不跟着变细；字号在图元上（字母的 SCRIPT_K 倍） "jp-head": s("sans", TEMPO_EM, "staff"),   // 谱头「1=C 3/4」：常规粗细（第五刀起照样张；字号在图元上 = 0.773 个数字字号）
   // 叠着的和弦折成的和弦名（第五刀 5-4）：窄字 = 正文字体横向压（图元的 sx），宽查 render/jianpu/glyphs.ts
   "jp-chord": s("sans", 2, "staff"),
   // 简谱数字行上的力度（pp…ff、sfz、fp）：和数字同一款字、常规粗细、斜体，约数字的 0.8（user 11-11「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）
@@ -7021,12 +7022,12 @@ var dotPath = (cx, cy, r) => {
 var accText = (rel) => rel > 0 ? "\u266F".repeat(rel) : rel < 0 ? "\u266D".repeat(-rel) : "\u266E";
 var LETTER_EM = { A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
 var letterW = (step) => (LETTER_EM[step] ?? 0.66) * DIGIT_W / 0.555;
-var SCRIPT_K = 0.6;
+var SCRIPT_K = 0.7;
 var SCRIPT_GAP = 0.03 * FS;
 var SUP_DY = -0.45 * FS;
 var SUB_DY = 0.18 * FS;
 var SUB_DROP = 0.2 * FS;
-var SUP_RISE = 0.15 * FS;
+var SUP_RISE = Math.max(0, -SUP_DY + SCRIPT_K * DIGIT_H - DIGIT_H);
 var letterParts = (p, middleC) => ({ letter: p.step, acc: p.alter > 0 ? "\u266F".repeat(p.alter) : p.alter < 0 ? "\u266D".repeat(-p.alter) : "", oct: String(p.octave - 4 + middleC) });
 var scriptW = (p, middleC) => {
   const lp = letterParts(p, middleC);
@@ -8255,7 +8256,10 @@ function engrave(song, o) {
       const ind = s2 === 0 ? ind0 : indN, q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s2)) ?? per[0];
       const c0 = q0.units.find((u) => u.kind === "chunk" && u.system === s2);
       const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null, row0 = rowOf(s2, 0, 0);
-      if (num !== null && !(s2 === 0 && num <= 1)) attach(row0, "barNumber", () => placeAbove(row0, 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" }), rowPar(row0).barNoPad));
+      if (num !== null && !(s2 === 0 && num <= 1)) attach(row0, "barNumber", () => {
+        if (nRowsSys > 1) sky(row0).ink(MARGIN + ind - SYSTEM_LINE_W / 2, MARGIN + ind + SYSTEM_LINE_W / 2, body(row0).top, body(row0).bottom, false);
+        placeAbove(row0, 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" }), rowPar(row0).barNoPad);
+      });
     }
     const kIdx = (k) => per.map((_q, i) => i).filter((i) => kinds[i] === k);
     const ctxFor = (idx, who) => {
@@ -8500,4 +8504,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-000561d3242a.mjs.map
+//# sourceMappingURL=layout-worker-8b023254d232.mjs.map

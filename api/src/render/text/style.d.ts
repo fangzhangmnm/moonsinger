@@ -62,7 +62,8 @@ export declare const TEXT_STYLES: {
     "dyn-implied": TextStyle;
     "jp-digit": TextStyle;
     "jp-acc": TextStyle;
-    "jp-head": TextStyle;
+    "jp-letter-sup": TextStyle;
+    "jp-letter-sub": TextStyle;
     "jp-chord": TextStyle;
     "jp-dyn": TextStyle;
     "jp-legend": TextStyle;

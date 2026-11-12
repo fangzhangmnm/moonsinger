@@ -65,11 +65,15 @@ export declare const dotPath: (cx: number, cy: number, r: number) => string;
 /** 升降号的字（相对这个调的调内音：+1 = ♯、−1 = ♭、0 = ♮）。 */
 export declare const accText: (rel: number) => string;
 export declare const letterW: (step: string) => number;
-export declare const SCRIPT_K = 0.6, SCRIPT_GAP: number;
+/** 角标多大（字母的几成）：7-L（user 11-12「数字可以大一点再靠的近一点，以及latex是不是subscript用优化可读性的小字了？」）从六成改成七成（LaTeX 下标 = 正文的七成）；
+ *  笔画加粗照小字号专用字的思路做 = 样式表里上下标两种字是半粗（text/style.ts jp-letter-sup / jp-letter-sub，屏幕和 PDF 同一张表）。离字母多近（SCRIPT_GAP）等第八刀一起摆。 */
+export declare const SCRIPT_K = 0.7, SCRIPT_GAP: number;
 /** 上标（升降号）的基线、下标（八度数字）的基线：离字母基线多远（数字行的单位；上 = 负）。 */
 export declare const SUP_DY: number, SUB_DY: number;
 /** 字母谱的行上，字母底下多让出的那一截（下标比基线低多少）：下划线、低处的东西照着往下让。 */
-export declare const SUB_DROP: number, SUP_RISE: number;
+export declare const SUB_DROP: number;
+/** 上标比字母顶高出多少（和弦竖叠时上面那个字母让开它）：按上标的基线和字号算（字高 = 数字行的字高比例），不另写数（7-L 角标变大时原来写死的 0.15 FS 不够了）。 */
+export declare const SUP_RISE: number;
 /** 一个音的字母和两个角标：acc = 右上角（没有升降 = 空）、oct = 右下角的八度数字（写的八度 − 4 + 中央 C 叫 C 几）。 */
 export declare const letterParts: (p: {
     step: string;

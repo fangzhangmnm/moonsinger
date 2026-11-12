@@ -296,7 +296,7 @@ describe("简谱数字行", () => {
     eq(texts(a, /jp-letter-sup/).map((p) => p.s).join(""), "♯♯", "每个 F♯ 右上角都写 ♯");
     eq(texts(a, /jp-letter-sub/).map((p) => p.s).join(""), "4445", "右下角每个音都写八度数字（中央 C = C4）");
     const f = texts(a, /jp-letter\b(?!-)/)[1]!, sup = texts(a, /jp-letter-sup/)[0]!, sub = texts(a, /jp-letter-sub/)[1]!;
-    assert(sup.x > f.x && sup.y < f.y && sup.size! < f.size!, "升降号在字母右上、小一号"); assert(sub.x > f.x && sub.y > f.y && Math.abs(sub.size! / f.size! - 0.6) < 0.01, "八度数字在字母右下、字母的六成");
+    assert(sup.x > f.x && sup.y < f.y && sup.size! < f.size!, "升降号在字母右上、小一号"); assert(sub.x > f.x && sub.y > f.y && Math.abs(sub.size! / f.size! - 0.7) < 0.01, "八度数字在字母右下、字母的七成（7-L）");
     assert(!texts(a, /jp-head/).some((p) => p.s.startsWith("1=")) && a.keyHints.some((h) => h.s.startsWith("1=")), "调号不印，编辑器里淡的提示带着它");
     eq(a.prims.filter((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")).length, 0, "不用上下的点");
     // 下划线让开右下角的数字：在下标的下面
