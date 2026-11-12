@@ -111,14 +111,20 @@ export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; 
     if (measureNo === 0 && inBar > 0 && inBar < len) pickup = true;   // 纸头还没写满就碰到「|」= 弱起（小节号：弱起算第 0 小节）
     accState = new Map(); inBar = 0; if (!(repeat === "start" && empty)) measureNo++;   // 小节开头的 |:（前面那条小节线之后紧跟着 / 纸头）不多数一个小节
   };
-  const flushFull = () => { if (o.autoBars && inBar >= len && inBar > 0) pushBar(-1, true); };
+  // 自动小节线看的是「下一个占时值的东西或人插的小节线」：满了之后隔着不占时值的记号（力度、渐强渐弱、风格、调号、速度、谱号、八度线、跳转…）
+  //   紧跟着人插的「|」= 用它那一条，不另补自动的（原来记号先补一条自动的、再画人插的 = 两条；统筹 2026-11-12 定为毛病，施工单 7-G 记录）。
+  const manualBarAhead = (from: number): boolean => {
+    for (let j = from; j < tokens.length; j++) { const k = tokens[j]!.kind; if (k === "bar") return true; if (k === "note" || k === "rest" || k === "time") return false; }
+    return false;
+  };
+  /** 满了就补一条自动小节线（at = 这个不占时值的记号的下标：后面隔着记号紧跟人插的「|」= 不补，让它那一条收这一小节）。 */
+  const flushFull = (at?: number) => { if (o.autoBars && inBar >= len && inBar > 0 && !(at !== undefined && manualBarAhead(at))) pushBar(-1, true); };
   tokens.forEach((t, i) => {
     if (i < H) return;
-    if (o.skip?.has(t.kind)) { flushFull(); return; }   // 不交给排版的种类（演奏法和表情不显示时的力度 / 渐强渐弱，7-G）。flushFull 照留：力度 / 渐强渐弱原来也先「满了就补一条自动小节线」，
-    //   拿掉它们不许改小节线（夹在写满的一小节和人插的「|:」之间的力度会多出一条自动小节线——原来就这样，施工单 7-G 记录里报了；这里只保证显示 / 不显示两边一样）
+    if (o.skip?.has(t.kind)) return;   // 不交给排版的种类（演奏法和表情不显示时的力度 / 渐强渐弱，7-G）。自动小节线隔着不占时值的记号往后看，跳过它们不改小节线
     if (t.kind === "bar") { pushBar(i, false); return; }
     if (t.kind === "key") {
-      flushFull();
+      flushFull(i);
       const rf = realFifthsOf(t), inC = rf !== t.fifths || "realFifths" in t;   // 按 C 调看：这一处要写「1=X」，给字留宽
       units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: W.key(t.fifths, fifths, inC, o.ts ?? 1), x: 0, system: 0, tick, staff: 1, real: rf, minor: t.mode === "minor" });
       fifths = t.fifths; accState = new Map(); return;
@@ -128,16 +134,16 @@ export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; 
       units.push({ kind: "time", index: i, beats: t.beats, beatType: t.beatType, w: W.time(t.beats, t.beatType), x: 0, system: 0, tick, staff: 1 });
       beat = beatTicks(t.beats, t.beatType); len = measureLen(t.beats, t.beatType); return;
     }
-    if (t.kind === "tempo") { flushFull(); units.push({ kind: "tempo", index: i, bpm: t.bpm, w: W.tempo, x: 0, system: 0, tick, staff: 1 }); return; }
+    if (t.kind === "tempo") { flushFull(i); units.push({ kind: "tempo", index: i, bpm: t.bpm, w: W.tempo, x: 0, system: 0, tick, staff: 1 }); return; }
     // 力度记号 / 渐强渐弱不占横向的地方（画在谱上下，不在音和音之间）：插 / 挪 / 删它们，音的位置、间距、折行一点都不变
     //   （2026-10-08 Opus 5.5，user「移动力度标识的时候最好音符的渲染布局一点也不改…尤其是间隔之类的，不要被力度标识的插入影响」；以前各占 0.3 个间距）
-    if (t.kind === "dyn") { flushFull(); units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
-    if (t.kind === "hairpin") { flushFull(); units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
-    if (t.kind === "groove") { flushFull(); units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
+    if (t.kind === "dyn") { flushFull(i); units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
+    if (t.kind === "hairpin") { flushFull(i); units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
+    if (t.kind === "groove") { flushFull(i); units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
     // 谱号记号（v0.9.28）。纸头那一处的（这一段手选的谱号，v0.16.88）= 开头的谱号本身（resolveSongLooks 拿它当 start），不另占一个「中途换谱号」的位子
-    if (t.kind === "clef") { if (i < H || tokens.slice(H, i).every((x) => x.kind === "clef")) return; flushFull(); units.push({ kind: "clef", index: i, clef: t.clef, w: W.clef, x: 0, system: 0, tick, staff: 1 }); return; }
-    if (t.kind === "ottava") { flushFull(); units.push({ kind: "ottava", index: i, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }   // 八度线（v0.9.28）：不占横向地方   // 风格记号（拍子轻重）：同力度字，不占横向地方
-    if (t.kind === "nav") { const head = t.what === "ending" || t.what === "segno" || t.what === "coda"; if (head) flushFull(); units.push({ kind: "nav", index: i, w: 0, x: 0, system: 0, tick, staff: 1, slot: head ? 0.5 : -0.5 }); return; }   // 房子 / 跳转：谱上方，不占地方（房子从下一小节开头起：满了的小节先画小节线）
+    if (t.kind === "clef") { if (i < H || tokens.slice(H, i).every((x) => x.kind === "clef")) return; flushFull(i); units.push({ kind: "clef", index: i, clef: t.clef, w: W.clef, x: 0, system: 0, tick, staff: 1 }); return; }
+    if (t.kind === "ottava") { flushFull(i); units.push({ kind: "ottava", index: i, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }   // 八度线（v0.9.28）：不占横向地方   // 风格记号（拍子轻重）：同力度字，不占横向地方
+    if (t.kind === "nav") { const head = t.what === "ending" || t.what === "segno" || t.what === "coda"; if (head) flushFull(i); units.push({ kind: "nav", index: i, w: 0, x: 0, system: 0, tick, staff: 1, slot: head ? 0.5 : -0.5 }); return; }   // 房子 / 跳转：谱上方，不占地方（房子从下一小节开头起：满了的小节先画小节线）
     const isNote = t.kind === "note", nt = t as NoteTok;
     const pitch = isNote ? effectivePitch(tokens, i) : null;
     const pitches = isNote ? (nt.pitch ? allPitches(nt) : [pitch!]) : [];

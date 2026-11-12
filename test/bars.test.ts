@@ -28,6 +28,23 @@ describe("自动小节线", () => {
     eq(bars(l), "ma"); eq(l.shortBars, 0);
   });
   it("满了紧跟人插的「|」只画一条", () => { eq(bars(L([1, 1, 1, 1, "|", 1])), "m"); });
+  it("满了之后隔着不占时值的记号（力度 / 渐强渐弱 / 风格 / 调号）再接人插的「|」= 也只画一条；隔着记号再接音 = 自动小节线照旧（统筹 2026-11-12，施工单 7-G 记录）", () => {
+    let id = 100;
+    const marks: Record<string, () => Token> = { dyn: () => ({ kind: "dyn", id: id++, value: "f" }) as Token, hairpin: () => ({ kind: "hairpin", id: id++, dir: "cresc" }) as Token,
+      groove: () => ({ kind: "groove", id: id++, style: "pop" }) as Token, key: () => ({ kind: "key", id: id++, fifths: 2 }) as Token };
+    const withMarks = (seq: (number | "|" | string)[], autoBars = true) => {
+      const base = song(seq.filter((x): x is number | "|" => typeof x === "number" || x === "|")), head = base.papers[0]!.tracks.P1!.slice(0, 3);
+      let nid = 1000; const toks: Token[] = [...head];
+      for (const x of seq) toks.push(typeof x === "number" ? ({ kind: "note", pitch: p, dur: x === 2 ? Hf : Q * x, lyric: null, id: nid++ } as Token) : x === "|" ? ({ kind: "bar", id: nid++ } as Token) : marks[x]!());
+      const s = { ...base, papers: [{ ...base.papers[0]!, tracks: { P1: toks } }] };
+      return engrave(s, { width: 4000, sp: 10, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Vocals", first: true }], locale: "zh", measure: createTextMeasure((t, px) => t.length * px * 0.6), autoBars });
+    };
+    eq(bars(withMarks([1, 1, 1, 1, "dyn", "|", 1])), "m", "力度 + 人插的「|」");
+    eq(bars(withMarks([1, 1, 1, 1, "dyn", "hairpin", "groove", "|", 1])), "m", "几个记号 + 人插的「|」");
+    eq(bars(withMarks([1, 1, 1, 1, "key", "|", 1])), "m", "调号 + 人插的「|」");
+    eq(bars(withMarks([1, 1, 1, 1, "dyn", 1])), "a", "力度 + 音 = 自动小节线照旧");
+    eq(bars(withMarks([1, 1, 1, 1, "dyn", 1, 1, 1, 1, "groove", "|", 1])), "am", "后面一小节照样");
+  });
   it("跨小节线的音切成连着的两段（二分音符从第四拍起）", () => {
     const l = L([1, 1, 1, 2]);
     eq(bars(l), "a"); eq(ties(l), 1); eq(l.notes.length, 4);   // 点得到的还是四个音

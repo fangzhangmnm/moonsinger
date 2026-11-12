@@ -12333,21 +12333,26 @@ function unitsOf(tokens, o10) {
     inBar = 0;
     if (!(repeat === "start" && empty)) measureNo++;
   };
-  const flushFull = () => {
-    if (o10.autoBars && inBar >= len && inBar > 0) pushBar(-1, true);
+  const manualBarAhead = (from) => {
+    for (let j2 = from; j2 < tokens.length; j2++) {
+      const k2 = tokens[j2].kind;
+      if (k2 === "bar") return true;
+      if (k2 === "note" || k2 === "rest" || k2 === "time") return false;
+    }
+    return false;
+  };
+  const flushFull = (at3) => {
+    if (o10.autoBars && inBar >= len && inBar > 0 && !(at3 !== void 0 && manualBarAhead(at3))) pushBar(-1, true);
   };
   tokens.forEach((t10, i10) => {
     if (i10 < H3) return;
-    if (o10.skip?.has(t10.kind)) {
-      flushFull();
-      return;
-    }
+    if (o10.skip?.has(t10.kind)) return;
     if (t10.kind === "bar") {
       pushBar(i10, false);
       return;
     }
     if (t10.kind === "key") {
-      flushFull();
+      flushFull(i10);
       const rf2 = realFifthsOf(t10), inC = rf2 !== t10.fifths || "realFifths" in t10;
       units.push({ kind: "key", index: i10, fifths: t10.fifths, prev: fifths, w: W3.key(t10.fifths, fifths, inC, o10.ts ?? 1), x: 0, system: 0, tick, staff: 1, real: rf2, minor: t10.mode === "minor" });
       fifths = t10.fifths;
@@ -12362,39 +12367,39 @@ function unitsOf(tokens, o10) {
       return;
     }
     if (t10.kind === "tempo") {
-      flushFull();
+      flushFull(i10);
       units.push({ kind: "tempo", index: i10, bpm: t10.bpm, w: W3.tempo, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t10.kind === "dyn") {
-      flushFull();
+      flushFull(i10);
       units.push({ kind: "dyn", index: i10, value: t10.value, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t10.kind === "hairpin") {
-      flushFull();
+      flushFull(i10);
       units.push({ kind: "hairpin", index: i10, dir: t10.dir, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t10.kind === "groove") {
-      flushFull();
+      flushFull(i10);
       units.push({ kind: "groove", index: i10, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t10.kind === "clef") {
       if (i10 < H3 || tokens.slice(H3, i10).every((x2) => x2.kind === "clef")) return;
-      flushFull();
+      flushFull(i10);
       units.push({ kind: "clef", index: i10, clef: t10.clef, w: W3.clef, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t10.kind === "ottava") {
-      flushFull();
+      flushFull(i10);
       units.push({ kind: "ottava", index: i10, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t10.kind === "nav") {
       const head2 = t10.what === "ending" || t10.what === "segno" || t10.what === "coda";
-      if (head2) flushFull();
+      if (head2) flushFull(i10);
       units.push({ kind: "nav", index: i10, w: 0, x: 0, system: 0, tick, staff: 1, slot: head2 ? 0.5 : -0.5 });
       return;
     }
@@ -34054,7 +34059,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-9853062f072f.mjs");
+      return pick(() => "layout-worker-d7e1ceea0a84.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-7210b0331251.mjs");
   }
@@ -64227,4 +64232,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3164e3fa952b.mjs.map
+//# sourceMappingURL=moonsinger-ec35346b0126.mjs.map

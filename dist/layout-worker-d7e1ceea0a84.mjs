@@ -5556,21 +5556,26 @@ function unitsOf(tokens, o) {
     inBar = 0;
     if (!(repeat === "start" && empty)) measureNo++;
   };
-  const flushFull = () => {
-    if (o.autoBars && inBar >= len && inBar > 0) pushBar(-1, true);
+  const manualBarAhead = (from) => {
+    for (let j = from; j < tokens.length; j++) {
+      const k = tokens[j].kind;
+      if (k === "bar") return true;
+      if (k === "note" || k === "rest" || k === "time") return false;
+    }
+    return false;
+  };
+  const flushFull = (at2) => {
+    if (o.autoBars && inBar >= len && inBar > 0 && !(at2 !== void 0 && manualBarAhead(at2))) pushBar(-1, true);
   };
   tokens.forEach((t, i) => {
     if (i < H) return;
-    if (o.skip?.has(t.kind)) {
-      flushFull();
-      return;
-    }
+    if (o.skip?.has(t.kind)) return;
     if (t.kind === "bar") {
       pushBar(i, false);
       return;
     }
     if (t.kind === "key") {
-      flushFull();
+      flushFull(i);
       const rf = realFifthsOf(t), inC = rf !== t.fifths || "realFifths" in t;
       units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: W2.key(t.fifths, fifths, inC, o.ts ?? 1), x: 0, system: 0, tick, staff: 1, real: rf, minor: t.mode === "minor" });
       fifths = t.fifths;
@@ -5585,39 +5590,39 @@ function unitsOf(tokens, o) {
       return;
     }
     if (t.kind === "tempo") {
-      flushFull();
+      flushFull(i);
       units.push({ kind: "tempo", index: i, bpm: t.bpm, w: W2.tempo, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t.kind === "dyn") {
-      flushFull();
+      flushFull(i);
       units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t.kind === "hairpin") {
-      flushFull();
+      flushFull(i);
       units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t.kind === "groove") {
-      flushFull();
+      flushFull(i);
       units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t.kind === "clef") {
       if (i < H || tokens.slice(H, i).every((x) => x.kind === "clef")) return;
-      flushFull();
+      flushFull(i);
       units.push({ kind: "clef", index: i, clef: t.clef, w: W2.clef, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t.kind === "ottava") {
-      flushFull();
+      flushFull(i);
       units.push({ kind: "ottava", index: i, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t.kind === "nav") {
       const head2 = t.what === "ending" || t.what === "segno" || t.what === "coda";
-      if (head2) flushFull();
+      if (head2) flushFull(i);
       units.push({ kind: "nav", index: i, w: 0, x: 0, system: 0, tick, staff: 1, slot: head2 ? 0.5 : -0.5 });
       return;
     }
@@ -9139,4 +9144,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-9853062f072f.mjs.map
+//# sourceMappingURL=layout-worker-d7e1ceea0a84.mjs.map
