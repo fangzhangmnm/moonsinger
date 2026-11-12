@@ -193,11 +193,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const autoBars = o.autoBars !== false;
   const baseRight = o.width / sp - MARGIN;
   let right = baseRight, sheetRight = baseRight;   // 横卷：每张纸排完 right = 这张纸内容的右端 + SCROLL_TAIL；sheetRight = 最长那张
-  const PART_EM = TEXT_STYLES["part-name"].em, tx = (role: TextRole) => textPx(role, sp, ts);
+  const NK = PPAR.nameScale ?? 1;   // 左边歌手名的字号再乘多少（排版参数表纸一级：简谱照样张收；五线谱 = 1）
+  const PART_EM = TEXT_STYLES["part-name"].em * NK, tx = (role: TextRole) => textPx(role, sp, ts) * (role === "part-name" ? NK : 1);
   /** 这种字跟哪把尺子（字的尺子 = ts、谱的尺子 = 1）；TR = 按这种字的尺子量的长度（字周围留的空隙跟着字走）；mw = 这种字写这串多宽（sp，P 的单位）。 */
   const RS = (role: TextRole) => (TEXT_STYLES[role].ruler === "text" ? ts : 1), TR = (role: TextRole, v: number) => v * sp * RS(role);
   const mw = (role: TextRole, str: string) => o.measure.width(role, str, sp, ts);   // 换算在文字模块里（src/render/text/measure.ts；user 11-09「深模块窄接口统一一下风格」）
-  const nameW = (s: string) => mw("part-name", s);   // sp（名字跟字的尺子：紧凑档同一个名字占的 sp 多 1.4 倍）
+  const nameW = (s: string) => mw("part-name", s) * NK;   // sp（名字跟字的尺子：紧凑档同一个名字占的 sp 多 1.4 倍）
   const NMAX = NAME_MAX * ts;   // 名字一栏最宽（字的尺子）
   /** 声部名一列最宽 NAME_MAX（sp），再长就折行，不占五线谱的地方（user 2026-10-08「谱子前面的乐器名字如果很长的话应该换行而不是占用五线谱的空间」）。
    *  英文按词折、汉字按字折、一个词本身太长再按字母折；单谱表最多 3 行、大谱表 5 行，再多末尾「…」（全名在歌手牌里）。 */
@@ -427,7 +428,8 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     // 歌词按节奏排（v0.9.40；user「先试下你说的两个歌词开关吧，approved」）：音的位置只看时值，歌词让路（fitLyrics）。在算行高之前排好：错开到第二行的那一行要多留一行字
     const lyrPlan = new Map<string, LyricFit & { hw: number }>();   // 键 = 声部序号:下标；hw = 收过之后的半宽（sp，连字符摆在缝正中要用）
     const look = lyricLook(ts);   // 这一档歌词的字高 / 平常宽度（字高永远不动）
-    const lyrUnit = (str: string) => lyricWidth(o.measure, str, sp, ts);   // 这一档歌词字号 / 平常宽度下这串字的前进宽度（sp）
+    const LS = PPAR.lyricScale ?? 1, lsp = sp * LS;   // 歌词字号再乘多少（排版参数表纸一级：简谱照样张收；五线谱 = 1）
+    const lyrUnit = (str: string) => lyricWidth(o.measure, str, sp, ts) * LS;   // lyricWidth 给的是线间距（和 sp 无关）：字号乘多少，宽就乘多少   // 这一档歌词字号 / 平常宽度下这串字的前进宽度（sp）
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
     const lyrGaps: LyricGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };   // 定义见 LyricGaps；底线按档（样式表）
     if (songLook.lyricFit === "rhythm") per.forEach((q, r) => {
@@ -630,7 +632,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         const ly = ly0, cx = cx0 + (fit ? P(fit.dx) : 0);
         { const lh: LyricHit = { index: c.index, system: c.row, x: cx, y: ly, ...(fit?.tight ? { tight: true as const } : {}) }; partLyrics.push(lh); hitRow(lh, lrow(c.sys)); }   // 点击框归这个音那一行（system），画在歌词那一行（大谱表 = 下面那条）
         if (c.lyric === MELISMA_MARK) put(lrow(c.sys), { t: "line", x1: c.mx0, y1: ly0, x2: c.mx1, y2: ly0, w: P(0.12), cls: "melisma" });
-        else if (c.lyric) put(lrow(c.sys), { tok: c.tok, t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}), ...(look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}), cls: ["lyric", c.mute ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", c.cls ?? ""]   /* 挤了不画灰（v0.16.45；user「挤了能不能不画灰」「灰是有别的语义的」= 唱不出来 / 不认）：只留 lyric-tight 给歌词框说「挤了」 */.filter(Boolean).join(" ") });
+        else if (c.lyric) put(lrow(c.sys), { tok: c.tok, t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(look.k !== 1 || ts !== 1 || LS !== 1 ? { size: lyricSizePx(lsp, ts) } : {}), ...(look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}), cls: ["lyric", c.mute ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", c.cls ?? ""]   /* 挤了不画灰（v0.16.45；user「挤了能不能不画灰」「灰是有别的语义的」= 唱不出来 / 不认）：只留 lyric-tight 给歌词框说「挤了」 */.filter(Boolean).join(" ") });
       };
       const bySys = new Map<number, LyricSpot[]>();
       for (const c of spots) { const l = bySys.get(c.sys); if (l) l.push(c); else bySys.set(c.sys, [c]); }
@@ -646,7 +648,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
           const mine = partLyrics.slice(from), byIdx = new Map(cs.map((c) => [c.index, c] as const));
           const syls = mine.map((L) => { const pl = lyrPlan.get(`${r}:${L.index}`), c = byIdx.get(L.index)!, lyr = c.lyric ?? ""; return { x: L.x, hy: c.hyph, hw: pl ? P(pl.hw) : undefined, sx: pl?.sx, ...(pl ? {} : { nw: P(lyrUnit(lyricShow(lyr))) / 2 }), cjk: isBlockScript(lyricShow(lyr)), row: L.system }; });
           hyphens(syls, P(lyrHyphen), P(1.6)).forEach((h, n) => {
-            if (h) prims.push({ t: "text", x: h.x, y: mine[n]!.y, s: "-", cls: "lyric hyphen", ...(look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}), sx: look.sx * h.hf * HYPHEN_SX });
+            if (h) prims.push({ t: "text", x: h.x, y: mine[n]!.y, s: "-", cls: "lyric hyphen", ...(look.k !== 1 || ts !== 1 || LS !== 1 ? { size: lyricSizePx(lsp, ts) } : {}), sx: look.sx * h.hf * HYPHEN_SX });
           });
           lyrics.push(...partLyrics.slice(from));
         }, { min: 0, count: false, step: ROW_STEP });   // 歌词基线往下让也按整格（防抖）

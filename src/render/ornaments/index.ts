@@ -159,8 +159,13 @@ export function layDynamics(c: OrnCtx): void {
     const total = segs.reduce((n, [, a, b]) => n + Math.max(0, b - a), 0) || 1, H = P(0.5), long = total > P(right - MARGIN);
     const word = dir === "cresc" ? "cresc." : "dim.", ww = P(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
     let said = false, acc = 0, tailDone = false;
+    // 折到下一行的那一段短到画不出一个楔形 = 不画（统筹看第四刀成品样张后定的第 2 处：行首力度字前面那一小截虚线）。
+    //   **但不许整条都不画**（第五刀：照样张放宽音距后，行尾的力度字后面接着折行、下一行开头又是终点的字，两段都太短 = 记号静默没了，守卫 4 抓出来的）：
+    //   一段都画不出来时，最长的那一段照最短的楔形画
+    const drawable = segs.map(([, a0, b], i) => !(b - a0 < P(0.3) || (i > 0 && b - a0 < P(PIN_MIN))));
+    if (!drawable.some(Boolean) && segs.length) { let bi = 0; segs.forEach(([, a0, b], i) => { if (b - a0 > segs[bi]![2] - segs[bi]![1]) bi = i; }); segs[bi]![2] = Math.max(segs[bi]![2], segs[bi]![1] + P(PIN_MIN)); drawable[bi] = true; }
     segs.forEach(([sy, a0, b], i) => {
-      if (b - a0 < P(0.3) || (i > 0 && b - a0 < P(PIN_MIN))) return;   // 折到下一行的那一段短到画不出一个楔形 = 不画（统筹看第四刀成品样张后定的第 2 处：行首力度字前面那一小截虚线）
+      if (!drawable[i]) return;
       const row = c.row(sy), keys = [wedgeKey(index, sy)], last = i === segs.length - 1;
       if (i === 0 && k0) keys.push(k0);
       if (last && k1) keys.push(k1);

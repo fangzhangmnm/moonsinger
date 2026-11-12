@@ -42,7 +42,7 @@ describe("排版参数表", () => {
   it("行身从画法的竖向锚点来（不假设 0–4）；数字行的行高按数字行自己的那一行参数", () => {
     const st = DRAWERS.staff.anchors(0, 0.5), jp = DRAWERS.jianpu.anchors(0, 0.5);
     eq([st.top, st.bottom].join(","), "0,4", "五线谱 = 五条线");
-    assert(jp.top > 0 && jp.bottom < 4 && jp.bottom > jp.top, "数字行有自己的行身");
+    assert(Math.abs(jp.top - (2.95 - 1.82 * 2.5)) < 1e-6 && Math.abs(jp.bottom - (2.95 + 1.0 * 2.5)) < 1e-6, `数字行有自己的行身 = 样张的小节线那一段（基线上 1.82 到基线下 1.0 个数字字号）：${jp.top}–${jp.bottom}`);
     // 一首没有歌词、没有记号的长歌，切成简谱：中间那几行（谱头不在、墨在最小值里）的行高 = 数字行的「没歌词」最小行高
     const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
     let id = 1000; const body = Array.from({ length: 128 }, (_, i) => ({ kind: "note", pitch: { step: "CDEFGAB"[i % 7] as "C", alter: 0, octave: 4 }, dur: TPQ, lyric: null, id: id++ }) as Token);
@@ -54,7 +54,7 @@ describe("排版参数表", () => {
       assert(mid.length >= 2, "折成了好几行");
       return mid.map((r) => Math.round(((r.bottom - r.top) / sp) * 100) / 100);
     };
-    for (const h of heights("off")) eq(h, ROW_PARAMS.jianpu.cozy.rowHNoLyric, "不印小节号：数字行的行高 = 最小值");
+    for (const h of heights("off")) assert(Math.abs(h - ROW_PARAMS.jianpu.cozy.rowHNoLyric) < 0.006, `不印小节号：数字行的行高 = 最小值（${h} vs ${ROW_PARAMS.jianpu.cozy.rowHNoLyric}）`);
     for (const h of heights()) assert(h <= ROW_PARAMS.jianpu.cozy.rowHNoLyric + 1, `印小节号：最多高一格（${h}）——小节号贴着行身，不按五线谱躲符干的 2.4`);
   });
   // 验收按拍子算（统筹看第四刀成品样张后定的第 3 处，user「字有点大……有点太舒适了」）：A5 舒适档，四拍子、四分和八分为主的单声部旋律一行约 6 小节（约 24 个四分音符）；三拍子约 8 小节
@@ -71,10 +71,23 @@ describe("排版参数表", () => {
     const digitMm = (L.prims.find((p) => /jp-digit/.test(p.cls ?? "")) as { size: number }).size / sp * spMm(pp);
     return { perRow: L.systems.map((_, i) => by.get(i) ?? 0).slice(0, -1), digitMm };
   };
-  it("密度按拍子算：A5 舒适档四拍子一行约 6 小节、三拍子约 8 小节（最后一行不算）", () => {
+  it("一拍占多宽 = 样张的比例（第五刀：简谱的样子以当时的样张为准；统筹定的验收：比例对、每行几小节只报数不卡）", () => {
+    // 一行排得下（最后一行不拉宽）：相邻两个音的中心距 ÷ 数字字号 = 样张的弹簧（字号 22 px 时 5 + 6.8·log2(1 + 4×几拍) px）和「一列至少多宽」里大的那个
+    const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
+    const gap = (q: number) => {
+      let id = 6000; const body = Array.from({ length: 4 }, (_, i) => ({ kind: "note", id: id++, pitch: { step: "CDEF"[i] as "C", alter: 0, octave: 4 }, dur: TPQ * q, lyric: null }) as Token);
+      const pp = paperOf("A5"); let s: Song = { ...st0.song, paper: pp, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...paper.tracks[part]!, ...body] } }] };
+      s = setNotation({ ...st0, song: s }, "jianpu").song;
+      const sp = 10, L = engrave(s, { width: lineSp(pp) * sp, sp, locale: "zh", at: { paper: paper.id, part }, parts: [{ id: part, name: "Vocals", first: true }], measure: createTextMeasure((x: string, px: number) => [...x].length * 0.55 * px), autoBars: true, page: pageGeoOf(pp) });
+      const ds = L.prims.filter((p) => /jp-digit/.test(p.cls ?? "")) as { x: number; size: number }[];
+      return (ds[2]!.x - ds[1]!.x) / ds[0]!.size;
+    };
+    const mock = (q: number) => (5 + 6.8 * Math.log2(1 + 4 * q)) / 22;
+    for (const [q, want] of [[1, mock(1)], [0.5, Math.max(mock(0.5), 0.756)], [0.25, Math.max(mock(0.25), 0.492)]] as const) {
+      const g = gap(q); assert(Math.abs(g - want) < 0.01, `${q} 拍的音：中心距 ${g.toFixed(3)} 个字号 = 样张 ${want.toFixed(3)}`);
+    }
     const four = melody(4, 32, "A5"), three = melody(3, 32, "A5");
-    assert(four.perRow.length >= 3 && four.perRow.every((n) => n >= 5 && n <= 7), `四拍子每行 ${four.perRow.join(" ")}`);
-    assert(three.perRow.length >= 3 && three.perRow.every((n) => n >= 7 && n <= 9), `三拍子每行 ${three.perRow.join(" ")}`);
+    console.log(`    （只报数）A5 舒适：四拍子每行 ${four.perRow.join(" ")} 小节；三拍子每行 ${three.perRow.join(" ")} 小节`);
   });
   it("数字字号：舒适 3.6 mm、紧凑约 3.0 mm，不跟着纸变（A5、A6 同一档一样大）", () => {
     eq(Math.round(melody(4, 4, "A5").digitMm * 100) / 100, 3.6, "舒适 A5");

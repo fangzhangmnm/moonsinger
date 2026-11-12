@@ -10,7 +10,8 @@ import type { ColEntry } from "../frame/arrange.ts";
 import type { PartView } from "../engrave.ts";
 import type { Unit, Chunk, Head } from "../frame/units.ts";
 import type { ChordFold } from "../../theory/index.ts";
-import { DIGIT_W, ACC_W, ARP_W, chordNameW, CHORD_AMB_W, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
+import { SP_DEFAULTS } from "../spacing.ts";
+import { DIGIT_W, ACC_W, ARP_W, chordNameW, CHORD_AMB_W, COL_MIN, COL_MIN_SHORT, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
 
 /** 一条要排的简谱轨（一个声部在这张纸上；框架交来的单元已经切好了时值）。 */
 export interface JianpuTrack {
@@ -48,6 +49,8 @@ export const glyphWOf = (u: Chunk, aux: JianpuAux | undefined): number => { cons
 export const accsOf = (u: Chunk): (number | null)[] => (u.j !== 0 || !u.note ? [] : u.pitches.length > 1 ? u.accs : [u.acc]);
 /** 这一段画不画琶音的竖波浪（只挂在和弦上：单音的琶音核心那边已经去掉了）。 */
 export const hasArp = (u: Chunk): boolean => u.note && u.j === 0 && u.pitches.length > 1 && u.art.includes("arpeggio");
+/** 这一段（第一个字形）这一列至少多宽（数字行的单位；样张：四分 / 八分 = 数字宽 + 一点缝，十六分及更短只占字宽——「密的声部自己挤紧」；和弦名 = 名字的宽 + 两边的缝）。 */
+const core = (u: Chunk, nameW: number): number => (nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN);
 /** 第几层下划线（八分 = 1、十六分 = 2…；四分以上 = 0）。 */
 export const underlines = (u: Chunk): number => (u.base < TPQ ? Math.max(1, Math.round(Math.log2(TPQ / u.base))) : 0);
 
@@ -75,7 +78,7 @@ export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits"
     const n = extraGlyphs(u), acc = mode === "digits" && !fd && accsOf(u).some((a) => a !== null);   // 和弦：哪个音要写升降号，这一列就往左让出升降号的地方（和弦竖叠，宽不变）
     const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;   // 换气的 V（+「吸 / 深吸」）画在音后面：留出来，不压下一个音
     //   左边挂的东西（升降号、琶音）= 这个音往左的最小占地：前面有空就不挪，会撞上前一个音 / 小节线才推这一个音（UX 稿第 7 节；间距那一套本来就这样顶）
-    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = (0.1 + gw + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k;
+    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = Math.max(0, (core(u, fd ? gw : 0) + 0.1 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k - SP_DEFAULTS.pad);   // 顶杆 = 前一个的右伸 + 后一个的左伸（−0.1）+ 缝：右伸按样张这一列至少多宽倒推
     inkL.set(u, Math.max(0, left));
     const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks }];
     const cx = (0.1 + gw / 2) * k;

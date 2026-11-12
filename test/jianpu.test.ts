@@ -178,18 +178,20 @@ describe("简谱数字行", () => {
     assert(L.prims.filter((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "") && p.tok === 1000).length >= 1, "第二小节那一拍半 = 带附点");
     assert(L.notes.filter((h) => h.index === paper.tracks[part]!.length).length === 1, "点击框只有一个、指回这个音");
   });
-  it("记号（UX 稿第 5 节）：跳音 = 楔形、保持 = 短横、重音的帽子、次重音细一号、幽灵音小一号、气声 ×、换气 V + 吸、滚奏三道斜线", () => {
+  it("记号（UX 稿第 5 节；第五刀起样子照样张）：跳音 = 实心窄楔形、保持 = 短横、重音 = 描边的 >、次重音细一号、幽灵音小一号、气声 ×、换气 V + 吸、滚奏三道斜线", () => {
     const { L } = lay([
       n(P("C"), TPQ, { art: ["staccato"] }), n(P("D"), TPQ, { art: ["tenuto"] }), n(P("E"), TPQ, { art: ["accent"] }), n(P("F"), TPQ, { art: ["stress"] }),
       n(P("G"), TPQ, { art: ["ghost"] }), n(P("A"), TPQ, { art: ["whisper"] }), n(P("B"), TPQ, { art: ["breath"], inhale: "soft" }), n(P("C", 5), TPQ, { art: ["roll"] }),
     ]);
     const glyphs = L.prims.filter((p): p is Extract<Prim, { t: "glyph" }> => p.t === "glyph");
-    assert(glyphs.some((g) => g.ch === "\u{E4A8}"), "跳音 = 楔形（E4A8）");
-    assert(glyphs.some((g) => g.ch === "\u{E4A4}"), "保持 = 短横（E4A4）");
-    const acc = glyphs.filter((g) => g.ch === "\u{E4A0}");
-    eq(acc.length, 2, "重音、次重音都是 >");
-    const sz = acc.map((g) => g.size ?? 40).sort((a, b) => a - b);
-    assert(sz[0]! < sz[1]!, "次重音细一号（字号小）");
+    void glyphs;
+    assert(L.prims.some((p) => p.t === "path" && /jp-stacc/.test(p.cls ?? "") && /staccato/.test(p.cls ?? "")), "跳音 = 实心窄楔形");
+    assert(L.prims.some((p) => p.t === "line" && /jp-ten/.test(p.cls ?? "")), "保持 = 短横");
+    const chev = L.prims.filter((p): p is Extract<Prim, { t: "path" }> => p.t === "path" && /jp-chev/.test(p.cls ?? ""));
+    eq(chev.length, 2, "重音、次重音都是 >");
+    const thick = (p: { d: string }) => { const n = p.d.match(/-?[\d.]+/g)!.map(Number); return n[11]! - n[1]!; };   // 第一条臂竖着的厚（上沿 → 下沿）
+    const accT = thick(chev.find((p) => /accent/.test(p.cls ?? ""))!), strT = thick(chev.find((p) => /stress/.test(p.cls ?? ""))!);
+    assert(strT < accT, `次重音细一号（描边细：${strT.toFixed(2)} < ${accT.toFixed(2)}）`);
     const ds = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? ""));
     const gh = ds.find((p) => /art-ghost/.test(p.cls ?? ""));
     assert(gh !== undefined && gh.size! < ds.find((p) => !/ghost/.test(p.cls ?? ""))!.size! && !/(^|\s)ghost(\s|$)/.test(gh.cls ?? ""), "幽灵音 = 数字小一号（不是灰的：灰 = 没写音高）");
