@@ -104,8 +104,10 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     const cells = (f: (d: Dyn) => string) => DYNS.map((d) => `<td>${f(d)}</td>`).join("");
     const vel = sp.dynamicsVel;
     return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d) => `<th title="${d}"><span class="smufl">${DYN_GLYPH[d]}</span></th>`).join("")}</tr>` +
-      (vel ? `<tr><th>${_t("MIDI 力度")}</th>${cells((d) => String(vel[d]))}</tr>` : `<tr><th>${_t("音量 dB")}</th>${cells((d) => db(sp.dynamicsDb[d]))}</tr>`) +
-      (vel && layers && layers.count > 1 ? `<tr><th>${_t("GS 力度层")}</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
+      (vel ? `<tr><th>${_t("MIDI 力度")}</th>${cells((d) => String(vel[d]))}</tr>` +
+        // 响度（第 9 节，2026-11-12）：SoundFont 照规范放，音量 = (力度 ÷ 127)² → 响度 = 40·log10(力度 ÷ 127) dB（满力度 = 0）；一张表看出每档差多少
+        `<tr><th>${_t("响度 dB")}</th>${cells((d) => db(Math.round(40 * Math.log10(vel[d] / 127) * 10) / 10))}</tr>` : `<tr><th>${_t("音量 dB")}</th>${cells((d) => db(sp.dynamicsDb[d]))}</tr>`) +
+      (vel && layers && layers.count > 1 ? `<tr><th>${_t("第几份录音")}</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
   }
   /** 乐器页的内容（每次改完整页重画；输入框里正在打的字不受影响——只有提交时才改 extras）。 */
   /** 插件自报参数行要的上下文（ADR-0004 §2.5）：休息室 / 角色 / 哼的字 / 音乐目录（没载 = null）/ 排版小工具。 */

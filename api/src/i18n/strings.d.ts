@@ -3205,8 +3205,11 @@ export declare const S: {
     readonly "\u97F3\u91CF dB": {
         readonly en: "Volume dB";
     };
-    readonly "GS \u529B\u5EA6\u5C42": {
-        readonly en: "GS velocity layer";
+    readonly 第几份录音: {
+        readonly en: "Recording #";
+    };
+    readonly "\u54CD\u5EA6 dB": {
+        readonly en: "Loudness dB";
     };
     readonly "\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08{n}\uFF09{library}": {
         readonly en: "Sound embedded in the song ({n}){library}";
@@ -5005,8 +5008,11 @@ export declare const S: {
     readonly "\u56DE\u5230 {def}": {
         readonly en: "Back to {def}";
     };
-    readonly "\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002{dynamicsVel}{L}": {
-        readonly en: "Notes without a dynamic use this velocity (MIDI 1–127). {dynamicsVel}{L}";
+    readonly "\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002\u97F3\u91CF = \u529B\u5EA6\u7684\u5E73\u65B9\uFF08SoundFont \u89C4\u8303\uFF1B\u6EE1\u529B\u5EA6 127 = 0 dB\uFF0C\u529B\u5EA6\u51CF\u534A = \u8F7B 12 dB\uFF09\u3002{dynamicsVel}{L}": {
+        readonly en: "Notes without a dynamic use this velocity (MIDI 1–127). Volume = velocity squared (the SoundFont standard; full velocity 127 = 0 dB, half the velocity = 12 dB quieter). {dynamicsVel}{L}";
+    };
+    readonly "\u4E50\u5668\u7684\u5F3A\u5F31\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\uFF0C\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\u3002\u6700\u54CD\u7684 fff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\uFF0C\u6574\u9996\u4F1A\u53D8\u8F7B\uFF1B\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002": {
+        readonly en: "Instruments now follow the SoundFont standard for dynamics: volume goes with velocity squared, so loud and soft differ twice as much as before. fff is as loud as it was; every other level is quieter (mf is 4 dB quieter), so whole songs get quieter. Older songs need their balance redone.";
     };
     readonly "\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{L}": {
         readonly en: "Dynamics follow this performer's velocity table (accent +{accentVel}, marcato +{marcatoVel}; for other marks see “How marks are performed” below): {L}";

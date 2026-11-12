@@ -3787,7 +3787,8 @@ var S = {
   "\u7B2C\u4E8C\u884C\u8D77\u5199 {ab}": { en: "from the 2nd system: {ab}" },
   "MIDI \u529B\u5EA6": { en: "MIDI velocity" },
   "\u97F3\u91CF dB": { en: "Volume dB" },
-  "GS \u529B\u5EA6\u5C42": { en: "GS velocity layer" },
+  "\u7B2C\u51E0\u4EFD\u5F55\u97F3": { en: "Recording #" },
+  "\u54CD\u5EA6 dB": { en: "Loudness dB" },
   "\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08{n}\uFF09{library}": { en: "Sound embedded in the song ({n}){library}" },
   "\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 {name}": { en: ", from {name} in the family sound library" },
   "\uFF0C\u6765\u81EA {name}": { en: ", from {name}" },
@@ -4387,7 +4388,8 @@ var S = {
   "\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09": { en: "A little softer (MIDI velocity \u22128)" },
   "\u91CD\u4E00\u70B9\uFF08+8\uFF09": { en: "A little harder (+8)" },
   "\u56DE\u5230 {def}": { en: "Back to {def}" },
-  "\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002{dynamicsVel}{L}": { en: "Notes without a dynamic use this velocity (MIDI 1\u2013127). {dynamicsVel}{L}" },
+  "\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002\u97F3\u91CF = \u529B\u5EA6\u7684\u5E73\u65B9\uFF08SoundFont \u89C4\u8303\uFF1B\u6EE1\u529B\u5EA6 127 = 0 dB\uFF0C\u529B\u5EA6\u51CF\u534A = \u8F7B 12 dB\uFF09\u3002{dynamicsVel}{L}": { en: "Notes without a dynamic use this velocity (MIDI 1\u2013127). Volume = velocity squared (the SoundFont standard; full velocity 127 = 0 dB, half the velocity = 12 dB quieter). {dynamicsVel}{L}" },
+  "\u4E50\u5668\u7684\u5F3A\u5F31\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\uFF0C\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\u3002\u6700\u54CD\u7684 fff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\uFF0C\u6574\u9996\u4F1A\u53D8\u8F7B\uFF1B\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002": { en: "Instruments now follow the SoundFont standard for dynamics: volume goes with velocity squared, so loud and soft differ twice as much as before. fff is as loud as it was; every other level is quieter (mf is 4 dB quieter), so whole songs get quieter. Older songs need their balance redone." },
   "\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{L}": { en: "Dynamics follow this performer's velocity table (accent +{accentVel}, marcato +{marcatoVel}; for other marks see \u201CHow marks are performed\u201D below): {L}" },
   "\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A{p}": { en: "This performer came on stage earlier: dynamics still only change volume: {p}" },
   "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 {count} \u4E2A\u529B\u5EA6\u5C42{p}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002": { en: "This GS sound has {count} velocity layers{p}: crossing a layer = a different recording, so timbre changes, not just loudness." },
@@ -33131,15 +33133,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-5dcc08fe2fcc.mjs");
+      return pick(() => "singer-worker-715d0db234b9.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
-      return pick(() => "studio-worklet-cdbca833c2a0.mjs");
+      return pick(() => "studio-worklet-c332a92b253e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-8b023254d232.mjs");
+      return pick(() => "layout-worker-e26d4272a183.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-a55e39c0a87c.mjs");
+      return pick(() => "encode-worker-2831cb51d267.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -36912,6 +36914,10 @@ function creditsText(lines) {
 }
 
 // src/gm/tsf-standalone.ts
+function sfNoteOnSquared(ex2, f2, preset, key, vel) {
+  if (vel > 0) ex2.sf_set_volume(f2, vel);
+  ex2.sf_note_on(f2, preset, key, vel);
+}
 async function instantiateTsf(module) {
   const imports = { env: { emscripten_notify_memory_growth: () => {
   } } };
@@ -36952,8 +36958,9 @@ var Tsf = class {
     this.ex.sf_close(b3.handle);
   }
   noteOn(b3, preset, key, vel) {
-    this.ex.sf_note_on(b3.handle, preset, key, vel);
+    sfNoteOnSquared(this.ex, b3.handle, preset, key, vel);
   }
+  // 音量 = 力度的平方（第 9 节）
   noteOff(b3, preset, key) {
     this.ex.sf_note_off(b3.handle, preset, key);
   }
@@ -39739,7 +39746,7 @@ var soundfont = registerPerformer({
       rows.push({
         label: _t("\u529B\u5EA6##MIDI"),
         control: `<b class="ip-val">${midi2}</b><button class="btn" data-v="vel:-8" title="${_t("\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09")}">\u22128</button><button class="btn" data-v="vel:8" title="${_t("\u91CD\u4E00\u70B9\uFF08+8\uFF09")}">+8</button>` + (midi2 !== def ? `<button class="btn" data-v="vel:def" title="${_t("\u56DE\u5230 {def}", { def })}">${_t("\u9ED8\u8BA4")}</button>` : ""),
-        note: _t("\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002{dynamicsVel}{L}", { dynamicsVel: sp2.dynamicsVel ? _t("\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{L}", { accentVel: sp2.accentVel, marcatoVel: sp2.marcatoVel, L: dynTable(L2) }) : _t("\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A{p}", { p: dynTable(null) }), L: L2 ? L2.count > 1 ? _t("GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 {count} \u4E2A\u529B\u5EA6\u5C42{p}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002", { count: L2.count, p: k2 >= 0 ? _t("\uFF0C\u73B0\u5728\u5728\u7B2C {p} \u5C42\uFF08{p2}\u2013{p3}\uFF09", { p: k2 + 1, p2: L2.ranges[k2][0], p3: L2.ranges[k2][1] }) : "" }) : _t("GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002") : "" })
+        note: _t("\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002\u97F3\u91CF = \u529B\u5EA6\u7684\u5E73\u65B9\uFF08SoundFont \u89C4\u8303\uFF1B\u6EE1\u529B\u5EA6 127 = 0 dB\uFF0C\u529B\u5EA6\u51CF\u534A = \u8F7B 12 dB\uFF09\u3002{dynamicsVel}{L}", { dynamicsVel: sp2.dynamicsVel ? _t("\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{L}", { accentVel: sp2.accentVel, marcatoVel: sp2.marcatoVel, L: dynTable(L2) }) : _t("\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A{p}", { p: dynTable(null) }), L: L2 ? L2.count > 1 ? _t("GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 {count} \u4E2A\u529B\u5EA6\u5C42{p}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002", { count: L2.count, p: k2 >= 0 ? _t("\uFF0C\u73B0\u5728\u5728\u7B2C {p} \u5C42\uFF08{p2}\u2013{p3}\uFF09", { p: k2 + 1, p2: L2.ranges[k2][0], p3: L2.ranges[k2][1] }) : "" }) : _t("GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002") : "" })
       });
     }
     if (active?.sfx) {
@@ -41792,7 +41799,7 @@ function createInstSettings(el2, h2) {
     const db = (x2) => `${x2 > 0 ? "+" : x2 < 0 ? "\u2212" : ""}${Math.abs(x2)}`;
     const cells = (f2) => DYNS.map((d3) => `<td>${f2(d3)}</td>`).join("");
     const vel = sp2.dynamicsVel;
-    return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d3) => `<th title="${d3}"><span class="smufl">${DYN_GLYPH[d3]}</span></th>`).join("")}</tr>` + (vel ? `<tr><th>${_t("MIDI \u529B\u5EA6")}</th>${cells((d3) => String(vel[d3]))}</tr>` : `<tr><th>${_t("\u97F3\u91CF dB")}</th>${cells((d3) => db(sp2.dynamicsDb[d3]))}</tr>`) + (vel && layers && layers.count > 1 ? `<tr><th>${_t("GS \u529B\u5EA6\u5C42")}</th>${cells((d3) => {
+    return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d3) => `<th title="${d3}"><span class="smufl">${DYN_GLYPH[d3]}</span></th>`).join("")}</tr>` + (vel ? `<tr><th>${_t("MIDI \u529B\u5EA6")}</th>${cells((d3) => String(vel[d3]))}</tr><tr><th>${_t("\u54CD\u5EA6 dB")}</th>${cells((d3) => db(Math.round(40 * Math.log10(vel[d3] / 127) * 10) / 10))}</tr>` : `<tr><th>${_t("\u97F3\u91CF dB")}</th>${cells((d3) => db(sp2.dynamicsDb[d3]))}</tr>`) + (vel && layers && layers.count > 1 ? `<tr><th>${_t("\u7B2C\u51E0\u4EFD\u5F55\u97F3")}</th>${cells((d3) => {
       const k2 = layers.ranges.findIndex(([lo2, hi]) => vel[d3] >= lo2 && vel[d3] <= hi);
       return k2 >= 0 ? String(k2 + 1) : "\u2013";
     })}</tr>` : "") + `</table>`;
@@ -43085,8 +43092,8 @@ ${tg2.fx}`);
 };
 
 // src/core/version.ts
-var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "3d9f411a5400f974" : "dev";
+var CORE_VERSION = "0.2.0";
+var CORE_HASH = true ? "0d647347c1e6f1f9" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -56636,6 +56643,7 @@ var SelBar = class {
 installTouchTips();
 applyDocumentLang();
 document.getElementById("score")?.setAttribute("aria-label", _t("\u4E50\u8C31"));
+var ranBefore = deviceKvGet("diag-log") !== null;
 initBlackBox(APP_VERSION);
 var D3 = createDocument({ st: initState(), extras: emptyExtras() }, {
   now: () => performance.now(),
@@ -58192,6 +58200,7 @@ async function renderInLibrary(id2) {
     busy.close();
   }
 }
+var KV_SF_VELOCITY_SAID = "said-sf-velocity-square";
 var mp3Keep = deviceKvGet("mp3-keep") !== "off";
 function openMp3Panel() {
   ui2.close();
@@ -62829,10 +62838,19 @@ setTimeout(() => schedulePrewarm(), 1200);
     void openFromLink(raw);
   }
 }
+if (deviceKvGet(KV_SF_VELOCITY_SAID) !== "1") {
+  deviceKvSet(KV_SF_VELOCITY_SAID, "1");
+  if (ranBefore) showNotice({
+    id: "sf-velocity",
+    level: "info",
+    text: _t("\u4E50\u5668\u7684\u5F3A\u5F31\u6539\u6210\u4E86 SoundFont \u6807\u51C6\u7684\u653E\u6CD5\uFF1A\u97F3\u91CF\u6309\u529B\u5EA6\u7684\u5E73\u65B9\u8D70\uFF0C\u5F3A\u5F31\u7684\u5DEE\u522B\u662F\u539F\u6765\u7684\u4E24\u500D\u3002\u6700\u54CD\u7684 fff \u548C\u539F\u6765\u4E00\u6837\uFF0C\u522B\u7684\u6863\u6BD4\u539F\u6765\u8F7B\uFF08mf \u8F7B 4 dB\uFF09\uFF0C\u6574\u9996\u4F1A\u53D8\u8F7B\uFF1B\u65E7\u6B4C\u7684\u5E73\u8861\u8981\u91CD\u65B0\u8C03\u3002"),
+    actions: [{ label: _t("\u77E5\u9053\u4E86"), primary: true, onClick: () => closeNotice("sf-velocity") }]
+  });
+}
 void midi.resume();
 /**
 * vue v3.5.35
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6f1a254d5c29.mjs.map
+//# sourceMappingURL=moonsinger-974003d82fec.mjs.map

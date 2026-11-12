@@ -138,6 +138,7 @@ import { TAB20, partColorIndices, partAbbr, localPartName } from "../ui/part-col
 installTouchTips();
 applyDocumentLang();   // <html lang> + CSS 里写死的几句：第一个做，后面画界面都已经是这个语言
 document.getElementById("score")?.setAttribute("aria-label", _t("乐谱"));
+const ranBefore = deviceKvGet("diag-log") !== null;   // 这台设备以前开过 app（黑匣子的环在）：「更新之后第一次打开说一次」只对用过旧版的设备说，全新的不说（第 9 节）
 initBlackBox(APP_VERSION);   // 黑匣子第一个起：之后所有报错 / 面包屑都有地方落（设置里「诊断日志」能分享）
 /** 文档 = 真相 + **改它的唯一入口**（src/app/document.ts，2026-10-16 doc 这一刀）：谱的状态 `D.st`、文件里的其余部分 `D.extras`、撤销栈、「改过没存」的基线、修改锁的第 ②③ 道。
  *  改状态一律 `D.commit()`（下面的 update / updateExtras / updateBoth 只是薄壳）；界面的副作用在 afterState / afterExtras / afterRestore 三个 hook 里（函数声明会提升，这里引用没问题）。 */
@@ -1207,6 +1208,7 @@ async function renderInLibrary(id: string): Promise<boolean> {
     return false;
   } finally { busy.close(); }
 }
+const KV_SF_VELOCITY_SAID = "said-sf-velocity-square";   // 第 9 节那一句说过了（这台设备只说一次）
 let mp3Keep = deviceKvGet("mp3-keep") !== "off";   // 导出时也记在这台设备上（设备设置；user 11-11「导出时明说，给开关 同意」）
 function openMp3Panel(): void {
   ui.close();
@@ -4270,4 +4272,10 @@ setTimeout(() => schedulePrewarm(), 1200);
 // 从链接打开（`?file=<链接>`）：开机恢复完再问；先把这一段从地址栏拿掉（刷新不再问，问了「算了」也不留着）
 { const raw = linkParam(location.href);
   if (raw) { history.replaceState(history.state, "", withoutLinkParam(location.href)); void openFromLink(raw); } }
+// 乐器的强弱改成 SoundFont 标准的放法（施工单第 9 节，2026-11-12；user「立刻最先修」）：更新之后第一次打开说一次（这台设备只说一次；不问、不留旧模式）
+if (deviceKvGet(KV_SF_VELOCITY_SAID) !== "1") {
+  deviceKvSet(KV_SF_VELOCITY_SAID, "1");
+  if (ranBefore) showNotice({ id: "sf-velocity", level: "info", text: _t("乐器的强弱改成了 SoundFont 标准的放法：音量按力度的平方走，强弱的差别是原来的两倍。最响的 fff 和原来一样，别的档比原来轻（mf 轻 4 dB），整首会变轻；旧歌的平衡要重新调。"),
+    actions: [{ label: _t("知道了"), primary: true, onClick: () => closeNotice("sf-velocity") }] });
+}
 void midi.resume();   // 浏览器记住了「允许」= 静默接上 MIDI 键盘（没记住不弹框，等顶栏「MIDI」或设置里点「连接」；W-42）   // 启动时打开的那首歌（歌库 / 上次的）也预热   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响

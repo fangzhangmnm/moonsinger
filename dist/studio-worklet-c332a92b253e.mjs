@@ -1,4 +1,8 @@
 // src/gm/tsf-standalone.ts
+function sfNoteOnSquared(ex, f, preset, key, vel) {
+  if (vel > 0) ex.sf_set_volume(f, vel);
+  ex.sf_note_on(f, preset, key, vel);
+}
 async function instantiateTsf(module) {
   const imports = { env: { emscripten_notify_memory_growth: () => {
   } } };
@@ -39,8 +43,9 @@ var Tsf = class {
     this.ex.sf_close(b.handle);
   }
   noteOn(b, preset, key, vel) {
-    this.ex.sf_note_on(b.handle, preset, key, vel);
+    sfNoteOnSquared(this.ex, b.handle, preset, key, vel);
   }
+  // 音量 = 力度的平方（第 9 节）
   noteOff(b, preset, key) {
     this.ex.sf_note_off(b.handle, preset, key);
   }
@@ -1916,4 +1921,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-cdbca833c2a0.mjs.map
+//# sourceMappingURL=studio-worklet-c332a92b253e.mjs.map
