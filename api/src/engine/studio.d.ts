@@ -17,7 +17,8 @@ export interface NoteEv {
     t1: number;
     key: number;
     vel: number;
-    preset: number;
+    preset: number; /** 写的结尾（只有被踏板留长了的才有）：从中间起放时这个音只靠踏板留着 + 乐器会自己衰减 = 不补按（规矩八）。 */
+    w1?: number;
 }
 /** 慢引擎的一块：key = 内容键（主线程按 key 喂 samples）；t0 = 这块第 0 个采样对应时间线的第几秒（含提前量）；dur = 预计几秒（没到时判断「站在它上面」）；gain = 乘多少。 */
 export interface ClipRef {
@@ -39,7 +40,8 @@ export type TrackSpec = {
     sha: string;
     notes: NoteEv[];
     gain: GainSeg[] | null;
-    chain?: FxV2[];
+    chain?: FxV2[]; /** 按下去就自然衰减（候选 canSwell = false：钢琴、拨弦…）：只靠踏板留着的音从中间起放不补按（规矩八）。 */
+    decays?: true;
 } | {
     id: string;
     kind: "vowel";
@@ -420,6 +422,9 @@ export declare class Studio {
     /** 这一圈放到哪儿为止：循环 = 谱的末尾（loopTo），不循环 = 范围尾（最后一句的尾音也放完）。 */
     private endAt;
     private chaseAtLoop;
+    /** 从中间起放 / 跳转 / 循环绕回时补不补按这个音（踏板 11-1 规矩八，统筹 11-0 之后定）：写的时值盖住起点的照补；只靠踏板留着的——会自己衰减的乐器不补（真弹早衰减了，
+     *  补 = 十几个音一起从音头重敲），按住不衰减的照补（它们这时候确实还响着）。 */
+    private chaseable;
     private silent;
     /** 各声部出 cnt 个采样进母线 / 总线（从 off 起）。notesOn = 排新音；clipsOn = 块前进（false = 冻着，块不出声）。
      *  两趟（侧链要先看到别的轨的声）：① 每轨 出声 → 表情曲线 → 块淡入淡出 → 演奏者的链 → src；② 每轨 src → 通道链（压缩器的 key 读别的轨的 src）→ 静音 / 独奏 → 推子 / 声像 → 去总轨或总线，再按发送量发到总线。 */

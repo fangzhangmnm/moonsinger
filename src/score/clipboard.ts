@@ -68,7 +68,7 @@ export function toJianpu(toks: Token[], fifths: number): string {
     if (t.kind === "key") { f = t.fifths; out.push(t.mode === "minor" ? `[6=${MINOR_LABEL[t.fifths] ?? t.fifths}]` : `[1=${KEY_LABEL[t.fifths] ?? t.fifths}]`); continue; }   // 小调写 la 是哪个音
     if (t.kind === "time") { out.push(`[${t.beats}/${t.beatType}]`); continue; }
     if (t.kind === "tempo") { out.push(`[T=${t.bpm}]`); continue; }
-    if (t.kind === "clef" || t.kind === "ottava") continue;   // 谱号 / 八度线只管画，不进简谱文字（app 内剪贴板带着原 token）
+    if (t.kind === "clef" || t.kind === "ottava" || t.kind === "pedal") continue;   // 谱号 / 八度线 / 踏板（11-1）只管画、出声，不进简谱文字（app 内剪贴板带着原 token）
     if (t.kind === "dyn") { out.push(`[${t.value}]`); continue; }   // 力度 = [mf]（演奏法不进简谱文字；app 内剪贴板带着原 token）
     if (t.kind === "hairpin") { out.push(t.dir === "cresc" ? "[<]" : "[>]"); continue; }   // 渐强 / 渐弱 = [<] / [>]
     if (t.kind === "groove") { out.push(`[G=${t.style}${t.amount !== undefined && t.amount !== 1 ? `:${Math.round(t.amount * 100)}` : ""}${t.shift ? "/2-3" : ""}]`); continue; }   // /2-3 = 错开一小节   // 风格（拍子轻重）= [G=pop] / [G=pop:150]

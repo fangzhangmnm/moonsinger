@@ -155,7 +155,17 @@ export interface OttavaTok {
     shift: -1 | 0 | 1 | 2; /** 自动画的（v0.9.37）：只在导出 MusicXML 时临时插进去（带 ms-auto id），谱里永远没有。 */
     auto?: true;
 }
-export type Token = NoteTok | RestTok | BarTok | MarkTok | DynTok | HairpinTok | GrooveTok | NavTok | ClefTok | OttavaTok;
+/** 踏板记号（踏板 11-1，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；设计 = ai-docs/20261112-pedals-and-ring-design.md）：不占时值，挂在后面那个音 / 休止上（能挂在一段最后）。
+ *  which = 延音 / 持音 / 弱音；act = 踩下 / 抬起 / 换踏板（换 = 只有延音有：这一刻留着的音全松、接着踩着）。按声部、按纸算：每张纸开头三种都是抬着的，纸尾还踩着 = 纸尾抬起。
+ *  11-1 只接延音（持音、弱音是 11-2）。 */
+export type PedalKind = "sustain" | "sostenuto" | "soft";
+export interface PedalTok {
+    kind: "pedal";
+    id: number;
+    which: PedalKind;
+    act: "down" | "up" | "change";
+}
+export type Token = NoteTok | RestTok | BarTok | MarkTok | DynTok | HairpinTok | GrooveTok | NavTok | ClefTok | OttavaTok | PedalTok;
 export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
 export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, "id">;

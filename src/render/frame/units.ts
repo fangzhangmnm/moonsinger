@@ -140,6 +140,7 @@ export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; 
     if (t.kind === "dyn") { flushFull(i); units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "hairpin") { flushFull(i); units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "groove") { flushFull(i); units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
+    if (t.kind === "pedal") return;   // 踏板记号（11-1）：画是第三步（两种谱共用的挂件），这一步先不建单元
     // 谱号记号（v0.9.28）。纸头那一处的（这一段手选的谱号，v0.16.88）= 开头的谱号本身（resolveSongLooks 拿它当 start），不另占一个「中途换谱号」的位子
     if (t.kind === "clef") { if (i < H || tokens.slice(H, i).every((x) => x.kind === "clef")) return; flushFull(i); units.push({ kind: "clef", index: i, clef: t.clef, w: W.clef, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "ottava") { flushFull(i); units.push({ kind: "ottava", index: i, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }   // 八度线（v0.9.28）：不占横向地方   // 风格记号（拍子轻重）：同力度字，不占横向地方

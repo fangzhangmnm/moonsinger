@@ -41,13 +41,13 @@ const LOOKAHEAD = 30;
 
 // ── 契约（主线程 ↔ 录音房）────────────────────────────────────────────────────────────────────────────────────────────
 /** 一个要出声的音（时间线上的秒）。preset = 这份库里的预设下标（主线程按 bank:program 查过）；vel 0–1。 */
-export interface NoteEv { t0: number; t1: number; key: number; vel: number; preset: number }
+export interface NoteEv { t0: number; t1: number; key: number; vel: number; preset: number; /** 写的结尾（只有被踏板留长了的才有）：从中间起放时这个音只靠踏板留着 + 乐器会自己衰减 = 不补按（规矩八）。 */ w1?: number }
 /** 慢引擎的一块：key = 内容键（主线程按 key 喂 samples）；t0 = 这块第 0 个采样对应时间线的第几秒（含提前量）；dur = 预计几秒（没到时判断「站在它上面」）；gain = 乘多少。 */
 export interface ClipRef { key: string; t0: number; dur: number; gain: number; /** 唱的最后一个音结束的秒（t0 + dur 还含收尾余音）；从某一段放时，end ≤ 起点的块不放。 */ end?: number }
 export interface GainSeg { t0: number; t1: number; dB: number }
 /** chain = 跟着演奏者走的效果（琴箱 / 音箱…；CandidateV2.chain），在表情曲线之后、通道条之前。 */
 export type TrackSpec =
-  | { id: string; kind: "sf"; sha: string; notes: NoteEv[]; gain: GainSeg[] | null; chain?: FxV2[] }
+  | { id: string; kind: "sf"; sha: string; notes: NoteEv[]; gain: GainSeg[] | null; chain?: FxV2[]; /** 按下去就自然衰减（候选 canSwell = false：钢琴、拨弦…）：只靠踏板留着的音从中间起放不补按（规矩八）。 */ decays?: true }
   | { id: string; kind: "vowel"; kana: string; notes: NoteEv[]; gain: GainSeg[] | null; chain?: FxV2[] }
   | { id: string; kind: "clips"; clips: ClipRef[]; gain: GainSeg[] | null; chain?: FxV2[] };
 /** 循环接缝两边最多接多长（秒）：唱段提前起的辅音（LEAD_IN 0.5）/ 留的尾音（SUNG_TAIL 0.6）都在这里面。 */
@@ -425,7 +425,7 @@ export class Studio {
       if (segs && segs.length) { let k = 0; while (k < segs.length - 1 && this.pos >= segs[k].t1) k++; t.gk = k; if (chase) t.y = dbToLin(segs[k].dB); }
       if (t.spec.kind === "clips") continue;
       const notes = t.spec.notes; let i = 0;
-      while (i < notes.length && notes[i].t0 < this.pos) { if (chase && notes[i].t1 > this.pos && !this.mutedNote(notes[i])) this.noteOn(t, notes[i]); i++; }
+      while (i < notes.length && notes[i].t0 < this.pos) { if (chase && notes[i].t1 > this.pos && !this.mutedNote(notes[i]) && this.chaseable(t, notes[i])) this.noteOn(t, notes[i]); i++; }
       t.nextNote = i;
     }
   }
@@ -595,7 +595,10 @@ export class Studio {
   }
   /** 这一圈放到哪儿为止：循环 = 谱的末尾（loopTo），不循环 = 范围尾（最后一句的尾音也放完）。 */
   private endAt(): number { return this.loop && this.loopTo !== null ? Math.min(this.range.to, Math.max(this.loopTo, (this.loopFrom ?? this.range.from) + 1e-3)) : this.range.to; }
-  private chaseAtLoop(): void { for (const t of this.tracks.values()) { if (t.spec.kind === "clips") continue; for (const nte of t.spec.notes) if (nte.t0 < this.pos && nte.t1 > this.pos) this.noteOn(t, nte); } }
+  private chaseAtLoop(): void { for (const t of this.tracks.values()) { if (t.spec.kind === "clips") continue; for (const nte of t.spec.notes) if (nte.t0 < this.pos && nte.t1 > this.pos && this.chaseable(t, nte)) this.noteOn(t, nte); } }
+  /** 从中间起放 / 跳转 / 循环绕回时补不补按这个音（踏板 11-1 规矩八，统筹 11-0 之后定）：写的时值盖住起点的照补；只靠踏板留着的——会自己衰减的乐器不补（真弹早衰减了，
+   *  补 = 十几个音一起从音头重敲），按住不衰减的照补（它们这时候确实还响着）。 */
+  private chaseable(t: TrackState, n: NoteEv): boolean { return n.w1 === undefined || n.w1 > this.pos || !(t.spec.kind === "sf" && t.spec.decays); }
   private silent(): boolean {
     for (const t of this.tracks.values()) { if (t.sf && this.tsf.active(t.sf.player) > 0) return false; if (t.vowels.length) return false; if (t.spec.kind === "clips" && t.env > 1e-4) return false; }
     return true;

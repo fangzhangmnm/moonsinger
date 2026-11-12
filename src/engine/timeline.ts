@@ -3,6 +3,7 @@
 //   谱是 tick + 速度表 + 反复 + 编排，这里一次解成秒，seek / 循环 / 排程就是算术，三个引擎共一个钟）。派生物，改谱重算，不进文件。
 // 月读的块：只在够长的休止处切，**不在纸界切**（user「曲段的边界算句子吧…也许还是同意可以跨曲段句子。cache应该不伤，听你的试试」；
 //   弱起 / 连音线跨段的一句拦腰切 = 中间多一道接缝）；粒度仍是歌手的属性（句 / 曲段 / 一整首）。块的内容键里没有位置 → 歌词移位再复原照样命中。
+import { sustainSpans, holdBySustain } from "../score/pedal.ts";
 import { _t } from "../i18n/index.ts";
 import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type Hum, type NoteTok, flattenPart, timeline, effectivePitch, allPitches, paperTicks, tempoOwner } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
@@ -198,7 +199,9 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const percKey = (m: number): number | null => (info.gm?.note !== undefined ? info.gm.note : info.hitSec ? m : null);
     const rollHz = info.plugin.honors.includes("roll") ? (m: number) => info.spec.rollHz ?? rollDefaultHz(percKey(m)) : undefined;
     const rollVel = rollHz && byVel ? rollHitVelocity(tokens, map, info.spec, info.velocity, bounds, groove, curve) : undefined;   // 滚奏的每一下按当时的力度水平（7-N；按音量曲线的照旧）
-    const notes = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(info.spec), ...(rollHz ? { rollHz, ...(info.rollVar ? { rollVar: info.rollVar } : {}) } : {}) }, (i) => vels?.get(i) ?? info.velocity, rollVel);
+    const notes0 = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(info.spec), ...(rollHz ? { rollHz, ...(info.rollVar ? { rollVar: info.rollVar } : {}) } : {}) }, (i) => vels?.get(i) ?? info.velocity, rollVel);
+    // 踏板（11-1）：键按多久 = 谱上的延音踏板 → 照写的时值（score/pedal.ts）。这位不认踏板 = 照写的（记号画灰、明说）
+    const notes = info.plugin.pedals?.includes("sustain") ? holdBySustain(notes0, sustainSpans(tokens, map, bounds)) : notes0;
     // 快引擎：音符表 → 这位的轨，怎么拼归插件（元音版 / SoundFont 的键 / 着力点都在它自己那里；ADR-0004）
     const built = info.plugin.track?.({ id: part.id, notes, gain, ...(info.chain?.length ? { chain: info.chain } : {}), hum, info });
     if (!built) { unplayable.push({ part: part.id, why: _t("「{label}」不会按音符表出声", { label: info.plugin.label }) }); continue; }

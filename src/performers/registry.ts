@@ -25,7 +25,7 @@ export type LyricsAbility = "words" | "hum" | "none";
 /** pad 键底部提示的音域（人声固定；乐器看目录 = null，由界面另查）。 */
 export type FixedRange = { lo: number; hi: number; who: string } | null;
 /** 时间线交给插件的一个音（秒；力度已按谱算好）。 */
-export interface LightNote { midi: number; t0: number; t1: number; vel?: number }
+export interface LightNote { midi: number; t0: number; t1: number; vel?: number; /** 写的结尾（只有被踏板留长了的才有，score/pedal.ts；追音用，规矩八）。 */ w1?: number }
 /** 只要知道「哪首歌的哪个角色」的调用都用这个。 */
 export interface RoleCtx { extras: Extras; role: string }
 /** 出声前准备要用的东西（胶水给；插件只拿它要的）。 */
@@ -89,6 +89,8 @@ export interface PerformerPlugin {
   readonly hintRange: FixedRange;
   /** 认哪些记号（不认的谱上画灰 + 明说；`test/honors.test.ts` 核「表说认 = 出声真变了」）。 */
   readonly honors: readonly Mark[];
+  /** 认哪几种踏板（踏板 11-1：按键盘发音的乐手三种都认；没写 = 都不认 → 踏板记号画灰、明说）。test/pedal.test.ts 核「表说认 = 出声真变了」。 */
+  readonly pedals?: readonly import("../score/song.ts").PedalKind[];
   /** 本来就连着唱（连线 / 保持对它没意义，断句用呼吸）→ 这两个记号画灰的理由是 "sung" 而不是 "gap"。 */
   readonly connected: boolean;
   /** 力度怎么落：velocity = 按下那一下的 MIDI 力度（有力度表）；gain = 音量曲线（dB）乘在声音上。乐器页按这个摆哪一行。 */

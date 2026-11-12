@@ -6333,6 +6333,17 @@ function sliceBySegments(tokens, segs, newId) {
         const t10 = last.get(kind);
         if (t10) out.push({ ...t10, id: newId() });
       }
+      for (const which of ["sustain", "sostenuto", "soft"]) {
+        const isDown = (list2, upto) => {
+          let d3 = false;
+          list2.forEach((t10, i10) => {
+            if (t10.kind === "pedal" && t10.which === which && upto(i10)) d3 = t10.act === "up" ? false : true;
+          });
+          return d3;
+        };
+        const want = isDown(tokens, (i10) => ticks[i10] < s10.t0), now2 = isDown(out, () => true);
+        if (want || now2) out.push({ kind: "pedal", id: newId(), which, act: !want ? "up" : now2 ? "change" : "down" });
+      }
     }
     tokens.forEach((t10, i10) => {
       const at3 = ticks[i10];
@@ -12445,6 +12456,7 @@ function unitsOf(tokens, o10) {
       units.push({ kind: "groove", index: i10, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
+    if (t10.kind === "pedal") return;
     if (t10.kind === "clef") {
       if (i10 < H3 || tokens.slice(H3, i10).every((x2) => x2.kind === "clef")) return;
       flushFull(i10);
@@ -34291,11 +34303,11 @@ function siteFile(name) {
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
-      return pick(() => "studio-worklet-23eab1edf660.mjs");
+      return pick(() => "studio-worklet-714d957ac9f7.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-869b28c7367a.mjs");
+      return pick(() => "layout-worker-bc44e9c0b6a8.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-1e53c9936af5.mjs");
+      return pick(() => "encode-worker-a985f1936147.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -39454,7 +39466,7 @@ var Studio = class {
       const notes = t10.spec.notes;
       let i10 = 0;
       while (i10 < notes.length && notes[i10].t0 < this.pos) {
-        if (chase && notes[i10].t1 > this.pos && !this.mutedNote(notes[i10])) this.noteOn(t10, notes[i10]);
+        if (chase && notes[i10].t1 > this.pos && !this.mutedNote(notes[i10]) && this.chaseable(t10, notes[i10])) this.noteOn(t10, notes[i10]);
         i10++;
       }
       t10.nextNote = i10;
@@ -39778,8 +39790,13 @@ var Studio = class {
   chaseAtLoop() {
     for (const t10 of this.tracks.values()) {
       if (t10.spec.kind === "clips") continue;
-      for (const nte of t10.spec.notes) if (nte.t0 < this.pos && nte.t1 > this.pos) this.noteOn(t10, nte);
+      for (const nte of t10.spec.notes) if (nte.t0 < this.pos && nte.t1 > this.pos && this.chaseable(t10, nte)) this.noteOn(t10, nte);
     }
+  }
+  /** 从中间起放 / 跳转 / 循环绕回时补不补按这个音（踏板 11-1 规矩八，统筹 11-0 之后定）：写的时值盖住起点的照补；只靠踏板留着的——会自己衰减的乐器不补（真弹早衰减了，
+   *  补 = 十几个音一起从音头重敲），按住不衰减的照补（它们这时候确实还响着）。 */
+  chaseable(t10, n10) {
+    return n10.w1 === void 0 || n10.w1 > this.pos || !(t10.spec.kind === "sf" && t10.spec.decays);
   }
   silent() {
     for (const t10 of this.tracks.values()) {
@@ -40633,6 +40650,64 @@ var tsukuyomi = registerPerformer({
   }
 });
 
+// src/score/pedal.ts
+function sustainSpans(tokens, tempoMap, bounds = [0]) {
+  const tl2 = timeline(tokens, tempoMap), spans2 = [];
+  const starts = [.../* @__PURE__ */ new Set([0, ...bounds])].sort((a10, b3) => a10 - b3);
+  for (let k2 = 0; k2 < starts.length; k2++) {
+    const a10 = starts[k2], b3 = k2 + 1 < starts.length ? starts[k2 + 1] : tokens.length;
+    const timed2 = tl2.filter((x2) => x2.index >= a10 && x2.index < b3);
+    if (!timed2.length) continue;
+    const end = timed2[timed2.length - 1].t1;
+    const at3 = (i10) => timed2.find((x2) => x2.index > i10)?.t0 ?? end;
+    let cur = null;
+    for (let i10 = a10; i10 < b3; i10++) {
+      const t10 = tokens[i10];
+      if (t10.kind !== "pedal" || t10.which !== "sustain") continue;
+      const s10 = at3(i10);
+      if (t10.act === "down") {
+        if (!cur) cur = { down: s10, up: end, changes: [] };
+      } else if (t10.act === "up") {
+        if (cur) {
+          cur.up = s10;
+          spans2.push(cur);
+          cur = null;
+        }
+      } else if (cur) {
+        if (s10 > cur.down) cur.changes.push(s10);
+      } else cur = { down: s10, up: end, changes: [] };
+    }
+    if (cur) spans2.push(cur);
+  }
+  return spans2;
+}
+function holdBySustain(notes, spans2) {
+  if (!spans2.length) return notes.slice();
+  const out = notes.map((n10) => {
+    const sp2 = spans2.find((s10) => s10.down < n10.t1 - 1e-9 && n10.t1 < s10.up - 1e-9);
+    if (!sp2) return n10;
+    const rel = Math.min(sp2.up, ...sp2.changes.filter((c10) => c10 >= n10.t1 - 1e-9));
+    return rel > n10.t1 + 1e-9 ? { ...n10, t1: rel, w1: n10.t1 } : n10;
+  });
+  const byMidi = /* @__PURE__ */ new Map();
+  out.forEach((n10, i10) => {
+    const l10 = byMidi.get(n10.midi) ?? [];
+    l10.push(i10);
+    byMidi.set(n10.midi, l10);
+  });
+  for (const idx of byMidi.values()) for (const i10 of idx) {
+    const n10 = out[i10];
+    if (n10.w1 === void 0) continue;
+    let cut = n10.t1;
+    for (const j2 of idx) {
+      const m2 = out[j2];
+      if (j2 !== i10 && m2.t0 >= n10.w1 - 1e-9 && m2.t0 < cut) cut = m2.t0;
+    }
+    if (cut < n10.t1) out[i10] = cut > n10.w1 + 1e-9 ? { ...n10, t1: cut } : (({ w1: _w, ...rest }) => ({ ...rest, t1: n10.w1 }))(n10);
+  }
+  return out;
+}
+
 // src/engine/roll-variation.ts
 var ROLL_VARIATION = {
   small: { hand: 0.03, vel: 0.04, time: 0.03 },
@@ -40789,7 +40864,8 @@ function buildTimeline(inp) {
     const percKey = (m2) => info2.gm?.note !== void 0 ? info2.gm.note : info2.hitSec ? m2 : null;
     const rollHz = info2.plugin.honors.includes("roll") ? (m2) => info2.spec.rollHz ?? rollDefaultHz(percKey(m2)) : void 0;
     const rollVel = rollHz && byVel ? rollHitVelocity(tokens, map, info2.spec, info2.velocity, bounds, groove, curve) : void 0;
-    const notes = lightNotes(tokens, map, info2.plugin.poly, { ...lightMarks(info2.spec), ...rollHz ? { rollHz, ...info2.rollVar ? { rollVar: info2.rollVar } : {} } : {} }, (i10) => vels?.get(i10) ?? info2.velocity, rollVel);
+    const notes0 = lightNotes(tokens, map, info2.plugin.poly, { ...lightMarks(info2.spec), ...rollHz ? { rollHz, ...info2.rollVar ? { rollVar: info2.rollVar } : {} } : {} }, (i10) => vels?.get(i10) ?? info2.velocity, rollVel);
+    const notes = info2.plugin.pedals?.includes("sustain") ? holdBySustain(notes0, sustainSpans(tokens, map, bounds)) : notes0;
     const built = info2.plugin.track?.({ id: part2.id, notes, gain, ...info2.chain?.length ? { chain: info2.chain } : {}, hum, info: info2 });
     if (!built) {
       unplayable.push({ part: part2.id, why: _t("\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0", { label: info2.plugin.label }) });
@@ -41156,6 +41232,8 @@ var soundfont = registerPerformer({
   hintRange: null,
   // lightMarks 那一路；琶音只有能叠音的认（v0.9.45）；气声 / 出声的换气乐器本来就不认
   honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio", "roll"],
+  pedals: ["sustain", "sostenuto", "soft"],
+  // 踏板 11-1：按键盘发音的三种都认（11-1 只接了延音；持音、弱音 11-2）
   connected: false,
   dynamics: "velocity",
   grooveCategory: "gm",
@@ -41178,12 +41256,12 @@ var soundfont = registerPerformer({
     if (!g3) return { unplayable: _t("\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668") };
     const sfNotes = notes.map((n10) => {
       const key = sfKey(n10.midi, g3, info2.transpose), h2 = info2.hitSec?.(key) ?? 0;
-      return { t0: n10.t0 - h2, t1: n10.t1, key, vel: n10.vel ?? info2.velocity, preset: g3.presetIndex };
+      return { t0: n10.t0 - h2, t1: n10.t1, key, vel: n10.vel ?? info2.velocity, preset: g3.presetIndex, ...n10.w1 !== void 0 ? { w1: n10.w1 } : {} };
     });
     let from;
     if (info2.hitSec) sfNotes.sort((x2, y2) => x2.t0 - y2.t0);
     for (const n10 of sfNotes) from = from === void 0 ? n10.t0 : Math.min(from, n10.t0);
-    return { track: { id: id2, kind: "sf", sha: g3.sha, notes: sfNotes, gain, ...chain?.length ? { chain } : {} }, ...from !== void 0 ? { from } : {} };
+    return { track: { id: id2, kind: "sf", sha: g3.sha, notes: sfNotes, gain, ...chain?.length ? { chain } : {}, ...info2.spec.canSwell === false ? { decays: true } : {} }, ...from !== void 0 ? { from } : {} };
   },
   /** × 符头 = 固定敲一个键（鼓件 / 音效固定原速）；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27）。只是画法，数据不动。 */
   notation: ({ extras, role }) => {
@@ -44669,7 +44747,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "3b7b6a7fe0782557" : "dev";
+var CORE_HASH = true ? "16fed1126d764c61" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -57342,7 +57420,7 @@ function toJianpu(toks, fifths) {
       out.push(`[T=${t10.bpm}]`);
       continue;
     }
-    if (t10.kind === "clef" || t10.kind === "ottava") continue;
+    if (t10.kind === "clef" || t10.kind === "ottava" || t10.kind === "pedal") continue;
     if (t10.kind === "dyn") {
       out.push(`[${t10.value}]`);
       continue;
@@ -64653,4 +64731,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3fb74a454a83.mjs.map
+//# sourceMappingURL=moonsinger-ab6e8c6fcbc2.mjs.map

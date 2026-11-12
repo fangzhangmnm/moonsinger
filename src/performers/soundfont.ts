@@ -33,6 +33,7 @@ export const soundfont = registerPerformer({
   sound: "notes", poly: true, lyrics: "none", hintRange: null,
   // lightMarks 那一路；琶音只有能叠音的认（v0.9.45）；气声 / 出声的换气乐器本来就不认
   honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio", "roll"],
+  pedals: ["sustain", "sostenuto", "soft"],   // 踏板 11-1：按键盘发音的三种都认（11-1 只接了延音；持音、弱音 11-2）
   connected: false, dynamics: "velocity", grooveCategory: "gm", removable: true,
   defaultCalibrationDb: (library) => LIBRARY_CALIBRATION_DB[library ?? ""] ?? OWN_SF2_CALIBRATION_DB,   // 9-3：按库报
   info: ({ extras, role, presetIndex, velCurve }) => {
@@ -49,11 +50,11 @@ export const soundfont = registerPerformer({
   track: ({ id, notes, gain, chain, info }) => {
     const g = info.gm;
     if (!g) return { unplayable: _t("台上的不是 SoundFont 乐器") };
-    const sfNotes = notes.map((n): NoteEv => { const key = sfKey(n.midi, g, info.transpose), h = info.hitSec?.(key) ?? 0; return { t0: n.t0 - h, t1: n.t1, key, vel: n.vel ?? info.velocity, preset: g.presetIndex }; });
+    const sfNotes = notes.map((n): NoteEv => { const key = sfKey(n.midi, g, info.transpose), h = info.hitSec?.(key) ?? 0; return { t0: n.t0 - h, t1: n.t1, key, vel: n.vel ?? info.velocity, preset: g.presetIndex, ...(n.w1 !== undefined ? { w1: n.w1 } : {}) }; });
     let from: number | undefined;
     if (info.hitSec) sfNotes.sort((x, y) => x.t0 - y.t0);   // 提前了的音：录音房按 t0 顺序走
     for (const n of sfNotes) from = from === undefined ? n.t0 : Math.min(from, n.t0);   // 比 0 还早（着力点 / 歌开头的琶音，v0.16.1）= 时间线从那儿起
-    return { track: { id, kind: "sf", sha: g.sha, notes: sfNotes, gain, ...(chain?.length ? { chain } : {}) }, ...(from !== undefined ? { from } : {}) };
+    return { track: { id, kind: "sf", sha: g.sha, notes: sfNotes, gain, ...(chain?.length ? { chain } : {}), ...(info.spec.canSwell === false ? { decays: true as const } : {}) }, ...(from !== undefined ? { from } : {}) };
   },
   /** × 符头 = 固定敲一个键（鼓件 / 音效固定原速）；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27）。只是画法，数据不动。 */
   notation: ({ extras, role }) => {

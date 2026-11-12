@@ -95,6 +95,12 @@ export function sliceBySegments(tokens: readonly Token[], segs: readonly Seg[], 
       const last = new Map<string, Token>();
       tokens.forEach((t, i) => { if (STATE_KINDS.has(t.kind) && ticks[i] < s.t0) last.set(t.kind, t); });
       for (const kind of ["key", "time", "tempo", "groove", "dyn", "clef", "ottava"]) { const t = last.get(kind); if (t) out.push({ ...t, id: newId() }); }
+      // 踏板（11-1）：跳到的那一刻之前三种踏板各是踩着还是抬着，和跳之前（已经展开出来的那一串）比——要抬而踩着 = 补抬起；要踩而抬着 = 补踩下；两边都踩着 = 补换踏板（前面留着的不带过来）
+      for (const which of ["sustain", "sostenuto", "soft"] as const) {
+        const isDown = (list: readonly Token[], upto: (i: number) => boolean) => { let d = false; list.forEach((t, i) => { if (t.kind === "pedal" && t.which === which && upto(i)) d = t.act === "up" ? false : true; }); return d; };
+        const want = isDown(tokens, (i) => ticks[i]! < s.t0), now = isDown(out, () => true);
+        if (want || now) out.push({ kind: "pedal", id: newId(), which, act: !want ? "up" : now ? "change" : "down" });
+      }
     }
     tokens.forEach((t, i) => {
       const at = ticks[i];

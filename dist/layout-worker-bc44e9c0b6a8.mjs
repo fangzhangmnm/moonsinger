@@ -5640,6 +5640,7 @@ function unitsOf(tokens, o) {
       units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
+    if (t.kind === "pedal") return;
     if (t.kind === "clef") {
       if (i < H || tokens.slice(H, i).every((x) => x.kind === "clef")) return;
       flushFull(i);
@@ -9353,4 +9354,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-869b28c7367a.mjs.map
+//# sourceMappingURL=layout-worker-bc44e9c0b6a8.mjs.map

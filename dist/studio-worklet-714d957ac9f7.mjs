@@ -1195,7 +1195,7 @@ var Studio = class {
       const notes = t.spec.notes;
       let i = 0;
       while (i < notes.length && notes[i].t0 < this.pos) {
-        if (chase && notes[i].t1 > this.pos && !this.mutedNote(notes[i])) this.noteOn(t, notes[i]);
+        if (chase && notes[i].t1 > this.pos && !this.mutedNote(notes[i]) && this.chaseable(t, notes[i])) this.noteOn(t, notes[i]);
         i++;
       }
       t.nextNote = i;
@@ -1519,8 +1519,13 @@ var Studio = class {
   chaseAtLoop() {
     for (const t of this.tracks.values()) {
       if (t.spec.kind === "clips") continue;
-      for (const nte of t.spec.notes) if (nte.t0 < this.pos && nte.t1 > this.pos) this.noteOn(t, nte);
+      for (const nte of t.spec.notes) if (nte.t0 < this.pos && nte.t1 > this.pos && this.chaseable(t, nte)) this.noteOn(t, nte);
     }
+  }
+  /** 从中间起放 / 跳转 / 循环绕回时补不补按这个音（踏板 11-1 规矩八，统筹 11-0 之后定）：写的时值盖住起点的照补；只靠踏板留着的——会自己衰减的乐器不补（真弹早衰减了，
+   *  补 = 十几个音一起从音头重敲），按住不衰减的照补（它们这时候确实还响着）。 */
+  chaseable(t, n) {
+    return n.w1 === void 0 || n.w1 > this.pos || !(t.spec.kind === "sf" && t.spec.decays);
   }
   silent() {
     for (const t of this.tracks.values()) {
@@ -1944,4 +1949,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-23eab1edf660.mjs.map
+//# sourceMappingURL=studio-worklet-714d957ac9f7.mjs.map

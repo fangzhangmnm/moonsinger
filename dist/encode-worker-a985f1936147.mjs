@@ -3353,6 +3353,17 @@ function sliceBySegments(tokens, segs, newId) {
         const t = last.get(kind);
         if (t) out.push({ ...t, id: newId() });
       }
+      for (const which of ["sustain", "sostenuto", "soft"]) {
+        const isDown = (list, upto) => {
+          let d = false;
+          list.forEach((t, i) => {
+            if (t.kind === "pedal" && t.which === which && upto(i)) d = t.act === "up" ? false : true;
+          });
+          return d;
+        };
+        const want = isDown(tokens, (i) => ticks[i] < s.t0), now = isDown(out, () => true);
+        if (want || now) out.push({ kind: "pedal", id: newId(), which, act: !want ? "up" : now ? "change" : "down" });
+      }
     }
     tokens.forEach((t, i) => {
       const at = ticks[i];
@@ -5824,4 +5835,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-1e53c9936af5.mjs.map
+//# sourceMappingURL=encode-worker-a985f1936147.mjs.map
