@@ -10599,13 +10599,36 @@ function rodsOf(cols, o10) {
   });
   return rods;
 }
+function lineGaps(cols, gaps, ix2, from, to2, s10, even) {
+  const g3 = [];
+  for (let k2 = from; k2 < to2; k2++) g3.push(cols[k2].fixed !== void 0 ? gaps[k2] : gaps[k2] * (1 + s10));
+  if (!even) return g3;
+  const seg = [];
+  let n10 = 0;
+  for (let k2 = from; k2 < to2; k2++) {
+    if (cols[k2].fixed !== void 0 && !isZero(cols[k2])) n10++;
+    seg.push(n10);
+  }
+  const need = /* @__PURE__ */ new Map();
+  for (let k2 = from; k2 < to2; k2++) for (const r10 of ix2.into[k2] ?? []) {
+    if (r10.from < from || cols[r10.from].fixed !== void 0 || seg[r10.from - from] !== seg[k2 - from]) continue;
+    let sum = 0;
+    for (let j2 = r10.from; j2 < k2; j2++) sum += g3[j2 - from];
+    if (sum > EPS && r10.min > sum + EPS) need.set(seg[k2 - from], Math.max(need.get(seg[k2 - from]) ?? 1, r10.min / sum));
+  }
+  if (need.size) for (let k2 = from; k2 < to2; k2++) {
+    const f2 = need.get(seg[k2 - from]);
+    if (f2 && cols[k2].fixed === void 0) g3[k2 - from] = g3[k2 - from] * f2;
+  }
+  return g3;
+}
 var leftOf = (c10) => c10.fixed !== void 0 ? 0 : c10.items.reduce((m2, it2) => Math.max(m2, it2.left), 0);
 var rightOf = (c10) => c10.fixed !== void 0 ? c10.fixed : c10.items.reduce((m2, it2) => Math.max(m2, it2.right), 0);
-function placeLine(cols, gaps, rods, from, to2, s10) {
+function placeLine(cols, gaps, rods, from, to2, s10, even = false) {
   const n10 = to2 - from, xs = new Array(n10).fill(0);
   if (n10 <= 0) return { xs, end: 0 };
-  const ix2 = "into" in rods ? rods : indexRods(rods, cols.length);
-  const gap = (k2) => cols[k2].fixed !== void 0 ? gaps[k2] : gaps[k2] * (1 + s10);
+  const ix2 = "into" in rods ? rods : indexRods(rods, cols.length), lg2 = lineGaps(cols, gaps, ix2, from, to2, s10, even);
+  const gap = (k2) => lg2[k2 - from];
   for (let k2 = from; k2 < to2; k2++) {
     let x2 = k2 === from ? 0 : xs[k2 - 1 - from] + gap(k2 - 1);
     x2 = Math.max(x2, leftOf(cols[k2]));
@@ -10617,7 +10640,7 @@ function placeLine(cols, gaps, rods, from, to2, s10) {
   return { xs, end: xs[n10 - 1] + Math.max(gap(lastK), rightOf(cols[lastK])) };
 }
 function fitLine(cols, gaps, rods, from, to2, width, opt) {
-  const ix2 = "into" in rods ? rods : indexRods(rods, cols.length), at2 = (s11) => placeLine(cols, gaps, ix2, from, to2, s11), nat2 = at2(0);
+  const ix2 = "into" in rods ? rods : indexRods(rods, cols.length), at2 = (s11) => placeLine(cols, gaps, ix2, from, to2, s11, !!opt.even), nat2 = at2(0);
   const solve = (lo2, hi2) => {
     for (let i10 = 0; i10 < 48; i10++) {
       const mid = (lo2 + hi2) / 2;
@@ -11010,7 +11033,8 @@ var jianpuSprings = (k2) => [[TPQ / 8, 1.45], [TPQ / 4, 1.55], [TPQ / 2, 1.75], 
 var PAPER_PARAMS = {
   staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
-  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3 } }
+  //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
+  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true } }
 };
 var jianpuRow = (k2, v) => ({ above: v.above * k2, rowH: v.rowH * k2, rowHNoLyric: v.rowHNoLyric * k2, graveUpper: v.graveUpper * k2, lyricBelow: v.lyricBelow * k2, clear: v.clear * k2, scale: k2 });
 var JIANPU_ROW_PARAMS = { cozy: jianpuRow(JP_COZY, { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }), compact: jianpuRow(JP_COMPACT, { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 }) };
@@ -13726,10 +13750,10 @@ function arrangeColumns(cols, tracks, o10) {
   const spCols = cols.map((c10) => c10.chunk ? { tick: c10.tick, items: c10.members.flatMap(({ track, entry }) => entry.chunk ? entry.chunk.items.map((it2) => ({ ...it2, row: tracks[track].laneBase + it2.row })) : []) } : { tick: c10.tick, fixed: c10.w, items: [] });
   const spans2 = cols.flatMap((c10) => c10.members.flatMap(({ entry }) => entry.chunk ? [[entry.tick, entry.tick + entry.chunk.span]] : []));
   const breakableAt = (tick) => !spans2.some(([a10, b3]) => a10 < tick - 1e-6 && b3 > tick + 1e-6);
-  const gaps = idealGaps(spCols, o10.paperLen, o10.spacing), rodIx = indexRods(rodsOf(spCols, o10.spacing), spCols.length);
+  const gaps = idealGaps(spCols, o10.paperLen, o10.spacing), rodIx = indexRods(rodsOf(spCols, o10.spacing), spCols.length), even = !!o10.evenBars;
   const brk = o10.width, n10 = cols.length, lineFrom = [], sysStarts = [];
   const tail = (to2) => cols[to2 - 1].bar ? 0 : o10.endPad;
-  const lineW = (from, to2, s10) => placeLine(spCols, gaps, rodIx, from, to2, s10).end + tail(to2);
+  const lineW = (from, to2, s10) => placeLine(spCols, gaps, rodIx, from, to2, s10, even).end + tail(to2);
   const segs = [];
   for (let k2 = 0; k2 < n10; k2++) if (k2 === n10 - 1 || cols[k2].bar && breakableAt(cols[k2].tick)) segs.push(k2 + 1);
   if (brk !== Infinity) {
@@ -13777,12 +13801,12 @@ function arrangeColumns(cols, tracks, o10) {
   for (let s10 = 0; s10 < nSys; s10++) {
     const from = lineFrom[s10], to2 = s10 + 1 < nSys ? lineFrom[s10 + 1] : n10;
     if (from >= to2) continue;
-    const avail2 = brk - sysStarts[s10], nat2 = placeLine(spCols, gaps, rodIx, from, to2, 0);
+    const avail2 = brk - sysStarts[s10], nat2 = placeLine(spCols, gaps, rodIx, from, to2, 0, even);
     const reach = nat2.end > avail2 + 1e-6 ? avail2 : Math.min(avail2, nat2.end * o10.maxStretch);
-    let f2 = brk !== Infinity && (nat2.end > avail2 + 1e-6 || s10 !== nSys - 1 && nat2.end >= avail2 * 0.6) ? fitLine(spCols, gaps, rodIx, from, to2, reach, { squeeze: o10.squeeze, justify: true }) : nat2;
+    let f2 = brk !== Infinity && (nat2.end > avail2 + 1e-6 || s10 !== nSys - 1 && nat2.end >= avail2 * 0.6) ? fitLine(spCols, gaps, rodIx, from, to2, reach, { squeeze: o10.squeeze, justify: true, even }) : nat2;
     if (s10 === nSys - 1 && s10 > 0 && f2 === nat2 && prevStretch > 0 && brk !== Infinity) {
-      const g3 = placeLine(spCols, gaps, rodIx, from, to2, prevStretch);
-      f2 = g3.end <= avail2 + 1e-6 ? { ...g3, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to2, avail2, { squeeze: o10.squeeze, justify: true });
+      const g3 = placeLine(spCols, gaps, rodIx, from, to2, prevStretch, even);
+      f2 = g3.end <= avail2 + 1e-6 ? { ...g3, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to2, avail2, { squeeze: o10.squeeze, justify: true, even });
     }
     prevStretch = f2.stretch ?? 0;
     for (let k2 = from; k2 < to2; k2++) {
@@ -14045,7 +14069,7 @@ function engrave(song, o10) {
       return Math.max(...per0.map((q2, i10) => DRAWERS[kinds[i10]].lineStart(q2, keys.get(q2.p.id), first, base2, kScale(kinds[i10]))));
     };
     const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
-    const ar2 = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o10.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, endPad: BAR_W, lineStart: headAt });
+    const ar2 = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o10.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, endPad: BAR_W, lineStart: headAt });
     const { lineFrom, sysStarts } = ar2, nSys = lineFrom.length, sysKeys = lineFrom.map((k2) => new Map(keyAtCol[k2]));
     const cols = merged.map((c10, k2) => ({ tick: c10.tick, slot: c10.slot, n: c10.n, x: ar2.xs[k2], w: ar2.ws[k2], system: ar2.system[k2], bar: c10.bar, units: c10.members.map((m2) => m2.entry.ref) }));
     const at2 = /* @__PURE__ */ new Map();
@@ -32743,7 +32767,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-9f460da9b006.mjs");
+      return pick(() => "layout-worker-dff096c02251.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-0351db4bb88f.mjs");
   }
@@ -62383,4 +62407,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-95a9ac4b4eb8.mjs.map
+//# sourceMappingURL=moonsinger-48d33f7192cf.mjs.map

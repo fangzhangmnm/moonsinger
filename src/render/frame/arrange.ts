@@ -42,6 +42,8 @@ export interface ArrangeOpts {
   squeeze: number;
   /** 一行最多拉宽到自然宽的几倍（排版参数表纸一级；Infinity = 不设上限、拉满 = 五线谱现在的样子）。到了上限就不再拉，右边空着（UX 稿第 8 节）。 */
   maxStretch: number;
+  /** 一小节里一样长的音等距（顶杆顶开时整小节的弹簧一起放大，不只放大挨着的那一段；简谱 = 是，五线谱 = 否；排版参数表纸一级）。 */
+  evenBars?: boolean;
   /** 一行最后一列不是小节线时，行尾多留多少（sp）。 */
   endPad: number;
   /** 从第 k 列开一行，行首（名字一栏 + 各种行自己的行首）多宽（sp）；first = 这张纸第一行。 */
@@ -55,13 +57,13 @@ export function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonl
   // 哪些小节线列后面能折行：没有哪条轨的音跨过这一拍
   const spans = cols.flatMap((c) => c.members.flatMap(({ entry }) => (entry.chunk ? [[entry.tick, entry.tick + entry.chunk.span] as const] : [])));
   const breakableAt = (tick: number) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
-  const gaps = idealGaps(spCols, o.paperLen, o.spacing), rodIx = indexRods(rodsOf(spCols, o.spacing), spCols.length);
+  const gaps = idealGaps(spCols, o.paperLen, o.spacing), rodIx = indexRods(rodsOf(spCols, o.spacing), spCols.length), even = !!o.evenBars;
   // 折行：只在没有音跨过的小节线后折（一个小节自己一行都放不下 = 那个小节里逐列切开）；整张纸一起挑折点（像排书的 Knuth–Plass）：
   //   每行的代价 = 拉松多少（比例的平方）/ 挤紧多少（同上，挤比拉贵 4 倍；挤一挤 = 弹簧最多压 squeeze，user「「稍微超出一点的小节」压进当前行 这个就是我想要的」）+ 每行 2；
   //   最后一行不算拉松。原来是从前往后一行行塞满：小节窄了以后会出现「前面挤满、最后一行孤零零一个小节」（刀 3 样张歌第二、三段就是这样）。
   const brk = o.width, n = cols.length, lineFrom: number[] = [], sysStarts: number[] = [];
   const tail = (to: number) => (cols[to - 1]!.bar ? 0 : o.endPad);
-  const lineW = (from: number, to: number, s: number) => placeLine(spCols, gaps, rodIx, from, to, s).end + tail(to);
+  const lineW = (from: number, to: number, s: number) => placeLine(spCols, gaps, rodIx, from, to, s, even).end + tail(to);
   // 段 = 能折的地方之间的一串列
   const segs: number[] = [];   // 每一段的结尾（不含）
   for (let k = 0; k < n; k++) if (k === n - 1 || (cols[k]!.bar && breakableAt(cols[k]!.tick))) segs.push(k + 1);
@@ -102,12 +104,12 @@ export function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonl
   let prevStretch = 0;
   for (let s = 0; s < nSys; s++) {
     const from = lineFrom[s]!, to = s + 1 < nSys ? lineFrom[s + 1]! : n; if (from >= to) continue;
-    const avail = brk - sysStarts[s]!, nat = placeLine(spCols, gaps, rodIx, from, to, 0);
+    const avail = brk - sysStarts[s]!, nat = placeLine(spCols, gaps, rodIx, from, to, 0, even);
     const reach = nat.end > avail + 1e-6 ? avail : Math.min(avail, nat.end * o.maxStretch);   // 要拉满的行拉到哪：可用宽，但最多自然宽的 maxStretch 倍
-    let f: { xs: number[]; end: number; stretch?: number } = brk !== Infinity && (nat.end > avail + 1e-6 || (s !== nSys - 1 && nat.end >= avail * 0.6)) ? fitLine(spCols, gaps, rodIx, from, to, reach, { squeeze: o.squeeze, justify: true }) : nat;
+    let f: { xs: number[]; end: number; stretch?: number } = brk !== Infinity && (nat.end > avail + 1e-6 || (s !== nSys - 1 && nat.end >= avail * 0.6)) ? fitLine(spCols, gaps, rodIx, from, to, reach, { squeeze: o.squeeze, justify: true, even }) : nat;
     if (s === nSys - 1 && s > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
-      const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch);
-      f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true });
+      const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch, even);
+      f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true, even });
     }
     prevStretch = f.stretch ?? 0;
     for (let k = from; k < to; k++) {

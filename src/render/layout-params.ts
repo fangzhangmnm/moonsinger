@@ -11,7 +11,7 @@ import type { RowKind } from "./notations.ts";
 
 /** 纸一级（按这首歌的谱种 × 版式）：行与行之间多空（sysGap，sp）、音距曲线（curve：v0.16.43 起跟版式，user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧」）、
  *  一行最多压紧多少（squeeze，弹簧的比例）、一行最多拉宽到自然宽的几倍（maxStretch；Infinity = 不设上限、拉满整行 = 五线谱现在的样子，第六刀才改）。 */
-export interface PaperParams { sysGap: number; curve: SpacingMode | SpringPts; squeeze: number; maxStretch: number }
+export interface PaperParams { sysGap: number; curve: SpacingMode | SpringPts; squeeze: number; maxStretch: number; /** 一小节里一样长的音等距（spacing.ts lineGaps 的 even）。 */ evenBars?: boolean }
 /** 数字行的尺寸比例：数字字号（mm）÷（2.5 个线间距 × 这一档一个线间距的 mm）。舒适 3.6 / (2.5 × 1.75)、紧凑 3.0 / (2.5 × 1.25)（第五刀 5-0c）。 */
 const JP_COZY = 3.6 / (2.5 * 1.75), JP_COMPACT = 3.0 / (2.5 * 1.25);
 /** 简谱的弹簧（第五刀 5-0c，user「字有点大……有点太舒适了」）：一拍一格——四分一个字位、二分两个、全音符四个（横线一拍一根）；短音只比数字宽一点（「密的声部自己挤紧，短音只占字宽」）。
@@ -20,7 +20,8 @@ const jianpuSprings = (k: number): SpringPts => ([[TPQ / 8, 1.45], [TPQ / 4, 1.5
 export const PAPER_PARAMS: Readonly<Record<NotationId, Readonly<Record<Density, PaperParams>>>> = {
   staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
-  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3 } },
+  //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
+  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true } },
 };
 /** 行一级（按这一行的种类 × 版式；单位 sp，从行身算：行身 = 画法的竖向锚点 top–bottom）：行身上面最少留多少（above）、整行最少多高（rowH 有歌词 / rowHNoLyric 没歌词 /
  *  graveUpper 大谱表上面那条：没歌词、紧挨着下面那条）、歌词基线在行身下沿往下多少（lyricBelow）、谱上方贴挂件时下面什么墨都没有就贴在行身上沿上方多远（clear；

@@ -49,7 +49,7 @@ describe("简谱数字行", () => {
     eq(L.chordHeads.filter((h) => h.index === iCh).length, 2, "叠着的另外两个音各一块点击框（指着同一个音）");
     assert(L.notes.some((h) => h.index === iCh && Math.abs(h.y - (hi!.y - 9)) < 12), "旋律线（最上面那个）的点击框在最上面那个数字那儿");
   });
-  it("琶音（第五刀 5-4，UX 稿第 7 节）：和弦左边一条竖的波浪线；左边挂的东西让位——前面有空就不挪，挤了才只推这一个音", () => {
+  it("琶音（第五刀 5-4，UX 稿第 7 节）：和弦左边一条竖的波浪线；左边挂的东西让位——前面有空就不挪；挤了 = 这一小节一起放宽（一样长的音照样等距，⑦ 一小节里等距）", () => {
     const xs = (body: Omit<Token, "id">[], song?: (s: Song) => Song) => { const { L } = lay(body, song); return { L, x: L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "")).map((p) => p.x) }; };
     const chord = (arp: boolean) => n(P("G"), TPQ, { chord: [P("C")], ...(arp ? { art: ["arpeggio"] } : {}) });
     //   前面空够 = 同一小节里前面一个全音符（8/4 拍：中间没有小节线——小节线后面的第一个音本来就贴着小节线，左边挂的东西一律往右顶）
@@ -62,8 +62,9 @@ describe("简谱数字行", () => {
     eq(loose1.x.map((v) => v.toFixed(3)).join(" "), loose0.x.map((v) => v.toFixed(3)).join(" "), "前面空够：加了琶音谁都不挪");
     const s16 = TPQ / 4, tight = (arpOn: boolean) => xs([n(P("C"), s16), n(P("D"), s16), n(P("E"), s16), n(P("F"), s16), chord(arpOn), n(P("C"))]);
     const t0 = tight(false), t1 = tight(true);
-    eq(t1.x.slice(0, 4).map((v) => v.toFixed(3)).join(" "), t0.x.slice(0, 4).map((v) => v.toFixed(3)).join(" "), "挤的时候前面的音也不挪");
-    assert(t1.x[4]! > t0.x[4]! + 1, `挤了：和弦这一个往右推（${t0.x[4]} → ${t1.x[4]}）`);
+    const g = t1.x.slice(1, 5).map((v, i) => v - t1.x[i]!);
+    assert(Math.max(...g) - Math.min(...g) < 1e-6, `挤了：这一小节一起放宽，和弦前面一样长的十六分照样等距（${g.map((v) => v.toFixed(2)).join(" ")}）`);
+    assert(t1.x[4]! > t0.x[4]! + 1, `挤了：和弦往右让出琶音的地方（${t0.x[4]} → ${t1.x[4]}）`);
   });
   it("鼓 = X 行（第五刀 5-4，UX 稿第 7 节）：另一种行；音画成 X、幽灵音 = 小 x、同时敲的几件往上叠；节奏的写法同数字行；调号不印、编辑器里淡的「1=D」提示带着它", () => {
     const kit = { perc: { kind: "kit" } };
@@ -125,6 +126,25 @@ describe("简谱数字行", () => {
     eq(voice.systems[0]!.octBase, 0, "人声的音域 = 基准 0（这几个低音各两个点）"); eq(keyDots(voice), 0, "基准 0 = 字母上下不画点");
     eq(plain.systems[0]!.octBase, -2, "没给音域 = 点最少（低两组）"); eq(keyDots(plain), 2, "低两组 = 「1=C」的 C 下面两个点");
     eq(lay([n(P("C", 1)), n(P("C"))], undefined, { range: { lo: 57, hi: 76 } }).L.systems[0]!.octBase, fewestDotsBase([-3, 0]), "按音域要三个点（C1）= 极端，退回点最少");
+  });
+  it("一小节里等距（第五刀 5-4 ⑦；UX 稿第 8 节验收）：扬琴的和弦折成名字 + 琶音让位之后，同一页上手鼓那一声部同一小节里相邻八分的间距相等（几种行宽都是）", () => {
+    const st0 = initState(), paper = st0.song.papers[0]!, p0 = st0.song.parts[0]!, head = paper.tracks[p0.id]!.slice(0, 3);
+    let id = 3000; const ids = (ts: Omit<Token, "id">[]) => ts.map((t) => ({ ...t, id: id++ }) as Token);
+    const bar = [n(P("A"), TPQ, { chord: [P("E"), P("C")], art: ["arpeggio"] }), n(P("G"), TPQ, { chord: [P("E"), P("C")] }), n(P("B"), TPQ, { chord: [P("G"), P("D"), P("G", 3)], art: ["arpeggio"] }), n(P("F"), TPQ, { chord: [P("D"), P("A", 3)] })];
+    const song0: Song = { ...st0.song, parts: [p0, { ...p0, id: "BG", role: "rBG", mic: "mBG" }], papers: [{ ...paper, tracks: { [p0.id]: [...head, ...ids([...bar, ...bar, ...bar, ...bar])], BG: [...head, ...ids(Array.from({ length: 32 }, () => n(P("C", 2), TPQ / 2)))] } }] };
+    const song = setPartChords({ ...st0, song: setNotation({ ...st0, song: song0 }, "jianpu").song }, p0.id, "fold").song;
+    let bars = 0;
+    for (const width of [900, 600, 450]) {
+      const L = engrave(song, { width, sp: 10, locale: "zh", at: { paper: paper.id, part: p0.id }, parts: [{ id: p0.id, name: "Yq", first: true }, { id: "BG", name: "Bongo", perc: { kind: "kit" } }], measure: createTextMeasure((x: string) => x.length * 8), autoBars: true });
+      assert(L.prims.some((p) => p.t === "text" && /jp-chord/.test(p.cls ?? "")) && L.prims.some((p) => p.t === "path" && /arpeggio/.test(p.cls ?? "")), "扬琴折成了名字、有琶音（比较器不是空的）");
+      const bg = new Set(L.systems.map((r, i) => (r.part === "BG" ? i : -1)).filter((i) => i >= 0)), hits = L.notes.filter((h) => bg.has(h.system)).sort((a, b) => a.system - b.system || a.x - b.x);
+      for (let b = 0; b * 8 < hits.length; b++) {
+        const hb = hits.slice(b * 8, b * 8 + 8); if (hb.length < 8 || hb.some((h) => h.system !== hb[0]!.system)) continue;
+        const gaps = hb.slice(1).map((h, i) => h.x - hb[i]!.x); bars++;
+        assert(Math.max(...gaps) - Math.min(...gaps) < 1e-6, `行宽 ${width} 第 ${b + 1} 小节：手鼓八分等距（${gaps.map((v) => v.toFixed(2)).join(" ")}）`);
+      }
+    }
+    assert(bars >= 10, `量到了足够多的小节（${bars}）`);
   });
   it("下划线按拍连：两个八分在同一拍 = 一条；跨拍 = 断开；十六分 = 两层", () => {
     const e = TPQ / 2, s16 = TPQ / 4;

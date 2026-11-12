@@ -3018,13 +3018,36 @@ function rodsOf(cols, o) {
   });
   return rods;
 }
+function lineGaps(cols, gaps, ix, from, to, s2, even) {
+  const g = [];
+  for (let k = from; k < to; k++) g.push(cols[k].fixed !== void 0 ? gaps[k] : gaps[k] * (1 + s2));
+  if (!even) return g;
+  const seg = [];
+  let n2 = 0;
+  for (let k = from; k < to; k++) {
+    if (cols[k].fixed !== void 0 && !isZero(cols[k])) n2++;
+    seg.push(n2);
+  }
+  const need = /* @__PURE__ */ new Map();
+  for (let k = from; k < to; k++) for (const r of ix.into[k] ?? []) {
+    if (r.from < from || cols[r.from].fixed !== void 0 || seg[r.from - from] !== seg[k - from]) continue;
+    let sum = 0;
+    for (let j = r.from; j < k; j++) sum += g[j - from];
+    if (sum > EPS && r.min > sum + EPS) need.set(seg[k - from], Math.max(need.get(seg[k - from]) ?? 1, r.min / sum));
+  }
+  if (need.size) for (let k = from; k < to; k++) {
+    const f = need.get(seg[k - from]);
+    if (f && cols[k].fixed === void 0) g[k - from] = g[k - from] * f;
+  }
+  return g;
+}
 var leftOf = (c) => c.fixed !== void 0 ? 0 : c.items.reduce((m, it) => Math.max(m, it.left), 0);
 var rightOf = (c) => c.fixed !== void 0 ? c.fixed : c.items.reduce((m, it) => Math.max(m, it.right), 0);
-function placeLine(cols, gaps, rods, from, to, s2) {
+function placeLine(cols, gaps, rods, from, to, s2, even = false) {
   const n2 = to - from, xs = new Array(n2).fill(0);
   if (n2 <= 0) return { xs, end: 0 };
-  const ix = "into" in rods ? rods : indexRods(rods, cols.length);
-  const gap = (k) => cols[k].fixed !== void 0 ? gaps[k] : gaps[k] * (1 + s2);
+  const ix = "into" in rods ? rods : indexRods(rods, cols.length), lg = lineGaps(cols, gaps, ix, from, to, s2, even);
+  const gap = (k) => lg[k - from];
   for (let k = from; k < to; k++) {
     let x = k === from ? 0 : xs[k - 1 - from] + gap(k - 1);
     x = Math.max(x, leftOf(cols[k]));
@@ -3036,7 +3059,7 @@ function placeLine(cols, gaps, rods, from, to, s2) {
   return { xs, end: xs[n2 - 1] + Math.max(gap(lastK), rightOf(cols[lastK])) };
 }
 function fitLine(cols, gaps, rods, from, to, width, opt) {
-  const ix = "into" in rods ? rods : indexRods(rods, cols.length), at = (s3) => placeLine(cols, gaps, ix, from, to, s3), nat = at(0);
+  const ix = "into" in rods ? rods : indexRods(rods, cols.length), at = (s3) => placeLine(cols, gaps, ix, from, to, s3, !!opt.even), nat = at(0);
   const solve = (lo, hi2) => {
     for (let i = 0; i < 48; i++) {
       const mid = (lo + hi2) / 2;
@@ -4890,7 +4913,8 @@ var jianpuSprings = (k) => [[TPQ / 8, 1.45], [TPQ / 4, 1.55], [TPQ / 2, 1.75], [
 var PAPER_PARAMS = {
   staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
-  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3 } }
+  //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
+  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true } }
 };
 var jianpuRow = (k, v) => ({ above: v.above * k, rowH: v.rowH * k, rowHNoLyric: v.rowHNoLyric * k, graveUpper: v.graveUpper * k, lyricBelow: v.lyricBelow * k, clear: v.clear * k, scale: k });
 var JIANPU_ROW_PARAMS = { cozy: jianpuRow(JP_COZY, { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }), compact: jianpuRow(JP_COMPACT, { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 }) };
@@ -7357,10 +7381,10 @@ function arrangeColumns(cols, tracks, o) {
   const spCols = cols.map((c) => c.chunk ? { tick: c.tick, items: c.members.flatMap(({ track, entry }) => entry.chunk ? entry.chunk.items.map((it) => ({ ...it, row: tracks[track].laneBase + it.row })) : []) } : { tick: c.tick, fixed: c.w, items: [] });
   const spans = cols.flatMap((c) => c.members.flatMap(({ entry }) => entry.chunk ? [[entry.tick, entry.tick + entry.chunk.span]] : []));
   const breakableAt = (tick) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
-  const gaps = idealGaps(spCols, o.paperLen, o.spacing), rodIx = indexRods(rodsOf(spCols, o.spacing), spCols.length);
+  const gaps = idealGaps(spCols, o.paperLen, o.spacing), rodIx = indexRods(rodsOf(spCols, o.spacing), spCols.length), even = !!o.evenBars;
   const brk = o.width, n2 = cols.length, lineFrom = [], sysStarts = [];
   const tail = (to) => cols[to - 1].bar ? 0 : o.endPad;
-  const lineW = (from, to, s2) => placeLine(spCols, gaps, rodIx, from, to, s2).end + tail(to);
+  const lineW = (from, to, s2) => placeLine(spCols, gaps, rodIx, from, to, s2, even).end + tail(to);
   const segs = [];
   for (let k = 0; k < n2; k++) if (k === n2 - 1 || cols[k].bar && breakableAt(cols[k].tick)) segs.push(k + 1);
   if (brk !== Infinity) {
@@ -7408,12 +7432,12 @@ function arrangeColumns(cols, tracks, o) {
   for (let s2 = 0; s2 < nSys; s2++) {
     const from = lineFrom[s2], to = s2 + 1 < nSys ? lineFrom[s2 + 1] : n2;
     if (from >= to) continue;
-    const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, to, 0);
+    const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, to, 0, even);
     const reach = nat.end > avail + 1e-6 ? avail : Math.min(avail, nat.end * o.maxStretch);
-    let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, to, reach, { squeeze: o.squeeze, justify: true }) : nat;
+    let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, to, reach, { squeeze: o.squeeze, justify: true, even }) : nat;
     if (s2 === nSys - 1 && s2 > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
-      const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch);
-      f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true });
+      const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch, even);
+      f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true, even });
     }
     prevStretch = f.stretch ?? 0;
     for (let k = from; k < to; k++) {
@@ -7676,7 +7700,7 @@ function engrave(song, o) {
       return Math.max(...per0.map((q, i) => DRAWERS[kinds[i]].lineStart(q, keys.get(q.p.id), first, base, kScale(kinds[i]))));
     };
     const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
-    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, endPad: BAR_W, lineStart: headAt });
+    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, endPad: BAR_W, lineStart: headAt });
     const { lineFrom, sysStarts } = ar, nSys = lineFrom.length, sysKeys = lineFrom.map((k) => new Map(keyAtCol[k]));
     const cols = merged.map((c, k) => ({ tick: c.tick, slot: c.slot, n: c.n, x: ar.xs[k], w: ar.ws[k], system: ar.system[k], bar: c.bar, units: c.members.map((m) => m.entry.ref) }));
     const at = /* @__PURE__ */ new Map();
@@ -8166,4 +8190,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-9f460da9b006.mjs.map
+//# sourceMappingURL=layout-worker-dff096c02251.mjs.map

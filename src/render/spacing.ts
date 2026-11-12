@@ -99,15 +99,33 @@ export function rodsOf(cols: readonly SpCol[], o: SpOpts): Rod[] {
   return rods;
 }
 
+// ── 一小节里等距（简谱；第五刀 5-4，UX 稿第 8 节验收「扬琴折叠 + 琶音让位后，bongo 每小节八分等距」）──────────────────
+/** 顶杆把某一列顶开时，原来只有挨着它的那一段弹簧变长（同一小节里一样长的音间距就不一样了）。even = 换个办法：一段（两个固定列之间 = 一小节，
+ *  调号 / 拍号也算分界）里只要有一根顶杆比它跨过的弹簧加起来还长，这一段的弹簧**一起**按同一个倍数放大到顶杆够得着——一样长的音在这一小节里照样等距。
+ *  从固定列（小节线）顶出来的那根不算（小节线后第一个音的升降号往右顶，整小节一起挪，不影响小节里的距离）。在摆一行时按这一行拉 / 压过的弹簧算（压紧时顶杆会重新顶上）。 */
+function lineGaps(cols: readonly SpCol[], gaps: readonly number[], ix: RodIndex, from: number, to: number, s: number, even: boolean): number[] {
+  const g: number[] = []; for (let k = from; k < to; k++) g.push(cols[k]!.fixed !== undefined ? gaps[k]! : gaps[k]! * (1 + s));
+  if (!even) return g;
+  const seg: number[] = []; let n = 0; for (let k = from; k < to; k++) { if (cols[k]!.fixed !== undefined && !isZero(cols[k]!)) n++; seg.push(n); }
+  const need = new Map<number, number>();
+  for (let k = from; k < to; k++) for (const r of ix.into[k] ?? []) {
+    if (r.from < from || cols[r.from]!.fixed !== undefined || seg[r.from - from] !== seg[k - from]) continue;
+    let sum = 0; for (let j = r.from; j < k; j++) sum += g[j - from]!;
+    if (sum > EPS && r.min > sum + EPS) need.set(seg[k - from]!, Math.max(need.get(seg[k - from]!) ?? 1, r.min / sum));
+  }
+  if (need.size) for (let k = from; k < to; k++) { const f = need.get(seg[k - from]!); if (f && cols[k]!.fixed === undefined) g[k - from] = g[k - from]! * f; }
+  return g;
+}
+
 // ── 摆一行 ────────────────────────────────────────────────────────────────────
 const leftOf = (c: SpCol): number => (c.fixed !== undefined ? 0 : c.items.reduce((m, it) => Math.max(m, it.left), 0));
 const rightOf = (c: SpCol): number => (c.fixed !== undefined ? c.fixed : c.items.reduce((m, it) => Math.max(m, it.right), 0));
 /** 这一行的列（cols[from..to)）按拉伸量 s 摆：弹簧 ×(1 + s)，顶杆是下限。xs[i] = 第 from + i 列的对齐线离行首多远；end = 这一行内容的右端。
  *  gaps / rods 是整串算好的（idealGaps / rodsOf），这里只用落在这一行里的那几条。 */
-export function placeLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[] | RodIndex, from: number, to: number, s: number): { xs: number[]; end: number } {
+export function placeLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[] | RodIndex, from: number, to: number, s: number, even = false): { xs: number[]; end: number } {
   const n = to - from, xs = new Array<number>(n).fill(0); if (n <= 0) return { xs, end: 0 };
-  const ix = "into" in rods ? rods : indexRods(rods, cols.length);
-  const gap = (k: number) => (cols[k]!.fixed !== undefined ? gaps[k]! : gaps[k]! * (1 + s));
+  const ix = "into" in rods ? rods : indexRods(rods, cols.length), lg = lineGaps(cols, gaps, ix, from, to, s, even);
+  const gap = (k: number) => lg[k - from]!;
   for (let k = from; k < to; k++) {
     let x = k === from ? 0 : xs[k - 1 - from]! + gap(k - 1);
     x = Math.max(x, leftOf(cols[k]!));   // 行首：前面的临时记号往右让出来（前面只有不占宽的列时也算）
@@ -119,8 +137,8 @@ export function placeLine(cols: readonly SpCol[], gaps: readonly number[], rods:
   return { xs, end: xs[n - 1]! + Math.max(gap(lastK), rightOf(cols[lastK]!)) };
 }
 /** 把这一行排进 width 宽：放得下 = 原样（justify 时拉到正好满）；超了 = 压，最多压 squeeze（弹簧的比例），还超 = over（调用方换行）。 */
-export function fitLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[] | RodIndex, from: number, to: number, width: number, opt: { squeeze: number; justify: boolean }): { xs: number[]; end: number; stretch: number; over: boolean } {
-  const ix = "into" in rods ? rods : indexRods(rods, cols.length), at = (s: number) => placeLine(cols, gaps, ix, from, to, s), nat = at(0);
+export function fitLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[] | RodIndex, from: number, to: number, width: number, opt: { squeeze: number; justify: boolean; even?: boolean }): { xs: number[]; end: number; stretch: number; over: boolean } {
+  const ix = "into" in rods ? rods : indexRods(rods, cols.length), at = (s: number) => placeLine(cols, gaps, ix, from, to, s, !!opt.even), nat = at(0);
   const solve = (lo: number, hi: number) => { for (let i = 0; i < 48; i++) { const mid = (lo + hi) / 2; if (at(mid).end > width) hi = mid; else lo = mid; } return lo; };
   if (nat.end > width + EPS) {
     const tight = at(-opt.squeeze);
