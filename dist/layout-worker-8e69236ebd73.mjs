@@ -6829,7 +6829,7 @@ var jpGlyph = (a) => {
 var keyHead = (fifths, minor) => keyText(fifths, minor).replace(/=([A-G])([♭♯])$/, "=$2$1");
 function drawJianpu(c, mine, mode = "digits") {
   const lyricParts = [];
-  const { song, paper, o, P, tx, put, notes, chordHeads, keyHints, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
+  const { song, paper, o, P, tx, TR, put, notes, chordHeads, keyHints, chordTagsOut, placeBelow, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
   const jk = c.scale ?? 1, Q = (v) => P(v * jk);
   const Y = (row, v) => staffTop(row) + Q(v);
   for (const r of mine) {
@@ -7114,6 +7114,20 @@ function drawJianpu(c, mine, mode = "digits") {
         if (acc >= v.ratio[1] * minBase - 1e-6) flush();
       }
       flush();
+    }
+    if (mode === "digits" && c.look.chordTags) {
+      const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: c.look.chordsOf(q.p.id) !== "stacked" }).map((x) => [x.index, x.read])), fs = tx("chord-tag");
+      for (const u of units) {
+        if (u.kind !== "chunk" || !u.note || u.j !== 0 || u.index < 0 || u.pad) continue;
+        const rd = tagged.get(u.index);
+        if (!rd) continue;
+        const row = rowOf(u.system, r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = theory.label(rd), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;
+        c.attach(row, "chordTag", () => placeBelow(row, 0.3 * jk, (y) => {
+          c.prims.push({ t: "text", x: lx, y, s: label, cls, size: fs, anchor: "start" });
+          chordTagsOut.push({ x: lx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: u.index });
+        }));
+      }
     }
     layDynamics(orn);
     const inkL = measured[r].inkL;
@@ -7965,4 +7979,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-0279b20445bf.mjs.map
+//# sourceMappingURL=layout-worker-8e69236ebd73.mjs.map

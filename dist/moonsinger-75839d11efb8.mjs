@@ -13170,7 +13170,7 @@ var jpGlyph = (a10) => {
 var keyHead = (fifths, minor) => keyText(fifths, minor).replace(/=([A-G])([♭♯])$/, "=$2$1");
 function drawJianpu(c10, mine, mode = "digits") {
   const lyricParts = [];
-  const { song, paper, o: o10, P: P2, tx: tx2, put: put2, notes, chordHeads, keyHints, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c10;
+  const { song, paper, o: o10, P: P2, tx: tx2, TR, put: put2, notes, chordHeads, keyHints, chordTagsOut, placeBelow, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c10;
   const jk = c10.scale ?? 1, Q2 = (v) => P2(v * jk);
   const Y2 = (row2, v) => staffTop(row2) + Q2(v);
   for (const r10 of mine) {
@@ -13455,6 +13455,20 @@ function drawJianpu(c10, mine, mode = "digits") {
         if (acc >= v.ratio[1] * minBase - 1e-6) flush2();
       }
       flush2();
+    }
+    if (mode === "digits" && c10.look.chordTags) {
+      const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: c10.look.chordsOf(q2.p.id) !== "stacked" }).map((x2) => [x2.index, x2.read])), fs = tx2("chord-tag");
+      for (const u2 of units) {
+        if (u2.kind !== "chunk" || !u2.note || u2.j !== 0 || u2.index < 0 || u2.pad) continue;
+        const rd2 = tagged.get(u2.index);
+        if (!rd2) continue;
+        const row2 = rowOf(u2.system, r10, 0), lx2 = P2(u2.x) + Q2(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = theory.label(rd2), w2 = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const cls = `chord-tag${rd2.pinned ? " is-pinned" : ""}${rd2.stale ? " is-stale" : ""}`;
+        c10.attach(row2, "chordTag", () => placeBelow(row2, 0.3 * jk, (y2) => {
+          c10.prims.push({ t: "text", x: lx2, y: y2, s: label, cls, size: fs, anchor: "start" });
+          chordTagsOut.push({ x: lx2 - TR("chord-tag", 0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2, system: row2, index: u2.index });
+        }));
+      }
     }
     layDynamics(orn);
     const inkL = measured[r10].inkL;
@@ -32542,7 +32556,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-0279b20445bf.mjs");
+      return pick(() => "layout-worker-8e69236ebd73.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-2a6526a1e852.mjs");
   }
@@ -62178,4 +62192,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f90a972e8b67.mjs.map
+//# sourceMappingURL=moonsinger-75839d11efb8.mjs.map

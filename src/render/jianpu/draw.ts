@@ -6,6 +6,7 @@
 import { TPQ, swellOf, type Song, type PaperSeg, type NoteTok, type OttavaTok } from "../../score/song.ts";
 import { _tIn } from "../../i18n/index.ts";
 import { SIGNS } from "../signs.ts";
+import { harmonyTheory, harmonyTags } from "../../theory/index.ts";
 import { keyText } from "../../score/pitch.ts";
 import { toDegree, fewestDotsBase } from "../../score/degree.ts";
 import type { SongView } from "../../score/song-view.ts";
@@ -33,9 +34,10 @@ export interface JianpuDrawCtx {
   /** 行里的尺寸比例（排版参数表行一级；第五刀 5-0c）：数字行自己的尺寸 / 偏移都乘它。没给 = 1。 */
   scale?: number;
   put: (row: number, p: Prim) => void; hitRow: (hit: object, row: number) => void;
-  prims: Prim[]; notes: HitNote[]; chordHeads: Layout["chordHeads"]; keyHints: Layout["keyHints"]; rests: RestHit[]; marks: MarkHit[]; dyns: DynHit[]; clefs: ClefHit[]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
+  prims: Prim[]; notes: HitNote[]; chordHeads: Layout["chordHeads"]; keyHints: Layout["keyHints"]; chordTagsOut: Layout["chordTags"]; rests: RestHit[]; marks: MarkHit[]; dyns: DynHit[]; clefs: ClefHit[]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
   staffTop: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
   placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
+  placeBelow: (row: number, gap: number, draw: (y: number) => void) => number;
   attach: (row: number, lane: LaneKind, run: () => void) => void;
   /** 这一行的右边界（sp）；速度画在哪一位那行（这张纸最上面在场的那位）、上一段结尾的速度（开头变了标 ↑ / ↓）。 */
   right: number; owner: string | null; prevBpm: number | null;
@@ -51,7 +53,7 @@ const keyHead = (fifths: number, minor: boolean): string => keyText(fifths, mino
 /** mode = 数字行（digits）还是鼓的 X 行（x：音画成 X、调号只在编辑器里给淡的提示；第五刀 5-4）。 */
 export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: JianpuMode = "digits"): { lyricParts: LyricPart[] } {
   const lyricParts: LyricPart[] = [];
-  const { song, paper, o, P, tx, put, notes, chordHeads, keyHints, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
+  const { song, paper, o, P, tx, TR, put, notes, chordHeads, keyHints, chordTagsOut, placeBelow, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
   const jk = c.scale ?? 1, Q = (v: number) => P(v * jk);   // 行里的尺寸比例（排版参数表行一级，第五刀 5-0c）：数字行自己的尺寸 / 偏移走 Q，框架给的位置（u.x、右边界、行首）走 P
   const Y = (row: number, v: number) => staffTop(row) + Q(v);   // 局部 y（数字行的单位）→ px（框架还没定行距：staffTop 是这一行的临时原点）
   for (const r of mine) {
@@ -260,6 +262,21 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         if (acc >= v.ratio![1] * minBase - 1e-6) flush();
       }
       flush(); }
+    // 和弦级数（第五刀 5-4 ④；UX 稿第 2 节「显示和弦级数」= 歌的总开关）：标哪几个音、标什么 = 乐理模块（同五线谱）；摆在这个音的右下（数字右边、往下贴天际线，歌词让在它下面）。
+    //   鼓的 X 行不标。合租一家合起来认 = 第五节问统筹（挑中的读法记在哪个音上）
+    if (mode === "digits" && c.look.chordTags) {
+      const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: c.look.chordsOf(q.p.id) !== "stacked" }).map((x) => [x.index, x.read] as const)), fs = tx("chord-tag");
+      for (const u of units) {
+        if (u.kind !== "chunk" || !u.note || u.j !== 0 || u.index < 0 || u.pad) continue;
+        const rd = tagged.get(u.index); if (!rd) continue;
+        const row = rowOf(u.system, r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = theory.label(rd), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;   // 人挑的 = 换个颜色；对不上了 = 灰 + 「?」（同五线谱）
+        c.attach(row, "chordTag", () => placeBelow(row, 0.3 * jk, (y) => {
+          c.prims.push({ t: "text", x: lx, y, s: label, cls, size: fs, anchor: "start" });
+          chordTagsOut.push({ x: lx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: u.index });
+        }));
+      }
+    }
     layDynamics(orn);   // 力度那一层（力度字：中文界面写中文、别的界面写字母；记号表 signs.ts）
     // 光标落点、写字头：框架那一套（frame/carets.ts）；升降号挂在左边，光标画在它左边；数字行没有谱号位移
     const inkL = measured[r]!.inkL;

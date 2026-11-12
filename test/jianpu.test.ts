@@ -76,6 +76,17 @@ describe("简谱数字行", () => {
     assert(L.keyHints.some((h) => h.index === iKey && h.tok === toks[iKey]!.id && h.s.startsWith("1=")), "编辑器里淡的「1=…」提示带着调号 token");
     eq(GEOMETRY.jianpuX.pitchAxis, undefined, "X 行没有「纵向 = 音高」");
   });
+  it("和弦级数在数字行上也标（第五刀 5-4 ④）：歌的总开关开着 = 和弦右下一个级数，点得到（指着那个音）；鼓的 X 行不标", () => {
+    const { L, toks } = lay([n(P("G"), TPQ, { chord: [P("E"), P("C")] }), n(P("C")), n(P("D")), n(P("E"))]);
+    const iCh = toks.findIndex((t) => t.kind === "note" && !!t.chord?.length);
+    const tag = L.chordTags.find((h) => h.index === iCh), txt = L.prims.find((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /chord-tag/.test(p.cls ?? ""));
+    assert(!!tag && !!txt && txt.s.length > 0, "和弦有级数（字 + 点击框）");
+    const lo = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? ""))[0]!;
+    assert(txt!.y > lo.y && txt!.x > lo.x, `级数在和弦的右下（${txt!.x},${txt!.y} vs 数字 ${lo.x},${lo.y}）`);
+    const off = lay([n(P("G"), TPQ, { chord: [P("E"), P("C")] })], (s) => ({ ...s, chordTags: false }));
+    eq(off.L.chordTags.length, 0, "总开关关了 = 不标");
+    eq(lay([n(P("G", 2), TPQ, { chord: [P("C", 2)] })], undefined, { perc: { kind: "kit" } }).L.chordTags.length, 0, "鼓的 X 行不标");
+  });
   it("下划线按拍连：两个八分在同一拍 = 一条；跨拍 = 断开；十六分 = 两层", () => {
     const e = TPQ / 2, s16 = TPQ / 4;
     const ul = (body: Omit<Token, "id">[]) => lay(body).L.prims.filter((p) => p.t === "line" && /jp-ul/.test(p.cls ?? "")).length;
