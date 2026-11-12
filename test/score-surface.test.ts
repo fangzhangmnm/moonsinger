@@ -7,8 +7,11 @@
 //   红了 = 先查是不是搬错 / 改坏；版面本来就该变才重冻（第六刀这类看得见的先出样张经统筹给 user 看）。
 const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e?: string): Uint8Array & string; readdirSync(p: URL): string[] };
 const { gunzipSync } = (await import("node:zlib" as string)) as { gunzipSync(b: Uint8Array): { toString(e: string): string } };
-import { describe, it, assert } from "./runner.mjs";
-import { engrave, type Prim } from "../src/render/engrave.ts";
+import { describe, it, assert, eq } from "./runner.mjs";
+import { engrave, type Prim, type Layout } from "../src/render/engrave.ts";
+import { ARTS, DYNS, type Song, type Token } from "../src/score/song.ts";
+import { SIGNS } from "../src/render/signs.ts";
+import { NOTATIONS as NOTATION_IDS } from "../src/score/song-view.ts";
 import { _tIn } from "../src/i18n/index.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 import { surfaceCases, surfacePath, fullSnapshotRaw, tolDiffs, PATH_NOISE_MAX, FULL_VIEWS, type SurfaceGroup } from "./fixtures/layout/full.ts";
@@ -53,6 +56,69 @@ describe("谱面排版：版面和底本逐个相同 + 平数据", () => {
   });
   it("真实密度的大歌（Once upon a Tale，895 个 token、7 声部、合租）× 印 / 全部 / 听", () => { checkGroup("dense"); });
   it("边界情形：空纸 / 全隐藏、只有谱头的轨（补齐）、跨好几行的长音 + 弱起 + 整小节休止、窄到小节里逐列切开", () => { checkGroup("edge"); });
+});
+
+// ── 守卫 4（全量）/ 守卫 5（点击只指 token 或家具）：谱面分家第四刀 4-7（设计稿第 3.9 节；施工单第三节「4」验收）。created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟）──
+//   用全的测试歌 × 两种谱（五线谱 / 切成简谱）× 编辑视图。数字行上的、仍排成五线谱行的都算。
+type Where = { paper: string; part: string; index: number; tok: Token };
+/** 一个点击框指的是哪条轨的哪个 token（合租叠起来的那一行 = 虚拟轨；合租的声部 2 = hit.part）。 */
+function hitTrack(L: Layout, song: Song, h: { system: number; part?: string }): { paper: string; part: string; tokens: Token[] } {
+  const row = L.systems[h.system]!, part = h.part ?? row.part, tokens = L.virtual[`${row.paper}:${part}`] ?? song.papers.find((x) => x.id === row.paper)!.tracks[part]!;   // 虚拟轨的键 = 「纸:声部」
+  assert(!!tokens, `点击框指的那一行（${row.paper} / ${part}）找不到轨`);
+  return { paper: row.paper, part, tokens };
+}
+/** 轨开头（第一个音 / 休止之前）的那几个 token 的下标。 */
+const headIdx = (toks: readonly Token[]) => { const k = toks.findIndex((t) => t.kind === "note" || t.kind === "rest"); return k < 0 ? toks.length : k; };
+/** 分家前就有的、两种谱一样的缺口（这一刀不补；要不要补 = 第五节「小弟问（4-7 守卫 4）」等统筹定）。落不进这几类的没图元的 token = 红。 */
+function knownGap(w: Where, song: Song, L: Layout, rowKind: string | undefined): string | null {
+  const paper = song.papers.find((x) => x.id === w.paper)!, head = w.index < headIdx(paper.tracks[w.part]!), host = song.parts.find((x) => x.id === w.part)?.host;
+  if (paper.hidden) return "隐藏的整张纸（不排；细行在覆盖层）";
+  if (host !== undefined || song.parts.some((x) => x.host === w.part)) return "合租叠成一行的一家（主人和房客都画在虚拟轨上，token 编号不同）";
+  if (head && w.tok.kind === "tempo") return "谱头的速度（画速度的共用挂件不带 token；不在最上面的那几位的谱头速度本来就不画）";
+  if (head && w.tok.kind === "clef") return "轨开头的谱号记号（并进了行首谱号）";
+  if (rowKind === "staff" && ["key", "time", "clef", "ottava", "bar"].includes(w.tok.kind)) return "五线谱上调号 / 拍号 / 谱号 / 八度线 / 小节线的字形有的不带 token（行首的、行中间换的、段落线 / 终止线…）";
+  return null;
+}
+describe("谱面排版：全量和点击（守卫 4 / 5）", () => {
+  const cases = [{ name: "五线谱", song: fullSong() }, { name: "简谱", song: { ...fullSong(), notation: "jianpu" } as Song }];
+  const view = FULL_VIEWS.find((v) => v.name === "edit-all")!;
+  for (const c of cases) {
+    it(`守卫 4（全量）· ${c.name}：每个 token 至少一个图元指着它（落进「分家前就有的缺口」那几类的除外，数字行上只许谱头的速度和轨开头的谱号）；一个图元最多指一个 token`, () => {
+      const L = engrave(c.song, view.opts(c.song)), has = new Set<number>(), seen: string[] = [];
+      for (const p of L.prims) if (p.tok !== undefined) { assert(typeof p.tok === "number", "图元的 tok 是一个 token 的 id（一个图元最多一个 token）"); has.add(p.tok); }
+      const gaps = new Map<string, number>();
+      for (const paper of c.song.papers) for (const [part, toks] of Object.entries(paper.tracks)) toks.forEach((tok, index) => {
+        if (has.has(tok.id)) return;
+        const rowKind = L.systems.find((r) => r.paper === paper.id && r.part === part)?.kind, why = knownGap({ paper: paper.id, part, index, tok }, c.song, L, rowKind);
+        if (!why) { seen.push(`${paper.id}/${part} ${tok.kind}#${tok.id}`); return; }
+        if (rowKind === "jianpu") assert(/谱头的速度|轨开头的谱号/.test(why), `数字行上的 ${paper.id}/${part} ${tok.kind}#${tok.id} 没图元（${why}）——数字行只许谱头的速度和轨开头的谱号`);
+        gaps.set(why, (gaps.get(why) ?? 0) + 1);
+      });
+      eq(seen.join(" "), "", "说不出原因的没图元的 token");
+      assert(gaps.size > 0 || c.name === "简谱", "比较器不是空的");
+    });
+    it(`守卫 5（点击只指 token 或家具）· ${c.name}：每个带下标的点击框指向对的那条轨里对的那种 token；光标落点在轨长之内`, () => {
+      const L = engrave(c.song, view.opts(c.song));
+      type H = { index: number; system: number; part?: string; kind?: string };
+      const want = (hits: readonly H[], ok: (tok: Token, h: H) => boolean, what: string) => {
+        assert(hits.length > 0, `${what}：有点击框（比较器不是空的）`);
+        for (const h of hits) { const t = hitTrack(L, c.song, h), tok = t.tokens[h.index]; assert(!!tok && ok(tok, h), `${what} ${t.paper}/${t.part} 第 ${h.index} 个（${h.kind ?? ""}）= ${tok?.kind ?? "没有"}`); }
+      };
+      const is = (k: string) => (tok: Token) => tok.kind === k;
+      want(L.notes, is("note"), "音"); want(L.chordHeads, is("note"), "叠音的符头"); want(L.rests, is("rest"), "休止");
+      want(L.lyrics, is("note"), "歌词"); want(L.chordTags, is("note"), "和弦级数");
+      want(L.marks, (tok, h) => tok.kind === h.kind, "调号 / 拍号 / 速度");
+      // 渐到 = 带 ramp 的力度记号：它的虚线楔形按「发夹」登记、指着那个力度记号（设计如此）
+      want(L.dyns, (tok, h) => tok.kind === h.kind || (h.kind === "hairpin" && tok.kind === "dyn" && !!(tok as { ramp?: boolean }).ramp), "力度 / 发夹 / 风格 / 跳转");
+      want(L.clefs.filter((h) => h.kind !== "start" && h.index >= 0), (tok, h) => tok.kind === (h.kind === "mid" ? "clef" : "ottava"), "行中间的谱号 / 八度线");
+      for (const h of L.clefs.filter((x) => x.kind === "start")) assert(c.song.parts.some((p) => p.id === h.part) || !!L.virtual[h.part], `行首谱号（家具）指的声部 ${h.part} 在`);
+      for (const sl of L.slots) { const t = hitTrack(L, c.song, sl); assert(sl.caret >= 0 && sl.caret <= t.tokens.length, `光标落点 ${sl.caret} 在轨长 ${t.tokens.length} 之内`); }
+    });
+  }
+  it("记号表不漏（编译期由 Record<…> 守着；这里核运行时的表：每个演奏法、每个力度一行，每一行每种谱都有一栏画法）", () => {
+    const ids = [...ARTS.map((a) => `art:${a}`), ...DYNS.map((d) => `dyn:${d}`)];
+    for (const id of ids) { const sg = (SIGNS as Record<string, { draw: Record<string, unknown> }>)[id]; assert(!!sg, `记号表里有 ${id}`); for (const n of NOTATION_IDS) assert(!!sg!.draw[n], `${id} 在${n}里画成什么`); }
+  });
 });
 
 const RENDER = new URL("../src/render/", import.meta.url);

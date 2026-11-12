@@ -1,6 +1,7 @@
 import type { Song, PaperSeg, Token, ClefName, Focus } from "../../score/song.ts";
 import { type ResolvedLook } from "../../score/clef.ts";
 import type { TextMeasure } from "../text/index.ts";
+import type { SongView } from "../../score/song-view.ts";
 import type { PartView } from "../engrave.ts";
 import type { StaffTrack } from "./measure.ts";
 /** 框架交来的一家：这张纸上看得见的两位以上（按歌里的顺序，主人在前）、这次可以叠。host = 这一家的主人 id（不一定在这张纸上）。 */
@@ -32,6 +33,7 @@ export interface StaffRows {
 export declare function staffRows(paper: PaperSeg, visible: readonly PartView[], fold: readonly FoldFamily[], lookAt: LookAt): StaffRows;
 export interface StaffTracksCtx {
     song: Song;
+    look: SongView;
     paper: PaperSeg;
     lookAt: LookAt;
     at: Focus;

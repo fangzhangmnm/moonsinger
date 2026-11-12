@@ -1,3 +1,4 @@
+import type { GhostNote } from "../frame/ghost.ts";
 /** 第 d 级（第五线 = 38、中线 34、第一线 30；每级半个线间距）在这一行的 y（px）。staffTop = 这一行第五线的 y，half = 半个线间距（px）。 */
 export declare const yAt: (staffTop: number, d: number, half: number) => number;
 /** y（px）→ 最近的第几级。 */
@@ -23,6 +24,8 @@ export declare const previewAt: (row: StaffRowData, d: number, half: number) => 
     y: number;
     ledgers: number[];
 };
+/** 五线谱的鬼音符（谱面分家第四刀 4-6 从 score-view 搬来，画法不变）：x 处一个符头 + 加线 + 升降号（svg 片段，盖在谱上、不占排版）。 */
+export declare function staffGhost(row: StaffRowData, x: number, notes: readonly GhostNote[], half: number): string;
 /** 纵向 = 音高（五线谱有、简谱没有）：这个 y 是第几级；竖着拖了 dy（px，往下为正）是几级（半个线间距一级）。 */
 export declare const pitchAxis: {
     stepAt: (row: StaffRowData, y: number, half: number) => number;

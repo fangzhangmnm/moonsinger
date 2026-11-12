@@ -457,6 +457,64 @@ declare function setViewInC(st, on): EditorState;   declare function setPartChor
 6. 〔第三刀〕第 7 节提案里的 `SongView` 还收了现有的版式 / 音距 / 歌词排法 / 小节号，`LayoutInput` 把 `view` 和歌分开传。这一刀只收了这次存进歌的四样（施工单只说这四样；那几样各有自己的读者，收进来要改它们 = 另一件事），排版自己从歌里读 `songViewOf(song)`，不另传——歌本来就是排版的输入，另传一份会有「两份对不上」的口子。
 5. 纵向的版式表（`frame/params.ts SPACING` 里谱上面留多少、大谱表上面那条、没歌词的那条）还在框架的参数文件里，按五线谱的数写着；收进「排版参数表」（按谱种给值）= 第四刀（排版参数表那一项）。
 
+
+#### 〔第四刀落地，2026-11-11，Claude Opus 5.5（MoonSinger小弟）〕简谱单声部之后的实际接口
+
+上面「和提案不一样的地方」第 1、5 条在这一刀收了：两种画法收成同一个形状、谱种表各一行；纵向版式表进了排版参数表。第 2、3 条照旧（`draw` 吃这种行的那几条轨、`measure` 出列条目）。第 4 条：数字行有了第一样自己的行数据（八度基准），也是原地的可选字段，没挪进 `RowBox.data`。
+
+```ts
+// ── 谱种表（src/render/notations.ts；框架只经过它拿画法，不直接 import staff/ 或 jianpu/）────────────
+type RowKind = "staff" | "jianpu";                       // SystemBox.kind：每一行都写（统筹审第四刀接口第 1 条）
+interface RowDrawer {
+  readonly kind: RowKind;
+  measure(q: Track): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> };    // 量：一条轨的纯函数
+  lineStart(q: Track, key: number, first: boolean, base: number): number;        // 行首多宽（sp）
+  lyricAnchors(q: Track): LyricAnchor[];                                          // 歌词让路要的锚点（字归框架）
+  draw(c: RowDrawCtx, mine: readonly number[]): { lyricParts: LyricPart[] };      // 只画分给它的那几条轨的行（put / attach / hitRow / placeAbove / placeBelow 越界报错，第 5 条）
+  readonly lanes: readonly LaneKind[];                                            // 道的先后：每一行用自己那种画法的（第 3 条）
+  anchors(origin: number, half: number): { top: number; mid: number; bottom: number };   // 竖向锚点 = 行身；anchors(0, 0.5) = 局部 sp（框架只经过它知道上下沿，第 4 条）
+}
+declare const DRAWERS: Readonly<Record<RowKind, RowDrawer>>;
+interface Notation { readonly id: NotationId; readonly home: RowKind; rowKindOf(q: Track): RowKind }   // home = 空纸按它留高
+declare const NOTATIONS: Readonly<Record<NotationId, Notation>>;   // 简谱：有音高、这张纸上没叠音、不是虚拟轨 / 声部 2 / 鼓 / × 符头 → 数字行，别的照旧五线谱的行（第五刀退场）
+declare const BUILD: { looks; rows; tracks };                      // 建轨照五线谱那一套（第五刀变成谱种表里的一项，第 7 条）
+interface RowGeometry {                                             // 主线程几何，和 DRAWERS 并排、按行的种类查；谱面只查这张表（第 2 条）
+  caretSpan(row: SystemBox, half: number): { y1: number; y2: number };
+  bandTop(row: SystemBox, half: number): number;
+  ghost(row: SystemBox, x: number, notes: readonly GhostNote[], half: number, atCaret: boolean): string;   // 鬼音符的 svg 片段
+  readonly pitchAxis?: { stepAt(row, y, half): number; stepsOfDrag(dy, half): number };                   // 可选：数字行没有 = 不竖拖
+}
+declare const GEOMETRY: Readonly<Record<RowKind, RowGeometry>>;
+interface GhostNote { p: Pitch; shown: number | null; shift: number; fifths: number }   // src/render/frame/ghost.ts（两种行共用的形状）
+
+// ── 排版参数表（src/render/layout-params.ts；调版式 = 改这个文件；行里的尺寸仍在各画法的 glyphs.ts）──────
+interface PaperParams { sysGap: number; curve: SpacingMode; squeeze: number; maxStretch: number }   // 纸一级：按这首歌的谱种 × 版式
+declare const PAPER_PARAMS: Readonly<Record<NotationId, Readonly<Record<Density, PaperParams>>>>;   // maxStretch：简谱 1.3、五线谱 Infinity（第六刀改）
+interface RowParams { above: number; rowH: number; rowHNoLyric: number; graveUpper: number; lyricBelow: number; clear: number }   // 行一级：按行的种类 × 版式，从行身算
+declare const ROW_PARAMS: Readonly<Record<RowKind, Readonly<Record<Density, RowParams>>>>;
+// frame/arrange.ts ArrangeOpts 多 maxStretch：要拉满的行，目标宽 = min(可用宽, 自然宽 × maxStretch)
+
+// ── 这首歌怎么看（src/score/song-view.ts）：第三刀四样 + 第四刀收的三样（只收读）+ 一个派生值 ──────────────
+interface SongView { notation; chordTags; viewInC; chordsOf(part);
+  readonly inCActive: boolean;        // = viewInC ∧ ¬MOVABLE_DO[notation]：排版、谱面、键上大字看它；设置面板的钮看 viewInC
+  readonly density: Density; readonly lyricFit: "rhythm" | "lyrics"; readonly barNumbers: boolean }   // 改照旧走 song.ts（不进修改锁的看法：W-68）
+declare const MOVABLE_DO: Readonly<Record<NotationId, boolean>>;   // 首调的谱：按 C 调看没有意义
+// UNWRITTEN 多冻三样：density cozy / lyricFit rhythm / barNumbers true（原来就有的意思）。音距不单收：v0.16.43 起跟着版式，歌里的 spacing 键没人读。
+
+// ── 记号表（src/render/signs.ts）+ 共用挂件（src/render/ornaments/index.ts）─────────────────────────────
+type Depiction = { kind: "glyph"; above; below?; w?; h?; ink? } | { kind: "word"; zh; other: Depiction } | { kind: "drawn"; how: string };
+interface Sign { id; name(l); says(l); lane; draw: Record<NotationId, Depiction> }   // 每种谱都必须有一栏：漏一个编译不过
+declare function dynDepiction(d: Dyn, notation: NotationId, l: Lang);   // 按「这一行的种类」查（简谱中文界面 = 中文字）
+interface OrnCtx { notation: NotationId /* = 这一行的种类 */; noteX; noteEnd; row; attach; placeAbove; … }
+declare function layDynamics(c: OrnCtx): void; declare function layNoteDynamics(c, row, ch, o): void; declare function layGroove(c, u): void;
+declare function layNav(c, u, repeatBarX): void; declare function layTempo(c, row, x, bpm, cls, index, change?): void;
+
+// ── 简谱这一种（只从 src/render/jianpu/index.ts 拿）────────────────────────────────────────────────
+// measureJianpu / jianpuLineStart / jianpuLyricAnchors / drawJianpu / JIANPU_LANES / jianpuAnchors / jianpuCaretSpan / jianpuBandTop / jianpuGhost / jianpuPreviewAt
+// 行身 = 小节线那一段（JP_BODY 0.75–3.55）；SystemBox.octBase = 这一行的八度基准（「点最少」那条退路）。只许 import type 五线谱的排版单元（staff/units.ts，第五刀第一个提交挪进框架）。
+```
+
+守卫（`test/score-surface.test.ts`）：结构那条多了「框架只经过表、表只走两个入口、简谱只许 import type 五线谱的单元、排版不直接读歌的显示字段」和谱面那条「不直接 import 画法、不按谱种分支」；新加守卫 4（全量）/ 守卫 5（点击只指 token 或家具），两种谱都跑——分家前就有的缺口按名字列成几类（施工单第五节「小弟问（4-7 守卫 4）」）。
 ## 8. 要 user 拍的
 
 1. **总方向**：第 1 节那五句。尤其是「热插拔的单位是一行的画法，不是整页的引擎」和「写法归核心、由光标的种类决定」。同意的话我把它记成一条 ADR。

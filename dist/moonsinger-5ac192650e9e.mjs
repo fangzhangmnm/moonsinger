@@ -13155,8 +13155,9 @@ function drawJianpu(c10, mine) {
     const tempoHere = q2.p.id === c10.owner && q2.head.idx.tempo !== void 0;
     c10.attach(row0, "tempo", () => placeAbove(row0, 0.5, (y2) => {
       const kw = P2(midTextW(keyS)), tw2 = P2(midTextW(timeS));
-      put2(row0, { t: "text", x: hx, y: y2, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
-      put2(row0, { t: "text", x: hx + kw, y: y2, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
+      const kt = q2.head.idx.key !== void 0 ? tokens[q2.head.idx.key]?.id : void 0, tt2 = q2.head.idx.time !== void 0 ? tokens[q2.head.idx.time]?.id : void 0;
+      put2(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y: y2, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
+      put2(row0, { ...tt2 !== void 0 ? { tok: tt2 } : {}, t: "text", x: hx + kw, y: y2, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
       if (tempoHere) tempoAt2(orn, row0, MARGIN + ind0 + 0.6 + midTextW(keyS) + midTextW(timeS) + 0.6, q2.head.bpm, "tempo", q2.head.idx.tempo, c10.prevBpm === null || c10.prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > c10.prevBpm ? "up" : "down", y2);
       if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row0, x: hx - P2(0.3), y: y2 - hs, w: kw, h: hs * 1.4 });
       if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row0, x: hx + kw - P2(0.3), y: y2 - hs, w: tw2, h: hs * 1.4 });
@@ -32417,7 +32418,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-f5448bd2604b.mjs");
+      return pick(() => "layout-worker-869ba8681543.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-a873a7a161f2.mjs");
   }
@@ -62052,4 +62053,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ca26c4e5f96a.mjs.map
+//# sourceMappingURL=moonsinger-5ac192650e9e.mjs.map

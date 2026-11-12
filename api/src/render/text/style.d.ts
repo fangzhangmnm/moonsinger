@@ -60,6 +60,9 @@ export declare const TEXT_STYLES: {
     "breath-label": TextStyle;
     "dyn-word": TextStyle;
     "dyn-implied": TextStyle;
+    "jp-digit": TextStyle;
+    "jp-acc": TextStyle;
+    "jp-head": TextStyle;
 };
 export type TextRole = keyof typeof TEXT_STYLES;
 /** 一个字图元的样式：样式类里最后一个在表里的词（越往后越具体：「tempo tempo-word」→ tempo-word、「nav-mark nav-word」→ nav-word）；都不在 = 正文默认。 */

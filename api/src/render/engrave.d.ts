@@ -3,6 +3,7 @@ import { type Lang } from "../i18n/index.ts";
 import { type Song, type Token, type Focus, type Staff } from "../score/song.ts";
 import { type PercInfo } from "../gm/percussion.ts";
 import { type HarmonyRead } from "../theory/index.ts";
+import { type RowKind } from "./notations.ts";
 /** tok = 这个图元属于哪个 token（id）：写字头 / 选区 / 强调色不进排版，score-view 按 data-tok 在 DOM 上开关 class（W-17 第 1 刀，2026-10-15）。 */
 export type Prim = {
     t: "line";
@@ -131,11 +132,14 @@ export interface SystemBox {
     paper: string;
     part: string;
     sys: number;
-    staff: Staff; /** 五线谱右端（px；播放时的小节底色右边界用，v0.10.12）。 */
+    staff: Staff; /** 这一行用哪种画法（谱面分家第四刀；每一行都写）：staffTop = 这一行的原点（五线谱 = 第五线）。 */
+    kind: RowKind; /** 五线谱右端（px；播放时的小节底色右边界用，v0.10.12）。 */
     x1?: number;
     /** 这一行谱上真有墨的上下沿（px）：音（含叠着的房客）、符干、跳音 / 重音、力度那几道、八度线、歌词；不含速度 / 风格记号（那是整张谱的）。播放的灰块按这个（v0.10.26）。 */
     inkTop?: number;
     inkBottom?: number;
+    /** 数字行的八度基准（第几个八度的音不加点；谱面分家第四刀 4-6：鬼音符照它加点）。五线谱的行没有。 */
+    octBase?: number;
 }
 export interface HitNote {
     index: number;

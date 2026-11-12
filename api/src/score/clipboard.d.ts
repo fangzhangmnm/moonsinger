@@ -1,5 +1,5 @@
 import { type EditorState, type Token } from "./song.ts";
-import { type Pitch, stepIndex } from "./pitch.ts";
+import { stepIndex } from "./pitch.ts";
 /** 选中的那一段（没选中 = null）。原样切片，id 原样（贴的时候重编）。 */
 export declare function copyTokens(st: EditorState): Token[] | null;
 /** 选区真正的起点：往前带上紧挨着第一个音、挂在它身上的记号（力度 / 渐强渐弱 / 风格——它们记在音的前面，v0.7.27 起「落在光标前那个音」）。
@@ -14,14 +14,7 @@ export declare function cutTokens(st: EditorState): {
 } | null;
 /** 全选 = 这条 track 谱头之后的全部（文本框的范围：这张纸上这个声部）。 */
 export declare function selectAll(st: EditorState): EditorState;
-/** 音 → 相对 fifths 这个调的简谱：音级 1–7、八度偏移、相对调内音的升降。 */
-export declare function toDegree(p: Pitch, fifths: number): {
-    degree: number;
-    shift: number;
-    acc: number;
-};
-/** 简谱 → 音（相对 fifths）。 */
-export declare function fromDegree(degree: number, shift: number, acc: number, fifths: number): Pitch;
+export { toDegree, fromDegree } from "./degree.ts";
 /** 一段 token → 简谱文字（相对 fifths）。 */
 export declare function toJianpu(toks: Token[], fifths: number): string;
 /** 简谱文字 → token（相对 fifths；读不懂的词 = 整段不认，返回 null——别把别人聊天里的话当谱）。id 从 0 起（贴的时候重编）。 */

@@ -574,6 +574,27 @@ export declare const S: {
     readonly 看谱: {
         readonly en: "Reading";
     };
+    readonly 谱种: {
+        readonly en: "Notation";
+    };
+    readonly 五线谱: {
+        readonly en: "Staff";
+    };
+    readonly 简谱: {
+        readonly en: "Numbered (jianpu)";
+    };
+    readonly 纸张: {
+        readonly en: "Paper";
+    };
+    readonly 按音高画在五条线上: {
+        readonly en: "Pitches drawn on the five lines";
+    };
+    readonly "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09\uFF1B\u6709\u53E0\u97F3\u7684\u58F0\u90E8\u3001\u9F13\u548C\u5408\u79DF\u53E0\u8D77\u6765\u7684\u90A3\u4E00\u884C\u6682\u65F6\u8FD8\u753B\u6210\u4E94\u7EBF\u8C31": {
+        readonly en: "Digits 1–7 (movable do); parts with stacked notes, drums and shared rows are still drawn as staff for now";
+    };
+    readonly "\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002": {
+        readonly en: "Numbered notation is already movable-do (1 = the key's tonic), so “Read in C” doesn't apply; your choice is kept and works again on staff.";
+    };
     readonly 休息室: {
         readonly en: "Green room";
     };
@@ -5146,6 +5167,66 @@ export declare const S: {
     readonly " \u7B49 {n} \u5904": {
         readonly en: " at {n} places";
     };
+    readonly "\u8FD9\u4E2A\u97F3\u77ED\u4E00\u70B9\u3001\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00": {
+        readonly en: "Make this note short, detached from the next one";
+    };
+    readonly 这个音的音头重一点: {
+        readonly en: "Lean on the start of this note";
+    };
+    readonly 比重音更重的音头: {
+        readonly en: "A heavier attack than an accent";
+    };
+    readonly "\u6BD4\u91CD\u97F3\u8F7B\u4E00\u6863\u7684\u91CD\uFF08\u56DB\u62CD\u5B50\u91CC\u7684\u7B2C\u4E09\u62CD\u90A3\u79CD\uFF09": {
+        readonly en: "A lighter stress than an accent (like beat three in 4/4)";
+    };
+    readonly 这个音轻一点: {
+        readonly en: "Play this note softer";
+    };
+    readonly "\u51E0\u4E4E\u542C\u4E0D\u89C1\u7684\u97F3\uFF08\u53EA\u7559\u4E2A\u5F71\u5B50\uFF09": {
+        readonly en: "A note you can barely hear (just a shadow)";
+    };
+    readonly "\u8FD9\u4E2A\u97F3\u5531 / \u594F\u6EE1\uFF0C\u4E0D\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00": {
+        readonly en: "Hold this note full length, connected to the next one";
+    };
+    readonly 这个音后面换气: {
+        readonly en: "Breathe after this note";
+    };
+    readonly "\u97F3\u5934\u7A81\u7136\u51B2\u4E00\u4E0B\u3001\u518D\u56DE\u5230\u5F53\u4E0B\u7684\u529B\u5EA6": {
+        readonly en: "A sudden burst at the start, then back to the current dynamic";
+    };
+    readonly "\u97F3\u5934\u6309\u5F3A\u3001\u9A6C\u4E0A\u843D\u5230\u5F31\uFF0C\u540E\u9762\u7684\u97F3\u90FD\u662F\u5F31": {
+        readonly en: "Loud attack that drops straight to soft; the notes after stay soft";
+    };
+    readonly "\u4E0D\u5531\u97F3\u9AD8\u3001\u7528\u6C14\u58F0\u5FF5\uFF08\u97F3\u9AD8\u7167\u5199\u5728\u8C31\u4E0A\uFF09": {
+        readonly en: "Speak this note in a breathy voice instead of singing the pitch (the pitch stays written)";
+    };
+    readonly 这个音里面从弱长到写的力度: {
+        readonly en: "Grow from soft to the written dynamic within this note";
+    };
+    readonly 这个音里面从写的力度收弱: {
+        readonly en: "Fade from the written dynamic within this note";
+    };
+    readonly "\u8FD9\u4E2A\u97F3\u91CC\u9762\u5148\u957F\u540E\u6536\uFF08messa di voce\uFF09": {
+        readonly en: "Grow then fade within this note (messa di voce)";
+    };
+    readonly 和弦从低到高一个个拨出来: {
+        readonly en: "Roll the chord from the lowest note up";
+    };
+    readonly "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09": {
+        readonly en: "Repeat this note rapidly (a roll)";
+    };
+    readonly "\u529B\u5EA6\u8BB0\u53F7\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7": {
+        readonly en: "Dynamic mark: from this note on, at this loudness, until the next dynamic mark";
+    };
+    readonly "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": {
+        readonly en: "Getting louder from here until the next dynamic mark";
+    };
+    readonly "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": {
+        readonly en: "Getting softer from here until the next dynamic mark";
+    };
+    readonly 从上一个力度记号均匀变到这一个: {
+        readonly en: "Change evenly from the previous dynamic mark to this one";
+    };
     readonly "{src} \u8F7D\u8FDB\u6765\u4E86\uFF0C\u4F46\u91CC\u9762\u6CA1\u6709\u300C{key}\u300D": {
         readonly en: "{src} loaded, but “{key}” isn't in it";
     };
@@ -6199,8 +6280,8 @@ export declare const S: {
     readonly "\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F": {
         readonly en: "Tap = mute / unmute; long-press (right-click on a computer) = solo";
     };
-    readonly "\u7EB8\uFF1A{paperLabel}": {
-        readonly en: "Paper: {paperLabel}";
+    readonly "\u8C31\u79CD\u548C\u7EB8\uFF1A{paperLabel}": {
+        readonly en: "Notation and paper: {paperLabel}";
     };
     readonly 这一段的菜单: {
         readonly en: "This section's menu";
