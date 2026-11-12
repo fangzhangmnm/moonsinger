@@ -5,7 +5,7 @@
 //   连音线 / 延音：^ 前缀 = 连着前一个音（tie）；0 = 休止（时值同音）；- = 前一个音 / 休止再加一个四分（简谱的横线）；| = 小节线；单独一个 , = 句（换气 / 换行）；
 //   记号：[1=G] 调号、[3/4] 拍号、[T=90] 速度；歌词里的空格 / 斜杠不许（歌词只认到下一个空格）。
 //   写不出的时值（连音 / 奇怪的 tick 数）写成 (tick)：1(560)。
-import { type Dyn, type EditorState, type Token, type NoteTok, type Timed, type Repeat, type NavWhat, NAV_LABEL, tr, withTrack, headLen, keyAt, isMark, TPQ, allPitches, withPitches, materializeLead } from "./song.ts";
+import { type Dyn, type EditorState, type Token, type NoteTok, type Timed, type Repeat, type NavWhat, NAV_LABEL, tr, withTrack, headLen, keyAt, isMark, isPhraseMark, TPQ, allPitches, withPitches, materializeLead } from "./song.ts";
 import { stepIndex, KEY_LABEL, MINOR_LABEL } from "./pitch.ts";
 
 /** 选中的那一段（没选中 = null）。原样切片，id 原样（贴的时候重编）。 */
@@ -18,7 +18,7 @@ export function copyTokens(st: EditorState): Token[] | null {
 export function clipFrom(st: EditorState): number {
   const toks = tr(st), h = headLen(toks);
   let a = st.sel!.from;
-  while (a > h && (toks[a - 1].kind === "dyn" || toks[a - 1].kind === "hairpin" || toks[a - 1].kind === "groove")) a--;
+  while (a > h && isPhraseMark(toks[a - 1])) a--;   // 力度 / 渐强渐弱 / 风格 / 踏板（song.ts 一处定义）
   return a;
 }
 /** 贴：有选中 = 替换选中；没有 = 插在光标处。id 从 nextId 重编；光标落在贴的末尾；本次输入记录清空。 */

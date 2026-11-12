@@ -770,7 +770,7 @@ export class ScoreView {
     this.decorated = [];
     const st = this.host.get(), toks = tr(st);
     const add = (id: number, cls: string, ok?: (el: Element) => boolean) => { for (const el of this.tokEls!.get(id) ?? []) if (!ok || ok(el)) { el.classList.add(cls); this.decorated.push({ el, cls }); } };
-    const HOT = ["lyric", "dyn", "groove-mark", "nav-mark", "nav-sign", "dyn-word", "hairpin"];
+    const HOT = ["lyric", "dyn", "groove-mark", "nav-mark", "nav-sign", "dyn-word", "hairpin", "pedal"];
     if (st.sel) { for (let i = st.sel.from; i < st.sel.to; i++) { const t = toks[i]; if (t) add(t.id, "sel"); } }
     else if (st.log.length > 0) { for (let i = st.caret - 1; i >= 0; i--) if (isTimed(toks[i])) { add(toks[i].id, "cur", (el) => !el.classList.contains("lyric")); break; } }   // 刚写过：光标前那个音 = 写字头
     if (this.hot) for (const id of this.hot) add(id, "hot", (el) => HOT.some((c) => el.classList.contains(c)));
@@ -1269,7 +1269,7 @@ export class ScoreView {
       return;
     }
     if (f.grab.kind === "lyric" && f.short) this.host.notice?.(f.cur > f.src ? _t("后面没有空着的音了，字只能挪到这儿") : _t("前面隔着句号（或者没有音了），字挪不过去"));
-    if (f.grab.kind === "mark" && f.removed) this.host.notice?.(_t("顺手去掉了 {removed} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）", { removed: f.removed }));
+    if (f.grab.kind === "mark" && f.removed) this.host.notice?.(_t("顺手去掉了 {n} 个不再管任何音的记号（力度 / 渐强渐弱 / 踏板；撤销能找回来）", { n: f.removed }));
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
   private noteAt(x: number, y: number, finger = false): HitNote | null {

@@ -19,16 +19,19 @@ export function fullSong(): Song {
   const head = (fifths: number, beats: number, beatType: number, bpm: number) => [t({ kind: "key", fifths }), t({ kind: "time", beats, beatType }), t({ kind: "tempo", bpm })];
   const n = (pitch: ReturnType<typeof p> | null, dur: number, more: Record<string, unknown> = {}) => t({ kind: "note", pitch, dur, lyric: null, ...more });
   const r = (dur: number) => t({ kind: "rest", dur });
+  // 踏板（11-1，2026-11-12）：id 最后才编（排在所有别的 token 后面）——中间插进来不挪别的 token 的 id，底本的差别只在踏板那几样
+  const pedals: Token[] = [];
+  const pd = (which: "sustain" | "sostenuto" | "soft", act: "down" | "up" | "change") => { const x = { kind: "pedal", which, act, id: 0 } as unknown as Token; pedals.push(x); return x; };
 
   // 第一张纸「A」 ── 人声：歌词（连字符、拖腔、空音高）、各种演奏法、连线、连音线、三连音、力度 / 发夹（顺着、反着、没终点）/ 渐到、风格、
   //   反复（|: :|×3 房子 1. 2.）、Segno / To Coda / Coda / D.S. al Coda、段落线 / 终止线、中途换调换拍号
   const aV: Token[] = [
     ...head(2, 4, 4, 96),
-    t({ kind: "groove", style: "pop" }), t({ kind: "dyn", value: "mp" }), t({ kind: "hairpin", dir: "cresc" }),
+    t({ kind: "groove", style: "pop" }), t({ kind: "dyn", value: "mp" }), t({ kind: "hairpin", dir: "cresc" }), pd("sustain", "down"),
     n(p("D", 5), Q, { lyric: "ka", art: ["accent"] }),
     n(p("E", 5), E, { lyric: "ki", art: ["staccato"], slur: true }), n(p("F", 5, 1), E, { lyric: "ku", slur: true }),
     n(p("G", 5), Q, { lyric: "ke", slur: true }), n(p("A", 5), Q, { lyric: MELISMA_MARK }),
-    t({ kind: "dyn", value: "f" }),
+    pd("sustain", "up"), t({ kind: "dyn", value: "f" }),
     t({ kind: "bar", repeat: "start" }),
     n(p("B", 4), T3, { lyric: "hap", hyph: true }), n(p("A", 4), T3, { lyric: "py" }), n(null, T3, { lyric: "空" }),
     n(p("G", 4), Q, { lyric: "a", art: ["tenuto", "breath"], inhale: "soft" }), r(H),
@@ -52,12 +55,13 @@ export function fullSong(): Song {
     t({ kind: "nav", what: "dsCoda" }), t({ kind: "bar", style: "final" }),
   ];
   // 钢琴（这一段手选大谱表）：叠音 + 琶音、滚奏、整小节休止、手写八度线；比人声短 = 后面补齐的空小节
+  //   踏板（11-1）：踩下 → 换 → 抬起；持音一段（中间一个没踩就抬的延音 = 灰「✱」）；弱音和延音踩到纸尾（纸尾的钩）；已经踩着又踩 = 灰「Ped.」
   const aP: Token[] = [
     ...head(2, 4, 4, 96),
-    n(p("D", 5), H, { chord: [p("A", 4), p("F", 4, 1), p("D", 4)], art: ["arpeggio"] }), n(p("G", 2), H, { art: ["roll"] }),
-    r(W),
-    t({ kind: "ottava", shift: 1 }), n(p("A", 5), Q), n(p("B", 5), Q), n(p("C", 6, 1), Q), n(p("D", 6), Q), t({ kind: "ottava", shift: 0 }),
-    n(p("D", 3), S), n(p("F", 3, 1), S), n(p("A", 3), S), n(p("D", 4), S), n(p("E", 4), E), n(p("C", 4, 1), E), n(p("D", 4), H),
+    pd("sustain", "down"), n(p("D", 5), H, { chord: [p("A", 4), p("F", 4, 1), p("D", 4)], art: ["arpeggio"] }), pd("sustain", "change"), n(p("G", 2), H, { art: ["roll"] }),
+    pd("sustain", "up"), r(W),
+    pd("sostenuto", "down"), t({ kind: "ottava", shift: 1 }), n(p("A", 5), Q), n(p("B", 5), Q), pd("sustain", "up"), n(p("C", 6, 1), Q), n(p("D", 6), Q), t({ kind: "ottava", shift: 0 }), pd("sostenuto", "up"),
+    pd("soft", "down"), n(p("D", 3), S), n(p("F", 3, 1), S), pd("sustain", "down"), n(p("A", 3), S), pd("sustain", "down"), n(p("D", 4), S), n(p("E", 4), E), n(p("C", 4, 1), E), n(p("D", 4), H),
   ];
   // 低音：纸头手选低音谱号、中途换高音谱号、按拍的符杠、临时记号（小节内记忆）
   const aB: Token[] = [
@@ -69,7 +73,7 @@ export function fullSong(): Song {
   const mid = () => [n(p("G", 4), Q), n(p("A", 4), Q), n(p("B", 4), Q), n(p("C", 5, 1), Q), n(p("D", 5), Q), n(p("E", 5), Q), n(p("F", 5, 1), Q), n(p("G", 5), Q)];
   const aK: Token[] = [...head(2, 4, 4, 96), t({ kind: "hairpin", dir: "cresc" }), n(p("A", 4), Q), n(p("C", 7), E), n(p("D", 7), E), n(p("E", 7), E), n(p("B", 4), E), ...mid(), n(p("F", 7, 1), E), n(p("G", 7), E), n(p("A", 7), E), n(p("B", 4), E), ...mid(), ...mid(), t({ kind: "dyn", value: "ff" }), n(p("A", 4), W)];
   // 合租一家（X 主人 + Y 房客）：光标不在这家 = 叠成一行
-  const aX: Token[] = [...head(2, 4, 4, 96), n(p("F", 5, 1), Q), n(p("G", 5), Q), n(p("A", 5), H)];
+  const aX: Token[] = [...head(2, 4, 4, 96), pd("sustain", "down"), n(p("F", 5, 1), Q), n(p("G", 5), Q), pd("sustain", "up"), n(p("A", 5), H)];   // 主人的踏板：叠起来那一行照画（只画打头那位的，同力度）
   const aY: Token[] = [...head(2, 4, 4, 96), n(p("D", 3), H), n(p("A", 2), H)];
   // 鼓一家（D 整套鼓主人 + W 木鱼房客）= 并成一套五线鼓谱；C 牛铃自己一行 = 一线谱
   const aD: Token[] = [...head(2, 4, 4, 96), n(p("C", 2), E), n(p("F", 2, 1), E), n(p("D", 2), E), n(p("F", 2, 1), E), n(p("C", 2), E), n(p("C", 2), E), n(p("D", 2), Q)];
@@ -90,6 +94,7 @@ export function fullSong(): Song {
   const bK: Token[] = [...head(0, 6, 8, 120), n(p("C", 6), Q * 3), n(p("F", 6), Q * 3)];   // C 调 = 淡的「1=C」
   // 第三张纸「C」：隐藏
   const cV: Token[] = [...head(0, 4, 4, 80), n(p("C", 4), W, { lyric: "end" })];
+  for (const x of pedals) (x as { id: number }).id = id++;
 
   return asOpened({   // app 打开之后的样子（每张纸开头补力度，第八刀 8-7）
     title: "排版分家守卫歌", hum: "u", credits: "词曲：守卫\n编：小弟", arrangement: "A B (A)×2 Z", paper: paperOf("A5"),
@@ -111,7 +116,7 @@ export function fullSong(): Song {
 export function fullFlags(song: Song): Record<string, Partial<PartView>> {
   const bLyric = song.papers[1]!.tracks.V!.find((x) => x.kind === "note" && (x as { lyric?: string }).lyric === "na")!.id;
   return {
-    V: { abbr: "Vo.", ignores: ["roll"], lyricMute: new Set([bLyric]) },
+    V: { abbr: "Vo.", ignores: ["roll", "pedal:sustain"], lyricMute: new Set([bLyric]) },   // 台上这位不认延音踏板 = 整条画灰
     P: { abbr: "Pno.", noLyrics: "这位不唱字" },
     B: { abbr: "B." },
     K: { abbr: "Glk.", empty: true, badges: ["静"] },

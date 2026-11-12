@@ -8,7 +8,7 @@ export type PadKeyAction = {
     mark: "key" | "time" | "tempo";
 } | {
     kind: "menu";
-    menu: "groove" | "repeat" | "clef" | "ottava";
+    menu: "groove" | "repeat" | "clef" | "ottava" | "pedal";
 };
 /** 一个按键 id 该做什么；不认识的 = null（键盘加了格子、这里没接 = test/pad-keys.test.ts 红）。mods.ramp = 「渐到」亮着（只对力度有意义）。 */
 export declare function padKeyAction(id: string, mods?: {

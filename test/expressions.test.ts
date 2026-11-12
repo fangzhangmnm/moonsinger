@@ -73,7 +73,7 @@ describe("演奏法和表情不显示（7-G）· 名单", () => {
 describe("演奏法和表情不显示（7-G）· 淡提示什么时候有", () => {
   it("不显示、但整首没有一个能收起来的记号 = 不出提示（没收起来什么，就不打扰）", () => {
     const s = mapNotes(fullSong(), (t) => { const n = { ...t }; delete n.art; delete n.slur; delete n.inhale; return n; });
-    const bare = { ...s, papers: s.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).map(([k, ts]) => [k, ts.filter((t) => t.kind !== "dyn" && t.kind !== "hairpin")])) })) };
+    const bare = { ...s, papers: s.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).map(([k, ts]) => [k, ts.filter((t) => !FOLDED_TOKEN_KINDS.has(t.kind))   /* 整个不交给排版的种类（力度 / 渐强渐弱 / 踏板），和 expressions.ts 同一份 */])) })) };
     eq(lay(hide(bare)).statusHints.some((ln) => ln.items.some((it) => it.kind === "expr")), false);
   });
 });

@@ -2,7 +2,7 @@
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-3：代码原样从 staff/draw.ts 搬出，五线谱传它原来的锚点 = 每一行画出来和原来一样）。
 //   每一样都按行登记（attach(行, 道, …)；统筹审第四刀接口第 3 条：每一行按它自己那种画法的道的先后贴）；一次跨好几行的（发夹、房子）拆成一行一个。
 //   这里不是框架（frame/ 不认字形）：画法 import 它；它认得的只有记号表、文字样式和 Bravura 的速度音符。
-import { DYNS, type Song, type PaperSeg, type Token, type GrooveTok, type NavTok, NAV_LABEL, endingLabel, tempoWord, rampSource } from "../../score/song.ts";
+import { DYNS, type Song, type PaperSeg, type Token, type GrooveTok, type NavTok, type PedalKind, PEDAL_KINDS, NAV_LABEL, endingLabel, tempoWord, rampSource } from "../../score/song.ts";
 import { grooveLabel, grooveStyle } from "../../score/groove.ts";
 import type { NotationId } from "../../score/song-view.ts";
 import { TEMPO_EM, type TextRole } from "../text/index.ts";
@@ -10,7 +10,7 @@ import { GLYPH } from "../smufl.ts";
 import { MARGIN } from "../frame/params.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import type { Prim, EngraveOpts, DynHit, MarkHit } from "../engrave.ts";
-import type { Unit, Chunk, DynU, NavU } from "../frame/units.ts";
+import type { Unit, Chunk, DynU, NavU, PedalU } from "../frame/units.ts";
 import { dynDepiction, SIGNS } from "../signs.ts";
 import { GLYPH_BOX } from "../glyph-box.gen.ts";
 
@@ -35,7 +35,15 @@ export interface OrnCtx {
   P: (v: number) => number; tx: (role: TextRole) => number; TR: (role: TextRole, v: number) => number; RS: (role: TextRole) => number; mw: (role: TextRole, s: string) => number; sp: number;
   prims: Prim[]; dyns: DynHit[]; marks: MarkHit[];
   placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
+  /** 谱下方贴（踏板用）：同 placeAbove，往下挪到离上面的天际线 gap。 */
+  placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: { min?: number }) => number;
   attach: (row: number, lane: LaneKind, run: () => void) => void;
+  /** 这条轨第 s 行最下面那一行（五线谱 = 最下面那张谱表，大谱表 = 低音那张；数字行 = 它自己）：踏板挂在这一行下面。 */
+  rowLow: (s: number) => number;
+  /** 台上这位不认的记号（PartView.ignores：演奏法的名字 + 踏板「pedal:sustain」…）：画灰。 */
+  ignores: readonly string[];
+  /** 第 s 行的线画到哪（px；五线 / 数字行的行尾，最后一根小节线）；contentEnd = 这一行内容的右缘（所有声部的列里最右那一列，不过行尾）。踏板的线用。 */
+  rowEnd: (s: number) => number; contentEnd: (s: number) => number;
   /** 这一行的右边界（sp）。 */
   right: number;
   /** 这一行内容最左能到哪（px；7-K ⑤）：五线谱 = 行首竖线；数字行 = 行首竖线往右它自己的行首（同 jianpuLineStart）。挂件续到下一行时从不早于这里起，不越过竖线。 */
@@ -327,4 +335,140 @@ export function layNoteDynamics(c: OrnCtx, row: number, _ch: Chunk, a: { cx: num
     const d = swl === "<" ? `M${xb},${ym - H}L${xa},${ym}L${xb},${ym + H}` : swl === ">" ? `M${xa},${ym - H}L${xb},${ym}L${xa},${ym + H}` : `M${xa},${ym}L${mx},${ym - H}L${xb},${ym}M${xa},${ym}L${mx},${ym + H}L${xb},${ym}`;
     prims.push({ t: "path", d, cls: cl });
   }));
+}
+
+/** 踏板（11-1，设计稿 ai-docs/20261112-pedals-and-ring-design.md 第 5 节）：挂件最外一道——这一位最下面那条谱下面（歌词、8vb 再往外）。
+ *  延音 =「Ped.」+ 一条线到抬起处、抬起处往上一个钩；换踏板 = 线上一个尖（先抬再踩）；持音 =「Sost.」、弱音 =「una corda」（细斜体字），同样的线和钩
+ *  （统筹 11-12：三种踏板一个读法，范围看得见；弱音不写「tre corde」、不用「U.C.」）。
+ *  道：三种严格按 延音 → 持音 → 弱音 从里往外，同一种在同一行永远一条基线；这一行没有的那种不占道（统筹 11-12）。离上面最近的东西（级数、歌词、下八度点…）至少 1 个线间距。
+ *  同一行同一种踏板共用一条基线（一次贴：整行的线一样高）；三种踏板各一条，延音最靠谱。跨行 = 每行一段，下一行从行首接着画线（不再写「Ped.」）。
+ *  不起作用的（已经踩着又踩、没踩就抬）照画、画灰（踩下 = 灰「Ped.」、抬起 = 灰「*」）；没踩就「换踏板」= 照踩下画（统筹 11-12：换完本来就是踩着的）。
+ *  台上这位不认这种踏板（PartView.ignores 里有「pedal:<种类>」）= 整条画灰。纸尾还踩着 = 画到这张纸内容的右缘、照样有钩（放的时候纸尾就抬，sustainSpans）。 */
+export const PEDAL = { scale: 0.8, gap: 1.0, textGap: 0.3, hook: 1.1, notch: 0.45, hookIn: 0.3 } as const;
+const PEDAL_GLYPH: Readonly<Record<"sustain" | "sostenuto", string>> = { sustain: "\u{E650}", sostenuto: "\u{E659}" };
+const PEDAL_UP_GLYPH = "\u{E655}";
+export function layPedals(c: OrnCtx): void {
+  const { P, prims, dyns, tokens, units } = c;
+  const peds = units.filter((u): u is PedalU => u.kind === "pedal");
+  if (!peds.length) return;
+  const chunks = units.filter((u): u is Chunk => u.kind === "chunk"), lastC = chunks[chunks.length - 1];
+  const jp = c.notation !== "staff", gk = c.glyphScale ?? 1, K = PEDAL.scale;
+  /** 纸尾（踏板记号后面没有音了 / 纸尾还踩着）：这张纸最后那一行内容的右缘（最后一个音占到哪；有收尾的小节线 = 到它前面），不早于最后一个音的墨后面一点。 */
+  const paperEnd = (fallbackSys: number): { sys: number; x: number } => {
+    if (!lastC) return { sys: fallbackSys, x: c.contentEnd(fallbackSys) - P(PEDAL.hookIn) };
+    return { sys: lastC.system, x: Math.max(c.noteEnd(lastC) + P(0.6), c.contentEnd(lastC.system) - P(PEDAL.hookIn)) };
+  };
+  /** 这个记号作用在哪：后面那个音 / 休止的起点（音的墨的左边）；后面没有了 = 最后一个音后面一点（纸尾）。 */
+  const at = (u: PedalU): { sys: number; x: number } => {
+    const k = units.indexOf(u), nx = units.slice(k + 1).find((v): v is Chunk => v.kind === "chunk");
+    if (nx) return { sys: nx.system, x: c.noteX(nx) };
+    return paperEnd(u.system);
+  };
+  /** 一个字（踏板的名字 / 抬起的「*」）：画在 (x, y)，交回墨的宽高（px）。五线谱 = Bravura 字形；数字行 / 弱音的字 = 文字（简谱同力度用细斜体）。 */
+  const word = (kind: "glyph" | "text", s: string, x: number, y: number, tok: number, cls: string): { w: number; h: number } => {
+    if (kind === "glyph") {
+      const b = GLYPH_BOX[s], w = P((b?.[1] ?? 4) * K), h = P((b ? b[3] - b[2] : 2.2) * K);
+      prims.push({ tok, t: "glyph", x, y, ch: s, cls, size: P(4 * K) });
+      return { w, h };
+    }
+    const role = jp ? "jp-dyn" : "dyn-word", k = jp ? gk : 1, fs = c.tx(role) * k;
+    prims.push({ tok, t: "text", x, y, s, cls: `${cls} ${role}`, size: fs, anchor: "start" });
+    return { w: P(c.mw(role, s) * k), h: fs * 0.75 };
+  };
+  const nameOf = (w: PedalKind): { kind: "glyph" | "text"; s: string } =>
+    w === "soft" ? { kind: "text", s: "una corda" } : jp ? { kind: "text", s: w === "sustain" ? "Ped." : "Sost." } : { kind: "glyph", s: PEDAL_GLYPH[w] };
+  const upOf = (): { kind: "glyph" | "text"; s: string } => (jp ? { kind: "text", s: "*" } : { kind: "glyph", s: PEDAL_UP_GLYPH });
+  /** 每一行最近贴的那一种踏板的基线（局部，线间距）：下一种至少在它下面（道的先后）。 */
+  const lanes = new Map<number, number>();
+  /** 一种踏板的名字高出基线多少（px；同 word 的量法）。 */
+  const nameH = (w: PedalKind): number => { const nm = nameOf(w); return nm.kind === "glyph" ? P(((GLYPH_BOX[nm.s] ? -GLYPH_BOX[nm.s]![2] : 2.2)) * K) : c.tx(jp ? "jp-dyn" : "dyn-word") * (jp ? gk : 1) * 0.75; };
+  /** 一个字多宽多高（px），不画（摆之前查挤不挤）；同 word 的量法。 */
+  const wordSize = (kind: "glyph" | "text", s: string): { w: number; h: number } => {
+    if (kind === "glyph") { const b = GLYPH_BOX[s]; return { w: P((b?.[1] ?? 4) * K), h: P((b ? b[3] - b[2] : 2.2) * K) }; }
+    const role = jp ? "jp-dyn" : "dyn-word", k = jp ? gk : 1; return { w: P(c.mw(role, s) * k), h: c.tx(role) * k * 0.75 };
+  };
+  for (const which of PEDAL_KINDS) {
+    const mine = peds.filter((u) => u.which === which); if (!mine.length) continue;
+    const mute = c.ignores.includes(`pedal:${which}`) ? " art-mute" : "", cls = `pedal${mute}`, nm = nameOf(which), nmW = wordSize(nm.kind, nm.s).w;
+    /** 每一行要画的：main = 这一种的道上（名字、线、尖、钩；同一行一次贴、共用一条基线），taken = 道上被名字 / 钩占着的横向范围，greys = 不起作用的（灰），挤了往外让一道。 */
+    type RowItems = { main: ((y: number) => void)[]; taken: [number, number][]; greys: { x0: number; x1: number; draw: (y: number) => void }[] };
+    const byRow = new Map<number, RowItems>();
+    const rowOf = (sy: number): RowItems => { const r = c.rowLow(sy); let it = byRow.get(r); if (!it) byRow.set(r, (it = { main: [], taken: [], greys: [] })); return it; };
+    const hit = (sy: number, index: number, x: number, y: number, w: number, h: number) => dyns.push({ index, kind: "pedal", system: c.rowLow(sy), x, y, w, h });
+    /** 一段踩着的线：从 (s0, x0) 到 (s1, x1)；notches = 换踏板的尖；hook = 抬起的钩挂在谁身上（undefined = 纸尾抬起，钩不挂 token）。
+     *  挤的时候（换踏板 / 抬起紧跟在踩下后面、落在名字的宽里）照先后往右挪到线上第一个空处——一个都不丢（显示 = 全量）。 */
+    const lineSpan = (startIdx: number, s0: number, x0: number, s1: number, x1: number, notches: { sys: number; x: number; index: number }[], hookIdx: number | undefined) => {
+      const N = P(PEDAL.notch);
+      for (let sy = s0; sy <= s1; sy++) {
+        const a = sy === s0 ? x0 : c.left(sy) + P(0.3), closes = sy === s1;
+        const ns: { x: number; index: number }[] = []; let minX = a + N;
+        for (const n of notches.filter((m) => m.sys === sy).sort((m, k) => m.x - k.x)) { const x = Math.max(n.x, minX); ns.push({ x, index: n.index }); minX = x + 2 * N + P(0.2); }
+        const b = closes ? Math.max(x1, ns.length ? ns[ns.length - 1]!.x + N + P(0.2) : a) : c.rowEnd(sy);   // 接到下一行的：画到这一行的行尾
+        const it = rowOf(sy); if (closes) it.taken.push([b - P(0.6), b + P(0.6)]);
+        it.main.push((y) => {
+          const H = P(PEDAL.hook);
+          // 线：一笔，尖的地方断开（尖另画一笔，挂换踏板那个 token）
+          const pieces: string[] = []; let from = a;
+          for (const n of ns) { pieces.push(`M${from},${y}L${n.x - N},${y}`); from = n.x + N; }
+          pieces.push(`M${from},${y}L${b},${y}`);
+          prims.push({ tok: tokens[startIdx]!.id, t: "path", d: pieces.join(""), cls });
+          for (const n of ns) {
+            prims.push({ tok: tokens[n.index]!.id, t: "path", d: `M${n.x - N},${y}L${n.x},${y - H}L${n.x + N},${y}`, cls });
+            dyns.push({ index: n.index, kind: "pedal", system: c.rowLow(sy), x: n.x - N - P(0.3), y: y - H - P(0.4), w: 2 * N + P(0.6), h: H + P(0.8) });
+          }
+          if (closes) {
+            prims.push({ ...(hookIdx !== undefined ? { tok: tokens[hookIdx]!.id } : {}), t: "path", d: `M${b},${y}L${b},${y - H}`, cls });
+            if (hookIdx !== undefined) dyns.push({ index: hookIdx, kind: "pedal", system: c.rowLow(sy), x: b - P(0.6), y: y - H - P(0.4), w: P(1.2), h: H + P(0.8) });
+          }
+        });
+      }
+    };
+    /** 不起作用的（画灰）：踩着又踩 = 灰名字，没踩就抬 = 灰「✱」。 */
+    const grey = (u: PedalU, p: { sys: number; x: number }, w: { kind: "glyph" | "text"; s: string }) => {
+      const sz = wordSize(w.kind, w.s), id = tokens[u.index]!.id;
+      rowOf(p.sys).greys.push({ x0: p.x, x1: p.x + sz.w, draw: (y) => { const m = word(w.kind, w.s, p.x, y, id, "pedal art-mute"); hit(p.sys, u.index, p.x - P(0.3), y - m.h - P(0.3), m.w + P(0.6), m.h + P(0.7)); } });
+    };
+    let down: { sys: number; x: number; idx: number } | null = null, notches: { sys: number; x: number; index: number }[] = [];
+    const finish = (endSys: number, endX: number, hookIdx: number | undefined) => {
+      const d = down!; down = null;
+      lineSpan(d.idx, d.sys, d.x + nmW + P(PEDAL.textGap), endSys, endX, notches, hookIdx);
+    };
+    for (const u of mine) {
+      const p = at(u);
+      if (u.act === "down" || (u.act === "change" && !down)) {
+        if (down) { grey(u, p, nm); continue; }   // 已经踩着又踩：不起作用
+        const it = rowOf(p.sys), id = tokens[u.index]!.id;
+        it.taken.push([p.x, p.x + nmW]);
+        it.main.push((y) => { const m = word(nm.kind, nm.s, p.x, y, id, cls); hit(p.sys, u.index, p.x - P(0.3), y - m.h - P(0.3), m.w + P(0.6), m.h + P(0.7)); });
+        down = { sys: p.sys, x: p.x, idx: u.index }; notches = [];
+        continue;
+      }
+      if (u.act === "change") { notches.push({ sys: p.sys, x: p.x, index: u.index }); continue; }
+      if (!down) { grey(u, p, upOf()); continue; }   // 没踩就抬：不起作用
+      finish(p.sys, p.x - P(PEDAL.hookIn), u.index);
+    }
+    if (down) {   // 纸尾还踩着 = 纸尾抬起（钩不挂 token）
+      const end = paperEnd((down as { sys: number }).sys);
+      finish(end.sys, end.x, undefined);
+    }
+    // 道：这一行前一种踏板（更靠谱的）的基线往下至少「这一种的字高 + 1 个线间距」——那一种在这一段 x 上没有墨时也不往里钻（统筹 11-12 ②）。
+    //   灰的那几个：和道上的名字 / 钩、和同一道上别的灰的挤了 = 往外让一道（同段尾力度挤了挪到外面一道的规矩）；一道里从左往右摆
+    const top = Math.max(nameH(which), P(PEDAL.hook)) / P(1);
+    for (const [row, it] of byRow) c.attach(row, "pedal", () => {
+      const subs: { taken: [number, number][]; draws: ((y: number) => void)[] }[] = [{ taken: [...it.taken], draws: [...it.main] }];
+      const pad = P(0.3), free = (tk: [number, number][], a: number, b: number) => tk.every(([x0, x1]) => b + pad <= x0 || a >= x1 + pad);
+      for (const g of [...it.greys].sort((m, k) => m.x0 - k.x0)) {
+        let k = 0; while (k < subs.length && !free(subs[k]!.taken, g.x0, g.x1)) k++;
+        if (k === subs.length) subs.push({ taken: [], draws: [] });
+        subs[k]!.taken.push([g.x0, g.x1]); subs[k]!.draws.push(g.draw);
+      }
+      let prev = lanes.get(row);
+      subs.forEach((sb, k) => {
+        if (!sb.draws.length) return;
+        const dy = c.placeBelow(row, k ? 0.4 : PEDAL.gap, (y) => { for (const d of sb.draws) d(y); }, prev === undefined ? {} : { min: prev + top + (k ? 0.4 : PEDAL.gap) });
+        prev = dy;
+      });
+      if (prev !== undefined) lanes.set(row, prev);
+    });
+  }
 }

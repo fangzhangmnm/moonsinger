@@ -18,7 +18,7 @@
 import { _t } from "../i18n/index.ts";
 import { type Pitch, alterBy, keySpell, midiOf } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
-import { type EditorState, type NoteTok, ART_NAME, allPitches, singleSel, writePitch, soundingPitch, setNote, setUnit, setTuplet, setInputKey, setInputScale, tr, keyAt, toggleChordPitch, dynMarkAt } from "../score/song.ts";
+import { type EditorState, type Token, type NoteTok, ART_NAME, allPitches, singleSel, writePitch, soundingPitch, setNote, setUnit, setTuplet, setInputKey, setInputScale, tr, keyAt, toggleChordPitch, dynMarkAt } from "../score/song.ts";
 import type { Mark } from "../score/perform.ts";
 import { Pad, type HintRange } from "../keyboard/pad.ts";
 import { chordHead, chordBothAfterMs, chordVerdict, monoClash, type ChordWhy } from "../keyboard/chords.ts";
@@ -72,6 +72,8 @@ export interface PadGlue {
   insertMarkHere(kind: "key" | "time" | "tempo"): void;
   insertGrooveHere(): void;
   openRepeatMenu(): void;
+  /** 符号层「踏板」的小菜单（11-1）。 */
+  openPedalMenu(): void;
   openInsertClefMenu(at: { x: number; y: number }): void;
   openInsertOttavaMenu(at: { x: number; y: number }): void;
   showPad(on: boolean): void;
@@ -224,6 +226,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     if (a.kind === "mark") g.insertMarkHere(a.mark);
     else if (a.menu === "groove") g.insertGrooveHere();
     else if (a.menu === "repeat") g.openRepeatMenu();
+    else if (a.menu === "pedal") g.openPedalMenu();
     else { const r = padEl.getBoundingClientRect(), at = { x: r.left + r.width / 2, y: r.top - 4 }; if (a.menu === "clef") g.openInsertClefMenu(at); else g.openInsertOttavaMenu(at); }
   }
   /** pad 的编辑命令：锁（/2 的凑满一份）× 命令 → apply；做不成的说一句；写了的披露（不认的记号 / 被盖掉的力度）。 */
@@ -237,9 +240,10 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     if (c.k === "swell" && nx === prev) { g.info(_t("音内的起伏要挂在一个音上（光标前面是休止或者还没有音）")); return; }
     if (c.k === "wedge" && nx === prev) { g.info(_t("{p}从一个音到下一个音（光标前面是休止或者还没有音）", { p: c.w === "cresc" ? _t("渐强") : _t("渐弱") })); return; }
     g.update(nx); if (c.k === "rest" || c.k === "extend") g.afterWrite();
-    if (c.k === "backspace" || c.k === "delete") {   // 删音顺手湮灭了不再管任何音的力度记号 / 渐强渐弱：说一声（不静默；撤销能回来）
-      const marks = (s: EditorState) => tr(s).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length, gone = marks(prev) - marks(st()) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length : 0);
-      if (gone > 0) g.info(_t("顺手去掉了 {gone} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）", { gone }));
+    if (c.k === "backspace" || c.k === "delete") {   // 删音顺手湮灭了不再管任何音的力度记号 / 渐强渐弱 / 踏板：说一声（不静默；撤销能回来）
+      const ann = (t: Token) => t.kind === "dyn" || t.kind === "hairpin" || t.kind === "pedal";   // 会湮灭的几种（song.ts annihilate）
+      const marks = (s: EditorState) => tr(s).filter(ann).length, gone = marks(prev) - marks(st()) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter(ann).length : 0);
+      if (gone > 0) g.info(_t("顺手去掉了 {n} 个不再管任何音的记号（力度 / 渐强渐弱 / 踏板；撤销能找回来）", { n: gone }));
     }
     if (c.k === "art") g.discloseArt(prev, c.a === "swellDown" ? "swellFade" : c.a === "swellUp" || c.a === "swellBoth" ? "swellGrow" : c.a);   // 音内起伏在演奏法里（v0.9.44），「做不到」的说法照旧按 swellGrow / swellFade
     if (c.k === "slur") g.discloseArt(prev, "slur");

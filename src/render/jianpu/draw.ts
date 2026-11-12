@@ -14,7 +14,7 @@ import type { SongView } from "../../score/song-view.ts";
 import type { Prim, EngraveOpts, HitNote, RestHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox, Layout } from "../engrave.ts";
 import { dynOverridden } from "../../score/perform.ts";
 import { navWhy } from "../../score/repeats.ts";
-import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, tempoAt, tempoW, type OrnCtx } from "../ornaments/index.ts";
+import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, layPedals, tempoAt, tempoW, type OrnCtx } from "../ornaments/index.ts";
 import type { TextRole } from "../text/index.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import { MARGIN } from "../frame/params.ts";
@@ -32,7 +32,7 @@ import { scalePrim } from "../skyline.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_GAP, UL_W, DASH_PITCH, BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, DIGIT_H, KIT_CHAR, JP_BODY, HEAD_EM, MARK_GAP, MARK_GAP2, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, MARCATO_EM, UNSTRESS_EM, CHORD_H, chordNameW, dotPath } from "./glyphs.ts";
 
 /** 简谱数字行贴挂件的先后（从数字往上：演奏法 → 音的修饰 → 力度道 → 跳转 → 速度 → 风格 → 小节号 → 和弦级数；歌词在下面）。和五线谱同一张道名表（frame/lanes.ts）。 */
-export const JIANPU_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics"];
+export const JIANPU_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "pedal"];
 
 /** 框架交给数字行的东西（是五线谱那一份的子集：不要纵向 ↔ 音高的几何）。 */
 export interface JianpuDrawCtx {
@@ -121,7 +121,8 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
     { let pend: Chunk[] = []; for (const v of units) { if (v.kind !== "chunk" && v.kind !== "bar") continue; for (const c0 of pend) spanTo.set(c0, c0.system === v.system ? v.x : staffEnd[c0.system]!); pend = v.kind === "chunk" ? [v] : []; }
       for (const c0 of pend) { let end = -Infinity; for (const col of c.cols) if (col.system === c0.system) end = Math.max(end, col.x + col.w); spanTo.set(c0, Math.min(staffEnd[c0.system]!, end > c0.x ? end : staffEnd[c0.system]!)); } }   // 这张纸最后一个音后面什么都没有（最后一小节没写满 = 没有小节线）：占到这一行内容的结尾（所有声部的列里最右那一列的右缘），不摊到行尾（7-E 另查①：长音的横线原来摊了半行）
     // 共用挂件（力度那一串、风格、跳转房子、速度；ornaments/index.ts）：音的锚点 = 数字的左右缘
-    const orn: OrnCtx = { song, paper, o, notation: "jianpu", P, tx, TR: c.TR, RS: c.RS, mw: c.mw, sp: c.sp, prims: c.prims, dyns: c.dyns, marks, placeAbove, attach: c.attach, right: c.right, left: (sy) => P(MARGIN + (sy === 0 ? ind0 : c.indN)) + Q(0.6), tokens, units, row: (sy) => rowOf(sy, r, 0),   // left = jianpuLineStart（行首竖线往右 0.6）
+    const orn: OrnCtx = { song, paper, o, notation: "jianpu", P, tx, TR: c.TR, RS: c.RS, mw: c.mw, sp: c.sp, prims: c.prims, dyns: c.dyns, marks, placeAbove, placeBelow: (row, gap, d, o2) => placeBelow(row, gap, d, o2), rowLow: (sy) => rowOf(sy, r, 0), ignores: q.p.ignores ?? [], rowEnd: (sy) => P(staffEnd[sy]!),
+      contentEnd: (sy) => { let e = -Infinity; for (const col of cols) if (col.system === sy) e = Math.max(e, col.x + col.w); return P(e > -Infinity ? Math.min(staffEnd[sy]!, e) : staffEnd[sy]!); }, attach: c.attach, right: c.right, left: (sy) => P(MARGIN + (sy === 0 ? ind0 : c.indN)) + Q(0.6), tokens, units, row: (sy) => rowOf(sy, r, 0),   // left = jianpuLineStart（行首竖线往右 0.6）
       glyphScale: jk, noteX: (ch) => P(ch.x) + Q(0.1), noteEnd: (ch) => P(ch.x) + Q(0.1 + DIGIT_W), dynOff: dynOverridden(tokens), navMute: (i) => (navWhy(song, paper, q.p.id, tokens[i]!) ? " art-mute" : ""), hint: c.hint };   // hint：推定的灰字、速度变了的箭头交给框架最后贴（8-5）
     // 八度基准（UX 稿第 3 节；第五刀 5-4）：整条轨（这张纸上）一个基准——按台上那位的音域定（宿主查好放在 q.p.range）；查不到 = 写的音「点最少」；
     //   按音域定的基准下有音要三个点以上（写得离这件乐器的音域很远）= 极端：退回「点最少」。基准画在每一行「1=」那个字母上下（下面 keyDots）
@@ -363,6 +364,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       }
     }
     layDynamics(orn);   // 力度那一层（力度字：中文界面写中文、别的界面写字母；记号表 signs.ts）
+    layPedals(orn);   // 踏板（11-1）：共用挂件，这一行下面最外一道（歌词再往外）
     if (kit && mode === "x" && q.p.kitNames) layKitLegend(q, r);   // 整套鼓的图例（行首名字下面）
     // 光标落点、写字头：框架那一套（frame/carets.ts）；升降号挂在左边，光标画在它左边；数字行没有谱号位移
     const inkL = measured[r]!.inkL;

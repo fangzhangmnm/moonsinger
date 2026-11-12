@@ -1,5 +1,5 @@
 import { type TextMeasure } from "../text/index.ts";
-import { type Token, type Repeat, type Art, type Dyn, type ClefName, type Staff } from "../../score/song.ts";
+import { type Token, type Repeat, type Art, type Dyn, type ClefName, type Staff, type PedalKind } from "../../score/song.ts";
 import { type Pitch } from "../../score/pitch.ts";
 export declare const MIN_PLAIN: number;
 export declare const NOTATABLE: {
@@ -173,7 +173,19 @@ export interface OttavaU {
     tick: number;
     staff: Staff;
 }
-export type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | DynU | HairpinU | GrooveU | NavU | ClefU | OttavaU;
+/** 踏板记号（11-1）：不占横向地方，挂在后面那个音 / 休止上（时刻 = 它的起点）；画在这一位最下面那条谱下面最外一道（共用挂件 ornaments layPedals）。 */
+export interface PedalU {
+    kind: "pedal";
+    index: number;
+    which: PedalKind;
+    act: "down" | "up" | "change";
+    w: number;
+    x: number;
+    system: number;
+    tick: number;
+    staff: Staff;
+}
+export type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | DynU | HairpinU | GrooveU | NavU | ClefU | OttavaU | PedalU;
 /** 各种单元多宽（sp，量之前的那个宽；画法给）。音那一段：先算临时记号让位的宽 acc，再 chunk = 平常占多宽，按歌词排时 lyric 和它取大，换气 / 出声的换气另加。 */
 export interface UnitWidths {
     bar(repeat: Repeat | undefined, style: "double" | "final" | undefined): number;

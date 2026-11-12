@@ -228,7 +228,7 @@ export interface ClefHit {
 /** 力度记号 / 渐强渐弱的点击区域（px）：点 = 小菜单（改 / 删），长按拖 = 挪到别的音上（2026-10-08 Opus 5.5）。渐强渐弱跨行 = 每行一块。 */
 export interface DynHit {
     index: number;
-    kind: "dyn" | "hairpin" | "groove" | "nav";
+    kind: "dyn" | "hairpin" | "groove" | "nav" | "pedal";
     system: number;
     x: number;
     y: number;

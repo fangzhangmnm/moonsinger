@@ -1,5 +1,5 @@
 import { type Lang } from "../i18n/index.ts";
-import type { Art, Dyn } from "../score/song.ts";
+import type { Art, Dyn, PedalKind } from "../score/song.ts";
 import type { NotationId } from "../score/song-view.ts";
 import type { LaneKind } from "./frame/lanes.ts";
 export type Depiction = {
@@ -18,7 +18,7 @@ export type Depiction = {
     kind: "text";
     s: string;
 };
-export type SignId = `art:${Art}` | `dyn:${Dyn}` | "hairpin:cresc" | "hairpin:dim" | "ramp";
+export type SignId = `art:${Art}` | `dyn:${Dyn}` | "hairpin:cresc" | "hairpin:dim" | "ramp" | `pedal:${PedalKind}`;
 export interface Sign {
     readonly id: SignId;
     name(l: Lang): string;

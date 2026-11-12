@@ -45,7 +45,7 @@ const PENDING: Record<string, string> = {   // 8-7 ① 时字母谱有过一条 
 const STAFF_KNOWN: Record<string, string> = {
   "path:brace × rect:cat-bar.ann.cat-1": "花括号压着编辑器的色条", "path:brace × rect:cat-bar.ann.cat-4": "花括号压着编辑器的色条",
   "line:ottava-line × text:ottava.cont": "8va 虚线压着「(8va)」",
-  "line:- × path:tie": "延音线压符干", "glyph:dyn × glyph:timesig": "7-V：一行比一页高，跑出纸底压到下一页第一行（分页 / 印；8-7 夹具先过补力度之后出现）", "glyph:note × line:ottava-line.off.ann": "关着的自动八度线提示压符头", "glyph:note × text:ottava.cont.off.ann": "关着的自动八度线提示的字压符头",
+  "line:- × path:tie": "延音线压符干", "glyph:note × line:ottava-line.off.ann": "关着的自动八度线提示压符头", "glyph:note × text:ottava.cont.off.ann": "关着的自动八度线提示的字压符头",
 };
 
 type Case = { name: string; L: Layout; ts: number };
@@ -56,12 +56,26 @@ function cases(notation: "staff" | "jianpu" | "letters"): Case[] {
   for (const [name, o] of [["编辑", { ...editorBase(t, TRIO_LABELS), measure: real }], ["印", printOpts(t, SP, views(t, TRIO_LABELS, false), real, true)]] as const) out.push({ name: `三声部 · ${name}`, L: engrave(t, o as EngraveOpts), ts: (o as EngraveOpts).textScale ?? 1 });
   return out;
 }
-/** 一种谱的所有相叠，按「谁和谁」分组（去掉 ALLOWED 的）。 */
+/** 7-V 的豁免（统筹 2026-11-12 裁定，取代原来按种类挂的 7-V 条目）：分页的版面里，一组（一张纸的一行，几个声部）比一页还高、跑出了它那一页的纸底——
+ *  从那一页的纸底到这一组的底这一条横带里的相叠不查（那里压着的是这一组跑出去的部分和下一页开头）。7-V 本身没修，等 user 定方向。
+ *  只管分页的版面（有纸的框）；同样的东西在连续排的视图里没有分页、照样查，所以这条带里真有「谱号压小节线」那种，连续排的那几份会报。
+ *  圈的是横带不是「这一组的图元」：版面没给每个图元记它属于哪一组（行首的家具是行距定了以后另画的），要逐个认得让排版器往外交行号。 */
+function overflowBands(L: Layout): [number, number][] {
+  const pages = (allPrims(L).filter((p) => p.t === "rect" && has(p, "page")) as { y: number; h: number }[]);
+  if (!pages.length) return [];
+  const groups = new Map<string, { top: number; bottom: number }>();
+  for (const b of L.systems) { const k = `${b.paper}:${b.sys}`, e = groups.get(k); if (!e) groups.set(k, { top: b.top, bottom: b.bottom }); else { e.top = Math.min(e.top, b.top); e.bottom = Math.max(e.bottom, b.bottom); } }
+  const out: [number, number][] = [];
+  for (const g of groups.values()) { const pg = pages.find((q) => g.top >= q.y - 1 && g.top < q.y + q.h); if (pg && g.bottom > pg.y + pg.h) out.push([pg.y + pg.h, g.bottom]); }
+  return out;
+}
+/** 一种谱的所有相叠，按「谁和谁」分组（去掉 ALLOWED 的、7-V 那条带里的）。 */
 function found(notation: "staff" | "jianpu" | "letters"): Map<string, string[]> {
   const g = new Map<string, string[]>();
   for (const c of cases(notation)) {
-    const AP = allPrims(c.L), ink = inkOf(c.L, (s, size) => real.widthPx(s, size, c.L.sp, c.ts), (p) => p.t === "rect" && has(p, "page"), font);
+    const AP = allPrims(c.L), ink = inkOf(c.L, (s, size) => real.widthPx(s, size, c.L.sp, c.ts), (p) => p.t === "rect" && has(p, "page"), font), bands = overflowBands(c.L);
     for (const o of overlaps(ink, EPS).values()) {
+      if (bands.some(([y0, y1]) => o.y >= y0 && o.y <= y1)) continue;   // 7-V：跑出纸底的那一组压着下一页（见 overflowBands）
       const a = AP[o.a]!, b = AP[o.b]!;
       if (ALLOWED.some((r) => r.ok(a, b) || r.ok(b, a))) continue;
       const ka = kindOf(a), kb = kindOf(b), key = ka < kb ? `${ka} × ${kb}` : `${kb} × ${ka}`, lab = (p: Prim) => (p.t === "text" ? `「${p.s}」` : p.t);

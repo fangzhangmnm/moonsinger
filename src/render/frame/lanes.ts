@@ -12,6 +12,7 @@ export type LaneKind =
   | "barNumber"      // 小节号
   | "chordTag"       // 和弦级数
   | "lyrics"         // 歌词
-  | "ottavaBelow";   // 八度线（8vb，谱下方）
+  | "ottavaBelow"    // 八度线（8vb，谱下方）
+  | "pedal";         // 踏板（11-1）：这一位最下面那条谱下面最外一道（设计稿 ai-docs/20261112-pedals-and-ring-design.md 第 5 节）
 /** 播放的小节底色只盖到这一道为止（含）：反复跳转算这一行的墨，速度 / 风格这些整张谱的不算（v0.10.26）。 */
 export const INK_UP_TO: LaneKind = "nav";

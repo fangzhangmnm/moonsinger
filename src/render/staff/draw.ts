@@ -15,7 +15,7 @@ import { harmonyTheory, type PlacedTag, type ChordFold } from "../../theory/inde
 import { baseClef } from "../../score/clef.ts";
 import { MARGIN } from "../frame/params.ts";
 import { TOP_LINE, MID_LINE, BOTTOM_LINE, ART_GLYPH, GLYPH_BREATH, SHARP_POS, FLAT_POS, GLYPH_TUPLET } from "./glyphs.ts";
-import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, type OrnCtx } from "../ornaments/index.ts";   // 两种行共用的挂件（第四刀 4-3）
+import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, layPedals, type OrnCtx } from "../ornaments/index.ts";   // 两种行共用的挂件（第四刀 4-3）
 import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W } from "./units.ts";
 import type { Unit, Chunk } from "../frame/units.ts";
 import { stemInput, posD, shAt, percAt, clefW, noteheadW, NOTEHEAD_X } from "./measure.ts";
@@ -28,7 +28,7 @@ import type { LaneKind } from "../frame/lanes.ts";
 
 /** 框架交给五线谱画法的东西（施工单 1b-6a：原来是 engrave() 里的局部变量）。以后 6b–6d 收窄：挂件改成清单、每行一张图元表、摆的结果不抄回单元。 */
 /** 五线谱这一种贴挂件的先后（原来按编号 later[2..12]：跳音 / 保持在音符层里，不是挂件）。 */
-export const STAFF_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow"];
+export const STAFF_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow", "pedal"];
 export interface StaffDrawCtx {
   song: Song; paper: PaperSeg; o: EngraveOpts;
   /** 这首歌怎么看（src/score/song-view.ts；框架读一次传进来：按 C 调看、和弦标级数、每条轨的和弦选项）。 */
@@ -105,11 +105,14 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
     const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
     for (let k = 0; k < Math.abs(f); k++) put(r, { ...T, t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k] + off), ch, cls });
   };
+  /** 第 s 行内容的右缘（sp）：所有声部的列里最右那一列的右缘，不过行尾（同简谱长音横线的 7-E 另查①）。 */
+  const rowContentEnd = (sy: number): number => { let e = -Infinity; for (const col of cols) if (col.system === sy) e = Math.max(e, col.x + col.w); return e > -Infinity ? Math.min(staffEnd[sy]!, e) : staffEnd[sy]!; };
   /** 这条轨交给共用挂件的东西（ornaments/index.ts）：音的锚点 = 符头（刀 3：对齐线 = 列的 x，符头画在 x + 0.35）。 */
   const ornCache = new Map<number, OrnCtx>();
   const ornOf = (q: StaffTrack, r: number, noteEnd?: (ch: Chunk) => number): OrnCtx => {
     const hit = ornCache.get(r); if (hit && !noteEnd) return hit;
-    const oc: OrnCtx = { song, paper, o, notation: "staff", P, tx, TR, RS, mw, sp, prims, dyns, marks, placeAbove, attach, right, left: (sy) => P(MARGIN + (sy === 0 ? ind0 : indN)), tokens: q.tokens, units: q.units, row: (sy) => rowOf(sy, r, 0),
+    const oc: OrnCtx = { song, paper, o, notation: "staff", P, tx, TR, RS, mw, sp, prims, dyns, marks, placeAbove, placeBelow: (row, gap, d, o2) => placeBelow(row, gap, d, o2), attach, right, left: (sy) => P(MARGIN + (sy === 0 ? ind0 : indN)), tokens: q.tokens, units: q.units, row: (sy) => rowOf(sy, r, 0),
+      rowLow: (sy) => rowOf(sy, r, q.staves - 1), ignores: q.p.ignores ?? [], rowEnd: (sy) => P(staffEnd[sy]!), contentEnd: (sy) => P(rowContentEnd(sy)),   // 踏板挂在最下面那张谱表下面（11-1）
       noteX: (ch) => P(ch.x + 0.35), noteEnd: noteEnd ?? ((ch) => P(ch.x + 0.35)), dynOff: dynOverridden(q.tokens), navMute: (i) => (navWhy(song, paper, q.p.id, q.tokens[i]!) ? " art-mute" : "") };
     ornCache.set(r, oc); return oc;
   };
@@ -232,7 +235,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
     };
     for (const u of units) {
       const row = RW(u);
-      if (u.kind === "dyn") continue;   // 力度：共用挂件（layDynamics，在下面一起摆）
+      if (u.kind === "dyn" || u.kind === "pedal") continue;   // 力度 / 踏板：共用挂件（layDynamics / layPedals，在下面一起摆）
       if (u.kind === "groove") { layGroove(orn, u); continue; }   // 风格记号：共用挂件（挂件第 8 样）
       if (u.kind === "head") continue;   // 写字头（零宽，只在尾巴）：只为五线画到右边；光标本身 score-view 在 ink 层按落点（slots）画
       if (v2 && (u.kind === "bar" || u.kind === "key" || u.kind === "time")) continue;   // 声部 2：小节线 / 调号 / 拍号是声部 1 画的（单位留着：符杠照样在小节线处断）
@@ -457,6 +460,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
     //   刀 4b：力度字 / 发夹 / cresc. 字 / 渐到 = 力度那一层（挂件第 4 样），各是一块（dynItems）；用发夹连着的一串（字—发夹—字）共用一条基线 = 这一串里最高的那个，
     //   贴它们自己那几段天际线往上 0.4。原来整行一条「外道」（只要这一行有个高音，整行的力度都被抬上去）。
     layDynamics(orn);   // 力度那一层（力度字 / 发夹 / cresc. 字 / 渐到）：共用挂件（ornaments/index.ts，第四刀 4-3 原样搬出），按行登记
+    if (!v2) layPedals(orn);   // 踏板（11-1）：共用挂件，最下面那张谱表下面最外一道（声部 2 = 合租并成的第二个声部，记号归声部 1）
     // 和弦级数（v0.16.13；乐理模块 src/theory/）= 挂件第 10 样（刀 4b，user 11-08 拍：放到和弦的右下角）：x = 符头右缘 + 0.3、靠左对齐；y = 这一段下天际线再往下 0.3。
     //   按 C 调看时认的是换到 C 的谱 + C 调——级数一样。合租叠起来的虚拟行、声部 2 不标（只看个大概的）。印（跟着设置进 PDF）
     if (harmony && !v2 && !q.vrt) {   // 按行登记（第四刀）：一个和弦一块；合租的一家合起来认的挂在这一家最下面那一行（第五刀 5-4，预处理 theory/families.ts）

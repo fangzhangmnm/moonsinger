@@ -27,7 +27,7 @@ const skipped = (cls: string[]) => cls.some((c) => SKIP.has(c));
 /** 这个图元印不印（按样式类；测试用）。 */
 export const isPrinted = (cls: string | undefined): boolean => !skipped((cls ?? "").split(/\s+/).filter(Boolean));
 /** 描边的路径（其余路径都是填充）：屏幕上的线宽是固定 px（谱间距 ~10 px 时），这里按谱间距等比换。 */
-const STROKE: Record<string, { w: number; dash?: number[]; round?: boolean }> = { arpeggio: { w: 1.1, round: true }, tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true }, volta: { w: 1.1 } };
+const STROKE: Record<string, { w: number; dash?: number[]; round?: boolean }> = { arpeggio: { w: 1.1, round: true }, tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true }, volta: { w: 1.1 }, pedal: { w: 1.1 } };
 
 /** 一串字在这款字体里多宽（em；按 shape 出来的字形——注音字体按词换的字形宽度一样）。 */
 export function textEm(font: TtfFont, s: string): number { return font.shape(s).reduce((a, g) => a + font.advance(g), 0) / font.unitsPerEm; }

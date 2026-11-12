@@ -134,7 +134,7 @@ export interface PerformerPlugin {
     readonly hintRange: FixedRange;
     /** 认哪些记号（不认的谱上画灰 + 明说；`test/honors.test.ts` 核「表说认 = 出声真变了」）。 */
     readonly honors: readonly Mark[];
-    /** 认哪几种踏板（踏板 11-1：按键盘发音的乐手三种都认；没写 = 都不认 → 踏板记号画灰、明说）。test/pedal.test.ts 核「表说认 = 出声真变了」。 */
+    /** 认哪几种踏板（没写 = 都不认 → 踏板记号画灰、明说）。只写出声真接了的：11-1 = 延音；持音、弱音 11-2。test/pedal.test.ts 核「表说认 = 出声真变了」。 */
     readonly pedals?: readonly import("../score/song.ts").PedalKind[];
     /** 本来就连着唱（连线 / 保持对它没意义，断句用呼吸）→ 这两个记号画灰的理由是 "sung" 而不是 "gap"。 */
     readonly connected: boolean;

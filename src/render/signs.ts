@@ -1,11 +1,11 @@
 // signs.ts —— 记号表（设计稿第 3.8 节）：一个记号一行——名字、点一下的说明、贴在哪一道、每种谱里画成什么、（下一轮）键面。
-//   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-3）。这一刀收：演奏法（Art）、力度（Dyn）、渐强 / 渐弱、渐到。
+//   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-3）。这一刀收：演奏法（Art）、力度（Dyn）、渐强 / 渐弱、渐到；2026-11-12 加踏板三种（11-1）。
 //   「每种谱里画成什么」的类型是 Record<NotationId, …>：加一个记号或加一种谱而漏填 = 编译不过（守卫 4 的编译期那一半）。
 //   画成什么：glyph = Bravura 字形（五线谱现有的码位原样搬来，数值逐位一样）；
 //   drawn = 画法里用线 / 路径画的（发夹、音内起伏、琶音线、横线…），这一栏写一句它画成什么。
 //   名字 / 说明走翻译表（_tIn：排版明着吃界面语言，不读这一页的当前语言）；说明的界面（点一下就说明）= 第五刀再露，这一刀先把字填上。键面那一栏不做（下一轮）。
 import { _tIn, type Lang } from "../i18n/index.ts";
-import type { Art, Dyn } from "../score/song.ts";
+import type { Art, Dyn, PedalKind } from "../score/song.ts";
 import type { NotationId } from "../score/song-view.ts";
 import type { LaneKind } from "./frame/lanes.ts";
 
@@ -14,7 +14,7 @@ export type Depiction =
   | { kind: "drawn"; how: string }
   /** 普通的字（文字样式表里的一种：字体 / 粗细 / 斜体在那里）：简谱数字行上的力度（第五刀，统筹转达 user 11-11「我觉得主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）。 */
   | { kind: "text"; s: string };
-export type SignId = `art:${Art}` | `dyn:${Dyn}` | "hairpin:cresc" | "hairpin:dim" | "ramp";
+export type SignId = `art:${Art}` | `dyn:${Dyn}` | "hairpin:cresc" | "hairpin:dim" | "ramp" | `pedal:${PedalKind}`;
 export interface Sign {
   readonly id: SignId;
   name(l: Lang): string;
@@ -67,6 +67,10 @@ export const SIGNS: Readonly<Record<SignId, Sign>> = {
   "hairpin:cresc": { id: "hairpin:cresc", name: (l) => _tIn(l, "渐强"), says: (l) => _tIn(l, "从这里起越来越强，到下一个力度记号为止"), lane: "dynamics", draw: { staff: D("发夹 <（太长写 cresc. - - -）"), jianpu: D("楔形 <"), letters: D("楔形 <") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "hairpin:dim": { id: "hairpin:dim", name: (l) => _tIn(l, "渐弱"), says: (l) => _tIn(l, "从这里起越来越弱，到下一个力度记号为止"), lane: "dynamics", draw: { staff: D("发夹 >（太长写 dim. - - -）"), jianpu: D("楔形 >"), letters: D("楔形 >") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   ramp: { id: "ramp", name: (l) => _tIn(l, "渐到"), says: (l) => _tIn(l, "从上一个力度记号均匀变到这一个"), lane: "dynamics", draw: { staff: D("虚线发夹"), jianpu: D("虚线楔形"), letters: D("虚线楔形") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  // 踏板（11-1）：这一位最下面那条谱下面最外一道；线 / 尖 / 钩 = 共用挂件 ornaments layPedals 画（五线谱的名字 = Bravura 字形，数字行 = 细斜体字，同力度）
+  "pedal:sustain": { id: "pedal:sustain", name: (l) => _tIn(l, "延音踏板"), says: (l) => _tIn(l, "踩下：之后松开的键先不停，到换踏板或抬起才停"), lane: "pedal", draw: { staff: G("\u{E650}"), jianpu: T("Ped."), letters: T("Ped.") } },
+  "pedal:sostenuto": { id: "pedal:sostenuto", name: (l) => _tIn(l, "持音踏板"), says: (l) => _tIn(l, "踩下那一刻按着的键留住，后面弹的照常"), lane: "pedal", draw: { staff: G("\u{E659}"), jianpu: T("Sost."), letters: T("Sost.") } },
+  "pedal:soft": { id: "pedal:soft", name: (l) => _tIn(l, "弱音踏板"), says: (l) => _tIn(l, "踩下：弹得轻一点、音色暗一点"), lane: "pedal", draw: { staff: T("una corda"), jianpu: T("una corda"), letters: T("una corda") } },   // 字 + 同延音的线和钩（统筹 11-12）
 };
 
 /** 力度字在这种谱里画成什么：五线谱 = Bravura 字形 + 墨迹；简谱 = 普通的字（细斜体小写，墨迹按字宽现量）。不分界面语言（纪要第 88 节）。 */

@@ -66,6 +66,8 @@ export interface PadGlue {
     insertMarkHere(kind: "key" | "time" | "tempo"): void;
     insertGrooveHere(): void;
     openRepeatMenu(): void;
+    /** 符号层「踏板」的小菜单（11-1）。 */
+    openPedalMenu(): void;
     openInsertClefMenu(at: {
         x: number;
         y: number;

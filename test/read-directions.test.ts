@@ -14,12 +14,13 @@ const dir = (x: string, snd = "") => `<direction placement="below"><direction-ty
 const xml = (body: string) => `<?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Pno</part-name></score-part></part-list><part id="P1"><measure number="1"><attributes><divisions>1</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>${body}</measure></part></score-partwise>`;
 
 describe("读别家的谱：认不得的方向记号按种类数出来（踏板 11-1 第一笔）", () => {
-  it("踏板（开始 / 换 / 抬、<sound> 里的踏板）、表情文字、排练记号、别的：各数各的；音一个不少", () => {
+  it("踏板读成记号（11-1 第二步起）；表情文字、排练记号、别的：各数各的；音一个不少", () => {
     const r = readMusicXml(xml(
       dir('<pedal type="start" line="yes"/>') + N("C") + dir('<pedal type="change" line="yes"/>') + N("D") + dir('<pedal type="stop" line="yes"/>') + N("E") +
       dir("<words>una corda</words>", '<sound soft-pedal="yes"/>') + dir("<words>dolce</words>") + dir("<rehearsal>A</rehearsal>") + dir("<eyeglasses/>") + N("F")));
-    eq(r.dropped["踏板记号"], 4, "三个 <pedal> + 一个 <sound soft-pedal>（同一条方向记号里的文字另算）");
-    eq(r.dropped["文字记号（如 dolce、rit.）"], 2, "una corda、dolce");
+    eq(r.parts[0]!.tokens.filter((t) => t.kind === "pedal").map((t) => `${(t as { which: string }).which}:${(t as { act: string }).act}`).join(" "), "sustain:down sustain:change sustain:up soft:down", "延音开始 / 换 / 抬 + <sound soft-pedal> 的弱音");
+    eq(r.dropped["踏板记号"], undefined, "读进来了，不再算读不了的");
+    eq(r.dropped["文字记号（如 dolce、rit.）"], 1, "dolce（una corda 跟着弱音踏板认走了）");
     eq(r.dropped["排练记号"], 1); eq(r.dropped["别的方向记号"], 1, "eyeglasses");
     eq(r.parts[0]!.tokens.filter((t) => t.kind === "note").length, 4, "音一个不少");
   });

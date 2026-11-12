@@ -136,6 +136,8 @@ export interface OttavaTok { kind: "ottava"; id: number; shift: -1 | 0 | 1 | 2; 
  *  which = 延音 / 持音 / 弱音；act = 踩下 / 抬起 / 换踏板（换 = 只有延音有：这一刻留着的音全松、接着踩着）。按声部、按纸算：每张纸开头三种都是抬着的，纸尾还踩着 = 纸尾抬起。
  *  11-1 只接延音（持音、弱音是 11-2）。 */
 export type PedalKind = "sustain" | "sostenuto" | "soft";
+/** 三种踏板（画的先后：延音最靠谱）。 */
+export const PEDAL_KINDS: readonly PedalKind[] = ["sustain", "sostenuto", "soft"];
 export interface PedalTok { kind: "pedal"; id: number; which: PedalKind; act: "down" | "up" | "change" }
 export type Token = NoteTok | RestTok | BarTok | MarkTok | DynTok | HairpinTok | GrooveTok | NavTok | ClefTok | OttavaTok | PedalTok;
 export type Timed = NoteTok | RestTok;
@@ -455,7 +457,7 @@ function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alter
 function fillTarget(st: EditorState): number {
   for (let i = st.caret; i < tr(st).length; i++) {
     const t = tr(st)[i];
-    if (t.kind === "bar" || t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove" || t.kind === "nav" || t.kind === "clef" || t.kind === "ottava" || isMark(t)) continue;
+    if (!isTimed(t)) continue;   // 不占时值的一律跳过（原来逐个列了除踏板以外的全部种类，2026-11-12 踏板漏了一回：新种类不该每次都来这里补）
     return t.kind === "note" && t.pitch === null ? i : -1;
   }
   return -1;
@@ -539,7 +541,9 @@ function eatRests(tk: Token[], i: number, need: number): { got: number; end: num
   return { got, end, keep: keep.slice(0, kept) };
 }
 /** 曲级记号（力度字 / 渐强渐弱 / 风格）跟着它后面那个音（复制、清记号都这么算）。 */
-const isPhraseMark = (t: Token | undefined): boolean => !!t && (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove");
+/** 挂在后面那个音上的记号（力度 / 渐强渐弱 / 风格 / 踏板）：它们记在音的前面、管的是那个音起。一处定义——空纸写音落在它们后面、插小节线让到它们后面、
+ *  复制带上第一个音身上的、符号退格先删、清掉曲级记号、打开时理顺纸头那一串，都按这一份（2026-11-12 踏板加进来时，四处各抄一份的漏了一处）。 */
+export const isPhraseMark = (t: Token | undefined): boolean => !!t && (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove" || t.kind === "pedal");
 /** 光标处放进一个有时值的 token（写音默认覆盖休止）：光标后（跳过不占时值的记号）紧挨着的是休止 = 放在那些记号后面、吃掉 tok.dur 那么长的休止，
  *  不够的那截才把后面的往后推；后面不是休止 = 照旧插在光标处（全推）。at = 新 token 的下标；ate = 吃了多少休止。 */
 function overwriteInsert(tk: Token[], caret: number, tok: Timed): { tokens: Token[]; at: number; ate: number } {
@@ -821,6 +825,46 @@ export function setDynSel(st: EditorState, value: Dyn | null, ramp?: boolean): E
   let at = an; for (let i = a; i < an; i++) if (toks[i].kind === "hairpin") { at = i; break; }
   const id = st.nextId; nt.splice(at, 0, { kind: "dyn", id, value, ...(ramp ? { ramp: true as const } : {}) });
   return next({ ...st, nextId: id + 1 }, nt, shiftAt(st, 1, at));
+}
+/** 踏板（11-1）：第 at 个 token 之前这一种踏板踩着没有——从这条轨这张纸的开头照记号数（不起作用的不改状态；换踏板 = 踩着）。
+ *  默认 = 抬着（乐手的默认 = 11-3，到时候从这里接）。和出声同一个读法（score/pedal.ts sustainSpans）。 */
+export function pedalDownAt(toks: readonly Token[], at: number, which: PedalKind): boolean {
+  let down = false;
+  for (let i = headLen(toks as Token[]); i < Math.min(at, toks.length); i++) { const t = toks[i]!; if (t.kind === "pedal" && t.which === which) down = t.act !== "up"; }
+  return down;
+}
+/** 光标处（markAnchor 那个音）这一种踏板：那个音前面踩着没有（down，不算挂在它身上的那个）+ 它身上已经挂着的这一种的记号（mark）。符号层「踏板」小菜单的字跟着它。 */
+export function pedalHere(st: EditorState, which: PedalKind): { down: boolean; mark: PedalTok | null } | null {
+  const toks = tr(st), an = markAnchor(st); if (an < 0) return null;
+  const a = runBefore(toks, an); let mark: PedalTok | null = null;
+  for (let i = a; i < an; i++) { const t = toks[i]!; if (t.kind === "pedal" && t.which === which) mark = t; }
+  return { down: pedalDownAt(toks, a, which), mark };
+}
+/** 符号层「踏板」（11-1，设计稿第 6 节）：踏板记号挂在 markAnchor 那个音上（同力度：写完一个音按 = 从这个音起）。
+ *  那个音上已经有同一种踏板的记号：同一个动作 = 去掉（再按一下撤回），别的动作 = 改成这个。有选区 = 「把这一段踩住」：选区第一个音前面踩下、选区后面抬起（act 不看）。
+ *  回 idle = 写上的那个不起作用（这里本来就踩着又踩 = "already"；本来没踩又抬 = "notDown"）：照写、画灰，调用方说一句为什么。 */
+export function insertPedal(st: EditorState, which: PedalKind, act: PedalTok["act"]): { st: EditorState; did: "added" | "changed" | "removed" | "span" | "none"; idle?: "already" | "notDown" } {
+  const toks = tr(st), an = markAnchor(st);
+  if (an < 0) return { st, did: "none" };
+  if (st.sel) {
+    const end = Math.min(st.sel.to, toks.length), nt = toks.slice(), id = st.nextId;
+    nt.splice(end, 0, { kind: "pedal", id: id + 1, which, act: "up" });
+    nt.splice(an, 0, { kind: "pedal", id, which, act: "down" });
+    const idle = pedalDownAt(toks, an, which) ? "already" as const : undefined;
+    return { st: next({ ...st, nextId: id + 2 }, nt, { sel: { from: st.sel.from + (an >= st.sel.from ? 0 : 1), to: end + 2 }, caret: end + 2, log: [] }), did: "span", ...(idle ? { idle } : {}) };
+  }
+  const a = runBefore(toks, an), nt = toks.slice();
+  let k = -1; for (let i = a; i < an; i++) { const t = toks[i]!; if (t.kind === "pedal" && t.which === which) k = i; }
+  if (k >= 0) {
+    const old = toks[k] as PedalTok;
+    if (old.act === act) { nt.splice(k, 1); return { st: next(st, nt, shiftAt(st, -1, k)), did: "removed" }; }
+    nt[k] = { ...old, act };
+    const idle = act === "down" && pedalDownAt(toks, k, which) ? "already" as const : act === "up" && !pedalDownAt(toks, k, which) ? "notDown" as const : undefined;
+    return { st: next(st, nt), did: "changed", ...(idle ? { idle } : {}) };
+  }
+  const id = st.nextId; nt.splice(an, 0, { kind: "pedal", id, which, act });
+  const idle = act === "down" && pedalDownAt(toks, an, which) ? "already" as const : act === "up" && !pedalDownAt(toks, an, which) ? "notDown" as const : undefined;
+  return { st: next({ ...st, nextId: id + 1 }, nt, shiftAt(st, 1, an)), did: "added", ...(idle ? { idle } : {}) };
 }
 /** 渐强 / 渐弱记号放在 markAnchor 那个音上（从这个音起）：那儿已经有同方向的 = 去掉，反方向的 = 换。 */
 export function toggleHairpin(st: EditorState, dir: "cresc" | "dim"): EditorState {
@@ -1400,7 +1444,7 @@ export function moveCaret(st: EditorState, d: number): EditorState {
 /** 删音之后：不再管任何音的力度记号 / 渐强渐弱「湮灭」（2026-10-08，user「大批量删音的时候会不会堆一堆强度符号…p f删第二个音，会变成，你觉得是p还是f?」）：
  *  两个力度记号之间一个音都没有 = 前面那个不管任何音，去掉，留后面那个（p A f B C 删掉 A、B → 留 f，C 本来就在 f 下面）；
  *  渐强渐弱和它的终点（下一个力度记号 / 下一个渐强渐弱 / 谱尾）之间一个音都没有 = 去掉。返回去掉了几个、各在哪（下标，按原来的串）。 */
-export function annihilate(tokens: Token[]): { tokens: Token[]; removed: number[] } {
+export function annihilate(tokens: Token[], before?: readonly Token[]): { tokens: Token[]; removed: number[] } {
   const drop = new Set<number>();
   let lastDyn = -1, timedSince = true;
   tokens.forEach((t, i) => {
@@ -1412,12 +1456,29 @@ export function annihilate(tokens: Token[]): { tokens: Token[]; removed: number[
     for (let j = i + 1; j < tokens.length; j++) { const u = tokens[j]; if (isTimed(u)) return; if (u.kind === "dyn" || u.kind === "hairpin") break; }
     drop.add(i);
   });
+  // 踏板（11-1，设计稿第 6 节「踩下和抬起之间一个音都没有 = 湮灭」）：同一种踏板，踩下 / 换踏板后面没隔一个音就抬起 = 那个踩下两个一起去掉、换踏板只去掉换（抬起留着）；
+  //   踩下 / 换踏板后面没隔一个音又换 = 后面那个换去掉（刚踩下就换，什么都不改）。抬起后面没隔音就踩下 = 等于换踏板，有意义，不动。
+  //   只管「这一下删音删出来的」：给了 before（删之前的串）且那两个记号之间原来隔着音、现在没了，才湮灭——本来就挨着的（别家谱读进来的、手写的）不碰，
+  //   挪记号（moveMark 不给 before）也不碰。踏板记号各自的意思是写明的（踩下 / 抬起 / 换踏板），改一个不许顺手改掉别的（设计第 13 节，user 11-12「踏板不能只写switch而是写清楚上下这样才鲁棒」）
+  const posBefore = before ? new Map(before.map((t, k) => [t.id, k] as const)) : null;
+  const hadNoteBetween = (a: Token, b: Token): boolean => { if (!posBefore || !before) return false; const x = posBefore.get(a.id), y = posBefore.get(b.id); return x !== undefined && y !== undefined && before.slice(x + 1, y).some(isTimed); };
+  if (posBefore) tokens.forEach((t, i) => {
+    if (t.kind !== "pedal" || t.act === "up" || drop.has(i)) return;
+    for (let j = i + 1; j < tokens.length; j++) {
+      const u = tokens[j]!; if (isTimed(u)) return;
+      if (u.kind !== "pedal" || u.which !== t.which || drop.has(j)) continue;
+      if (!hadNoteBetween(t, u)) return;   // 本来就挨着（不是这一下删出来的）：不动
+      if (u.act === "up") { drop.add(i); if (t.act === "down") drop.add(j); return; }
+      if (u.act === "change") { drop.add(j); continue; }
+      return;   // 又一个踩下（不起作用的）：留着、画灰
+    }
+  });
   if (!drop.size) return { tokens, removed: [] };
   return { tokens: tokens.filter((_, i) => !drop.has(i)), removed: [...drop].sort((x, y) => x - y) };
 }
 /** 删了东西之后统一收尾：湮灭 + 光标跟着往回挪（被去掉的在光标前面的那些）。 */
 function afterDelete(st: EditorState, nt: Token[], over: Partial<EditorState>): EditorState {
-  const a = annihilate(nt), caret = (over.caret ?? st.caret) - a.removed.filter((k) => k < (over.caret ?? st.caret)).length;
+  const a = annihilate(nt, tr(st)), caret = (over.caret ?? st.caret) - a.removed.filter((k) => k < (over.caret ?? st.caret)).length;
   return next(st, a.tokens, { ...over, caret });
 }
 /** 长按拖力度记号 / 渐强渐弱（2026-10-08 Opus 5.5；user 批「力度和渐强渐弱能长按拖动」）：下标 from 的记号挪到下标 before 那个音（或休止）前面 = 从那个音起。
@@ -1425,7 +1486,7 @@ function afterDelete(st: EditorState, nt: Token[], over: Partial<EditorState>): 
  *  removed = 湮灭掉了几个（调用方说一声）。没挪动（同一个音 / 不是这两种记号）= 原样。选区收掉，光标跟着同一个音。 */
 export function moveMark(st: EditorState, from: number, before: number): { st: EditorState; removed: number } {
   const toks = tr(st), m = toks[from];
-  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin" && m.kind !== "groove") || !toks[before] || !isTimed(toks[before])) return { st, removed: 0 };
+  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin" && m.kind !== "groove" && m.kind !== "pedal") || !toks[before] || !isTimed(toks[before])) return { st, removed: 0 };   // 踏板（11-1）：长按拖 = 挪到那个音起
   const nt = toks.slice(); nt.splice(from, 1);
   let at = before - (before > from ? 1 : 0);   // 那个音现在的下标
   if (m.kind === "dyn") { let a = at; while (a > headLen(nt) && !isTimed(nt[a - 1]) && nt[a - 1].kind !== "bar") a--; for (let k = a; k < at; k++) if (nt[k].kind === "hairpin") { at = k; break; } }
@@ -1476,12 +1537,13 @@ export function setHairpinTarget(st: EditorState, i: number, target: Dyn | null)
   return { st: next(st, nt, { nextId: st.nextId + 1, caret: st.caret + (at < st.caret ? 1 : 0), sel: null }), did: endTok ? "beforeHairpin" : "end" };
 }
 /** 点力度记号 / 渐强渐弱的小菜单：改成别的力度 / 换方向；null = 删掉（光标跟着）。 */
-export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | { style: string } | { amount: number } | { shift: boolean } | { nav: Exclude<NavWhat, "ending"> } | { nums: number[] } | null): EditorState {
+export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | { style: string } | { amount: number } | { shift: boolean } | { nav: Exclude<NavWhat, "ending"> } | { nums: number[] } | { act: PedalTok["act"] } | null): EditorState {
   const toks = tr(st), m = toks[i];
-  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin" && m.kind !== "groove" && m.kind !== "nav")) return st;
+  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin" && m.kind !== "groove" && m.kind !== "nav" && m.kind !== "pedal")) return st;
   const nt = toks.slice();
   if (change === null) { nt.splice(i, 1); return next(st, nt, { caret: st.caret - (i < st.caret ? 1 : 0), sel: null }); }
   if (m.kind === "dyn" && "value" in change) { if (m.value === change.value) return st; nt[i] = { ...m, value: change.value }; return next(st, nt); }
+  if (m.kind === "pedal" && "act" in change) { if (m.act === change.act) return st; nt[i] = { ...m, act: change.act }; return next(st, nt); }   // 踏板（11-1）：点它的小菜单换成踩下 / 抬起 / 换踏板
   if (m.kind === "dyn" && "ramp" in change) { if (!!m.ramp === change.ramp) return st; const { ramp: _r, ...rest } = m; nt[i] = change.ramp ? { ...rest, ramp: true } : rest; return next(st, nt); }
   if (m.kind === "hairpin" && "dir" in change) { if (m.dir === change.dir) return st; nt[i] = { ...m, dir: change.dir }; return next(st, nt); }
   if (m.kind === "nav" && "nav" in change && m.what !== "ending") { if (m.what === change.nav) return st; nt[i] = { ...m, what: change.nav }; return next(st, nt); }
@@ -1504,7 +1566,7 @@ export function symBackspace(st: EditorState): EditorState {
     const nt = toks.slice(), art = artOf(t);
     // 挂在这个音上的力度 / 渐强渐弱 / 风格（v0.7.27 起记号落在「光标前那个音」= 插在它前面）先删——user 2026-10-10「我早就想用退格删强度曲线了」
     const j = i - 1, mk = toks[j];
-    if (j >= h && (mk?.kind === "dyn" || mk?.kind === "hairpin" || mk?.kind === "groove")) { nt.splice(j, 1); return next(st, nt, { caret: st.caret - 1 }); }
+    if (j >= h && isPhraseMark(mk)) { nt.splice(j, 1); return next(st, nt, { caret: st.caret - 1 }); }
     const strip = (k: "slur") => { const { [k]: _x, ...rest } = t; return rest as NoteTok; };
     { const sw = swellOf(t); if (sw) { nt[i] = withArt(t, SWELL_ART[sw], false); return next(st, nt); } }   // 音内起伏（演奏法里，最外面那层先退）
     for (const a of ["roll", "arpeggio", "marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "whisper"] as Art[]) if (art.includes(a)) { nt[i] = withArt(t, a, false); return next(st, nt); }
@@ -1677,7 +1739,6 @@ export function removePart(st: EditorState, partId: string): EditorState {
  *  改谱的时候不动别的记号的先后（光标前放风格记号再开它的小菜单，靠的就是刚放的那个在原处；E2E groove 抓到的）。 */
 export function ensureStartDyns(song: Song, nextId: number, o: { reorder?: boolean } = {}): { song: Song; nextId: number; added: { paper: string; part: string; index: number }[]; reordered: { paper: string; part: string; index: number }[] } {
   let id = nextId; const added: { paper: string; part: string; index: number }[] = [], reordered: { paper: string; part: string; index: number }[] = [], last = new Map<string, Dyn>();
-  const LEAD = new Set<Token["kind"]>(["dyn", "hairpin", "groove"]);   // 挂在后面那个音上的曲级记号（渐到 = 力度记号上的旗）
   const papers = song.papers.map((pp) => {
     let tracks = pp.tracks, changed = false;
     for (const part of song.parts) {
@@ -1687,13 +1748,13 @@ export function ensureStartDyns(song: Song, nextId: number, o: { reorder?: boole
       if (has && o.reorder) {   // 已经有力度（打开歌时）：第一个音前面那一串里力度不在最前 = 理顺
         let f = -1; for (let i = headLen(t); i < t.length; i++) if (t[i].kind === "note") { f = i; break; }
         if (f >= 0) {
-          let a = f; while (a > headLen(t) && LEAD.has(t[a - 1].kind)) a--;
+          let a = f; while (a > headLen(t) && isPhraseMark(t[a - 1])) a--;
           const run = t.slice(a, f), dyns = run.filter((k) => k.kind === "dyn"), rest = run.filter((k) => k.kind !== "dyn");
           const sorted = [...dyns, ...rest];
           if (dyns.length && sorted.some((k, j) => k !== run[j])) { t = [...t.slice(0, a), ...sorted, ...t.slice(f)]; tracks = { ...tracks, [part.id]: t }; changed = true; reordered.push({ paper: pp.id, part: part.id, index: a }); }
         }
       } else if (first >= 0) {
-        let at = first; while (at > headLen(t) && LEAD.has(t[at - 1].kind)) at--;   // 这一串的最前面
+        let at = first; while (at > headLen(t) && isPhraseMark(t[at - 1])) at--;   // 这一串的最前面（挂在后面那个音上的记号，isPhraseMark）
         tracks = { ...tracks, [part.id]: [...t.slice(0, at), { kind: "dyn", id: id++, value: last.get(part.id) ?? "mf" } as Token, ...t.slice(at)] };
         changed = true; added.push({ paper: pp.id, part: part.id, index: at });
       }

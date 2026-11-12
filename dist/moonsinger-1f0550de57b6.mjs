@@ -3487,6 +3487,7 @@ var S = {
   "\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8": { en: "Unhid this sheet" },
   "\u8FD9\u4E00\u6BB5\u5B9A\u6210\u4E86\u5927\u8C31\u8868\uFF08\u624B\u52A8\u5206\u7684\u4E0A\u4E0B\u884C\u8981\u5B58\u5F97\u4E0B\uFF09\uFF1B\u60F3\u56DE\u5230\u81EA\u52A8\uFF0C\u70B9\u884C\u9996\u8C31\u53F7\u9009\u300C\u81EA\u52A8\u300D": { en: "This section is now fixed as a grand staff (so the notes you moved between staves can be saved); to go back to automatic, tap the clef at the start of the line and pick \u201CAuto\u201D" },
   "\u6E10\u5F3A / \u6E10\u5F31": { en: "crescendo / diminuendo" },
+  "\u8E0F\u677F\u8BB0\u53F7": { en: "pedal marks" },
   "\u6539\u5230\u4E86\u6CA1\u663E\u793A\u7684{what}\uFF08\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\uFF09": { en: "You changed hidden {what} (articulations & dynamics are hidden right now; undo brings them back)" },
   "\u3001": { en: ", " },
   "\u5199\u4E0A\u4E86\uFF0C\u4F46\u73B0\u5728\u6CA1\u663E\u793A\uFF1A{what}\uFF08\u9875\u9762\u8BBE\u7F6E \u2192\u300C\u770B\u8C31\u300D\u91CC\u6253\u5F00\uFF09": { en: "Written, but hidden right now: {what} (turn them on under Page settings \u203A Reading)" },
@@ -3937,6 +3938,22 @@ var S = {
   "\u7EC8\u6B62\u7EBF": { en: "Final bar" },
   "\u7EC8\u6B62\u7EBF\uFF08\u7EC6 + \u7C97\uFF09\uFF1A\u66F2\u5B50 / \u8FD9\u4E00\u6BB5\u5230\u8FD9\u513F\u7ED3\u675F": { en: "Final bar (thin + thick): the piece / this section ends here" },
   "\u623F\u5B50\uFF1A\u7B2C {p} \u904D\u8D70\u8FD9\u91CC": { en: "Ending: take this on pass {p}" },
+  "\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09": { en: "Press (keep notes ringing)" },
+  "\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09": { en: "Lift (stop the notes)" },
+  "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09": { en: "Change pedal (stop, then keep again)" },
+  "\u5EF6\u97F3\u8E0F\u677F": { en: "Sustain pedal" },
+  "\u6301\u97F3\u8E0F\u677F": { en: "Sostenuto pedal" },
+  "\u5F31\u97F3\u8E0F\u677F": { en: "Soft pedal" },
+  "\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "The pedal is already down here: this press does nothing (greyed)" },
+  "\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740\uFF1A\u8FD9\u4E2A\u62AC\u8D77\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "The pedal isn't down here: this lift does nothing (greyed)" },
+  "\u8E0F\u677F\u8BB0\u53F7\u6302\u5728\u97F3\u4E0A\uFF1A\u8FD9\u5F20\u7EB8\u4E0A\u5149\u6807\u9644\u8FD1\u8FD8\u6CA1\u6709\u97F3": { en: "Pedal marks hang on notes: there are no notes near the cursor on this sheet yet" },
+  "\u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\uFF08\u9009\u533A\u5F00\u5934\u8E29\u4E0B\u3001\u7ED3\u5C3E\u62AC\u8D77\uFF09": { en: "Hold this passage (press at the start of the selection, lift at its end)" },
+  "\u8FD9\u4E2A\u97F3\u4E0A\u5DF2\u7ECF\u6709\u4E86\uFF1A\u518D\u70B9 = \u53BB\u6389": { en: "Already on this note: tap again to remove" },
+  "\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09": { en: " (from the note before the cursor)" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": { en: "No effect (greyed): the pedal is already down here" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740": { en: "No effect (greyed): the pedal isn't down here" },
+  "\u8FD9\u91CC\u4E4B\u524D\u6CA1\u8E29\u7740\uFF0C\u6362\u8E0F\u677F = \u8E29\u4E0B": { en: "The pedal wasn't down before this, so a change = a press" },
+  "\u5220\u6389\u8FD9\u4E2A\u8E0F\u677F\u8BB0\u53F7": { en: "Delete this pedal mark" },
   "8va\uFF1A\u8C31\u4E0A\u753B\u4F4E\u4E00\u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645\u7167\u5199\u7684\u9AD8\u516B\u5EA6\u54CD\uFF09": { en: "8va: drawn an octave lower (sounds an octave higher, as written)" },
   "15ma\uFF1A\u8C31\u4E0A\u753B\u4F4E\u4E24\u4E2A\u516B\u5EA6": { en: "15ma: drawn two octaves lower" },
   "8vb\uFF1A\u8C31\u4E0A\u753B\u9AD8\u4E00\u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645\u7167\u5199\u7684\u4F4E\u516B\u5EA6\u54CD\uFF09": { en: "8vb: drawn an octave higher (sounds an octave lower, as written)" },
@@ -4003,7 +4020,7 @@ var S = {
   "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31": { en: "Remove this crescendo / diminuendo" },
   "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF09": { en: "Long-press and drag = move it to another note (right of the last note = the end of this section)" },
   "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A": { en: "Long-press and drag = move to another note" },
-  "\u987A\u624B\u53BB\u6389\u4E86 {removed} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {removed} dynamics / hairpins that no longer govern any note (undo brings them back)" },
+  "\u987A\u624B\u53BB\u6389\u4E86 {n} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u8BB0\u53F7\uFF08\u529B\u5EA6 / \u6E10\u5F3A\u6E10\u5F31 / \u8E0F\u677F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {n} marks that no longer govern any note (dynamics / hairpins / pedals; undo brings them back)" },
   "\u7EC8\u70B9\u6539\u6210\u4E86 {d}\uFF08\u53D1\u5939\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09": { en: "End changed to {d} (the dynamic after the hairpin)" },
   "\u5728\u4E0B\u4E00\u6761\u6E10\u5F3A\u6E10\u5F31\u524D\u9762\u653E\u4E86 {d}": { en: "Put {d} before the next hairpin" },
   "\u5728\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\u653E\u4E86 {d}": { en: "Put {d} after the last note of this section" },
@@ -4319,7 +4336,6 @@ var S = {
   "\u51FA\u58F0\u7684\u6362\u6C14\u6302\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "An audible breath goes after a note (before the cursor is a rest, or no note yet)" },
   "\u97F3\u5185\u7684\u8D77\u4F0F\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A swell must go on a note (before the cursor is a rest, or no note yet)" },
   "{p}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "{p} goes from one note to the next (before the cursor is a rest, or no note yet)" },
-  "\u987A\u624B\u53BB\u6389\u4E86 {gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {gone} dynamics / hairpins that no longer govern any note (undo brings them back)" },
   "\u8DDF\u8C31": { en: "Follow score" },
   "\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7": { en: "Uses the key signature here" },
   "\u624B\u52A8": { en: "Manual" },
@@ -4659,7 +4675,6 @@ var S = {
   "\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09": { en: "Dynamic marks (not recognized by this version, such as sfz)" },
   "\u6309\u62CD\u5B50\u91CD\u590D\u7684\u98A4\u97F3\uFF08\u4E00\u4E24\u9053\u659C\u7EBF\uFF09": { en: "Measured tremolo (one or two slashes)" },
   "\u5927\u8C31\u8868\u4E0B\u9762\u4E00\u884C\u7684\u6362\u8C31\u53F7": { en: "clef changes on the lower staff of a grand staff" },
-  "\u8E0F\u677F\u8BB0\u53F7": { en: "Pedal marks" },
   "\u6587\u5B57\u8BB0\u53F7\uFF08\u5982 dolce\u3001rit.\uFF09": { en: "Text directions (e.g. dolce, rit.)" },
   "\u522B\u7684\u65B9\u5411\u8BB0\u53F7": { en: "Other direction marks" },
   "\u88C5\u9970\u97F3": { en: "Grace notes" },
@@ -4898,7 +4913,7 @@ var S = {
   "\u8BB0\u53F7": { en: "Marks" },
   "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438\uFF08\u9759\u9ED8 / \u8F7B\u5438 / \u6DF1\u5438\uFF09\u3001\u6C14\u58F0": { en: "Strength (ghost / unstressed / stress / accent / marcato / sfz / fp), tenuto / staccato / slur / breath (silent / soft / deep), whisper" },
   "ppp\u2026fff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F": { en: "ppp\u2026fff, crescendo / diminuendo, ramp, swells" },
-  "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09": { en: "Phrase end, key / time / clef / ottava / tempo, style (beat weighting)" },
+  "\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09\u3001\u53CD\u590D\u3001\u8E0F\u677F": { en: "Key / time / clef / octave lines / tempo, style (beat weights), repeats, pedals" },
   "\u4E09\u5341\u4E8C\u5206": { en: "Thirty-second" },
   "\u5341\u516D\u5206": { en: "Sixteenth" },
   "\u516B\u5206": { en: "Eighth" },
@@ -5003,6 +5018,8 @@ var S = {
   "\u98CE\u683C\u8BB0\u53F7\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u5728\u5C0F\u8282\u91CC\u7684\u4F4D\u7F6E\u8F7B\u4E00\u70B9 / \u91CD\u4E00\u70B9\uFF08\u53E4\u5178 / \u6D41\u884C / \u534E\u5C14\u5179 / \u8FDB\u884C\u66F2\u2026\u70B9\u5F00\u9009\uFF09\uFF1B\u6574\u5F20\u7EB8\u7684\u58F0\u90E8\u4E00\u8D77\u542C\uFF0C\u5404\u4EBA\u8DDF\u591A\u5C11\u6309\u4E50\u5668": { en: "Style mark: from the note before the cursor to the end of the sheet, each note gets lighter / heavier by its place in the bar (classical / pop / waltz / march\u2026 tap to choose); all parts on the sheet follow, each by instrument" },
   "\u53CD\u590D": { en: "Repeat" },
   "\u8C31\u5185\u53CD\u590D / \u8DF3\u8F6C\uFF1A|: :|\u3001\u623F\u5B50 1. 2.\u3001Segno / Coda / D.C. / D.S. / Fine\u2026\uFF08\u70B9\u5F00\u9009\uFF1B\u63D2\u5728\u5149\u6807\u5904\uFF0C\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\uFF09\u3002\u4E0D\u8DE8\u7EB8\uFF1B\u653E\u7684\u65F6\u5019\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C": { en: "Score repeats / jumps: |: :|, endings 1. 2., Segno / Coda / D.C. / D.S. / Fine\u2026 (tap to choose; inserted at the cursor, next to a barline = turns it into a repeat). Doesn't cross sheets; playback only looks at this sheet's top part" },
+  "\u8E0F\u677F": { en: "Pedal" },
+  "\u8E0F\u677F\uFF08\u7559\u4E0D\u7559\u4F4F\u97F3\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A": { en: "Pedal (keep notes ringing or not): press / lift / change from the note before the cursor; the choices follow whether the pedal is down there. With a selection = hold that passage. Tap a pedal mark on the score to change or delete it; long-press and drag to move it" },
   "\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868": { en: "Grand staff: move this note to the other staff" },
   "{who}\u7684\u97F3\u57DF\u91CC": { en: "Within {who}'s range" },
   "\u77ED\u4E00\u6B65": { en: "Shorter" },
@@ -5123,6 +5140,9 @@ var S = {
   "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting louder from here until the next dynamic mark" },
   "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting softer from here until the next dynamic mark" },
   "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A": { en: "Change evenly from the previous dynamic mark to this one" },
+  "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C": { en: "Pedal down: keys you let go keep sounding until the next pedal change or lift" },
+  "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38": { en: "Keys held at the moment of pressing keep sounding; later notes play as usual" },
+  "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3001\u97F3\u8272\u6697\u4E00\u70B9": { en: "Pedal down: play a little softer and darker" },
   "{src} \u8F7D\u8FDB\u6765\u4E86\uFF0C\u4F46\u91CC\u9762\u6CA1\u6709\u300C{key}\u300D": { en: "{src} loaded, but \u201C{key}\u201D isn't in it" },
   "\u5907\u7528\u7248\u6587\u4EF6\u5939\u91CC\u5C11\u4E86 {src}\uFF08\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u8BFB\uFF09": { en: "{src} is missing from the standalone folder (or the browser won't let it be read)" },
   "\u5907\u7528\u7248\u91CC\u6CA1\u6709 {path}": { en: "{path} isn't in the standalone version" },
@@ -5906,8 +5926,13 @@ var SIGNS = {
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "hairpin:dim": { id: "hairpin:dim", name: (l10) => _tIn(l10, "\u6E10\u5F31"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 >\uFF08\u592A\u957F\u5199 dim. - - -\uFF09"), jianpu: D("\u6954\u5F62 >"), letters: D("\u6954\u5F62 >") } },
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  ramp: { id: "ramp", name: (l10) => _tIn(l10, "\u6E10\u5230"), says: (l10) => _tIn(l10, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62"), letters: D("\u865A\u7EBF\u6954\u5F62") } }
+  ramp: { id: "ramp", name: (l10) => _tIn(l10, "\u6E10\u5230"), says: (l10) => _tIn(l10, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62"), letters: D("\u865A\u7EBF\u6954\u5F62") } },
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  // 踏板（11-1）：这一位最下面那条谱下面最外一道；线 / 尖 / 钩 = 共用挂件 ornaments layPedals 画（五线谱的名字 = Bravura 字形，数字行 = 细斜体字，同力度）
+  "pedal:sustain": { id: "pedal:sustain", name: (l10) => _tIn(l10, "\u5EF6\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C"), lane: "pedal", draw: { staff: G("\uE650"), jianpu: T("Ped."), letters: T("Ped.") } },
+  "pedal:sostenuto": { id: "pedal:sostenuto", name: (l10) => _tIn(l10, "\u6301\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38"), lane: "pedal", draw: { staff: G("\uE659"), jianpu: T("Sost."), letters: T("Sost.") } },
+  "pedal:soft": { id: "pedal:soft", name: (l10) => _tIn(l10, "\u5F31\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3001\u97F3\u8272\u6697\u4E00\u70B9"), lane: "pedal", draw: { staff: T("una corda"), jianpu: T("una corda"), letters: T("una corda") } }
+  // 字 + 同延音的线和钩（统筹 11-12）
 };
 function dynDepiction(d3, notation) {
   const g3 = SIGNS[`dyn:${d3}`].draw[notation];
@@ -6439,6 +6464,7 @@ function swellOf(t10) {
   return t10.art.includes("swellUp") ? "<" : t10.art.includes("swellDown") ? ">" : t10.art.includes("swellBoth") ? "<>" : void 0;
 }
 var DYNS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
+var PEDAL_KINDS = ["sustain", "sostenuto", "soft"];
 var CLEFS = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
 var SPLIT_MIDI = 60;
 var DEFAULT_KEY = 0;
@@ -6648,7 +6674,7 @@ function applyAcc(p2, input) {
 function fillTarget(st2) {
   for (let i10 = st2.caret; i10 < tr(st2).length; i10++) {
     const t10 = tr(st2)[i10];
-    if (t10.kind === "bar" || t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove" || t10.kind === "nav" || t10.kind === "clef" || t10.kind === "ottava" || isMark(t10)) continue;
+    if (!isTimed(t10)) continue;
     return t10.kind === "note" && t10.pitch === null ? i10 : -1;
   }
   return -1;
@@ -6746,7 +6772,7 @@ function eatRests(tk2, i10, need) {
   }
   return { got: got2, end, keep: keep2.slice(0, kept) };
 }
-var isPhraseMark = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove");
+var isPhraseMark = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove" || t10.kind === "pedal");
 function overwriteInsert(tk2, caret, tok) {
   if (!tk2.slice(headLen(tk2), caret).some(isTimed)) while (caret < tk2.length && isPhraseMark(tk2[caret])) caret++;
   let i10 = caret;
@@ -7101,6 +7127,56 @@ function setDynSel(st2, value, ramp) {
   const id2 = st2.nextId;
   nt2.splice(at3, 0, { kind: "dyn", id: id2, value, ...ramp ? { ramp: true } : {} });
   return next({ ...st2, nextId: id2 + 1 }, nt2, shiftAt(st2, 1, at3));
+}
+function pedalDownAt(toks, at3, which) {
+  let down = false;
+  for (let i10 = headLen(toks); i10 < Math.min(at3, toks.length); i10++) {
+    const t10 = toks[i10];
+    if (t10.kind === "pedal" && t10.which === which) down = t10.act !== "up";
+  }
+  return down;
+}
+function pedalHere(st2, which) {
+  const toks = tr(st2), an2 = markAnchor(st2);
+  if (an2 < 0) return null;
+  const a10 = runBefore(toks, an2);
+  let mark = null;
+  for (let i10 = a10; i10 < an2; i10++) {
+    const t10 = toks[i10];
+    if (t10.kind === "pedal" && t10.which === which) mark = t10;
+  }
+  return { down: pedalDownAt(toks, a10, which), mark };
+}
+function insertPedal(st2, which, act) {
+  const toks = tr(st2), an2 = markAnchor(st2);
+  if (an2 < 0) return { st: st2, did: "none" };
+  if (st2.sel) {
+    const end = Math.min(st2.sel.to, toks.length), nt3 = toks.slice(), id3 = st2.nextId;
+    nt3.splice(end, 0, { kind: "pedal", id: id3 + 1, which, act: "up" });
+    nt3.splice(an2, 0, { kind: "pedal", id: id3, which, act: "down" });
+    const idle2 = pedalDownAt(toks, an2, which) ? "already" : void 0;
+    return { st: next({ ...st2, nextId: id3 + 2 }, nt3, { sel: { from: st2.sel.from + (an2 >= st2.sel.from ? 0 : 1), to: end + 2 }, caret: end + 2, log: [] }), did: "span", ...idle2 ? { idle: idle2 } : {} };
+  }
+  const a10 = runBefore(toks, an2), nt2 = toks.slice();
+  let k2 = -1;
+  for (let i10 = a10; i10 < an2; i10++) {
+    const t10 = toks[i10];
+    if (t10.kind === "pedal" && t10.which === which) k2 = i10;
+  }
+  if (k2 >= 0) {
+    const old = toks[k2];
+    if (old.act === act) {
+      nt2.splice(k2, 1);
+      return { st: next(st2, nt2, shiftAt(st2, -1, k2)), did: "removed" };
+    }
+    nt2[k2] = { ...old, act };
+    const idle2 = act === "down" && pedalDownAt(toks, k2, which) ? "already" : act === "up" && !pedalDownAt(toks, k2, which) ? "notDown" : void 0;
+    return { st: next(st2, nt2), did: "changed", ...idle2 ? { idle: idle2 } : {} };
+  }
+  const id2 = st2.nextId;
+  nt2.splice(an2, 0, { kind: "pedal", id: id2, which, act });
+  const idle = act === "down" && pedalDownAt(toks, an2, which) ? "already" : act === "up" && !pedalDownAt(toks, an2, which) ? "notDown" : void 0;
+  return { st: next({ ...st2, nextId: id2 + 1 }, nt2, shiftAt(st2, 1, an2)), did: "added", ...idle ? { idle } : {} };
 }
 function toggleHairpin(st2, dir) {
   const toks = tr(st2), an2 = markAnchor(st2);
@@ -7738,7 +7814,7 @@ function moveCaret(st2, d3) {
   }
   return setCaret(st2, c10);
 }
-function annihilate(tokens) {
+function annihilate(tokens, before) {
   const drop = /* @__PURE__ */ new Set();
   let lastDyn = -1, timedSince = true;
   tokens.forEach((t10, i10) => {
@@ -7761,16 +7837,41 @@ function annihilate(tokens) {
     }
     drop.add(i10);
   });
+  const posBefore = before ? new Map(before.map((t10, k2) => [t10.id, k2])) : null;
+  const hadNoteBetween = (a10, b3) => {
+    if (!posBefore || !before) return false;
+    const x2 = posBefore.get(a10.id), y2 = posBefore.get(b3.id);
+    return x2 !== void 0 && y2 !== void 0 && before.slice(x2 + 1, y2).some(isTimed);
+  };
+  if (posBefore) tokens.forEach((t10, i10) => {
+    if (t10.kind !== "pedal" || t10.act === "up" || drop.has(i10)) return;
+    for (let j2 = i10 + 1; j2 < tokens.length; j2++) {
+      const u2 = tokens[j2];
+      if (isTimed(u2)) return;
+      if (u2.kind !== "pedal" || u2.which !== t10.which || drop.has(j2)) continue;
+      if (!hadNoteBetween(t10, u2)) return;
+      if (u2.act === "up") {
+        drop.add(i10);
+        if (t10.act === "down") drop.add(j2);
+        return;
+      }
+      if (u2.act === "change") {
+        drop.add(j2);
+        continue;
+      }
+      return;
+    }
+  });
   if (!drop.size) return { tokens, removed: [] };
   return { tokens: tokens.filter((_2, i10) => !drop.has(i10)), removed: [...drop].sort((x2, y2) => x2 - y2) };
 }
 function afterDelete(st2, nt2, over) {
-  const a10 = annihilate(nt2), caret = (over.caret ?? st2.caret) - a10.removed.filter((k2) => k2 < (over.caret ?? st2.caret)).length;
+  const a10 = annihilate(nt2, tr(st2)), caret = (over.caret ?? st2.caret) - a10.removed.filter((k2) => k2 < (over.caret ?? st2.caret)).length;
   return next(st2, a10.tokens, { ...over, caret });
 }
 function moveMark(st2, from, before) {
   const toks = tr(st2), m2 = toks[from];
-  if (!m2 || m2.kind !== "dyn" && m2.kind !== "hairpin" && m2.kind !== "groove" || !toks[before] || !isTimed(toks[before])) return { st: st2, removed: 0 };
+  if (!m2 || m2.kind !== "dyn" && m2.kind !== "hairpin" && m2.kind !== "groove" && m2.kind !== "pedal" || !toks[before] || !isTimed(toks[before])) return { st: st2, removed: 0 };
   const nt2 = toks.slice();
   nt2.splice(from, 1);
   let at3 = before - (before > from ? 1 : 0);
@@ -7835,7 +7936,7 @@ function setHairpinTarget(st2, i10, target) {
 }
 function editMarkAt(st2, i10, change) {
   const toks = tr(st2), m2 = toks[i10];
-  if (!m2 || m2.kind !== "dyn" && m2.kind !== "hairpin" && m2.kind !== "groove" && m2.kind !== "nav") return st2;
+  if (!m2 || m2.kind !== "dyn" && m2.kind !== "hairpin" && m2.kind !== "groove" && m2.kind !== "nav" && m2.kind !== "pedal") return st2;
   const nt2 = toks.slice();
   if (change === null) {
     nt2.splice(i10, 1);
@@ -7844,6 +7945,11 @@ function editMarkAt(st2, i10, change) {
   if (m2.kind === "dyn" && "value" in change) {
     if (m2.value === change.value) return st2;
     nt2[i10] = { ...m2, value: change.value };
+    return next(st2, nt2);
+  }
+  if (m2.kind === "pedal" && "act" in change) {
+    if (m2.act === change.act) return st2;
+    nt2[i10] = { ...m2, act: change.act };
     return next(st2, nt2);
   }
   if (m2.kind === "dyn" && "ramp" in change) {
@@ -7900,7 +8006,7 @@ function symBackspace(st2) {
   if (i10 >= h2 && t10?.kind === "note") {
     const nt2 = toks.slice(), art2 = artOf(t10);
     const j2 = i10 - 1, mk2 = toks[j2];
-    if (j2 >= h2 && (mk2?.kind === "dyn" || mk2?.kind === "hairpin" || mk2?.kind === "groove")) {
+    if (j2 >= h2 && isPhraseMark(mk2)) {
       nt2.splice(j2, 1);
       return next(st2, nt2, { caret: st2.caret - 1 });
     }
@@ -8100,7 +8206,6 @@ function removePart(st2, partId) {
 function ensureStartDyns(song, nextId, o10 = {}) {
   let id2 = nextId;
   const added = [], reordered = [], last = /* @__PURE__ */ new Map();
-  const LEAD = /* @__PURE__ */ new Set(["dyn", "hairpin", "groove"]);
   const papers = song.papers.map((pp) => {
     let tracks = pp.tracks, changed2 = false;
     for (const part2 of song.parts) {
@@ -8126,7 +8231,7 @@ function ensureStartDyns(song, nextId, o10 = {}) {
         }
         if (f2 >= 0) {
           let a10 = f2;
-          while (a10 > headLen(t10) && LEAD.has(t10[a10 - 1].kind)) a10--;
+          while (a10 > headLen(t10) && isPhraseMark(t10[a10 - 1])) a10--;
           const run2 = t10.slice(a10, f2), dyns = run2.filter((k2) => k2.kind === "dyn"), rest = run2.filter((k2) => k2.kind !== "dyn");
           const sorted = [...dyns, ...rest];
           if (dyns.length && sorted.some((k2, j2) => k2 !== run2[j2])) {
@@ -8138,7 +8243,7 @@ function ensureStartDyns(song, nextId, o10 = {}) {
         }
       } else if (first >= 0) {
         let at3 = first;
-        while (at3 > headLen(t10) && LEAD.has(t10[at3 - 1].kind)) at3--;
+        while (at3 > headLen(t10) && isPhraseMark(t10[at3 - 1])) at3--;
         tracks = { ...tracks, [part2.id]: [...t10.slice(0, at3), { kind: "dyn", id: id2++, value: last.get(part2.id) ?? "mf" }, ...t10.slice(at3)] };
         changed2 = true;
         added.push({ paper: pp.id, part: part2.id, index: at3 });
@@ -10163,7 +10268,7 @@ var PART_VIEW_KEYS = ["chords"];
 
 // src/render/expressions.ts
 var foldsArt = (a10) => `art:${a10}` in SIGNS;
-var FOLDED_TOKEN_KINDS = /* @__PURE__ */ new Set(["dyn", "hairpin"]);
+var FOLDED_TOKEN_KINDS = /* @__PURE__ */ new Set(["dyn", "hairpin", "pedal"]);
 function stripNote(t10) {
   const art2 = t10.art?.filter((a10) => !foldsArt(a10));
   const artChanged = !!t10.art && art2.length !== t10.art.length;
@@ -10202,7 +10307,7 @@ function foldedMarks(tokens) {
   const out = [];
   let inSlur = false;
   for (const t10 of tokens) {
-    if (t10.kind === "dyn" || t10.kind === "hairpin") {
+    if (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "pedal") {
       out.push({ tok: t10.id, what: t10.kind });
       continue;
     }
@@ -11718,6 +11823,9 @@ var GLYPH_BOX = {
   "\uE530": [-0.62, 3.32, -1.776, 0.608],
   "\uE534": [-0.564, 2.476, -1.776, 0.608],
   "\uE539": [0, 2.932, -1.776, 0.608],
+  "\uE650": [0, 4.076, -2.22, 0.032],
+  "\uE655": [0, 1.8, -1.8, 0],
+  "\uE659": [0, 4.428, -2.364, 0.06],
   "\uE880": [0, 1.272, -1.5, 0.032],
   "\uE881": [0.04, 1.024, -1.488, 0],
   "\uE882": [0.04, 1.316, -1.5, 0.024],
@@ -12456,7 +12564,11 @@ function unitsOf(tokens, o10) {
       units.push({ kind: "groove", index: i10, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
-    if (t10.kind === "pedal") return;
+    if (t10.kind === "pedal") {
+      flushFull(i10);
+      units.push({ kind: "pedal", index: i10, which: t10.which, act: t10.act, w: 0, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
     if (t10.kind === "clef") {
       if (i10 < H3 || tokens.slice(H3, i10).every((x2) => x2.kind === "clef")) return;
       flushFull(i10);
@@ -12884,7 +12996,7 @@ function layoutStems(seq, dir, f2 = LOCAL) {
 }
 
 // src/render/frame/columns.ts
-var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, tail: 4, note: 5 };
+var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, pedal: 3.65, hairpin: 3.7, tail: 4, note: 5 };
 
 // src/render/staff/glyphs.ts
 var TOP_LINE2 = 38;
@@ -12947,7 +13059,7 @@ var stemInput = (q2, xOf) => {
   return { seq, dir: q2.v2 ? "down" : q2.hasV2 ? "up" : percHere ? pm === "one" ? "up" : "kit" : "auto" };
 };
 var restW = (base2) => base2 >= WHOLE ? W.restWhole : base2 >= TPQ * 2 ? W.restHalf : base2 >= TPQ ? W.restQuarter : base2 >= TPQ / 2 ? W.rest8th : base2 >= TPQ / 4 ? W.rest16th : W.rest32nd;
-var COLUMN_KIND = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
+var COLUMN_KIND = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
 function measureTrack(q2) {
   const flagRight = /* @__PURE__ */ new Map();
   {
@@ -13667,6 +13779,163 @@ function layNoteDynamics(c10, row2, _ch, a10) {
     prims.push({ t: "path", d: d3, cls: cl2 });
   }));
 }
+var PEDAL = { scale: 0.8, gap: 1, textGap: 0.3, hook: 1.1, notch: 0.45, hookIn: 0.3 };
+var PEDAL_GLYPH = { sustain: "\uE650", sostenuto: "\uE659" };
+var PEDAL_UP_GLYPH = "\uE655";
+function layPedals(c10) {
+  const { P: P2, prims, dyns, tokens, units } = c10;
+  const peds = units.filter((u2) => u2.kind === "pedal");
+  if (!peds.length) return;
+  const chunks2 = units.filter((u2) => u2.kind === "chunk"), lastC = chunks2[chunks2.length - 1];
+  const jp = c10.notation !== "staff", gk = c10.glyphScale ?? 1, K4 = PEDAL.scale;
+  const paperEnd = (fallbackSys) => {
+    if (!lastC) return { sys: fallbackSys, x: c10.contentEnd(fallbackSys) - P2(PEDAL.hookIn) };
+    return { sys: lastC.system, x: Math.max(c10.noteEnd(lastC) + P2(0.6), c10.contentEnd(lastC.system) - P2(PEDAL.hookIn)) };
+  };
+  const at3 = (u2) => {
+    const k2 = units.indexOf(u2), nx2 = units.slice(k2 + 1).find((v) => v.kind === "chunk");
+    if (nx2) return { sys: nx2.system, x: c10.noteX(nx2) };
+    return paperEnd(u2.system);
+  };
+  const word = (kind, s10, x2, y2, tok, cls) => {
+    if (kind === "glyph") {
+      const b3 = GLYPH_BOX[s10], w2 = P2((b3?.[1] ?? 4) * K4), h2 = P2((b3 ? b3[3] - b3[2] : 2.2) * K4);
+      prims.push({ tok, t: "glyph", x: x2, y: y2, ch: s10, cls, size: P2(4 * K4) });
+      return { w: w2, h: h2 };
+    }
+    const role = jp ? "jp-dyn" : "dyn-word", k2 = jp ? gk : 1, fs = c10.tx(role) * k2;
+    prims.push({ tok, t: "text", x: x2, y: y2, s: s10, cls: `${cls} ${role}`, size: fs, anchor: "start" });
+    return { w: P2(c10.mw(role, s10) * k2), h: fs * 0.75 };
+  };
+  const nameOf2 = (w2) => w2 === "soft" ? { kind: "text", s: "una corda" } : jp ? { kind: "text", s: w2 === "sustain" ? "Ped." : "Sost." } : { kind: "glyph", s: PEDAL_GLYPH[w2] };
+  const upOf = () => jp ? { kind: "text", s: "*" } : { kind: "glyph", s: PEDAL_UP_GLYPH };
+  const lanes = /* @__PURE__ */ new Map();
+  const nameH = (w2) => {
+    const nm2 = nameOf2(w2);
+    return nm2.kind === "glyph" ? P2((GLYPH_BOX[nm2.s] ? -GLYPH_BOX[nm2.s][2] : 2.2) * K4) : c10.tx(jp ? "jp-dyn" : "dyn-word") * (jp ? gk : 1) * 0.75;
+  };
+  const wordSize = (kind, s10) => {
+    if (kind === "glyph") {
+      const b3 = GLYPH_BOX[s10];
+      return { w: P2((b3?.[1] ?? 4) * K4), h: P2((b3 ? b3[3] - b3[2] : 2.2) * K4) };
+    }
+    const role = jp ? "jp-dyn" : "dyn-word", k2 = jp ? gk : 1;
+    return { w: P2(c10.mw(role, s10) * k2), h: c10.tx(role) * k2 * 0.75 };
+  };
+  for (const which of PEDAL_KINDS) {
+    const mine = peds.filter((u2) => u2.which === which);
+    if (!mine.length) continue;
+    const mute = c10.ignores.includes(`pedal:${which}`) ? " art-mute" : "", cls = `pedal${mute}`, nm2 = nameOf2(which), nmW = wordSize(nm2.kind, nm2.s).w;
+    const byRow = /* @__PURE__ */ new Map();
+    const rowOf = (sy2) => {
+      const r10 = c10.rowLow(sy2);
+      let it2 = byRow.get(r10);
+      if (!it2) byRow.set(r10, it2 = { main: [], taken: [], greys: [] });
+      return it2;
+    };
+    const hit2 = (sy2, index, x2, y2, w2, h2) => dyns.push({ index, kind: "pedal", system: c10.rowLow(sy2), x: x2, y: y2, w: w2, h: h2 });
+    const lineSpan = (startIdx, s02, x0, s12, x1, notches2, hookIdx) => {
+      const N2 = P2(PEDAL.notch);
+      for (let sy2 = s02; sy2 <= s12; sy2++) {
+        const a10 = sy2 === s02 ? x0 : c10.left(sy2) + P2(0.3), closes = sy2 === s12;
+        const ns2 = [];
+        let minX = a10 + N2;
+        for (const n10 of notches2.filter((m2) => m2.sys === sy2).sort((m2, k2) => m2.x - k2.x)) {
+          const x2 = Math.max(n10.x, minX);
+          ns2.push({ x: x2, index: n10.index });
+          minX = x2 + 2 * N2 + P2(0.2);
+        }
+        const b3 = closes ? Math.max(x1, ns2.length ? ns2[ns2.length - 1].x + N2 + P2(0.2) : a10) : c10.rowEnd(sy2);
+        const it2 = rowOf(sy2);
+        if (closes) it2.taken.push([b3 - P2(0.6), b3 + P2(0.6)]);
+        it2.main.push((y2) => {
+          const H3 = P2(PEDAL.hook);
+          const pieces = [];
+          let from = a10;
+          for (const n10 of ns2) {
+            pieces.push(`M${from},${y2}L${n10.x - N2},${y2}`);
+            from = n10.x + N2;
+          }
+          pieces.push(`M${from},${y2}L${b3},${y2}`);
+          prims.push({ tok: tokens[startIdx].id, t: "path", d: pieces.join(""), cls });
+          for (const n10 of ns2) {
+            prims.push({ tok: tokens[n10.index].id, t: "path", d: `M${n10.x - N2},${y2}L${n10.x},${y2 - H3}L${n10.x + N2},${y2}`, cls });
+            dyns.push({ index: n10.index, kind: "pedal", system: c10.rowLow(sy2), x: n10.x - N2 - P2(0.3), y: y2 - H3 - P2(0.4), w: 2 * N2 + P2(0.6), h: H3 + P2(0.8) });
+          }
+          if (closes) {
+            prims.push({ ...hookIdx !== void 0 ? { tok: tokens[hookIdx].id } : {}, t: "path", d: `M${b3},${y2}L${b3},${y2 - H3}`, cls });
+            if (hookIdx !== void 0) dyns.push({ index: hookIdx, kind: "pedal", system: c10.rowLow(sy2), x: b3 - P2(0.6), y: y2 - H3 - P2(0.4), w: P2(1.2), h: H3 + P2(0.8) });
+          }
+        });
+      }
+    };
+    const grey = (u2, p2, w2) => {
+      const sz2 = wordSize(w2.kind, w2.s), id2 = tokens[u2.index].id;
+      rowOf(p2.sys).greys.push({ x0: p2.x, x1: p2.x + sz2.w, draw: (y2) => {
+        const m2 = word(w2.kind, w2.s, p2.x, y2, id2, "pedal art-mute");
+        hit2(p2.sys, u2.index, p2.x - P2(0.3), y2 - m2.h - P2(0.3), m2.w + P2(0.6), m2.h + P2(0.7));
+      } });
+    };
+    let down = null, notches = [];
+    const finish2 = (endSys, endX, hookIdx) => {
+      const d3 = down;
+      down = null;
+      lineSpan(d3.idx, d3.sys, d3.x + nmW + P2(PEDAL.textGap), endSys, endX, notches, hookIdx);
+    };
+    for (const u2 of mine) {
+      const p2 = at3(u2);
+      if (u2.act === "down" || u2.act === "change" && !down) {
+        if (down) {
+          grey(u2, p2, nm2);
+          continue;
+        }
+        const it2 = rowOf(p2.sys), id2 = tokens[u2.index].id;
+        it2.taken.push([p2.x, p2.x + nmW]);
+        it2.main.push((y2) => {
+          const m2 = word(nm2.kind, nm2.s, p2.x, y2, id2, cls);
+          hit2(p2.sys, u2.index, p2.x - P2(0.3), y2 - m2.h - P2(0.3), m2.w + P2(0.6), m2.h + P2(0.7));
+        });
+        down = { sys: p2.sys, x: p2.x, idx: u2.index };
+        notches = [];
+        continue;
+      }
+      if (u2.act === "change") {
+        notches.push({ sys: p2.sys, x: p2.x, index: u2.index });
+        continue;
+      }
+      if (!down) {
+        grey(u2, p2, upOf());
+        continue;
+      }
+      finish2(p2.sys, p2.x - P2(PEDAL.hookIn), u2.index);
+    }
+    if (down) {
+      const end = paperEnd(down.sys);
+      finish2(end.sys, end.x, void 0);
+    }
+    const top = Math.max(nameH(which), P2(PEDAL.hook)) / P2(1);
+    for (const [row2, it2] of byRow) c10.attach(row2, "pedal", () => {
+      const subs2 = [{ taken: [...it2.taken], draws: [...it2.main] }];
+      const pad4 = P2(0.3), free = (tk2, a10, b3) => tk2.every(([x0, x1]) => b3 + pad4 <= x0 || a10 >= x1 + pad4);
+      for (const g3 of [...it2.greys].sort((m2, k2) => m2.x0 - k2.x0)) {
+        let k2 = 0;
+        while (k2 < subs2.length && !free(subs2[k2].taken, g3.x0, g3.x1)) k2++;
+        if (k2 === subs2.length) subs2.push({ taken: [], draws: [] });
+        subs2[k2].taken.push([g3.x0, g3.x1]);
+        subs2[k2].draws.push(g3.draw);
+      }
+      let prev = lanes.get(row2);
+      subs2.forEach((sb2, k2) => {
+        if (!sb2.draws.length) return;
+        const dy = c10.placeBelow(row2, k2 ? 0.4 : PEDAL.gap, (y2) => {
+          for (const d3 of sb2.draws) d3(y2);
+        }, prev === void 0 ? {} : { min: prev + top + (k2 ? 0.4 : PEDAL.gap) });
+        prev = dy;
+      });
+      if (prev !== void 0) lanes.set(row2, prev);
+    });
+  }
+}
 
 // src/render/frame/carets.ts
 function caretStops(q2, o10) {
@@ -13758,7 +14027,7 @@ var pitchAxis = {
 var bandTop = (row2, half2) => yAt(row2.staffTop, 44, half2);
 
 // src/render/staff/draw.ts
-var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow"];
+var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow", "pedal"];
 function drawStaff(c10, mine) {
   const lyricParts = [];
   const own = mine ? new Set(mine) : null, skip = (r10) => own !== null && !own.has(r10);
@@ -13802,6 +14071,11 @@ function drawStaff(c10, mine) {
     const pos = f2 > 0 ? SHARP_POS : FLAT_POS, ch2 = f2 > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
     for (let k2 = 0; k2 < Math.abs(f2); k2++) put2(r10, { ...T3, t: "glyph", x: P2(x0 + k2 * 1.05), y: yOf(r10, pos[k2] + off), ch: ch2, cls });
   };
+  const rowContentEnd = (sy2) => {
+    let e10 = -Infinity;
+    for (const col of cols) if (col.system === sy2) e10 = Math.max(e10, col.x + col.w);
+    return e10 > -Infinity ? Math.min(staffEnd[sy2], e10) : staffEnd[sy2];
+  };
   const ornCache = /* @__PURE__ */ new Map();
   const ornOf = (q2, r10, noteEnd2) => {
     const hit2 = ornCache.get(r10);
@@ -13821,12 +14095,18 @@ function drawStaff(c10, mine) {
       dyns,
       marks,
       placeAbove,
+      placeBelow: (row2, gap, d3, o22) => placeBelow(row2, gap, d3, o22),
       attach: attach2,
       right,
       left: (sy2) => P2(MARGIN + (sy2 === 0 ? ind0 : indN)),
       tokens: q2.tokens,
       units: q2.units,
       row: (sy2) => rowOf(sy2, r10, 0),
+      rowLow: (sy2) => rowOf(sy2, r10, q2.staves - 1),
+      ignores: q2.p.ignores ?? [],
+      rowEnd: (sy2) => P2(staffEnd[sy2]),
+      contentEnd: (sy2) => P2(rowContentEnd(sy2)),
+      // 踏板挂在最下面那张谱表下面（11-1）
       noteX: (ch2) => P2(ch2.x + 0.35),
       noteEnd: noteEnd2 ?? ((ch2) => P2(ch2.x + 0.35)),
       dynOff: dynOverridden(q2.tokens),
@@ -13967,7 +14247,7 @@ function drawStaff(c10, mine) {
     };
     for (const u2 of units) {
       const row2 = RW(u2);
-      if (u2.kind === "dyn") continue;
+      if (u2.kind === "dyn" || u2.kind === "pedal") continue;
       if (u2.kind === "groove") {
         layGroove(orn, u2);
         continue;
@@ -14242,6 +14522,7 @@ function drawStaff(c10, mine) {
       });
     }
     layDynamics(orn);
+    if (!v2) layPedals(orn);
     if (harmony && !v2 && !q2.vrt) {
       const fs = tx2("chord-tag");
       const theory = harmonyTheory(), placed = new Map((harmony.get(q2.p.id) ?? []).map((x2) => [x2.index, x2]));
@@ -14871,7 +15152,7 @@ function keyPrims(k2, x2, y2, size, cls, T3) {
 // src/render/jianpu/measure.ts
 var LEFT_CLEAR = 4;
 var core = (u2, nameW) => nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u2.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN;
-var COLUMN_KIND2 = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
+var COLUMN_KIND2 = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
 function unitW(u2, printKey) {
   switch (u2.kind) {
     case "bar":
@@ -14926,7 +15207,7 @@ function layoutHead(x0, items) {
 }
 
 // src/render/jianpu/draw.ts
-var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics"];
+var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "pedal"];
 var jpGlyph = (a10) => {
   const d3 = SIGNS[`art:${a10}`]?.draw.jianpu;
   return d3 && d3.kind === "glyph" ? { above: d3.above, w: d3.w ?? 1, h: d3.h ?? 1 } : null;
@@ -15045,6 +15326,15 @@ function drawJianpu(c10, mine, mode = "digits") {
       dyns: c10.dyns,
       marks,
       placeAbove,
+      placeBelow: (row2, gap, d3, o22) => placeBelow(row2, gap, d3, o22),
+      rowLow: (sy2) => rowOf(sy2, r10, 0),
+      ignores: q2.p.ignores ?? [],
+      rowEnd: (sy2) => P2(staffEnd[sy2]),
+      contentEnd: (sy2) => {
+        let e10 = -Infinity;
+        for (const col of cols) if (col.system === sy2) e10 = Math.max(e10, col.x + col.w);
+        return P2(e10 > -Infinity ? Math.min(staffEnd[sy2], e10) : staffEnd[sy2]);
+      },
       attach: c10.attach,
       right: c10.right,
       left: (sy2) => P2(MARGIN + (sy2 === 0 ? ind0 : c10.indN)) + Q2(0.6),
@@ -15381,6 +15671,7 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
     }
     layDynamics(orn);
+    layPedals(orn);
     if (kit && mode === "x" && q2.p.kitNames) layKitLegend(q2, r10);
     const inkL = measured[r10].inkL;
     caretStops(q2, { cx: (u2) => {
@@ -18296,7 +18587,7 @@ var ScoreView = class {
         this.decorated.push({ el: el2, cls });
       }
     };
-    const HOT = ["lyric", "dyn", "groove-mark", "nav-mark", "nav-sign", "dyn-word", "hairpin"];
+    const HOT = ["lyric", "dyn", "groove-mark", "nav-mark", "nav-sign", "dyn-word", "hairpin", "pedal"];
     if (st2.sel) {
       for (let i10 = st2.sel.from; i10 < st2.sel.to; i10++) {
         const t10 = toks[i10];
@@ -19002,7 +19293,7 @@ var ScoreView = class {
       return;
     }
     if (f2.grab.kind === "lyric" && f2.short) this.host.notice?.(f2.cur > f2.src ? _t("\u540E\u9762\u6CA1\u6709\u7A7A\u7740\u7684\u97F3\u4E86\uFF0C\u5B57\u53EA\u80FD\u632A\u5230\u8FD9\u513F") : _t("\u524D\u9762\u9694\u7740\u53E5\u53F7\uFF08\u6216\u8005\u6CA1\u6709\u97F3\u4E86\uFF09\uFF0C\u5B57\u632A\u4E0D\u8FC7\u53BB"));
-    if (f2.grab.kind === "mark" && f2.removed) this.host.notice?.(_t("\u987A\u624B\u53BB\u6389\u4E86 {removed} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { removed: f2.removed }));
+    if (f2.grab.kind === "mark" && f2.removed) this.host.notice?.(_t("\u987A\u624B\u53BB\u6389\u4E86 {n} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u8BB0\u53F7\uFF08\u529B\u5EA6 / \u6E10\u5F3A\u6E10\u5F31 / \u8E0F\u677F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { n: f2.removed }));
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
   noteAt(x2, y2, finger = false) {
@@ -19792,11 +20083,11 @@ var SYM_PAGES = {
   // 2026-10-10：出声的换气（轻吸 / 深吸）、气声（× 符头）   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:ppp", "dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "dyn:fff", "wedge:cresc", "wedge:dim", "dyn:ramp"],
   // 音内渐强 / 渐弱 / 鼓起搬到「演奏法」（v0.9.44；user「…应该属于演奏法…因为是跟着音符的」）   // ppp…fff 两整排（v0.9.23）
-  mark: ["key", "time", "tempo", "clef", "ottava", "groove", "repeat", "staff"]
-  // 谱号 / 八度线（v0.9.28）
+  mark: ["key", "time", "tempo", "clef", "ottava", "groove", "repeat", "pedal", "staff"]
+  // 谱号 / 八度线（v0.9.28）；踏板（11-1）
 };
 var SYM_PAGE_NAME = { art: _t("\u6F14\u594F\u6CD5##\u9875\u7B7E"), dyn: _t("\u529B\u5EA6##\u9875\u7B7E"), mark: _t("\u8BB0\u53F7") };
-var SYM_PAGE_TITLE = { art: _t("\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438\uFF08\u9759\u9ED8 / \u8F7B\u5438 / \u6DF1\u5438\uFF09\u3001\u6C14\u58F0"), dyn: _t("ppp\u2026fff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F"), mark: _t("\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09") };
+var SYM_PAGE_TITLE = { art: _t("\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438\uFF08\u9759\u9ED8 / \u8F7B\u5438 / \u6DF1\u5438\uFF09\u3001\u6C14\u58F0"), dyn: _t("ppp\u2026fff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F"), mark: _t("\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09\u3001\u53CD\u590D\u3001\u8E0F\u677F") };
 var WRITE_KEY_IDS = ["caret:-1", "caret:1", "rest", "bar", "art:breath", "extend", "backspace", "symBackspace", "staff"];
 var PAD_KEY_IDS = [...WRITE_KEY_IDS, ...Object.values(SYM_PAGES).flat().filter((id2) => id2 !== "dyn:ramp" && !WRITE_KEY_IDS.includes(id2))];
 
@@ -20215,6 +20506,7 @@ var Pad = class {
       cell2("ottava", `<span class="smufl">\uE511</span>`, _t("\u516B\u5EA6\u7EBF"), _t("\u516B\u5EA6\u7EBF\uFF1A\u4ECE\u5149\u6807\u5904\u8D77\u8C31\u4E0A\u753B\u4F4E\uFF088va / 15ma\uFF09\u6216\u753B\u9AD8\uFF088vb\uFF09\uFF1B\u6709\u9009\u533A = \u8FD9\u4E00\u6BB5\uFF1B\u300C\u7ED3\u675F\u300D= \u5230\u8FD9\u513F\u6536\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8")),
       cell2("groove", `<span class="big it">${_t("\u98CE\u683C")}</span>`, _t("\u62CD\u5B50\u8F7B\u91CD"), _t("\u98CE\u683C\u8BB0\u53F7\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u5728\u5C0F\u8282\u91CC\u7684\u4F4D\u7F6E\u8F7B\u4E00\u70B9 / \u91CD\u4E00\u70B9\uFF08\u53E4\u5178 / \u6D41\u884C / \u534E\u5C14\u5179 / \u8FDB\u884C\u66F2\u2026\u70B9\u5F00\u9009\uFF09\uFF1B\u6574\u5F20\u7EB8\u7684\u58F0\u90E8\u4E00\u8D77\u542C\uFF0C\u5404\u4EBA\u8DDF\u591A\u5C11\u6309\u4E50\u5668")),
       cell2("repeat", `<span class="big">:|</span>`, _t("\u53CD\u590D"), _t("\u8C31\u5185\u53CD\u590D / \u8DF3\u8F6C\uFF1A|: :|\u3001\u623F\u5B50 1. 2.\u3001Segno / Coda / D.C. / D.S. / Fine\u2026\uFF08\u70B9\u5F00\u9009\uFF1B\u63D2\u5728\u5149\u6807\u5904\uFF0C\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\uFF09\u3002\u4E0D\u8DE8\u7EB8\uFF1B\u653E\u7684\u65F6\u5019\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C")),
+      cell2("pedal", `<span class="smufl">\uE650</span>`, _t("\u8E0F\u677F"), _t("\u8E0F\u677F\uFF08\u7559\u4E0D\u7559\u4F4F\u97F3\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A")),
       ...this.host.staves() === 2 ? [cell2("staff", `<span class="big">\u21C5</span>`, _t("\u6362\u8C31\u8868"), _t("\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868"))] : []
     ];
     const byId = new Map(items.map((h2) => [/data-sym="([^"]+)"/.exec(h2)[1], h2]));
@@ -20758,6 +21050,7 @@ function padKeyAction(id2, mods = { ramp: false }) {
     case "repeat":
     case "clef":
     case "ottava":
+    case "pedal":
       return { kind: "menu", menu: id2 };
     case "wedge:cresc":
       return cmd2({ k: "wedge", w: "cresc" });
@@ -33548,6 +33841,7 @@ function createPadHost(padEl2, g3) {
     if (a10.kind === "mark") g3.insertMarkHere(a10.mark);
     else if (a10.menu === "groove") g3.insertGrooveHere();
     else if (a10.menu === "repeat") g3.openRepeatMenu();
+    else if (a10.menu === "pedal") g3.openPedalMenu();
     else {
       const r10 = padEl2.getBoundingClientRect(), at3 = { x: r10.left + r10.width / 2, y: r10.top - 4 };
       if (a10.menu === "clef") g3.openInsertClefMenu(at3);
@@ -33581,8 +33875,9 @@ function createPadHost(padEl2, g3) {
     g3.update(nx2);
     if (c10.k === "rest" || c10.k === "extend") g3.afterWrite();
     if (c10.k === "backspace" || c10.k === "delete") {
-      const marks = (s10) => tr(s10).filter((t10) => t10.kind === "dyn" || t10.kind === "hairpin").length, gone = marks(prev) - marks(st2()) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t10) => t10.kind === "dyn" || t10.kind === "hairpin").length : 0);
-      if (gone > 0) g3.info(_t("\u987A\u624B\u53BB\u6389\u4E86 {gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { gone }));
+      const ann = (t10) => t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "pedal";
+      const marks = (s10) => tr(s10).filter(ann).length, gone = marks(prev) - marks(st2()) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter(ann).length : 0);
+      if (gone > 0) g3.info(_t("\u987A\u624B\u53BB\u6389\u4E86 {n} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u8BB0\u53F7\uFF08\u529B\u5EA6 / \u6E10\u5F3A\u6E10\u5F31 / \u8E0F\u677F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { n: gone }));
     }
     if (c10.k === "art") g3.discloseArt(prev, c10.a === "swellDown" ? "swellFade" : c10.a === "swellUp" || c10.a === "swellBoth" ? "swellGrow" : c10.a);
     if (c10.k === "slur") g3.discloseArt(prev, "slur");
@@ -34299,15 +34594,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-406b3ca31272.mjs");
+      return pick(() => "singer-worker-0942214a851f.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-714d957ac9f7.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-bc44e9c0b6a8.mjs");
+      return pick(() => "layout-worker-ba34ccb7eeab.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-a985f1936147.mjs");
+      return pick(() => "encode-worker-14961245133b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -36312,6 +36607,13 @@ var NOTE_DYN = ["sfz", "fp"];
 var XML_NOTE_DYN = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
 var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
 var XML_DYN = (name) => DYNS.includes(name) ? name : /^p{4,}$/.test(name) ? "ppp" : /^f{4,}$/.test(name) ? "fff" : null;
+var PEDAL_ID = "pedal.";
+var pedalXml = (t10) => {
+  const on2 = t10.act !== "up";
+  if (t10.which === "soft") return `<direction placement="below"><direction-type><words id="${PEDAL_ID}soft.${on2 ? "down" : "up"}.${t10.id}">${on2 ? "una corda" : "tre corde"}</words></direction-type><sound soft-pedal="${on2 ? "yes" : "no"}"/></direction>`;
+  const sus = t10.which === "sustain", type = !on2 ? "stop" : sus ? t10.act === "change" ? "change" : "start" : "sostenuto";
+  return `<direction placement="below"><direction-type><pedal type="${type}" number="${sus ? 1 : 2}" line="yes"${sus ? ' sign="yes"' : ""} id="${PEDAL_ID}${t10.which}.${t10.act}.${t10.id}"/></direction-type><sound ${sus ? "damper" : "sostenuto"}-pedal="${on2 ? "yes" : "no"}"/></direction>`;
+};
 var GROOVE_ID = "groove.";
 var grooveXml = (t10) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t10.style}.${Math.round((t10.amount ?? 1) * 100)}.${t10.id}${t10.shift ? ".2-3" : ""}">${esc4(grooveLabel(t10))}</words></direction-type></direction>`;
 var NAV_ID = "nav.";
@@ -36494,6 +36796,11 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       cur.push(grooveXml(t10));
       continue;
     }
+    if (t10.kind === "pedal") {
+      if (ticks >= len) close(false);
+      cur.push(pedalXml(t10));
+      continue;
+    }
     if (t10.kind === "clef") {
       if (ticks >= len) close(false);
       cur.push(`<attributes>${staves === 1 ? clefXml(t10.clef) : clefXml(t10.clef).replace("<clef>", '<clef number="1">')}</attributes>`);
@@ -36635,6 +36942,7 @@ function readMusicXml(xml, hints) {
   };
   let pendingAttack = null;
   let pendingRamp = false;
+  const pedalNum = /* @__PURE__ */ new Map();
   let pendingHarm = null;
   const dropHarm = () => {
     if (pendingHarm) {
@@ -36830,9 +37138,50 @@ function readMusicXml(xml, hints) {
             }
           }
           {
-            const names = c10.name === "direction" ? kids(c10, "direction-type").flatMap((dt) => kids(dt).map((e10) => e10.name)) : [];
+            const peds = c10.name === "direction" ? kids(c10, "direction-type").flatMap((dt) => kids(dt, "pedal")) : [];
             const snd = c10.name === "sound" ? c10 : kid(c10, "sound");
-            if (names.includes("pedal") || !!(snd && (snd.attrs["damper-pedal"] || snd.attrs["soft-pedal"] || snd.attrs["sostenuto-pedal"]))) drop(_t("\u8E0F\u677F\u8BB0\u53F7"));
+            const ped = (which, act) => mark({ kind: "pedal", id: 0, which, act });
+            const sndWhich = snd ? snd.attrs["sostenuto-pedal"] !== void 0 ? "sostenuto" : snd.attrs["damper-pedal"] !== void 0 ? "sustain" : null : null;
+            for (const pe2 of peds) {
+              const ty2 = pe2.attrs.type, num2 = pe2.attrs.number ?? "1";
+              const own = /^pedal\.(sustain|sostenuto)\.(down|up|change)\.\d+$/.exec(pe2.attrs.id ?? "");
+              if (own) {
+                const w2 = own[1];
+                ped(w2, own[2]);
+                if (own[2] === "up") pedalNum.delete(num2);
+                else pedalNum.set(num2, w2);
+                continue;
+              }
+              if (ty2 === "start") {
+                ped("sustain", "down");
+                pedalNum.set(num2, "sustain");
+              } else if (ty2 === "sostenuto") {
+                ped("sostenuto", "down");
+                pedalNum.set(num2, "sostenuto");
+              } else if (ty2 === "change") {
+                ped("sustain", "change");
+                pedalNum.set(num2, "sustain");
+              } else if (ty2 === "stop") {
+                ped(sndWhich ?? pedalNum.get(num2) ?? "sustain", "up");
+                pedalNum.delete(num2);
+              }
+            }
+            if (!peds.length && snd) {
+              const v = (k2) => {
+                const a10 = snd.attrs[k2];
+                return a10 === void 0 ? null : a10 === "no" || a10 === "0" ? "up" : "down";
+              };
+              for (const [k2, which] of [["damper-pedal", "sustain"], ["sostenuto-pedal", "sostenuto"], ["soft-pedal", "soft"]]) {
+                const a10 = v(k2);
+                if (a10) {
+                  ped(which, a10);
+                  if (which === "soft") wordsUsed = true;
+                }
+              }
+            }
+          }
+          {
+            const names = c10.name === "direction" ? kids(c10, "direction-type").flatMap((dt) => kids(dt).map((e10) => e10.name)) : [];
             if (names.includes("words") && !wordsUsed) drop(_t("\u6587\u5B57\u8BB0\u53F7\uFF08\u5982 dolce\u3001rit.\uFF09"));
             for (const nm2 of new Set(names)) if (!DIR_READ.has(nm2)) drop(DIR_LABEL[nm2]?.() ?? _t("\u522B\u7684\u65B9\u5411\u8BB0\u53F7"));
           }
@@ -36950,7 +37299,7 @@ function readMusicXml(xml, hints) {
 
 // src/format/contract.ts
 var FORMAT = { manifest: 2, score: 2, lounge: 3, studio: 2 };
-var FORMAT_MINOR = { manifest: 1, score: 8, lounge: 0, studio: 1 };
+var FORMAT_MINOR = { manifest: 1, score: 9, lounge: 0, studio: 1 };
 var FORMAT_PATCH = { manifest: 1, score: 1, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
@@ -41232,8 +41581,8 @@ var soundfont = registerPerformer({
   hintRange: null,
   // lightMarks 那一路；琶音只有能叠音的认（v0.9.45）；气声 / 出声的换气乐器本来就不认
   honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio", "roll"],
-  pedals: ["sustain", "sostenuto", "soft"],
-  // 踏板 11-1：按键盘发音的三种都认（11-1 只接了延音；持音、弱音 11-2）
+  pedals: ["sustain"],
+  // 踏板 11-1：只声明出声真接了的（延音）；持音、弱音的出声是 11-2，接了再加（test/pedal.test.ts「表说认 = 出声真变了」守着）
   connected: false,
   dynamics: "velocity",
   grooveCategory: "gm",
@@ -44747,7 +45096,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "16fed1126d764c61" : "dev";
+var CORE_HASH = true ? "26b245651d7776f5" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -56684,7 +57033,7 @@ var PT_PER_MM = 72 / 25.4;
 var INK = [0.1, 0.1, 0.1];
 var SKIP = /* @__PURE__ */ new Set(["ann", "selbox", "caret", "in-span"]);
 var skipped = (cls) => cls.some((c10) => SKIP.has(c10));
-var STROKE = { arpeggio: { w: 1.1, round: true }, tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true }, volta: { w: 1.1 } };
+var STROKE = { arpeggio: { w: 1.1, round: true }, tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true }, volta: { w: 1.1 }, pedal: { w: 1.1 } };
 function textEm(font, s10) {
   return font.shape(s10).reduce((a10, g3) => a10 + font.advance(g3), 0) / font.unitsPerEm;
 }
@@ -57362,7 +57711,7 @@ function copyTokens(st2) {
 function clipFrom(st2) {
   const toks = tr(st2), h2 = headLen(toks);
   let a10 = st2.sel.from;
-  while (a10 > h2 && (toks[a10 - 1].kind === "dyn" || toks[a10 - 1].kind === "hairpin" || toks[a10 - 1].kind === "groove")) a10--;
+  while (a10 > h2 && isPhraseMark(toks[a10 - 1])) a10--;
   return a10;
 }
 function pasteTokens(st2, toks) {
@@ -58502,6 +58851,10 @@ var ignoredFor = (role) => {
   const sp2 = activePerfSpec(D3.extras, role);
   return ignoredArts(performerOf(activeInstrument(D3.extras, role)?.engine), sp2.gapSec, sp2.canSwell);
 };
+var pedalIgnoredFor = (role) => {
+  const pl = performerOf(activeInstrument(D3.extras, role)?.engine);
+  return pl ? PEDAL_KINDS.filter((k2) => !pl.pedals?.includes(k2)).map((k2) => `pedal:${k2}`) : [];
+};
 var ignoredHere = () => ignoredFor(curPart().role);
 var MARK_NAME = { ...ART_NAME, slur: _t("\u8FDE\u7EBF"), swellGrow: _t("\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77"), swellFade: _t("\u97F3\u5185\u6E10\u5F31"), inhale: _t("\u51FA\u58F0\u7684\u6362\u6C14") };
 function discloseArt(prev, a10) {
@@ -59388,6 +59741,7 @@ var padHost = createPadHost(padEl, {
   insertMarkHere,
   insertGrooveHere: () => insertGrooveHere(),
   openRepeatMenu: () => openRepeatMenu(),
+  openPedalMenu: () => openPedalMenu(),
   openInsertClefMenu: (at3) => openInsertClefMenu(at3),
   openInsertOttavaMenu: (at3) => openInsertOttavaMenu(at3),
   showPad: (on2) => showPad(on2)
@@ -59489,7 +59843,7 @@ function tellFolded(a10, b3) {
       for (const [k2, w2] of kb) if (!ka.has(k2)) added.add(w2);
     }
   }
-  const name = (w2) => w2 === "dyn" ? _t("\u529B\u5EA6\u8BB0\u53F7") : w2 === "hairpin" ? _t("\u6E10\u5F3A / \u6E10\u5F31") : w2 === "slur" ? _t("\u8FDE\u7EBF") : SIGNS[w2].name(lang());
+  const name = (w2) => w2 === "dyn" ? _t("\u529B\u5EA6\u8BB0\u53F7") : w2 === "hairpin" ? _t("\u6E10\u5F3A / \u6E10\u5F31") : w2 === "pedal" ? _t("\u8E0F\u677F\u8BB0\u53F7") : w2 === "slur" ? _t("\u8FDE\u7EBF") : SIGNS[w2].name(lang());
   const fresh = (ws2, told) => [...new Set([...ws2].map(name))].filter((n11) => !told.has(n11) && (told.add(n11), true));
   const g3 = fresh(gone, foldTold.gone), n10 = fresh(added, foldTold.added);
   if (g3.length) info(_t("\u6539\u5230\u4E86\u6CA1\u663E\u793A\u7684{what}\uFF08\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\uFF09", { what: g3.join(_t("\u3001")) }));
@@ -60401,7 +60755,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "d99d2c4471e2",
+  cssHash: "3f0e862ad3ae",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -61354,7 +61708,7 @@ function partViews() {
     const ly2 = plug?.lyrics, noLyrics = ly2 === "hum" || ly2 === "none" ? _t("{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220", { p: labels[k2], p2: ly2 === "hum" ? _t("\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC") : _t("\u4E0D\u5531\u6B4C\u8BCD") }) : "";
     const nota = notationOfRole(p2.role), rg2 = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p2.role);
     const kitNames = nota.perc?.kind === "kit" ? kitNamesOf(p2.id) : void 0;
-    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, ...rg2 ? { range: { lo: rg2.lo, hi: rg2.hi } } : {}, ...kitNames ? { kitNames } : {}, id: p2.id, name: looks.names[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p2.role) };
+    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, ...rg2 ? { range: { lo: rg2.lo, hi: rg2.hi } } : {}, ...kitNames ? { kitNames } : {}, id: p2.id, name: looks.names[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...nota, ignores: [...ignoredFor(p2.role), ...pedalIgnoredFor(p2.role)] };
   });
 }
 function afterViewChange() {
@@ -61991,6 +62345,66 @@ function openRepeatMenu() {
     }
   );
 }
+var PEDAL_ACT_LABEL = { down: _t("\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09"), up: _t("\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09") };
+var PEDAL_NAME = { sustain: _t("\u5EF6\u97F3\u8E0F\u677F"), sostenuto: _t("\u6301\u97F3\u8E0F\u677F"), soft: _t("\u5F31\u97F3\u8E0F\u677F") };
+function pedalIgnoredWhy(which) {
+  const role = curPart().role, pl = performerOf(activeInstrument(D3.extras, role)?.engine);
+  return pl && !pl.pedals?.includes(which) ? _t("{who}\u4E0D\u8BA4{p}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD", { who: activeCandidateName(D3.extras, role) || _t("\u53F0\u4E0A\u8FD9\u4F4D"), p: PEDAL_NAME[which] }) : null;
+}
+function disclosePedal(which, idle) {
+  const why2 = pedalIgnoredWhy(which);
+  if (why2) {
+    info(why2);
+    return;
+  }
+  if (idle === "already") info(_t("\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09"));
+  else if (idle === "notDown") info(_t("\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740\uFF1A\u8FD9\u4E2A\u62AC\u8D77\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09"));
+}
+function openPedalMenu() {
+  const r10 = padEl.getBoundingClientRect(), which = "sustain", here = pedalHere(D3.st, which);
+  if (!here) {
+    info(_t("\u8E0F\u677F\u8BB0\u53F7\u6302\u5728\u97F3\u4E0A\uFF1A\u8FD9\u5F20\u7EB8\u4E0A\u5149\u6807\u9644\u8FD1\u8FD8\u6CA1\u6709\u97F3"));
+    return;
+  }
+  const item = (v, label, on2 = false, title = "") => `<button class="btn ctx-item${on2 ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc12(title)}"` : ""}>${esc12(label)}</button>`;
+  const why2 = pedalIgnoredWhy(which);
+  const acts = here.down ? ["up", "change"] : ["down"];
+  if (here.mark && !acts.includes(here.mark.act)) acts.unshift(here.mark.act);
+  const body2 = D3.st.sel ? item("span", _t("\u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\uFF08\u9009\u533A\u5F00\u5934\u8E29\u4E0B\u3001\u7ED3\u5C3E\u62AC\u8D77\uFF09")) : acts.map((a10) => item(`act:${a10}`, PEDAL_ACT_LABEL[a10], here.mark?.act === a10, here.mark?.act === a10 ? _t("\u8FD9\u4E2A\u97F3\u4E0A\u5DF2\u7ECF\u6709\u4E86\uFF1A\u518D\u70B9 = \u53BB\u6389") : "")).join("");
+  ctxMenu(
+    "pedal-menu",
+    `<div class="ctx-hint ctx-what">${esc12(PEDAL_NAME[which])}\uFF1A${esc12(SIGNS[`pedal:${which}`].says(lang()))}${D3.st.sel ? "" : esc12(_t("\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09"))}</div>` + (why2 ? `<div class="ctx-hint">${esc12(why2)}</div>` : "") + body2,
+    { x: r10.left + r10.width / 2, y: r10.top - 4 },
+    (v) => {
+      const res = insertPedal(D3.st, which, v === "span" ? "down" : v.slice(4));
+      if (res.did === "none") return;
+      update(res.st);
+      if (res.did !== "removed") disclosePedal(which, res.idle);
+    }
+  );
+}
+function openPedalMarkMenu(i10, at3) {
+  const toks = tr(D3.st), t10 = toks[i10];
+  if (!t10 || t10.kind !== "pedal") return;
+  const before = pedalDownAt(toks, i10, t10.which), why2 = pedalIgnoredWhy(t10.which);
+  const idle = t10.act === "down" && before ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740") : t10.act === "up" && !before ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740") : t10.act === "change" && !before ? _t("\u8FD9\u91CC\u4E4B\u524D\u6CA1\u8E29\u7740\uFF0C\u6362\u8E0F\u677F = \u8E29\u4E0B") : "";
+  ctxMenu(
+    "pedal-menu",
+    `<div class="ctx-hint ctx-what">${esc12(PEDAL_NAME[t10.which])}\uFF1A${esc12(SIGNS[`pedal:${t10.which}`].says(lang()))}</div>` + (idle ? `<div class="ctx-hint">${esc12(idle)}</div>` : "") + (why2 ? `<div class="ctx-hint">${esc12(why2)}</div>` : "") + ["down", "up", "change"].map((a10) => `<button class="btn ctx-item${t10.act === a10 ? " is-on" : ""}" data-v="act:${a10}">${esc12(PEDAL_ACT_LABEL[a10])}</button>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u4E2A\u8E0F\u677F\u8BB0\u53F7")}</button>`,
+    at3,
+    (v) => {
+      if (v === "del") {
+        update(editMarkAt(D3.st, i10, null));
+        return;
+      }
+      const act = v.slice(4), nx2 = editMarkAt(D3.st, i10, { act });
+      if (nx2 === D3.st) return;
+      update(nx2);
+      const now2 = pedalDownAt(tr(D3.st), i10, t10.which);
+      disclosePedal(t10.which, act === "down" && now2 ? "already" : act === "up" && !now2 ? "notDown" : void 0);
+    }
+  );
+}
 var OTTAVAS = [1, 2, -1];
 var OTT_HELP = { 1: _t("8va\uFF1A\u8C31\u4E0A\u753B\u4F4E\u4E00\u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645\u7167\u5199\u7684\u9AD8\u516B\u5EA6\u54CD\uFF09"), 2: _t("15ma\uFF1A\u8C31\u4E0A\u753B\u4F4E\u4E24\u4E2A\u516B\u5EA6"), [-1]: _t("8vb\uFF1A\u8C31\u4E0A\u753B\u9AD8\u4E00\u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645\u7167\u5199\u7684\u4F4E\u516B\u5EA6\u54CD\uFF09"), 0: _t("\u5230\u8FD9\u513F\u7ED3\u675F\u516B\u5EA6\u7EBF") };
 function openInsertClefMenu(at3) {
@@ -62201,6 +62615,10 @@ function openMarkMenu(i10, at3) {
     openNavMenu(i10, at3);
     return;
   }
+  if (tr(D3.st)[i10]?.kind === "pedal") {
+    openPedalMarkMenu(i10, at3);
+    return;
+  }
   const t10 = tr(D3.st)[i10];
   if (!t10 || t10.kind !== "dyn" && t10.kind !== "hairpin") return;
   ui2.close();
@@ -62266,7 +62684,7 @@ function openMarkMenu(i10, at3) {
     else if (v === "toEnd") {
       const r10 = moveMarkToEnd(D3.st, i10);
       update(r10.st);
-      if (r10.removed) info(_t("\u987A\u624B\u53BB\u6389\u4E86 {removed} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { removed: r10.removed }));
+      if (r10.removed) info(_t("\u987A\u624B\u53BB\u6389\u4E86 {n} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u8BB0\u53F7\uFF08\u529B\u5EA6 / \u6E10\u5F3A\u6E10\u5F31 / \u8E0F\u677F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { n: r10.removed }));
     } else if (v.startsWith("dyn:")) update(editMarkAt(D3.st, i10, { value: v.slice(4) }));
     else if (v.startsWith("dir:")) update(editMarkAt(D3.st, i10, { dir: v.slice(4) }));
     else if (v.startsWith("to:")) {
@@ -64731,4 +65149,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ab6e8c6fcbc2.mjs.map
+//# sourceMappingURL=moonsinger-1f0550de57b6.mjs.map

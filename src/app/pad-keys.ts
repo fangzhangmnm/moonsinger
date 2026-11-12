@@ -8,7 +8,7 @@ import type { Mark } from "../score/perform.ts";
 export type PadKeyAction =
   | { kind: "cmd"; cmd: Command }
   | { kind: "mark"; mark: "key" | "time" | "tempo" }                   // 插调号 / 拍号 / 速度（在光标处，开记号框）
-  | { kind: "menu"; menu: "groove" | "repeat" | "clef" | "ottava" };    // 开小菜单（风格 / 反复 / 谱号 / 八度线）
+  | { kind: "menu"; menu: "groove" | "repeat" | "clef" | "ottava" | "pedal" };    // 开小菜单（风格 / 反复 / 谱号 / 八度线 / 踏板）
 
 const cmd = (c: Command): PadKeyAction => ({ kind: "cmd", cmd: c });
 /** 一个按键 id 该做什么；不认识的 = null（键盘加了格子、这里没接 = test/pad-keys.test.ts 红）。mods.ramp = 「渐到」亮着（只对力度有意义）。 */
@@ -17,7 +17,7 @@ export function padKeyAction(id: string, mods: { ramp: boolean } = { ramp: false
   switch (id) {
     case "rest": case "bar": case "extend": case "backspace": case "symBackspace": case "staff": case "slur": return cmd({ k: id } as Command);
     case "key": case "time": case "tempo": return { kind: "mark", mark: id };
-    case "groove": case "repeat": case "clef": case "ottava": return { kind: "menu", menu: id };
+    case "groove": case "repeat": case "clef": case "ottava": case "pedal": return { kind: "menu", menu: id };
     case "wedge:cresc": return cmd({ k: "wedge", w: "cresc" });
     case "wedge:dim": return cmd({ k: "wedge", w: "dim" });
     case "dyn:ramp": return null;   // 修饰键，键盘自己管（latch）

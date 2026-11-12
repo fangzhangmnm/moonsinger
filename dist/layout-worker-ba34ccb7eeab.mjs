@@ -510,6 +510,7 @@ var S = {
   "\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8": { en: "Unhid this sheet" },
   "\u8FD9\u4E00\u6BB5\u5B9A\u6210\u4E86\u5927\u8C31\u8868\uFF08\u624B\u52A8\u5206\u7684\u4E0A\u4E0B\u884C\u8981\u5B58\u5F97\u4E0B\uFF09\uFF1B\u60F3\u56DE\u5230\u81EA\u52A8\uFF0C\u70B9\u884C\u9996\u8C31\u53F7\u9009\u300C\u81EA\u52A8\u300D": { en: "This section is now fixed as a grand staff (so the notes you moved between staves can be saved); to go back to automatic, tap the clef at the start of the line and pick \u201CAuto\u201D" },
   "\u6E10\u5F3A / \u6E10\u5F31": { en: "crescendo / diminuendo" },
+  "\u8E0F\u677F\u8BB0\u53F7": { en: "pedal marks" },
   "\u6539\u5230\u4E86\u6CA1\u663E\u793A\u7684{what}\uFF08\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\uFF09": { en: "You changed hidden {what} (articulations & dynamics are hidden right now; undo brings them back)" },
   "\u3001": { en: ", " },
   "\u5199\u4E0A\u4E86\uFF0C\u4F46\u73B0\u5728\u6CA1\u663E\u793A\uFF1A{what}\uFF08\u9875\u9762\u8BBE\u7F6E \u2192\u300C\u770B\u8C31\u300D\u91CC\u6253\u5F00\uFF09": { en: "Written, but hidden right now: {what} (turn them on under Page settings \u203A Reading)" },
@@ -960,6 +961,22 @@ var S = {
   "\u7EC8\u6B62\u7EBF": { en: "Final bar" },
   "\u7EC8\u6B62\u7EBF\uFF08\u7EC6 + \u7C97\uFF09\uFF1A\u66F2\u5B50 / \u8FD9\u4E00\u6BB5\u5230\u8FD9\u513F\u7ED3\u675F": { en: "Final bar (thin + thick): the piece / this section ends here" },
   "\u623F\u5B50\uFF1A\u7B2C {p} \u904D\u8D70\u8FD9\u91CC": { en: "Ending: take this on pass {p}" },
+  "\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09": { en: "Press (keep notes ringing)" },
+  "\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09": { en: "Lift (stop the notes)" },
+  "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09": { en: "Change pedal (stop, then keep again)" },
+  "\u5EF6\u97F3\u8E0F\u677F": { en: "Sustain pedal" },
+  "\u6301\u97F3\u8E0F\u677F": { en: "Sostenuto pedal" },
+  "\u5F31\u97F3\u8E0F\u677F": { en: "Soft pedal" },
+  "\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "The pedal is already down here: this press does nothing (greyed)" },
+  "\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740\uFF1A\u8FD9\u4E2A\u62AC\u8D77\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "The pedal isn't down here: this lift does nothing (greyed)" },
+  "\u8E0F\u677F\u8BB0\u53F7\u6302\u5728\u97F3\u4E0A\uFF1A\u8FD9\u5F20\u7EB8\u4E0A\u5149\u6807\u9644\u8FD1\u8FD8\u6CA1\u6709\u97F3": { en: "Pedal marks hang on notes: there are no notes near the cursor on this sheet yet" },
+  "\u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\uFF08\u9009\u533A\u5F00\u5934\u8E29\u4E0B\u3001\u7ED3\u5C3E\u62AC\u8D77\uFF09": { en: "Hold this passage (press at the start of the selection, lift at its end)" },
+  "\u8FD9\u4E2A\u97F3\u4E0A\u5DF2\u7ECF\u6709\u4E86\uFF1A\u518D\u70B9 = \u53BB\u6389": { en: "Already on this note: tap again to remove" },
+  "\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09": { en: " (from the note before the cursor)" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": { en: "No effect (greyed): the pedal is already down here" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740": { en: "No effect (greyed): the pedal isn't down here" },
+  "\u8FD9\u91CC\u4E4B\u524D\u6CA1\u8E29\u7740\uFF0C\u6362\u8E0F\u677F = \u8E29\u4E0B": { en: "The pedal wasn't down before this, so a change = a press" },
+  "\u5220\u6389\u8FD9\u4E2A\u8E0F\u677F\u8BB0\u53F7": { en: "Delete this pedal mark" },
   "8va\uFF1A\u8C31\u4E0A\u753B\u4F4E\u4E00\u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645\u7167\u5199\u7684\u9AD8\u516B\u5EA6\u54CD\uFF09": { en: "8va: drawn an octave lower (sounds an octave higher, as written)" },
   "15ma\uFF1A\u8C31\u4E0A\u753B\u4F4E\u4E24\u4E2A\u516B\u5EA6": { en: "15ma: drawn two octaves lower" },
   "8vb\uFF1A\u8C31\u4E0A\u753B\u9AD8\u4E00\u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645\u7167\u5199\u7684\u4F4E\u516B\u5EA6\u54CD\uFF09": { en: "8vb: drawn an octave higher (sounds an octave lower, as written)" },
@@ -1026,7 +1043,7 @@ var S = {
   "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31": { en: "Remove this crescendo / diminuendo" },
   "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF09": { en: "Long-press and drag = move it to another note (right of the last note = the end of this section)" },
   "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A": { en: "Long-press and drag = move to another note" },
-  "\u987A\u624B\u53BB\u6389\u4E86 {removed} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {removed} dynamics / hairpins that no longer govern any note (undo brings them back)" },
+  "\u987A\u624B\u53BB\u6389\u4E86 {n} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u8BB0\u53F7\uFF08\u529B\u5EA6 / \u6E10\u5F3A\u6E10\u5F31 / \u8E0F\u677F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {n} marks that no longer govern any note (dynamics / hairpins / pedals; undo brings them back)" },
   "\u7EC8\u70B9\u6539\u6210\u4E86 {d}\uFF08\u53D1\u5939\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09": { en: "End changed to {d} (the dynamic after the hairpin)" },
   "\u5728\u4E0B\u4E00\u6761\u6E10\u5F3A\u6E10\u5F31\u524D\u9762\u653E\u4E86 {d}": { en: "Put {d} before the next hairpin" },
   "\u5728\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\u653E\u4E86 {d}": { en: "Put {d} after the last note of this section" },
@@ -1342,7 +1359,6 @@ var S = {
   "\u51FA\u58F0\u7684\u6362\u6C14\u6302\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "An audible breath goes after a note (before the cursor is a rest, or no note yet)" },
   "\u97F3\u5185\u7684\u8D77\u4F0F\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A swell must go on a note (before the cursor is a rest, or no note yet)" },
   "{p}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "{p} goes from one note to the next (before the cursor is a rest, or no note yet)" },
-  "\u987A\u624B\u53BB\u6389\u4E86 {gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {gone} dynamics / hairpins that no longer govern any note (undo brings them back)" },
   "\u8DDF\u8C31": { en: "Follow score" },
   "\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7": { en: "Uses the key signature here" },
   "\u624B\u52A8": { en: "Manual" },
@@ -1682,7 +1698,6 @@ var S = {
   "\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09": { en: "Dynamic marks (not recognized by this version, such as sfz)" },
   "\u6309\u62CD\u5B50\u91CD\u590D\u7684\u98A4\u97F3\uFF08\u4E00\u4E24\u9053\u659C\u7EBF\uFF09": { en: "Measured tremolo (one or two slashes)" },
   "\u5927\u8C31\u8868\u4E0B\u9762\u4E00\u884C\u7684\u6362\u8C31\u53F7": { en: "clef changes on the lower staff of a grand staff" },
-  "\u8E0F\u677F\u8BB0\u53F7": { en: "Pedal marks" },
   "\u6587\u5B57\u8BB0\u53F7\uFF08\u5982 dolce\u3001rit.\uFF09": { en: "Text directions (e.g. dolce, rit.)" },
   "\u522B\u7684\u65B9\u5411\u8BB0\u53F7": { en: "Other direction marks" },
   "\u88C5\u9970\u97F3": { en: "Grace notes" },
@@ -1921,7 +1936,7 @@ var S = {
   "\u8BB0\u53F7": { en: "Marks" },
   "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438\uFF08\u9759\u9ED8 / \u8F7B\u5438 / \u6DF1\u5438\uFF09\u3001\u6C14\u58F0": { en: "Strength (ghost / unstressed / stress / accent / marcato / sfz / fp), tenuto / staccato / slur / breath (silent / soft / deep), whisper" },
   "ppp\u2026fff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F": { en: "ppp\u2026fff, crescendo / diminuendo, ramp, swells" },
-  "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09": { en: "Phrase end, key / time / clef / ottava / tempo, style (beat weighting)" },
+  "\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09\u3001\u53CD\u590D\u3001\u8E0F\u677F": { en: "Key / time / clef / octave lines / tempo, style (beat weights), repeats, pedals" },
   "\u4E09\u5341\u4E8C\u5206": { en: "Thirty-second" },
   "\u5341\u516D\u5206": { en: "Sixteenth" },
   "\u516B\u5206": { en: "Eighth" },
@@ -2026,6 +2041,8 @@ var S = {
   "\u98CE\u683C\u8BB0\u53F7\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u5728\u5C0F\u8282\u91CC\u7684\u4F4D\u7F6E\u8F7B\u4E00\u70B9 / \u91CD\u4E00\u70B9\uFF08\u53E4\u5178 / \u6D41\u884C / \u534E\u5C14\u5179 / \u8FDB\u884C\u66F2\u2026\u70B9\u5F00\u9009\uFF09\uFF1B\u6574\u5F20\u7EB8\u7684\u58F0\u90E8\u4E00\u8D77\u542C\uFF0C\u5404\u4EBA\u8DDF\u591A\u5C11\u6309\u4E50\u5668": { en: "Style mark: from the note before the cursor to the end of the sheet, each note gets lighter / heavier by its place in the bar (classical / pop / waltz / march\u2026 tap to choose); all parts on the sheet follow, each by instrument" },
   "\u53CD\u590D": { en: "Repeat" },
   "\u8C31\u5185\u53CD\u590D / \u8DF3\u8F6C\uFF1A|: :|\u3001\u623F\u5B50 1. 2.\u3001Segno / Coda / D.C. / D.S. / Fine\u2026\uFF08\u70B9\u5F00\u9009\uFF1B\u63D2\u5728\u5149\u6807\u5904\uFF0C\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\uFF09\u3002\u4E0D\u8DE8\u7EB8\uFF1B\u653E\u7684\u65F6\u5019\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C": { en: "Score repeats / jumps: |: :|, endings 1. 2., Segno / Coda / D.C. / D.S. / Fine\u2026 (tap to choose; inserted at the cursor, next to a barline = turns it into a repeat). Doesn't cross sheets; playback only looks at this sheet's top part" },
+  "\u8E0F\u677F": { en: "Pedal" },
+  "\u8E0F\u677F\uFF08\u7559\u4E0D\u7559\u4F4F\u97F3\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A": { en: "Pedal (keep notes ringing or not): press / lift / change from the note before the cursor; the choices follow whether the pedal is down there. With a selection = hold that passage. Tap a pedal mark on the score to change or delete it; long-press and drag to move it" },
   "\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868": { en: "Grand staff: move this note to the other staff" },
   "{who}\u7684\u97F3\u57DF\u91CC": { en: "Within {who}'s range" },
   "\u77ED\u4E00\u6B65": { en: "Shorter" },
@@ -2146,6 +2163,9 @@ var S = {
   "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting louder from here until the next dynamic mark" },
   "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting softer from here until the next dynamic mark" },
   "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A": { en: "Change evenly from the previous dynamic mark to this one" },
+  "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C": { en: "Pedal down: keys you let go keep sounding until the next pedal change or lift" },
+  "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38": { en: "Keys held at the moment of pressing keep sounding; later notes play as usual" },
+  "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3001\u97F3\u8272\u6697\u4E00\u70B9": { en: "Pedal down: play a little softer and darker" },
   "{src} \u8F7D\u8FDB\u6765\u4E86\uFF0C\u4F46\u91CC\u9762\u6CA1\u6709\u300C{key}\u300D": { en: "{src} loaded, but \u201C{key}\u201D isn't in it" },
   "\u5907\u7528\u7248\u6587\u4EF6\u5939\u91CC\u5C11\u4E86 {src}\uFF08\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u8BFB\uFF09": { en: "{src} is missing from the standalone folder (or the browser won't let it be read)" },
   "\u5907\u7528\u7248\u91CC\u6CA1\u6709 {path}": { en: "{path} isn't in the standalone version" },
@@ -2803,6 +2823,7 @@ function swellOf(t) {
   return t.art.includes("swellUp") ? "<" : t.art.includes("swellDown") ? ">" : t.art.includes("swellBoth") ? "<>" : void 0;
 }
 var DYNS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
+var PEDAL_KINDS = ["sustain", "sostenuto", "soft"];
 var CLEFS = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
 var SPLIT_MIDI = 60;
 var DEFAULT_KEY = 0;
@@ -3332,6 +3353,9 @@ var GLYPH_BOX = {
   "\uE530": [-0.62, 3.32, -1.776, 0.608],
   "\uE534": [-0.564, 2.476, -1.776, 0.608],
   "\uE539": [0, 2.932, -1.776, 0.608],
+  "\uE650": [0, 4.076, -2.22, 0.032],
+  "\uE655": [0, 1.8, -1.8, 0],
+  "\uE659": [0, 4.428, -2.364, 0.06],
   "\uE880": [0, 1.272, -1.5, 0.032],
   "\uE881": [0.04, 1.024, -1.488, 0],
   "\uE882": [0.04, 1.316, -1.5, 0.024],
@@ -5444,8 +5468,13 @@ var SIGNS = {
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "hairpin:dim": { id: "hairpin:dim", name: (l) => _tIn(l, "\u6E10\u5F31"), says: (l) => _tIn(l, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 >\uFF08\u592A\u957F\u5199 dim. - - -\uFF09"), jianpu: D("\u6954\u5F62 >"), letters: D("\u6954\u5F62 >") } },
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  ramp: { id: "ramp", name: (l) => _tIn(l, "\u6E10\u5230"), says: (l) => _tIn(l, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62"), letters: D("\u865A\u7EBF\u6954\u5F62") } }
+  ramp: { id: "ramp", name: (l) => _tIn(l, "\u6E10\u5230"), says: (l) => _tIn(l, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62"), letters: D("\u865A\u7EBF\u6954\u5F62") } },
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  // 踏板（11-1）：这一位最下面那条谱下面最外一道；线 / 尖 / 钩 = 共用挂件 ornaments layPedals 画（五线谱的名字 = Bravura 字形，数字行 = 细斜体字，同力度）
+  "pedal:sustain": { id: "pedal:sustain", name: (l) => _tIn(l, "\u5EF6\u97F3\u8E0F\u677F"), says: (l) => _tIn(l, "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C"), lane: "pedal", draw: { staff: G("\uE650"), jianpu: T("Ped."), letters: T("Ped.") } },
+  "pedal:sostenuto": { id: "pedal:sostenuto", name: (l) => _tIn(l, "\u6301\u97F3\u8E0F\u677F"), says: (l) => _tIn(l, "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38"), lane: "pedal", draw: { staff: G("\uE659"), jianpu: T("Sost."), letters: T("Sost.") } },
+  "pedal:soft": { id: "pedal:soft", name: (l) => _tIn(l, "\u5F31\u97F3\u8E0F\u677F"), says: (l) => _tIn(l, "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3001\u97F3\u8272\u6697\u4E00\u70B9"), lane: "pedal", draw: { staff: T("una corda"), jianpu: T("una corda"), letters: T("una corda") } }
+  // 字 + 同延音的线和钩（统筹 11-12）
 };
 function dynDepiction(d, notation) {
   const g = SIGNS[`dyn:${d}`].draw[notation];
@@ -5456,7 +5485,7 @@ function dynDepiction(d, notation) {
 
 // src/render/expressions.ts
 var foldsArt = (a) => `art:${a}` in SIGNS;
-var FOLDED_TOKEN_KINDS = /* @__PURE__ */ new Set(["dyn", "hairpin"]);
+var FOLDED_TOKEN_KINDS = /* @__PURE__ */ new Set(["dyn", "hairpin", "pedal"]);
 function stripNote(t) {
   const art2 = t.art?.filter((a) => !foldsArt(a));
   const artChanged = !!t.art && art2.length !== t.art.length;
@@ -5495,7 +5524,7 @@ function foldedMarks(tokens) {
   const out = [];
   let inSlur = false;
   for (const t of tokens) {
-    if (t.kind === "dyn" || t.kind === "hairpin") {
+    if (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "pedal") {
       out.push({ tok: t.id, what: t.kind });
       continue;
     }
@@ -5640,7 +5669,11 @@ function unitsOf(tokens, o) {
       units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
-    if (t.kind === "pedal") return;
+    if (t.kind === "pedal") {
+      flushFull(i);
+      units.push({ kind: "pedal", index: i, which: t.which, act: t.act, w: 0, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
     if (t.kind === "clef") {
       if (i < H || tokens.slice(H, i).every((x) => x.kind === "clef")) return;
       flushFull(i);
@@ -6067,7 +6100,7 @@ function layoutStems(seq, dir, f = LOCAL) {
 }
 
 // src/render/frame/columns.ts
-var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, tail: 4, note: 5 };
+var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, pedal: 3.65, hairpin: 3.7, tail: 4, note: 5 };
 
 // src/render/staff/glyphs.ts
 var TOP_LINE2 = 38;
@@ -6130,7 +6163,7 @@ var stemInput = (q, xOf) => {
   return { seq, dir: q.v2 ? "down" : q.hasV2 ? "up" : percHere ? pm === "one" ? "up" : "kit" : "auto" };
 };
 var restW = (base) => base >= WHOLE ? W.restWhole : base >= TPQ * 2 ? W.restHalf : base >= TPQ ? W.restQuarter : base >= TPQ / 2 ? W.rest8th : base >= TPQ / 4 ? W.rest16th : W.rest32nd;
-var COLUMN_KIND = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
+var COLUMN_KIND = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
 function measureTrack(q) {
   const flagRight = /* @__PURE__ */ new Map();
   {
@@ -6615,6 +6648,163 @@ function layNoteDynamics(c, row, _ch, a) {
     prims.push({ t: "path", d, cls: cl });
   }));
 }
+var PEDAL = { scale: 0.8, gap: 1, textGap: 0.3, hook: 1.1, notch: 0.45, hookIn: 0.3 };
+var PEDAL_GLYPH = { sustain: "\uE650", sostenuto: "\uE659" };
+var PEDAL_UP_GLYPH = "\uE655";
+function layPedals(c) {
+  const { P, prims, dyns, tokens, units } = c;
+  const peds = units.filter((u) => u.kind === "pedal");
+  if (!peds.length) return;
+  const chunks = units.filter((u) => u.kind === "chunk"), lastC = chunks[chunks.length - 1];
+  const jp = c.notation !== "staff", gk = c.glyphScale ?? 1, K = PEDAL.scale;
+  const paperEnd = (fallbackSys) => {
+    if (!lastC) return { sys: fallbackSys, x: c.contentEnd(fallbackSys) - P(PEDAL.hookIn) };
+    return { sys: lastC.system, x: Math.max(c.noteEnd(lastC) + P(0.6), c.contentEnd(lastC.system) - P(PEDAL.hookIn)) };
+  };
+  const at2 = (u) => {
+    const k = units.indexOf(u), nx = units.slice(k + 1).find((v) => v.kind === "chunk");
+    if (nx) return { sys: nx.system, x: c.noteX(nx) };
+    return paperEnd(u.system);
+  };
+  const word = (kind, s2, x, y, tok, cls) => {
+    if (kind === "glyph") {
+      const b = GLYPH_BOX[s2], w = P((b?.[1] ?? 4) * K), h = P((b ? b[3] - b[2] : 2.2) * K);
+      prims.push({ tok, t: "glyph", x, y, ch: s2, cls, size: P(4 * K) });
+      return { w, h };
+    }
+    const role = jp ? "jp-dyn" : "dyn-word", k = jp ? gk : 1, fs = c.tx(role) * k;
+    prims.push({ tok, t: "text", x, y, s: s2, cls: `${cls} ${role}`, size: fs, anchor: "start" });
+    return { w: P(c.mw(role, s2) * k), h: fs * 0.75 };
+  };
+  const nameOf = (w) => w === "soft" ? { kind: "text", s: "una corda" } : jp ? { kind: "text", s: w === "sustain" ? "Ped." : "Sost." } : { kind: "glyph", s: PEDAL_GLYPH[w] };
+  const upOf = () => jp ? { kind: "text", s: "*" } : { kind: "glyph", s: PEDAL_UP_GLYPH };
+  const lanes = /* @__PURE__ */ new Map();
+  const nameH = (w) => {
+    const nm = nameOf(w);
+    return nm.kind === "glyph" ? P((GLYPH_BOX[nm.s] ? -GLYPH_BOX[nm.s][2] : 2.2) * K) : c.tx(jp ? "jp-dyn" : "dyn-word") * (jp ? gk : 1) * 0.75;
+  };
+  const wordSize = (kind, s2) => {
+    if (kind === "glyph") {
+      const b = GLYPH_BOX[s2];
+      return { w: P((b?.[1] ?? 4) * K), h: P((b ? b[3] - b[2] : 2.2) * K) };
+    }
+    const role = jp ? "jp-dyn" : "dyn-word", k = jp ? gk : 1;
+    return { w: P(c.mw(role, s2) * k), h: c.tx(role) * k * 0.75 };
+  };
+  for (const which of PEDAL_KINDS) {
+    const mine = peds.filter((u) => u.which === which);
+    if (!mine.length) continue;
+    const mute = c.ignores.includes(`pedal:${which}`) ? " art-mute" : "", cls = `pedal${mute}`, nm = nameOf(which), nmW = wordSize(nm.kind, nm.s).w;
+    const byRow = /* @__PURE__ */ new Map();
+    const rowOf = (sy) => {
+      const r = c.rowLow(sy);
+      let it = byRow.get(r);
+      if (!it) byRow.set(r, it = { main: [], taken: [], greys: [] });
+      return it;
+    };
+    const hit2 = (sy, index, x, y, w, h) => dyns.push({ index, kind: "pedal", system: c.rowLow(sy), x, y, w, h });
+    const lineSpan = (startIdx, s0, x0, s1, x1, notches2, hookIdx) => {
+      const N = P(PEDAL.notch);
+      for (let sy = s0; sy <= s1; sy++) {
+        const a = sy === s0 ? x0 : c.left(sy) + P(0.3), closes = sy === s1;
+        const ns = [];
+        let minX = a + N;
+        for (const n2 of notches2.filter((m) => m.sys === sy).sort((m, k) => m.x - k.x)) {
+          const x = Math.max(n2.x, minX);
+          ns.push({ x, index: n2.index });
+          minX = x + 2 * N + P(0.2);
+        }
+        const b = closes ? Math.max(x1, ns.length ? ns[ns.length - 1].x + N + P(0.2) : a) : c.rowEnd(sy);
+        const it = rowOf(sy);
+        if (closes) it.taken.push([b - P(0.6), b + P(0.6)]);
+        it.main.push((y) => {
+          const H = P(PEDAL.hook);
+          const pieces = [];
+          let from = a;
+          for (const n2 of ns) {
+            pieces.push(`M${from},${y}L${n2.x - N},${y}`);
+            from = n2.x + N;
+          }
+          pieces.push(`M${from},${y}L${b},${y}`);
+          prims.push({ tok: tokens[startIdx].id, t: "path", d: pieces.join(""), cls });
+          for (const n2 of ns) {
+            prims.push({ tok: tokens[n2.index].id, t: "path", d: `M${n2.x - N},${y}L${n2.x},${y - H}L${n2.x + N},${y}`, cls });
+            dyns.push({ index: n2.index, kind: "pedal", system: c.rowLow(sy), x: n2.x - N - P(0.3), y: y - H - P(0.4), w: 2 * N + P(0.6), h: H + P(0.8) });
+          }
+          if (closes) {
+            prims.push({ ...hookIdx !== void 0 ? { tok: tokens[hookIdx].id } : {}, t: "path", d: `M${b},${y}L${b},${y - H}`, cls });
+            if (hookIdx !== void 0) dyns.push({ index: hookIdx, kind: "pedal", system: c.rowLow(sy), x: b - P(0.6), y: y - H - P(0.4), w: P(1.2), h: H + P(0.8) });
+          }
+        });
+      }
+    };
+    const grey = (u, p, w) => {
+      const sz = wordSize(w.kind, w.s), id = tokens[u.index].id;
+      rowOf(p.sys).greys.push({ x0: p.x, x1: p.x + sz.w, draw: (y) => {
+        const m = word(w.kind, w.s, p.x, y, id, "pedal art-mute");
+        hit2(p.sys, u.index, p.x - P(0.3), y - m.h - P(0.3), m.w + P(0.6), m.h + P(0.7));
+      } });
+    };
+    let down = null, notches = [];
+    const finish = (endSys, endX, hookIdx) => {
+      const d = down;
+      down = null;
+      lineSpan(d.idx, d.sys, d.x + nmW + P(PEDAL.textGap), endSys, endX, notches, hookIdx);
+    };
+    for (const u of mine) {
+      const p = at2(u);
+      if (u.act === "down" || u.act === "change" && !down) {
+        if (down) {
+          grey(u, p, nm);
+          continue;
+        }
+        const it = rowOf(p.sys), id = tokens[u.index].id;
+        it.taken.push([p.x, p.x + nmW]);
+        it.main.push((y) => {
+          const m = word(nm.kind, nm.s, p.x, y, id, cls);
+          hit2(p.sys, u.index, p.x - P(0.3), y - m.h - P(0.3), m.w + P(0.6), m.h + P(0.7));
+        });
+        down = { sys: p.sys, x: p.x, idx: u.index };
+        notches = [];
+        continue;
+      }
+      if (u.act === "change") {
+        notches.push({ sys: p.sys, x: p.x, index: u.index });
+        continue;
+      }
+      if (!down) {
+        grey(u, p, upOf());
+        continue;
+      }
+      finish(p.sys, p.x - P(PEDAL.hookIn), u.index);
+    }
+    if (down) {
+      const end = paperEnd(down.sys);
+      finish(end.sys, end.x, void 0);
+    }
+    const top = Math.max(nameH(which), P(PEDAL.hook)) / P(1);
+    for (const [row, it] of byRow) c.attach(row, "pedal", () => {
+      const subs = [{ taken: [...it.taken], draws: [...it.main] }];
+      const pad = P(0.3), free = (tk, a, b) => tk.every(([x0, x1]) => b + pad <= x0 || a >= x1 + pad);
+      for (const g of [...it.greys].sort((m, k) => m.x0 - k.x0)) {
+        let k = 0;
+        while (k < subs.length && !free(subs[k].taken, g.x0, g.x1)) k++;
+        if (k === subs.length) subs.push({ taken: [], draws: [] });
+        subs[k].taken.push([g.x0, g.x1]);
+        subs[k].draws.push(g.draw);
+      }
+      let prev = lanes.get(row);
+      subs.forEach((sb, k) => {
+        if (!sb.draws.length) return;
+        const dy = c.placeBelow(row, k ? 0.4 : PEDAL.gap, (y) => {
+          for (const d of sb.draws) d(y);
+        }, prev === void 0 ? {} : { min: prev + top + (k ? 0.4 : PEDAL.gap) });
+        prev = dy;
+      });
+      if (prev !== void 0) lanes.set(row, prev);
+    });
+  }
+}
 
 // src/render/frame/carets.ts
 function caretStops(q, o) {
@@ -6682,7 +6872,7 @@ var yAt = (staffTop, d, half) => staffTop + (TOP_LINE2 - d) * half;
 var anchors = (staffTop, half) => ({ top: yAt(staffTop, TOP_LINE2, half), mid: yAt(staffTop, MID_LINE2, half), bottom: yAt(staffTop, BOTTOM_LINE, half) });
 
 // src/render/staff/draw.ts
-var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow"];
+var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow", "pedal"];
 function drawStaff(c, mine) {
   const lyricParts = [];
   const own = mine ? new Set(mine) : null, skip = (r) => own !== null && !own.has(r);
@@ -6726,6 +6916,11 @@ function drawStaff(c, mine) {
     const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
     for (let k = 0; k < Math.abs(f); k++) put(r, { ...T2, t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k] + off), ch, cls });
   };
+  const rowContentEnd = (sy) => {
+    let e = -Infinity;
+    for (const col of cols) if (col.system === sy) e = Math.max(e, col.x + col.w);
+    return e > -Infinity ? Math.min(staffEnd[sy], e) : staffEnd[sy];
+  };
   const ornCache = /* @__PURE__ */ new Map();
   const ornOf = (q, r, noteEnd) => {
     const hit2 = ornCache.get(r);
@@ -6745,12 +6940,18 @@ function drawStaff(c, mine) {
       dyns,
       marks,
       placeAbove,
+      placeBelow: (row, gap, d, o2) => placeBelow(row, gap, d, o2),
       attach,
       right,
       left: (sy) => P(MARGIN + (sy === 0 ? ind0 : indN)),
       tokens: q.tokens,
       units: q.units,
       row: (sy) => rowOf(sy, r, 0),
+      rowLow: (sy) => rowOf(sy, r, q.staves - 1),
+      ignores: q.p.ignores ?? [],
+      rowEnd: (sy) => P(staffEnd[sy]),
+      contentEnd: (sy) => P(rowContentEnd(sy)),
+      // 踏板挂在最下面那张谱表下面（11-1）
       noteX: (ch) => P(ch.x + 0.35),
       noteEnd: noteEnd ?? ((ch) => P(ch.x + 0.35)),
       dynOff: dynOverridden(q.tokens),
@@ -6891,7 +7092,7 @@ function drawStaff(c, mine) {
     };
     for (const u of units) {
       const row = RW(u);
-      if (u.kind === "dyn") continue;
+      if (u.kind === "dyn" || u.kind === "pedal") continue;
       if (u.kind === "groove") {
         layGroove(orn, u);
         continue;
@@ -7166,6 +7367,7 @@ function drawStaff(c, mine) {
       });
     }
     layDynamics(orn);
+    if (!v2) layPedals(orn);
     if (harmony && !v2 && !q.vrt) {
       const fs = tx("chord-tag");
       const theory = harmonyTheory(), placed = new Map((harmony.get(q.p.id) ?? []).map((x) => [x.index, x]));
@@ -7794,7 +7996,7 @@ function keyPrims(k, x, y, size, cls, T2) {
 // src/render/jianpu/measure.ts
 var LEFT_CLEAR = 4;
 var core = (u, nameW) => nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN;
-var COLUMN_KIND2 = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
+var COLUMN_KIND2 = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
 function unitW(u, printKey) {
   switch (u.kind) {
     case "bar":
@@ -7849,7 +8051,7 @@ function layoutHead(x0, items) {
 }
 
 // src/render/jianpu/draw.ts
-var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics"];
+var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "pedal"];
 var jpGlyph = (a) => {
   const d = SIGNS[`art:${a}`]?.draw.jianpu;
   return d && d.kind === "glyph" ? { above: d.above, w: d.w ?? 1, h: d.h ?? 1 } : null;
@@ -7968,6 +8170,15 @@ function drawJianpu(c, mine, mode = "digits") {
       dyns: c.dyns,
       marks,
       placeAbove,
+      placeBelow: (row, gap, d, o2) => placeBelow(row, gap, d, o2),
+      rowLow: (sy) => rowOf(sy, r, 0),
+      ignores: q.p.ignores ?? [],
+      rowEnd: (sy) => P(staffEnd[sy]),
+      contentEnd: (sy) => {
+        let e = -Infinity;
+        for (const col of cols) if (col.system === sy) e = Math.max(e, col.x + col.w);
+        return P(e > -Infinity ? Math.min(staffEnd[sy], e) : staffEnd[sy]);
+      },
       attach: c.attach,
       right: c.right,
       left: (sy) => P(MARGIN + (sy === 0 ? ind0 : c.indN)) + Q(0.6),
@@ -8304,6 +8515,7 @@ function drawJianpu(c, mine, mode = "digits") {
       }
     }
     layDynamics(orn);
+    layPedals(orn);
     if (kit && mode === "x" && q.p.kitNames) layKitLegend(q, r);
     const inkL = measured[r].inkL;
     caretStops(q, { cx: (u) => {
@@ -9354,4 +9566,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-bc44e9c0b6a8.mjs.map
+//# sourceMappingURL=layout-worker-ba34ccb7eeab.mjs.map

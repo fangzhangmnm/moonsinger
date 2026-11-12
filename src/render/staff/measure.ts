@@ -57,7 +57,7 @@ export const stemInput = (q: StaffTrack, xOf: (u: Chunk) => number): { seq: (Ste
 };
 const restW = (base: number) => (base >= WHOLE ? W.restWhole : base >= TPQ * 2 ? W.restHalf : base >= TPQ ? W.restQuarter : base >= TPQ / 2 ? W.rest8th : base >= TPQ / 4 ? W.rest16th : W.rest32nd);
 /** 排版单元的种类 → 框架那张先后表里的种类。 */
-const COLUMN_KIND: Record<Unit["kind"], ColumnKind> = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
+const COLUMN_KIND: Record<Unit["kind"], ColumnKind> = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
 
 /** 量（设计稿第 3.3 节第 3 步）：这条轨的每个排版单元 → 一个列条目。道号是这条轨自己的：第几张谱表 × 2，歌词那一道 +1（框架加上这条轨的道基数）。
  *  inkL = 这个音的墨往对齐线左边伸多远（sp；临时记号 / 括号 / 琶音线）：光标画在它左边（刀 3）。 */

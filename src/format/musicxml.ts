@@ -10,7 +10,7 @@ import { _t } from "../i18n/index.ts";
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
 import { DYNS, withArt, type ClefName, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
-import type { ChordPin } from "../score/song.ts";
+import type { ChordPin, PedalTok, PedalKind } from "../score/song.ts";
 import { pinXmlKind, xmlKindToPin } from "../theory/index.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
@@ -108,6 +108,16 @@ const XML_ART: Record<string, Art> = { accent: "accent", "strong-accent": "marca
 const XML_DYN = (name: string): Dyn | null => ((DYNS as readonly string[]).includes(name) ? (name as Dyn) : /^p{4,}$/.test(name) ? "ppp" : /^f{4,}$/.test(name) ? "fff" : null);
 /** 风格记号（拍子轻重；2026-10-08 深夜 Opus 5.5）：<direction><words>（别的软件照样显示那个字），id = groove.<预设>.<幅度百分数>.<token id>——
  *  我们自己读回来认 id 变回风格记号；别家谱里普通的 <words>（rit. / dolce…）照旧不读。 */
+/** 踏板（11-1，2026-11-12）：延音 = <pedal start|stop|change number="1">；持音 = <pedal sostenuto|stop number="2">（和延音用 number 分开）；弱音 = 文字 una corda / tre corde（带我们的 id）。
+ *  都带一个 <sound …-pedal> 给别的软件放。每一个都自己说清是哪一种、踩下 / 抬起 / 换踏板，不靠前文（设计第 13 节；user 11-12「踏板不能只写switch而是写清楚上下这样才鲁棒」）：
+ *  <pedal> 带 id = pedal.<种类>.<动作>.<token id>，<sound> 写明 yes / no。读：先认我们的 id；没有 = 看同一个方向里的 <sound> 是哪一种踏板；都没有（别家谱只写了 <pedal>）才按 number 和前面的配对。 */
+const PEDAL_ID = "pedal.";
+const pedalXml = (t: PedalTok): string => {
+  const on = t.act !== "up";
+  if (t.which === "soft") return `<direction placement="below"><direction-type><words id="${PEDAL_ID}soft.${on ? "down" : "up"}.${t.id}">${on ? "una corda" : "tre corde"}</words></direction-type><sound soft-pedal="${on ? "yes" : "no"}"/></direction>`;
+  const sus = t.which === "sustain", type = !on ? "stop" : sus ? (t.act === "change" ? "change" : "start") : "sostenuto";
+  return `<direction placement="below"><direction-type><pedal type="${type}" number="${sus ? 1 : 2}" line="yes"${sus ? ' sign="yes"' : ""} id="${PEDAL_ID}${t.which}.${t.act}.${t.id}"/></direction-type><sound ${sus ? "damper" : "sostenuto"}-pedal="${on ? "yes" : "no"}"/></direction>`;
+};
 const GROOVE_ID = "groove.";
 const grooveXml = (t: GrooveTok) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t.style}.${Math.round((t.amount ?? 1) * 100)}.${t.id}${t.shift ? ".2-3" : ""}">${esc(grooveLabel(t))}</words></direction-type></direction>`;
 /** 谱内反复 / 跳转（2026-10-09 Opus 5.5；MusicXML 原生：<barline> 的 <repeat> / <ending>，<direction> 的 segno / coda / words + <sound dacapo / dalsegno / fine / tocoda>）。
@@ -233,6 +243,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
     }
     if (t.kind === "hairpin") { if (ticks >= len) close(false); if (wedgeOpen) cur.push(wedgeXml("stop")); cur.push(wedgeXml(t.dir === "cresc" ? "crescendo" : "diminuendo")); wedgeOpen = true; continue; }
     if (t.kind === "groove") { if (ticks >= len) close(false); cur.push(grooveXml(t)); continue; }
+    if (t.kind === "pedal") { if (ticks >= len) close(false); cur.push(pedalXml(t)); continue; }   // 踏板（11-1）
     // 谱号记号（v0.9.28）：小节中间的 <attributes><clef>。大谱表的那一段里也照写（<clef number="1"> = 上面那一行从这里换谱号）：我们自己画大谱表时不看它（上高音下低音是固定的），
     //   但它是人放的记号——原来这里跳过不写 = 那一段选过大谱表、存一次，中途的换谱号记号就悄悄没了，再改回一行也找不回来（Claude Fable 5.2 2026-11-10 复查 v0.16.88 时查出）。
     if (t.kind === "clef") { if (ticks >= len) close(false); cur.push(`<attributes>${staves === 1 ? clefXml(t.clef) : clefXml(t.clef).replace("<clef>", '<clef number="1">')}</attributes>`); continue; }
@@ -359,6 +370,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
   /** <notations><articulations> → 音上的演奏法（这一版认跳音 / 重音 / 保持 / 呼吸；别的数出来报）。 */
   let pendingAttack: Art | null = null;
   let pendingRamp = false;
+  const pedalNum = new Map<string, PedalKind>();   // 踏板（11-1）：<pedal number> 正踩着的是哪一种（stop 按 number 认是哪一种抬起）
   /** 刚读到、还没挂上音的 <harmony>（v0.16.87，user 11-10「三可以接」）：紧跟着的那个音开头 = 挂上去；中间隔了休止 / 别的声部 / 小节尾 = 丢掉并数出来。 */
   let pendingHarm: ChordPin | null = null;
   const dropHarm = () => { if (pendingHarm) { drop(_t("和弦记号（没标在一个音的开头）")); pendingHarm = null; } };
@@ -488,11 +500,29 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
             }
             if (what) { wordsUsed = true; mark({ kind: "nav", id: 0, what }); }
           }
+          // 踏板（11-1）：<pedal> 按 type / number 认；没有 <pedal> 的认 <sound> 里的 damper / sostenuto / soft-pedal（别的软件只写了声音的、我们自己的弱音）
+          {
+            const peds = c.name === "direction" ? kids(c, "direction-type").flatMap((dt) => kids(dt, "pedal")) : [];
+            const snd = c.name === "sound" ? c : kid(c, "sound");
+            const ped = (which: PedalKind, act: PedalTok["act"]) => mark({ kind: "pedal", id: 0, which, act });
+            const sndWhich: PedalKind | null = snd ? (snd.attrs["sostenuto-pedal"] !== undefined ? "sostenuto" : snd.attrs["damper-pedal"] !== undefined ? "sustain" : null) : null;
+            for (const pe of peds) {
+              const ty = pe.attrs.type, num = pe.attrs.number ?? "1";
+              const own = /^pedal\.(sustain|sostenuto)\.(down|up|change)\.\d+$/.exec(pe.attrs.id ?? "");
+              if (own) { const w = own[1] as PedalKind; ped(w, own[2] as PedalTok["act"]); if (own[2] === "up") pedalNum.delete(num); else pedalNum.set(num, w); continue; }   // 我们自己写的：id 说清了，不看前文
+              if (ty === "start") { ped("sustain", "down"); pedalNum.set(num, "sustain"); }
+              else if (ty === "sostenuto") { ped("sostenuto", "down"); pedalNum.set(num, "sostenuto"); }
+              else if (ty === "change") { ped("sustain", "change"); pedalNum.set(num, "sustain"); }
+              else if (ty === "stop") { ped(sndWhich ?? pedalNum.get(num) ?? "sustain", "up"); pedalNum.delete(num); }   // 哪一种抬起：同一个方向里的 <sound> 写明了就照它；别家谱只写了 <pedal> 才按 number 配对
+            }
+            if (!peds.length && snd) {
+              const v = (k: string) => { const a = snd.attrs[k]; return a === undefined ? null : a === "no" || a === "0" ? "up" : "down"; };
+              for (const [k, which] of [["damper-pedal", "sustain"], ["sostenuto-pedal", "sostenuto"], ["soft-pedal", "soft"]] as const) { const a = v(k); if (a) { ped(which, a); if (which === "soft") wordsUsed = true; } }
+            }
+          }
           // 读不了的方向记号按种类数出来（统筹 2026-11-12 裁定、踏板 11-1 第一笔：原来踏板、<sound> 里的踏板、dolce 这类文字整个静默丢掉，「读不了的」计数是空的）
           {
             const names = c.name === "direction" ? kids(c, "direction-type").flatMap((dt) => kids(dt).map((e) => e.name)) : [];
-            const snd = c.name === "sound" ? c : kid(c, "sound");
-            if (names.includes("pedal") || !!(snd && (snd.attrs["damper-pedal"] || snd.attrs["soft-pedal"] || snd.attrs["sostenuto-pedal"]))) drop(_t("踏板记号"));
             if (names.includes("words") && !wordsUsed) drop(_t("文字记号（如 dolce、rit.）"));
             for (const nm of new Set(names)) if (!DIR_READ.has(nm)) drop(DIR_LABEL[nm]?.() ?? _t("别的方向记号"));
           }

@@ -2,7 +2,7 @@
 // > moved 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第五刀 5-1：从 src/render/staff/units.ts 搬进框架，统筹审第四刀接口第 6 条；纯搬家，算法和浮点先后不变）。
 //   各种单元多宽（字形宽、调号宽、换气留的宽…）是画法的事：由画法交进来（UnitWidths；五线谱那一份在 staff/units.ts STAFF_WIDTHS）。
 import { lyricWidth, type TextMeasure } from "../text/index.ts";
-import { type Token, type NoteTok, type BarTok, type Repeat, type Art, type Dyn, type ClefName, type Staff, WHOLE, TPQ, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, headLen, beatTicks, allPitches } from "../../score/song.ts";
+import { type Token, type NoteTok, type BarTok, type Repeat, type Art, type Dyn, type ClefName, type Staff, type PedalKind, WHOLE, TPQ, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, headLen, beatTicks, allPitches } from "../../score/song.ts";
 import { type Pitch, keyAlter } from "../../score/pitch.ts";
 import { MELISMA_MARK, lyricShow, lyricHang } from "../../score/lyrics.ts";
 import { realFifthsOf } from "../../score/view-in-c.ts";
@@ -68,7 +68,9 @@ export interface GrooveU { kind: "groove"; index: number; w: number; x: number; 
 export interface NavU { kind: "nav"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; slot: number }   // slot：D.C. / D.S. / Fine / To Coda 在小节线前（这小节尾），房子 / Segno / Coda 在后（下一小节头）   // 房子 / 跳转记号（谱内反复）：画在谱上方的反复那一道，不占地方
 export interface ClefU { kind: "clef"; index: number; clef: ClefName; w: number; x: number; system: number; tick: number; staff: Staff }   // 行中间换谱号：画一个小一号的谱号（v0.9.28）
 export interface OttavaU { kind: "ottava"; index: number; w: number; x: number; system: number; tick: number; staff: Staff }   // 八度线：不占地方（线在谱上 / 下，按音的范围画）
-export type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | DynU | HairpinU | GrooveU | NavU | ClefU | OttavaU;
+/** 踏板记号（11-1）：不占横向地方，挂在后面那个音 / 休止上（时刻 = 它的起点）；画在这一位最下面那条谱下面最外一道（共用挂件 ornaments layPedals）。 */
+export interface PedalU { kind: "pedal"; index: number; which: PedalKind; act: "down" | "up" | "change"; w: number; x: number; system: number; tick: number; staff: Staff }
+export type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | DynU | HairpinU | GrooveU | NavU | ClefU | OttavaU | PedalU;
 
 /** 各种单元多宽（sp，量之前的那个宽；画法给）。音那一段：先算临时记号让位的宽 acc，再 chunk = 平常占多宽，按歌词排时 lyric 和它取大，换气 / 出声的换气另加。 */
 export interface UnitWidths {
@@ -140,7 +142,7 @@ export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; 
     if (t.kind === "dyn") { flushFull(i); units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "hairpin") { flushFull(i); units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "groove") { flushFull(i); units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
-    if (t.kind === "pedal") return;   // 踏板记号（11-1）：画是第三步（两种谱共用的挂件），这一步先不建单元
+    if (t.kind === "pedal") { flushFull(i); units.push({ kind: "pedal", index: i, which: t.which, act: t.act, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }   // 踏板记号（11-1）：同力度字，不占横向地方
     // 谱号记号（v0.9.28）。纸头那一处的（这一段手选的谱号，v0.16.88）= 开头的谱号本身（resolveSongLooks 拿它当 start），不另占一个「中途换谱号」的位子
     if (t.kind === "clef") { if (i < H || tokens.slice(H, i).every((x) => x.kind === "clef")) return; flushFull(i); units.push({ kind: "clef", index: i, clef: t.clef, w: W.clef, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "ottava") { flushFull(i); units.push({ kind: "ottava", index: i, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }   // 八度线（v0.9.28）：不占横向地方   // 风格记号（拍子轻重）：同力度字，不占横向地方

@@ -577,6 +577,9 @@ export declare const S: {
     readonly "\u6E10\u5F3A / \u6E10\u5F31": {
         readonly en: "crescendo / diminuendo";
     };
+    readonly 踏板记号: {
+        readonly en: "pedal marks";
+    };
     readonly "\u6539\u5230\u4E86\u6CA1\u663E\u793A\u7684{what}\uFF08\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\uFF09": {
         readonly en: "You changed hidden {what} (articulations & dynamics are hidden right now; undo brings them back)";
     };
@@ -1927,6 +1930,54 @@ export declare const S: {
     readonly "\u623F\u5B50\uFF1A\u7B2C {p} \u904D\u8D70\u8FD9\u91CC": {
         readonly en: "Ending: take this on pass {p}";
     };
+    readonly "\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09": {
+        readonly en: "Press (keep notes ringing)";
+    };
+    readonly "\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09": {
+        readonly en: "Lift (stop the notes)";
+    };
+    readonly "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09": {
+        readonly en: "Change pedal (stop, then keep again)";
+    };
+    readonly 延音踏板: {
+        readonly en: "Sustain pedal";
+    };
+    readonly 持音踏板: {
+        readonly en: "Sostenuto pedal";
+    };
+    readonly 弱音踏板: {
+        readonly en: "Soft pedal";
+    };
+    readonly "\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": {
+        readonly en: "The pedal is already down here: this press does nothing (greyed)";
+    };
+    readonly "\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740\uFF1A\u8FD9\u4E2A\u62AC\u8D77\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": {
+        readonly en: "The pedal isn't down here: this lift does nothing (greyed)";
+    };
+    readonly "\u8E0F\u677F\u8BB0\u53F7\u6302\u5728\u97F3\u4E0A\uFF1A\u8FD9\u5F20\u7EB8\u4E0A\u5149\u6807\u9644\u8FD1\u8FD8\u6CA1\u6709\u97F3": {
+        readonly en: "Pedal marks hang on notes: there are no notes near the cursor on this sheet yet";
+    };
+    readonly "\u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\uFF08\u9009\u533A\u5F00\u5934\u8E29\u4E0B\u3001\u7ED3\u5C3E\u62AC\u8D77\uFF09": {
+        readonly en: "Hold this passage (press at the start of the selection, lift at its end)";
+    };
+    readonly "\u8FD9\u4E2A\u97F3\u4E0A\u5DF2\u7ECF\u6709\u4E86\uFF1A\u518D\u70B9 = \u53BB\u6389": {
+        readonly en: "Already on this note: tap again to remove";
+    };
+    readonly "\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09": {
+        readonly en: " (from the note before the cursor)";
+    };
+    readonly "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": {
+        readonly en: "No effect (greyed): the pedal is already down here";
+    };
+    readonly "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740": {
+        readonly en: "No effect (greyed): the pedal isn't down here";
+    };
+    readonly "\u8FD9\u91CC\u4E4B\u524D\u6CA1\u8E29\u7740\uFF0C\u6362\u8E0F\u677F = \u8E29\u4E0B": {
+        readonly en: "The pedal wasn't down before this, so a change = a press";
+    };
+    readonly 删掉这个踏板记号: {
+        readonly en: "Delete this pedal mark";
+    };
     readonly "8va\uFF1A\u8C31\u4E0A\u753B\u4F4E\u4E00\u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645\u7167\u5199\u7684\u9AD8\u516B\u5EA6\u54CD\uFF09": {
         readonly en: "8va: drawn an octave lower (sounds an octave higher, as written)";
     };
@@ -2125,8 +2176,8 @@ export declare const S: {
     readonly "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A": {
         readonly en: "Long-press and drag = move to another note";
     };
-    readonly "\u987A\u624B\u53BB\u6389\u4E86 {removed} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": {
-        readonly en: "Also removed {removed} dynamics / hairpins that no longer govern any note (undo brings them back)";
+    readonly "\u987A\u624B\u53BB\u6389\u4E86 {n} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u8BB0\u53F7\uFF08\u529B\u5EA6 / \u6E10\u5F3A\u6E10\u5F31 / \u8E0F\u677F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": {
+        readonly en: "Also removed {n} marks that no longer govern any note (dynamics / hairpins / pedals; undo brings them back)";
     };
     readonly "\u7EC8\u70B9\u6539\u6210\u4E86 {d}\uFF08\u53D1\u5939\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09": {
         readonly en: "End changed to {d} (the dynamic after the hairpin)";
@@ -3072,9 +3123,6 @@ export declare const S: {
     };
     readonly "{p}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": {
         readonly en: "{p} goes from one note to the next (before the cursor is a rest, or no note yet)";
-    };
-    readonly "\u987A\u624B\u53BB\u6389\u4E86 {gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": {
-        readonly en: "Also removed {gone} dynamics / hairpins that no longer govern any note (undo brings them back)";
     };
     readonly 跟谱: {
         readonly en: "Follow score";
@@ -4093,9 +4141,6 @@ export declare const S: {
     readonly 大谱表下面一行的换谱号: {
         readonly en: "clef changes on the lower staff of a grand staff";
     };
-    readonly 踏板记号: {
-        readonly en: "Pedal marks";
-    };
     readonly "\u6587\u5B57\u8BB0\u53F7\uFF08\u5982 dolce\u3001rit.\uFF09": {
         readonly en: "Text directions (e.g. dolce, rit.)";
     };
@@ -4810,8 +4855,8 @@ export declare const S: {
     readonly "ppp\u2026fff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F": {
         readonly en: "ppp…fff, crescendo / diminuendo, ramp, swells";
     };
-    readonly "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09": {
-        readonly en: "Phrase end, key / time / clef / ottava / tempo, style (beat weighting)";
+    readonly "\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09\u3001\u53CD\u590D\u3001\u8E0F\u677F": {
+        readonly en: "Key / time / clef / octave lines / tempo, style (beat weights), repeats, pedals";
     };
     readonly 三十二分: {
         readonly en: "Thirty-second";
@@ -5124,6 +5169,12 @@ export declare const S: {
     };
     readonly "\u8C31\u5185\u53CD\u590D / \u8DF3\u8F6C\uFF1A|: :|\u3001\u623F\u5B50 1. 2.\u3001Segno / Coda / D.C. / D.S. / Fine\u2026\uFF08\u70B9\u5F00\u9009\uFF1B\u63D2\u5728\u5149\u6807\u5904\uFF0C\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\uFF09\u3002\u4E0D\u8DE8\u7EB8\uFF1B\u653E\u7684\u65F6\u5019\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C": {
         readonly en: "Score repeats / jumps: |: :|, endings 1. 2., Segno / Coda / D.C. / D.S. / Fine… (tap to choose; inserted at the cursor, next to a barline = turns it into a repeat). Doesn't cross sheets; playback only looks at this sheet's top part";
+    };
+    readonly 踏板: {
+        readonly en: "Pedal";
+    };
+    readonly "\u8E0F\u677F\uFF08\u7559\u4E0D\u7559\u4F4F\u97F3\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A": {
+        readonly en: "Pedal (keep notes ringing or not): press / lift / change from the note before the cursor; the choices follow whether the pedal is down there. With a selection = hold that passage. Tap a pedal mark on the score to change or delete it; long-press and drag to move it";
     };
     readonly "\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868": {
         readonly en: "Grand staff: move this note to the other staff";
@@ -5484,6 +5535,15 @@ export declare const S: {
     };
     readonly 从上一个力度记号均匀变到这一个: {
         readonly en: "Change evenly from the previous dynamic mark to this one";
+    };
+    readonly "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C": {
+        readonly en: "Pedal down: keys you let go keep sounding until the next pedal change or lift";
+    };
+    readonly "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38": {
+        readonly en: "Keys held at the moment of pressing keep sounding; later notes play as usual";
+    };
+    readonly "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3001\u97F3\u8272\u6697\u4E00\u70B9": {
+        readonly en: "Pedal down: play a little softer and darker";
     };
     readonly "{src} \u8F7D\u8FDB\u6765\u4E86\uFF0C\u4F46\u91CC\u9762\u6CA1\u6709\u300C{key}\u300D": {
         readonly en: "{src} loaded, but “{key}” isn't in it";

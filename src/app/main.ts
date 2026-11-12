@@ -16,7 +16,7 @@ import { SIGNS } from "../render/signs.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
-import { setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
+import { PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type PedalTok, setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
 import { songViewOf, setViewInC, setChordTags, setNotation, setMiddleC, setExpressions, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { foldedMarks, type FoldedMark } from "../render/expressions.ts";   // 演奏法和表情不显示时改到 / 写上了它们：轻轻说一句（7-G）
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
@@ -254,6 +254,8 @@ async function adoptLegacyMp3(l: LegacyMp3, title: string, galleryId: string | n
 const curPart = (): PartDef => D.st.song.parts.find((p) => p.id === D.st.at.part) ?? D.st.song.parts[0];
 /** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
 const ignoredFor = (role: string): Mark[] => { const sp = activePerfSpec(D.extras, role); return ignoredArts(performerOf(activeInstrument(D.extras, role)?.engine), sp.gapSec, sp.canSwell); };
+/** 台上这位不认的踏板（插件能力 pedals；11-1）：交给排版画灰，记成「pedal:<种类>」。没人上场 = 不逐个画灰（同演奏法）。 */
+const pedalIgnoredFor = (role: string): string[] => { const pl = performerOf(activeInstrument(D.extras, role)?.engine); return pl ? PEDAL_KINDS.filter((k) => !pl.pedals?.includes(k)).map((k) => `pedal:${k}`) : []; };
 const ignoredHere = (): Mark[] => ignoredFor(curPart().role);
 const MARK_NAME: Record<Mark, string> = { ...ART_NAME, slur: _t("连线"), swellGrow: _t("音内渐强 / 鼓起"), swellFade: _t("音内渐弱"), inhale: _t("出声的换气") };
 /** 刚写上了一个台上那位不认的记号 → 明说（照样写进谱、画灰，出声不受影响）。连线 / 保持在「本来就不留缝」的人那里也是这样（连断，2026-10-08）。 */
@@ -844,7 +846,7 @@ const padHost = createPadHost(padEl, {
   accKey, stackKey, discloseArt, discloseDynOverride, ignoredHere,
   hintRange: () => padHint(), staves: () => lookNow(D.st.at.paper, D.st.at.part)?.staves ?? 1,
   autoBars: { get: () => autoBars, set: (on) => { autoBars = on; view.render(); } },
-  insertMarkHere, insertGrooveHere: () => insertGrooveHere(), openRepeatMenu: () => openRepeatMenu(),
+  insertMarkHere, insertGrooveHere: () => insertGrooveHere(), openRepeatMenu: () => openRepeatMenu(), openPedalMenu: () => openPedalMenu(),
   openInsertClefMenu: (at) => openInsertClefMenu(at), openInsertOttavaMenu: (at) => openInsertOttavaMenu(at),
   showPad: (on) => showPad(on),
 });
@@ -931,7 +933,7 @@ function tellFolded(a: Song, b: Song): void {
       for (const [k, w] of kb) if (!ka.has(k)) added.add(w);
     }
   }
-  const name = (w: FoldedMark["what"]) => (w === "dyn" ? _t("力度记号") : w === "hairpin" ? _t("渐强 / 渐弱") : w === "slur" ? _t("连线") : SIGNS[w].name(lang()));
+  const name = (w: FoldedMark["what"]) => (w === "dyn" ? _t("力度记号") : w === "hairpin" ? _t("渐强 / 渐弱") : w === "pedal" ? _t("踏板记号") : w === "slur" ? _t("连线") : SIGNS[w].name(lang()));
   const fresh = (ws: Set<FoldedMark["what"]>, told: Set<string>) => [...new Set([...ws].map(name))].filter((n) => !told.has(n) && (told.add(n), true));
   const g = fresh(gone, foldTold.gone), n = fresh(added, foldTold.added);
   if (g.length) info(_t("改到了没显示的{what}（演奏法和表情现在不显示；撤销能找回）", { what: g.join(_t("、")) }));
@@ -2148,7 +2150,7 @@ function partViews(): PartView[] {
     // 台上那位的音域（简谱的八度基准按它定；人声 = 插件自报，乐器 = 目录里角色那件乐器的；鼓 / 固定敲一个键的不要；目录没载 = 先没有，partLooks 载好了会重画）
     const nota = notationOfRole(p.role), rg = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p.role);
     const kitNames = nota.perc?.kind === "kit" ? kitNamesOf(p.id) : undefined;   // 整套鼓：用到的鼓件 → 名字（按界面语言；简谱的图例印）
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), ...(rg ? { range: { lo: rg.lo, hi: rg.hi } } : {}), ...(kitNames ? { kitNames } : {}), id: p.id, name: looks.names[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), ...(rg ? { range: { lo: rg.lo, hi: rg.hi } } : {}), ...(kitNames ? { kitNames } : {}), id: p.id, name: looks.names[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...nota, ignores: [...ignoredFor(p.role), ...pedalIgnoredFor(p.role)] };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -2555,6 +2557,63 @@ function openRepeatMenu(): void {
       discloseNav();
     });
 }
+// ── 踏板（11-1，设计稿 ai-docs/20261112-pedals-and-ring-design.md 第 6 节；user 11-12「那么几种踏板也做一下，钢琴也需要」）──
+//   菜单里的字带上效果、不让人去想踏板的机械（user「我觉得有些乐器反而是你踩下去才是让它停吧」——存的、说的都是「留不留住音」）。
+const PEDAL_ACT_LABEL: Record<PedalTok["act"], string> = { down: _t("踩下（留住音）"), up: _t("抬起（止音）"), change: _t("换踏板（先止音、接着留）") };
+const PEDAL_NAME: Record<PedalKind, string> = { sustain: _t("延音踏板"), sostenuto: _t("持音踏板"), soft: _t("弱音踏板") };
+/** 台上这位不认这种踏板 → 一句话；没人上场 = 不说（同演奏法）。 */
+function pedalIgnoredWhy(which: PedalKind): string | null {
+  const role = curPart().role, pl = performerOf(activeInstrument(D.extras, role)?.engine);
+  return pl && !pl.pedals?.includes(which) ? _t("{who}不认{p}：写在谱上了（画灰），出声不受影响", { who: activeCandidateName(D.extras, role) || _t("台上这位"), p: PEDAL_NAME[which] }) : null;
+}
+/** 写了一个踏板记号之后：不起作用的说为什么、台上这位不认的明说（照写、画灰）。 */
+function disclosePedal(which: PedalKind, idle: "already" | "notDown" | undefined): void {
+  const why = pedalIgnoredWhy(which);
+  if (why) { info(why); return; }
+  if (idle === "already") info(_t("这里本来就踩着：这个踩下不起作用（画灰）"));
+  else if (idle === "notDown") info(_t("这里本来没踩着：这个抬起不起作用（画灰）"));
+}
+/** 符号层「踏板」：字跟着光标前那个音那儿现在踩没踩（没踩 = 踩下；踩着 = 抬起 / 换踏板）；那个音上已经有的亮着、再点 = 去掉；有选区 = 把这一段踩住。
+ *  11-1 只有延音一行（持音 / 弱音的出声是 11-2，到时候各加一行）。 */
+function openPedalMenu(): void {
+  const r = padEl.getBoundingClientRect(), which: PedalKind = "sustain", here = pedalHere(D.st, which);
+  if (!here) { info(_t("踏板记号挂在音上：这张纸上光标附近还没有音")); return; }
+  const item = (v: string, label: string, on = false, title = "") => `<button class="btn ctx-item${on ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</button>`;
+  const why = pedalIgnoredWhy(which);
+  const acts: PedalTok["act"][] = here.down ? ["up", "change"] : ["down"];
+  if (here.mark && !acts.includes(here.mark.act)) acts.unshift(here.mark.act);   // 那个音上已经挂着的（哪怕不起作用）也列出来、亮着，点了 = 去掉
+  const body = D.st.sel
+    ? item("span", _t("把这一段踩住（选区开头踩下、结尾抬起）"))
+    : acts.map((a) => item(`act:${a}`, PEDAL_ACT_LABEL[a], here.mark?.act === a, here.mark?.act === a ? _t("这个音上已经有了：再点 = 去掉") : "")).join("");
+  ctxMenu("pedal-menu",
+    `<div class="ctx-hint ctx-what">${esc(PEDAL_NAME[which])}：${esc(SIGNS[`pedal:${which}`].says(lang()))}${D.st.sel ? "" : esc(_t("（从光标前那个音起）"))}</div>` +
+    (why ? `<div class="ctx-hint">${esc(why)}</div>` : "") + body,
+    { x: r.left + r.width / 2, y: r.top - 4 },
+    (v) => {
+      const res = insertPedal(D.st, which, v === "span" ? "down" : (v.slice(4) as PedalTok["act"]));
+      if (res.did === "none") return;
+      update(res.st);
+      if (res.did !== "removed") disclosePedal(which, res.idle);
+    });
+}
+/** 点谱上的踏板记号：换成踩下 / 抬起 / 换踏板，或删掉；顶上说这是什么、不起作用的说为什么。 */
+function openPedalMarkMenu(i: number, at: { x: number; y: number }): void {
+  const toks = tr(D.st), t = toks[i]; if (!t || t.kind !== "pedal") return;
+  const before = pedalDownAt(toks, i, t.which), why = pedalIgnoredWhy(t.which);
+  const idle = t.act === "down" && before ? _t("不起作用（画灰）：这里本来就踩着") : t.act === "up" && !before ? _t("不起作用（画灰）：这里本来没踩着") : t.act === "change" && !before ? _t("这里之前没踩着，换踏板 = 踩下") : "";
+  ctxMenu("pedal-menu",
+    `<div class="ctx-hint ctx-what">${esc(PEDAL_NAME[t.which])}：${esc(SIGNS[`pedal:${t.which}`].says(lang()))}</div>` +
+    (idle ? `<div class="ctx-hint">${esc(idle)}</div>` : "") + (why ? `<div class="ctx-hint">${esc(why)}</div>` : "") +
+    (["down", "up", "change"] as const).map((a) => `<button class="btn ctx-item${t.act === a ? " is-on" : ""}" data-v="act:${a}">${esc(PEDAL_ACT_LABEL[a])}</button>`).join("") +
+    `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("删掉这个踏板记号")}</button>`, at,
+    (v) => {
+      if (v === "del") { update(editMarkAt(D.st, i, null)); return; }
+      const act = v.slice(4) as PedalTok["act"], nx = editMarkAt(D.st, i, { act }); if (nx === D.st) return;
+      update(nx);
+      const now = pedalDownAt(tr(D.st), i, t.which);
+      disclosePedal(t.which, act === "down" && now ? "already" : act === "up" && !now ? "notDown" : undefined);
+    });
+}
 // ── 谱号 / 八度线（v0.9.28；user「谱号的显示模式跟着谱号而不是乐器」「默认自动同意」「加格式同意」「8va可以做了吗」）：只管画，音高数据不动 ──
 const OTTAVAS: readonly (1 | 2 | -1)[] = [1, 2, -1];
 const OTT_HELP: Record<number, string> = { 1: _t("8va：谱上画低一个八度（实际照写的高八度响）"), 2: _t("15ma：谱上画低两个八度"), [-1]: _t("8vb：谱上画高一个八度（实际照写的低八度响）"), 0: _t("到这儿结束八度线") };
@@ -2684,6 +2743,7 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
 function openMarkMenu(i: number, at: { x: number; y: number }): void {
   if (tr(D.st)[i]?.kind === "groove") { openGrooveMenu(i, at); return; }
   if (tr(D.st)[i]?.kind === "nav") { openNavMenu(i, at); return; }
+  if (tr(D.st)[i]?.kind === "pedal") { openPedalMarkMenu(i, at); return; }
   const t = tr(D.st)[i]; if (!t || (t.kind !== "dyn" && t.kind !== "hairpin")) return;
   ui.close();
   // 它管哪几个音（染强调色，菜单收起就清；user「如何不混淆的搞清楚<到底是哪里开始的？」）：渐强渐弱 = 到终点为止；渐到 = 从上一个力度记号后面到这儿；
@@ -2734,7 +2794,7 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
     close();
     if (v === "ramp" && t.kind === "dyn") update(editMarkAt(D.st, i, { ramp: !t.ramp }));
     else if (v === "del") update(editMarkAt(D.st, i, null));
-    else if (v === "toEnd") { const r = moveMarkToEnd(D.st, i); update(r.st); if (r.removed) info(_t("顺手去掉了 {removed} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）", { removed: r.removed })); }
+    else if (v === "toEnd") { const r = moveMarkToEnd(D.st, i); update(r.st); if (r.removed) info(_t("顺手去掉了 {n} 个不再管任何音的记号（力度 / 渐强渐弱 / 踏板；撤销能找回来）", { n: r.removed })); }
     else if (v.startsWith("dyn:")) update(editMarkAt(D.st, i, { value: v.slice(4) as Dyn }));
     else if (v.startsWith("dir:")) update(editMarkAt(D.st, i, { dir: v.slice(4) as "cresc" | "dim" }));
     else if (v.startsWith("to:")) {   // 「变到」：一步撤销；说一句放在了哪

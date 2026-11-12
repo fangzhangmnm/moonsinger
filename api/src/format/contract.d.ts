@@ -59,6 +59,10 @@ export type FormatFile = keyof typeof FORMAT;
  *  顶层多一个可选的 expressions（只写 false = 演奏法和表情不显示；没写 = 显示，冻住）。只管画——播放照写的来，歌里的记号一个不动；PDF 跟着眼前的样子。
  *  旧版本（minor 7）打开 = 不认识这个键、原样带回（未知键直通），照旧全画出来 = 缺功能：minor +1、让旧版本提示一次。归修改锁的「看法」（songLook：锁着能切、锁着期间不写）。
  *  冻结样本 = test/fixtures/format/minor/score-8/。 */
+/** score minor 9（踏板 11-1，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user 11-12「那么几种踏板也做一下，钢琴也需要」；设计 = ai-docs/20261112-pedals-and-ring-design.md）：
+ *  谱里多一种记号：踏板（延音 / 持音 / 弱音 × 踩下 / 抬起 / 换踏板），MusicXML 原生写在每张纸的正本里（<pedal> / <sound …-pedal> / 弱音的 una corda / tre corde），score.json 不变。
+ *  旧版本（minor 8）打开 = <pedal> 不认识（那一版连「读不了的」都不数）、照写的放；存一次踏板就没了，音不丢（每张纸的 MusicXML 按 token 重写，不认识的 MusicXML 元素带不回）
+ *  = 缺功能：minor +1、让旧版本提示一次。冻结样本 = test/fixtures/format/minor/score-9/（样本歌第一张纸带延音踏板）。 */
 export declare const FORMAT_MINOR: Readonly<Record<FormatFile, number>>;
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；

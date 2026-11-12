@@ -47,7 +47,18 @@ export interface OrnCtx {
     dyns: DynHit[];
     marks: MarkHit[];
     placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
+    /** 谱下方贴（踏板用）：同 placeAbove，往下挪到离上面的天际线 gap。 */
+    placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: {
+        min?: number;
+    }) => number;
     attach: (row: number, lane: LaneKind, run: () => void) => void;
+    /** 这条轨第 s 行最下面那一行（五线谱 = 最下面那张谱表，大谱表 = 低音那张；数字行 = 它自己）：踏板挂在这一行下面。 */
+    rowLow: (s: number) => number;
+    /** 台上这位不认的记号（PartView.ignores：演奏法的名字 + 踏板「pedal:sustain」…）：画灰。 */
+    ignores: readonly string[];
+    /** 第 s 行的线画到哪（px；五线 / 数字行的行尾，最后一根小节线）；contentEnd = 这一行内容的右缘（所有声部的列里最右那一列，不过行尾）。踏板的线用。 */
+    rowEnd: (s: number) => number;
+    contentEnd: (s: number) => number;
     /** 这一行的右边界（sp）。 */
     right: number;
     /** 这一行内容最左能到哪（px；7-K ⑤）：五线谱 = 行首竖线；数字行 = 行首竖线往右它自己的行首（同 jianpuLineStart）。挂件续到下一行时从不早于这里起，不越过竖线。 */
@@ -110,3 +121,19 @@ export declare function layNoteDynamics(c: OrnCtx, row: number, _ch: Chunk, a: {
     roll?: boolean;
     atk: readonly ("sfz" | "fp")[];
 }): void;
+/** 踏板（11-1，设计稿 ai-docs/20261112-pedals-and-ring-design.md 第 5 节）：挂件最外一道——这一位最下面那条谱下面（歌词、8vb 再往外）。
+ *  延音 =「Ped.」+ 一条线到抬起处、抬起处往上一个钩；换踏板 = 线上一个尖（先抬再踩）；持音 =「Sost.」、弱音 =「una corda」（细斜体字），同样的线和钩
+ *  （统筹 11-12：三种踏板一个读法，范围看得见；弱音不写「tre corde」、不用「U.C.」）。
+ *  道：三种严格按 延音 → 持音 → 弱音 从里往外，同一种在同一行永远一条基线；这一行没有的那种不占道（统筹 11-12）。离上面最近的东西（级数、歌词、下八度点…）至少 1 个线间距。
+ *  同一行同一种踏板共用一条基线（一次贴：整行的线一样高）；三种踏板各一条，延音最靠谱。跨行 = 每行一段，下一行从行首接着画线（不再写「Ped.」）。
+ *  不起作用的（已经踩着又踩、没踩就抬）照画、画灰（踩下 = 灰「Ped.」、抬起 = 灰「*」）；没踩就「换踏板」= 照踩下画（统筹 11-12：换完本来就是踩着的）。
+ *  台上这位不认这种踏板（PartView.ignores 里有「pedal:<种类>」）= 整条画灰。纸尾还踩着 = 画到这张纸内容的右缘、照样有钩（放的时候纸尾就抬，sustainSpans）。 */
+export declare const PEDAL: {
+    readonly scale: 0.8;
+    readonly gap: 1;
+    readonly textGap: 0.3;
+    readonly hook: 1.1;
+    readonly notch: 0.45;
+    readonly hookIn: 0.3;
+};
+export declare function layPedals(c: OrnCtx): void;

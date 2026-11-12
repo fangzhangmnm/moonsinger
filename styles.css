@@ -1036,6 +1036,8 @@ body:not(.print-look) .staff-svg path.hairpin.hot { stroke: var(--accent); strok
 /* 谱内反复 / 跳转（2026-10-09）：房子括号、Segno / Coda、D.C. / Fine…；不起作用的画灰（.art-mute，通用规则） */
 .staff-svg path.volta { fill: none; stroke: var(--ink); stroke-width: 1.1; }
 .staff-svg path.volta.art-mute { stroke: var(--muted); opacity: .5; }
+.staff-svg path.pedal { fill: none; stroke: var(--ink); stroke-width: 1.1; }   /* 踏板的线 / 尖 / 钩（11-1） */
+.staff-svg path.pedal.art-mute { stroke: var(--muted); opacity: .5; }
 body:not(.print-look) .staff-svg .nav-mark.sel, body:not(.print-look) .staff-svg .nav-sign.sel, body:not(.print-look) .staff-svg .repeat-bar.sel, body:not(.print-look) .staff-svg .nav-sign.hot { fill: var(--accent); }
 .ctx-menu.groove-menu { max-width: min(360px, calc(100vw - 16px)); }
 /* 整段 / 整首移调转调（v0.9.33） */

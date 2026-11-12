@@ -159,6 +159,8 @@ export interface OttavaTok {
  *  which = 延音 / 持音 / 弱音；act = 踩下 / 抬起 / 换踏板（换 = 只有延音有：这一刻留着的音全松、接着踩着）。按声部、按纸算：每张纸开头三种都是抬着的，纸尾还踩着 = 纸尾抬起。
  *  11-1 只接延音（持音、弱音是 11-2）。 */
 export type PedalKind = "sustain" | "sostenuto" | "soft";
+/** 三种踏板（画的先后：延音最靠谱）。 */
+export declare const PEDAL_KINDS: readonly PedalKind[];
 export interface PedalTok {
     kind: "pedal";
     id: number;
@@ -411,6 +413,10 @@ export declare function writeDegree(st: EditorState, degree: number, dir: Dir, m
 export declare function writeRest(st: EditorState): EditorState;
 /** 只选了一个音 / 休止（= 改这个音）：它的下标；不是 = -1。选区里不占时值的记号不算。 */
 export declare function singleSel(st: EditorState): number;
+/** 曲级记号（力度字 / 渐强渐弱 / 风格）跟着它后面那个音（复制、清记号都这么算）。 */
+/** 挂在后面那个音上的记号（力度 / 渐强渐弱 / 风格 / 踏板）：它们记在音的前面、管的是那个音起。一处定义——空纸写音落在它们后面、插小节线让到它们后面、
+ *  复制带上第一个音身上的、符号退格先删、清掉曲级记号、打开时理顺纸头那一串，都按这一份（2026-11-12 踏板加进来时，四处各抄一份的漏了一处）。 */
+export declare const isPhraseMark: (t: Token | undefined) => boolean;
 /** 反复小节线（pad 符号层「反复」菜单）：光标紧挨着一条小节线（前面或后面）= 把它改成反复的（|: 和 :| 撞在同一条上 = :|:）；否则在光标处插一条。
  *  repeat = null = 改回普通小节线。times 只给 :|（一共放几遍，2 = 不写）。 */
 export declare function setRepeatBar(st: EditorState, repeat: Repeat | null, times?: number): EditorState;
@@ -456,6 +462,22 @@ export declare function dynAt(tokens: Token[], i: number): Dyn;
 export declare function markAnchor(st: EditorState): number;
 /** 力度记号放在 markAnchor 那个音上：那儿已经有力度记号 = 改它；value null = 去掉。排在那儿的渐强渐弱前面（「mp <」的顺序）。 */
 export declare function setDynSel(st: EditorState, value: Dyn | null, ramp?: boolean): EditorState;
+/** 踏板（11-1）：第 at 个 token 之前这一种踏板踩着没有——从这条轨这张纸的开头照记号数（不起作用的不改状态；换踏板 = 踩着）。
+ *  默认 = 抬着（乐手的默认 = 11-3，到时候从这里接）。和出声同一个读法（score/pedal.ts sustainSpans）。 */
+export declare function pedalDownAt(toks: readonly Token[], at: number, which: PedalKind): boolean;
+/** 光标处（markAnchor 那个音）这一种踏板：那个音前面踩着没有（down，不算挂在它身上的那个）+ 它身上已经挂着的这一种的记号（mark）。符号层「踏板」小菜单的字跟着它。 */
+export declare function pedalHere(st: EditorState, which: PedalKind): {
+    down: boolean;
+    mark: PedalTok | null;
+} | null;
+/** 符号层「踏板」（11-1，设计稿第 6 节）：踏板记号挂在 markAnchor 那个音上（同力度：写完一个音按 = 从这个音起）。
+ *  那个音上已经有同一种踏板的记号：同一个动作 = 去掉（再按一下撤回），别的动作 = 改成这个。有选区 = 「把这一段踩住」：选区第一个音前面踩下、选区后面抬起（act 不看）。
+ *  回 idle = 写上的那个不起作用（这里本来就踩着又踩 = "already"；本来没踩又抬 = "notDown"）：照写、画灰，调用方说一句为什么。 */
+export declare function insertPedal(st: EditorState, which: PedalKind, act: PedalTok["act"]): {
+    st: EditorState;
+    did: "added" | "changed" | "removed" | "span" | "none";
+    idle?: "already" | "notDown";
+};
 /** 渐强 / 渐弱记号放在 markAnchor 那个音上（从这个音起）：那儿已经有同方向的 = 去掉，反方向的 = 换。 */
 export declare function toggleHairpin(st: EditorState, dir: "cresc" | "dim"): EditorState;
 /** 风格记号（拍子轻重；2026-10-08 深夜 Opus 5.5）：放在光标前那个音上（同力度记号 / 渐强渐弱，markAnchor）——从这个音起到这张纸结尾（或下一个风格记号）。
@@ -599,7 +621,7 @@ export declare function moveCaret(st: EditorState, d: number): EditorState;
 /** 删音之后：不再管任何音的力度记号 / 渐强渐弱「湮灭」（2026-10-08，user「大批量删音的时候会不会堆一堆强度符号…p f删第二个音，会变成，你觉得是p还是f?」）：
  *  两个力度记号之间一个音都没有 = 前面那个不管任何音，去掉，留后面那个（p A f B C 删掉 A、B → 留 f，C 本来就在 f 下面）；
  *  渐强渐弱和它的终点（下一个力度记号 / 下一个渐强渐弱 / 谱尾）之间一个音都没有 = 去掉。返回去掉了几个、各在哪（下标，按原来的串）。 */
-export declare function annihilate(tokens: Token[]): {
+export declare function annihilate(tokens: Token[], before?: readonly Token[]): {
     tokens: Token[];
     removed: number[];
 };
@@ -645,6 +667,8 @@ export declare function editMarkAt(st: EditorState, i: number, change: {
     nav: Exclude<NavWhat, "ending">;
 } | {
     nums: number[];
+} | {
+    act: PedalTok["act"];
 } | null): EditorState;
 /** 符号模式的退格（2026-10-08，user「退格只删符号或者没符号的时候退一步，不删音符」）：
  *  ① 光标前面紧挨着的不占时值的记号（力度 / 渐强渐弱 / 句号 / 中途的调号拍号速度）→ 删最后一个；

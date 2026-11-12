@@ -439,6 +439,7 @@ export class Pad {
       cell("ottava", `<span class="smufl">\uE511</span>`, _t("八度线"), _t("八度线：从光标处起谱上画低（8va / 15ma）或画高（8vb）；有选区 = 这一段；「结束」= 到这儿收。只管画，音高不变")),
       cell("groove", `<span class="big it">${_t("风格")}</span>`, _t("拍子轻重"), _t("风格记号：从光标前那个音起到这张纸结尾，每个音按它在小节里的位置轻一点 / 重一点（古典 / 流行 / 华尔兹 / 进行曲…点开选）；整张纸的声部一起听，各人跟多少按乐器")),
       cell("repeat", `<span class="big">:|</span>`, _t("反复"), _t("谱内反复 / 跳转：|: :|、房子 1. 2.、Segno / Coda / D.C. / D.S. / Fine…（点开选；插在光标处，挨着小节线 = 把那条改成反复的）。不跨纸；放的时候只看这张纸最上面那个声部那一行")),
+      cell("pedal", `<span class="smufl">\uE650</span>`, _t("踏板"), _t("踏板（留不留住音）：从光标前那个音起踩下 / 抬起 / 换踏板，字跟着那儿现在踩没踩；有选区 = 把这一段踩住。点谱上的踏板记号能改、删，长按拖能挪")),
       ...(this.host.staves() === 2 ? [cell("staff", `<span class="big">⇅</span>`, _t("换谱表"), _t("大谱表：这个音换到另一张谱表"))] : []),
     ];
     const byId = new Map(items.map((h) => [/data-sym="([^"]+)"/.exec(h)![1], h]));

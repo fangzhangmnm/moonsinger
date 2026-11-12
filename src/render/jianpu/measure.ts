@@ -18,7 +18,7 @@ import { DIGIT_W, COL_MIN, COL_MIN_SHORT, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, hea
 /** 左边挂了东西的音：前一个音的墨到这个挂件的空 ≥ 挂件到它自己那个音的空的几倍（第八刀，统筹 2026-11-12 定成规矩，不定成数）。 */
 const LEFT_CLEAR = 4;
 const core = (u: Chunk, nameW: number): number => (nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN);
-const COLUMN_KIND: Record<Unit["kind"], ColumnKind> = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
+const COLUMN_KIND: Record<Unit["kind"], ColumnKind> = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
 /** 中途换调 / 换拍号写的那几个字（「1=♭B」「3/4」）大约多宽（sp）。 */
 export const midTextW = (s: string): number => [...s].length * MID_TEXT_CH * MID_TEXT_EM + 0.6;
 /** 不是音的单元在数字行上占多宽（数字行的单位：乘上行里的尺寸比例才是 sp）：小节线一根的宽；换调 / 换拍号 = 写字的宽；谱号 / 八度线（五线谱才有的）= 小灰标的宽；别的（力度、发夹、速度、风格、跳转、写字头）不占地方。 */
