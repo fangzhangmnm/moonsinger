@@ -94,6 +94,10 @@ export declare const accRunW: (gs: readonly {
  *  Bravura 的 ♯ 比文字 ♯ 往下伸得多，按比例的大小会碰到右下角的八度数字（不相撞检查抓到的）。 */
 export declare const SUP_ACC_FIT = 0.88;
 export declare const supAccEm: (gk?: number) => number;
+/** 谱头那一行、中途换调 / 换拍号写的字：每个字的前进宽（字号的倍数；vendor 那款字 Noto Sans SC 量的，test/jianpu.test.ts 核着）。第八刀 8-4：宽从字形算，不按字数估。 */
+export declare const HEAD_CH_EM: Readonly<Record<string, number>>;
+/** 这串字在这个字号下多宽（同字号的单位）；表里没有的字按 0.6。 */
+export declare const headTextW: (s: string, size: number) => number;
 /** 升降号的字（相对这个调的调内音：+1 = ♯、−1 = ♭、0 = ♮）。 */
 export declare const accText: (rel: number) => string;
 export declare const letterW: (step: string) => number;

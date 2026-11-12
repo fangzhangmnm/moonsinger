@@ -13490,7 +13490,6 @@ var BAR_GAP = 0.35;
 var BAR_W_J = 0.36 * FS;
 var JP_BODY = { top: BAR_Y0, bottom: BAR_Y1 };
 var MID_TEXT_EM = 1.4;
-var MID_TEXT_CH = 0.62;
 var BREATH_W = 0.35 + 0.9;
 var INHALE_W = 2.2;
 var CHORD_GAP = 0.25;
@@ -13555,6 +13554,8 @@ var accGlyphsOfText = (t10) => [...t10].map((c10) => c10 === "\u266F" ? ACC_GLYP
 var accRunW = (gs, em2) => gs.reduce((w2, g3, i10) => w2 + (g3.box[1] - g3.box[0]) * em2 / 4 + (i10 ? ACC_SEP : 0), 0);
 var SUP_ACC_FIT = 0.88;
 var supAccEm = (gk = 1) => ACC_GLYPH_EM * (SCRIPT_K * DIGIT_EM * gk) * SUP_ACC_FIT / ACC_EM;
+var HEAD_CH_EM = { "0": 0.555, "1": 0.555, "2": 0.555, "3": 0.555, "4": 0.555, "5": 0.555, "6": 0.555, "7": 0.555, "8": 0.555, "9": 0.555, "=": 0.555, "/": 0.392, A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
+var headTextW = (s10, size) => [...s10].reduce((w2, c10) => w2 + (HEAD_CH_EM[c10] ?? 0.6), 0) * size;
 var accText = (rel) => rel > 0 ? "\u266F".repeat(rel) : rel < 0 ? "\u266D".repeat(-rel) : "\u266E";
 var LETTER_EM = { A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
 var letterW = (step) => (LETTER_EM[step] ?? 0.66) * DIGIT_W / 0.555;
@@ -13900,19 +13901,49 @@ function arpPart(yTop, yBot, T3, cls) {
   return part({ x0: -amp, x1: amp, y0: yTop, y1: yBot }, [{ ...T3, t: "path", d: d3, cls }]);
 }
 
+// src/render/jianpu/keytext.ts
+function keyParts(fifths, minor, base2, middleC) {
+  const m2 = /^([16]=)([A-G])([♭♯]?)$/.exec(keyText(fifths, minor));
+  const pre = m2?.[1] ?? (minor ? "6=" : "1="), letter = m2?.[2] ?? "?", acc = m2?.[3] ?? "";
+  const oct = base2 === null ? "" : String(fromDegree(minor ? 6 : 1, base2, 0, fifths).octave - 4 + middleC);
+  return { pre, acc, letter, oct };
+}
+function keyLayout(k2, size) {
+  const f2 = size / DIGIT_EM, accEm = ACC_GLYPH_EM * f2, gs = accGlyphsOfText(k2.acc), gap = 0.05 * size;
+  const xAcc = headTextW(k2.pre, size) + (k2.acc ? gap : 0), xLetter = xAcc + (k2.acc ? accRunW(gs, accEm) + gap : 0);
+  const xOct = xLetter + headTextW(k2.letter, size) + (k2.oct ? SCRIPT_GAP * f2 : 0);
+  return { xAcc, xLetter, xOct, w: xOct + (k2.oct ? headTextW(k2.oct, size * SCRIPT_K) : 0), accEm };
+}
+function keyPrims(k2, x2, y2, size, cls, T3) {
+  const L2 = keyLayout(k2, size), f2 = size / DIGIT_EM, prims = [];
+  prims.push({ ...T3, t: "text", x: x2, y: y2, s: k2.pre, cls, size, anchor: "start" });
+  if (k2.acc) {
+    const gs = accGlyphsOfText(k2.acc);
+    let gx = x2 + L2.xAcc;
+    const top = y2 - DIGIT_H * f2 - ACC_RISE * f2;
+    for (const g3 of gs) {
+      prims.push({ ...T3, t: "glyph", x: gx - g3.box[0] * L2.accEm / 4, y: top - g3.box[2] * L2.accEm / 4, ch: g3.ch, cls: "jp-acc jp-key-acc", size: L2.accEm });
+      gx += (g3.box[1] - g3.box[0]) * L2.accEm / 4 + 0.08 * f2;
+    }
+  }
+  prims.push({ ...T3, t: "text", x: x2 + L2.xLetter, y: y2, s: k2.letter, cls, size, anchor: "start" });
+  if (k2.oct) prims.push({ ...T3, t: "text", x: x2 + L2.xOct, y: y2 + SUB_DY * f2, s: k2.oct, cls: `${cls} jp-letter-sub jp-key-oct`, size: size * SCRIPT_K, anchor: "start" });
+  return { prims, w: L2.w };
+}
+
 // src/render/jianpu/measure.ts
 var LEFT_CLEAR = 4;
 var core = (u2, nameW) => nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u2.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN;
 var COLUMN_KIND2 = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
-var midTextW = (s10) => [...s10].length * MID_TEXT_CH * MID_TEXT_EM + 0.6;
 function unitW(u2) {
   switch (u2.kind) {
     case "bar":
       return u2.repeat ? BAR_W_J + 1 : u2.style ? BAR_W_J + 0.5 : BAR_W_J;
     case "key":
-      return midTextW("1=\u266DB");
+      return keyLayout(keyParts(u2.fifths, u2.minor, 0, 4), MID_TEXT_EM).w + 0.6;
+    // 中途换调写的字「1=♭B₃」（7-Q）：宽从字形算（第八刀 8-4）；八度数字按一位算
     case "time":
-      return midTextW(`${u2.beats}/${u2.beatType}`);
+      return headTextW(`${u2.beats}/${u2.beatType}`, MID_TEXT_EM) + 0.6;
     case "clef":
     case "ottava":
       return 2.6;
@@ -13943,6 +13974,19 @@ function measureJianpu(q2, k2 = 1, mode = "digits", aux) {
 }
 var jianpuLineStart = (_q, _key, _first, base2, k2 = 1) => base2 + 0.6 * k2;
 var jianpuLyricAnchors = (q2, k2 = 1, aux) => q2.units.filter((u2) => u2.kind === "chunk" && !!u2.lyric && u2.lyric !== MELISMA_MARK).map((u2) => ({ index: u2.index, system: u2.system, cx: u2.x + (0.1 + glyphWOf(u2, aux, q2) / 2) * k2, lyric: u2.lyric, hyph: u2.hyph }));
+
+// src/render/frame/rowhead.ts
+function layoutHead(x0, items) {
+  const out = /* @__PURE__ */ new Map();
+  let x2 = x0;
+  for (const it2 of items) {
+    x2 += it2.gap;
+    out.set(it2.id, x2);
+    x2 += it2.w;
+  }
+  out.set("end", x2);
+  return out;
+}
 
 // src/render/jianpu/draw.ts
 var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics"];
@@ -14082,14 +14126,6 @@ function drawJianpu(c10, mine, mode = "digits") {
     }
     const fewest = fewestDotsBase(shifts), byRange = q2.p.range ? rangeBase(q2.p.range.lo, q2.p.range.hi, tonicOf(q2.head.key)) : null;
     const base2 = byRange !== null && shifts.every((x2) => Math.abs(x2 - byRange) <= 2) ? byRange : fewest;
-    const keyDots = (row2, x0, y2, size, text2, tok) => {
-      if (!base2 || mode !== "digits" || letters) return;
-      const cs2 = [...text2], li2 = cs2.findIndex((ch2) => /[A-G]/.test(ch2));
-      if (li2 < 0) return;
-      const wOf = (ch2) => (/[0-9]/.test(ch2) ? 0.56 : ch2 === "=" ? 0.6 : /[♭♯]/.test(ch2) ? 0.5 : 0.66) * size;
-      const lx2 = x0 + cs2.slice(0, li2).reduce((w2, ch2) => w2 + wOf(ch2), 0) + wOf(cs2[li2]) / 2, r02 = size * 0.075, step = size * 0.2;
-      for (let j2 = 0; j2 < Math.abs(base2); j2++) put2(row2, { ...tok !== void 0 ? { tok } : {}, t: "path", d: dotPath(lx2, base2 > 0 ? y2 - size * 0.82 - r02 - j2 * step : y2 + size * 0.16 + r02 + j2 * step, r02), cls: "jp-dot jp-key-dot" });
-    };
     for (let s10 = 0; s10 < nSys; s10++) {
       const row2 = rowOf(s10, r10, 0);
       if (rows[row2]) {
@@ -14097,21 +14133,20 @@ function drawJianpu(c10, mine, mode = "digits") {
         if (letters) rows[row2].middleC = q2.letters;
       }
     }
-    const row0 = rowOf(0, r10, 0), hx = P2(MARGIN + ind0) + Q2(0.6);
-    const keyS = keyHead(q2.head.key, q2.head.minor), timeS = `${q2.head.time.beats}/${q2.head.time.beatType}`, hs = Q2(HEAD_EM);
-    const headW = (str2) => ([...str2].length * MID_TEXT_CH * HEAD_EM + 0.6) * jk;
+    const row0 = rowOf(0, r10, 0), hx = P2(MARGIN + ind0) + Q2(0.6), hs = Q2(HEAD_EM), printKey = mode === "digits" && !letters;
+    const kp = keyParts(q2.head.key, q2.head.minor, printKey ? base2 : null, c10.look.middleC), keyS = keyHead(q2.head.key, q2.head.minor), timeS = `${q2.head.time.beats}/${q2.head.time.beatType}`;
     const tempoHere = q2.p.id === c10.owner && q2.head.idx.tempo !== void 0;
     c10.attach(row0, "tempo", () => placeAbove(row0, 0.5 * jk, (y2) => {
-      const kw = P2(headW(keyS)), tw2 = P2(headW(timeS));
       const kt = q2.head.idx.key !== void 0 ? tokens[q2.head.idx.key]?.id : void 0, tt2 = q2.head.idx.time !== void 0 ? tokens[q2.head.idx.time]?.id : void 0;
-      if (mode === "x" || letters) keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q2.head.idx.key ?? 0, x: letters ? hx + tw2 : hx, y: y2, size: tx2("key-hint"), s: mode === "x" ? _tIn(o10.locale, "\u65E0\u8C03") : keyS });
-      else {
-        put2(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y: y2, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
-        keyDots(row0, hx, y2, hs, keyS, kt);
-      }
-      put2(row0, { ...tt2 !== void 0 ? { tok: tt2 } : {}, t: "text", x: letters ? hx : hx + kw, y: y2, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
-      if (tempoHere) tempoAt2(orn, row0, MARGIN + ind0 + 0.6 * jk + headW(keyS) + headW(timeS) + 0.6 * jk, q2.head.bpm, "tempo", q2.head.idx.tempo, c10.prevBpm === null || c10.prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > c10.prevBpm ? "up" : "down", y2);
-      if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row0, x: hx - Q2(0.3), y: y2 - hs, w: kw, h: hs * 1.4 });
+      const kw = printKey ? keyLayout(kp, hs).w : 0, tw2 = headTextW(timeS, hs);
+      const chg = c10.prevBpm === null || c10.prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > c10.prevBpm ? "up" : "down";
+      const hintW = !printKey && tempoHere ? headTextW(keyS, tx2("key-hint")) + Q2(0.6) : 0, arrowW = chg ? P2(0.3) + tx2("tempo-change") * 0.7 : 0;
+      const at2 = layoutHead(hx, [...printKey ? [{ id: "key", w: kw, gap: 0 }] : [], { id: "time", w: tw2, gap: printKey ? Q2(0.6) : 0 }, ...tempoHere ? [{ id: "tempo", w: 0, gap: Q2(1.2) + hintW + arrowW }] : []]);
+      if (printKey) for (const pr of keyPrims(kp, at2.get("key"), y2, hs, "jp-head", kt !== void 0 ? { tok: kt } : {}).prims) put2(row0, pr);
+      put2(row0, { ...tt2 !== void 0 ? { tok: tt2 } : {}, t: "text", x: at2.get("time"), y: y2, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
+      if (tempoHere) tempoAt2(orn, row0, at2.get("tempo") / P2(1), q2.head.bpm, "tempo", q2.head.idx.tempo, chg, y2);
+      if (!printKey) keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q2.head.idx.key ?? 0, x: at2.get("time") + tw2 + Q2(0.6), y: y2, size: tx2("key-hint"), s: mode === "x" ? _tIn(o10.locale, "\u65E0\u8C03") : keyS });
+      if (printKey && q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row0, x: at2.get("key") - Q2(0.3), y: y2 - hs, w: kw + Q2(0.6), h: hs * 1.4 });
       for (let i10 = 0; i10 < tokens.length; i10++) {
         const t10 = tokens[i10];
         if (t10.kind === "note" || t10.kind === "rest") break;
@@ -14121,7 +14156,7 @@ function drawJianpu(c10, mine, mode = "digits") {
         c10.clefs.push({ kind: "mid", paper: paper.id, part: q2.p.id, index: i10, system: row0, x: hx, y: ly2 - Q2(1.2), w: lw2, h: Q2(1.6) });
         break;
       }
-      if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row0, x: hx + kw - Q2(0.3), y: y2 - hs, w: tw2, h: hs * 1.4 });
+      if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row0, x: at2.get("time") - Q2(0.3), y: y2 - hs, w: tw2 + Q2(0.6), h: hs * 1.4 });
     }));
     const spots = [];
     lyricParts.push({ r: r10, lrow: (s10) => rowOf(s10, r10, 0), spots });
@@ -14140,19 +14175,16 @@ function drawJianpu(c10, mine, mode = "digits") {
     for (const u2 of units) {
       if (u2.kind === "key") {
         fifths = u2.fifths;
-        const row3 = rowOf(u2.system, r10, 0), s10 = keyHead(u2.fifths, u2.minor), x2 = P2(u2.x) + Q2(0.3);
-        if (mode === "x" || letters) keyHints.push({ ...tokens[u2.index] ? { tok: tokens[u2.index].id } : {}, system: row3, index: u2.index, x: x2, y: Y2(row3, BASE_Y - 0.3), size: tx2("key-hint"), s: mode === "x" ? _tIn(o10.locale, "\u65E0\u8C03") : s10 });
-        else {
-          put2(row3, { tok: tokens[u2.index]?.id, t: "text", x: x2, y: Y2(row3, BASE_Y - 0.3), s: s10, cls: "jp-head jp-mid", size: Q2(MID_TEXT_EM), anchor: "start" });
-          keyDots(row3, x2, Y2(row3, BASE_Y - 0.3), Q2(MID_TEXT_EM), s10, tokens[u2.index]?.id);
-        }
-        marks.push({ index: u2.index, kind: "key", system: row3, x: x2 - Q2(0.3), y: Y2(row3, BASE_Y - 1.6), w: Q2(midTextW(s10)), h: Q2(2.2) });
+        const row3 = rowOf(u2.system, r10, 0), s10 = keyHead(u2.fifths, u2.minor), x2 = P2(u2.x) + Q2(0.3), yb = Y2(row3, BASE_Y - 0.3);
+        if (mode === "x" || letters) keyHints.push({ ...tokens[u2.index] ? { tok: tokens[u2.index].id } : {}, system: row3, index: u2.index, x: x2, y: yb, size: tx2("key-hint"), s: mode === "x" ? _tIn(o10.locale, "\u65E0\u8C03") : s10 });
+        else for (const pr of keyPrims(keyParts(u2.fifths, u2.minor, base2, c10.look.middleC), x2, yb, Q2(MID_TEXT_EM), "jp-head jp-mid", tokens[u2.index] ? { tok: tokens[u2.index].id } : {}).prims) put2(row3, pr);
+        marks.push({ index: u2.index, kind: "key", system: row3, x: x2 - Q2(0.3), y: Y2(row3, BASE_Y - 1.6), w: Q2(keyLayout(keyParts(u2.fifths, u2.minor, 0, 4), MID_TEXT_EM).w + 0.6), h: Q2(2.2) });
         continue;
       }
       if (u2.kind === "time") {
         const row3 = rowOf(u2.system, r10, 0), s10 = `${u2.beats}/${u2.beatType}`, x2 = P2(u2.x) + Q2(0.3);
         put2(row3, { tok: tokens[u2.index]?.id, t: "text", x: x2, y: Y2(row3, BASE_Y - 0.3), s: s10, cls: "jp-head jp-mid", size: Q2(MID_TEXT_EM), anchor: "start" });
-        marks.push({ index: u2.index, kind: "time", system: row3, x: x2 - Q2(0.3), y: Y2(row3, BASE_Y - 1.6), w: Q2(midTextW(s10)), h: Q2(2.2) });
+        marks.push({ index: u2.index, kind: "time", system: row3, x: x2 - Q2(0.3), y: Y2(row3, BASE_Y - 1.6), w: Q2(headTextW(s10, MID_TEXT_EM) + 0.6), h: Q2(2.2) });
         continue;
       }
       if (u2.kind === "bar") {
@@ -33541,7 +33573,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-1ef86f28393a.mjs");
+      return pick(() => "layout-worker-0859933c3925.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-a34d6dc28f15.mjs");
   }
@@ -63621,4 +63653,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8e5f1038f698.mjs.map
+//# sourceMappingURL=moonsinger-395b47ae77ce.mjs.map

@@ -3,7 +3,7 @@
 import { performerOf } from "../src/performers/index.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { percOf, percKindOf } from "../src/gm/percussion.ts";
-import { engrave, type PartView } from "../src/render/engrave.ts";
+import { engrave, type PartView, type Prim } from "../src/render/engrave.ts";
 import { PERC_CLEF, PERC_HEAD } from "../src/render/smufl.ts";
 import { initState, addPart, addPaper, setPartHost, setFocus, headLen, TPQ, DEFAULT_BPM, type Token, type EditorState, type PartDef, type Song } from "../src/score/song.ts";
 import { emptyExtras, activePerfSpec } from "../src/format/project.ts";
@@ -77,7 +77,8 @@ describe("鼓谱：排版", () => {
     }
     const pitchedStaff = at(inG(song([[key(64), key(67)]])), undefined), pitchedJp = at(inG(song([[key(64), key(67)]]), true), undefined);
     assert(!pitchedStaff.keyHints.some((h) => h.s === "无调") && pitchedStaff.prims.some((p) => p.t === "glyph" && /keysig/.test(p.cls ?? "")), "五线谱、有音高：印调号（一个升号），没有「无调」");
-    assert(!pitchedJp.keyHints.length && pitchedJp.prims.some((p) => p.t === "text" && (p as { s: string }).s === "1=G"), "简谱、有音高：谱头印「1=G」");
+    const headTxt = pitchedJp.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-head/.test(p.cls ?? "")).map((p) => p.s).join("");
+    assert(!pitchedJp.keyHints.length && /^1=G\d/.test(headTxt), `简谱、有音高：谱头印「1=G」（7-Q 起后面带八度数字：${headTxt}）`);
   });
   it("一家合租全是鼓件 = 一行五线鼓谱，各在自己那一线（鼓组 = 一家合租）", () => {
     let st = song([[key(60), key(60)], [key(60), key(60)], [key(60)]]);   // 写的音高都一样：各人的线按台上那件

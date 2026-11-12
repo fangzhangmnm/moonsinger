@@ -23,7 +23,10 @@ import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf, glyphWOf } from "./chunk.ts";
 import { midTextW } from "./measure.ts";
+import { headTextW } from "./glyphs.ts";
 import { noteCell, tailW, coreBottom, UL_DROP } from "./note-cell.ts";
+import { keyParts, keyLayout, keyPrims } from "./keytext.ts";
+import { layoutHead } from "../frame/rowhead.ts";
 import { scalePrim } from "../skyline.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_DX, AUG_R,
   BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, BREATH_W, INHALE_W, ACC_W, ARP_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, JP_BODY, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, AUG_Y, lowDotY, LOW_DOT_UNDER, GHOST_K, HEAD_EM, MARK_GAP, MARK_GAP2, STACC_W, STACC_H, STACC_STEP, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, TEN_L, TEN_W, TEN_DY, TEN_STEP, MARCATO_EM, UNSTRESS_EM, BREATH_EM, BREATH_Y, MID_TEXT_CH, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, accText } from "./glyphs.ts";
@@ -126,37 +129,34 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
     for (const u of units) { if (u.kind === "key") f0 = u.fifths; else if (u.kind === "chunk" && u.note && u.pitch && !u.pad) shifts.push(toDegree(u.pitch, tonicOf(f0)).shift); }
     const fewest = fewestDotsBase(shifts), byRange = q.p.range ? rangeBase(q.p.range.lo, q.p.range.hi, tonicOf(q.head.key)) : null;
     const base = byRange !== null && shifts.every((x) => Math.abs(x - byRange) <= 2) ? byRange : fewest;
-    /** 「1=D」那个字母上下画基准的点（上 = 高八度、下 = 低八度；UX 稿第 3 节「每行自己的 1=，字母上下加点」）：x0 = 字的左边、y = 基线、size = 字号（px）；字母的位置按字宽估（半角）。 */
-    const keyDots = (row: number, x0: number, y: number, size: number, text: string, tok: number | undefined) => {
-      if (!base || mode !== "digits" || letters) return;
-      const cs = [...text], li = cs.findIndex((ch) => /[A-G]/.test(ch)); if (li < 0) return;
-      const wOf = (ch: string) => (/[0-9]/.test(ch) ? 0.56 : ch === "=" ? 0.6 : /[♭♯]/.test(ch) ? 0.5 : 0.66) * size;
-      const lx = x0 + cs.slice(0, li).reduce((w, ch) => w + wOf(ch), 0) + wOf(cs[li]!) / 2, r0 = size * 0.075, step = size * 0.2;
-      for (let j = 0; j < Math.abs(base); j++) put(row, { ...(tok !== undefined ? { tok } : {}), t: "path", d: dotPath(lx, base > 0 ? y - size * 0.82 - r0 - j * step : y + size * 0.16 + r0 + j * step, r0), cls: "jp-dot jp-key-dot" });
-    };
     for (let s = 0; s < nSys; s++) { const row = rowOf(s, r, 0); if (rows[row]) { rows[row]!.octBase = base; if (letters) rows[row]!.middleC = q.letters!; } }
-    // 谱头（UX 稿第 3 节）：第一行上方「1=C  4/4」，字也能点（= 调号 / 拍号的点击框，开谱头面板）
-    const row0 = rowOf(0, r, 0), hx = P(MARGIN + ind0) + Q(0.6);
-    const keyS = keyHead(q.head.key, q.head.minor), timeS = `${q.head.time.beats}/${q.head.time.beatType}`, hs = Q(HEAD_EM);   // 样张：谱头那一行 0.773 FS、常规粗细
-    const headW = (str: string) => ([...str].length * MID_TEXT_CH * HEAD_EM + 0.6) * jk;   // 谱头的字占多宽（sp；半角，按字数估）
+    // 谱头（UX 稿第 3 节；第八刀 8-4：印的几样从左到右依次排开、宽从字形算；7-Q：调写成「1=C₄」）：第一行上方「1=C₄  4/4  ♩=…」，字也能点（= 调号 / 拍号的点击框，开谱头面板）
+    const row0 = rowOf(0, r, 0), hx = P(MARGIN + ind0) + Q(0.6), hs = Q(HEAD_EM), printKey = mode === "digits" && !letters;
+    const kp = keyParts(q.head.key, q.head.minor, printKey ? base : null, c.look.middleC), keyS = keyHead(q.head.key, q.head.minor), timeS = `${q.head.time.beats}/${q.head.time.beatType}`;
     const tempoHere = q.p.id === c.owner && q.head.idx.tempo !== undefined;   // 速度写在谱头同一行（UX 稿第 3 节「1=♭A  4/4  ♩=100」）：这张纸最上面在场的那位才写
     c.attach(row0, "tempo", () => placeAbove(row0, 0.5 * jk, (y) => {
-      const kw = P(headW(keyS)), tw = P(headW(timeS));   // 谱头的字跟字的尺子（tx），不跟数字行缩
       const kt = q.head.idx.key !== undefined ? tokens[q.head.idx.key]?.id : undefined, tt = q.head.idx.time !== undefined ? tokens[q.head.idx.time]?.id : undefined;   // 谱头的字指着谱头那两个 token（守卫 4：每个 token 都有图元）
-      if (mode === "x" || letters) keyHints.push({ ...(kt !== undefined ? { tok: kt } : {}), system: row0, index: q.head.idx.key ?? 0, x: letters ? hx + tw : hx, y, size: tx("key-hint"), s: mode === "x" ? _tIn(o.locale, "无调") : keyS });   // 打击乐的行没有调（7-R，统筹定 A：提示照画、字写「无调」，不加括号——括号在这个 app 里是「推定的」；守卫 4 不改）   // 字母谱：拍号顶到了前面，提示放在拍号后面那个空当里（速度照旧让出一个调号的宽；7-K ①）   // 鼓的 X 行 / 字母谱（7-B「调号不写」）：调号不印，编辑器里淡的「1=D」提示（统筹裁定 5-3：调号是真的状态）
-      else { put(row0, { ...(kt !== undefined ? { tok: kt } : {}), t: "text", x: hx, y, s: keyS, cls: "jp-head", size: hs, anchor: "start" }); keyDots(row0, hx, y, hs, keyS, kt); }
-      put(row0, { ...(tt !== undefined ? { tok: tt } : {}), t: "text", x: letters ? hx : hx + kw, y, s: timeS, cls: "jp-head", size: hs, anchor: "start" });   // 字母谱没有「1=」：拍号顶到前面
-      if (tempoHere) tempoAt(orn, row0, MARGIN + ind0 + 0.6 * jk + headW(keyS) + headW(timeS) + 0.6 * jk, q.head.bpm, "tempo", q.head.idx.tempo!, c.prevBpm === null || c.prevBpm === q.head.bpm ? undefined : q.head.bpm > c.prevBpm ? "up" : "down", y);
-      if (q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row0, x: hx - Q(0.3), y: y - hs, w: kw, h: hs * 1.4 });
-      // 轨开头的谱号记号（五线谱才有的；守卫 4，第五刀 5-3）：谱头「1=C」左边一个小灰标「谱号」（不印），点得到（谱号的小菜单里能改 / 删）
+      const kw = printKey ? keyLayout(kp, hs).w : 0, tw = headTextW(timeS, hs);
+      const chg = c.prevBpm === null || c.prevBpm === q.head.bpm ? undefined : q.head.bpm > c.prevBpm ? "up" as const : "down" as const;
+      // 过渡（8-5 之前）：不印的提示还占着原来的地方——速度变了的「↑ / ↓」画在速度字左边、字母谱 / 鼓有速度时调号提示在拍号和速度之间；8-5 改成最后贴、只躲不推后拿掉这两块留白
+      const hintW = !printKey && tempoHere ? headTextW(keyS, tx("key-hint")) + Q(0.6) : 0, arrowW = chg ? P(0.3) + tx("tempo-change") * 0.7 : 0;
+      const at = layoutHead(hx, [...(printKey ? [{ id: "key", w: kw, gap: 0 }] : []), { id: "time", w: tw, gap: printKey ? Q(0.6) : 0 }, ...(tempoHere ? [{ id: "tempo", w: 0, gap: Q(1.2) + hintW + arrowW }] : [])]);   // 字母谱 / 鼓不印调号：拍号顶到前面
+      if (printKey) for (const pr of keyPrims(kp, at.get("key")!, y, hs, "jp-head", kt !== undefined ? { tok: kt } : {}).prims) put(row0, pr);
+      put(row0, { ...(tt !== undefined ? { tok: tt } : {}), t: "text", x: at.get("time")!, y, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
+      if (tempoHere) tempoAt(orn, row0, at.get("tempo")! / P(1), q.head.bpm, "tempo", q.head.idx.tempo!, chg, y);
+      // 鼓的 X 行 / 字母谱（7-B「调号不写」）：调号不印，编辑器里淡的提示（统筹裁定 5-3：调号是真的状态；打击乐的行写「无调」，7-R）。不印的不占宽、不推印的：
+      //   写在拍号后面（有速度 = 拍号和速度之间留给它的那一块；8-5 再统一改成最后贴、只躲不推）
+      if (!printKey) keyHints.push({ ...(kt !== undefined ? { tok: kt } : {}), system: row0, index: q.head.idx.key ?? 0, x: at.get("time")! + tw + Q(0.6), y, size: tx("key-hint"), s: mode === "x" ? _tIn(o.locale, "无调") : keyS });
+      if (printKey && q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row0, x: at.get("key")! - Q(0.3), y: y - hs, w: kw + Q(0.6), h: hs * 1.4 });
+      // 轨开头的谱号记号（五线谱才有的；守卫 4，第五刀 5-3）：谱头那一行上面一个小灰标「谱号」（不印），点得到（谱号的小菜单里能改 / 删）
       for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i]!; if (t.kind === "note" || t.kind === "rest") break; if (t.kind !== "clef") continue;
-        const lw = Q(2.6), ly = y - hs;   // 7-K ②：谱头那一行上面一行、左对齐行首（原来在「1=C」左边往左写，写进了名字那一栏、压着行首竖线和色条）；上下差一个谱头字号
+        const lw = Q(2.6), ly = y - hs;   // 7-K ②：谱头那一行上面一行、左对齐行首；上下差一个谱头字号
         put(row0, { tok: t.id, t: "text", x: hx, y: ly, s: _tIn(o.locale, "谱号"), cls: "jp-staffonly ann", size: Q(1.0), anchor: "start" });
         c.clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: i, system: row0, x: hx, y: ly - Q(1.2), w: lw, h: Q(1.6) });
         break;
       }
-      if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row0, x: hx + kw - Q(0.3), y: y - hs, w: tw, h: hs * 1.4 });
+      if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row0, x: at.get("time")! - Q(0.3), y: y - hs, w: tw + Q(0.6), h: hs * 1.4 });
     }));
     const spots: LyricSpot[] = []; lyricParts.push({ r, lrow: (s) => rowOf(s, r, 0), spots });
     const ign = new Set(q.p.ignores ?? []);   // 台上这位不认的记号：照画、画灰（纪律）
@@ -175,16 +175,16 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
     for (const u of units) {
       if (u.kind === "key") {   // 中途换调：在那一点写新的「1=D」（UX 稿第 3 节）
         fifths = u.fifths;
-        const row = rowOf(u.system, r, 0), s = keyHead(u.fifths, u.minor), x = P(u.x) + Q(0.3);
-        if (mode === "x" || letters) keyHints.push({ ...(tokens[u.index] ? { tok: tokens[u.index]!.id } : {}), system: row, index: u.index, x, y: Y(row, BASE_Y - 0.3), size: tx("key-hint"), s: mode === "x" ? _tIn(o.locale, "无调") : s });   // 鼓 / 字母谱：只给提示（同谱头）
-        else { put(row, { tok: tokens[u.index]?.id, t: "text", x, y: Y(row, BASE_Y - 0.3), s, cls: "jp-head jp-mid", size: Q(MID_TEXT_EM), anchor: "start" }); keyDots(row, x, Y(row, BASE_Y - 0.3), Q(MID_TEXT_EM), s, tokens[u.index]?.id); }
-        marks.push({ index: u.index, kind: "key", system: row, x: x - Q(0.3), y: Y(row, BASE_Y - 1.6), w: Q(midTextW(s)), h: Q(2.2) });
+        const row = rowOf(u.system, r, 0), s = keyHead(u.fifths, u.minor), x = P(u.x) + Q(0.3), yb = Y(row, BASE_Y - 0.3);
+        if (mode === "x" || letters) keyHints.push({ ...(tokens[u.index] ? { tok: tokens[u.index]!.id } : {}), system: row, index: u.index, x, y: yb, size: tx("key-hint"), s: mode === "x" ? _tIn(o.locale, "无调") : s });   // 鼓 / 字母谱：只给提示（同谱头）
+        else for (const pr of keyPrims(keyParts(u.fifths, u.minor, base, c.look.middleC), x, yb, Q(MID_TEXT_EM), "jp-head jp-mid", tokens[u.index] ? { tok: tokens[u.index]!.id } : {}).prims) put(row, pr);   // 中途换调：「1=D₄」（7-Q）
+        marks.push({ index: u.index, kind: "key", system: row, x: x - Q(0.3), y: Y(row, BASE_Y - 1.6), w: Q(keyLayout(keyParts(u.fifths, u.minor, 0, 4), MID_TEXT_EM).w + 0.6), h: Q(2.2) });
         continue;
       }
       if (u.kind === "time") {
         const row = rowOf(u.system, r, 0), s = `${u.beats}/${u.beatType}`, x = P(u.x) + Q(0.3);
         put(row, { tok: tokens[u.index]?.id, t: "text", x, y: Y(row, BASE_Y - 0.3), s, cls: "jp-head jp-mid", size: Q(MID_TEXT_EM), anchor: "start" });
-        marks.push({ index: u.index, kind: "time", system: row, x: x - Q(0.3), y: Y(row, BASE_Y - 1.6), w: Q(midTextW(s)), h: Q(2.2) });
+        marks.push({ index: u.index, kind: "time", system: row, x: x - Q(0.3), y: Y(row, BASE_Y - 1.6), w: Q(headTextW(s, MID_TEXT_EM) + 0.6), h: Q(2.2) });
         continue;
       }
       if (u.kind === "bar") {   // 小节线：单线 / 段落线（双细）/ 终止线（细 + 粗）；反复的点 = 后面几步

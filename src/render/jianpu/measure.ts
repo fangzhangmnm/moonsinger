@@ -9,9 +9,10 @@ import type { ColEntry } from "../frame/arrange.ts";
 import type { Unit, Chunk } from "../frame/units.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, lettersOf, glyphWOf } from "./chunk.ts";
 import { noteCell } from "./note-cell.ts";
+import { keyParts, keyLayout } from "./keytext.ts";
 export type { JianpuTrack, JianpuMode, JianpuAux } from "./chunk.ts";
 import { SP_DEFAULTS } from "../spacing.ts";
-import { DIGIT_W, COL_MIN, COL_MIN_SHORT, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH } from "./glyphs.ts";
+import { DIGIT_W, COL_MIN, COL_MIN_SHORT, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, headTextW } from "./glyphs.ts";
 
 /** 这一段（第一个字形）这一列至少多宽（数字行的单位；样张：四分 / 八分 = 数字宽 + 一点缝，十六分及更短只占字宽——「密的声部自己挤紧」；和弦名 = 名字的宽 + 两边的缝）。 */
 /** 左边挂了东西的音：前一个音的墨到这个挂件的空 ≥ 挂件到它自己那个音的空的几倍（第八刀，统筹 2026-11-12 定成规矩，不定成数）。 */
@@ -24,8 +25,8 @@ export const midTextW = (s: string): number => [...s].length * MID_TEXT_CH * MID
 function unitW(u: Unit): number {
   switch (u.kind) {
     case "bar": return u.repeat ? BAR_W_J + 1.0 : u.style ? BAR_W_J + 0.5 : BAR_W_J;
-    case "key": return midTextW("1=♭B");
-    case "time": return midTextW(`${u.beats}/${u.beatType}`);
+    case "key": return keyLayout(keyParts(u.fifths, u.minor, 0, 4), MID_TEXT_EM).w + 0.6;   // 中途换调写的字「1=♭B₃」（7-Q）：宽从字形算（第八刀 8-4）；八度数字按一位算
+    case "time": return headTextW(`${u.beats}/${u.beatType}`, MID_TEXT_EM) + 0.6;
     case "clef": case "ottava": return 2.6;   // 小灰标「谱号」/「8va」写得下（字号 1 sp，两个汉字 / 四个字母）
     default: return 0;
   }

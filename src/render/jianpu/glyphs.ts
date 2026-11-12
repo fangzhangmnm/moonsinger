@@ -97,6 +97,10 @@ export const accRunW = (gs: readonly { box: readonly number[] }[], em: number): 
  *  Bravura 的 ♯ 比文字 ♯ 往下伸得多，按比例的大小会碰到右下角的八度数字（不相撞检查抓到的）。 */
 export const SUP_ACC_FIT = 0.88;
 export const supAccEm = (gk = 1): number => (ACC_GLYPH_EM * (SCRIPT_K * DIGIT_EM * gk) * SUP_ACC_FIT) / ACC_EM;
+/** 谱头那一行、中途换调 / 换拍号写的字：每个字的前进宽（字号的倍数；vendor 那款字 Noto Sans SC 量的，test/jianpu.test.ts 核着）。第八刀 8-4：宽从字形算，不按字数估。 */
+export const HEAD_CH_EM: Readonly<Record<string, number>> = { "0": 0.555, "1": 0.555, "2": 0.555, "3": 0.555, "4": 0.555, "5": 0.555, "6": 0.555, "7": 0.555, "8": 0.555, "9": 0.555, "=": 0.555, "/": 0.392, A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
+/** 这串字在这个字号下多宽（同字号的单位）；表里没有的字按 0.6。 */
+export const headTextW = (s: string, size: number): number => [...s].reduce((w, c) => w + (HEAD_CH_EM[c] ?? 0.6), 0) * size;
 /** 升降号的字（相对这个调的调内音：+1 = ♯、−1 = ♭、0 = ♮）。 */
 export const accText = (rel: number): string => (rel > 0 ? "♯".repeat(rel) : rel < 0 ? "♭".repeat(-rel) : "♮");
 /** 字母谱（7-B；user「下标放数字上标放升降号…我们只要保证用tracker的人能看懂就行了」）：大写字母，右上角挂升降号、右下角挂八度数字（中央 C 默认叫 C4，歌里可以改成 C3 / C5）。

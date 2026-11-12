@@ -184,15 +184,26 @@ describe("简谱数字行", () => {
     const font = parseTtf(new Uint8Array(zlib.gunzipSync(fs.readFileSync(new URL("../vendor/fonts/sans.ttf.gz", import.meta.url)))));
     for (const ch of ["♭", "♯"]) eq(CHORD_CH_EM[ch], font.advance(font.glyphId(ch.codePointAt(0)!)) / font.unitsPerEm, `和弦名宽表里的 ${ch} = 字体里的前进宽`);
   });
-  it("八度基准按乐器音域（第五刀 5-4，UX 稿第 3 节）：宿主给了音域 = 按音域；没给 = 写的音「点最少」；按音域要三个点以上 = 极端，退回点最少；基准画在「1=」那个字母上下", () => {
+  it("八度基准按乐器音域（第五刀 5-4，UX 稿第 3 节）：宿主给了音域 = 按音域；没给 = 写的音「点最少」；按音域要三个点以上 = 极端，退回点最少；基准写成「1=C₄」的八度数字（7-Q，取代字母上下的点）", () => {
     eq(rangeBase(57, 76, 0), 0, "人声 A3–E5 在 C 调 = 0");
     eq(rangeBase(28, 55, 0), -2, "低音 E1–G3 = 低两组");
     const low = [n(P("G", 2)), n(P("A", 2)), n(P("B", 2)), n(P("C", 3))];
-    const keyDots = (L: ReturnType<typeof lay>["L"]) => L.prims.filter((p) => p.t === "path" && /jp-key-dot/.test(p.cls ?? "")).length;
+    const keyOct = (L: ReturnType<typeof lay>["L"]) => L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-key-oct/.test(p.cls ?? "")).map((p) => p.s).join(",");
     const voice = lay(low, undefined, { range: { lo: 57, hi: 76 } }).L, plain = lay(low).L;
-    eq(voice.systems[0]!.octBase, 0, "人声的音域 = 基准 0（这几个低音各两个点）"); eq(keyDots(voice), 0, "基准 0 = 字母上下不画点");
-    eq(plain.systems[0]!.octBase, -2, "没给音域 = 点最少（低两组）"); eq(keyDots(plain), 2, "低两组 = 「1=C」的 C 下面两个点");
+    eq(voice.systems[0]!.octBase, 0, "人声的音域 = 基准 0（这几个低音各两个点）"); eq(keyOct(voice), "4", "基准 0 = 「1=C₄」（不带点的 1 = 中央 C）");
+    eq(plain.systems[0]!.octBase, -2, "没给音域 = 点最少（低两组）"); eq(keyOct(plain), "2", "低两组 = 「1=C₂」");
+    assert(!voice.prims.some((p) => p.t === "path" && /jp-key-dot/.test(p.cls ?? "")), "「1=」上下不再画点（7-Q）");
     eq(lay([n(P("C", 1)), n(P("C"))], undefined, { range: { lo: 57, hi: 76 } }).L.systems[0]!.octBase, fewestDotsBase([-3, 0]), "按音域要三个点（C1）= 极端，退回点最少");
+  });
+  it("7-Q：「1=」后面 = 字母 + 右下角八度数字（不带点的 1 是哪个音）；跟着这首歌中央 C 叫 C 几；升降号在字母前面（Bravura）；中途换调同样写", async () => {
+    const { keyParts } = await import("../src/render/jianpu/keytext.ts");
+    const k = (f: number, minor: boolean, base: number, mc = 4) => { const p = keyParts(f, minor, base, mc); return `${p.pre}${p.acc}${p.letter}${p.oct}`; };
+    eq(k(0, false, 0), "1=C4", "C 调、基准 0 = 1=C₄"); eq(k(1, false, 0), "1=G4", "G 调 = 1=G₄"); eq(k(-2, false, -1), "1=♭B3", "♭B 调、低一组 = 1=♭B₃（升降号在字母前面）");
+    eq(k(0, false, 0, 3), "1=C3", "中央 C 叫 C3 的歌 = 1=C₃"); eq(k(0, false, 0, 5), "1=C5", "叫 C5 = 1=C₅");
+    eq(k(0, true, 0), "6=A4", "小调写 6=：不带点的 6 = 这一组里的 la");
+    const L = lay([n(P("C")), n(P("D"))], (s) => ({ ...s, papers: s.papers.map((pp) => ({ ...pp, tracks: Object.fromEntries(Object.entries(pp.tracks).map(([id, ts]) => [id, ts.map((t) => (t.kind === "key" ? { ...t, fifths: -2 } : t))])) })) })).L;
+    assert(L.prims.some((p) => p.t === "glyph" && /jp-key-acc/.test(p.cls ?? "") && p.ch === "\u{E260}"), "谱头的 ♭ 是 Bravura 的字形");
+    assert(L.prims.some((p) => p.t === "text" && /jp-key-oct/.test(p.cls ?? "")), "谱头写了八度数字");
   });
   it("一小节里等距（第五刀 5-4 ⑦；UX 稿第 8 节验收）：扬琴的和弦折成名字 + 琶音让位之后，同一页上手鼓那一声部同一小节里相邻八分的间距相等（几种行宽都是）", () => {
     const st0 = initState(), paper = st0.song.papers[0]!, p0 = st0.song.parts[0]!, head = paper.tracks[p0.id]!.slice(0, 3);
