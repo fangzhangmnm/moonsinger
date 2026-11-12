@@ -43,3 +43,23 @@ describe("图标接线", () => {
     assert(!/<link rel="icon"[^>]*icon\.svg/.test(html), "icon.svg 挂上 rel=icon 会盖掉手画的 32 档");
   });
 });
+
+/** 一份 svg / html 里的 symbol id。 */
+const symbolIds = (text: string) => new Set([...text.matchAll(/<symbol id="([^"]+)"/g)].map((m) => m[1]!));
+describe("页面内联的图标齐全（7-A：谱种钮的图标进了 assets、没贴进页面 = 线上空白）", () => {
+  it("index.html 里内联的图标 ⊇ assets/icons.svg + 本地补丁（构建脚本每次都重贴：scripts/build.sh → inline-sprites.py）", () => {
+    const page = symbolIds(read("index.html")), want = [...symbolIds(read("assets/icons.svg")), ...(fs.existsSync(at("assets/icons-local.svg")) ? symbolIds(read("assets/icons-local.svg")) : [])];
+    const miss = want.filter((n) => !page.has(n));
+    assert(!miss.length, `页面里少了这些图标（跑 python3 scripts/inline-sprites.py，或 npm run build）：${miss.join(" ")}`);
+  });
+  it("源码里写死的每个图标名都在页面内联的图标集里（icon / iconHtml / ic(\"…\")、href=\"#…\"、icon: \"…\"）", () => {
+    const page = symbolIds(read("index.html")), names = new Set<string>();
+    for (const f of fs.readdirSync(at("src"), { recursive: true }).filter((x) => /\.ts$/.test(x))) {
+      const t = read(`src/${f}`);
+      for (const m of t.matchAll(/\b(?:ic|icon|svgIcon|iconHtml)\(\s*"([a-z0-9-]+)"|href="#([a-z0-9-]+)"|\bicon:\s*"([a-z0-9-]+)"/g)) names.add((m[1] ?? m[2] ?? m[3])!);
+    }
+    assert(names.size > 20, `量得到东西（${names.size} 个名字）`);
+    const miss = [...names].filter((n) => !page.has(n));
+    assert(!miss.length, `源码用了、页面里没有的图标：${miss.join(" ")}`);
+  });
+});

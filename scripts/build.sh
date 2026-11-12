@@ -6,6 +6,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ENTRY="./src/app/main.ts"
+
+# 图标：assets/icons.svg（+ 本地补丁 icons-local.svg）每次构建都重新贴进 index.html（7-A：谱种钮的「1 / ♪」进了 assets、没贴进页面 = 线上那颗钮是空白的；
+#   原来「贴」是手工步骤、靠人记得。现在构建自己做；test/icon-wiring.test.ts 守着页面里的图标齐全）
+python3 scripts/inline-sprites.py >/dev/null
 ESBUILD_VER="0.24.0"
 ESBUILD="./tools/esbuild/esbuild"
 
