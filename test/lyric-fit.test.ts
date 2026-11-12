@@ -116,7 +116,7 @@ describe("歌词不越过这一行的左右边界（7-E）", () => {
   /** 两位歌手（第一位带词：每个四分音符一个短词，first / last 换成长词）→ 排一遍，回每个字的墨 [x0, x1]、它在第几行、那一行左边那根竖线。 */
   const run = (notation: "staff" | "jianpu", rhythm: boolean, words: (i: number, n: number) => string) => {
     let st = initState(); st = addPart(st, { id: "P2", role: "r2", mic: "m2" }, st.song.papers[0]!.id);
-    const N = 40; let id = 8100;
+    const N = 60; let id = 8100;   // 60 个：最后一行很短会并进上一行（7-F），40 个的时候简谱并完只剩一行，测不到行首的长词
     const body = Array.from({ length: N }, (_, i): Token => ({ kind: "note", id: id++, pitch: { step: "E", alter: 0, octave: 5 }, dur: TPQ, lyric: words(i, N) }) as Token);
     const p0 = st.song.papers[0]!, a = st.song.parts[0]!.id;
     let song = { ...st.song, ...(rhythm ? {} : { lyricFit: "lyrics" as const }), papers: [{ ...p0, tracks: { ...p0.tracks, [a]: [...p0.tracks[a]!.slice(0, 3), ...body] } }] };

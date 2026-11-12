@@ -5128,10 +5128,11 @@ var JP_COZY = 3.6 / (2.5 * 1.75);
 var JP_COMPACT = 3 / (2.5 * 1.25);
 var mockSpring = (q) => (5 + 6.8 * Math.log2(1 + 4 * q)) * 2.5 / 22;
 var jianpuSprings = (k) => [[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]].map(([t, w]) => [t, w * k]);
-var JIANPU_PAPER = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } };
+var LAST_MERGE = { short: 0.3, squeeze: 0.3 };
+var JIANPU_PAPER = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } };
 var PAPER_PARAMS = {
   // 五线谱（第六刀，user 看了对照后定的，纪要第 91 节）：一行最多拉宽约 1.3 倍、放不满就让右边空着；让位时整小节一起放宽（和简谱一致）。折行可以留孤行（user「我觉得可以留」「倾向紧凑」）
-  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true } },
+  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
   //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
   //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，text/style.ts LYRIC_LOOK）
@@ -6162,7 +6163,17 @@ function measureTrack(q) {
 }
 var clefW = (q) => q.fFam ? W.fClef : W.gClef;
 var lineStartWidth = (q, key, first, base) => base + 0.6 + clefW(q) + 1 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
-var lyricAnchors = (q) => q.units.filter((u) => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + 0.6, lyric: u.lyric, hyph: u.hyph }));
+var NOTEHEAD_X = 0.35;
+function noteheadW(q, c) {
+  const percHere = !!q.pmode && !!q.p.perc, k = c.base >= WHOLE ? 2 : c.base >= TPQ * 2 ? 1 : 0;
+  if (!!q.p.xHead && !percHere || !!c.whisper) return k === 2 ? W.noteheadXWhole : k === 1 ? W.noteheadXHalf : W.noteheadXBlack;
+  if (percHere && c.pitch) {
+    const pi = percAt(q, c.pitch), hd = (pi?.head === "custom" && pi.smufl ? PERC_SMUFL[pi.smufl] : void 0) ?? PERC_HEAD[pi?.head ?? "normal"] ?? PERC_HEAD.normal;
+    return hd.w[k];
+  }
+  return k === 2 ? W.noteheadWhole : W.noteheadBlack;
+}
+var lyricAnchors = (q) => q.units.filter((u) => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + NOTEHEAD_X + noteheadW(q, u) / 2, lyric: u.lyric, hyph: u.hyph }));
 
 // src/singer/packs.gen.ts
 var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
@@ -6786,7 +6797,7 @@ function drawStaff(c, mine) {
     const RW = (u) => rowOf(u.system, r, u.staff - 1);
     const lyricRow = (s2) => rowOf(s2, r, q.staves - 1);
     const navMute = (i) => navWhy(song, paper, q.p.id, tokens[i]) ? " art-mute" : "";
-    const nhX = (c2) => P(c2.x + 0.35);
+    const nhX = (c2) => P(c2.x + NOTEHEAD_X);
     const pm = pmode[r], percHere = !!pm && !!q.p.perc;
     const xHead = !!q.p.xHead && !percHere;
     const percHead = (c2, p) => {
@@ -6794,7 +6805,7 @@ function drawStaff(c, mine) {
       return { ch: hd.ch[k], w: hd.w[k] };
     };
     const xOf = (c2) => xHead || !!c2.whisper;
-    const nhW = (c2) => P(xOf(c2) ? c2.base >= WHOLE ? W.noteheadXWhole : c2.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack : percHere && c2.pitch ? percHead(c2, c2.pitch).w : c2.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+    const nhW = (c2) => P(noteheadW(q, c2));
     const whisperMute = (q.p.ignores ?? []).includes("whisper");
     const clsOf = (c2) => [c2.ghost ? "ghost" : "", c2.pad ? "pad-rest" : ""].filter(Boolean).join(" ") || void 0;
     const tokOf = (c2) => c2.index >= 0 && !c2.pad ? tokens[c2.index]?.id : void 0;
@@ -8401,6 +8412,15 @@ function arrangeColumns(cols, tracks, o) {
     for (let j = S2; j > 0; j = prev[j]) starts.push(segStart(prev[j]));
     lineFrom.push(...starts.reverse());
   }
+  let mergedLast = false;
+  if (brk !== Infinity && o.lastMerge && lineFrom.length >= 2) {
+    const k = lineFrom.length - 1, from = lineFrom[k - 1], last = lineFrom[k], M = o.lastMerge;
+    const oneBar = segs.filter((e) => e > last).length <= 1, short = oneBar || lineW(last, n2, 0) < M.short * (brk - o.lineStart(last, false));
+    if (short && lineW(from, n2, -M.squeeze) <= brk - o.lineStart(from, from === 0) + 1e-6) {
+      lineFrom.pop();
+      mergedLast = true;
+    }
+  }
   for (const k of lineFrom) sysStarts.push(o.lineStart(k, k === 0));
   const nSys = lineFrom.length, xs = new Array(n2).fill(0), ws = new Array(n2).fill(0), system = new Array(n2).fill(0);
   let prevStretch = 0;
@@ -8410,7 +8430,8 @@ function arrangeColumns(cols, tracks, o) {
     const te = effTo(from, to);
     const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, te, 0, even);
     const reach = nat.end > avail + 1e-6 ? avail : Math.min(avail, nat.end * o.maxStretch);
-    let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, te, reach, { squeeze: o.squeeze, justify: true, even }) : nat;
+    const sq = mergedLast && s2 === nSys - 1 ? o.lastMerge.squeeze : o.squeeze;
+    let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, te, reach, { squeeze: sq, justify: true, even }) : nat;
     if (s2 === nSys - 1 && s2 > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
       const g = placeLine(spCols, gaps, rodIx, from, te, prevStretch, even);
       f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, te, avail, { squeeze: o.squeeze, justify: true, even });
@@ -8424,7 +8445,7 @@ function arrangeColumns(cols, tracks, o) {
       ws[k] = Math.max(0, x1 - x0);
     }
   }
-  return { lineFrom, sysStarts, xs, ws, system };
+  return { lineFrom, sysStarts, xs, ws, system, ...mergedLast ? { mergedLast: true } : {} };
 }
 
 // src/render/engrave.ts
@@ -8713,7 +8734,7 @@ function engrave(song, o) {
       return Math.max(...per0.map((q, i) => DRAWERS[kinds[i]].lineStart(q, keys.get(q.p.id), first, base, kScale(kinds[i]))));
     };
     const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
-    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, endPad: BAR_W, lineStart: headAt });
+    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, endPad: BAR_W, lineStart: headAt, ...PPAR.lastMerge ? { lastMerge: PPAR.lastMerge } : {} });
     const { lineFrom, sysStarts } = ar, nSys = lineFrom.length, sysKeys = lineFrom.map((k) => new Map(keyAtCol[k]));
     const cols = merged.map((c, k) => ({ tick: c.tick, slot: c.slot, n: c.n, x: ar.xs[k], w: ar.ws[k], system: ar.system[k], bar: c.bar, units: c.members.map((m) => m.entry.ref) }));
     const at2 = /* @__PURE__ */ new Map();
@@ -9319,4 +9340,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-a0604b2338e2.mjs.map
+//# sourceMappingURL=layout-worker-292bf52eb0aa.mjs.map

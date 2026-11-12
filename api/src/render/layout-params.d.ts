@@ -12,6 +12,12 @@ export interface PaperParams {
     evenBars?: boolean;
     /** 歌词字号再乘多少（没写 = 1）：简谱 = 样张的「歌词 0.727 个数字字号」换算出来的（第五刀）。 */ lyricScale?: number;
     /** 左边歌手名的字号再乘多少（没写 = 1）：简谱 = 样张的「名字 0.545 个数字字号」换算出来的（第五刀）。 */ nameScale?: number;
+    /** 一张纸最后一行很短时并进上一行（7-F；user 11-11「我反而需要最后多了一小节的时候前面能不能再挤一点放进去」、看了做法「嗯动前两行合理，赞」）：
+     *  short = 最后一行只有一小节，或者自然宽度不到行宽的这么多（比例）；squeeze = 并的那一行允许压到多紧（弹簧的比例，平常是 squeeze；硬下限 = 顶杆，字和字不相撞）。
+     *  并得进 = 并；并不进 = 照旧留着。只动最后两行。没写 = 不并。 */ lastMerge?: {
+        short: number;
+        squeeze: number;
+    };
 }
 export declare const PAPER_PARAMS: Readonly<Record<NotationId, Readonly<Record<Density, PaperParams>>>>;
 /** 行一级（按这一行的种类 × 版式；单位 sp，从行身算：行身 = 画法的竖向锚点 top–bottom）：行身上面最少留多少（above）、整行最少多高（rowH 有歌词 / rowHNoLyric 没歌词 /

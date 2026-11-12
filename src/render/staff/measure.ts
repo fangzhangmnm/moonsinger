@@ -6,7 +6,7 @@ import { TPQ, WHOLE } from "../../score/song.ts";
 import { type Pitch, diatonicIndex, midiOf } from "../../score/pitch.ts";
 import { CLEF_SHIFT, ottavaShift } from "../../score/clef.ts";
 import { percOf, type PercInfo } from "../../gm/percussion.ts";
-import { W, FLAG_W } from "../smufl.ts";
+import { W, FLAG_W, PERC_HEAD, PERC_SMUFL } from "../smufl.ts";
 import { layoutStems, type StemNote, type StemDir } from "../stems.ts";
 import type { SpItem } from "../spacing.ts";
 import { SLOT, type ColumnKind } from "../frame/columns.ts";
@@ -101,6 +101,16 @@ export const clefW = (q: { fFam: boolean }) => (q.fFam ? W.fClef : W.gClef);
 export const lineStartWidth = (q: StaffTrack, key: number, first: boolean, base: number): number =>
   base + 0.6 + clefW(q) + 1.0 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
 
-/** 歌词按节奏排（框架的歌词让路）要的：这条轨每个带字的音在第几行、字的中心在哪（sp：对齐线往右 0.6）。拖腔线不算。 */
+/** 符头的左缘离对齐线（列的 x）多远（sp）：刀 3 起临时记号挂在左边，符头从这儿起。 */
+export const NOTEHEAD_X = 0.35;
+/** 这个音的符头多宽（sp）：× 符头（台上那位固定敲一个键 / 气声）、鼓谱按仓鼠的表、其余按时值挑黑 / 全。画（draw.ts）和歌词的锚点（lyricAnchors）用同一个。 */
+export function noteheadW(q: StaffTrack, c: Chunk): number {
+  const percHere = !!q.pmode && !!q.p.perc, k = c.base >= WHOLE ? 2 : c.base >= TPQ * 2 ? 1 : 0;
+  if ((!!q.p.xHead && !percHere) || !!c.whisper) return k === 2 ? W.noteheadXWhole : k === 1 ? W.noteheadXHalf : W.noteheadXBlack;
+  if (percHere && c.pitch) { const pi = percAt(q, c.pitch), hd = (pi?.head === "custom" && pi.smufl ? PERC_SMUFL[pi.smufl] : undefined) ?? PERC_HEAD[pi?.head ?? "normal"] ?? PERC_HEAD.normal; return hd.w[k]; }
+  return k === 2 ? W.noteheadWhole : W.noteheadBlack;
+}
+/** 歌词按节奏排（框架的歌词让路）要的：这条轨每个带字的音在第几行、字的中心在哪（sp）= 符头的中心（对齐线 + NOTEHEAD_X + 半个符头宽），和画字的那一处（draw.ts 歌词锚点）同一个数。拖腔线不算。
+ *  （7-F 抓出来的：原来写的是「对齐线往右 0.6」，刀 3 之前的符头位置；画的时候已经是 0.35 + 半个符头宽，黑符头差 0.34 个线间距 = 让路贴着右边那道墙摆，画出来越过去。） */
 export const lyricAnchors = (q: StaffTrack): { index: number; system: number; cx: number; lyric: string; hyph: boolean }[] =>
-  q.units.filter((u): u is Chunk => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + 0.6, lyric: u.lyric!, hyph: u.hyph }));
+  q.units.filter((u): u is Chunk => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + NOTEHEAD_X + noteheadW(q, u) / 2, lyric: u.lyric!, hyph: u.hyph }));

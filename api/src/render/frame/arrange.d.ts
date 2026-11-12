@@ -43,6 +43,11 @@ export interface ArrangeOpts {
     maxStretch: number;
     /** 一小节里一样长的音等距（顶杆顶开时整小节的弹簧一起放大，不只放大挨着的那一段；简谱 = 是，五线谱 = 否；排版参数表纸一级）。 */
     evenBars?: boolean;
+    /** 最后一行很短时并进上一行（7-F；排版参数表 lastMerge）：没给 = 不并。 */
+    lastMerge?: {
+        short: number;
+        squeeze: number;
+    };
     /** 一行最后一列不是小节线时，行尾多留多少（sp）。 */
     endPad: number;
     /** 从第 k 列开一行，行首（名字一栏 + 各种行自己的行首）多宽（sp）；first = 这张纸第一行。 */
@@ -54,6 +59,7 @@ export interface Arranged {
     sysStarts: number[];
     xs: number[];
     ws: number[];
-    system: number[];
+    system: number[]; /** 最后一行很短、并进了上一行（7-F）。 */
+    mergedLast?: true;
 }
 export declare function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonly ArrangeTrack<R>[], o: ArrangeOpts): Arranged;

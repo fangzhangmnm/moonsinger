@@ -12040,10 +12040,11 @@ var JP_COZY = 3.6 / (2.5 * 1.75);
 var JP_COMPACT = 3 / (2.5 * 1.25);
 var mockSpring = (q2) => (5 + 6.8 * Math.log2(1 + 4 * q2)) * 2.5 / 22;
 var jianpuSprings = (k2) => [[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]].map(([t10, w2]) => [t10, w2 * k2]);
-var JIANPU_PAPER = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } };
+var LAST_MERGE = { short: 0.3, squeeze: 0.3 };
+var JIANPU_PAPER = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } };
 var PAPER_PARAMS = {
   // 五线谱（第六刀，user 看了对照后定的，纪要第 91 节）：一行最多拉宽约 1.3 倍、放不满就让右边空着；让位时整小节一起放宽（和简谱一致）。折行可以留孤行（user「我觉得可以留」「倾向紧凑」）
-  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true } },
+  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
   //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
   //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，text/style.ts LYRIC_LOOK）
@@ -12968,7 +12969,17 @@ function measureTrack(q2) {
 }
 var clefW = (q2) => q2.fFam ? W.fClef : W.gClef;
 var lineStartWidth = (q2, key, first, base2) => base2 + 0.6 + clefW(q2) + 1 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q2.head.time.beats, q2.head.time.beatType) + 1.2 : 0.4);
-var lyricAnchors = (q2) => q2.units.filter((u2) => u2.kind === "chunk" && !!u2.lyric && u2.lyric !== MELISMA_MARK).map((u2) => ({ index: u2.index, system: u2.system, cx: u2.x + 0.6, lyric: u2.lyric, hyph: u2.hyph }));
+var NOTEHEAD_X = 0.35;
+function noteheadW(q2, c10) {
+  const percHere = !!q2.pmode && !!q2.p.perc, k2 = c10.base >= WHOLE ? 2 : c10.base >= TPQ * 2 ? 1 : 0;
+  if (!!q2.p.xHead && !percHere || !!c10.whisper) return k2 === 2 ? W.noteheadXWhole : k2 === 1 ? W.noteheadXHalf : W.noteheadXBlack;
+  if (percHere && c10.pitch) {
+    const pi = percAt(q2, c10.pitch), hd = (pi?.head === "custom" && pi.smufl ? PERC_SMUFL[pi.smufl] : void 0) ?? PERC_HEAD[pi?.head ?? "normal"] ?? PERC_HEAD.normal;
+    return hd.w[k2];
+  }
+  return k2 === 2 ? W.noteheadWhole : W.noteheadBlack;
+}
+var lyricAnchors = (q2) => q2.units.filter((u2) => u2.kind === "chunk" && !!u2.lyric && u2.lyric !== MELISMA_MARK).map((u2) => ({ index: u2.index, system: u2.system, cx: u2.x + NOTEHEAD_X + noteheadW(q2, u2) / 2, lyric: u2.lyric, hyph: u2.hyph }));
 
 // src/singer/packs.gen.ts
 var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
@@ -13851,7 +13862,7 @@ function drawStaff(c10, mine) {
     const RW = (u2) => rowOf(u2.system, r10, u2.staff - 1);
     const lyricRow = (s10) => rowOf(s10, r10, q2.staves - 1);
     const navMute = (i10) => navWhy(song, paper, q2.p.id, tokens[i10]) ? " art-mute" : "";
-    const nhX = (c11) => P2(c11.x + 0.35);
+    const nhX = (c11) => P2(c11.x + NOTEHEAD_X);
     const pm = pmode[r10], percHere = !!pm && !!q2.p.perc;
     const xHead = !!q2.p.xHead && !percHere;
     const percHead = (c11, p2) => {
@@ -13859,7 +13870,7 @@ function drawStaff(c10, mine) {
       return { ch: hd.ch[k2], w: hd.w[k2] };
     };
     const xOf = (c11) => xHead || !!c11.whisper;
-    const nhW = (c11) => P2(xOf(c11) ? c11.base >= WHOLE ? W.noteheadXWhole : c11.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack : percHere && c11.pitch ? percHead(c11, c11.pitch).w : c11.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+    const nhW = (c11) => P2(noteheadW(q2, c11));
     const whisperMute = (q2.p.ignores ?? []).includes("whisper");
     const clsOf = (c11) => [c11.ghost ? "ghost" : "", c11.pad ? "pad-rest" : ""].filter(Boolean).join(" ") || void 0;
     const tokOf = (c11) => c11.index >= 0 && !c11.pad ? tokens[c11.index]?.id : void 0;
@@ -15505,6 +15516,15 @@ function arrangeColumns(cols, tracks, o10) {
     for (let j2 = S3; j2 > 0; j2 = prev[j2]) starts.push(segStart(prev[j2]));
     lineFrom.push(...starts.reverse());
   }
+  let mergedLast = false;
+  if (brk !== Infinity && o10.lastMerge && lineFrom.length >= 2) {
+    const k2 = lineFrom.length - 1, from = lineFrom[k2 - 1], last = lineFrom[k2], M3 = o10.lastMerge;
+    const oneBar = segs.filter((e10) => e10 > last).length <= 1, short = oneBar || lineW(last, n10, 0) < M3.short * (brk - o10.lineStart(last, false));
+    if (short && lineW(from, n10, -M3.squeeze) <= brk - o10.lineStart(from, from === 0) + 1e-6) {
+      lineFrom.pop();
+      mergedLast = true;
+    }
+  }
   for (const k2 of lineFrom) sysStarts.push(o10.lineStart(k2, k2 === 0));
   const nSys = lineFrom.length, xs = new Array(n10).fill(0), ws2 = new Array(n10).fill(0), system = new Array(n10).fill(0);
   let prevStretch = 0;
@@ -15514,7 +15534,8 @@ function arrangeColumns(cols, tracks, o10) {
     const te3 = effTo(from, to2);
     const avail2 = brk - sysStarts[s10], nat2 = placeLine(spCols, gaps, rodIx, from, te3, 0, even);
     const reach = nat2.end > avail2 + 1e-6 ? avail2 : Math.min(avail2, nat2.end * o10.maxStretch);
-    let f2 = brk !== Infinity && (nat2.end > avail2 + 1e-6 || s10 !== nSys - 1 && nat2.end >= avail2 * 0.6) ? fitLine(spCols, gaps, rodIx, from, te3, reach, { squeeze: o10.squeeze, justify: true, even }) : nat2;
+    const sq2 = mergedLast && s10 === nSys - 1 ? o10.lastMerge.squeeze : o10.squeeze;
+    let f2 = brk !== Infinity && (nat2.end > avail2 + 1e-6 || s10 !== nSys - 1 && nat2.end >= avail2 * 0.6) ? fitLine(spCols, gaps, rodIx, from, te3, reach, { squeeze: sq2, justify: true, even }) : nat2;
     if (s10 === nSys - 1 && s10 > 0 && f2 === nat2 && prevStretch > 0 && brk !== Infinity) {
       const g3 = placeLine(spCols, gaps, rodIx, from, te3, prevStretch, even);
       f2 = g3.end <= avail2 + 1e-6 ? { ...g3, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, te3, avail2, { squeeze: o10.squeeze, justify: true, even });
@@ -15528,7 +15549,7 @@ function arrangeColumns(cols, tracks, o10) {
       ws2[k2] = Math.max(0, x1 - x0);
     }
   }
-  return { lineFrom, sysStarts, xs, ws: ws2, system };
+  return { lineFrom, sysStarts, xs, ws: ws2, system, ...mergedLast ? { mergedLast: true } : {} };
 }
 
 // src/render/engrave.ts
@@ -15817,7 +15838,7 @@ function engrave(song, o10) {
       return Math.max(...per0.map((q2, i10) => DRAWERS[kinds[i10]].lineStart(q2, keys.get(q2.p.id), first, base2, kScale(kinds[i10]))));
     };
     const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
-    const ar2 = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o10.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, endPad: BAR_W, lineStart: headAt });
+    const ar2 = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o10.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, endPad: BAR_W, lineStart: headAt, ...PPAR.lastMerge ? { lastMerge: PPAR.lastMerge } : {} });
     const { lineFrom, sysStarts } = ar2, nSys = lineFrom.length, sysKeys = lineFrom.map((k2) => new Map(keyAtCol[k2]));
     const cols = merged.map((c10, k2) => ({ tick: c10.tick, slot: c10.slot, n: c10.n, x: ar2.xs[k2], w: ar2.ws[k2], system: ar2.system[k2], bar: c10.bar, units: c10.members.map((m2) => m2.entry.ref) }));
     const at3 = /* @__PURE__ */ new Map();
@@ -34259,7 +34280,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-23eab1edf660.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-a0604b2338e2.mjs");
+      return pick(() => "layout-worker-292bf52eb0aa.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-d2043b8a4b39.mjs");
   }
@@ -64571,4 +64592,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-312820af8a81.mjs.map
+//# sourceMappingURL=moonsinger-f3d3f8d9a622.mjs.map

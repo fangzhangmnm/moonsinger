@@ -13,7 +13,10 @@ import type { RowKind } from "./notations.ts";
  *  一行最多压紧多少（squeeze，弹簧的比例）、一行最多拉宽到自然宽的几倍（maxStretch；两种谱都是 1.3，第六刀起；Infinity = 不设上限、拉满整行）。 */
 export interface PaperParams { sysGap: number; curve: SpacingMode | SpringPts; squeeze: number; maxStretch: number; /** 一小节里一样长的音等距（spacing.ts lineGaps 的 even）。 */ evenBars?: boolean;
   /** 歌词字号再乘多少（没写 = 1）：简谱 = 样张的「歌词 0.727 个数字字号」换算出来的（第五刀）。 */ lyricScale?: number;
-  /** 左边歌手名的字号再乘多少（没写 = 1）：简谱 = 样张的「名字 0.545 个数字字号」换算出来的（第五刀）。 */ nameScale?: number }
+  /** 左边歌手名的字号再乘多少（没写 = 1）：简谱 = 样张的「名字 0.545 个数字字号」换算出来的（第五刀）。 */ nameScale?: number;
+  /** 一张纸最后一行很短时并进上一行（7-F；user 11-11「我反而需要最后多了一小节的时候前面能不能再挤一点放进去」、看了做法「嗯动前两行合理，赞」）：
+   *  short = 最后一行只有一小节，或者自然宽度不到行宽的这么多（比例）；squeeze = 并的那一行允许压到多紧（弹簧的比例，平常是 squeeze；硬下限 = 顶杆，字和字不相撞）。
+   *  并得进 = 并；并不进 = 照旧留着。只动最后两行。没写 = 不并。 */ lastMerge?: { short: number; squeeze: number } }
 /** 数字行的尺寸比例：数字字号（mm）÷（2.5 个线间距 × 这一档一个线间距的 mm）。舒适 3.6 / (2.5 × 1.75)、紧凑 3.0 / (2.5 × 1.25)（第五刀 5-0c）。 */
 const JP_COZY = 3.6 / (2.5 * 1.75), JP_COMPACT = 3.0 / (2.5 * 1.25);
 /** 简谱的弹簧（第五刀 5-0c，user「字有点大……有点太舒适了」）：一拍一格——四分一个字位、二分两个、全音符四个（横线一拍一根）；短音只比数字宽一点（「密的声部自己挤紧，短音只占字宽」）。
@@ -23,10 +26,12 @@ const JP_COZY = 3.6 / (2.5 * 1.75), JP_COMPACT = 3.0 / (2.5 * 1.25);
 const mockSpring = (q: number): number => ((5 + 6.8 * Math.log2(1 + 4 * q)) * 2.5) / 22;
 const jianpuSprings = (k: number): SpringPts => ([[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]] as const).map(([t, w]) => [t, w * k] as const);
 /** 简谱的纸一级参数（字母谱同一份）。 */
-const JIANPU_PAPER: Readonly<Record<Density, PaperParams>> = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: (0.727 * 2.5 * JP_COZY) / (1.6 * 1), nameScale: (0.545 * 2.5 * JP_COZY) / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: (0.727 * 2.5 * JP_COMPACT) / (1.6 * 1.15), nameScale: (0.545 * 2.5 * JP_COMPACT) / (1.36 * 1.4) } };   // 名字：正文字号 1.36 线间距 × 字的尺子（紧凑 1.4）
+/** 最后一行很短时并进上一行的两个数（7-F，两种谱一样；Claude Opus 5.5 起的，user 看了成品再说）：短 = 不到行宽三成（或者只有一小节）；并的那一行弹簧最多压到 70%。 */
+const LAST_MERGE = { short: 0.3, squeeze: 0.3 } as const;
+const JIANPU_PAPER: Readonly<Record<Density, PaperParams>> = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: (0.727 * 2.5 * JP_COZY) / (1.6 * 1), nameScale: (0.545 * 2.5 * JP_COZY) / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: (0.727 * 2.5 * JP_COMPACT) / (1.6 * 1.15), nameScale: (0.545 * 2.5 * JP_COMPACT) / (1.36 * 1.4) } };   // 名字：正文字号 1.36 线间距 × 字的尺子（紧凑 1.4）
 export const PAPER_PARAMS: Readonly<Record<NotationId, Readonly<Record<Density, PaperParams>>>> = {
   // 五线谱（第六刀，user 看了对照后定的，纪要第 91 节）：一行最多拉宽约 1.3 倍、放不满就让右边空着；让位时整小节一起放宽（和简谱一致）。折行可以留孤行（user「我觉得可以留」「倾向紧凑」）
-  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true } },
+  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
   //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
   //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，text/style.ts LYRIC_LOOK）

@@ -15,6 +15,7 @@ import { trioSong, TRIO_LABELS } from "./fixtures/layout/trio-song.ts";
 import { asFrozen, editorBase, views, SP } from "./fixtures/layout/cases.ts";
 import { emptySong, type Token } from "../src/score/song.ts";
 import { allPrims, inkOf, overlaps, kindOf } from "./fixtures/layout/collide.ts";
+import { PAPER_PARAMS } from "../src/render/layout-params.ts";
 // node 的内置模块照 pdf-wysiwyg.test.ts 的取法（类型检查不带 node 的类型）
 const nodeMod = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
 const fs = nodeMod("node:fs"), zlib = nodeMod("node:zlib");
@@ -171,4 +172,41 @@ describe("段尾的力度在行尾挤住了：挪到外面一道（统筹 2026-1
     }
     assert(outer > 0, "比较器不是空的：至少有一种挤法把 fff 挪到了外面一道");
   });
+});
+
+describe("最后一行很短并进上一行（7-F）：并了之后不相叠；按节奏排时歌词不影响并不并（统筹 2026-11-12 选 A）", () => {
+  // 一位歌手、四分音符带词（每 5 个一个长词）；几种小节数 × 宽度从窄到宽扫一遍：开 / 关 7-F 各排一次，行数少了一行的 = 并了，查并了的那些版面。
+  //   字母谱、按歌词排的简谱扫不出并的：音距全是顶杆（字母加八度数字 / 字进了顶杆，比四分音符的弹簧宽），压弹簧压不出地方 = 并不进、照旧（施工记录有一行）
+  const PP = PAPER_PARAMS as unknown as Record<string, Record<string, { lastMerge?: unknown }>>;
+  const withoutMerge = <T,>(f: () => T): T => { const keep: [Record<string, unknown>, unknown][] = []; for (const k of Object.keys(PP)) for (const d of Object.keys(PP[k]!)) { const o = PP[k]![d]! as Record<string, unknown>; if ("lastMerge" in o) { keep.push([o, o.lastMerge]); delete o.lastMerge; } } try { return f(); } finally { for (const [o, v] of keep) o.lastMerge = v; } };
+  const mk = (notation: "staff" | "jianpu" | "letters", rhythm: boolean, long: boolean, bars: number): Song => {
+    const s0 = emptySong(), p0 = s0.papers[0]!, a = s0.parts[0]!.id; let id = 7700;
+    const body: Token[] = Array.from({ length: bars * 4 }, (_, i) => ({ kind: "note", id: id++, pitch: { step: "CDEFGAB"[i % 7] as "C", alter: 0, octave: 5 }, dur: 1680, lyric: i % 5 === 4 && long ? "wonderful" : "la" }) as Token);
+    return { ...s0, notation, ...(rhythm ? {} : { lyricFit: "lyrics" as const }), papers: [{ ...p0, tracks: { [a]: [...p0.tracks[a]!.slice(0, 3), ...body] } }] } as Song;
+  };
+  const lay = (s: Song, width: number) => engrave(s, { width, sp: 10, at: { paper: s.papers[0]!.id, part: s.parts[0]!.id }, parts: [{ id: s.parts[0]!.id, name: "Voice", first: true }], locale: "zh", measure: real } as never);
+  const rowsOf = (L: Layout) => new Set(L.systems.map((r) => r.sys)).size;
+  for (const notation of ["staff", "jianpu", "letters"] as const) for (const rhythm of [true, false]) {
+    it(`${notation === "staff" ? "五线谱" : notation === "jianpu" ? "简谱" : "字母谱"} · ${rhythm ? "按节奏排" : "按歌词排"}：扫一遍宽度，并了的版面没有名单外的相叠${rhythm ? "；长词短词并不并一样、音一个不动" : ""}`, () => {
+      let merged = 0;
+      for (const bars of [3, 5, 7, 9]) for (let width = 300; width <= 900; width += 20) {
+        const s = mk(notation, rhythm, true, bars), L = lay(s, width), L0 = withoutMerge(() => lay(s, width));
+        if (rowsOf(L) >= rowsOf(L0)) continue;
+        merged++;
+        const tag = `${bars} 小节 · 宽 ${width}`, AP = allPrims(L), ink = inkOf(L, (t, size) => real.widthPx(t, size, L.sp, 1), (p) => p.t === "rect" && has(p, "page"), font);
+        for (const o of overlaps(ink, EPS).values()) {
+          const a = AP[o.a]!, b = AP[o.b]!;
+          if (ALLOWED.some((r) => r.ok(a, b) || r.ok(b, a))) continue;
+          if (a.t === "text" && b.t === "text" && has(a, "lyric") && has(b, "lyric") && (has(a, "lyric-tight") || has(b, "lyric-tight"))) continue;   // 挤了的歌词（让路四步走完）照写
+          const ka = kindOf(a), kb = kindOf(b), key = ka < kb ? `${ka} × ${kb}` : `${kb} × ${ka}`;
+          assert(notation === "staff" && key in STAFF_KNOWN, `${tag}：并了之后相叠 ${key}`);
+        }
+        if (rhythm) {   // 按节奏排：歌词进不进排版只由「歌词怎么排」那一个开关定，并不并只看音
+          const Ls = lay(mk(notation, rhythm, false, bars), width);
+          eq(L.notes.map((n) => Math.round(n.x * 100) + ":" + n.system).join(","), Ls.notes.map((n) => Math.round(n.x * 100) + ":" + n.system).join(","), `${tag}：长词和短词，音的位置、折行一样`);
+        }
+      }
+      if (notation === "staff" || rhythm && notation === "jianpu") assert(merged > 0, "扫的宽度里至少有一处真的并了（不然这条测试什么都没测）");
+    });
+  }
 });

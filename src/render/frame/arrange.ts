@@ -44,13 +44,15 @@ export interface ArrangeOpts {
   maxStretch: number;
   /** 一小节里一样长的音等距（顶杆顶开时整小节的弹簧一起放大，不只放大挨着的那一段；简谱 = 是，五线谱 = 否；排版参数表纸一级）。 */
   evenBars?: boolean;
+  /** 最后一行很短时并进上一行（7-F；排版参数表 lastMerge）：没给 = 不并。 */
+  lastMerge?: { short: number; squeeze: number };
   /** 一行最后一列不是小节线时，行尾多留多少（sp）。 */
   endPad: number;
   /** 从第 k 列开一行，行首（名字一栏 + 各种行自己的行首）多宽（sp）；first = 这张纸第一行。 */
   lineStart: (k: number, first: boolean) => number;
 }
 /** 排好的：每行从第几列起、行首多宽；每一列的横坐标 / 宽 / 第几行（sp，下标同 cols）。 */
-export interface Arranged { lineFrom: number[]; sysStarts: number[]; xs: number[]; ws: number[]; system: number[] }
+export interface Arranged { lineFrom: number[]; sysStarts: number[]; xs: number[]; ws: number[]; system: number[]; /** 最后一行很短、并进了上一行（7-F）。 */ mergedLast?: true }
 
 export function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonly ArrangeTrack<R>[], o: ArrangeOpts): Arranged {
   const spCols: SpCol[] = cols.map((c) => (c.chunk ? { tick: c.tick, items: c.members.flatMap(({ track, entry }) => (entry.chunk ? entry.chunk.items.map((it) => ({ ...it, row: tracks[track]!.laneBase + it.row })) : [])) } : { tick: c.tick, fixed: c.w, items: [] }));
@@ -101,6 +103,14 @@ export function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonl
     const starts: number[] = []; for (let j = S; j > 0; j = prev[j]!) starts.push(segStart(prev[j]!));
     lineFrom.push(...starts.reverse());
   }
+  // 最后一行很短（只有一小节，或者自然宽度不到行宽的 short）= 试着并进上一行（7-F）：两行的内容按更紧的 squeeze 一起均匀地压（整行的弹簧，硬下限 = 顶杆），
+  //   放得下 = 并、放不下 = 照旧。只动最后两行，前面的折行不重挑（user「嗯动前两行合理，赞」）
+  let mergedLast = false;
+  if (brk !== Infinity && o.lastMerge && lineFrom.length >= 2) {
+    const k = lineFrom.length - 1, from = lineFrom[k - 1]!, last = lineFrom[k]!, M = o.lastMerge;
+    const oneBar = segs.filter((e) => e > last).length <= 1, short = oneBar || lineW(last, n, 0) < M.short * (brk - o.lineStart(last, false));
+    if (short && lineW(from, n, -M.squeeze) <= brk - o.lineStart(from, from === 0) + 1e-6) { lineFrom.pop(); mergedLast = true; }
+  }
   for (const k of lineFrom) sysStarts.push(o.lineStart(k, k === 0));
   const nSys = lineFrom.length, xs = new Array<number>(n).fill(0), ws = new Array<number>(n).fill(0), system = new Array<number>(n).fill(0);
   // 摆：不是最后一行、用了六成以上 = 拉满；超了（挤一挤进来的）= 压回来；别的照自然宽
@@ -112,7 +122,8 @@ export function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonl
     const te = effTo(from, to);   // 行尾不占宽的那几列不参加排这一行（见上）
     const avail = brk - sysStarts[s]!, nat = placeLine(spCols, gaps, rodIx, from, te, 0, even);
     const reach = nat.end > avail + 1e-6 ? avail : Math.min(avail, nat.end * o.maxStretch);   // 要拉满的行拉到哪：可用宽，但最多自然宽的 maxStretch 倍
-    let f: { xs: number[]; end: number; stretch?: number } = brk !== Infinity && (nat.end > avail + 1e-6 || (s !== nSys - 1 && nat.end >= avail * 0.6)) ? fitLine(spCols, gaps, rodIx, from, te, reach, { squeeze: o.squeeze, justify: true, even }) : nat;
+    const sq = mergedLast && s === nSys - 1 ? o.lastMerge!.squeeze : o.squeeze;   // 并进来的那一行：允许压到更紧（7-F）
+    let f: { xs: number[]; end: number; stretch?: number } = brk !== Infinity && (nat.end > avail + 1e-6 || (s !== nSys - 1 && nat.end >= avail * 0.6)) ? fitLine(spCols, gaps, rodIx, from, te, reach, { squeeze: sq, justify: true, even }) : nat;
     if (s === nSys - 1 && s > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
       const g = placeLine(spCols, gaps, rodIx, from, te, prevStretch, even);
       f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, te, avail, { squeeze: o.squeeze, justify: true, even });
@@ -124,5 +135,5 @@ export function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonl
       xs[k] = x0; system[k] = s; ws[k] = Math.max(0, x1 - x0);
     }
   }
-  return { lineFrom, sysStarts, xs, ws, system };
+  return { lineFrom, sysStarts, xs, ws, system, ...(mergedLast ? { mergedLast: true as const } : {}) };
 }

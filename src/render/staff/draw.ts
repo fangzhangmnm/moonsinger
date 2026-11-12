@@ -18,7 +18,7 @@ import { TOP_LINE, MID_LINE, BOTTOM_LINE, ART_GLYPH, GLYPH_BREATH, SHARP_POS, FL
 import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, type OrnCtx } from "../ornaments/index.ts";   // 两种行共用的挂件（第四刀 4-3）
 import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W } from "./units.ts";
 import type { Unit, Chunk } from "../frame/units.ts";
-import { stemInput, posD, shAt, percAt, clefW } from "./measure.ts";
+import { stemInput, posD, shAt, percAt, clefW, noteheadW, NOTEHEAD_X } from "./measure.ts";
 import type { Prim, EngraveOpts, Layout, HitNote, RestHit, LyricHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox } from "../engrave.ts";
 import type { StaffTrack } from "./measure.ts";
 import { caretStops } from "../frame/carets.ts";
@@ -162,7 +162,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
     const RW = (u: Unit) => rowOf(u.system, r, u.staff - 1);
     const lyricRow = (s: number) => rowOf(s, r, q.staves - 1);   // 歌词在最下面那条谱表下面
     const navMute = (i: number) => (navWhy(song, paper, q.p.id, tokens[i]) ? " art-mute" : "");   // 不起作用的跳转（画灰；反复小节线的 ×N 也用）。房子 / Segno / D.C.… = 共用挂件（ornaments/index.ts layNav，第四刀 4-3）
-    const nhX = (c: Chunk) => P(c.x + 0.35);   // 刀 3：对齐线 = 列的 x，临时记号挂在左边（原来 + accW）
+    const nhX = (c: Chunk) => P(c.x + NOTEHEAD_X);   // 刀 3：对齐线 = 列的 x，临时记号挂在左边（原来 + accW）
     // × 符头：这个声部台上那位固定敲一个键（鼓件 / 音效固定原速）——谱上写的音高照留、只是不拿来出声，画成 × 让人一眼看出来（user 2026-10-08「披露就用x」）
     const pm = pmode[r], percHere = !!pm && !!q.p.perc;   // 鼓谱：符头按仓鼠的表（每个音各自的）、不画升降号
     const xHead = !!q.p.xHead && !percHere;
@@ -170,7 +170,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
     const percHead = (c: Chunk, p: Pitch) => { const pi = percAt(q, p), hd = (pi?.head === "custom" && pi.smufl ? PERC_SMUFL[pi.smufl] : undefined) ?? PERC_HEAD[pi?.head ?? "normal"] ?? PERC_HEAD.normal, k = c.base >= WHOLE ? 2 : c.base >= TPQ * 2 ? 1 : 0; return { ch: hd.ch[k], w: hd.w[k] }; };
     // 气声（2026-10-10，user「x同意，做支持」）：这个音画 × 符头（念白 / 说唱的标准写法）——和上面的 × 同一个意思：谱上的音高不拿来出声
     const xOf = (c: Chunk) => xHead || !!c.whisper;
-    const nhW = (c: Chunk) => P(xOf(c) ? (c.base >= WHOLE ? W.noteheadXWhole : c.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack) : percHere && c.pitch ? percHead(c, c.pitch).w : c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+    const nhW = (c: Chunk) => P(noteheadW(q, c));   // 符头多宽：和歌词让路的锚点同一个（measure.ts noteheadW）
     const whisperMute = (q.p.ignores ?? []).includes("whisper");   // 台上这位做不到气声：× 照画、画灰
     const clsOf = (c: Chunk) => [c.ghost ? "ghost" : "", c.pad ? "pad-rest" : ""].filter(Boolean).join(" ") || undefined;
     /** 这个音属于哪个 token（补齐的淡色休止不算）：写字头 / 选区 / 强调色由 score-view 按 data-tok 开关 class。 */
