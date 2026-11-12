@@ -586,14 +586,23 @@ export declare const S: {
     readonly 版面: {
         readonly en: "Page";
     };
+    readonly "\u4E0D\u6309\uFF08\u7167\u5199\u7684\u8C03\uFF09": {
+        readonly en: "No (as written)";
+    };
+    readonly "\u4E0D\u6309 C \u8C03\u770B\uFF08\u7167\u5199\u7684\u8C03\uFF09": {
+        readonly en: "Not in C (as written)";
+    };
+    readonly "\u6309 C \u8C03\u770B\u3001\u548C\u5F26\u6807\u7EA7\u6570": {
+        readonly en: "Read in C, chord degrees";
+    };
+    readonly "\u7167\u8FD9\u9996\u6B4C\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u9875\u7684\u8BBE\u7F6E\u5370\uFF1A{w}\uFF08\u5728\u90A3\u513F\u6539\uFF09\u3002": {
+        readonly en: "Printed with this song's Page settings › Reading: {w} (change them there).";
+    };
     readonly "{paper}\uFF08{note}\uFF09": {
         readonly en: "{paper} ({note})";
     };
     readonly "\u7167\u6587\u4EF6\u91CC\u7684 {mm} \u6BEB\u7C73": {
         readonly en: "As in the file ({mm} mm staff)";
-    };
-    readonly 看谱方式: {
-        readonly en: "Key view";
     };
     readonly 演奏法和表情: {
         readonly en: "Articulations & dynamics";
@@ -933,9 +942,6 @@ export declare const S: {
     };
     readonly "\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B": {
         readonly en: "Tsukuyomi-chan's credit and terms of use, plus the authors and licenses of the instrument catalog icons, all in one page";
-    };
-    readonly "\u770B\u8C31\u65B9\u5F0F\u3001\u548C\u5F26\u6807\u7EA7\u6570": {
-        readonly en: "How to read the score, chord degrees";
     };
     readonly "\u642C\u5230\u4E86\u9875\u9762\u8BBE\u7F6E\u91CC\uFF08\u8C31\u53F3\u4E0A\u89D2\u90A3\u9897\u94AE \u2192\u300C\u770B\u8C31\u300D\uFF09\uFF1A\u73B0\u5728\u8DDF\u7740\u6BCF\u9996\u6B4C\u8D70\u3001\u5B58\u5728\u6B4C\u91CC\uFF0C\u4EE5\u524D\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8C03\u8FC7\u7684\u4E0D\u5E26\u8FC7\u53BB\u3002": {
         readonly en: "Moved to Page settings (the button at the top right of the score → Reading): they now belong to each song and are saved in it; what you set on this device before does not carry over.";
@@ -1549,14 +1555,8 @@ export declare const S: {
     readonly "\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09": {
         readonly en: "Long words push notes apart (the traditional engraving rule)";
     };
-    readonly 专业: {
-        readonly en: "Standard";
-    };
     readonly "\u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D": {
         readonly en: "Draw in the actual key; big key labels show note names";
-    };
-    readonly "\u6309 C \u8C03\u770B\uFF081=X\uFF09": {
-        readonly en: "Read in C (1=X)";
     };
     readonly "\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8": {
         readonly en: "Draw the score in C with “1=original key” above every key signature; big key labels show degrees; the keys stay where they are";
@@ -1587,9 +1587,6 @@ export declare const S: {
     };
     readonly "\u6309 C \u8C03\u770B": {
         readonly en: "Read in C";
-    };
-    readonly "\u770B\u8C31\uFF1A\u4E13\u4E1A": {
-        readonly en: "Reading: professional";
     };
     readonly 和弦不标级数: {
         readonly en: "No chord degrees";
@@ -2463,9 +2460,6 @@ export declare const S: {
     };
     readonly "\u7EB8 / ": {
         readonly en: "sheets /";
-    };
-    readonly "\u7167\u8FD9\u9996\u6B4C\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u9875\u9762\u8BBE\u7F6E \u2192\u300C\u770B\u8C31\u300D\u91CC\u6539\uFF09\u3002": {
-        readonly en: "Printed the way this song is read: {w} (change it under Page settings › Reading).";
     };
     readonly "\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09": {
         readonly en: "read in C (“1=original key” above each key signature)";

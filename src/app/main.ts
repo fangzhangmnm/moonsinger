@@ -1364,7 +1364,7 @@ function openSettings(): void {
       item(_t("版权与署名"), look("doc:top", _t("看…")), _t("小月相的署名与使用条款、乐器目录图标的作者与许可，合在一篇里看")) +
     `</div>` +
     `<div class="set-page" data-page="a11y">` +
-      item(_t("看谱方式、和弦标级数"), "", "", `<div class="offer-msg">${_t("搬到了页面设置里（谱右上角那颗钮 →「看谱」）：现在跟着每首歌走、存在歌里，以前在这台设备上调过的不带过去。")}</div>`) +
+      item(_t("按 C 调看、和弦标级数"), "", "", `<div class="offer-msg">${_t("搬到了页面设置里（谱右上角那颗钮 →「看谱」）：现在跟着每首歌走、存在歌里，以前在这台设备上调过的不带过去。")}</div>`) +
     `</div>` +
     `<div class="set-page" data-page="sound">` +
       item(_t("模型来源"), "", _t("先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。") + (inFolder ? `<br>${FOLDER_TEXT.models}` : ""),
@@ -1950,7 +1950,7 @@ function openCreditsSheet(): void {
   ta.focus();
 }
 /** 页面设置（谱右上角那颗「1 / ♪」钮；7-C 起：页面设置 = 视图——怎么看、怎么印；user 2026-11-12「这个不应该在页面设置里面页面设置是视图」「整理成和设置一样的一页页的那个…都弄成下拉框」）。
- *  两页：看谱（谱种、看谱方式、和弦标级数、只看一号轨）/ 版面（纸张、版式、排法、屏幕放不下纸的时候、小节号、歌词排法）；样子同设置面板（setTabsHtml / setItem / wireSetPages：
+ *  两页：看谱（谱种、按 C 调看、和弦标级数、演奏法和表情、只看一号轨）/ 版面（纸张、版式、排法、屏幕放不下纸的时候、小节号、歌词排法）；样子同设置面板（setTabsHtml / setItem / wireSetPages：
  *  页签 + 一项一行 + 长说明进「?」），选项一律是下拉（界面零件库的下拉标准件，7-T）。曲段的列表拿掉了：增删、改名、隐藏、挪、移调是改这首歌，
  *  谱上每一段名字右边的「⋯」、「隐藏 N 段」小标、本段视图翻进隐藏的段都做得到（7-C 核过，没有只在列表里才能做的）。
  *  每一项的「?」里写清它存在哪：跟着这首歌（进歌、能撤销、PDF 照着印）/ 跟着这首歌的视图（存时顺手带，不算改动）/ 只在这次打开里。 */
@@ -1969,13 +1969,14 @@ function openPaperSheet(): void {
     const p = D.st.song.paper ?? paperOf(DEFAULT_PAPER), look = songViewOf(D.st.song), movable = !IN_C_APPLIES[look.notation];   // 选中哪一项 = 这首歌怎么看（只此一处读）
     const fileMm = p.staffMm !== undefined && Math.abs(p.staffMm - (look.density === "compact" ? STAFF_MM_COMPACT : STAFF_MM)) > 0.01 ? p.staffMm : null;   // 谱高是别家文件里写的、不是两档之一
     const one = D.st.song.parts[0], only1 = !!one && pv(one.id).only && D.st.song.parts.every((q) => q === one || !pv(q.id).only);
-    // 看谱：谱种第一行（谱面分家第四刀，user 11-11「面板第一行放谱种」）；看谱方式 / 中央 C / 和弦标级数 = 这首歌的，走修改锁的「看法」（锁着也能切、锁着期间不写文件）
+    // 看谱：谱种第一行（谱面分家第四刀，user 11-11「面板第一行放谱种」）；按 C 调看 / 中央 C / 和弦标级数 / 演奏法和表情 = 这首歌的，走修改锁的「看法」（锁着也能切、锁着期间不写文件）
     const lookPage =
       setItem(_t("谱种"), sel("nota", [["staff", _t("五线谱")], ["jianpu", _t("简谱")], ["letters", _t("字母谱")]], look.notation),
         defs([[_t("五线谱"), _t("按音高画在五条线上")], [_t("简谱"), _t("数字 1–7（首调）")], [_t("字母谱"), _t("实际的音名 C D E F G A B，右上角写升降号、右下角写八度（中央 C = C4）")]]) + IN_SONG) +
-      setItem(_t("看谱方式"), sel("inc", [["off", _t("专业")], ["on", _t("按 C 调看（1=X）")]], look.viewInC ? "on" : "off", movable),
+      // 名字写这件事本身、默认那一项也说出它是什么（user 11-12 看截图：「这个看谱方式比较让人难以理解它是干什么的」；统筹：不用「方式」「专业」这类要猜的词）
+      setItem(_t("按 C 调看"), sel("inc", [["off", _t("不按（照写的调）")], ["on", _t("按 C 调看")]], look.viewInC ? "on" : "off", movable),
         (movable ? (MOVABLE_DO[look.notation] ? _t("简谱本来就是首调（1 = 这个调的主音），用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。") : _t("字母谱写的是实际的音名，用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。"))
-          : defs([[_t("专业"), _t("按实际的调画谱，键上大字写音名")], [_t("按 C 调看（1=X）"), _t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")]])) + IN_SONG) +
+          : defs([[_t("不按（照写的调）"), _t("按实际的调画谱，键上大字写音名")], [_t("按 C 调看"), _t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")]])) + IN_SONG) +
       // 字母谱：中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；只在字母谱时显示）
       (look.notation === "letters" ? setItem(_t("中央 C 叫"), sel("mc", MIDDLE_C_NAMES.map((n) => [String(n), n === 4 ? `C${n}（${_t("默认")}）` : `C${n}`] as const), String(look.middleC)), _t("字母谱右下角的八度数字从哪儿数。") + IN_SONG) : "") +
       setItem(_t("和弦"), sel("ct", [["on", _t("标级数")], ["off", _t("不标")]], look.chordTags ? "on" : "off"), _t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选") + IN_SONG) +
@@ -2016,7 +2017,7 @@ function openPaperSheet(): void {
   box.addEventListener("change", (e) => {
     const el = e.target as HTMLButtonElement, k = el.dataset.pg, v = el.value; if (!k) return;
     if (k === "nota") setSongLook(setNotation(D.st, v as NotationId), v === "jianpu" ? _t("简谱") : v === "letters" ? _t("字母谱") : _t("五线谱"));
-    else if (k === "inc") setSongLook(setViewInC(D.st, v === "on"), v === "on" ? _t("按 C 调看") : _t("看谱：专业"));
+    else if (k === "inc") setSongLook(setViewInC(D.st, v === "on"), v === "on" ? _t("按 C 调看") : _t("不按 C 调看（照写的调）"));
     else if (k === "mc") { const n = Number(v); setSongLook(setMiddleC(D.st, n), _t("中央 C 叫 C{n}", { n })); }
     else if (k === "ct") setSongLook(setChordTags(D.st, v === "on"), v === "on" ? _t("和弦标级数") : _t("和弦不标级数"));
     else if (k === "expr") setSongLook(setExpressions(D.st, v === "on"), v === "on" ? _t("显示演奏法和表情") : _t("不显示演奏法和表情"));
@@ -3094,7 +3095,7 @@ function openPdfPanel(): void {
       (someHidden ? `<div class="part-sec">${_t("声部")}</div><div class="set-row">${pick("parts:view", partPick === "view", _t("照分页预览"), _t("隐藏的声部不印，预览里那条细行的位置空着（和预览一样）"))}${pick("parts:shown", partPick === "shown", _t("只排看得见的：{p}", { p: shownNames.join("、") }), _t("隐藏的声部整个拿掉、重新排，不留空位（像抽出来的分谱；和分页预览不一样）"))}</div>` : "") +
       `<div class="offer-msg">${_t("第一次要下载字体（思源黑体，约 {p} MB），之后离线也能用。纸张 = 这首歌的纸（页面设置里改）。", { p: PDF_FONT_MB })}</div>` +
       `<div class="offer-msg">${partPick === "shown" ? _t("只排看得见的声部（{p}）：重新排、不留空位——和分页预览不一样。", { p: esc(shownNames.join("、")) }) : _t("印出来的 = 页面设置里「分页」+ 曲段控件「{p}」看到的样子，去掉按钮和提示；隐藏的{p2}声部不印（预览里那条细行的位置空着）。", { p: paperPick === "one" ? _t("本段") : _t("全部"), p2: paperPick === "one" ? "" : _t("纸 / ") })}</div>` +
-      ((lk) => (lk.viewInC || lk.chordTags || !lk.expressions) ? `<div class="offer-msg">${_t("照这首歌的看谱方式印：{w}（页面设置 →「看谱」里改）。", { w: [lk.viewInC ? _t("按 C 调看（每个调号上方印「1=原来的调」）") : "", lk.chordTags ? _t("和弦级数") : "", !lk.expressions ? _t("不印演奏法和表情") : ""].filter(Boolean).join(_t("、")) })}</div>` : "")(songViewOf(D.st.song)) +   // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
+      ((lk) => (lk.viewInC || lk.chordTags || !lk.expressions) ? `<div class="offer-msg">${_t("照这首歌页面设置「看谱」页的设置印：{w}（在那儿改）。", { w: [lk.viewInC ? _t("按 C 调看（每个调号上方印「1=原来的调」）") : "", lk.chordTags ? _t("和弦级数") : "", !lk.expressions ? _t("不印演奏法和表情") : ""].filter(Boolean).join(_t("、")) })}</div>` : "")(songViewOf(D.st.song)) +   // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
       `<div class="offer-btns"><button class="btn" data-v="close">${_t("算了")}</button><button class="btn primary" data-v="go">${_t("生成 PDF")}</button></div></div>`;
   };
   draw(); document.body.append(box);

@@ -30,13 +30,13 @@ check((await p.evaluate(() => document.querySelector("#score .score-overlay .ov-
 await openSheet();
 check((await p.$eval('.settings-card .set-page[data-page="look"] .row-lab', (e) => e.firstChild.textContent)) === "谱种" && !(await p.$eval('.settings-card .set-page[data-page="look"]', (e) => e.hidden)), "面板打开在「看谱」页、第一行 = 谱种（7-C）");
 check((await ddValue(p, '.settings-card [data-pg="nota"]')) === "staff", "没写谱种 = 下拉里是五线谱");
-check(!(await p.$eval('.settings-card [data-pg="inc"]', (e) => e.disabled)), "五线谱时「看谱方式」能选");
+check(!(await p.$eval('.settings-card [data-pg="inc"]', (e) => e.disabled)), "五线谱时「按 C 调看」能选");
 // ② 点「简谱」= 谱上是数字行；按 C 调看那两颗变灰、写明为什么
 await pickOnPage(p, '.settings-card [data-pg="nota"]', "jianpu"); await p.waitForTimeout(300);
 check((await S()).song.notation === "jianpu", "写进歌里（notation: jianpu）");
 check((await kinds()).split(",").every((k) => k === "jianpu"), "谱上每一行都是数字行", await kinds());
 check((await p.evaluate(() => [...document.querySelectorAll("#score text.jp-digit")].map((t) => t.textContent).join(""))) === "12345671", "数字 = 1234 5671（高八度的 1 带点）");
-check(await p.$eval('.settings-card [data-pg="inc"]', (e) => e.disabled), "简谱时「看谱方式」变灰");
+check(await p.$eval('.settings-card [data-pg="inc"]', (e) => e.disabled), "简谱时「按 C 调看」变灰");
 check((await p.$eval('.settings-card .set-item:has([data-pg="inc"]) .row-help', (e) => e.textContent)).includes("首调"), "「?」里写明为什么（简谱本来就是首调）");
 await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
 // ③ 能撤销 / 重做（这首歌怎么看进撤销）
