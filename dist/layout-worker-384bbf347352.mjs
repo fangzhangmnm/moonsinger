@@ -7937,7 +7937,11 @@ function drawJianpu(c, mine, mode = "digits") {
         for (const c0 of pend) spanTo.set(c0, c0.system === v.system ? v.x : staffEnd[c0.system]);
         pend = v.kind === "chunk" ? [v] : [];
       }
-      for (const c0 of pend) spanTo.set(c0, staffEnd[c0.system]);
+      for (const c0 of pend) {
+        let end = -Infinity;
+        for (const col of c.cols) if (col.system === c0.system) end = Math.max(end, col.x + col.w);
+        spanTo.set(c0, Math.min(staffEnd[c0.system], end > c0.x ? end : staffEnd[c0.system]));
+      }
     }
     const orn = {
       song,
@@ -9340,4 +9344,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-aaeb4088e06b.mjs.map
+//# sourceMappingURL=layout-worker-384bbf347352.mjs.map

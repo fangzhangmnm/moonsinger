@@ -15003,7 +15003,11 @@ function drawJianpu(c10, mine, mode = "digits") {
         for (const c02 of pend) spanTo.set(c02, c02.system === v.system ? v.x : staffEnd[c02.system]);
         pend = v.kind === "chunk" ? [v] : [];
       }
-      for (const c02 of pend) spanTo.set(c02, staffEnd[c02.system]);
+      for (const c02 of pend) {
+        let end = -Infinity;
+        for (const col of c10.cols) if (col.system === c02.system) end = Math.max(end, col.x + col.w);
+        spanTo.set(c02, Math.min(staffEnd[c02.system], end > c02.x ? end : staffEnd[c02.system]));
+      }
     }
     const orn = {
       song,
@@ -34280,7 +34284,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-23eab1edf660.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-aaeb4088e06b.mjs");
+      return pick(() => "layout-worker-384bbf347352.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-d2043b8a4b39.mjs");
   }
@@ -64592,4 +64596,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3987230548fa.mjs.map
+//# sourceMappingURL=moonsinger-4df5055c64a3.mjs.map

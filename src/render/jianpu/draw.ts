@@ -119,7 +119,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
     /** 每一段音 / 休止排完版后占到哪（sp）：同一行里它后面第一个音 / 休止 / 小节线的位置；后面没有 = 这一行的右端。长音的横线、几拍的休止的 0 按它一拍一个摆。 */
     const spanTo = new Map<Chunk, number>();
     { let pend: Chunk[] = []; for (const v of units) { if (v.kind !== "chunk" && v.kind !== "bar") continue; for (const c0 of pend) spanTo.set(c0, c0.system === v.system ? v.x : staffEnd[c0.system]!); pend = v.kind === "chunk" ? [v] : []; }
-      for (const c0 of pend) spanTo.set(c0, staffEnd[c0.system]!); }
+      for (const c0 of pend) { let end = -Infinity; for (const col of c.cols) if (col.system === c0.system) end = Math.max(end, col.x + col.w); spanTo.set(c0, Math.min(staffEnd[c0.system]!, end > c0.x ? end : staffEnd[c0.system]!)); } }   // 这张纸最后一个音后面什么都没有（最后一小节没写满 = 没有小节线）：占到这一行内容的结尾（所有声部的列里最右那一列的右缘），不摊到行尾（7-E 另查①：长音的横线原来摊了半行）
     // 共用挂件（力度那一串、风格、跳转房子、速度；ornaments/index.ts）：音的锚点 = 数字的左右缘
     const orn: OrnCtx = { song, paper, o, notation: "jianpu", P, tx, TR: c.TR, RS: c.RS, mw: c.mw, sp: c.sp, prims: c.prims, dyns: c.dyns, marks, placeAbove, attach: c.attach, right: c.right, left: (sy) => P(MARGIN + (sy === 0 ? ind0 : c.indN)) + Q(0.6), tokens, units, row: (sy) => rowOf(sy, r, 0),   // left = jianpuLineStart（行首竖线往右 0.6）
       glyphScale: jk, noteX: (ch) => P(ch.x) + Q(0.1), noteEnd: (ch) => P(ch.x) + Q(0.1 + DIGIT_W), dynOff: dynOverridden(tokens), navMute: (i) => (navWhy(song, paper, q.p.id, tokens[i]!) ? " art-mute" : ""), hint: c.hint };   // hint：推定的灰字、速度变了的箭头交给框架最后贴（8-5）
