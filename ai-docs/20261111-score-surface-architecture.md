@@ -515,6 +515,45 @@ declare function layNav(c, u, repeatBarX): void; declare function layTempo(c, ro
 ```
 
 守卫（`test/score-surface.test.ts`）：结构那条多了「框架只经过表、表只走两个入口、简谱只许 import type 五线谱的单元、排版不直接读歌的显示字段」和谱面那条「不直接 import 画法、不按谱种分支」；新加守卫 4（全量）/ 守卫 5（点击只指 token 或家具），两种谱都跑——分家前就有的缺口按名字列成几类（施工单第五节「小弟问（4-7 守卫 4）」）。
+
+#### 第五刀落地后的变化（2026-11-11，Claude Opus 5.5，施工；施工单第六节 5-0 … 5-4）
+
+```ts
+// ── 框架 / 谱种表（src/render/notations.ts）────────────────────────────────────────────────
+type RowKind = "staff" | "jianpu" | "jianpuX";                     // jianpuX = 简谱里鼓的那种行（音画成 X；量和画用数字行那一套，mode "x"）
+interface RowDrawer { …;
+  measure(q, scale, aux?: TrackAux); lyricAnchors(q, scale, aux?: TrackAux);   // aux = 框架交来的这一条轨的预处理
+  readonly oneRow?: true }                                         // 一条轨只占一行（数字行、X 行；框架排之前把谱表数当 1）
+interface TrackAux { folds?: ReadonlyMap<number, ChordFold> }      // 叠着的和弦折成的和弦名（这条轨的和弦选项是「折叠」才有）
+interface Notation { id; home; build: Build; rowKindOf(q); families: "fold" | "line" }   // build = 建轨（BUILD 常量删了，5-2）；families：五线谱叠 / 简谱一家左边一条竖线（5-4 ③）
+// 简谱：rowKindOf = 鼓（pmode / perc）→ jianpuX；台上固定敲一个键（× 符头）→ 照旧五线谱的行（等统筹定，第五节「小弟问 ⑨」）；别的 → jianpu（叠音也是，竖叠）
+// 框架画法：五线谱先画，别的几种行挨个画（不再写死数字行一种）。RowDrawCtx 多 harmony（和弦级数的预处理）、aux（每条轨的 TrackAux）
+
+// ── 排版单元的时间那一半（src/render/frame/units.ts，5-1）：Chunk / BarU / … / Unit / Head、unitsOf、notate / splitDur / NOTATABLE / RATIOS ──
+interface UnitWidths { bar; key; time; tempo; clef; acc; chunk; lyric; breath; inhale }   // 各种单元多宽由画法交进来；五线谱那份 = staff/units.ts STAFF_WIDTHS
+// 数字行的量一个宽都不从单元里拿（每样自己量）：单元宽只有五线谱的行读，所以没另做一份简谱的
+
+// ── 和弦（src/theory/，只从 index.ts 出口）──────────────────────────────────────────────
+declare function paperHarmony(theory, input: { parts: { id; tokens; broken }[]; families: string[][] }): Map<string, PlacedTag[]>;   // 合租一家合起来认（5-4 ④½）
+interface PlacedTag { index: number; read: HarmonyRead; at: string }   // index = owner 那条 track 的音（挑法写回它）；at = 画在哪一位那一行（一家 = 最下面那一位）
+interface HarmonyTheory { …; fold?(pitches, at: { fifths; minor }, pin): ChordFold | null }   // 能还原就折（5-4 ⑤）
+interface ChordFold { name: string; bass: Pitch; ambiguous: boolean; read: HarmonyRead }
+// western.ts voicingOf(guess, bassOctave)：读法的标准排法（最低音起、其余一个八度内依次往上、拼法从根音数）
+
+// ── 版面数据（src/render/engrave.ts）──────────────────────────────────────────────────
+// Layout.chordTags[].part?：index 指的是哪一位的 track（一家合起来认的画在最下面那一行）；Layout.keyHints[].tok?：提示指的调号 token（守卫 4 / 5）
+// PartView.range?：台上那位的音域（MIDI；宿主从演奏者 / 乐器目录查好，排版不认识目录）→ 数字行的八度基准（score/degree.ts rangeBase；查不到 = 点最少）
+
+// ── 排版参数表 / 间距 ───────────────────────────────────────────────────────────────
+interface PaperParams { sysGap; curve: SpacingMode | SpringPts; squeeze; maxStretch; evenBars?: boolean }   // evenBars = 一小节里等距（简谱开，5-4 ⑦）
+interface RowParams { …; scale: number }                          // 行里的尺寸比例（数字行舒适 ≈ 0.823 / 紧凑 0.96，5-0c）
+// spacing.ts placeLine / fitLine 多一个 even：一段里有顶杆比跨过的弹簧长 = 这一段弹簧一起按同一倍数放大（按这一行拉 / 压过的弹簧算）
+
+// ── 记号表：力度两种谱都是字母字形（5-0；word 那种画法删了，中文叫法在 says 里）；dynDepiction(d, notation) 不再收语言 ─────────
+// ── 简谱这一种多出口：jianpuXGhost、JianpuMode（digits | x）、JianpuAux；glyphs.ts stackBases（和弦竖叠）、chordNameW / chordBassCx（和弦名）、X_EM
+```
+
+守卫 4 的意思（第五节统筹裁定 5-3）：每个 token 在编辑器里至少有一样指着它的东西——印出来的图元，或者编辑器里的提示 / 灰标；只在编辑器里有的只许三种（C 大调 / 鼓谱的调号；数字行上的谱号、八度线；大谱表上的八度线）；什么都没有的只许三类（谱头速度 / 五线谱叠起来的一家 / 隐藏的纸和声部），各带正面断言。
 ## 8. 要 user 拍的
 
 1. **总方向**：第 1 节那五句。尤其是「热插拔的单位是一行的画法，不是整页的引擎」和「写法归核心、由光标的种类决定」。同意的话我把它记成一条 ADR。

@@ -78,6 +78,11 @@ describe("简谱数字行", () => {
     const iKey = toks.findIndex((t) => t.kind === "key");
     assert(L.keyHints.some((h) => h.index === iKey && h.tok === toks[iKey]!.id && h.s.startsWith("1=")), "编辑器里淡的「1=…」提示带着调号 token");
     eq(GEOMETRY.jianpuX.pitchAxis, undefined, "X 行没有「纵向 = 音高」");
+    // 不分音高的一律 X 行（统筹裁定 5-4 ⑨）：台上固定敲一个键的（五线谱上画 × 符头）也是；简谱的歌里不再有五线谱的行
+    const fixed = lay([n(P("E")), n(P("G"))], undefined, { xHead: true }).L;
+    assert(fixed.systems.every((r) => r.kind === "jianpuX") && fixed.prims.some((p) => p.t === "text" && /jp-x/.test(p.cls ?? "")), "固定敲一个键的声部 = X 行");
+    const v = FULL_VIEWS.find((x) => x.name === "edit-all")!, J = { ...fullSong(), notation: "jianpu" } as Song;
+    eq(engrave(J, v.opts(J)).systems.filter((r) => r.kind === "staff").length, 0, "用全的测试歌切成简谱：一行五线谱都没有了（过渡退场）");
   });
   it("和弦级数在数字行上也标（第五刀 5-4 ④）：歌的总开关开着 = 和弦右下一个级数，点得到（指着那个音）；鼓的 X 行不标", () => {
     const { L, toks } = lay([n(P("G"), TPQ, { chord: [P("E"), P("C")] }), n(P("C")), n(P("D")), n(P("E"))]);

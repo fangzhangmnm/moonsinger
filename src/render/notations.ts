@@ -82,9 +82,12 @@ export interface Build {
 export interface Notation { readonly id: NotationId; readonly home: RowKind; readonly build: Build; rowKindOf(q: Track): RowKind;
   /** 合租的一家怎么露：fold = 没人在写就叠成一行，展开着时编辑器里一条能点的括号（点 = 叠回去）；line = 不叠，一家左边一条印出来的竖线包住（简谱，UX 稿第 7 节）。 */
   readonly families: "fold" | "line" }
-/** 数字行画得了的：有音高（叠音 = 竖叠，第五刀 5-4）、不是叠起来的一家（虚拟轨）/ 声部 2、台上那位不是固定敲一个键（× 符头）。鼓 = X 行。别的照旧五线谱的行（第五刀后面几步退场）。 */
-const jianpuCan = (q: Track): boolean => !q.vrt && !q.v2 && !q.hasV2 && !q.p.xHead;
-const jianpuRowOf = (q: Track): RowKind => (!jianpuCan(q) ? "staff" : q.pmode || q.p.perc ? "jianpuX" : "jianpu");
+/** 简谱里排得了的：不是五线谱叠起来的一家（虚拟轨）/ 声部 2（简谱不叠，这两种本来就不会出现）。 */
+const jianpuCan = (q: Track): boolean => !q.vrt && !q.v2 && !q.hasV2;
+/** 不分音高的「一下」（统筹裁定 5-4 ⑨，2026-11-11）：五线谱画成鼓谱 / 一线谱的（鼓：pmode / perc）和台上那位固定敲一个键的（× 符头）——简谱里一律 X 行，
+ *  写的音高留在数据里，换成有音高的乐器就变回数字行。一个判断，不单为哪一类写特例。 */
+const unpitched = (q: Track): boolean => !!(q.pmode || q.p.perc || q.p.xHead);
+const jianpuRowOf = (q: Track): RowKind => (!jianpuCan(q) ? "staff" : unpitched(q) ? "jianpuX" : "jianpu");
 export const NOTATIONS: Readonly<Record<NotationId, Notation>> = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。

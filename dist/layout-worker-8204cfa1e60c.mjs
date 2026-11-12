@@ -7343,8 +7343,9 @@ var DRAWERS = {
   // 鼓的 X 行：和数字行同一套量和画（节奏的写法一样），音画成 X、不写升降号 / 八度点 / 琶音（jianpu/draw.ts 的 x 那一路）
   jianpuX: { kind: "jianpuX", measure: (q, k) => measureJianpu(q, k, "x"), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine, "x"), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true }
 };
-var jianpuCan = (q) => !q.vrt && !q.v2 && !q.hasV2 && !q.p.xHead;
-var jianpuRowOf = (q) => !jianpuCan(q) ? "staff" : q.pmode || q.p.perc ? "jianpuX" : "jianpu";
+var jianpuCan = (q) => !q.vrt && !q.v2 && !q.hasV2;
+var unpitched = (q) => !!(q.pmode || q.p.perc || q.p.xHead);
+var jianpuRowOf = (q) => !jianpuCan(q) ? "staff" : unpitched(q) ? "jianpuX" : "jianpu";
 var NOTATIONS2 = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
@@ -8190,4 +8191,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-dff096c02251.mjs.map
+//# sourceMappingURL=layout-worker-8204cfa1e60c.mjs.map

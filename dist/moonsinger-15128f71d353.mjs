@@ -13712,8 +13712,9 @@ var GEOMETRY = {
   jianpu: { caretSpan: jianpuCaretSpan, bandTop: jianpuBandTop, ghost: (row2, x2, notes, half2) => jianpuGhost(row2, x2, notes, half2) },
   jianpuX: { caretSpan: jianpuCaretSpan, bandTop: jianpuBandTop, ghost: (row2, x2, notes, half2) => jianpuXGhost(row2, x2, notes, half2) }
 };
-var jianpuCan = (q2) => !q2.vrt && !q2.v2 && !q2.hasV2 && !q2.p.xHead;
-var jianpuRowOf = (q2) => !jianpuCan(q2) ? "staff" : q2.pmode || q2.p.perc ? "jianpuX" : "jianpu";
+var jianpuCan = (q2) => !q2.vrt && !q2.v2 && !q2.hasV2;
+var unpitched = (q2) => !!(q2.pmode || q2.p.perc || q2.p.xHead);
+var jianpuRowOf = (q2) => !jianpuCan(q2) ? "staff" : unpitched(q2) ? "jianpuX" : "jianpu";
 var NOTATIONS2 = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
@@ -32767,7 +32768,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-dff096c02251.mjs");
+      return pick(() => "layout-worker-8204cfa1e60c.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-0351db4bb88f.mjs");
   }
@@ -62408,4 +62409,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b1f18fc57132.mjs.map
+//# sourceMappingURL=moonsinger-15128f71d353.mjs.map
