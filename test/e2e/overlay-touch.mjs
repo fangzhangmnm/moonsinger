@@ -1,5 +1,6 @@
 // test/e2e/overlay-touch.mjs —— 真浏览器 E2E（iPad 竖屏、手指）：谱面上面那一层（覆盖层）的钮不吃手势——
-//   手指按在眼睛 / 喇叭钮、虚线框上再拖 = 照样滚谱（钮不触发）；一根手指在钮上、另一根在谱上 = 照样捏合缩放；没动就松手 = 点；按住不动 = 长按。
+//   手指按在纸角的小钮、虚线框上再拖 = 照样滚谱（钮不触发）；一根手指在钮上、另一根在谱上 = 照样捏合缩放；没动就松手 = 点（手指抖一点也算）。
+//   2026-11-12（施工单第 12 条 12-2）：名字上面的眼睛 / 喇叭搬进小卡了，这里改用纸角的小钮当样本（同一层、同一套手势判法）；开关本身的点 / 长按在 part-toggles.mjs。
 //   另守一条：曲段 / 声部的编号（文件里读进来的）带引号也拼不出多余的属性。
 // created 2026-11-08 by Claude Fable 5.1（审刀 1 时查出：v0.16.25 覆盖层的钮 pointerdown 就拦下、谱面收不到 → 手指落在钮上滚不动、捏不了；
 //   刀 1 之前这些钮画在谱里，按住拖 = 滚动。施工单 N3「手感不变」，原有 E2E 没有一条量这个）
@@ -35,15 +36,16 @@ const drag = async (from, dy, steps = 10) => {
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await p.waitForTimeout(350);
 };
 
-// ① 手指按在眼睛钮上往上推 = 滚谱；钮不触发
+// ① 手指按在纸角的小钮上往上推 = 滚谱；钮不触发
 await top(0); await p.waitForTimeout(150);
-const eye = await at('.ov-tg[data-kind="hidden"]', "tg");
-check(!!eye, "找得到眼睛钮");
-const s0 = await shown(), t0 = await top();
+const opened = () => p.evaluate(() => document.querySelectorAll(".sheet-panel, .offer, .ctx-menu, .track-card, dialog[open], .modal").length);
+const eye = await at(".ov-paper-chip", "none");
+check(!!eye, "找得到纸角的小钮");
+const s0 = await shown(), t0 = await top(), o0 = await opened();
 await drag(eye, -400);
 const t1 = await top();
-check(t1 > t0 + 200, "手指按在眼睛钮上拖 = 滚谱", `${t0} → ${t1}`);
-check((await shown()) === s0, "拖过的那一下钮不触发（没隐藏谁）", await shown());
+check(t1 > t0 + 200, "手指按在纸角的小钮上拖 = 滚谱", `${t0} → ${t1}`);
+check((await opened()) === o0 && (await shown()) === s0, "拖过的那一下钮不触发（没开纸的设置）");
 
 // ② 滚到底：手指按在虚线框上往下拉 = 滚谱；不开「＋」的菜单
 await p.$eval("#score", (e) => { e.scrollTop = e.scrollHeight; }); await p.waitForTimeout(250);
@@ -60,38 +62,25 @@ check(!(await p.$(".ctx-menu, .offer, .track-card, .parts-page")), "拖过的那
 
 // ③ 一根手指在眼睛钮上、另一根在谱上，张开 = 捏合缩放
 await top(0); await p.waitForTimeout(200);
-const eye2 = await at('.ov-tg[data-kind="hidden"]', "tg"), z0 = await zoom();
-const f2 = { x: eye2.x + 200, y: eye2.y + 120 };
+const eye2 = await at(".ov-paper-chip", "none"), z0 = await zoom();
+const f2 = { x: eye2.x - 250, y: eye2.y + 150 };   // 纸角的小钮在右上角：第二根手指放在它左下，往左下张开
 await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...eye2, id: 1 }] }); await p.waitForTimeout(30);
 await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...eye2, id: 1 }, { ...f2, id: 2 }] }); await p.waitForTimeout(30);
-for (let k = 1; k <= 8; k++) { await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...eye2, id: 1 }, { x: f2.x + k * 25, y: f2.y + k * 20, id: 2 }] }); await p.waitForTimeout(16); }
+for (let k = 1; k <= 8; k++) { await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...eye2, id: 1 }, { x: f2.x - k * 25, y: f2.y + k * 20, id: 2 }] }); await p.waitForTimeout(16); }
 await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await p.waitForTimeout(400);
 const z1 = await zoom();
 check(z1 > z0 * 1.3, "一根手指在钮上也能捏合缩放", `zoom ${z0} → ${z1}`);
-check((await shown()) === s0, "捏合的那一下钮不触发", await shown());
+check((await shown()) === s0 && (await opened()) === o0, "捏合的那一下钮不触发", await shown());
 await p.evaluate(() => document.querySelector(".zoom-reset")?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))); await p.waitForTimeout(250);
 
-// ④ 没动就松手 = 点（喇叭 = 静音，不改版面）；按住不动 = 长按（独奏）
+// ④ 手指抖一点（< 10 px）也算轻点：纸角的小钮照样开纸的设置
 await top(0); await p.waitForTimeout(200);
-const ear = await at('.ov-tg[data-kind="muted"]', "tg");
-const tg = () => p.evaluate(() => { const b = document.querySelector('#score .score-overlay .ov-tg[data-kind="muted"]'); return b ? [...b.classList].filter((c) => c.startsWith("tg-")).join(",") : null; });
-if (await tg() !== null) {
-  await p.touchscreen.tap(ear.x, ear.y); await p.waitForTimeout(250);
-  check((await tg()) === "tg-muted", "轻点喇叭 = 静音", await tg());
-  await p.touchscreen.tap(ear.x, ear.y); await p.waitForTimeout(250);
-  check((await tg()) === "", "再点 = 出声", await tg());
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...ear, id: 1 }] }); await p.waitForTimeout(600);
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await p.waitForTimeout(250);
-  check((await tg()) === "tg-solo", "按住不动 = 长按（独奏），抬手不再算一次点", await tg());
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...ear, id: 1 }] }); await p.waitForTimeout(600);
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await p.waitForTimeout(250);
-  check((await tg()) === "", "再长按 = 独奏关掉", await tg());
-  // 手指抖一点（< 10 px）也算轻点
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...ear, id: 1 }] }); await p.waitForTimeout(30);
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: ear.x + 4, y: ear.y + 5, id: 1 }] }); await p.waitForTimeout(30);
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await p.waitForTimeout(250);
-  check((await tg()) === "tg-muted", "手指抖一点也算轻点（静音）", await tg());
-}
+{ const c = await at(".ov-paper-chip", "none"), before = await opened();
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...c, id: 1 }] }); await p.waitForTimeout(30);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: c.x + 4, y: c.y + 5, id: 1 }] }); await p.waitForTimeout(30);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await p.waitForTimeout(350);
+  check((await opened()) > before, "手指抖一点也算轻点（纸的设置开了）");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(250); }
 
 // ⑤ 手指轻点别的钮 = 照样开（点完菜单还在，不被这同一下的抬手收掉）
 const sheetBefore = await p.evaluate(() => document.querySelectorAll(".sheet-panel, .offer, .ctx-menu, .track-card, dialog[open], .modal").length);

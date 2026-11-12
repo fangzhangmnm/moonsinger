@@ -6,7 +6,6 @@ export const SCROLL_TAIL = 6;
 /** 谱前简写那一列的宽度参照（7 个半角宽 = part-colors.ts ABBR_W）。 */
 export const ABBR_REF = "Vln.Vc.";   // sp：横卷每张纸内容后面留的尾巴
 export const NAME_MAX = 6.5;   // sp：谱前声部名一列最宽（再长折行；engrave() 里 nameLines）
-export const NAME_MIN = 3.0 * 2 + 0.4;   // 两颗钮 3.0（v0.16.33 起；改钮的大小要两处一起改）
 // ── 尺寸（单位 sp） ─────────────────────────────────────────────────────
 /** 防抖：行的上下留白、歌词基线往下让，超出版式最小值的那一截按这么多线间距一格往上取（刀 4b 之后，user 11-09）。 */
 export const ROW_STEP = 1;

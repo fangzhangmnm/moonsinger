@@ -9,7 +9,6 @@ import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type
 import { midiOf } from "../score/pitch.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { scriptLang } from "../score/lang.ts";
-import { varyRoll, type RollVariation } from "./roll-variation.ts";
 import { gainSegments, noteEnd, noteVelocities, rollHitVelocity, depthCurve, lightMarks, rollDefaultHz, ROLL_HZ_MIN, ROLL_HZ_MAX, type PerfSpec, type VelDb } from "../score/perform.ts";
 import { grooveWeights, grooveMapOf, followOf, timeMapOf, type GrooveStyle } from "../score/groove.ts";
 import { toLabScore, singChunks, type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
@@ -46,8 +45,6 @@ export interface PerformerInfo {
   /** 着力点（v0.10.27；鼓 / 音效）：敲这个键时采样开头到「砸下去那一下」几秒——录音房提前这么多开始放，砸在写的那一拍上（反向镲 1.4 s）。
    *  有音高的乐器不给（不挪）。src/gm/percussion.ts；设计账 ai-docs/20261010-shared-staff-percussion-design.md §3。 */
   hitSec?: (key: number) => number;
-  /** 滚奏的「变化」（7-N 第三批，试验）：只在这次打开里有效、不进歌（RenderPlan.trial 带进来）；没有 = 均匀。 */
-  rollVar?: RollVariation;
   /** 这位自己的唱法参数（小月相：候选 defaults 里的旋钮，乐器页「高级」；2026-10-15）：盖在 TimelineInput.singOpt 上，一起进块的内容键。 */
   singOpt?: Record<string, unknown>;
   /** 按力度敲的乐器：引擎在敲的键上实际的 L（写的音高 × 力度 → dB；perform.ts VelDb，7-N）。准备声音时从库的字节算（录音房载库时），没载好 = 没有（这个声部本来就不出声）。
@@ -116,7 +113,7 @@ export function songLangOf(tokens: readonly Token[], hum: Hum): SingLang {
 /** 滚奏一下的力度（7-N）：perform.ts rollHitVelocity 给的那个函数。 */
 export type RollVel = ReturnType<typeof rollHitVelocity>;
 /** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。marks = 修的记号怎么落到这一路上（跳音截短、呼吸处收短一口气）；不给 = 照谱满长。 */
-export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: { staccatoGate: number; breath: boolean; gapSec: number; arpeggioSec?: number; /** 滚奏每秒几下（按敲的键 / 音高）；没给 = 这位不认滚奏，照一个长音放。 */ rollHz?: (midi: number) => number; /** 滚奏的「变化」（7-N 第三批，试验）：没有 = 均匀。 */ rollVar?: RollVariation }, velOf?: (index: number, art: readonly string[]) => number, rollVel?: RollVel): { midi: number; t0: number; t1: number; vel?: number }[] {
+export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: { staccatoGate: number; breath: boolean; gapSec: number; arpeggioSec?: number; /** 滚奏每秒几下（按敲的键 / 音高）；没给 = 这位不认滚奏，照一个长音放。 */ rollHz?: (midi: number) => number; }, velOf?: (index: number, art: readonly string[]) => number, rollVel?: RollVel): { midi: number; t0: number; t1: number; vel?: number }[] {
   type N = { midi: number; t0: number; t1: number; vel?: number; roll?: true; segs?: { index: number; t0: number; t1: number }[] };   // segs = 滚奏音的每一段（连音线连过去的几段；7-N：每一下按落在哪一段取力度）
   const notes: N[] = [];
   let open = new Map<number, N>();   // 上一个音正在响的各音高（连音线按音高接；力度跟第一段）
@@ -151,7 +148,7 @@ export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, ma
       hits.push({ midi: n.midi, t0: t, t1: n.t0 + (i + 1) * d, ...(v !== undefined ? { vel: v } : {}) });
     }
     // 「变化」（7-N 第三批，试验，默认没有）：左右手交替 + 小随机，种子 = 这个滚奏的音的 id（同一首歌每次一样；离线 = 实时）
-    out.push(...(marks.rollVar && segs[0] ? varyRoll(hits, tokens[segs[0].index]!.id, marks.rollVar) : hits));
+    out.push(...hits);
   }
   return out.sort((a, b) => a.t0 - b.t0);   // 琶音提早的低音可能比前一个音还早一点：按起点排（稳定排序：没琶音的歌顺序原样）
 }
@@ -199,7 +196,7 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const percKey = (m: number): number | null => (info.gm?.note !== undefined ? info.gm.note : info.hitSec ? m : null);
     const rollHz = info.plugin.honors.includes("roll") ? (m: number) => info.spec.rollHz ?? rollDefaultHz(percKey(m)) : undefined;
     const rollVel = rollHz && byVel ? rollHitVelocity(tokens, map, info.spec, info.velocity, bounds, groove, curve) : undefined;   // 滚奏的每一下按当时的力度水平（7-N；按音量曲线的照旧）
-    const notes0 = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(info.spec), ...(rollHz ? { rollHz, ...(info.rollVar ? { rollVar: info.rollVar } : {}) } : {}) }, (i) => vels?.get(i) ?? info.velocity, rollVel);
+    const notes0 = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(info.spec), ...(rollHz ? { rollHz } : {}) }, (i) => vels?.get(i) ?? info.velocity, rollVel);
     // 踏板（11-1）：键按多久 = 谱上的延音踏板 → 照写的时值（score/pedal.ts）。这位不认踏板 = 照写的（记号画灰、明说）
     const notes = info.plugin.pedals?.includes("sustain") ? holdBySustain(notes0, sustainSpans(tokens, map, bounds)) : notes0;
     // 快引擎：音符表 → 这位的轨，怎么拼归插件（元音版 / SoundFont 的键 / 着力点都在它自己那里；ADR-0004）

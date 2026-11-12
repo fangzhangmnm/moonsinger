@@ -7,8 +7,9 @@ import type { ColEntry } from "./frame/arrange.ts";
 import type { LaneKind } from "./frame/lanes.ts";
 import type { LyricPart } from "./frame/lyric-spots.ts";
 import { staffLooks, staffRows, staffTracks, measureTrack, lineStartWidth, lyricAnchors, drawStaff, STAFF_LANES, anchors, caretSpan, bandTop, pitchAxis, staffGhost, type StaffTrack, type StaffDrawCtx, type Unit, type Chunk } from "./staff/index.ts";
-import { measureJianpu, jianpuLineStart, jianpuLyricAnchors, drawJianpu, JIANPU_LANES, jianpuAnchors, jianpuCaretSpan, jianpuBandTop, jianpuGhost, jianpuXGhost } from "./jianpu/index.ts";
+import { measureJianpu, jianpuLineStart, jianpuLyricAnchors, drawJianpu, kitLegendMin, JIANPU_LANES, jianpuAnchors, jianpuCaretSpan, jianpuBandTop, jianpuGhost, jianpuXGhost, type JianpuTrack } from "./jianpu/index.ts";
 import type { SystemBox } from "./engrave.ts";
+import type { TextRole } from "./text/index.ts";
 import type { GhostNote } from "./frame/ghost.ts";
 export type { GhostNote } from "./frame/ghost.ts";
 import type { ChordFold } from "../theory/index.ts";
@@ -46,13 +47,15 @@ export interface RowDrawer {
   anchors(origin: number, half: number): { top: number; mid: number; bottom: number };
   /** 这种行一条轨只占一行（没有大谱表的上下两条）：框架排之前把这条轨的谱表数当 1。 */
   readonly oneRow?: true;
+  /** 这条轨在名字那一栏里还要画的东西（鼓的图例）要多宽（sp）；没有 = 0。框架的名字一栏 = 最宽的名字和它取大（施工单第 12 条 12-2：栏宽只看谱上真有的字）。 */
+  nameMin?(q: Track, mw: (role: TextRole, s: string) => number): number;
 }
 export const DRAWERS: Readonly<Record<RowKind, RowDrawer>> = {
   staff: { kind: "staff", measure: measureTrack, lineStart: lineStartWidth, lyricAnchors, draw: (c, mine) => drawStaff(c, mine), lanes: STAFF_LANES, anchors },
   // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
   jianpu: { kind: "jianpu", measure: (q, k, aux) => measureJianpu(q, k, "digits", aux), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
   // 鼓的 X 行：和数字行同一套量和画（节奏的写法一样），音画成 X、不写升降号 / 八度点 / 琶音（jianpu/draw.ts 的 x 那一路）
-  jianpuX: { kind: "jianpuX", measure: (q, k, aux) => measureJianpu(q, k, "x", aux), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine, "x"), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
+  jianpuX: { kind: "jianpuX", measure: (q, k, aux) => measureJianpu(q, k, "x", aux), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine, "x"), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true, nameMin: (q, mw) => kitLegendMin(q as JianpuTrack, mw) },
 };
 
 /** 一种行在主线程上的几何（设计稿第 3.3 节末；统筹审第四刀接口第 2 条：和 DRAWERS 并排、按行的种类查）。谱面（score-view）只查这张表，不写「如果是简谱」。

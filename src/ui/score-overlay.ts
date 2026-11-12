@@ -11,17 +11,13 @@
 //     所以手指的 move / up 在 window 上听（捕获阶段）。edited by Claude Fable 5.1 2026-11-08（审刀 1：v0.16.25 手指落在钮 / 虚线框上滚不动、捏不了；E2E overlay-touch 守）
 import { _t } from "../i18n/index.ts";
 import { TEXT_FACES, textStyleOf, faceMetrics, boxTopFor, type TextStyle } from "../render/text/index.ts";
-import type { Layout, PartToggle, PartToggles } from "../render/engrave.ts";
+import type { Layout } from "../render/engrave.ts";
 import type { Song } from "../score/song.ts";
 
-/** 两颗钮（眼睛 / 喇叭）多大（sp）：比纸角的小控件（3.0）大（user 11-08「至少要比那些小扳手、本段这些东西大」「要粗的手指也能点」；E2E part-toggles 守 ≥ 3.1）。 */
-export const TG_BTN = 3.0;   // v0.16.33：3.2 → 3.0（user 11-09「眼睛和喇叭稍微再小一点」）；框和纸角钮（CTL_H 3.0）一样大，图标 2.16 仍比纸角钮的 2.0 大（user 11-08「至少要比那些小扳手大」）
-const TG_GAP = 0.4, CTL_H = 3.0, CTL_GLYPH = 2.0, CTL_TEXT = 1.4, LONG_MS = 420, TOUCH_SLOP = 10;
-const TG_LONG: Record<"hidden" | "muted", PartToggle> = { hidden: "only", muted: "solo" };
+// 名字上面原来的两颗钮（眼睛 / 喇叭）2026-11-12 起搬进点名字弹出的小卡（施工单第 12 条 12-2，user「声部上面的两个钮还是难看…能不能排版的时候不看这些钮。然后这些钮找个聪明的地方放」）
+const CTL_H = 3.0, CTL_GLYPH = 2.0, CTL_TEXT = 1.4, TOUCH_SLOP = 10;
 
 export interface OverlayHost {
-  toggles(part: string): PartToggles;
-  onPartToggle(part: string, kind: PartToggle): void;
   onPaperAdd(paper: string, kind: "part" | "paper", at: { x: number; y: number }): void;
   onPaperMenu(paper: string): void;
   onNavFrom(paper: string, dir: -1 | 1): void;
@@ -66,7 +62,7 @@ export class ScoreOverlay {
       const el = (e.target as HTMLElement).closest<HTMLElement>(".ov-i"); if (!el) return;
       const fired = !!this.press?.fired;   // 安卓：长按到点已经算过一次，系统随后又发 contextmenu——不算第二次（不然「只看」开了又关）
       e.preventDefault(); e.stopPropagation(); this.cancel();
-      if (!fired && el.dataset.ov === "tg") this.host.onPartToggle(el.dataset.part!, TG_LONG[el.dataset.kind as "hidden" | "muted"]);   // 右键 = 长按（只看 / 独奏）
+      void fired;
     });
   }
 
@@ -82,21 +78,6 @@ export class ScoreOverlay {
     const song = v.song, papers = song.papers, multi = papers.length > 1, nameOf = (id: string) => papers.find((p) => p.id === id);
     this.hiddenOf = new Map(L.papers.map((pp) => [pp.id, pp.hiddenParts]));
 
-    // ① 两颗钮：名字块上面，可以超出谱上沿（user 11-08）；一张纸上各位的钮对同一条中线 = 整个名字栏的中间（v0.16.49，user 11-09「眼睛应该对齐」：原来各自对自己的名字居中，名字长短不一就一个比一个偏）
-    const colRight = new Map<string, number>();
-    for (const n of L.names) { const c = colRight.get(n.paper); colRight.set(n.paper, c === undefined ? n.x1 : Math.max(c, n.x1)); }
-    const colLeft = new Map<string, number>();
-    for (const n of L.names) { const c = colLeft.get(n.paper); colLeft.set(n.paper, c === undefined ? n.x0 : Math.min(c, n.x0)); }
-    for (const n of L.names) {
-      const gs = L.sp;   // 两颗钮跟谱的尺子（刀 2 试：user 11-09「紧凑档里两颗钮跟着谱一起缩小三成。试一下」——紧凑档行距小，跟字放大会和上一位的两行名字挤在一起）
-      const t = this.host.toggles(n.part), s = TG_BTN * gs, total = (TG_BTN * 2 + TG_GAP) * gs, cx = ((colLeft.get(n.paper) ?? n.x0) + (colRight.get(n.paper) ?? n.x1)) / 2, x0 = Math.max(0.2 * gs, cx - total / 2), y = n.top - 0.35 * gs - s;
-      const eye = t.only ? "visibility-only" : t.hidden ? "visibility-hide" : "visibility-show", ear = t.solo ? "volume-solo" : t.muted ? "volume-mute" : "volume";
-      const btn = (kind: "hidden" | "muted", k: number, ic: string, st: string, title: string) =>
-        add(`tg:${n.paper}:${n.part}:${kind}`, "button", `ov-i ov-tg${st ? ` on ${st}` : ""}`, box(x0 + k * (TG_BTN + TG_GAP) * gs, y, s, s), icon(ic, s * 0.72),
-          { "data-ov": "tg", "data-part": n.part, "data-kind": kind, title, "aria-label": title });
-      btn("hidden", 0, eye, t.only ? "tg-only" : t.hidden ? "tg-hidden" : "", _t("点 = 隐藏 / 显示；长按（电脑右键）= 只看它"));
-      btn("muted", 1, ear, t.solo ? "tg-solo" : t.muted ? "tg-muted" : "", _t("点 = 静音 / 出声；长按（电脑右键）= 独奏"));
-    }
     // ② 纸角的小钮（纸的设置）+ 只有一张纸时歌名左边的「⋯」
     { const s = CTL_H * sp, x = L.content.right - s, y = L.title.y + 0.5 * sp;
       add("chip", "button", "ov-i ov-chip ov-paper-chip", box(x, y, s, s), icon("jianpu-staff", CTL_GLYPH * sp), { "data-ov": "chip", title: _t("谱种和纸：{paperLabel}", { paperLabel: v.paperLabel }) }); }   // 「1 / ♪」（user 11-11：一看就知道是切换五线谱和简谱的地方）
@@ -204,7 +185,6 @@ export class ScoreOverlay {
     this.cancel();
     if (!touch) { e.preventDefault(); e.stopPropagation(); try { el.setPointerCapture(e.pointerId); } catch { /* ignore */ } }   // 手指不拦：谱面接着收到这一下（滚动 / 捏合）
     const p = { el, pid: e.pointerId, timer: 0, fired: false, touch, x: e.clientX, y: e.clientY };
-    if (el.dataset.ov === "tg") p.timer = window.setTimeout(() => { p.fired = true; this.host.onPartToggle(el.dataset.part!, TG_LONG[el.dataset.kind as "hidden" | "muted"]); }, LONG_MS);   // 长按 = 只看 / 独奏
     this.press = p;
   }
   private up(e: PointerEvent): void {
@@ -221,7 +201,6 @@ export class ScoreOverlay {
   private fire(el: HTMLElement, r: DOMRect): void {
     const d = el.dataset, mid = { x: (r.left + r.right) / 2, y: r.bottom }, top = { x: (r.left + r.right) / 2, y: r.top };
     switch (d.ov) {
-      case "tg": this.host.onPartToggle(d.part!, d.kind as PartToggle); break;
       case "chip": this.host.onPaper(); break;
       case "menu": this.host.onPaperMenu(d.paper!); break;
       case "prev": if (!el.classList.contains("off")) this.host.onNavFrom(d.paper!, -1); break;

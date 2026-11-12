@@ -2,7 +2,6 @@ export declare const SCROLL_TAIL = 6;
 /** 谱前简写那一列的宽度参照（7 个半角宽 = part-colors.ts ABBR_W）。 */
 export declare const ABBR_REF = "Vln.Vc.";
 export declare const NAME_MAX = 6.5;
-export declare const NAME_MIN: number;
 /** 防抖：行的上下留白、歌词基线往下让，超出版式最小值的那一截按这么多线间距一格往上取（刀 4b 之后，user 11-09）。 */
 export declare const ROW_STEP = 1;
 export declare const MARGIN = 1.2, BAR_W = 1.6, TITLE_H = 5.4;

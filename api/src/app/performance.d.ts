@@ -7,7 +7,6 @@ import { type Extras, type GmCandidate } from "../format/project.ts";
 import { type CreditLine } from "../format/credits.ts";
 import { StudioClient } from "../engine/studio-client.ts";
 import type { TrackSpec } from "../engine/studio.ts";
-import type { RollVariation } from "../engine/roll-variation.ts";
 import { type Timeline, type PerformerInfo } from "../engine/timeline.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
 /** 胶水向宿主要的东西（main.ts 给）：状态只读访问器 + 几个界面 / 音源 / 署名的口；胶水不碰 DOM、不碰文件、不碰 undo。 */
@@ -207,9 +206,5 @@ export declare function createPerformance(host: PerfHost): {
     } | null;
     readonly exporting: boolean;
     mixBypass: boolean;
-    rollTrial: (role: string) => RollVariation | null;
-    setRollTrial: (role: string, v: RollVariation | null) => void;
-    trialOn: () => boolean;
-    resetTrial: () => void;
     turnLead: number;
 };

@@ -1,10 +1,6 @@
-import type { Layout, PartToggle, PartToggles } from "../render/engrave.ts";
+import type { Layout } from "../render/engrave.ts";
 import type { Song } from "../score/song.ts";
-/** 两颗钮（眼睛 / 喇叭）多大（sp）：比纸角的小控件（3.0）大（user 11-08「至少要比那些小扳手、本段这些东西大」「要粗的手指也能点」；E2E part-toggles 守 ≥ 3.1）。 */
-export declare const TG_BTN = 3;
 export interface OverlayHost {
-    toggles(part: string): PartToggles;
-    onPartToggle(part: string, kind: PartToggle): void;
     onPaperAdd(paper: string, kind: "part" | "paper", at: {
         x: number;
         y: number;

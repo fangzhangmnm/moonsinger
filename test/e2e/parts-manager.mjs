@@ -20,7 +20,7 @@ const mgr = async (n = 0) => { await card(n); await p.click('.track-card [data-v
 const P1 = await p.evaluate(() => window.__moonsinger.state().song.parts[0].id);
 const text = () => p.evaluate(() => document.body.innerText);
 await card();
-check((await p.$$eval(".track-card [data-v]", (bs) => bs.map((b) => b.dataset.v).join(","))) === "swap,inst,parts,delpart" && !!(await p.$('.track-card [data-v="delpart"].danger')), "小卡四颗：换乐器 / 乐器设置 / 声部管理 / 删掉声部（红）", await p.$$eval(".track-card [data-v]", (bs) => bs.map((b) => b.dataset.v).join(",")));
+check((await p.$$eval(".track-card [data-v]", (bs) => bs.map((b) => b.dataset.v).join(","))) === "tg:hidden,tg:muted,swap,inst,parts,delpart" && !!(await p.$('.track-card [data-v="delpart"].danger')), "小卡：显示 / 出声（12-2）+ 换乐器 / 乐器设置 / 声部管理 / 删掉声部（红）", await p.$$eval(".track-card [data-v]", (bs) => bs.map((b) => b.dataset.v).join(",")));
 await p.click('.track-card [data-v="parts"]'); await p.waitForTimeout(220);
 check(!!(await p.$(`.parts-mgr .pm-acts [data-v="addabove:${P1}"]`)) && !!(await p.$(`.parts-mgr .pm-acts [data-v="giveof:${P1}"]`)) && !!(await p.$(`.parts-mgr .pm-acts [data-v="delpart:${P1}"].danger`)), "从名字进来：这一行的 ⋯ 已展开（在上面加 / 交给 / 删掉声部）");
 // 下面加一位新的

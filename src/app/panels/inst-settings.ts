@@ -14,7 +14,6 @@ import { sfKey } from "../../gm/sf-key.ts";
 import { DYNS, type Dyn, type Hum, type Song } from "../../score/song.ts";
 import { jointOf, GS_LIBRARY_ID, type Catalog } from "../../gm/catalog.ts";
 import { DYN_GLYPH } from "../../render/smufl.ts";
-import { ROLL_VARIATION, type RollVariation } from "../../engine/roll-variation.ts";
 
 export interface InstSettingsHost {
   shown(): boolean;                    // 乐器页开着没
@@ -30,8 +29,6 @@ export interface InstSettingsHost {
   setHum(h: Hum): void; setPart(id: string): void; silence(): void;
   back(): void; togglePad(): void; openFinder(): void; findBankFile(candId: string): void;
   // 试验选项（7-N 第三批）：只在这次打开里有效、不进歌、不进撤销，换歌复位（宿主记着；听和导出都带上）
-  rollTrial(): RollVariation | null;   // 这位（角色 + 上场那位）滚奏的「变化」；null = 没有（均匀，默认）
-  setRollTrial(v: RollVariation | null): void;
 }
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const chip = (v: string, label: string, on: boolean, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v="${esc(v)}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
@@ -183,11 +180,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       (plug?.honors.includes("roll") ? ((set: number | null, d: number) => row(_t("滚奏"), `<b class="ip-val">${esc(_t("每秒 {n} 下", { n: set ?? d }))}</b>` +
         `<button class="btn" data-v="roll:-2" title="${_t("滚奏稀一点（每秒少 2 下）")}">−2</button><button class="btn" data-v="roll:2" title="${_t("滚奏密一点（每秒多 2 下）")}">+2</button>` +
         (set !== null ? `<button class="btn" data-v="roll:def" title="${_t("回到这件乐器的默认")}">${_t("默认")}</button>` : ""),
-        _t("谱上符干带三道斜线的音 = 滚奏：整个音按这个密度敲满；每一下按敲下去那一刻的力度——渐强渐弱 / 渐到、音内起伏（鼓也行）、强后即弱都在每一下的力度里，重音这一组只算第一下、幽灵音 / 弱化每一下都算。默认：鼓类一律 12，有音高的 14（每秒）。")))(activePerfSpec(h.extras(), role).rollHz, rollDefaultOf(role)) : "") +
-      // 滚奏的「变化」（7-N 第三批，试验；user「默认没有变化，我试了之后告诉你该sunset变化还是默认变化」）：只在这次打开里有效、不进歌；数照 src/engine/roll-variation.ts 那一处说
-      (plug?.honors.includes("roll") ? ((tv: RollVariation | null) => row(_t("滚奏的变化（试验）"), chip("rollvar:none", _t("没有（均匀）"), !tv) + chip("rollvar:small", _t("小##变化"), tv === "small") + chip("rollvar:clear", _t("明显##变化"), tv === "clear"),
-        _t("小、明显 = 左右手交替 + 随机：双数下（另一只手）轻 {hand}%；每一下的力度再随机 ±{v1}%（明显 ±{v2}%）、起点随机挪一下间隔的 ±{t1}%（明显 ±{t2}%），第一下不挪；随机按这个音定，同一首每次放出来一样。", { hand: Math.round(ROLL_VARIATION.small.hand * 100), v1: Math.round(ROLL_VARIATION.small.vel * 100), v2: Math.round(ROLL_VARIATION.clear.vel * 100), t1: Math.round(ROLL_VARIATION.small.time * 100), t2: Math.round(ROLL_VARIATION.clear.time * 100) }) +
-        `<br>${_t("试验：只在这次打开里有效，不存进歌、不进撤销，换歌就回到「没有」；听和导出都带上。开着的时候导出不用、也不记渲染缓存（缓存只认文件里的内容）。")}`))(h.rollTrial()) : "") +
+        _t("谱上符干带三道斜线的音 = 滚奏：整个音按这个密度敲满；每一下按敲下去那一刻的力度——渐强渐弱 / 渐到、音内起伏（鼓也行）、强后即弱都在每一下的力度里，重音这一组只算第一下、幽灵音 / 弱化每一下都算。每一下都是整下敲：想轻一点，就在这个音上再加幽灵音。默认：鼓类一律 12，有音高的 14（每秒）。")))(activePerfSpec(h.extras(), role).rollHz, rollDefaultOf(role)) : "") +
       // 音内起伏多深（7-N，2026-11-12；user「上了音内渐强是从-6db开始的还是从0开始的这个我也没法配置」）：swellDb，一档 3 dB，3–24，默认 6；按力度敲的旁边写约几档力度
       (plug?.honors.includes("swellGrow") || plug?.honors.includes("swellFade") ? ((D: number) => row(_t("音内起伏多深"), `<b class="ip-val">${D} dB</b>` +
         `<button class="btn" data-v="swell:-3" title="${_t("浅一点（−3 dB）")}">−3</button><button class="btn" data-v="swell:3" title="${_t("深一点（+3 dB）")}">+3</button>` +
@@ -234,7 +227,6 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     else if (v.startsWith("roll:")) { const cur = activePerfSpec(h.extras(), role).rollHz ?? rollDefaultOf(role), next = v === "roll:def" ? null : Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, cur + Number(v.slice(5)))); h.commit(withRollHz(h.extras(), role, next, hum), next === null ? _t("「{rn}」滚奏回到默认", { rn }) : _t("「{rn}」滚奏每秒 {n} 下", { rn, n: next }), "roll"); }
     else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? calDefault(role) : activeCalibrationDb(h.extras(), role) + d)); h.commit(withCalibration(h.extras(), role, next, hum), _t("「{rn}」响度校准 {next} dB", { rn, next }), "cal"); }
     else if (v.startsWith("hum:")) h.setHum(v.slice(4) as Hum);
-    else if (v.startsWith("rollvar:")) { const m = v.slice(8); h.setRollTrial(m === "small" || m === "clear" ? m : null); return; }   // 试验选项：不走撤销（宿主重画）
     else { const ch = performerOf(h.engine())?.onInspector?.(v, inspectorCtx(role)); if (!ch) return; h.commit(ch.extras, ch.label, ch.gesture); if (ch.silence) h.silence(); }   // 这位自己的行（力度 / 音效 / 修八度 / 唱法旋钮 / 分段唱…）：插件自己管（ADR-0004 §2.5）
     draw();
   });

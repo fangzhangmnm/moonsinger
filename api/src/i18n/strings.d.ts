@@ -1333,6 +1333,39 @@ export declare const S: {
     readonly "\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002": {
         readonly en: "Only for this session; not saved in the song.";
     };
+    readonly 视图: {
+        readonly en: "View";
+    };
+    readonly "\u9875\u9762\uFF08\u5206\u9875\uFF0C\u548C\u5370\u51FA\u6765\u4E00\u6837\uFF09": {
+        readonly en: "Page (paged, same as print)";
+    };
+    readonly "\u8FDE\u7EED\uFF08\u4E0D\u5206\u9875\uFF09": {
+        readonly en: "Continuous (no page breaks)";
+    };
+    readonly "\u6A2A\u5377\uFF08\u4E0D\u6298\u884C\uFF0C\u5F80\u53F3\u6EDA\uFF09": {
+        readonly en: "Scroll (no line breaks, scroll right)";
+    };
+    readonly "\u53EA\u5F71\u54CD\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B\uFF1A\u6253\u5370\u548C\u5BFC\u51FA\u6C38\u8FDC\u6309\u7EB8\u5206\u9875\u3002": {
+        readonly en: "Only changes how it looks on screen: printing and export always paginate by paper.";
+    };
+    readonly 页面: {
+        readonly en: "Page";
+    };
+    readonly "\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u548C\u5370\u51FA\u6765\u7684\u4E00\u6837": {
+        readonly en: "Breaks pages at the real paper height (A4 / A5), same as the printout";
+    };
+    readonly 连续: {
+        readonly en: "Continuous";
+    };
+    readonly "\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u9875\u9762\u89C6\u56FE\u4E00\u6837\uFF0C\u53EA\u662F\u4E0D\u5206\u9875": {
+        readonly en: "No page breaks; every line is the same as in Page view, just not paged";
+    };
+    readonly 横卷: {
+        readonly en: "Horizontal scroll";
+    };
+    readonly "\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9": {
+        readonly en: "One line per sheet, running right and scrolled sideways; part names stay pinned at the left";
+    };
     readonly 谱种: {
         readonly en: "Notation";
     };
@@ -1450,27 +1483,6 @@ export declare const S: {
     readonly "\u5355\u884C\u7684\u8C31\u3001\u7ED9\u65B0\u624B\u770B\u7684\u5E38\u7528\u8212\u9002\uFF1B\u58F0\u90E8\u591A\u7684\u603B\u8C31\u5E38\u7528\u7D27\u51D1\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002": {
         readonly en: "Single-line music and music for beginners commonly use Comfortable; scores with many parts commonly use Compact. Saved into MusicXML's scaling and spacing, so other programs open it the same way.";
     };
-    readonly 排法: {
-        readonly en: "Layout mode";
-    };
-    readonly 连续: {
-        readonly en: "Continuous";
-    };
-    readonly 分页: {
-        readonly en: "Paged";
-    };
-    readonly 横卷: {
-        readonly en: "Horizontal scroll";
-    };
-    readonly "\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837": {
-        readonly en: "No page breaks; every line matches paged layout";
-    };
-    readonly "\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370": {
-        readonly en: "Breaks at the paper's real height (A4 / A5), for print preview";
-    };
-    readonly "\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9": {
-        readonly en: "One line per sheet, running right and scrolled sideways; part names stay pinned at the left";
-    };
     readonly 屏幕放不下纸的时候: {
         readonly en: "When the screen can't fit the sheet";
     };
@@ -1536,6 +1548,15 @@ export declare const S: {
     };
     readonly "\u6253\u51FB\u4E50\u7684\u884C\u6CA1\u6709\u8C03\uFF1A\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\u9F13\uFF0C\u548C\u8C03\u53F7\u65E0\u5173\uFF08\u8C03\u53F7\u7559\u5728\u8C31\u91CC\uFF0C\u4E0D\u8D77\u4F5C\u7528\uFF09": {
         readonly en: "Percussion rows have no key: the written pitch says which drum is hit, not a pitch (the key signature stays in the score but does nothing)";
+    };
+    readonly 静音: {
+        readonly en: "Muted";
+    };
+    readonly 独奏: {
+        readonly en: "Solo";
+    };
+    readonly 只看它: {
+        readonly en: "Only this";
     };
     readonly 不出声: {
         readonly en: "Silent";
@@ -1783,14 +1804,35 @@ export declare const S: {
     readonly "\u58F0\u90E8\u7BA1\u7406\u2026": {
         readonly en: "Parts…";
     };
-    readonly "\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765": {
-        readonly en: "Change instrument: open the catalog (try with the keyboard on the right; this song’s instrument presets are on top); picking one swaps it in and keeps the catalog open so you can keep trying; “← Score” goes back";
-    };
     readonly "{who} \u5728\u6F14": {
         readonly en: "Played by {who}";
     };
-    readonly "\u6362\u4E50\u5668 \u203A": {
-        readonly en: "Change instrument ›";
+    readonly 隐藏着: {
+        readonly en: "Hidden";
+    };
+    readonly "\u70B9 = \u9690\u85CF / \u663E\u793A\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u53EA\u770B\u5B83": {
+        readonly en: "Tap = hide / show; long-press (right-click on a computer) = show only this part";
+    };
+    readonly 出声: {
+        readonly en: "Sounding";
+    };
+    readonly "\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F": {
+        readonly en: "Tap = mute / unmute; long-press (right-click on a computer) = solo";
+    };
+    readonly 换乐器: {
+        readonly en: "Change instrument";
+    };
+    readonly 进乐器目录: {
+        readonly en: "Open the instrument catalog";
+    };
+    readonly "\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765": {
+        readonly en: "Change instrument: open the catalog (try with the keyboard on the right; this song’s instrument presets are on top); picking one swaps it in and keeps the catalog open so you can keep trying; “← Score” goes back";
+    };
+    readonly 乐器设置: {
+        readonly en: "Instrument settings";
+    };
+    readonly "\u600E\u4E48\u6F14\u3001\u54CD\u5EA6": {
+        readonly en: "How it plays, loudness";
     };
     readonly "\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5": {
         readonly en: "How this performer plays (loudness, dynamics, singing…) and the name on the score: a full page, try it on the keys at the right";
@@ -3436,26 +3478,8 @@ export declare const S: {
     readonly 回到这件乐器的默认: {
         readonly en: "Back to this instrument's default";
     };
-    readonly "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": {
-        readonly en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands — crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Defaults: drums 12, pitched 14 (per second).";
-    };
-    readonly "\u6EDA\u594F\u7684\u53D8\u5316\uFF08\u8BD5\u9A8C\uFF09": {
-        readonly en: "Roll variation (trial)";
-    };
-    readonly "\u6CA1\u6709\uFF08\u5747\u5300\uFF09": {
-        readonly en: "None (even)";
-    };
-    readonly "\u5C0F##\u53D8\u5316": {
-        readonly en: "Small";
-    };
-    readonly "\u660E\u663E##\u53D8\u5316": {
-        readonly en: "Clear";
-    };
-    readonly "\u5C0F\u3001\u660E\u663E = \u5DE6\u53F3\u624B\u4EA4\u66FF + \u968F\u673A\uFF1A\u53CC\u6570\u4E0B\uFF08\u53E6\u4E00\u53EA\u624B\uFF09\u8F7B {hand}%\uFF1B\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u518D\u968F\u673A \u00B1{v1}%\uFF08\u660E\u663E \u00B1{v2}%\uFF09\u3001\u8D77\u70B9\u968F\u673A\u632A\u4E00\u4E0B\u95F4\u9694\u7684 \u00B1{t1}%\uFF08\u660E\u663E \u00B1{t2}%\uFF09\uFF0C\u7B2C\u4E00\u4E0B\u4E0D\u632A\uFF1B\u968F\u673A\u6309\u8FD9\u4E2A\u97F3\u5B9A\uFF0C\u540C\u4E00\u9996\u6BCF\u6B21\u653E\u51FA\u6765\u4E00\u6837\u3002": {
-        readonly en: "Small and Clear = alternating hands + randomness: every second stroke (the other hand) is {hand}% softer; each stroke's velocity varies randomly by ±{v1}% (Clear ±{v2}%) and its start moves randomly by ±{t1}% of the stroke spacing (Clear ±{t2}%), the first stroke stays put; the randomness is fixed per note, so the same song sounds the same every time.";
-    };
-    readonly "\u8BD5\u9A8C\uFF1A\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u3001\u4E0D\u8FDB\u64A4\u9500\uFF0C\u6362\u6B4C\u5C31\u56DE\u5230\u300C\u6CA1\u6709\u300D\uFF1B\u542C\u548C\u5BFC\u51FA\u90FD\u5E26\u4E0A\u3002\u5F00\u7740\u7684\u65F6\u5019\u5BFC\u51FA\u4E0D\u7528\u3001\u4E5F\u4E0D\u8BB0\u6E32\u67D3\u7F13\u5B58\uFF08\u7F13\u5B58\u53EA\u8BA4\u6587\u4EF6\u91CC\u7684\u5185\u5BB9\uFF09\u3002": {
-        readonly en: "Trial: only for this session — not saved in the song, not in undo, back to “None” when you switch songs; playback and export both use it. While it's on, export doesn't use or store the render cache (the cache only knows what's in the file).";
+    readonly "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u6BCF\u4E00\u4E0B\u90FD\u662F\u6574\u4E0B\u6572\uFF1A\u60F3\u8F7B\u4E00\u70B9\uFF0C\u5C31\u5728\u8FD9\u4E2A\u97F3\u4E0A\u518D\u52A0\u5E7D\u7075\u97F3\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": {
+        readonly en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands — crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Every hit is a full stroke: for a softer roll, also mark the note as a ghost note. Defaults: drums 12, pitched 14 (per second).";
     };
     readonly 音内起伏多深: {
         readonly en: "In-note swell depth";
@@ -3630,9 +3654,6 @@ export declare const S: {
     };
     readonly "\u6B63\u5728\u5BFC\u51FA\u6216\u51C6\u5907\u64AD\u653E\uFF0C\u7B49\u5B83\u5B8C\u4E86\u518D\u6E32": {
         readonly en: "Exporting or getting ready to play; render after that finishes";
-    };
-    readonly "\u4E50\u5668\u9875\u5F00\u7740\u8BD5\u9A8C\u9009\u9879\uFF08\u6EDA\u594F\u7684\u53D8\u5316\uFF09\uFF1A\u6E32\u51FA\u6765\u7684\u4E0D\u662F\u6587\u4EF6\u91CC\u7684\u6837\u5B50\uFF0C\u4E0D\u8BB0\u8FDB\u6E32\u67D3\u7F13\u5B58\u3002\u5173\u6389\u8BD5\u9A8C\u9009\u9879\u518D\u6E32\uFF0C\u6216\u8005\u76F4\u63A5\u5BFC\u51FA": {
-        readonly en: "A trial option is on in the instrument page (roll variation): the render isn't what the file says, so it won't go into the render cache. Turn the trial option off and render again, or just export";
     };
     readonly "{label} \u00B7 \u5F00\u5934 {p} \u79D2": {
         readonly en: "{label} · first {p} s";
@@ -5521,8 +5542,8 @@ export declare const S: {
     readonly 和弦从低到高一个个拨出来: {
         readonly en: "Roll the chord from the lowest note up";
     };
-    readonly "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09": {
-        readonly en: "Repeat this note rapidly (a roll)";
+    readonly "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09\uFF1B\u6BCF\u4E00\u4E0B\u90FD\u662F\u6574\u4E0B\u6572\uFF0C\u60F3\u8F7B\u4E00\u70B9\u5C31\u518D\u52A0\u5E7D\u7075\u97F3": {
+        readonly en: "Repeat this note rapidly (a roll); every hit is a full stroke — for a softer roll, also add a ghost note";
     };
     readonly "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7": {
         readonly en: "{dynName} ({dyn}): from this note on, at this loudness, until the next dynamic mark";
@@ -6618,12 +6639,6 @@ export declare const S: {
     };
     readonly " \u4EAE": {
         readonly en: " bright";
-    };
-    readonly "\u70B9 = \u9690\u85CF / \u663E\u793A\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u53EA\u770B\u5B83": {
-        readonly en: "Tap = hide / show; long-press (right-click on a computer) = show only this part";
-    };
-    readonly "\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F": {
-        readonly en: "Tap = mute / unmute; long-press (right-click on a computer) = solo";
     };
     readonly "\u8C31\u79CD\u548C\u7EB8\uFF1A{paperLabel}": {
         readonly en: "Notation and paper: {paperLabel}";

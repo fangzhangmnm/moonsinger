@@ -80,8 +80,9 @@ export interface JianpuDrawCtx {
     ind0: number;
     indN: number;
 }
-/** 画这几条（mine = per 里的下标）简谱轨。 */
-/** mode = 数字行（digits）还是鼓的 X 行（x：音画成 X、调号只在编辑器里给淡的提示；第五刀 5-4）。 */
+/** 名字那一栏至少要多宽才放得下这条轨的鼓的图例（sp；施工单第 12 条 12-2，统筹选 A：栏宽只看谱上真有的字）：一件鼓占一行时最宽的那一行（「● 小鼓」），
+ *  最多到声部名的上限 NAME_MAX（再长的名字照旧在栏里折）。按整张纸用到的鼓算（排之前不知道第一行有哪几件）；没有图例 = 0。 */
+export declare function kitLegendMin(q: JianpuTrack, mw: (role: TextRole, s: string) => number): number;
 export declare function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode?: JianpuMode): {
     lyricParts: LyricPart[];
 };

@@ -23,7 +23,8 @@ const waitPlaying = async (want = true) => { for (let i = 0; i < 80; i++) { if (
 const BAR = 4 * (60 / 90);   // ♩ = 90，一小节 4 拍（秒）
 // 1. 空白处右键（= 长按）菜单「从这儿放」：第二小节第二、三个音之间的空白
 const ba = await p.locator(".staff-svg .note").nth(PER + 1).boundingBox(), bb = await p.locator(".staff-svg .note").nth(PER + 2).boundingBox();
-await p.mouse.click((ba.x + ba.width + bb.x) / 2, ba.y + ba.height / 2, { button: "right" }); await p.waitForTimeout(150);
+// 点在这两个音上方的空白（同一个 x = 还是第二小节）：音挨得近时音和音之间的缝可能比手指 / 鼠标的命中范围还窄（12-2 名字一栏变窄后一行能放更多小节，缝从十几像素变成 8 像素）
+await p.mouse.click((ba.x + ba.width + bb.x) / 2, Math.min(ba.y, bb.y) - 15, { button: "right" }); await p.waitForTimeout(150);
 check(!!(await p.$('.ctx-menu [data-v="play"]')), "空白处长按 / 右键菜单里有「从这儿放」");
 await p.click('.ctx-menu [data-v="play"]');
 check(await waitPlaying(), "从这儿放 = 放起来");

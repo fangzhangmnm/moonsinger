@@ -48,7 +48,8 @@ check(n0 === 3 && (await p.evaluate(() => window.__moonsinger.home())) === "file
   check(box.below && box.above, "门在顶栏和谱之间自己一行，不盖谱", JSON.stringify(box)); }
 
 // ── ① 界面 + ② 写入口：键盘、触屏键盘、直接走写入口，都写不进去；只闪不弹 ──
-await p.click("#score", { position: { x: 300, y: 200 } });
+// 点谱面右边的空白拿焦点（原来点 (300, 200)：12-2 名字一栏变窄后谱往左挪，那一点落到行首的谱号 / 调号上、开了谱头面板）
+await p.click("#score", { position: { x: (await p.$eval("#score", (e) => e.clientWidth)) - 40, y: 200 } });
 await p.keyboard.press("5"); await p.waitForTimeout(150);
 check((await notes()) === n0, "电脑键盘按音键：谱没变（锁着键盘只弹不写，同「弹」；不算蹭，不闪）");
 await p.click(".pad-key[data-k] >> nth=0"); await p.waitForTimeout(150);

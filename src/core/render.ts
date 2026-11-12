@@ -16,7 +16,6 @@ import { activeGm, activeInstrument, activeCalibrationDb, activeVelocity, active
 import { performerOf } from "../performers/index.ts";
 import { buildTimeline, LEAD_IN, type Timeline, type PerformerInfo } from "../engine/timeline.ts";
 import { resolveChain } from "../engine/chain.ts";
-import type { RollVariation } from "../engine/roll-variation.ts";
 import type { TimelineMsg, ChannelParams, BusSpec, MasterParams } from "../engine/studio.ts";
 import type { VowelTableMsg } from "../engine/studio-client.ts";   // 只要类型（元音表的形状）；运行时不碰 studio-client（它要 AudioWorklet）
 
@@ -59,12 +58,7 @@ export interface RenderPlan {
   mixBypass?: boolean;
   /** 静音的混音轨（视图态）。 */
   busMuted?: ReadonlySet<string>;
-  /** 这次打开里的试验选项（不进歌、不进撤销；听和导出都带上）。 */
-  trial?: PerfTrial;
 }
-/** 试验选项（7-N 第三批）：rollVar = 滚奏的「变化」，键 = trialKey(角色, 上场那位的候选 id)——换了人就不跟过去。 */
-export interface PerfTrial { rollVar?: ReadonlyMap<string, RollVariation> }
-export const trialKey = (role: string, cand: string): string => `${role}/${cand}`;
 export interface PrepareError { part: string; cand: string; why: string }
 
 /** 整首唱时给唱法核心的哼的参数：ん 闭嘴（N_m）、哼的字辅音至少 70 ms（核心默认关，Lab 命令行不受影响）；leadIn 明说（块按它摆）。歌级；小月相自己的旋钮在候选里（performers/tsukuyomi.ts info → ChunkPlan.opt）。 */
@@ -77,11 +71,10 @@ export function audibleParts(song: Song, pv: PartAudible): PartDef[] {
   return song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted));
 }
 /** 上场那位的出声参数（时间线不碰 Extras）。SoundFont 的预设下标要库先进录音房（prepareParts）。 */
-export function performerInfoOf(extras: Extras, part: PartDef, banks: BankLookup, trial?: PerfTrial): PerformerInfo {
+export function performerInfoOf(extras: Extras, part: PartDef, banks: BankLookup): PerformerInfo {
   const role = part.role, eng = (activeInstrument(extras, role)?.engine ?? "unknown") as PerformerInfo["engine"], plugin = performerOf(eng), cat = grooveCategory(plugin?.grooveCategory ?? null, activeGm(extras, role));
   const own = plugin ? plugin.info({ extras, role, presetIndex: (s, b, p) => banks.presetIndex(s, b, p), velCurve: (s, b, p) => banks.velCurve(s, b, p) }) : { gm: null, chunk: "phrase" as const };   // 这位自己的那部分（gm / 分段唱 / 着力点）归插件
-  const rollVar = trial?.rollVar?.get(trialKey(role, activeId(extras, role)));
-  return { engine: eng, plugin, spec: activePerfSpec(extras, role), velocity: activeVelocity(extras, role), transpose: activeTranspose(extras, role), follow: (s) => followOf(s, cat), chain: activeChain(extras, role), ...(rollVar ? { rollVar } : {}), ...own };
+  return { engine: eng, plugin, spec: activePerfSpec(extras, role), velocity: activeVelocity(extras, role), transpose: activeTranspose(extras, role), follow: (s) => followOf(s, cat), chain: activeChain(extras, role), ...own };
 }
 /** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
 export async function prepareParts(parts: readonly PartDef[], extras: Extras, deps: Pick<RenderDeps, "engine" | "sounds">): Promise<PrepareError[]> {
@@ -127,7 +120,7 @@ export function pushMix(engine: RenderEngine, plan: RenderPlan, pv: PartAudible)
 /** 这首歌（出声的声部）的时间线：谁上场 / 分段 / 音符表 / 块清单。纯函数（除了预设下标 / L 曲线要问录音房里的库）。 */
 export function timelineOf(plan: RenderPlan, banks: BankLookup): Timeline {
   const { song } = plan;
-  return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part) => performerInfoOf(plan.extras, part, banks, plan.trial), hum: plan.hum, singOpt: humOpt() });
+  return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part) => performerInfoOf(plan.extras, part, banks), hum: plan.hum, singOpt: humOpt() });
 }
 
 /** 循环按谱绕的那一圈（谱上的秒）：从第一张纸头（编排写了 `[循环段]` 且 withArrangementLoop = 循环段第一张纸的头）到谱的结尾。

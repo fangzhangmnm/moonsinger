@@ -56,7 +56,7 @@ const ART_SIGNS: Readonly<Record<`art:${Art}`, Sign>> = {
   "art:swellDown": art("swellDown", (l) => _tIn(l, "音内渐弱"), (l) => _tIn(l, "这个音里面从写的力度收弱"), "noteDynamics", D("这个音上方的小发夹 >"), D("这个音上方的小楔形 >")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "art:swellBoth": art("swellBoth", (l) => _tIn(l, "音内鼓起"), (l) => _tIn(l, "这个音里面先长后收（messa di voce）"), "noteDynamics", D("这个音上方的小发夹 <>"), D("这个音上方的小楔形 <>")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "art:arpeggio": art("arpeggio", (l) => _tIn(l, "琶音"), (l) => _tIn(l, "和弦从低到高一个个拨出来"), "note", D("和弦左边一条竖的波浪线"), D("和弦左边一条竖的波浪线（多声部 = 第五刀）")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:roll": art("roll", (l) => _tIn(l, "滚奏"), (l) => _tIn(l, "这个音快速地反复敲（滚）"), "note", D("符干上三道斜线"), D("数字下面三道短斜线")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:roll": art("roll", (l) => _tIn(l, "滚奏"), (l) => _tIn(l, "这个音快速地反复敲（滚）；每一下都是整下敲，想轻一点就再加幽灵音"), "note", D("符干上三道斜线"), D("数字下面三道短斜线")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
 const dynSign = (d: Dyn): Sign => ({ id: `dyn:${d}`, name: () => d, says: (l) => _tIn(l, "{dynName}（{dyn}）：从这个音起是这个强弱，管到下一个力度记号", { dynName: DYN_NAME(d, l), dyn: d }), lane: "dynamics", draw: { staff: DYN_G[d], jianpu: T(d), letters: T(d) } });   // 两种谱都写字母（纪要第 88 节）；简谱用和数字同一款的细斜体（第五刀样张后，user「主要是粗细，不在字号」）
 /** 力度：每一档一行（明着写八行，类型 = 每档都要有）。 */

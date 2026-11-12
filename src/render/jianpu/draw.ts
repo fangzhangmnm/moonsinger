@@ -17,7 +17,7 @@ import { navWhy } from "../../score/repeats.ts";
 import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, layPedals, tempoAt, tempoW, type OrnCtx } from "../ornaments/index.ts";
 import type { TextRole } from "../text/index.ts";
 import type { LaneKind } from "../frame/lanes.ts";
-import { MARGIN } from "../frame/params.ts";
+import { MARGIN, NAME_MAX } from "../frame/params.ts";
 import { caretStops } from "../frame/carets.ts";
 import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
@@ -64,6 +64,27 @@ const keyHead = (fifths: number, minor: boolean): string => keyText(fifths, mino
 
 /** 画这几条（mine = per 里的下标）简谱轨。 */
 /** mode = 数字行（digits）还是鼓的 X 行（x：音画成 X、调号只在编辑器里给淡的提示；第五刀 5-4）。 */
+/** 整套鼓的图例按「哪种字」分组：字 → 这种字的几件鼓（名字、各自在五线鼓谱上的高低）、这一组最高的那一线。sys 给了 = 只看这一行（画图例用：这张纸上第一次有敲击的那一行）；
+ *  没给 = 整张纸（名字一栏要多宽用：排之前还不知道折到哪一行）。 */
+function kitGroups(q: JianpuTrack, sys?: number): Map<string, { line: number; names: string[]; lines: number[] }> {
+  const groups = new Map<string, { line: number; names: string[]; lines: number[] }>();
+  for (const u of q.units) {
+    if (u.kind !== "chunk" || !u.note || u.pad || (sys !== undefined && u.system !== sys) || !u.pitch) continue;
+    for (const pp of u.pitches.length ? u.pitches : [u.pitch]) {
+      const m = midiOf(pp), nm = q.p.kitNames?.[m]; if (!nm) continue;
+      const pi = percOf(128, 0, m), ch = KIT_CHAR[pi?.head ?? "normal"] ?? "●", g = groups.get(ch) ?? { line: pi?.line ?? 4, names: [], lines: [] };
+      g.line = Math.min(g.line, pi?.line ?? 4); if (!g.names.includes(nm)) { g.names.push(nm); g.lines.push(pi?.line ?? 4); } groups.set(ch, g);
+    }
+  }
+  return groups;
+}
+/** 名字那一栏至少要多宽才放得下这条轨的鼓的图例（sp；施工单第 12 条 12-2，统筹选 A：栏宽只看谱上真有的字）：一件鼓占一行时最宽的那一行（「● 小鼓」），
+ *  最多到声部名的上限 NAME_MAX（再长的名字照旧在栏里折）。按整张纸用到的鼓算（排之前不知道第一行有哪几件）；没有图例 = 0。 */
+export function kitLegendMin(q: JianpuTrack, mw: (role: TextRole, s: string) => number): number {
+  let w = 0;
+  for (const [ch, g] of kitGroups(q)) for (const nm of g.names) w = Math.max(w, mw("jp-legend", `${ch} ${nm}`));
+  return Math.min(NAME_MAX, w);
+}
 export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: JianpuMode = "digits"): { lyricParts: LyricPart[] } {
   const lyricParts: LyricPart[] = [];
   const { song, paper, o, P, tx, TR, put, notes, chordHeads, keyHints, chordTagsOut, placeBelow, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
@@ -73,15 +94,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
    *  「● 大鼓 / 小鼓」；按五线鼓谱上的高低从上往下排（同叠的方向）；名字宽过名字那一栏就折到下一行（缩进）。名字由宿主按界面语言给（PartView.kitNames），没有名字的鼓件不列。屏幕和 PDF 都印。 */
   const layKitLegend = (q: JianpuTrack, r: number): void => {
     const first = q.units.find((u): u is Chunk => u.kind === "chunk" && u.note && !u.pad && !!u.pitch); if (!first) return;
-    const groups = new Map<string, { line: number; names: string[]; lines: number[] }>();
-    for (const u of q.units) {
-      if (u.kind !== "chunk" || !u.note || u.pad || u.system !== first.system || !u.pitch) continue;
-      for (const pp of u.pitches.length ? u.pitches : [u.pitch]) {
-        const m = midiOf(pp), nm = q.p.kitNames?.[m]; if (!nm) continue;
-        const pi = percOf(128, 0, m), ch = KIT_CHAR[pi?.head ?? "normal"] ?? "●", g = groups.get(ch) ?? { line: pi?.line ?? 4, names: [], lines: [] };
-        g.line = Math.min(g.line, pi?.line ?? 4); if (!g.names.includes(nm)) { g.names.push(nm); g.lines.push(pi?.line ?? 4); } groups.set(ch, g);
-      }
-    }
+    const groups = kitGroups(q, first.system);
     if (!groups.size) return;
     const width = ind0 - 1.4, lines: string[] = [];   // 名字那一栏能放多宽（sp）：右边让出一家的竖线 / 谱左边那根线
     for (const [ch, g] of [...groups].sort((a, b) => a[1].line - b[1].line)) {   // 同高的几种字 = 先出现的在前

@@ -29,7 +29,7 @@ import type { Part, Ink } from "./frame/cell.ts";
 import { songInC } from "../score/view-in-c.ts";
 import { songViewOf } from "../score/song-view.ts";
 import { type HarmonyRead } from "../theory/index.ts";
-import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SYSTEM_LINE_W, LYRIC_EDGE } from "./frame/params.ts";
+import { SCROLL_TAIL, ABBR_REF, NAME_MAX, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SYSTEM_LINE_W, LYRIC_EDGE } from "./frame/params.ts";
 import { PAPER_PARAMS, ROW_PARAMS } from "./layout-params.ts";   // 排版参数表（纸一级按谱种、行一级按行的种类）
 import { wrapTitle } from "./frame/furniture.ts";
 // 五线谱这一种：只从它的入口拿（施工单 1b-9 守卫 1：框架不直接 import 字形表、符干、谱号模块）
@@ -117,7 +117,6 @@ export interface LyricHit { index: number; system: number; x: number; y: number;
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export type PartToggle = "muted" | "solo" | "hidden" | "only";
 export type PartToggles = Record<PartToggle, boolean>;
-/** 名字那一栏至少多宽（sp）：屏幕上覆盖层在名字上面放两颗 3.0 的大钮（src/ui/score-overlay.ts TG_BTN）；PDF 照样这么宽 = 预览的版面 = PDF（屏幕和 PDF 同一条规矩；刀 1 起这只是一个几何常数，排版器不画钮）。 */
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
 /** 谱号 / 八度线的点击区域（v0.9.28）：start = 每行开头的谱号（index = 管着它的谱号记号，−1 = 声部自己的谱号）；mid = 行中间的谱号记号；ottava = 八度线开头的字。 */
 export interface ClefHit { kind: "start" | "mid" | "ottava"; paper: string; part: string; index: number; system: number; x: number; y: number; w: number; h: number; /** 自动画的八度线（v0.9.37）：index = −1，这一段的起止下标和几度。 */ run?: { from: number; to: number; shift: 1 | 2 | -1 } }
@@ -444,7 +443,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const merged = mergeColumns(atracks), n = merged.length;
     // 行首 = 名字一栏的缩进（框架）+ 各条轨行首要画的（五线谱：谱号 + 那里生效的调号 + 第一行的拍号），取大
     const FAM_W = openFams.length ? (o.chrome?.famGap ?? 0) * ts : 0;   // 有展开着的一家：名字和谱之间多让一点给括号
-    const ind0 = Math.max(NAME_MIN, ...parts.map((p) => Math.max(...nameLines(p.name, p.staves === 2 || song.papers.some((pp) => lookAt(pp.id, p.id)?.staves === 2) ? 2 : 1).map(nameW)))) + 1.4 * ts + FAM_W;   // 名字一栏 = 两颗大钮的宽和名字（最长 NAME_MAX，再长折行）里大的那个；屏幕和 PDF 同一条规矩（预览 = PDF）   // 至少放得下名字下面那四颗小钮（v0.16.17；屏幕和 PDF 同一条规矩）   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
+    const ind0 = Math.max(...per0.map((q, i) => DRAWERS[kinds[i]!].nameMin?.(q, mw) ?? 0), ...parts.map((p) => Math.max(...nameLines(p.name, p.staves === 2 || song.papers.some((pp) => lookAt(pp.id, p.id)?.staves === 2) ? 2 : 1).map(nameW)))) + 1.4 * ts + FAM_W;   // 名字一栏 = 两颗大钮的宽和名字（最长 NAME_MAX，再长折行）里大的那个；屏幕和 PDF 同一条规矩（预览 = PDF）   // 至少放得下名字下面那四颗小钮（v0.16.17；屏幕和 PDF 同一条规矩）   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
     // 第二行起每行写简写（v0.9.31；user「todo 总谱的每一行都放乐器名的省空间简写」→「乐手名和颜色同意」）：缩进 = 最宽的那个简写；没给简写（测试 / 老调用）= 0，照旧
     //   v0.9.41：定宽（user 经仓鼠转达「没简写的能不能想办法也按定宽裁一下，不然有一个没查到简写就beat the propose了」）——简写已按 ABBR_W 裁好（part-colors.ts fitAbbr），
     //   列宽 = 一个 ABBR_W 宽的参照（Vln.Vc.），不随谁最长变；字形特别宽、量出来超了参照的那个才撑一点（不叠到谱上）
