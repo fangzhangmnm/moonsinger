@@ -13411,13 +13411,16 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
     }
     if (!groups.size) return;
-    const width = ind0 - 0.6, lines = [];
+    const width = ind0 - 2, lines = [];
     for (const [ch2, g3] of [...groups].sort((a10, b3) => a10[1].line - b3[1].line)) {
       const nms = g3.names.map((nm2, k2) => ({ nm: nm2, ln: g3.lines[k2] })).sort((a10, b3) => a10.ln - b3.ln).map((x2) => x2.nm);
       const atoms = [`${ch2} `];
       nms.forEach((nm2, k2) => {
         (k2 ? [" / "] : []).forEach((a10) => atoms.push(a10));
-        for (const m2 of nm2.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) atoms.push(m2);
+        for (const m2 of nm2.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) {
+          if (/^[）)」』，、。：；]$/.test(m2) && atoms.length) atoms[atoms.length - 1] += m2;
+          else atoms.push(m2);
+        }
       });
       let cur = "";
       for (const a10 of atoms) {
@@ -32904,7 +32907,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-fde729494709.mjs");
+      return pick(() => "layout-worker-93f2313e54de.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-dbf4137da628.mjs");
   }
@@ -62559,4 +62562,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ea8dd71259e2.mjs.map
+//# sourceMappingURL=moonsinger-b377b2bc628f.mjs.map

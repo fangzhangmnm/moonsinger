@@ -75,12 +75,12 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       }
     }
     if (!groups.size) return;
-    const width = ind0 - 0.6, lines: string[] = [];   // 名字那一栏能放多宽（sp）
+    const width = ind0 - 2.0, lines: string[] = [];   // 名字那一栏能放多宽（sp）：右边让出一家的竖线 / 谱左边那根线，再给 PDF 那款字比量字的尺子宽一点留余地
     for (const [ch, g] of [...groups].sort((a, b) => a[1].line - b[1].line)) {   // 同高的几种字 = 先出现的在前
       const nms = g.names.map((nm, k) => ({ nm, ln: g.lines[k]! })).sort((a, b) => a.ln - b.ln).map((x) => x.nm);   // 同一种字的几件：也按谱上的高低（上面的先写）
       // 一个一个「原子」往行里放，放不下就折到下一行（缩进一个字）：中文一个字一个原子、英文一个词一个、「 / 」跟着前一件；一件的名字比一栏还宽也照样折开
       const atoms: string[] = [`${ch} `];
-      nms.forEach((nm, k) => { (k ? [" / "] : []).forEach((a) => atoms.push(a)); for (const m of nm.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) atoms.push(m); });
+      nms.forEach((nm, k) => { (k ? [" / "] : []).forEach((a) => atoms.push(a)); for (const m of nm.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) { if (/^[）)」』，、。：；]$/.test(m) && atoms.length) atoms[atoms.length - 1] += m; else atoms.push(m); } });   // 右括号这类标点不单独起一行：跟着前一个字
       let cur = "";
       for (const a of atoms) { const next = cur + a; if (!cur.trim() || c.mw("jp-legend", next.trimEnd()) <= width) cur = next; else { lines.push(cur.trimEnd()); cur = `\u3000${a.trimStart()}`; } }
       if (cur.trim()) lines.push(cur.trimEnd());

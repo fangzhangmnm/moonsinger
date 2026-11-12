@@ -7072,13 +7072,16 @@ function drawJianpu(c, mine, mode = "digits") {
       }
     }
     if (!groups.size) return;
-    const width = ind0 - 0.6, lines = [];
+    const width = ind0 - 2, lines = [];
     for (const [ch, g] of [...groups].sort((a, b) => a[1].line - b[1].line)) {
       const nms = g.names.map((nm, k) => ({ nm, ln: g.lines[k] })).sort((a, b) => a.ln - b.ln).map((x) => x.nm);
       const atoms = [`${ch} `];
       nms.forEach((nm, k) => {
         (k ? [" / "] : []).forEach((a) => atoms.push(a));
-        for (const m of nm.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) atoms.push(m);
+        for (const m of nm.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) {
+          if (/^[）)」』，、。：；]$/.test(m) && atoms.length) atoms[atoms.length - 1] += m;
+          else atoms.push(m);
+        }
       });
       let cur = "";
       for (const a of atoms) {
@@ -8329,4 +8332,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-fde729494709.mjs.map
+//# sourceMappingURL=layout-worker-93f2313e54de.mjs.map
