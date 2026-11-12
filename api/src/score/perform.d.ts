@@ -145,7 +145,9 @@ export declare function lightMarks(spec: {
     breathSec: number;
     breathShare: number;
 };
-/** 滚奏默认每秒几下（v0.16.64；演奏者没写 rollHz 时用；好不好听归 user 耳朵，能在乐器页调）：key = 敲的是哪个鼓键（整套鼓 = 写的音、固定敲一件 = 那一件的键），
- *  null = 有音高的乐器（定音鼓 / 弦乐的颤音）。军鼓 20、镲 14、底鼓 12、别的鼓 16、有音高的 14。 */
+/** 滚奏默认每秒几下：鼓类（整套鼓的每一件、固定敲一件的）一律 12，有音高的（定音鼓 / 弦乐的颤音）14（7-N 第二批，2026-11-12；user「然后其他类似的乐器也这么做？
+ *  然后默认是均匀，12」「10–14 同意」「理想的情况是比我的稍微密一点」——手写的那段是每秒 9.33 下。原来军鼓 20、镲 14、底鼓 12、别的鼓 16）。演奏者没写 rollHz 时用，乐器页能调。 */
+export declare const ROLL_HZ_DRUM = 12, ROLL_HZ_PITCHED = 14;
+/** key = 敲的是哪个鼓键（整套鼓 = 写的音、固定敲一件 = 那一件的键）；null = 有音高的乐器。 */
 export declare function rollDefaultHz(key: number | null): number;
 export { ROLL_HZ_MIN, ROLL_HZ_MAX };

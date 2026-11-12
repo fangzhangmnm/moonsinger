@@ -1051,8 +1051,8 @@ export declare const S: {
     readonly "\u6EDA\u594F\u7684\u97F3\u4E0A\u6309\u529B\u5EA6\u505A\uFF1Amf\uFF08{mf}\uFF09\u4F4E {d} dB \u2248 \u529B\u5EA6 {to}\uFF08\u7EA6 {n} \u6863\u529B\u5EA6\uFF09\u3002": {
         readonly en: "On rolled notes this is done with velocity: {d} dB below mf ({mf}) ≈ velocity {to} (about {n} dynamic steps).";
     };
-    readonly "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\u3001\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": {
-        readonly en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands — crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Defaults: snare 20, cymbals 14, bass drum 12, other drums 16, pitched 14 (per second).";
+    readonly "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": {
+        readonly en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands — crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Defaults: drums 12, pitched 14 (per second).";
     };
     readonly 音内起伏多深: {
         readonly en: "In-note swell depth";
@@ -3244,9 +3244,6 @@ export declare const S: {
     readonly "\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09": {
         readonly en: "How marks are performed (this performer's own settings, saved in the song with them)";
     };
-    readonly "\u6309\u9F13\u4EF6\uFF08\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\uFF09": {
-        readonly en: "Per drum (snare 20, cymbals 14, kick 12, other drums 16)";
-    };
     readonly "\u4EBA\u58F0\uFF08\u8FDE\u7740\u5531\uFF09": {
         readonly en: "Voice (legato)";
     };
@@ -3330,9 +3327,6 @@ export declare const S: {
     };
     readonly "\u6BCF\u79D2 {n} \u4E0B": {
         readonly en: "{n} per second";
-    };
-    readonly 按鼓件: {
-        readonly en: "Per drum";
     };
     readonly "\u6EDA\u594F\u7A00\u4E00\u70B9\uFF08\u6BCF\u79D2\u5C11 2 \u4E0B\uFF09": {
         readonly en: "Slower roll (2 fewer hits per second)";

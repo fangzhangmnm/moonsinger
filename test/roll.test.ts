@@ -1,7 +1,7 @@
 // roll.test.ts —— 滚奏（v0.16.64，总表第 26 条）。created 2026-11-09 by Claude Opus 5.5
 // user 11-07「标准滚奏记号 可以，但是要可以调整密度」、11-09「滚奏也许可以顺手做一下，然后设计可以下一个纪元」。
 // 守：放的时候按密度敲满（连音线连过去的也算）、不认滚奏的照一个长音放；MusicXML 往返（单音颤音三道 = 滚奏，一两道不当滚奏）；谱上三道斜杠（全音符也有）；
-//   默认密度按乐器（军鼓 20、镲 14、底鼓 12、别的鼓 16、有音高的 14）；乐器页调过的存得住、能回默认。
+//   默认密度：鼓类一律 12、有音高的 14（7-N 第二批；原来军鼓 20、镲 14、底鼓 12、别的鼓 16）；乐器页调过的存得住、能回默认。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, select, toggleArtSel, tr, TPQ, withTrack, type Token, type NoteTok } from "../src/score/song.ts";
 import { lightNotes } from "../src/engine/timeline.ts";
@@ -33,8 +33,8 @@ describe("滚奏：放", () => {
     const hits = lightNotes(toks, map, true, marks(10));
     eq(hits.filter((h) => h.midi === 38).length, 10); eq(hits.filter((h) => h.midi === 36).length, 1);
   });
-  it("默认密度按乐器：军鼓 20、镲 14、底鼓 12、别的鼓 16、有音高的 14", () => {
-    eq([38, 40, 49, 51, 36, 45].map((k) => rollDefaultHz(k)).join(","), "20,20,14,14,12,16"); eq(rollDefaultHz(null), 14);
+  it("默认密度：鼓类一律 12（军鼓 / 镲 / 底鼓 / 别的鼓都是），有音高的 14（7-N 第二批，user「默认是均匀，12」）", () => {
+    eq([38, 40, 49, 51, 36, 45, 76].map((k) => rollDefaultHz(k)).join(","), "12,12,12,12,12,12,12"); eq(rollDefaultHz(null), 14);
   });
   it("乐器页调过的存进演奏者（可选字段）、能回默认", () => {
     let ex = withNewRole(emptyExtras(), "r1", "n");

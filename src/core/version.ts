@@ -14,6 +14,8 @@
 //     所有 SoundFont 乐器再轻 1–8 dB、乐器之间相对的轻重最多挪 6 dB；第 9 节的「敲之前设总音量」退场。小月相 / 元音版的力度深度 = 800（插件报）。设备上记着的渲好的声音因此作废。
 //   0.2.3（2026-11-12，Claude Opus 5.5（MoonSinger小弟）；施工单 7-N，user「这个滚奏完全没法用啊」）：按力度敲的乐器，滚奏的每一下按敲下去那一刻的力度（渐强渐弱 / 渐到 / 音内起伏 /
 //     强后即弱都在每一下里，重音这一组只算第一下）；强后即弱「压到 p」按这件乐器在那个键上实际的 L（原来写死 960，深度 800 的乐器多压约 2 dB）。没写这些的滚奏、别的音不变。
-export const CORE_VERSION = "0.2.3";
+//   0.2.4（2026-11-12，Claude Opus 5.5（MoonSinger小弟）；施工单 7-N 第二批，user「默认是均匀，12」）：没调过密度的鼓（整套鼓的每一件、固定敲一件的）滚奏默认每秒 12 下
+//     （原来军鼓 20、镲 14、底鼓 12、别的鼓 16）；有音高的照旧 14。乐器页调过的照旧。
+export const CORE_VERSION = "0.2.4";
 export const CORE_HASH: string = typeof __CORE_HASH__ === "string" ? __CORE_HASH__ : "dev";
 export const coreInfo = (): { version: string; hash: string } => ({ version: CORE_VERSION, hash: CORE_HASH });

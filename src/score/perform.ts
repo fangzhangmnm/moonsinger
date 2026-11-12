@@ -273,13 +273,9 @@ export function lightMarks(spec: { staccatoGate: number; gapSec?: number; gapSha
   return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, arpeggioSec: spec.arpeggioSec ?? M.arpeggioSec, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
 }
 
-/** 滚奏默认每秒几下（v0.16.64；演奏者没写 rollHz 时用；好不好听归 user 耳朵，能在乐器页调）：key = 敲的是哪个鼓键（整套鼓 = 写的音、固定敲一件 = 那一件的键），
- *  null = 有音高的乐器（定音鼓 / 弦乐的颤音）。军鼓 20、镲 14、底鼓 12、别的鼓 16、有音高的 14。 */
-export function rollDefaultHz(key: number | null): number {
-  if (key === null) return 14;
-  if (key === 38 || key === 40 || key === 37) return 20;
-  if ([49, 51, 52, 53, 55, 57, 59].includes(key)) return 14;
-  if (key === 35 || key === 36) return 12;
-  return 16;
-}
+/** 滚奏默认每秒几下：鼓类（整套鼓的每一件、固定敲一件的）一律 12，有音高的（定音鼓 / 弦乐的颤音）14（7-N 第二批，2026-11-12；user「然后其他类似的乐器也这么做？
+ *  然后默认是均匀，12」「10–14 同意」「理想的情况是比我的稍微密一点」——手写的那段是每秒 9.33 下。原来军鼓 20、镲 14、底鼓 12、别的鼓 16）。演奏者没写 rollHz 时用，乐器页能调。 */
+export const ROLL_HZ_DRUM = 12, ROLL_HZ_PITCHED = 14;
+/** key = 敲的是哪个鼓键（整套鼓 = 写的音、固定敲一件 = 那一件的键）；null = 有音高的乐器。 */
+export function rollDefaultHz(key: number | null): number { return key === null ? ROLL_HZ_PITCHED : ROLL_HZ_DRUM; }
 export { ROLL_HZ_MIN, ROLL_HZ_MAX };

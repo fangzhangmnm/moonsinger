@@ -3069,7 +3069,7 @@ var S = {
   "\u6574\u4E2A\u97F3\u6572\u6EE1\uFF0C\u6BCF\u79D2 {hz} \u4E0B\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\uFF08\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230 / \u97F3\u5185\u8D77\u4F0F / \u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u91CC\uFF09\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B": { en: "Fills the whole note, {hz} hits per second; each hit uses the dynamic at the moment it lands (crescendos, ramps, in-note swells and fp are all in each hit's velocity); accents and the like only on the first hit" },
   "\u6EDA\u594F\u7684\u97F3\u4E0A\u6309\u529B\u5EA6\u505A\uFF08\u58F0\u97F3\u8F7D\u597D\u540E\u663E\u793A\u7EA6\u51E0\u6863\uFF09\u3002": { en: "On rolled notes this is done with velocity (shown once the sound is loaded)." },
   "\u6EDA\u594F\u7684\u97F3\u4E0A\u6309\u529B\u5EA6\u505A\uFF1Amf\uFF08{mf}\uFF09\u4F4E {d} dB \u2248 \u529B\u5EA6 {to}\uFF08\u7EA6 {n} \u6863\u529B\u5EA6\uFF09\u3002": { en: "On rolled notes this is done with velocity: {d} dB below mf ({mf}) \u2248 velocity {to} (about {n} dynamic steps)." },
-  "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\u3001\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": { en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands \u2014 crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Defaults: snare 20, cymbals 14, bass drum 12, other drums 16, pitched 14 (per second)." },
+  "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": { en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands \u2014 crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Defaults: drums 12, pitched 14 (per second)." },
   "\u97F3\u5185\u8D77\u4F0F\u591A\u6DF1": { en: "In-note swell depth" },
   "\u6D45\u4E00\u70B9\uFF08\u22123 dB\uFF09": { en: "Shallower (\u22123 dB)" },
   "\u6DF1\u4E00\u70B9\uFF08+3 dB\uFF09": { en: "Deeper (+3 dB)" },
@@ -3800,7 +3800,6 @@ var S = {
   "{gapSec}\uFF08\u6700\u591A {gapShare}\uFF09": { en: "{gapSec} (at most {gapShare})" },
   "\u6EDA\u594F": { en: "Roll" },
   "\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09": { en: "How marks are performed (this performer's own settings, saved in the song with them)" },
-  "\u6309\u9F13\u4EF6\uFF08\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\uFF09": { en: "Per drum (snare 20, cymbals 14, kick 12, other drums 16)" },
   "\u4EBA\u58F0\uFF08\u8FDE\u7740\u5531\uFF09": { en: "Voice (legato)" },
   "\u81EA\u5DF1\u7684 .sf2\uFF08\u76EE\u5F55\u91CC\u6CA1\u6709\u8FD9\u4E2A\u97F3\u8272\u7684\u8FDE\u65AD\u6570\u636E\uFF09": { en: "Own .sf2 (the catalog has no legato data for this sound)" },
   "\u4E00\u4E0B\u5C31\u5B8C / \u97F3\u6548\uFF08\u4E0D\u7559\u7F1D\uFF09": { en: "One-shot / sound effect (no gap)" },
@@ -3829,7 +3828,6 @@ var S = {
   "\u4E0D\u5199\u8BB0\u53F7\u7684\u97F3\u548C\u4E0B\u4E00\u4E2A\u97F3\u4E4B\u95F4\u7559\u7684\u7F1D\uFF1A0 = \u8FDE\u7740\u3002{d}\u8FDE\u7EBF\uFF08\u8FDE\u594F\uFF09\u3001\u4FDD\u6301\u7684\u97F3\u4E0D\u7559\u7F1D\uFF1B\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u8DF3\u97F3\u53E6\u7B97": { en: "Gap left between unmarked notes and the next note: 0 = connected. {d}Slurred (legato) and tenuto notes leave no gap; a breath separates here; staccato is separate" },
   "{label}\uFF1A\u9ED8\u8BA4 {p} ms\uFF08\u97F3\u4E50\u76EE\u5F55\u7ED9\u7684\uFF0C\u6309\u97F3\u8272\u9010\u4E2A\uFF09\u3002": { en: "{label}: default {p} ms (from the music catalog, per sound)." },
   "\u6BCF\u79D2 {n} \u4E0B": { en: "{n} per second" },
-  "\u6309\u9F13\u4EF6": { en: "Per drum" },
   "\u6EDA\u594F\u7A00\u4E00\u70B9\uFF08\u6BCF\u79D2\u5C11 2 \u4E0B\uFF09": { en: "Slower roll (2 fewer hits per second)" },
   "\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09": { en: "Faster roll (2 more hits per second)" },
   "\u56DE\u5230\u8FD9\u4EF6\u4E50\u5668\u7684\u9ED8\u8BA4": { en: "Back to this instrument's default" },
@@ -12456,12 +12454,10 @@ function whyIgnored(p2, m2) {
 function lightMarks(spec) {
   return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, arpeggioSec: spec.arpeggioSec ?? M.arpeggioSec, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
 }
+var ROLL_HZ_DRUM = 12;
+var ROLL_HZ_PITCHED = 14;
 function rollDefaultHz(key) {
-  if (key === null) return 14;
-  if (key === 38 || key === 40 || key === 37) return 20;
-  if ([49, 51, 52, 53, 55, 57, 59].includes(key)) return 14;
-  if (key === 35 || key === 36) return 12;
-  return 16;
+  return key === null ? ROLL_HZ_PITCHED : ROLL_HZ_DRUM;
 }
 
 // src/render/ornaments/index.ts
@@ -33236,15 +33232,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-f20b145424c5.mjs");
+      return pick(() => "singer-worker-cfa1ad12cde3.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-ccb9b3082d57.mjs");
+      return pick(() => "layout-worker-15def784c941.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-7ab9d6756c55.mjs");
+      return pick(() => "encode-worker-b80fa5641b27.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -42119,13 +42115,11 @@ function createInstSettings(el2, h2) {
   }
   function rollDefaultOf(role) {
     const g3 = activeGm(h2.extras(), role);
-    if (g3?.note !== void 0) return rollDefaultHz(g3.note);
-    if (g3?.bank === 128) return null;
-    return rollDefaultHz(null);
+    return rollDefaultHz(g3?.note !== void 0 ? g3.note : g3?.bank === 128 ? 38 : null);
   }
   function rollHzText(role) {
-    const set = activePerfSpec(h2.extras(), role).rollHz, d3 = rollDefaultOf(role);
-    return set !== null ? String(set) : d3 !== null ? String(d3) : _t("\u6309\u9F13\u4EF6\uFF08\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\uFF09");
+    const set = activePerfSpec(h2.extras(), role).rollHz;
+    return String(set !== null ? set : rollDefaultOf(role));
   }
   function gapDefaultOf(role) {
     const g3 = activeGm(h2.extras(), role);
@@ -42232,8 +42226,8 @@ function createInstSettings(el2, h2) {
     ))(activePerfSpec(h2.extras(), role).gapSec, gapDefaultOf(role)) : "") + // 滚奏的密度（v0.16.64；user 11-07「标准滚奏记号 可以，但是要可以调整密度」）：只给认滚奏的演奏者；没调过 = 按乐器默认，调过 = 「默认」钮回去
     (plug?.honors.includes("roll") ? ((set, d3) => row2(
       _t("\u6EDA\u594F"),
-      `<b class="ip-val">${esc6(set !== null ? _t("\u6BCF\u79D2 {n} \u4E0B", { n: set }) : d3 !== null ? _t("\u6BCF\u79D2 {n} \u4E0B", { n: d3 }) : _t("\u6309\u9F13\u4EF6"))}</b><button class="btn" data-v="roll:-2" title="${_t("\u6EDA\u594F\u7A00\u4E00\u70B9\uFF08\u6BCF\u79D2\u5C11 2 \u4E0B\uFF09")}">\u22122</button><button class="btn" data-v="roll:2" title="${_t("\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09")}">+2</button>` + (set !== null ? `<button class="btn" data-v="roll:def" title="${_t("\u56DE\u5230\u8FD9\u4EF6\u4E50\u5668\u7684\u9ED8\u8BA4")}">${_t("\u9ED8\u8BA4")}</button>` : ""),
-      _t("\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\u3001\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002")
+      `<b class="ip-val">${esc6(_t("\u6BCF\u79D2 {n} \u4E0B", { n: set ?? d3 }))}</b><button class="btn" data-v="roll:-2" title="${_t("\u6EDA\u594F\u7A00\u4E00\u70B9\uFF08\u6BCF\u79D2\u5C11 2 \u4E0B\uFF09")}">\u22122</button><button class="btn" data-v="roll:2" title="${_t("\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09")}">+2</button>` + (set !== null ? `<button class="btn" data-v="roll:def" title="${_t("\u56DE\u5230\u8FD9\u4EF6\u4E50\u5668\u7684\u9ED8\u8BA4")}">${_t("\u9ED8\u8BA4")}</button>` : ""),
+      _t("\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002")
     ))(activePerfSpec(h2.extras(), role).rollHz, rollDefaultOf(role)) : "") + // 音内起伏多深（7-N，2026-11-12；user「上了音内渐强是从-6db开始的还是从0开始的这个我也没法配置」）：swellDb，一档 3 dB，3–24，默认 6；按力度敲的旁边写约几档力度
     (plug?.honors.includes("swellGrow") || plug?.honors.includes("swellFade") ? ((D4) => row2(
       _t("\u97F3\u5185\u8D77\u4F0F\u591A\u6DF1"),
@@ -42280,7 +42274,7 @@ function createInstSettings(el2, h2) {
       const cur = activePerfSpec(h2.extras(), role).swellDb, next2 = v === "swell:def" ? null : Math.max(SWELL_DB_MIN, Math.min(SWELL_DB_MAX, cur + Number(v.slice(6))));
       h2.commit(withSwellDb(h2.extras(), role, next2, hum), _t("\u300C{rn}\u300D\u97F3\u5185\u8D77\u4F0F {d} dB", { rn: rn2, d: next2 ?? MARK_DEFAULTS_SWELL }), "swell");
     } else if (v.startsWith("roll:")) {
-      const cur = activePerfSpec(h2.extras(), role).rollHz ?? rollDefaultOf(role) ?? 16, next2 = v === "roll:def" ? null : Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, cur + Number(v.slice(5))));
+      const cur = activePerfSpec(h2.extras(), role).rollHz ?? rollDefaultOf(role), next2 = v === "roll:def" ? null : Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, cur + Number(v.slice(5))));
       h2.commit(withRollHz(h2.extras(), role, next2, hum), next2 === null ? _t("\u300C{rn}\u300D\u6EDA\u594F\u56DE\u5230\u9ED8\u8BA4", { rn: rn2 }) : _t("\u300C{rn}\u300D\u6EDA\u594F\u6BCF\u79D2 {n} \u4E0B", { rn: rn2, n: next2 }), "roll");
     } else if (v.startsWith("cal:")) {
       const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? calDefault(role) : activeCalibrationDb(h2.extras(), role) + d3));
@@ -43500,8 +43494,8 @@ ${tg2.fx}`);
 };
 
 // src/core/version.ts
-var CORE_VERSION = "0.2.3";
-var CORE_HASH = true ? "1e4606d66895f3a2" : "dev";
+var CORE_VERSION = "0.2.4";
+var CORE_HASH = true ? "0bf114185e03ac64" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -63301,4 +63295,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0247d861fede.mjs.map
+//# sourceMappingURL=moonsinger-c95f5ea4d38c.mjs.map

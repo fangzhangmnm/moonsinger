@@ -73,16 +73,14 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     ];
     return `<details class="ip-marks"><summary>${_t("记号怎么演（这位自己的配置，跟着演奏者存进歌）")}</summary><table>${rows.map(([k, m, v]) => `<tr${gray(m)}><th>${k}</th><td>${esc(v)}${m && ign.includes(m as Mark) ? `<span class="ign-tag">${_t("不认")}</span>` : ""}</td></tr>`).join("")}</table></details>`;
   }
-  /** 滚奏的默认（v0.16.64）：固定敲一件 = 那一件的键；整套鼓 = 按敲的鼓件（军鼓 20、镲 14…，各不一样）；有音高的 = 14。null = 整套鼓（没有一个数）。 */
-  function rollDefaultOf(role: string): number | null {
+  /** 滚奏的默认（7-N 第二批）：鼓类（固定敲一件 / 整套鼓）一律 12、有音高的 14（perform.ts rollDefaultHz）。 */
+  function rollDefaultOf(role: string): number {
     const g = activeGm(h.extras(), role);
-    if (g?.note !== undefined) return rollDefaultHz(g.note);
-    if (g?.bank === 128) return null;
-    return rollDefaultHz(null);
+    return rollDefaultHz(g?.note !== undefined ? g.note : g?.bank === 128 ? 38 : null);   // 整套鼓：哪一件都一样（38 只是「是鼓」）
   }
   function rollHzText(role: string): string {
-    const set = activePerfSpec(h.extras(), role).rollHz, d = rollDefaultOf(role);
-    return set !== null ? String(set) : d !== null ? String(d) : _t("按鼓件（军鼓 20、镲 14、底鼓 12、别的鼓 16）");
+    const set = activePerfSpec(h.extras(), role).rollHz;
+    return String(set !== null ? set : rollDefaultOf(role));
   }
   /** 乐器页「音和音之间」的默认 + 说明：GS 货架上的 = 目录的 joint；自己的 .sf2 = 0（目录不认识）；元音版 = 0（人声连着唱）。目录还没载 = null（先载，载好重画）。 */
   function gapDefaultOf(role: string): { gapSec: number; label: string } | null {
@@ -177,10 +175,10 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
         (d && Math.abs(gap - d.gapSec) > 1e-9 ? `<button class="btn" data-v="gap:def" title="${_t("回到默认 {p} ms", { p: Math.round(d.gapSec * 1000) })}">${_t("默认")}</button>` : ""),
         _t("不写记号的音和下一个音之间留的缝：0 = 连着。{d}连线（连奏）、保持的音不留缝；呼吸 = 这里断开；跳音另算", { d: d ? _t("{label}：默认 {p} ms（音乐目录给的，按音色逐个）。", { label: esc(d.label), p: Math.round(d.gapSec * 1000) }) : "" })))(activePerfSpec(h.extras(), role).gapSec, gapDefaultOf(role)) : "") +
       // 滚奏的密度（v0.16.64；user 11-07「标准滚奏记号 可以，但是要可以调整密度」）：只给认滚奏的演奏者；没调过 = 按乐器默认，调过 = 「默认」钮回去
-      (plug?.honors.includes("roll") ? ((set: number | null, d: number | null) => row(_t("滚奏"), `<b class="ip-val">${esc(set !== null ? _t("每秒 {n} 下", { n: set }) : d !== null ? _t("每秒 {n} 下", { n: d }) : _t("按鼓件"))}</b>` +
+      (plug?.honors.includes("roll") ? ((set: number | null, d: number) => row(_t("滚奏"), `<b class="ip-val">${esc(_t("每秒 {n} 下", { n: set ?? d }))}</b>` +
         `<button class="btn" data-v="roll:-2" title="${_t("滚奏稀一点（每秒少 2 下）")}">−2</button><button class="btn" data-v="roll:2" title="${_t("滚奏密一点（每秒多 2 下）")}">+2</button>` +
         (set !== null ? `<button class="btn" data-v="roll:def" title="${_t("回到这件乐器的默认")}">${_t("默认")}</button>` : ""),
-        _t("谱上符干带三道斜线的音 = 滚奏：整个音按这个密度敲满；每一下按敲下去那一刻的力度——渐强渐弱 / 渐到、音内起伏（鼓也行）、强后即弱都在每一下的力度里，重音这一组只算第一下、幽灵音 / 弱化每一下都算。默认：军鼓 20、镲 14、底鼓 12、别的鼓 16、有音高的 14（每秒）。")))(activePerfSpec(h.extras(), role).rollHz, rollDefaultOf(role)) : "") +
+        _t("谱上符干带三道斜线的音 = 滚奏：整个音按这个密度敲满；每一下按敲下去那一刻的力度——渐强渐弱 / 渐到、音内起伏（鼓也行）、强后即弱都在每一下的力度里，重音这一组只算第一下、幽灵音 / 弱化每一下都算。默认：鼓类一律 12，有音高的 14（每秒）。")))(activePerfSpec(h.extras(), role).rollHz, rollDefaultOf(role)) : "") +
       // 音内起伏多深（7-N，2026-11-12；user「上了音内渐强是从-6db开始的还是从0开始的这个我也没法配置」）：swellDb，一档 3 dB，3–24，默认 6；按力度敲的旁边写约几档力度
       (plug?.honors.includes("swellGrow") || plug?.honors.includes("swellFade") ? ((D: number) => row(_t("音内起伏多深"), `<b class="ip-val">${D} dB</b>` +
         `<button class="btn" data-v="swell:-3" title="${_t("浅一点（−3 dB）")}">−3</button><button class="btn" data-v="swell:3" title="${_t("深一点（+3 dB）")}">+3</button>` +
@@ -223,7 +221,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     if (v.startsWith("find:")) { h.findBankFile(v.slice(5)); return; }
     if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(h.extras(), role).gapSec + Number(v.slice(4)))); h.commit(withGapSec(h.extras(), role, next, hum), _t("「{rn}」音和音之间 {p} ms", { rn, p: Math.round(next * 1000) }), "gap"); }
     else if (v.startsWith("swell:")) { const cur = activePerfSpec(h.extras(), role).swellDb, next = v === "swell:def" ? null : Math.max(SWELL_DB_MIN, Math.min(SWELL_DB_MAX, cur + Number(v.slice(6)))); h.commit(withSwellDb(h.extras(), role, next, hum), _t("「{rn}」音内起伏 {d} dB", { rn, d: next ?? MARK_DEFAULTS_SWELL }), "swell"); }
-    else if (v.startsWith("roll:")) { const cur = activePerfSpec(h.extras(), role).rollHz ?? rollDefaultOf(role) ?? 16, next = v === "roll:def" ? null : Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, cur + Number(v.slice(5)))); h.commit(withRollHz(h.extras(), role, next, hum), next === null ? _t("「{rn}」滚奏回到默认", { rn }) : _t("「{rn}」滚奏每秒 {n} 下", { rn, n: next }), "roll"); }
+    else if (v.startsWith("roll:")) { const cur = activePerfSpec(h.extras(), role).rollHz ?? rollDefaultOf(role), next = v === "roll:def" ? null : Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, cur + Number(v.slice(5)))); h.commit(withRollHz(h.extras(), role, next, hum), next === null ? _t("「{rn}」滚奏回到默认", { rn }) : _t("「{rn}」滚奏每秒 {n} 下", { rn, n: next }), "roll"); }
     else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? calDefault(role) : activeCalibrationDb(h.extras(), role) + d)); h.commit(withCalibration(h.extras(), role, next, hum), _t("「{rn}」响度校准 {next} dB", { rn, next }), "cal"); }
     else if (v.startsWith("hum:")) h.setHum(v.slice(4) as Hum);
     else { const ch = performerOf(h.engine())?.onInspector?.(v, inspectorCtx(role)); if (!ch) return; h.commit(ch.extras, ch.label, ch.gesture); if (ch.silence) h.silence(); }   // 这位自己的行（力度 / 音效 / 修八度 / 唱法旋钮 / 分段唱…）：插件自己管（ADR-0004 §2.5）
