@@ -75,15 +75,30 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       }
     }
     if (!groups.size) return;
-    const width = ind0 - 2.0, lines: string[] = [];   // 名字那一栏能放多宽（sp）：右边让出一家的竖线 / 谱左边那根线，再给 PDF 那款字比量字的尺子宽一点留余地
+    const width = ind0 - 1.4, lines: string[] = [];   // 名字那一栏能放多宽（sp）：右边让出一家的竖线 / 谱左边那根线
     for (const [ch, g] of [...groups].sort((a, b) => a[1].line - b[1].line)) {   // 同高的几种字 = 先出现的在前
       const nms = g.names.map((nm, k) => ({ nm, ln: g.lines[k]! })).sort((a, b) => a.ln - b.ln).map((x) => x.nm);   // 同一种字的几件：也按谱上的高低（上面的先写）
-      // 一个一个「原子」往行里放，放不下就折到下一行（缩进一个字）：中文一个字一个原子、英文一个词一个、「 / 」跟着前一件；一件的名字比一栏还宽也照样折开
-      const atoms: string[] = [`${ch} `];
-      nms.forEach((nm, k) => { (k ? [" / "] : []).forEach((a) => atoms.push(a)); for (const m of nm.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) { if (/^[）)」』，、。：；]$/.test(m) && atoms.length) atoms[atoms.length - 1] += m; else atoms.push(m); } });   // 右括号这类标点不单独起一行：跟着前一个字
-      let cur = "";
-      for (const a of atoms) { const next = cur + a; if (!cur.trim() || c.mw("jp-legend", next.trimEnd()) <= width) cur = next; else { lines.push(cur.trimEnd()); cur = `\u3000${a.trimStart()}`; } }
-      if (cur.trim()) lines.push(cur.trimEnd());
+      // 先按「一件」折：放得下就几件写在一行（「 / 」隔开），放不下就下一件另起一行（缩进一个字）；只有一件的名字本身比一栏还宽，才在它里面折——
+      //   中文按字、英文按词；开括号跟着后一个字、闭括号和标点跟着前一个字（不落单、不在行尾留开括号）
+      const fits = (t: string) => c.mw("jp-legend", t.trimEnd()) <= width;
+      const atomsOf = (t: string): string[] => {
+        const out: string[] = []; let carry = "";
+        for (const m of t.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) {
+          if (/^[（(「『]$/.test(m)) { carry += m; continue; }
+          if (/^[）)」』，、。：；]$/.test(m) && out.length && !carry) { out[out.length - 1] += m; continue; }
+          out.push(carry + m); carry = "";
+        }
+        if (carry) out.push(carry);
+        return out;
+      };
+      const pushLong = (first: string) => {   // 一行放不下的：按原子折
+        let cur = "";
+        for (const a of atomsOf(first)) { const next = cur + a; if (!cur.trim() || fits(next)) cur = next; else { lines.push(cur.trimEnd()); cur = `\u3000${a.trimStart()}`; } }
+        if (cur.trim()) lines.push(cur.trimEnd());
+      };
+      let cur = `${ch} ${nms[0]}`;
+      for (const nm of nms.slice(1)) { const next = `${cur} / ${nm}`; if (fits(next)) cur = next; else { if (fits(cur + " /")) lines.push(cur + " /"); else pushLong(cur + " /"); cur = `\u3000${nm}`; } }
+      if (fits(cur)) lines.push(cur); else pushLong(cur);
     }
     const row = rowOf(first.system, r, 0), nameFs = tx("part-name"), fs = tx("jp-legend"), LH = fs * 1.3;
     const mid = Q((JP_BODY.top + JP_BODY.bottom) / 2), y0 = mid + nameFs * 0.55 + nameFs * 0.35 + fs * 1.05 + (q.p.badges?.length ? TR("part-badge", 1.4) : 0);   // 名字的基线往下：名字的下半截 + 一行图例（有「不出声」角标 = 再让一行）

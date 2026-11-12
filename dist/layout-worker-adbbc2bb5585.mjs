@@ -7072,27 +7072,52 @@ function drawJianpu(c, mine, mode = "digits") {
       }
     }
     if (!groups.size) return;
-    const width = ind0 - 2, lines = [];
+    const width = ind0 - 1.4, lines = [];
     for (const [ch, g] of [...groups].sort((a, b) => a[1].line - b[1].line)) {
       const nms = g.names.map((nm, k) => ({ nm, ln: g.lines[k] })).sort((a, b) => a.ln - b.ln).map((x) => x.nm);
-      const atoms = [`${ch} `];
-      nms.forEach((nm, k) => {
-        (k ? [" / "] : []).forEach((a) => atoms.push(a));
-        for (const m of nm.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) {
-          if (/^[）)」』，、。：；]$/.test(m) && atoms.length) atoms[atoms.length - 1] += m;
-          else atoms.push(m);
+      const fits = (t) => c.mw("jp-legend", t.trimEnd()) <= width;
+      const atomsOf = (t) => {
+        const out = [];
+        let carry = "";
+        for (const m of t.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) {
+          if (/^[（(「『]$/.test(m)) {
+            carry += m;
+            continue;
+          }
+          if (/^[）)」』，、。：；]$/.test(m) && out.length && !carry) {
+            out[out.length - 1] += m;
+            continue;
+          }
+          out.push(carry + m);
+          carry = "";
         }
-      });
-      let cur = "";
-      for (const a of atoms) {
-        const next = cur + a;
-        if (!cur.trim() || c.mw("jp-legend", next.trimEnd()) <= width) cur = next;
+        if (carry) out.push(carry);
+        return out;
+      };
+      const pushLong = (first2) => {
+        let cur2 = "";
+        for (const a of atomsOf(first2)) {
+          const next = cur2 + a;
+          if (!cur2.trim() || fits(next)) cur2 = next;
+          else {
+            lines.push(cur2.trimEnd());
+            cur2 = `\u3000${a.trimStart()}`;
+          }
+        }
+        if (cur2.trim()) lines.push(cur2.trimEnd());
+      };
+      let cur = `${ch} ${nms[0]}`;
+      for (const nm of nms.slice(1)) {
+        const next = `${cur} / ${nm}`;
+        if (fits(next)) cur = next;
         else {
-          lines.push(cur.trimEnd());
-          cur = `\u3000${a.trimStart()}`;
+          if (fits(cur + " /")) lines.push(cur + " /");
+          else pushLong(cur + " /");
+          cur = `\u3000${nm}`;
         }
       }
-      if (cur.trim()) lines.push(cur.trimEnd());
+      if (fits(cur)) lines.push(cur);
+      else pushLong(cur);
     }
     const row = rowOf(first.system, r, 0), nameFs = tx("part-name"), fs = tx("jp-legend"), LH = fs * 1.3;
     const mid = Q((JP_BODY.top + JP_BODY.bottom) / 2), y0 = mid + nameFs * 0.55 + nameFs * 0.35 + fs * 1.05 + (q.p.badges?.length ? TR("part-badge", 1.4) : 0);
@@ -8332,4 +8357,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-93f2313e54de.mjs.map
+//# sourceMappingURL=layout-worker-adbbc2bb5585.mjs.map

@@ -124,6 +124,8 @@ describe("简谱数字行", () => {
     assert(lg2.length > 3, "长名字折成了好几行");
     const perCh = (8 * textStyleOf("jp-legend").em) / textStyleOf("lyric").em;   // 这个测试的尺子：一个字按歌词字号量 8 px，换算到图例的字号
     for (const p of lg2) assert(p.x + p.s.trimEnd().length * perCh < x0, `「${p.s}」没伸进谱里（${p.x.toFixed(1)} + ${p.s.trimEnd().length} × ${perCh.toFixed(2)} vs ${x0.toFixed(1)}）`);
+    assert(lg2.every((p) => !/[（(]$/.test(p.s) && !/^\u3000?[）)，、]/.test(p.s)), "开括号不在行尾、闭括号和标点不在行首");
+    assert(lg2.some((p) => p.s.includes("大鼓")), "放得下的一件不拆开（整件折到下一行）");
     eq(lg2.map((p) => p.s.replace(/^\u3000/, "")).join(" ").replace(/\s+/g, " ").includes("Acoustic Snare Drum Very Long Name"), true, "英文按词折（词没被拆开）");
     assert(!L.prims.some((p) => p.t === "text" && /jp-acc/.test(p.cls ?? "")) && !L.prims.some((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")), "没有升降号、没有八度点");
     eq(L.prims.filter((p) => p.t === "line" && /jp-ul/.test(p.cls ?? "")).length, 1, "两个八分连一条下划线（节奏写法同数字行）");

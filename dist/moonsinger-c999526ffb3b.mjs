@@ -13411,27 +13411,52 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
     }
     if (!groups.size) return;
-    const width = ind0 - 2, lines = [];
+    const width = ind0 - 1.4, lines = [];
     for (const [ch2, g3] of [...groups].sort((a10, b3) => a10[1].line - b3[1].line)) {
       const nms = g3.names.map((nm2, k2) => ({ nm: nm2, ln: g3.lines[k2] })).sort((a10, b3) => a10.ln - b3.ln).map((x2) => x2.nm);
-      const atoms = [`${ch2} `];
-      nms.forEach((nm2, k2) => {
-        (k2 ? [" / "] : []).forEach((a10) => atoms.push(a10));
-        for (const m2 of nm2.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) {
-          if (/^[）)」』，、。：；]$/.test(m2) && atoms.length) atoms[atoms.length - 1] += m2;
-          else atoms.push(m2);
+      const fits = (t10) => c10.mw("jp-legend", t10.trimEnd()) <= width;
+      const atomsOf = (t10) => {
+        const out = [];
+        let carry = "";
+        for (const m2 of t10.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) {
+          if (/^[（(「『]$/.test(m2)) {
+            carry += m2;
+            continue;
+          }
+          if (/^[）)」』，、。：；]$/.test(m2) && out.length && !carry) {
+            out[out.length - 1] += m2;
+            continue;
+          }
+          out.push(carry + m2);
+          carry = "";
         }
-      });
-      let cur = "";
-      for (const a10 of atoms) {
-        const next2 = cur + a10;
-        if (!cur.trim() || c10.mw("jp-legend", next2.trimEnd()) <= width) cur = next2;
+        if (carry) out.push(carry);
+        return out;
+      };
+      const pushLong = (first2) => {
+        let cur2 = "";
+        for (const a10 of atomsOf(first2)) {
+          const next2 = cur2 + a10;
+          if (!cur2.trim() || fits(next2)) cur2 = next2;
+          else {
+            lines.push(cur2.trimEnd());
+            cur2 = `\u3000${a10.trimStart()}`;
+          }
+        }
+        if (cur2.trim()) lines.push(cur2.trimEnd());
+      };
+      let cur = `${ch2} ${nms[0]}`;
+      for (const nm2 of nms.slice(1)) {
+        const next2 = `${cur} / ${nm2}`;
+        if (fits(next2)) cur = next2;
         else {
-          lines.push(cur.trimEnd());
-          cur = `\u3000${a10.trimStart()}`;
+          if (fits(cur + " /")) lines.push(cur + " /");
+          else pushLong(cur + " /");
+          cur = `\u3000${nm2}`;
         }
       }
-      if (cur.trim()) lines.push(cur.trimEnd());
+      if (fits(cur)) lines.push(cur);
+      else pushLong(cur);
     }
     const row2 = rowOf(first.system, r10, 0), nameFs = tx2("part-name"), fs = tx2("jp-legend"), LH = fs * 1.3;
     const mid = Q2((JP_BODY.top + JP_BODY.bottom) / 2), y0 = mid + nameFs * 0.55 + nameFs * 0.35 + fs * 1.05 + (q2.p.badges?.length ? TR("part-badge", 1.4) : 0);
@@ -32907,7 +32932,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-93f2313e54de.mjs");
+      return pick(() => "layout-worker-adbbc2bb5585.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-dbf4137da628.mjs");
   }
@@ -62562,4 +62587,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b377b2bc628f.mjs.map
+//# sourceMappingURL=moonsinger-c999526ffb3b.mjs.map
