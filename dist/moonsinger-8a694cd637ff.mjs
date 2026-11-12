@@ -13385,7 +13385,7 @@ function drawJianpu(c10, mine, mode = "digits") {
   const jk = c10.scale ?? 1, Q2 = (v) => P2(v * jk);
   const Y2 = (row2, v) => staffTop(row2) + Q2(v);
   for (const r10 of mine) {
-    const q2 = per[r10], units = q2.units, tokens = q2.tokens;
+    const q2 = per[r10], units = q2.units, tokens = q2.tokens, xHead = mode === "digits" && !!q2.p.xHead;
     for (let s10 = 0; s10 < nSys; s10++) {
       const row2 = rowOf(s10, r10, 0);
       if (rows[row2]) rows[row2].x1 = P2(staffEnd[s10]);
@@ -13633,7 +13633,7 @@ function drawJianpu(c10, mine, mode = "digits") {
           });
           const swl = u2.j === 0 ? swellOf(tokens[u2.index]) : void 0, atk = ["sfz", "fp"].filter((x2) => u2.art.includes(x2));
           if (swl || atk.length) layNoteDynamics(orn, row2, u2, { cx: cx2, x0, w: P2(u2.w), tok, cls: void 0, ign, swl, atk });
-          if (u2.whisper) put2(row2, { ...T3, t: "text", x: cx2 + Q2(DIGIT_W * 0.55), y: Y2(row2, hiBase - DIGIT_H + 0.5), s: "\xD7", cls: artCls("whisper", "jp-acc whisper"), size: Q2(ACC_EM), anchor: "start" });
+          if (u2.whisper || xHead) put2(row2, { ...T3, t: "text", x: cx2 + Q2(DIGIT_W * 0.55), y: Y2(row2, hiBase - DIGIT_H + 0.5), s: "\xD7", cls: u2.whisper ? artCls("whisper", "jp-acc whisper") : "jp-acc xhead", size: Q2(ACC_EM), anchor: "start" });
           if (u2.art.includes("roll")) for (let k2 = 0; k2 < 3; k2++) {
             const yy = (nUL0 ? UL_Y0 + nUL0 * UL_GAP : BASE_Y) + 0.35 + (Math.min(0, lowDots) ? -lowDots * DOT_STEP + 0.2 : 0) + k2 * 0.28;
             put2(row2, { ...T3, t: "line", x1: cx2 - Q2(0.4), y1: Y2(row2, yy + 0.18), x2: cx2 + Q2(0.4), y2: Y2(row2, yy - 0.18), w: Q2(0.11), cls: artCls("roll", "jp-roll") });
@@ -13787,12 +13787,12 @@ var GEOMETRY = {
   jianpuX: { caretSpan: jianpuCaretSpan, bandTop: jianpuBandTop, ghost: (row2, x2, notes, half2) => jianpuXGhost(row2, x2, notes, half2) }
 };
 var jianpuCan = (q2) => !q2.vrt && !q2.v2 && !q2.hasV2;
-var unpitched = (q2) => !!(q2.pmode || q2.p.perc || q2.p.xHead);
+var unpitched = (q2) => !!(q2.pmode || q2.p.perc);
 var jianpuRowOf = (q2) => !jianpuCan(q2) ? "staff" : unpitched(q2) ? "jianpuX" : "jianpu";
 var NOTATIONS2 = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边一条竖线 = families "line"），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
-  //   有叠音的声部 = 数字竖着叠（数字行）；鼓 / 固定敲一个键的 = X 行；简谱的歌里没有五线谱的行（第五刀 5-4 ⑨ 过渡退场）。
+  //   有叠音的声部 = 数字竖着叠（数字行）；鼓 = X 行；固定敲一个键的 = 数字 + ×；简谱的歌里没有五线谱的行（第五刀 5-4 ⑨ 过渡退场）。
   jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf, families: "line" }
 };
 
@@ -32844,7 +32844,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-0877b3e3dc84.mjs");
+      return pick(() => "layout-worker-6884550b3667.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-0351db4bb88f.mjs");
   }
@@ -62485,4 +62485,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-18dcf392fcc6.mjs.map
+//# sourceMappingURL=moonsinger-8a694cd637ff.mjs.map

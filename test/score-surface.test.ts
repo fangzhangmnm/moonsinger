@@ -74,7 +74,7 @@ const headIdx = (toks: readonly Token[]) => { const k = toks.findIndex((t) => t.
 type EditorOnly = "unwritten-key" | "row-cannot" | "no-effect";
 function editorOnlyWhy(w: Where, L: Layout, drums: ReadonlySet<string>): EditorOnly | null {
   const rows = L.systems.filter((r) => r.paper === w.paper && r.part === w.part);
-  if (w.tok.kind === "key" && (w.tok.fifths === 0 || drums.has(w.part))) return "unwritten-key";   // 课本写法本来就不画的：C 大调的调号、不分音高的那几行（鼓 / 固定敲一个键的）上的调号（淡的「1=C」「1=D」提示）
+  if (w.tok.kind === "key" && (w.tok.fifths === 0 || drums.has(w.part))) return "unwritten-key";   // 课本写法本来就不画的：C 大调的调号、鼓的那几行上的调号（淡的「1=C」「1=D」提示）
   if ((w.tok.kind === "clef" || w.tok.kind === "ottava") && rows.length > 0 && rows.every((r) => r.kind === "jianpu")) return "row-cannot";   // 这种行用不上的记号：数字行上的谱号记号、八度线（小灰标）
   if (w.tok.kind === "ottava" && rows.some((r) => r.staff === 2)) return "no-effect";   // 现在不起作用的记号：大谱表上的八度线（画灰；真做 = 愿望单 W-73）
   return null;
@@ -95,7 +95,7 @@ describe("谱面排版：全量和点击（守卫 4 / 5）", () => {
   for (const c of cases) {
     it(`守卫 4（全量）· ${c.name}：每个 token 至少一个图元指着它；没有的只许三类，每类由别的东西代表着（正面断言）；一个图元最多指一个 token`, () => {
       const opts = view.opts(c.song), L = engrave(c.song, opts), has = new Set<number>(), shown = new Set<number>(), seen: string[] = [], reps = new Map<Rep, Where[]>(), only = new Map<EditorOnly, number>();
-      const drums = new Set((opts.parts ?? []).filter((p) => !!p.perc || !!p.xHead).map((p) => p.id));   // 不分音高的（鼓 + 固定敲一个键的；统筹裁定 5-4 ⑨）：调号照规矩不画，只给提示
+      const drums = new Set((opts.parts ?? []).filter((p) => !!p.perc).map((p) => p.id));   // 不分音高的（鼓：五线谱鼓谱 / 一线谱、简谱 X 行）：调号照规矩不画，只给提示。固定敲一个键的（× 符头）照常印调号（统筹 5-6）
       for (const p of L.prims) if (p.tok !== undefined) { assert(typeof p.tok === "number", "图元的 tok 是一个 token 的 id（一个图元最多一个 token）"); (isPrinted(p.cls) ? has : shown).add(p.tok); }   // 印出来的 / 只在编辑器里的（灰标、推定的灰字…）
       for (const kh of L.keyHints) if (kh.tok !== undefined) shown.add(kh.tok);   // 淡的「1=C」「1=D」提示（覆盖层，不印）：带着它指的那个调号（点得到它 = 守卫 5）
       for (const paper of c.song.papers) for (const [part, toks] of Object.entries(paper.tracks)) toks.forEach((tok, index) => {

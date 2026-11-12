@@ -84,13 +84,14 @@ export interface Notation { readonly id: NotationId; readonly home: RowKind; rea
   readonly families: "fold" | "line" }
 /** 简谱里排得了的：不是五线谱叠起来的一家（虚拟轨）/ 声部 2（简谱不叠，这两种本来就不会出现）。 */
 const jianpuCan = (q: Track): boolean => !q.vrt && !q.v2 && !q.hasV2;
-/** 不分音高的「一下」（统筹裁定 5-4 ⑨，2026-11-11）：五线谱画成鼓谱 / 一线谱的（鼓：pmode / perc）和台上那位固定敲一个键的（× 符头）——简谱里一律 X 行，
- *  写的音高留在数据里，换成有音高的乐器就变回数字行。一个判断，不单为哪一类写特例。 */
-const unpitched = (q: Track): boolean => !!(q.pmode || q.p.perc || q.p.xHead);
+/** 不分音高的「一下」= 五线谱里画成鼓谱 / 一线谱的（鼓：pmode / perc）→ 简谱里 X 行；写的音高留在数据里，换成有音高的乐器就变回数字行。
+ *  简谱跟五线谱的分法一一对上（统筹 5-6 更正 5-4 ⑨，2026-11-11）：五线谱里画在五线上、符头是 × 的（台上那位固定敲一个键，音效固定原速这类）
+ *  → 数字行、每个数字旁边一个 ×（同气声：五线谱里两者本来就是同一个 × 符头、同一个意思 = 写的音高不拿来出声）。 */
+const unpitched = (q: Track): boolean => !!(q.pmode || q.p.perc);
 const jianpuRowOf = (q: Track): RowKind => (!jianpuCan(q) ? "staff" : unpitched(q) ? "jianpuX" : "jianpu");
 export const NOTATIONS: Readonly<Record<NotationId, Notation>> = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边一条竖线 = families "line"），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
-  //   有叠音的声部 = 数字竖着叠（数字行）；鼓 / 固定敲一个键的 = X 行；简谱的歌里没有五线谱的行（第五刀 5-4 ⑨ 过渡退场）。
+  //   有叠音的声部 = 数字竖着叠（数字行）；鼓 = X 行；固定敲一个键的 = 数字 + ×；简谱的歌里没有五线谱的行（第五刀 5-4 ⑨ 过渡退场）。
   jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf, families: "line" },
 };

@@ -78,9 +78,13 @@ describe("简谱数字行", () => {
     const iKey = toks.findIndex((t) => t.kind === "key");
     assert(L.keyHints.some((h) => h.index === iKey && h.tok === toks[iKey]!.id && h.s.startsWith("1=")), "编辑器里淡的「1=…」提示带着调号 token");
     eq(GEOMETRY.jianpuX.pitchAxis, undefined, "X 行没有「纵向 = 音高」");
-    // 不分音高的一律 X 行（统筹裁定 5-4 ⑨）：台上固定敲一个键的（五线谱上画 × 符头）也是；简谱的歌里不再有五线谱的行
+    // 简谱跟五线谱的分法一一对上（统筹 5-6 更正 5-4 ⑨）：鼓（五线谱画成鼓谱 / 一线谱）= X 行；台上固定敲一个键的（五线谱画在五线上、× 符头）= 数字行，每个数字 + ×（同气声），音高看得见
     const fixed = lay([n(P("E")), n(P("G"))], undefined, { xHead: true }).L;
-    assert(fixed.systems.every((r) => r.kind === "jianpuX") && fixed.prims.some((p) => p.t === "text" && /jp-x/.test(p.cls ?? "")), "固定敲一个键的声部 = X 行");
+    assert(fixed.systems.every((r) => r.kind === "jianpu") && !fixed.prims.some((p) => p.t === "text" && /jp-x/.test(p.cls ?? "")), "固定敲一个键的声部 = 数字行（不是 X 行）");
+    const fd = fixed.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "")), fx = fixed.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /xhead/.test(p.cls ?? ""));
+    eq(fd.map((p) => p.s).join(""), "35", "数字照写的音（音高看得见）"); eq(fx.map((p) => p.s).join(""), "××", "每个数字旁边一个 ×");
+    const fixedKey = fixed.prims.some((p) => p.t === "text" && /jp-head/.test(p.cls ?? "") && (p as { s: string }).s.startsWith("1="));
+    assert(fixedKey && !fixed.keyHints.length, "数字行照常印调号「1=」（不是鼓那种只给提示）");
     const v = FULL_VIEWS.find((x) => x.name === "edit-all")!, J = { ...fullSong(), notation: "jianpu" } as Song;
     eq(engrave(J, v.opts(J)).systems.filter((r) => r.kind === "staff").length, 0, "用全的测试歌切成简谱：一行五线谱都没有了（过渡退场）");
   });

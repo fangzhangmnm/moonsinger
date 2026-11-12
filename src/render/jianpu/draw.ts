@@ -61,7 +61,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
   const jk = c.scale ?? 1, Q = (v: number) => P(v * jk);   // 行里的尺寸比例（排版参数表行一级，第五刀 5-0c）：数字行自己的尺寸 / 偏移走 Q，框架给的位置（u.x、右边界、行首）走 P
   const Y = (row: number, v: number) => staffTop(row) + Q(v);   // 局部 y（数字行的单位）→ px（框架还没定行距：staffTop 是这一行的临时原点）
   for (const r of mine) {
-    const q = per[r]!, units = q.units, tokens = q.tokens;
+    const q = per[r]!, units = q.units, tokens = q.tokens, xHead = mode === "digits" && !!q.p.xHead;   // 台上固定敲一个键（数字行上每个数字 + ×）
     for (let s = 0; s < nSys; s++) { const row = rowOf(s, r, 0); if (rows[row]) rows[row]!.x1 = P(staffEnd[s]!); }   // 八度基准下面算好再记进每一行（鬼音符要）
     const tokOf = (u: Chunk): number | undefined => (u.index >= 0 && !u.pad ? tokens[u.index]?.id : undefined);
     // 共用挂件（力度那一串、风格、跳转房子、速度；ornaments/index.ts）：音的锚点 = 数字的左右缘
@@ -246,7 +246,8 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
           })); });
           const swl = u.j === 0 ? swellOf(tokens[u.index]!) : undefined, atk = (["sfz", "fp"] as const).filter((x) => u.art.includes(x));
           if (swl || atk.length) layNoteDynamics(orn, row, u, { cx, x0, w: P(u.w), tok, cls: undefined, ign, swl, atk });   // 突强 / 强后弱 / 音内起伏：共用挂件
-          if (u.whisper) put(row, { ...T, t: "text", x: cx + Q(DIGIT_W * 0.55), y: Y(row, hiBase - DIGIT_H + 0.5), s: "×", cls: artCls("whisper", "jp-acc whisper"), size: Q(ACC_EM), anchor: "start" });   // 气声 = 数字 + ×（认的黑、不认的灰）
+          // 气声 = 数字 + ×（认的黑、不认的灰）；台上那位固定敲一个键（五线谱上画 × 符头）= 每个数字 + ×（同一个意思 = 写的音高不拿来出声；统筹 5-6）。两样都有 = 一个 ×
+          if (u.whisper || xHead) put(row, { ...T, t: "text", x: cx + Q(DIGIT_W * 0.55), y: Y(row, hiBase - DIGIT_H + 0.5), s: "×", cls: u.whisper ? artCls("whisper", "jp-acc whisper") : "jp-acc xhead", size: Q(ACC_EM), anchor: "start" });
           if (u.art.includes("roll")) for (let k = 0; k < 3; k++) { const yy = (nUL0 ? UL_Y0 + nUL0 * UL_GAP : BASE_Y) + 0.35 + (Math.min(0, lowDots) ? -lowDots * DOT_STEP + 0.2 : 0) + k * 0.28; put(row, { ...T, t: "line", x1: cx - Q(0.4), y1: Y(row, yy + 0.18), x2: cx + Q(0.4), y2: Y(row, yy - 0.18), w: Q(0.11), cls: artCls("roll", "jp-roll") }); }   // 滚奏 = 数字下面三道短斜线（UX 稿第 7 节，默认）
         }
         if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, hiBase - DIGIT_H / 2), w: Q(glyphW), d: NaN });   // 旋律线那个数字（和弦 = 最上面）；数字行没有「纵向 = 音高」：d = NaN（不提供竖着拖改音高）
