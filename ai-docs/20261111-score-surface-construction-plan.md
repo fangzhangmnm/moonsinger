@@ -1492,3 +1492,12 @@ user 提的（愿望单 W-71）。
     2. 谱上要不要把「深度 0」那几件乐器的力度记号画灰（施工单说这次不做）：记着。
     3. 鼓组的仓内样本（见上）。
   - **测试**：新 `test/sf-loudness.test.ts`（3）；`test/sf-velocity.test.ts` 改写（4：深度读得对 / 引擎照深度出声 / 结构 / 两份 wasm 同响度）；`test/loudness-convention.test.ts` 第 1 条按插件的 800 和规范 960 各核一遍；`test/performers.test.ts` 加深度能力的守卫；E2E `dyn-levels.mjs` 小月相那张表改成 −30 … −6.7 … −0.1。`npm run check` 1527 全过。
+- 2026-11-12 · 9-4 补：推开发版之后整套 E2E 108 份全过（follow / edit-lock-gallery / hscroll 并行时红、单跑绿 = 负载 flake）。
+- 2026-11-12 · 9-3 · 每个库的校准归它自己带（MoonSinger小弟；数都没变，出声逐样本不变）
+  - **块乘多少 → 小月相的插件报**：`registry.ts` 新能力 `chunkGain`（按块出声的报，按音符表的不报）；小月相 = 0.89 / 0.42（原 `timeline.ts SUNG_GAIN`，删了）；时间线填块的增益 = `info.plugin.chunkGain ?? 1`。
+  - **新上场的默认响度 → 插件 / 库报**：`registry.ts` 新方法 `defaultCalibrationDb(库)`。SoundFont = 插件里一张「库 → 默认」的表（`soundfont.ts LIBRARY_CALIBRATION_DB`：GS = −6；自己拖进来的 .sf2 = −6），换上乐器时调用方问它（`main.ts` 两处）；`withSf2Candidate` 的 `calibrationDb` 改成必填（原来缺了就用全局常数）。小月相 / 元音版 = 内置预设表 `format/performance.ts BUILTIN_CALIBRATION_DB`（和她的唱法旋钮默认 `TSUKUYOMI_DEFAULTS` 同一类：内置预设的数据，新建时按值抄进歌），她们的插件报的就是这张表里自己那一格。
+  - **「没写」是格式的意思，单独留着**：`UNWRITTEN_CALIBRATION_DB = −6`（候选里没写 calibrationDb 时 `activeCalibrationDb` 用它；也给别家软件来的未知乐器）。`DEFAULT_CALIBRATION_DB` / `SOUNDFONT_CALIBRATION_DB` 删了。
+  - **乐器页**：「响度」那一行写「这个库的默认是 −6 dB。库和库之间就在这一个数上对齐……混音台的推子是这首歌的决定，另算」；「默认」钮回到这位所在的库 / 插件报的数（原来回全局常数）。
+  - **为什么内置那两位的数放在格式层、不放在插件文件里**（小弟定的，统筹不同意可以改）：新建这两位的代码（`project.ts defaultRole`，比较「是不是没动过的内置那位」也用它）在格式层，格式层 import 插件会成环（插件都 import `project.ts`）；内置预设的其它数据（唱法旋钮默认、力度表）本来就住 `format/performance.ts`。插件仍然是对外报这个数的那一处。
+  - **守卫**（新 `test/library-calibration.test.ts`）：① 按块出声的必须报 `chunkGain`、按音符表的不报；每位的 `defaultCalibrationDb` 是个合理的数（这一次都是 −6），小月相的块乘 0.89 / 0.42。② `src/engine`、`src/core`、`src/score` 里不声明、不 import 名字里同时有引擎 / 库名和音量词的东西（SUNG_GAIN、xxxCalibrationDb…），也不 import `BUILTIN_CALIBRATION_DB`；退场的三个名字全 src 都没有。反证：把 `SUNG_GAIN` 放回 `timeline.ts` = 红。
+  - **测试**：`npm run check` 1529 全过；E2E dyn-levels / sing-chunks / sing-experiments / finder-presets / inst-split 过。改了的老测试只是给 `withSf2Candidate` 补上必填的 `calibrationDb`（credits / gm-format / pack / presets / sfx-fixed），`pack.test.ts` 的校准那条改成核「插件报的 = 新建时写进去的」。

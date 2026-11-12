@@ -8,7 +8,7 @@ import { initState } from "../src/score/song.ts";
 
 const hum = "n" as const;
 const sub = (k: number) => new Uint8Array([1, 2, 3, k]);
-const sf = (name: string, program: number, sfx = false) => ({ name, bank: 0, program, subset: sub(program), sha256: `sha${program}`.padEnd(64, "0"), embed: false as const,
+const sf = (name: string, program: number, sfx = false) => ({ name, bank: 0, program, calibrationDb: -6, subset: sub(program), sha256: `sha${program}`.padEnd(64, "0"), embed: false as const,
   ...(sfx ? { note: 60, sfx: { key: 60, midi: 61 } } : {}),
   origin: { name: "GeneralUser GS 2.0.3", fileSha256: "f".repeat(64), bytes: 1000, library: "generaluser-gs-2.0.3" }, credit: { attribution: ["x"], license: { name: "y" } } });
 const concept = (n: string) => ({ name: n, sound: `wind.${n}`, concept: { ids: { wikidata: `Q${n}`, local: null, musicxml: null, gm: [], hs: null }, name: { zh: n, en: n } } });

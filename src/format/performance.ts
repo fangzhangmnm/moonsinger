@@ -41,13 +41,13 @@ export const DYNAMICS_VEL: Record<Dynamic, number> = { ppp: 16, pp: 33, p: 49, m
 export const ACCENT_VEL = 16, MARCATO_VEL = 28, MARCATO_DB = 7;
 /** 没画曲线的音用的默认数（单位同 curves.json 的 units）：soundfont 的 velocity = MIDI 力度比例 0–1。 */
 export const SOUNDFONT_DEFAULTS: Record<string, number> = { velocity: 0.8 };
-/** 新建 SoundFont 候选的响度校准（dB）：月读当基准（0），乐器默认让一点（2026-10-08 by Claude Opus 5.5；user「感觉乐器进来之后好像月读变轻了」）。
- *  只是起点：好不好听归 user 耳朵，歌手牌上看得见、能调（契约「校准 = 看得见、能调的默认，不偷偷自动」）；进歌 by value，以后改这个数动不到旧歌。 */
-export const SOUNDFONT_CALIBRATION_DB = -6;
-/** 新建的演奏者（月读也是）默认的响度校准，也是「没写」时的值（2026-10-08 by Claude Opus 5.5；user「月读也得-6db，不然一和别的乐器在一起，
- *  就会音色变成另外一个人」）：几个声部相加超过母线天花板时限幅器（src/audio/mix.ts，起压 3 ms）压的是整条混音——月读最响，压的主要是她的峰，
- *  3 ms 只够她一两个声门周期，等于掰弯她的波形；先让 6 dB = 叠在一起也很少顶到天花板。只管新建的：旧歌里存的 0 照旧（不偷偷改，人能调）。 */
-export const DEFAULT_CALIBRATION_DB = -6;
+/** 候选里没写 calibrationDb（「响度」）时的值——格式的意思，冻住（2026-10-08 起：user「月读也得-6db，不然一和别的乐器在一起，就会音色变成另外一个人」）。
+ *  新上场的演奏者默认多少不归这里：归各自的插件 / 库报（9-3，registry.ts defaultCalibrationDb）。 */
+export const UNWRITTEN_CALIBRATION_DB = -6;
+/** 内置的两位（小月相 / 元音版）新建时按值写进去的「响度」（dB）；她们的插件报的就是这张表（9-3，2026-11-12；user「小月相有自己的normalization，normalization应该是乐器自己可以带的。
+ *  是不同库之间需要调」）。数 = 2026-10-08 定的 −6（几个声部相加超过母线天花板时，限幅器压的主要是她的峰、掰弯她的波形；先让 6 dB）。
+ *  和唱法旋钮的默认（TSUKUYOMI_DEFAULTS）一样是内置预设的数据，进歌 by value，以后改这里动不到旧歌。 */
+export const BUILTIN_CALIBRATION_DB = { tsukuyomi: -6, "vowel-sampler": -6 } as const;
 /** 小月相唱法核心的旋钮（by value 存在候选的 defaults 里，乐器页「高级」里改；没写 = 这张表；新建时抄进去）。2026-10-15 user 拍板：「应该leverage就是齐平，我觉得不开没什么影响吧，
  *  默认不开，然后月相可以设置，齐平和其他的也都放在高级设置里面可以持久化」「嗯你试一下连续也行」。物理意义见 ai-docs/20261013-dango-c10-pop-probe.md §6：
  *  level = 每个字的响度往整句中位数拉几成（0 = 关 = 照念的轻重；唱法核心自己的默认 0.8 只给 Lab 命令行）；levelMaxDb = 最多拉几 dB；levelContinuous = 1 时增益从前一个字连续过渡到这个字（不每字跳回 0）；

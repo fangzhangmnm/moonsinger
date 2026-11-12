@@ -3,7 +3,7 @@
 //   审计风险 2「主程序里一张一张手糊的面板」）。宿主给一组访问器 + 动作，页面自己管画和点击；行为和搬之前一样。各段的来历见段内注释（原注释照搬）。
 import { _t, lang } from "../../i18n/index.ts";
 import { roleName, roleSound, activeId, gmCandidates, activeCandidateName, partLabels, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withCalibration, GAP_MAX_SEC, type Extras, type Engine } from "../../format/project.ts";
-import { DEFAULT_CALIBRATION_DB, ROLL_HZ_MIN, ROLL_HZ_MAX } from "../../format/performance.ts";
+import { UNWRITTEN_CALIBRATION_DB, ROLL_HZ_MIN, ROLL_HZ_MAX } from "../../format/performance.ts";
 import { performerOf } from "../../performers/index.ts";
 import type { InspectorCtx } from "../../performers/registry.ts";
 import { ignoredArts, rollDefaultHz, velocityDb, SF2_VEL_DEPTH, type Mark } from "../../score/perform.ts";
@@ -112,6 +112,11 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       (layers && layers.count > 1 ? `<tr><th>${_t("第几份录音")}</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
   }
   /** 乐器页的内容（每次改完整页重画；输入框里正在打的字不受影响——只有提交时才改 extras）。 */
+  /** 上场那位所在的库 / 插件报的默认「响度」（9-3）：SoundFont 按候选来自哪个库，别的引擎问自己的插件；没人上场 = 格式里「没写」的值。 */
+  function calDefault(role: string): number {
+    const aid = activeId(h.extras(), role), g = gmCandidates(h.extras(), role).find((x) => x.id === aid);
+    return performerOf(h.engine())?.defaultCalibrationDb(g?.origin.library ?? null) ?? UNWRITTEN_CALIBRATION_DB;
+  }
   /** 插件自报参数行要的上下文（ADR-0004 §2.5）：休息室 / 角色 / 哼的字 / 音乐目录（没载 = null）/ 排版小工具。 */
   function inspectorCtx(role: string): InspectorCtx {
     return { extras: h.extras(), role, hum: h.song().hum, catalog: h.catalog(), esc, chip, dynTable: (L, depth) => dynTable(activePerfSpec(h.extras(), role), L, depth), bankBytes: (sha) => h.bankBytes(sha) };
@@ -125,7 +130,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       : ((found) => `<div class="cand-status">${_t("弱引用：歌里不带声音，用时从「{name}」找（{found}）", { name: esc(active.origin.name), found: found ? _t("本次已找到") : _t("家族音源库 / 设备缓存 / 你的文件") })}${found ? "" : `<button class="btn" data-v="find:${esc(active.id)}">${_t("找文件…")}</button>`}</div>`)(h.sessionHas(active.subsetSha256));
     const labels = partLabels(h.song(), h.extras()), onPaper = new Set(Object.keys(h.song().papers.find((p) => p.id === h.at().paper)?.tracks ?? {}));
     const parts = h.song().parts.map((p, k) => ({ p, label: labels[k] })).filter((x) => onPaper.has(x.p.id));
-    const cal = activeCalibrationDb(h.extras(), role), tr = activeTranspose(h.extras(), role);
+    const cal = activeCalibrationDb(h.extras(), role), tr = activeTranspose(h.extras(), role), calDef = calDefault(role);
     const row = (k: string, v: string, note = "") => `<span class="ip-k">${k}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note ? `<div class="ip-note">${note}</div>` : ""}</div>`;
     // 这位怎么演：通用的行（响度 / 音和音之间 / 力度记号 dB 表 / 哼的字）按能力字段摆；这位自己的行（力度 / 音效 / 修八度 / 八度 / 唱法旋钮 / 分段唱…）由插件自报
     //   （ADR-0004 §2.5「槽旁的参数行由插件自报，不是 main.ts 写死」；2026-10-15 刀 5 之一）。
@@ -133,8 +138,8 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     const own = plug?.inspector?.(ictx) ?? [], ownMain = own.filter((x) => !x.place), ownAdv = own.filter((x) => x.place === "adv"), ownTail = own.filter((x) => x.place === "tail");
     const rowOf = (x: { label: string; control: string; note?: string }) => row(x.label, x.control, x.note ?? "");
     const how =
-      (plug ? row(_t("响度"), `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="${_t("这位演奏者小声 1 dB")}">−1 dB</button><button class="btn" data-v="cal:1" title="${_t("大声 1 dB")}">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="${_t("回到默认 {DEFAULT_CALIBRATION_DB}", { DEFAULT_CALIBRATION_DB: fmtDb(DEFAULT_CALIBRATION_DB) })}">${_t("默认")}</button>` : ""}`,
-        _t("这位演奏者自己的音量：默认都是 {DEFAULT_CALIBRATION_DB}（小月相也是），几个声部叠在一起才不顶到天花板、不把声音压变样；混音台的推子另算", { DEFAULT_CALIBRATION_DB: fmtDb(DEFAULT_CALIBRATION_DB) })) : "") +
+      (plug ? row(_t("响度"), `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="${_t("这位演奏者小声 1 dB")}">−1 dB</button><button class="btn" data-v="cal:1" title="${_t("大声 1 dB")}">+1 dB</button>${cal !== calDef ? `<button class="btn" data-v="cal:def" title="${_t("回到默认 {d}", { d: fmtDb(calDef) })}">${_t("默认")}</button>` : ""}`,
+        _t("这位演奏者自己的音量：这个库的默认是 {d}。库和库之间就在这一个数上对齐，几个声部叠在一起也不顶到天花板、不把声音压变样；混音台的推子是这首歌的决定，另算", { d: fmtDb(calDef) })) : "") +
       // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
       //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
       (plug?.sound === "notes" ? ((gap, d) => row(_t("音和音之间"), `<b class="ip-val">${Math.round(gap * 1000)} ms</b>` +
@@ -183,7 +188,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     if (v.startsWith("find:")) { h.findBankFile(v.slice(5)); return; }
     if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(h.extras(), role).gapSec + Number(v.slice(4)))); h.commit(withGapSec(h.extras(), role, next, hum), _t("「{rn}」音和音之间 {p} ms", { rn, p: Math.round(next * 1000) }), "gap"); }
     else if (v.startsWith("roll:")) { const cur = activePerfSpec(h.extras(), role).rollHz ?? rollDefaultOf(role) ?? 16, next = v === "roll:def" ? null : Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, cur + Number(v.slice(5)))); h.commit(withRollHz(h.extras(), role, next, hum), next === null ? _t("「{rn}」滚奏回到默认", { rn }) : _t("「{rn}」滚奏每秒 {n} 下", { rn, n: next }), "roll"); }
-    else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(h.extras(), role) + d)); h.commit(withCalibration(h.extras(), role, next, hum), _t("「{rn}」响度校准 {next} dB", { rn, next }), "cal"); }
+    else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? calDefault(role) : activeCalibrationDb(h.extras(), role) + d)); h.commit(withCalibration(h.extras(), role, next, hum), _t("「{rn}」响度校准 {next} dB", { rn, next }), "cal"); }
     else if (v.startsWith("hum:")) h.setHum(v.slice(4) as Hum);
     else { const ch = performerOf(h.engine())?.onInspector?.(v, inspectorCtx(role)); if (!ch) return; h.commit(ch.extras, ch.label, ch.gesture); if (ch.silence) h.silence(); }   // 这位自己的行（力度 / 音效 / 修八度 / 唱法旋钮 / 分段唱…）：插件自己管（ADR-0004 §2.5）
     draw();

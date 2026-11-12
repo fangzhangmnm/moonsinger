@@ -91,6 +91,12 @@ export interface PerformerPlugin {
   /** 力度深度（cB，9-4；和 SoundFont「力度 → 初始衰减」调制器的量同一个单位）：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）。
    *  按音量曲线走力度的（dynamics: "gain"）必须报；按力度敲的乐器不报——深度是库给每件乐器写的，引擎自己读（vendor/tsf/patch-tsf.py 补丁 2）。 */
   readonly velocityDepth?: number;
+  /** 按块出声的（sound: "chunks"）块乘多少：这个引擎原始输出的满音量归它自己（9-3，2026-11-12；user「小月相有自己的normalization，normalization应该是乐器自己可以带的」）。
+   *  公共的出声代码不认识这个数（守卫：src/engine、src/core、src/score 里没有针对某个引擎的音量常数）。按音符表出声的不报。 */
+  readonly chunkGain?: number;
+  /** 新上场的这位默认的「响度」（calibrationDb，dB）：插件 / 库自己报（9-3；user「是不同库之间需要调」）。library = 候选的 origin.library（SoundFont 按库；
+   *  别的引擎不看）。乐器页的「默认」钮回到它。库和库之间只在这一个数上对齐；混音台的推子是这首歌的决定，不算。 */
+  defaultCalibrationDb(library: string | null): number;
   /** 拍子轻重预设的类别：voice = 人声一档；gm = 按 GM 音色家族 / 鼓件（要 gm 参数）。 */
   readonly grooveCategory: "voice" | "gm";
   /** 能不能从休息室删掉（第一公民的两位不删；带自己字节的乐器能删）。 */

@@ -1700,7 +1700,7 @@ async function castPick(p: FinderPick): Promise<void> {
   if (p.kind === "voice") { const vid = p.light ? CANDIDATE_ID.light : CANDIDATE_ID.full; next = withSwap(withCastAs(next, role, vid, ca, hum), role, vid, hum, { prev, before: base.extras }); }
   else {
     const { subset, sha256 } = audition!, inf = sf2Info(subset);
-    next = withSf2Candidate(next, role, { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false,
+    next = withSf2Candidate(next, role, { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false, calibrationDb: performerOf("soundfont")!.defaultCalibrationDb(GS.id),   // 新上场的响度 = 库报的（9-3）
       origin: { name: GS.name, fileSha256: GS.sha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, hum);
     const id = activeId(next, role);
     next = withSwap(withCastAs(next, role, id, ca, hum), role, id, hum, { prev, fresh: true, before: base.extras });   // 新上场的这位记下「作为这件乐器」+ 换上台那一刻的设置指纹（R3），下台那位没调过 = 删（R2）
@@ -1722,7 +1722,7 @@ async function castOwn(p: OwnPick): Promise<void> {
   const { subset, sha256 } = audition!, inf = sf2Info(f.bytes), hum = D.st.song.hum;
   const fileSha256 = (f.fileSha256 ??= await sha256Hex(f.bytes));
   const np = newPartPending, base = np ? newPartState(np) : { st: D.st, extras: D.extras, role: curRole() }, role = base.role, prev = activeId(base.extras, role);
-  const made = withSf2Candidate(base.extras, role, { name: p.name, bank: p.bank, program: p.program, subset, sha256, embed: false,
+  const made = withSf2Candidate(base.extras, role, { name: p.name, bank: p.bank, program: p.program, subset, sha256, embed: false, calibrationDb: performerOf("soundfont")!.defaultCalibrationDb(null),   // 自己的 .sf2 没有库（9-3）
     origin: { name: f.name, fileSha256, bytes: f.bytes.length },
     credit: { attribution: [inf.name, inf.engineer, inf.copyright].filter((x): x is string => !!x), license: { name: "unknown", text: inf.comment } } }, hum);   // 自己拖进来的只有 INFO 块里的字、许可证 unknown
   const next = withSwap(made, role, activeId(made, role), hum, { prev, fresh: true, before: base.extras });   // R2 / R3 同 castPick

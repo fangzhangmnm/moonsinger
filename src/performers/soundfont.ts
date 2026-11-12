@@ -21,6 +21,12 @@ function hitOf(g: GmCandidate | null): { hitSec?: (key: number) => number } {
   const h = pk.info.hitSec ?? 0; return h ? { hitSec: () => h } : {};
 }
 
+/** 每个库新上场的乐器默认的「响度」（dB；9-3，2026-11-12；user「小月相有自己的normalization，normalization应该是乐器自己可以带的。是不同库之间需要调」）。
+ *  现在只有一个库：GS = −6（2026-10-08 定的：月读当基准、乐器让一点；user「感觉乐器进来之后好像月读变轻了」）。加第三个库时用量响度的工具给建议，数由人定。
+ *  自己拖进来的 .sf2（没有库）= OWN。进歌 by value，以后改这里动不到旧歌。 */
+const LIBRARY_CALIBRATION_DB: Record<string, number> = { [GS_LIBRARY_ID]: -6 };
+const OWN_SF2_CALIBRATION_DB = -6;
+
 export const soundfont = registerPerformer({
   guid: "3e8a5c47-9f21-4b6d-a0e2-c7d14f8b9a63", kind: "performer", name: "soundfont", version: 1, label: _t("SoundFont 乐器"),
   description: _t("SoundFont 乐器（TinySoundFont 出声）"),
@@ -28,6 +34,7 @@ export const soundfont = registerPerformer({
   // lightMarks 那一路；琶音只有能叠音的认（v0.9.45）；气声 / 出声的换气乐器本来就不认
   honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio", "roll"],
   connected: false, dynamics: "velocity", grooveCategory: "gm", removable: true,
+  defaultCalibrationDb: (library) => LIBRARY_CALIBRATION_DB[library ?? ""] ?? OWN_SF2_CALIBRATION_DB,   // 9-3：按库报
   info: ({ extras, role, presetIndex }) => {
     const g = activeGm(extras, role);
     return { gm: g ? { sha: g.subsetSha256, presetIndex: presetIndex(g.subsetSha256, g.bank, g.program), note: g.note, sfx: g.sfx } : null, chunk: "phrase", ...hitOf(g) };

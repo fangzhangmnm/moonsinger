@@ -9,8 +9,6 @@ import type { TrackSpec } from "./studio.ts";
 import type { PerformerPlugin } from "../performers/registry.ts";
 /** 月读核心 OPT.leadIn（sing-core.mjs）：第一个元音前留的秒数；块的第 0 个采样 = 第一个音的时刻 − 它。 */
 export declare const LEAD_IN = 0.5;
-/** 唱法核心 raw 输出的补偿增益：刀 0 量的 raw 峰值 ≈ 0.42（うさぎ 0.419 / 団子 0.412）→ 乘到 0.89（原整首归一化的目标；按句出块后不再整首归一化，句与句的强弱照原样）。 */
-export declare const SUNG_GAIN: number;
 /** 唱法核心 finish 的尾巴（秒）：块的声音比最后一个音长这么多。 */
 export declare const SUNG_TAIL = 0.6;
 /** 从光标放：提前这么多起放，第一个字的辅音（在元音前）不被切掉。 */

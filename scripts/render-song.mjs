@@ -123,7 +123,7 @@ async function sing(tl, progress) {
     if (c.lang === "en" && !piper.phonemizeEnWords) { const en = await englishFront(); piper.phonemizeEnWords = (words) => en.phonemizeWords(words); }
     progress(`小月相：第 ${++k} / ${tl.chunks.length} 句（${c.score.SCORE.map((e) => e.kana).join("")}）`);
     const r = await singCore({ score: c.score.SCORE, text: c.score.TEXT, tempo: c.score.TEMPO_QUARTER, lang: c.lang, atlas: "off", breath: false, preset: presetDefault[c.lang] ?? 0, piper, world, loadAtlas: null, opt: c.opt ?? {} });
-    engine.chunk(c.key, r.SR, Float32Array.from(r.y));   // raw：和浏览器 worker 的 raw: true 同一份（整首最后不归一化，块乘固定 SUNG_GAIN）
+    engine.chunk(c.key, r.SR, Float32Array.from(r.y));   // raw：和浏览器 worker 的 raw: true 同一份（整首最后不归一化，块乘小月相插件报的 chunkGain；9-3）
   }
 }
 

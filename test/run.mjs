@@ -37,6 +37,7 @@ import "./format-guard.test.ts";
 import "./sf2.test.ts";
 import "./sf-velocity.test.ts";
 import "./sf-loudness.test.ts";
+import "./library-calibration.test.ts";
 import "./loudness-convention.test.ts";
 import "./gm-format.test.ts";
 import "./sounds.test.ts";

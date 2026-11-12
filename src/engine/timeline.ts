@@ -20,8 +20,6 @@ import type { PerformerPlugin } from "../performers/registry.ts";   // 只拿类
 
 /** 月读核心 OPT.leadIn（sing-core.mjs）：第一个元音前留的秒数；块的第 0 个采样 = 第一个音的时刻 − 它。 */
 export const LEAD_IN = 0.5;
-/** 唱法核心 raw 输出的补偿增益：刀 0 量的 raw 峰值 ≈ 0.42（うさぎ 0.419 / 団子 0.412）→ 乘到 0.89（原整首归一化的目标；按句出块后不再整首归一化，句与句的强弱照原样）。 */
-export const SUNG_GAIN = 0.89 / 0.42;
 /** 唱法核心 finish 的尾巴（秒）：块的声音比最后一个音长这么多。 */
 export const SUNG_TAIL = 0.6;
 /** 从光标放：提前这么多起放，第一个字的辅音（在元音前）不被切掉。 */
@@ -168,7 +166,7 @@ export function buildTimeline(inp: TimelineInput): Timeline {
         const first = noteAt(a), last = tl.filter((x) => x.index >= a && x.index < b && x.tok.kind === "note").reduce((m, x) => Math.max(m, x.t1), first);
         const opt = { ...inp.singOpt, ...(info.singOpt ?? {}) };   // 歌级的哼的参数 + 这位自己的旋钮（候选里按值存的）
         const key = JSON.stringify(["tsukuyomi-chunk", score, opt]), t0 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
-        clips.clips.push({ key, t0, dur, gain: SUNG_GAIN, end: last });
+        clips.clips.push({ key, t0, dur, gain: info.plugin.chunkGain ?? 1, end: last });   // 块乘多少 = 这位的插件报（9-3：满音量归引擎自己，公共代码不认识这个数）
         chunks.push({ part: part.id, key, score, lang, opt, t0, dur, end: last, entryOf });
         from = Math.min(from, t0); to = Math.max(to, t0 + dur);
       }

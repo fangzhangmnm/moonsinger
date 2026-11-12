@@ -5,7 +5,7 @@
 import { _t } from "../i18n/index.ts";
 import { registerPerformer } from "./registry.ts";
 import { activeSingChunk, activeSingCore, withSingChunk, withSingCore, roleName, type SingCoreKey } from "../format/project.ts";
-import { TSUKUYOMI_DEFAULTS } from "../format/performance.ts";
+import { TSUKUYOMI_DEFAULTS, BUILTIN_CALIBRATION_DB } from "../format/performance.ts";
 
 /** 她的音域（A3–E5）：pad 键底部的提示；元音版同。 */
 export const TSUKUYOMI_RANGE = { lo: 57, hi: 76, who: _t("小月相") } as const;
@@ -29,6 +29,10 @@ export const tsukuyomi = registerPerformer({
   // 力度深度 800（施工单 9-4 第 4 条，统筹定；user 2026-11-12「小月相要不要也用库里多数乐器的那个深度 什么乐器的逻辑最像人声？你想想」）：
   //   GS 里三个人声类音色（Concert Choir / Voice Oohs / Synth Voice）都写 800，和长笛、双簧管、小提琴一样，而且亮度不随力度变——她的力度也是只变响度
   velocityDepth: 800,
+  // 块乘多少（9-3，原来是 src/engine/timeline.ts 的 SUNG_GAIN，数不变）：唱法核心 raw 输出的补偿——刀 0 量的 raw 峰值 ≈ 0.42（うさぎ 0.419 / 団子 0.412）→ 乘到 0.89
+  //   （原整首归一化的目标；按句出块后不再整首归一化，句与句的强弱照原样）
+  chunkGain: 0.89 / 0.42,
+  defaultCalibrationDb: () => BUILTIN_CALIBRATION_DB.tsukuyomi,
   info: ({ extras, role }) => ({ gm: null, chunk: activeSingChunk(extras, role), singOpt: activeSingCore(extras, role) }),   // 旋钮按值在候选里（乐器页「高级」）→ 进块的内容键
   prepare: async () => { /* 引擎预热 / 模型包下载在工作道里按需做（singer.warm / 第一次唱），不在这里 */ },
   audition: ({ kana, dyn }) => ({ inst: { kind: "vowel", kana }, key: (m) => m, vel: 1, gainDb: dyn.dB }),

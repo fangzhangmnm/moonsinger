@@ -3797,9 +3797,9 @@ var S = {
   "\u54CD\u5EA6": { en: "Loudness" },
   "\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB": { en: "This performer 1 dB softer" },
   "\u5927\u58F0 1 dB": { en: "1 dB louder" },
-  "\u56DE\u5230\u9ED8\u8BA4 {DEFAULT_CALIBRATION_DB}": { en: "Back to default {DEFAULT_CALIBRATION_DB}" },
+  "\u56DE\u5230\u9ED8\u8BA4 {d}": { en: "Back to default {d}" },
   "\u9ED8\u8BA4": { en: "Default" },
-  "\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F {DEFAULT_CALIBRATION_DB}\uFF08\u5C0F\u6708\u76F8\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u53E6\u7B97": { en: "This performer's own volume: the default is {DEFAULT_CALIBRATION_DB} for everyone (Tsukuyomi-chan too), so stacked parts don't hit the ceiling and get squashed; the mixer fader is separate" },
+  "\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u8FD9\u4E2A\u5E93\u7684\u9ED8\u8BA4\u662F {d}\u3002\u5E93\u548C\u5E93\u4E4B\u95F4\u5C31\u5728\u8FD9\u4E00\u4E2A\u6570\u4E0A\u5BF9\u9F50\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u4E5F\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u662F\u8FD9\u9996\u6B4C\u7684\u51B3\u5B9A\uFF0C\u53E6\u7B97": { en: "This performer's own volume: this library's default is {d}. Libraries are matched to each other on this one number, and stacked parts don't hit the ceiling and get squashed; the mixer fader is a decision for this song and is separate" },
   "\u7F1D\u5C0F 10 ms\uFF08\u66F4\u8FDE\uFF09": { en: "Gap 10 ms smaller (more legato)" },
   "\u7F1D\u5927 10 ms\uFF08\u66F4\u65AD\uFF09": { en: "Gap 10 ms larger (more detached)" },
   "\u56DE\u5230\u9ED8\u8BA4 {p} ms": { en: "Back to default {p} ms" },
@@ -12142,8 +12142,8 @@ var ACCENT_VEL = 16;
 var MARCATO_VEL = 28;
 var MARCATO_DB = 7;
 var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
-var SOUNDFONT_CALIBRATION_DB = -6;
-var DEFAULT_CALIBRATION_DB = -6;
+var UNWRITTEN_CALIBRATION_DB = -6;
+var BUILTIN_CALIBRATION_DB = { tsukuyomi: -6, "vowel-sampler": -6 };
 var TSUKUYOMI_DEFAULTS = { level: 0.8, levelMaxDb: 6, cleanMax: 0.4, breath: 0, levelContinuous: 1 };
 var REPO = "https://github.com/fangzhangmnm/moonsinger";
 var TSUKUYOMI_CREDIT = {
@@ -33127,15 +33127,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-161fd2609684.mjs");
+      return pick(() => "singer-worker-66bada2b5849.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-6595b5f94747.mjs");
+      return pick(() => "layout-worker-186a90f8c1aa.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-89e3afe86186.mjs");
+      return pick(() => "encode-worker-466a626d07ea.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35937,11 +35937,11 @@ var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], t
 var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 var withThumbnail = (extras, png) => ({ ...extras, thumbnail: png });
 var CANDIDATE_ID = { full: "c1", light: "c2" };
-var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsVel: { ...DYNAMICS_VEL }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });
+var common = (calibrationDb) => ({ calibrationDb, chain: [], dynamicsVel: { ...DYNAMICS_VEL }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });
 function defaultRole(hum, id2) {
   return { version: FORMAT.lounge, id: id2, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
-    { id: CANDIDATE_ID.full, name: _t("\u5C0F\u6708\u76F8"), instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), sing: structuredClone(SING_MARKS), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
-    { id: CANDIDATE_ID.light, name: _t("\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09"), instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) }
+    { id: CANDIDATE_ID.full, name: _t("\u5C0F\u6708\u76F8"), instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(BUILTIN_CALIBRATION_DB.tsukuyomi), sing: structuredClone(SING_MARKS), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
+    { id: CANDIDATE_ID.light, name: _t("\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09"), instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(BUILTIN_CALIBRATION_DB["vowel-sampler"]), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) }
   ] };
 }
 var cands = (role) => role?.candidates ?? [];
@@ -36425,7 +36425,7 @@ function withSf2Candidate(extras, role, c10, hum) {
   const n10 = Math.max(0, ...list2.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
   const embed = c10.embed !== false, path = embed ? `${SOUNDS2}${c10.sha256}.sf2` : null;
   const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, ...c10.sfx ? { sfx: { ...c10.sfx } } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
-  list2.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c10.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS, ...c10.canSwell === false ? { canSwell: false } : {} }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list2.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(c10.calibrationDb), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c10.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS, ...c10.canSwell === false ? { canSwell: false } : {} }, dynamicsVel: { ...DYNAMICS_VEL }, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r10.candidates = list2;
   r10.active = id2;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 }, sounds: path ? { ...extras.sounds, [path]: c10.subset } : extras.sounds };
@@ -36560,8 +36560,8 @@ function withGapSec(extras, role, sec, hum) {
 }
 function activeCalibrationDb(extras, role) {
   const c10 = activeCandidate(extras, role);
-  const v = Number(c10?.calibrationDb ?? DEFAULT_CALIBRATION_DB);
-  return Number.isFinite(v) ? v : DEFAULT_CALIBRATION_DB;
+  const v = Number(c10?.calibrationDb ?? UNWRITTEN_CALIBRATION_DB);
+  return Number.isFinite(v) ? v : UNWRITTEN_CALIBRATION_DB;
 }
 function activeVelocity(extras, role) {
   const c10 = activeCandidate(extras, role), v = Number((c10?.defaults ?? {}).velocity ?? SOUNDFONT_DEFAULTS.velocity);
@@ -36882,7 +36882,7 @@ function finish(reads, song0, extras, ours, name) {
     role.name = p2?.name || DEFAULT_ROLE.name;
     if (p2?.sound) role.sound = p2.sound;
     role.active = "c0";
-    cands(role).unshift({ id: "c0", name: was, instrument: { engine: "unknown", midi: { program: gm ?? null, variant: p2?.variant ?? null } }, gm: { program: gm ?? null, variant: p2?.variant ?? null }, ...common(), defaults: {}, credit: { attribution: [], license: { name: "unknown" } }, spec: { kind: "unknown" } });
+    cands(role).unshift({ id: "c0", name: was, instrument: { engine: "unknown", midi: { program: gm ?? null, variant: p2?.variant ?? null } }, gm: { program: gm ?? null, variant: p2?.variant ?? null }, ...common(UNWRITTEN_CALIBRATION_DB), defaults: {}, credit: { attribution: [], license: { name: "unknown" } }, spec: { kind: "unknown" } });
     extras.lounge[part.role] = role;
     notices.push(_t("\u58F0\u90E8\u300C{name}\u300D\u539F\u6765\u662F{was}{gm}\uFF1B\u8FD9\u4E00\u7248\u6CA1\u6709\u8FD9\u4EF6\u4E50\u5668\uFF0C\u6240\u4EE5\u8FD8\u6CA1\u4EBA\u4E0A\u573A\u3002\u8981\u5C0F\u6708\u76F8\u6765\u5531\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C{name2}\u300D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u9009\u5C0F\u6708\u76F8\u3002", { name: role.name, was, gm: gm ? _t("\uFF08GM {gm} \u53F7\uFF09", { gm }) : "", name2: role.name }));
   }
@@ -39238,6 +39238,10 @@ var tsukuyomi = registerPerformer({
   // 力度深度 800（施工单 9-4 第 4 条，统筹定；user 2026-11-12「小月相要不要也用库里多数乐器的那个深度 什么乐器的逻辑最像人声？你想想」）：
   //   GS 里三个人声类音色（Concert Choir / Voice Oohs / Synth Voice）都写 800，和长笛、双簧管、小提琴一样，而且亮度不随力度变——她的力度也是只变响度
   velocityDepth: 800,
+  // 块乘多少（9-3，原来是 src/engine/timeline.ts 的 SUNG_GAIN，数不变）：唱法核心 raw 输出的补偿——刀 0 量的 raw 峰值 ≈ 0.42（うさぎ 0.419 / 団子 0.412）→ 乘到 0.89
+  //   （原整首归一化的目标；按句出块后不再整首归一化，句与句的强弱照原样）
+  chunkGain: 0.89 / 0.42,
+  defaultCalibrationDb: () => BUILTIN_CALIBRATION_DB.tsukuyomi,
   info: ({ extras, role }) => ({ gm: null, chunk: activeSingChunk(extras, role), singOpt: activeSingCore(extras, role) }),
   // 旋钮按值在候选里（乐器页「高级」）→ 进块的内容键
   prepare: async () => {
@@ -39282,7 +39286,6 @@ var canAlign = (s10) => !!s10 && s10.midi !== void 0 && !!s10.centsPerKey;
 
 // src/engine/timeline.ts
 var LEAD_IN = 0.5;
-var SUNG_GAIN = 0.89 / 0.42;
 var SUNG_TAIL = 0.6;
 var PRE_ROLL = 0.1;
 function sungPlan(tokens, tempoMap, bounds, mode, hum) {
@@ -39377,7 +39380,7 @@ function buildTimeline(inp) {
         const first = noteAt(a10), last = tl2.filter((x2) => x2.index >= a10 && x2.index < b3 && x2.tok.kind === "note").reduce((m2, x2) => Math.max(m2, x2.t1), first);
         const opt = { ...inp.singOpt, ...info2.singOpt ?? {} };
         const key = JSON.stringify(["tsukuyomi-chunk", score, opt]), t02 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
-        clips.clips.push({ key, t0: t02, dur, gain: SUNG_GAIN, end: last });
+        clips.clips.push({ key, t0: t02, dur, gain: info2.plugin.chunkGain ?? 1, end: last });
         chunks2.push({ part: part.id, key, score, lang: lang2, opt, t0: t02, dur, end: last, entryOf });
         from = Math.min(from, t02);
         to2 = Math.max(to2, t02 + dur);
@@ -39495,6 +39498,8 @@ var vowelSampler = registerPerformer({
   removable: false,
   velocityDepth: 800,
   // 同小月相（施工单 9-4 第 4 条）
+  defaultCalibrationDb: () => BUILTIN_CALIBRATION_DB["vowel-sampler"],
+  // 9-3：内置预设表里她那一格
   info: () => ({ gm: null, chunk: "phrase" }),
   prepare: async (ctx2) => {
     await ctx2.ensureVowels();
@@ -39738,6 +39743,8 @@ function hitOf(g3) {
   const h2 = pk.info.hitSec ?? 0;
   return h2 ? { hitSec: () => h2 } : {};
 }
+var LIBRARY_CALIBRATION_DB = { [GS_LIBRARY_ID]: -6 };
+var OWN_SF2_CALIBRATION_DB = -6;
 var soundfont = registerPerformer({
   guid: "3e8a5c47-9f21-4b6d-a0e2-c7d14f8b9a63",
   kind: "performer",
@@ -39755,6 +39762,8 @@ var soundfont = registerPerformer({
   dynamics: "velocity",
   grooveCategory: "gm",
   removable: true,
+  defaultCalibrationDb: (library) => LIBRARY_CALIBRATION_DB[library ?? ""] ?? OWN_SF2_CALIBRATION_DB,
+  // 9-3：按库报
   info: ({ extras, role, presetIndex }) => {
     const g3 = activeGm(extras, role);
     return { gm: g3 ? { sha: g3.subsetSha256, presetIndex: presetIndex(g3.subsetSha256, g3.bank, g3.program), note: g3.note, sfx: g3.sfx } : null, chunk: "phrase", ...hitOf(g3) };
@@ -41871,6 +41880,10 @@ function createInstSettings(el2, h2) {
       return k2 >= 0 ? String(k2 + 1) : "\u2013";
     })}</tr>` : "") + `</table>`;
   }
+  function calDefault(role) {
+    const aid = activeId(h2.extras(), role), g3 = gmCandidates(h2.extras(), role).find((x2) => x2.id === aid);
+    return performerOf(h2.engine())?.defaultCalibrationDb(g3?.origin.library ?? null) ?? UNWRITTEN_CALIBRATION_DB;
+  }
   function inspectorCtx(role) {
     return { extras: h2.extras(), role, hum: h2.song().hum, catalog: h2.catalog(), esc: esc6, chip, dynTable: (L2, depth) => dynTable(activePerfSpec(h2.extras(), role), L2, depth), bankBytes: (sha) => h2.bankBytes(sha) };
   }
@@ -41881,15 +41894,15 @@ function createInstSettings(el2, h2) {
     const status = !active ? "" : active.bytes ? `<div class="cand-status">${_t("\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08{n}\uFF09{library}", { n: sizeText2(active.bytes.length), library: active.origin.library ? _t("\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 {name}", { name: esc6(active.origin.name) }) : _t("\uFF0C\u6765\u81EA {name}", { name: esc6(active.origin.name) }) })}</div>` : active.path ? `<div class="cand-status">${_t("\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")}</div>` : ((found) => `<div class="cand-status">${_t("\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C{name}\u300D\u627E\uFF08{found}\uFF09", { name: esc6(active.origin.name), found: found ? _t("\u672C\u6B21\u5DF2\u627E\u5230") : _t("\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6") })}${found ? "" : `<button class="btn" data-v="find:${esc6(active.id)}">${_t("\u627E\u6587\u4EF6\u2026")}</button>`}</div>`)(h2.sessionHas(active.subsetSha256));
     const labels = partLabels(h2.song(), h2.extras()), onPaper = new Set(Object.keys(h2.song().papers.find((p2) => p2.id === h2.at().paper)?.tracks ?? {}));
     const parts = h2.song().parts.map((p2, k2) => ({ p: p2, label: labels[k2] })).filter((x2) => onPaper.has(x2.p.id));
-    const cal = activeCalibrationDb(h2.extras(), role), tr3 = activeTranspose(h2.extras(), role);
+    const cal = activeCalibrationDb(h2.extras(), role), tr3 = activeTranspose(h2.extras(), role), calDef = calDefault(role);
     const row2 = (k2, v, note2 = "") => `<span class="ip-k">${k2}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note2 ? `<div class="ip-note">${note2}</div>` : ""}</div>`;
     const plug = performerOf(eng), ictx = inspectorCtx(role);
     const own = plug?.inspector?.(ictx) ?? [], ownMain = own.filter((x2) => !x2.place), ownAdv = own.filter((x2) => x2.place === "adv"), ownTail = own.filter((x2) => x2.place === "tail");
     const rowOf = (x2) => row2(x2.label, x2.control, x2.note ?? "");
     const how = (plug ? row2(
       _t("\u54CD\u5EA6"),
-      `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="${_t("\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB")}">\u22121 dB</button><button class="btn" data-v="cal:1" title="${_t("\u5927\u58F0 1 dB")}">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="${_t("\u56DE\u5230\u9ED8\u8BA4 {DEFAULT_CALIBRATION_DB}", { DEFAULT_CALIBRATION_DB: fmtDb(DEFAULT_CALIBRATION_DB) })}">${_t("\u9ED8\u8BA4")}</button>` : ""}`,
-      _t("\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F {DEFAULT_CALIBRATION_DB}\uFF08\u5C0F\u6708\u76F8\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u53E6\u7B97", { DEFAULT_CALIBRATION_DB: fmtDb(DEFAULT_CALIBRATION_DB) })
+      `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="${_t("\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB")}">\u22121 dB</button><button class="btn" data-v="cal:1" title="${_t("\u5927\u58F0 1 dB")}">+1 dB</button>${cal !== calDef ? `<button class="btn" data-v="cal:def" title="${_t("\u56DE\u5230\u9ED8\u8BA4 {d}", { d: fmtDb(calDef) })}">${_t("\u9ED8\u8BA4")}</button>` : ""}`,
+      _t("\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u8FD9\u4E2A\u5E93\u7684\u9ED8\u8BA4\u662F {d}\u3002\u5E93\u548C\u5E93\u4E4B\u95F4\u5C31\u5728\u8FD9\u4E00\u4E2A\u6570\u4E0A\u5BF9\u9F50\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u4E5F\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u662F\u8FD9\u9996\u6B4C\u7684\u51B3\u5B9A\uFF0C\u53E6\u7B97", { d: fmtDb(calDef) })
     ) : "") + // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
     //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
     (plug?.sound === "notes" ? ((gap, d3) => row2(
@@ -41942,7 +41955,7 @@ function createInstSettings(el2, h2) {
       const cur = activePerfSpec(h2.extras(), role).rollHz ?? rollDefaultOf(role) ?? 16, next2 = v === "roll:def" ? null : Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, cur + Number(v.slice(5))));
       h2.commit(withRollHz(h2.extras(), role, next2, hum), next2 === null ? _t("\u300C{rn}\u300D\u6EDA\u594F\u56DE\u5230\u9ED8\u8BA4", { rn: rn2 }) : _t("\u300C{rn}\u300D\u6EDA\u594F\u6BCF\u79D2 {n} \u4E0B", { rn: rn2, n: next2 }), "roll");
     } else if (v.startsWith("cal:")) {
-      const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(h2.extras(), role) + d3));
+      const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? calDefault(role) : activeCalibrationDb(h2.extras(), role) + d3));
       h2.commit(withCalibration(h2.extras(), role, next2, hum), _t("\u300C{rn}\u300D\u54CD\u5EA6\u6821\u51C6 {next} dB", { rn: rn2, next: next2 }), "cal");
     } else if (v.startsWith("hum:")) h2.setHum(v.slice(4));
     else {
@@ -43160,7 +43173,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.2";
-var CORE_HASH = true ? "16b7e180fa8b5934" : "dev";
+var CORE_HASH = true ? "8b7291a9cf280e40" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -59034,6 +59047,8 @@ async function castPick(p2) {
       subset,
       sha256,
       embed: false,
+      calibrationDb: performerOf("soundfont").defaultCalibrationDb(GS.id),
+      // 新上场的响度 = 库报的（9-3）
       origin: { name: GS.name, fileSha256: GS.sha256, bytes: GS.bytes, library: GS.id },
       credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } }
     }, hum);
@@ -59069,6 +59084,8 @@ async function castOwn(p2) {
     subset,
     sha256,
     embed: false,
+    calibrationDb: performerOf("soundfont").defaultCalibrationDb(null),
+    // 自己的 .sf2 没有库（9-3）
     origin: { name: f2.name, fileSha256, bytes: f2.bytes.length },
     credit: { attribution: [inf.name, inf.engineer, inf.copyright].filter((x2) => !!x2), license: { name: "unknown", text: inf.comment } }
   }, hum);
@@ -62925,4 +62942,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-78d29de98de5.mjs.map
+//# sourceMappingURL=moonsinger-fc69d6438341.mjs.map

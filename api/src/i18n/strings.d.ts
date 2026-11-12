@@ -3235,14 +3235,14 @@ export declare const S: {
     readonly "\u5927\u58F0 1 dB": {
         readonly en: "1 dB louder";
     };
-    readonly "\u56DE\u5230\u9ED8\u8BA4 {DEFAULT_CALIBRATION_DB}": {
-        readonly en: "Back to default {DEFAULT_CALIBRATION_DB}";
+    readonly "\u56DE\u5230\u9ED8\u8BA4 {d}": {
+        readonly en: "Back to default {d}";
     };
     readonly 默认: {
         readonly en: "Default";
     };
-    readonly "\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F {DEFAULT_CALIBRATION_DB}\uFF08\u5C0F\u6708\u76F8\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u53E6\u7B97": {
-        readonly en: "This performer's own volume: the default is {DEFAULT_CALIBRATION_DB} for everyone (Tsukuyomi-chan too), so stacked parts don't hit the ceiling and get squashed; the mixer fader is separate";
+    readonly "\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u8FD9\u4E2A\u5E93\u7684\u9ED8\u8BA4\u662F {d}\u3002\u5E93\u548C\u5E93\u4E4B\u95F4\u5C31\u5728\u8FD9\u4E00\u4E2A\u6570\u4E0A\u5BF9\u9F50\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u4E5F\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u662F\u8FD9\u9996\u6B4C\u7684\u51B3\u5B9A\uFF0C\u53E6\u7B97": {
+        readonly en: "This performer's own volume: this library's default is {d}. Libraries are matched to each other on this one number, and stacked parts don't hit the ceiling and get squashed; the mixer fader is a decision for this song and is separate";
     };
     readonly "\u7F1D\u5C0F 10 ms\uFF08\u66F4\u8FDE\uFF09": {
         readonly en: "Gap 10 ms smaller (more legato)";

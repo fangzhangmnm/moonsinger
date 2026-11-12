@@ -18,7 +18,7 @@ async function band(): Promise<{ extras: Extras; have: Map<string, Uint8Array> }
   let ex = withNewRole(emptyExtras(), "r1", "n");
   const add = async (role: string, name: string, bank: number, program: number, credit: typeof GS | { attribution: string[]; license: { name: string } }) => {
     const subset = subsetSf2(fixture, [{ bank, program }]), sha256 = await sha(subset); have.set(sha256, subset);
-    ex = withSf2Candidate(ex, role, { name, bank, program, subset, sha256, embed: false, origin, credit }, "n");
+    ex = withSf2Candidate(ex, role, { name, bank, program, subset, sha256, embed: false, origin, credit, calibrationDb: -6 }, "n");
   };
   await add("r2", "Square Lead", 0, 80, GS);
   await add("r3", "Castanets", 8, 115, GS);

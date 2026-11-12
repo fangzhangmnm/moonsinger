@@ -15,7 +15,7 @@ const engineOf = (o: { extras: Extras }) => activeInstrument(o.extras, "r1")?.en
 
 async function withSquare(extras = emptyExtras()): Promise<{ extras: Extras; subset: Uint8Array; sha256: string }> {
   const subset = subsetSf2(fixture, [{ bank: 0, program: 80 }]), sha256 = await sha(subset), info = sf2Info(fixture);
-  return { subset, sha256, extras: withSf2Candidate(extras, "r1", { name: "Square Lead", bank: 0, program: 80, subset, sha256,
+  return { subset, sha256, extras: withSf2Candidate(extras, "r1", { name: "Square Lead", bank: 0, program: 80, calibrationDb: -6, subset, sha256,
     origin: { name: "gu-square-castanets.sf2", fileSha256: await sha(fixture), bytes: fixture.length },
     credit: { attribution: [info.name ?? "", info.copyright ?? ""].filter(Boolean), license: { name: "unknown", text: info.comment } } }, "n") };
 }
@@ -23,7 +23,7 @@ async function withSquare(extras = emptyExtras()): Promise<{ extras: Extras; sub
 describe("GM 候选进歌", () => {
   it("弱引用：不嵌字节，歌里只记来源 + 子集 sha256；存 → 开保留；GC 不碰它", async () => {
     const subset = subsetSf2(fixture, [{ bank: 0, program: 80 }]), sha256 = await sha(subset);
-    const ex = withSf2Candidate(emptyExtras(), "r1", { name: "Square (weak)", bank: 0, program: 80, subset, sha256, embed: false, origin: { name: "gu.sf2", fileSha256: await sha(fixture), bytes: fixture.length, library: "x" }, credit: { attribution: [], license: { name: "unknown" } } }, "n");
+    const ex = withSf2Candidate(emptyExtras(), "r1", { name: "Square (weak)", bank: 0, program: 80, calibrationDb: -6, subset, sha256, embed: false, origin: { name: "gu.sf2", fileSha256: await sha(fixture), bytes: fixture.length, library: "x" }, credit: { attribution: [], license: { name: "unknown" } } }, "n");
     eq(Object.keys(ex.sounds).length, 0);
     const g = activeGm(ex, "r1")!; eq(g.path, null); eq(g.bytes, null); eq(g.subsetSha256, sha256); eq(g.origin.library, "x");
     const o = openBytes("x.mxl", save(ex));

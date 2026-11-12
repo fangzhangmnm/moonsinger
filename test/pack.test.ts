@@ -3,7 +3,9 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array };
 import { saveMxl, openBytes, emptyExtras, withSf2Candidate, withActive, activeGm, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, CANDIDATE_ID, type Extras } from "../src/format/project.ts";
-import { SOUNDFONT_CALIBRATION_DB, DEFAULT_CALIBRATION_DB } from "../src/format/performance.ts";
+import { UNWRITTEN_CALIBRATION_DB, BUILTIN_CALIBRATION_DB } from "../src/format/performance.ts";
+import { performerOf } from "../src/performers/index.ts";
+const SF_CAL = performerOf("soundfont")!.defaultCalibrationDb(null);   // 新上场的 SoundFont 乐器默认的响度 = 插件按库报的（9-3）
 import { unzipSync } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong } from "./fixtures/format/sample-song.ts";
 import { subsetSf2 } from "../src/gm/sf2-subset.ts";
@@ -17,8 +19,8 @@ async function twoWeak(): Promise<{ extras: Extras; a: { subset: Uint8Array; sha
   const fileSha256 = await sha(fixture), origin = { name: "gu.sf2", fileSha256, bytes: fixture.length };
   const sa = subsetSf2(fixture, [{ bank: 0, program: 80 }]), sb = subsetSf2(fixture, [{ bank: 8, program: 115 }]);
   const a = { subset: sa, sha256: await sha(sa) }, b = { subset: sb, sha256: await sha(sb) };
-  let ex = withSf2Candidate(emptyExtras(), "r1", { name: "Square", bank: 0, program: 80, ...a, embed: false, origin, credit: { attribution: [], license: { name: "unknown" } } }, "n");
-  ex = withSf2Candidate(ex, "r2", { name: "Castanets", bank: 8, program: 115, ...b, embed: false, origin, credit: { attribution: [], license: { name: "unknown" } } }, "n");
+  let ex = withSf2Candidate(emptyExtras(), "r1", { name: "Square", bank: 0, program: 80, calibrationDb: SF_CAL, ...a, embed: false, origin, credit: { attribution: [], license: { name: "unknown" } } }, "n");
+  ex = withSf2Candidate(ex, "r2", { name: "Castanets", bank: 8, program: 115, calibrationDb: SF_CAL, ...b, embed: false, origin, credit: { attribution: [], license: { name: "unknown" } } }, "n");
   return { extras: ex, a, b };
 }
 
@@ -85,13 +87,15 @@ describe("音源打包 / 解包（project.ts）", () => {
 });
 
 describe("响度校准（候选 calibrationDb）", () => {
-  it("新的 SoundFont 候选 = SOUNDFONT_CALIBRATION_DB；月读 = 0；改了进歌、存 → 开还在", async () => {
+  it("新的 SoundFont 候选 = 插件按库报的默认（9-3）；新建的小月相 = 内置预设表里她那一格；没写 = 格式的「没写」；数都还是 −6；改了进歌、存 → 开还在", async () => {
     const { extras } = await twoWeak();
-    eq(activeCalibrationDb(extras, "r1"), SOUNDFONT_CALIBRATION_DB);
-    const voice = withActive(extras, "r1", CANDIDATE_ID.full, "n"); eq(activeCalibrationDb(voice, "r1"), DEFAULT_CALIBRATION_DB, "新建的月读也是 −6（user「月读也得-6db」）");
-    eq(activeCalibrationDb(emptyExtras(), "r9"), DEFAULT_CALIBRATION_DB, "没有角色快照 = 默认 −6");
+    eq(SF_CAL, -6, "数不变（9-3）"); eq(performerOf("soundfont")!.defaultCalibrationDb("generaluser-gs-2.0.3"), -6, "GS");
+    eq(activeCalibrationDb(extras, "r1"), SF_CAL);
+    const voice = withActive(extras, "r1", CANDIDATE_ID.full, "n"); eq(activeCalibrationDb(voice, "r1"), BUILTIN_CALIBRATION_DB.tsukuyomi, "新建的月读也是 −6（user「月读也得-6db」）");
+    eq(performerOf("tsukuyomi")!.defaultCalibrationDb(null), BUILTIN_CALIBRATION_DB.tsukuyomi, "她的插件报的 = 新建时写进去的");
+    eq(activeCalibrationDb(emptyExtras(), "r9"), UNWRITTEN_CALIBRATION_DB, "没有角色快照 = 「没写」= −6");
     const ch = withCalibration(extras, "r1", -3.26, "n"); eq(activeCalibrationDb(ch, "r1"), -3.3);
-    eq(activeCalibrationDb(ch, "r2"), SOUNDFONT_CALIBRATION_DB, "只改这个角色上场的那位");
+    eq(activeCalibrationDb(ch, "r2"), SF_CAL, "只改这个角色上场的那位");
     eq(activeCalibrationDb(openBytes("x.mxl", save(ch)).extras, "r1"), -3.3);
   });
 });

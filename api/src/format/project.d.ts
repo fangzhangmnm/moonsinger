@@ -258,7 +258,7 @@ export interface Sf2CandidateArgs {
     embed?: boolean;
     origin: Sf2Source["origin"];
     credit: Credit;
-    calibrationDb?: number;
+    calibrationDb: number;
     gapSec?: number;
     canSwell?: boolean;
 }
@@ -325,7 +325,7 @@ export declare const GAP_MAX_SEC = 0.2;
 export declare function withRollHz(extras: Extras, role: string, hz: number | null, hum: Hum): Extras;
 /** 改上场那位的连断底色（乐器页；秒，0 … GAP_MAX_SEC，记到毫秒）。没人上场 = 原样。 */
 export declare function withGapSec(extras: Extras, role: string, sec: number, hum: Hum): Extras;
-/** 上场那位的校准（dB；没有角色快照 / 没写 = 0）。渲染时乘在这个声部上，和录音室推子相加（推子 = 混音决定，校准 = 演奏者自己的响度）。 */
+/** 上场那位的校准（dB；没写 = UNWRITTEN_CALIBRATION_DB，格式的意思）。渲染时乘在这个声部上，和录音室推子相加（推子 = 混音决定，校准 = 演奏者自己的响度）。 */
 export declare function activeCalibrationDb(extras: Extras, role: string): number;
 /** 上场那位的力度（0–1，= MIDI 力度 ÷ 127）；没写 = SOUNDFONT_DEFAULTS.velocity。 */
 export declare function activeVelocity(extras: Extras, role: string): number;

@@ -16,8 +16,8 @@ const PHONE = { key: 64, midi: 96, centsPerKey: 50 };
 async function setup(): Promise<Extras> {
   const origin = { name: "gu.sf2", fileSha256: await sha(fixture), bytes: fixture.length, library: "generaluser-gs-2.0.3" };
   const s = subsetSf2(fixture, [{ bank: 0, program: 80 }]), credit = { attribution: [], license: { name: "unknown" } };
-  let ex = withSf2Candidate(emptyExtras(), "r1", { name: "Telephone", bank: 0, program: 80, note: PHONE.key, sfx: PHONE, subset: s, sha256: await sha(s), embed: false, origin, credit }, "n");
-  ex = withSf2Candidate(ex, "r2", { name: "Square", bank: 0, program: 80, subset: s, sha256: await sha(s), embed: false, origin, credit }, "n");
+  let ex = withSf2Candidate(emptyExtras(), "r1", { name: "Telephone", bank: 0, program: 80, calibrationDb: -6, note: PHONE.key, sfx: PHONE, subset: s, sha256: await sha(s), embed: false, origin, credit }, "n");
+  ex = withSf2Candidate(ex, "r2", { name: "Square", bank: 0, program: 80, calibrationDb: -6, subset: s, sha256: await sha(s), embed: false, origin, credit }, "n");
   return ex;
 }
 
