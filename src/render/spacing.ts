@@ -47,6 +47,8 @@ const LOOSE: readonly Pt[] = [[TPQ / 8, 2.2], [TPQ / 4, 2.2], [TPQ / 2, 2.85], [
 const DENSE: readonly Pt[] = [[TPQ / 8, 1.6], [TPQ / 4, 1.9], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
 const TIGHT: readonly Pt[] = [[TPQ / 8, 1.5], [TPQ / 4, 1.7], [TPQ / 2, 2.35], [TPQ, 3.0], [TPQ * 2, 3.6], [TPQ * 4, 4.2]];
 export type SpacingMode = "loose" | "normal" | "tight";
+/** 一条自己给的弹簧折线（时值 tick → 宽 sp；按时值从短到长）。简谱的纸用它（排版参数表纸一级，第五刀 5-0c）。 */
+export type SpringPts = readonly (readonly [ticks: number, width: number])[];
 const lerpLog = (pts: readonly Pt[], ticks: number): number => {
   if (ticks <= pts[0]![0]) return pts[0]![1];
   const last = pts[pts.length - 1]!, prev = pts[pts.length - 2]!;
@@ -58,7 +60,7 @@ const lerpLog = (pts: readonly Pt[], ticks: number): number => {
   return last[1];
 };
 /** 时值 → 宽（三档；true = 正常、false = 松，老写法）。连音 / 附点按实际时值落在折线上（八分三连音在八分和十六分之间）。 */
-export const curveOf = (m: SpacingMode | boolean) => { const t = m === true || m === "normal" ? DENSE : m === "tight" ? TIGHT : LOOSE; return (ticks: number): number => lerpLog(t, ticks); };
+export const curveOf = (m: SpacingMode | boolean | SpringPts) => { const t = typeof m === "object" ? m : m === true || m === "normal" ? DENSE : m === "tight" ? TIGHT : LOOSE; return (ticks: number): number => lerpLog(t, ticks); };
 export const SP_DEFAULTS = { pad: 0.3, emptyBar: 4.5 } as const;
 
 // ── 弹簧：每一列到下一列的理想距离 ──────────────────────────────────────────────

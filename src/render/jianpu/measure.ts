@@ -41,7 +41,7 @@ export const underlines = (u: Chunk): number => (u.base < TPQ ? Math.max(1, Math
 const COLUMN_KIND: Record<Unit["kind"], ColumnKind> = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
 /** 中途换调 / 换拍号写的那几个字（「1=♭B」「3/4」）大约多宽（sp）。 */
 export const midTextW = (s: string): number => [...s].length * MID_TEXT_CH * MID_TEXT_EM + 0.6;
-/** 不是音的单元在数字行上占多宽（sp）：小节线一根的宽；换调 / 换拍号 = 写字的宽；谱号 / 八度线（五线谱才有的）= 小灰标的宽；别的（力度、发夹、速度、风格、跳转、写字头）不占地方。 */
+/** 不是音的单元在数字行上占多宽（数字行的单位：乘上行里的尺寸比例才是 sp）：小节线一根的宽；换调 / 换拍号 = 写字的宽；谱号 / 八度线（五线谱才有的）= 小灰标的宽；别的（力度、发夹、速度、风格、跳转、写字头）不占地方。 */
 function unitW(u: Unit): number {
   switch (u.kind) {
     case "bar": return u.repeat ? BAR_W_J + 1.0 : u.style ? BAR_W_J + 0.5 : BAR_W_J;
@@ -53,25 +53,25 @@ function unitW(u: Unit): number {
 }
 
 /** 量（设计稿第 3.3 节第 3 步）：这条轨的每个排版单元 → 一个列条目。道号：数字那一道 = 0、歌词那一道 = 1（框架加上这条轨的道基数）。
- *  inkL = 这个音的墨往对齐线左边伸多远（sp；升降号）：光标画在它左边。 */
-export function measureJianpu(q: JianpuTrack): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> } {
+ *  inkL = 这个音的墨往对齐线左边伸多远（sp；升降号）：光标画在它左边。k = 行里的尺寸比例（排版参数表行一级；数字行自己的宽都乘它，第五刀 5-0c）。 */
+export function measureJianpu(q: JianpuTrack, k = 1): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> } {
   const inkL = new Map<Chunk, number>();
   const spItems = (u: Chunk): SpItem[] => {
     if (u.pad) return [];   // 补齐的淡色小节不画、不参加间距（同五线谱）
     const n = extraGlyphs(u), acc = u.note && u.j === 0 && u.acc !== null;
     const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;   // 换气的 V（+「吸 / 深吸」）画在音后面：留出来，不压下一个音
-    const left = acc ? ACC_W : -0.1, right = 0.1 + DIGIT_W + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW;
+    const left = (acc ? ACC_W : -0.1) * k, right = (0.1 + DIGIT_W + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k;
     inkL.set(u, Math.max(0, left));
     const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks }];
-    const cx = 0.1 + DIGIT_W / 2;
+    const cx = (0.1 + DIGIT_W / 2) * k;
     if (u.lyW !== undefined) out.push({ row: 1, left: u.lyW / 2 - cx, right: cx + u.lyW / 2 + 0.4 + (u.hyph ? 0.7 : 0) });   // 按歌词排：字和字之间不撞（同一套顶杆）
     return out;
   };
-  const entries = q.units.map((u): ColEntry<Unit> => ({ tick: u.tick, slot: u.kind === "nav" ? u.slot : SLOT[COLUMN_KIND[u.kind]], w: u.kind === "chunk" ? u.w : unitW(u), ...(u.kind === "bar" ? { bar: true } : {}), ...(u.kind === "chunk" ? { chunk: { items: spItems(u), span: u.ticks } } : {}), ref: u }));
+  const entries = q.units.map((u): ColEntry<Unit> => ({ tick: u.tick, slot: u.kind === "nav" ? u.slot : SLOT[COLUMN_KIND[u.kind]], w: u.kind === "chunk" ? u.w : unitW(u) * k, ...(u.kind === "bar" ? { bar: true } : {}), ...(u.kind === "chunk" ? { chunk: { items: spItems(u), span: u.ticks } } : {}), ref: u }));
   return { entries, inkL };
 }
 /** 行首多宽（sp）：base = 框架给的（名字一栏的缩进 + 边距）；数字行行首不画谱号 / 调号（谱头「1=C 4/4」写在第一行上方），只留一点空。 */
-export const jianpuLineStart = (_q: JianpuTrack, _key: number, _first: boolean, base: number): number => base + 0.6;
+export const jianpuLineStart = (_q: JianpuTrack, _key: number, _first: boolean, base: number, k = 1): number => base + 0.6 * k;
 /** 歌词锚点：每个带字的音在第几行、字的中心在哪（sp：数字的中心）。拖腔线不算。 */
-export const jianpuLyricAnchors = (q: JianpuTrack): { index: number; system: number; cx: number; lyric: string; hyph: boolean }[] =>
-  q.units.filter((u): u is Chunk => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + 0.1 + DIGIT_W / 2, lyric: u.lyric!, hyph: u.hyph }));
+export const jianpuLyricAnchors = (q: JianpuTrack, k = 1): { index: number; system: number; cx: number; lyric: string; hyph: boolean }[] =>
+  q.units.filter((u): u is Chunk => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + (0.1 + DIGIT_W / 2) * k, lyric: u.lyric!, hyph: u.hyph }));

@@ -31,6 +31,8 @@ export interface OrnCtx {
   attach: (row: number, lane: LaneKind, run: () => void) => void;
   /** 这一行的右边界（sp）。 */
   right: number;
+  /** 这一行字形的尺寸比例（力度字、突强 / 强后弱）：数字行 = 排版参数表行一级的 scale（第五刀 5-0c）；五线谱不给 = 原样。 */
+  glyphScale?: number;
   tokens: Token[]; units: Unit[];
   /** 这条轨第 s 行挂挂件的那一行（五线谱 = 第一张谱表）。 */
   row: (s: number) => number;
@@ -123,8 +125,9 @@ export function layDynamics(c: OrnCtx): void {
   const right = c.right;
   /** 一个力度字：怎么画 + 墨迹（sp，相对字的原点：左、右、基线以上、基线以下）。 */
   const dynOf = (v: DynU["value"]) => {
-    const d = dynDepiction(v, notation);
-    return { ink: d.ink, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls }) };
+    const d = dynDepiction(v, notation), g = c.glyphScale;
+    if (g === undefined) return { ink: d.ink, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls }) };
+    return { ink: [d.ink[0] * g, d.ink[1] * g, d.ink[2] * g, d.ink[3] * g] as const, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls, size: P(4 * g) }) };
   };
   const dynItems: { row: number; x0: number; keys: string[]; draw: (base: number) => void }[] = [];
   // 力度：谱上方、和后面那个音左对齐；挂件第 4 样（刀 4b：和用发夹连着的一串共用一条基线，贴它们自己那几段天际线往上 0.4；挨得近的两个 = 后摆的那个自然叠上去）
@@ -246,8 +249,8 @@ export function layNoteDynamics(c: OrnCtx, row: number, _ch: Chunk, a: { cx: num
   c.attach(row, "noteDynamics", () => c.placeAbove(row, 0.5, (y) => {
     let xa = a.x0;
     for (const k of atk) {
-      const ch = k === "sfz" ? "\u{E539}" : "\u{E534}", w = P(GLYPH_BOX[ch]?.[1] ?? 2.6), gx = cx - w / 2;
-      prims.push({ tok, t: "glyph", x: gx, y, ch, cls: ["dyn", ign.has(k) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+      const gs = c.glyphScale, ch = k === "sfz" ? "\u{E539}" : "\u{E534}", w = P((GLYPH_BOX[ch]?.[1] ?? 2.6) * (gs ?? 1)), gx = cx - w / 2;
+      prims.push({ tok, t: "glyph", x: gx, y, ch, cls: ["dyn", ign.has(k) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), ...(gs !== undefined ? { size: P(4 * gs) } : {}) });
       xa = Math.max(xa, gx + w + P(0.3));
     }
     if (!swl) return;

@@ -95,7 +95,9 @@ export interface SystemBox { top: number; staffTop: number; bottom: number; pape
   /** 这一行谱上真有墨的上下沿（px）：音（含叠着的房客）、符干、跳音 / 重音、力度那几道、八度线、歌词；不含速度 / 风格记号（那是整张谱的）。播放的灰块按这个（v0.10.26）。 */
   inkTop?: number; inkBottom?: number;
   /** 数字行的八度基准（第几个八度的音不加点；谱面分家第四刀 4-6：鬼音符照它加点）。五线谱的行没有。 */
-  octBase?: number }   // staff = 大谱表里是上（1）还是下（2）
+  octBase?: number;
+  /** 这一行行里的尺寸比例（排版参数表行一级 scale；不是 1 才写）：主线程几何（光标 / 鬼音符 / 选区带）按它取。 */
+  scale?: number }   // staff = 大谱表里是上（1）还是下（2）
 export interface HitNote { index: number; system: number; x: number; y: number; w: number; d: number; /** 合租的声部 2（v0.10.28）：下标指这条虚拟 track（`…~v2`），不是这一行那一位的。 */ part?: string }
 export interface Slot { caret: number; system: number; x: number; end?: true; /** 补齐的淡色小节的开头：点这里 = 光标在尾巴 + 先补这么长（tick）的休止再写（v0.10.6）。 */ lead?: number }   // end = 行末那个落点（光标在下一行开头的那个位置，点在这一行行末时画在这儿）
 /** 光标画在哪（W-17 第 1 刀：排版不认光标，只给出每个 caret 位置该画的地方，score-view 按 EditorState 挑）：老规矩 = 同一 tick 上排在小节线 / 记号后面、音前面；
@@ -276,9 +278,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
   const rowAbove = new Map<number, number>(), lyricOff = new Map<number, number>();   // 行号 → 谱上面留多少（sp）/ 歌词基线在第一线下多少（sp）。刀 4b 起力度 / 反复 / 速度 / 风格 / 八度线不再有「行 → y」的表：每一样各自贴天际线
   const staffTop = (r: number) => rowTop.get(r)! + P(rowAbove.get(r) ?? 0);   // 这一行的原点（画的时候 = 0，第 12 步定了行距再整行挪）
   /** 这一行的竖向锚点（上沿 / 中线 / 下沿）：家具只认这三个；按这一行的画法问（谱种的表）。 */
-  const anc = (r: number) => DRAWERS[rows[r]!.kind].anchors(staffTop(r), P(0.5));
+  const anc = (r: number) => DRAWERS[rows[r]!.kind].anchors(staffTop(r), P(0.5) * rowPar(r).scale);   // 行里的尺寸比例（参数表行一级；五线谱 = 1）
   /** 行身在局部坐标里的上下沿（sp）：问这一行的画法（不假设 0–4；统筹审第四刀接口第 4 条）。 */
-  const body = (r: number) => DRAWERS[rows[r]!.kind].anchors(0, 0.5);
+  const body = (r: number) => DRAWERS[rows[r]!.kind].anchors(0, 0.5 * rowPar(r).scale);
   /** 这一行的行一级参数（排版参数表，按行的种类 × 版式）。 */
   const rowPar = (r: number) => ROW_PARAMS[rows[r]!.kind][density];
   const lyricY = (r: number) => anc(r).bottom + P(lyricOff.get(r) ?? rowPar(r).lyricBelow);   // 歌词基线 = 这一行下沿往下让多少
@@ -370,7 +372,8 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     // 2. 量（五线谱这一种行，一条轨的纯函数：staff/measure.ts）→ 3. 排（框架：合成列 → 折行 → 摆，frame/arrange.ts）。设计稿第 3.3 节第 3、4 步；施工单 1b-4
     //   横向间距（刀 3，2026-11-09 Claude Opus 5.5；算法 = src/render/spacing.ts）：一列到下一列多远 = 这一刻正在响的音里最短的那个该占的宽；同一行前后两样东西真会撞才顶开；
     //   一行排满只拉 / 压弹簧（小节线、调号这些固定宽的不拉）。对齐线 = 列的 x；符头画在 x + 0.35，临时记号挂在左边、进前一列的空。
-    const measured = per0.map((q, i) => DRAWERS[kinds[i]!].measure(q));
+    const kScale = (k: RowKind) => ROW_PARAMS[k][density].scale;   // 行里的尺寸比例（这种行自己的字形 / 偏移统一乘它）
+    const measured = per0.map((q, i) => DRAWERS[kinds[i]!].measure(q, kScale(kinds[i]!)));
     const atracks: ArrangeTrack<Unit>[] = per0.map((_q, pi) => ({ entries: measured[pi]!.entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));   // 声部 2 画在主人那一行 = 和主人一个道基数
     const merged = mergeColumns(atracks), n = merged.length;
     // 行首 = 名字一栏的缩进（框架）+ 各条轨行首要画的（五线谱：谱号 + 那里生效的调号 + 第一行的拍号），取大
@@ -383,7 +386,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const keyAtCol: Map<string, number>[] = [];   // 第 k 列之前生效的调号（每行开头画哪个调号、行首多宽）
     { const now = new Map<string, number>(per0.map((q) => [q.p.id, q.head.key]));
       for (let k = 0; k <= n; k++) { keyAtCol.push(new Map(now)); if (k < n) for (const { track, entry } of merged[k]!.members) if (entry.ref.kind === "key") now.set(per0[track]!.p.id, entry.ref.fifths); } }
-    const headAt = (k: number, first: boolean) => { const keys = keyAtCol[k]!, base = (first ? ind0 : indN) + MARGIN; return Math.max(...per0.map((q, i) => DRAWERS[kinds[i]!].lineStart(q, keys.get(q.p.id)!, first, base))); };
+    const headAt = (k: number, first: boolean) => { const keys = keyAtCol[k]!, base = (first ? ind0 : indN) + MARGIN; return Math.max(...per0.map((q, i) => DRAWERS[kinds[i]!].lineStart(q, keys.get(q.p.id)!, first, base, kScale(kinds[i]!)))); };
     const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };   // 音距跟版式（参数表纸一级；v0.16.43 user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧」）：舒适 = 摸主旋律和歌词，紧凑 = 配器
     const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, endPad: BAR_W, lineStart: headAt });   // 横卷 = 不折行
     const { lineFrom, sysStarts } = ar, nSys = lineFrom.length, sysKeys = lineFrom.map((k) => new Map(keyAtCol[k]!));
@@ -418,7 +421,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     if (songLook.lyricFit === "rhythm") per.forEach((q, r) => {
       if (!lyricsOf[r]) return;
       const bySys = new Map<number, (LyricItem & { index: number })[]>();
-      for (const u of DRAWERS[kinds[r]!].lyricAnchors(q)) {   // 每个带字的音在哪（这种行的画法给的锚点）
+      for (const u of DRAWERS[kinds[r]!].lyricAnchors(q, kScale(kinds[r]!))) {   // 每个带字的音在哪（这种行的画法给的锚点）
         const arr = bySys.get(u.system) ?? []; bySys.set(u.system, arr);
         arr.push({ index: u.index, cx: u.cx, w: lyrUnit(lyricShow(u.lyric)), hy: u.hyph, block: isBlockScript(u.lyric) && [...lyricShow(u.lyric)].length <= 1 });   // 一个音上两个以上方块字（日文「だん」这类合租）= 自己收，不带着整段一起变窄（user 11-09「日文有时候有双字合租的…这种时候也变窄到能放下？」）
       }
@@ -435,7 +438,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     for (let s = 0; s < nSys; s++) for (let r = 0; r < nR; r++) for (let k = 0; k < effStaves(r); k++) {
       const row = rowOf(s, r, k);
       rowTop.set(row, 0); rowAbove.set(row, 0);
-      rows[row] = { top: 0, staffTop: 0, bottom: 0, paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff, inkTop: 0, inkBottom: 0, kind: kinds[r]! };   // 每一行都写这一行用哪种画法（统筹审第四刀接口第 1 条）
+      rows[row] = { top: 0, staffTop: 0, bottom: 0, paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff, inkTop: 0, inkBottom: 0, kind: kinds[r]!, ...(kScale(kinds[r]!) !== 1 ? { scale: kScale(kinds[r]!) } : {}) };   // 每一行都写这一行用哪种画法（统筹审第四刀接口第 1 条）
       skies[row - rowBase] = new Skyline(right + MARGIN + 8);
       if (per[r].vrt) sharedRows.push(row);   // 叠起来的那一行只读
     }
@@ -587,7 +590,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const ctxFor = (idx: readonly number[], who: RowKind) => {
       const own = new Set<number>(); for (const r of idx) for (let s = 0; s < nSys; s++) for (let k = 0; k < effStaves(r) || (rowHost[r]! >= 0 && k < 1); k++) own.add(rowOf(s, r, k));
       const chk = (row: number) => { if (!own.has(row)) throw new Error(`engrave: the ${who} drawer drew on row ${row}, which is not one of its rows`); };
-      return { ...drawCtx, put: (row: number, p: Prim) => { chk(row); put(row, p); }, hitRow: (h: object, row: number) => { chk(row); hitRow(h, row); },
+      return { ...drawCtx, scale: kScale(who), put: (row: number, p: Prim) => { chk(row); put(row, p); }, hitRow: (h: object, row: number) => { chk(row); hitRow(h, row); },
         attach: (row: number, lane: LaneKind, run: () => void) => { chk(row); attach(row, lane, run); },
         placeAbove: (row: number, gap: number, d: (y: number) => void) => { chk(row); return placeAbove(row, gap, d); },
         placeBelow: (row: number, gap: number, d: (y: number) => void, o2?: { min?: number; count?: boolean; step?: number }) => { chk(row); return placeBelow(row, gap, d, o2); } };

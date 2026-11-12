@@ -5,25 +5,35 @@
 //   staff/glyphs.ts、jianpu/glyphs.ts，写死的数，排版不现场量；现场量的只有歌词和名字）；框架自己的尺寸（frame/params.ts）。
 import type { Density } from "../score/paper.ts";
 import type { NotationId } from "../score/song-view.ts";
-import type { SpacingMode } from "./spacing.ts";
+import type { SpacingMode, SpringPts } from "./spacing.ts";
+import { TPQ } from "../score/song.ts";
 import type { RowKind } from "./notations.ts";
 
 /** 纸一级（按这首歌的谱种 × 版式）：行与行之间多空（sysGap，sp）、音距曲线（curve：v0.16.43 起跟版式，user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧」）、
  *  一行最多压紧多少（squeeze，弹簧的比例）、一行最多拉宽到自然宽的几倍（maxStretch；Infinity = 不设上限、拉满整行 = 五线谱现在的样子，第六刀才改）。 */
-export interface PaperParams { sysGap: number; curve: SpacingMode; squeeze: number; maxStretch: number }
+export interface PaperParams { sysGap: number; curve: SpacingMode | SpringPts; squeeze: number; maxStretch: number }
+/** 数字行的尺寸比例：数字字号（mm）÷（2.5 个线间距 × 这一档一个线间距的 mm）。舒适 3.6 / (2.5 × 1.75)、紧凑 3.0 / (2.5 × 1.25)（第五刀 5-0c）。 */
+const JP_COZY = 3.6 / (2.5 * 1.75), JP_COMPACT = 3.0 / (2.5 * 1.25);
+/** 简谱的弹簧（第五刀 5-0c，user「字有点大……有点太舒适了」）：一拍一格——四分一个字位、二分两个、全音符四个（横线一拍一根）；短音只比数字宽一点（「密的声部自己挤紧，短音只占字宽」）。
+ *  按数字原大（scale 1）起的数，乘这一档的尺寸比例；A5 舒适档四拍子、四分和八分为主的旋律一行约 6 小节（测试守着）。 */
+const jianpuSprings = (k: number): SpringPts => ([[TPQ / 8, 1.45], [TPQ / 4, 1.55], [TPQ / 2, 1.75], [TPQ, 2.55], [TPQ * 2, 5.1], [TPQ * 4, 10.2]] as const).map(([t, w]) => [t, w * k] as const);
 export const PAPER_PARAMS: Readonly<Record<NotationId, Readonly<Record<Density, PaperParams>>>> = {
   staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
-  jianpu: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3 } },
+  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3 } },
 };
 /** 行一级（按这一行的种类 × 版式；单位 sp，从行身算：行身 = 画法的竖向锚点 top–bottom）：行身上面最少留多少（above）、整行最少多高（rowH 有歌词 / rowHNoLyric 没歌词 /
  *  graveUpper 大谱表上面那条：没歌词、紧挨着下面那条）、歌词基线在行身下沿往下多少（lyricBelow）、谱上方贴挂件时下面什么墨都没有就贴在行身上沿上方多远（clear；
- *  五线谱 2.4 = 躲开符干的老手感，数字行没有符干）。墨多了照天际线往外让（engrave 第 12 步），这里只是最小值。
+ *  五线谱 2.4 = 躲开符干的老手感，数字行没有符干）、行里的尺寸比例（scale：这种行自己的字形 / 偏移 / 线宽统一乘它，竖向锚点也按它取）。墨多了照天际线往外让（engrave 第 12 步），这里只是最小值。
+ *  数字行（第五刀 5-0c，user 看了 A5 成品「字有点大……有点太舒适了」）：数字字号舒适 3.6 mm、紧凑约 3.0 mm（不跟着纸变）——数字字号是 2.5 × scale 个线间距，
+ *  舒适一个线间距 1.75 mm → scale 0.823，紧凑 1.25 mm → 0.96；行距的最小值跟着乘（别只缩字）。
  *  五线谱：舒适 = 谱 7 mm、行距用原来紧凑那一档（user 2026-10-08「舒适的行距太宽了，反而不舒适。和紧凑的对齐」；0.2.x 的 17 sp 退役）；
  *  紧凑 = 谱 5 mm、再卷一点（「紧凑也许可以再卷一点」）：谱上面 / 歌词下面都收、没歌词的那条谱更矮。 */
-export interface RowParams { above: number; rowH: number; rowHNoLyric: number; graveUpper: number; lyricBelow: number; clear: number }
+export interface RowParams { above: number; rowH: number; rowHNoLyric: number; graveUpper: number; lyricBelow: number; clear: number; scale: number }
+/** 数字行的行一级参数：按数字原来的大小（scale 1）起的数，整体乘 scale（行高、各道的距离跟着字号一起收）。 */
+const jianpuRow = (k: number, v: Omit<RowParams, "scale">): RowParams => ({ above: v.above * k, rowH: v.rowH * k, rowHNoLyric: v.rowHNoLyric * k, graveUpper: v.graveUpper * k, lyricBelow: v.lyricBelow * k, clear: v.clear * k, scale: k });
 export const ROW_PARAMS: Readonly<Record<RowKind, Readonly<Record<Density, RowParams>>>> = {
-  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4 } },
+  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4, scale: 1 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4, scale: 1 } },
   // 数字行（行身 = 小节线那一段，jianpu/glyphs.ts JP_BODY）：没有五条线，比五线谱的行矮；数字行不分大谱表（graveUpper 用不上，照没歌词的填）
-  jianpu: { cozy: { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }, compact: { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 } },
+  jianpu: { cozy: jianpuRow(JP_COZY, { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }), compact: jianpuRow(JP_COMPACT, { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 }) },
 };

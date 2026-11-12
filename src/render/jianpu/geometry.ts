@@ -6,17 +6,19 @@ import { TEXT_FACES, TEXT_STYLES } from "../text/index.ts";
 import type { GhostNote } from "../frame/ghost.ts";
 
 /** 数字行自己的平数据：行框原点的 y（px；和五线谱同一个框，0 = 上沿）。现在就是 SystemBox.staffTop。 */
-export interface JianpuRowData { staffTop: number }
+export interface JianpuRowData { staffTop: number; /** 行里的尺寸比例（SystemBox.scale；没写 = 1）。 */ scale?: number }
+/** 这一行数字行的一个单位（px）= 两个半线间距 × 行里的尺寸比例。 */
+const unitOf = (row: JianpuRowData, half: number): number => 2 * half * (row.scale ?? 1);
 /** 光标：从行框上面一点画到下面一点的一根竖线（half = 半个线间距 px）。 */
-export const jianpuCaretSpan = (row: JianpuRowData, half: number): { y1: number; y2: number } => ({ y1: row.staffTop + CARET_Y0 * 2 * half, y2: row.staffTop + CARET_Y1 * 2 * half });
+export const jianpuCaretSpan = (row: JianpuRowData, half: number): { y1: number; y2: number } => ({ y1: row.staffTop + CARET_Y0 * unitOf(row, half), y2: row.staffTop + CARET_Y1 * unitOf(row, half) });
 /** 鬼音符（「弹」时不占排版的那个音）：一个淡的数字画在哪、多大（x = 光标的位置 px，数字的中心在它右边半个数字宽）。 */
-export const jianpuPreviewAt = (row: JianpuRowData, x: number, half: number): { x: number; y: number; size: number } => ({ x: x + (0.1 + DIGIT_W / 2) * 2 * half, y: row.staffTop + BASE_Y * 2 * half, size: DIGIT_EM * 2 * half });
+export const jianpuPreviewAt = (row: JianpuRowData, x: number, half: number): { x: number; y: number; size: number } => { const u = unitOf(row, half); return { x: x + (0.1 + DIGIT_W / 2) * u, y: row.staffTop + BASE_Y * u, size: DIGIT_EM * u }; };
 /** 选区带的上沿（和光标同一个上沿）。 */
-export const jianpuBandTop = (row: JianpuRowData, half: number): number => row.staffTop + CARET_Y0 * 2 * half;
+export const jianpuBandTop = (row: JianpuRowData, half: number): number => row.staffTop + CARET_Y0 * unitOf(row, half);
 /** 数字行的鬼音符（谱面分家第四刀 4-6）：x 处（光标 / 那个音的位置）一个淡的数字 + 升降 + 八度点（按这一行的八度基准；row.octBase）。几个音（叠）= 往上一个叠一个。
  *  字和排版里的数字同一款（字体属性写在元素上：鬼音符那一层不在 .staff-svg 里，套不上谱的样式表）。 */
 export function jianpuGhost(row: JianpuRowData & { octBase?: number }, x: number, notes: readonly GhostNote[], half: number): string {
-  const sp = 2 * half, pv = jianpuPreviewAt(row, x, half), face = TEXT_FACES[TEXT_STYLES["jp-digit"].face], parts: string[] = [];
+  const sp = unitOf(row, half), pv = jianpuPreviewAt(row, x, half), face = TEXT_FACES[TEXT_STYLES["jp-digit"].face], parts: string[] = [];
   notes.forEach((n, k) => {
     const d = toDegree(n.p, n.fifths), dots = d.shift - (row.octBase ?? 0), dy = -k * 2.4 * sp, Y = (v: number) => row.staffTop + v * sp + dy;
     parts.push(`<text x="${pv.x}" y="${pv.y + dy}" font-family='${face}' font-size="${pv.size}" text-anchor="middle">${d.degree}</text>`);

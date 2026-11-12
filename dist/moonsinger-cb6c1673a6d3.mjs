@@ -10314,7 +10314,7 @@ var lerpLog = (pts, ticks) => {
   return last[1];
 };
 var curveOf = (m2) => {
-  const t10 = m2 === true || m2 === "normal" ? DENSE : m2 === "tight" ? TIGHT : LOOSE;
+  const t10 = typeof m2 === "object" ? m2 : m2 === true || m2 === "normal" ? DENSE : m2 === "tight" ? TIGHT : LOOSE;
   return (ticks) => lerpLog(t10, ticks);
 };
 var SP_DEFAULTS = { pad: 0.3, emptyBar: 4.5 };
@@ -10768,15 +10768,19 @@ var CTL_H = 3;
 var SYSTEM_LINE_W = 0.16 * 1.4;
 
 // src/render/layout-params.ts
+var JP_COZY = 3.6 / (2.5 * 1.75);
+var JP_COMPACT = 3 / (2.5 * 1.25);
+var jianpuSprings = (k2) => [[TPQ / 8, 1.45], [TPQ / 4, 1.55], [TPQ / 2, 1.75], [TPQ, 2.55], [TPQ * 2, 5.1], [TPQ * 4, 10.2]].map(([t10, w2]) => [t10, w2 * k2]);
 var PAPER_PARAMS = {
   staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
-  jianpu: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3 } }
+  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3 } }
 };
+var jianpuRow = (k2, v) => ({ above: v.above * k2, rowH: v.rowH * k2, rowHNoLyric: v.rowHNoLyric * k2, graveUpper: v.graveUpper * k2, lyricBelow: v.lyricBelow * k2, clear: v.clear * k2, scale: k2 });
 var ROW_PARAMS = {
-  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4 } },
+  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4, scale: 1 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4, scale: 1 } },
   // 数字行（行身 = 小节线那一段，jianpu/glyphs.ts JP_BODY）：没有五条线，比五线谱的行矮；数字行不分大谱表（graveUpper 用不上，照没歌词的填）
-  jianpu: { cozy: { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }, compact: { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 } }
+  jianpu: { cozy: jianpuRow(JP_COZY, { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }), compact: jianpuRow(JP_COMPACT, { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 }) }
 };
 
 // src/render/frame/furniture.ts
@@ -12224,8 +12228,9 @@ function layDynamics(c10) {
   const { P: P2, tx: tx2, prims, dyns, tokens, units, dynOff, o: o10, notation } = c10;
   const right = c10.right;
   const dynOf = (v) => {
-    const d3 = dynDepiction(v, notation);
-    return { ink: d3.ink, draw: (x2, y2, tok, cls) => prims.push({ t: "glyph", x: x2, y: y2, ch: d3.glyph, tok, cls }) };
+    const d3 = dynDepiction(v, notation), g3 = c10.glyphScale;
+    if (g3 === void 0) return { ink: d3.ink, draw: (x2, y2, tok, cls) => prims.push({ t: "glyph", x: x2, y: y2, ch: d3.glyph, tok, cls }) };
+    return { ink: [d3.ink[0] * g3, d3.ink[1] * g3, d3.ink[2] * g3, d3.ink[3] * g3], draw: (x2, y2, tok, cls) => prims.push({ t: "glyph", x: x2, y: y2, ch: d3.glyph, tok, cls, size: P2(4 * g3) }) };
   };
   const dynItems = [];
   for (const u2 of units) {
@@ -12368,8 +12373,8 @@ function layNoteDynamics(c10, row2, _ch, a10) {
   c10.attach(row2, "noteDynamics", () => c10.placeAbove(row2, 0.5, (y2) => {
     let xa = a10.x0;
     for (const k2 of atk) {
-      const ch2 = k2 === "sfz" ? "\uE539" : "\uE534", w2 = P2(GLYPH_BOX[ch2]?.[1] ?? 2.6), gx = cx2 - w2 / 2;
-      prims.push({ tok, t: "glyph", x: gx, y: y2, ch: ch2, cls: ["dyn", ign.has(k2) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+      const gs = c10.glyphScale, ch2 = k2 === "sfz" ? "\uE539" : "\uE534", w2 = P2((GLYPH_BOX[ch2]?.[1] ?? 2.6) * (gs ?? 1)), gx = cx2 - w2 / 2;
+      prims.push({ tok, t: "glyph", x: gx, y: y2, ch: ch2, cls: ["dyn", ign.has(k2) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), ...gs !== void 0 ? { size: P2(4 * gs) } : {} });
       xa = Math.max(xa, gx + w2 + P2(0.3));
     }
     if (!swl) return;
@@ -13086,24 +13091,24 @@ function unitW(u2) {
       return 0;
   }
 }
-function measureJianpu(q2) {
+function measureJianpu(q2, k2 = 1) {
   const inkL = /* @__PURE__ */ new Map();
   const spItems = (u2) => {
     if (u2.pad) return [];
     const n10 = extraGlyphs(u2), acc = u2.note && u2.j === 0 && u2.acc !== null;
     const breathW = u2.note && u2.breath ? BREATH_W + (u2.inhale ? INHALE_W : 0) : 0;
-    const left = acc ? ACC_W : -0.1, right = 0.1 + DIGIT_W + 0.15 + n10 * DASH_PITCH + (hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW;
+    const left = (acc ? ACC_W : -0.1) * k2, right = (0.1 + DIGIT_W + 0.15 + n10 * DASH_PITCH + (hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k2;
     inkL.set(u2, Math.max(0, left));
     const out = [{ row: 0, left, right, dur: u2.ticks }];
-    const cx2 = 0.1 + DIGIT_W / 2;
+    const cx2 = (0.1 + DIGIT_W / 2) * k2;
     if (u2.lyW !== void 0) out.push({ row: 1, left: u2.lyW / 2 - cx2, right: cx2 + u2.lyW / 2 + 0.4 + (u2.hyph ? 0.7 : 0) });
     return out;
   };
-  const entries2 = q2.units.map((u2) => ({ tick: u2.tick, slot: u2.kind === "nav" ? u2.slot : SLOT[COLUMN_KIND2[u2.kind]], w: u2.kind === "chunk" ? u2.w : unitW(u2), ...u2.kind === "bar" ? { bar: true } : {}, ...u2.kind === "chunk" ? { chunk: { items: spItems(u2), span: u2.ticks } } : {}, ref: u2 }));
+  const entries2 = q2.units.map((u2) => ({ tick: u2.tick, slot: u2.kind === "nav" ? u2.slot : SLOT[COLUMN_KIND2[u2.kind]], w: u2.kind === "chunk" ? u2.w : unitW(u2) * k2, ...u2.kind === "bar" ? { bar: true } : {}, ...u2.kind === "chunk" ? { chunk: { items: spItems(u2), span: u2.ticks } } : {}, ref: u2 }));
   return { entries: entries2, inkL };
 }
-var jianpuLineStart = (_q, _key, _first, base2) => base2 + 0.6;
-var jianpuLyricAnchors = (q2) => q2.units.filter((u2) => u2.kind === "chunk" && !!u2.lyric && u2.lyric !== MELISMA_MARK).map((u2) => ({ index: u2.index, system: u2.system, cx: u2.x + 0.1 + DIGIT_W / 2, lyric: u2.lyric, hyph: u2.hyph }));
+var jianpuLineStart = (_q, _key, _first, base2, k2 = 1) => base2 + 0.6 * k2;
+var jianpuLyricAnchors = (q2, k2 = 1) => q2.units.filter((u2) => u2.kind === "chunk" && !!u2.lyric && u2.lyric !== MELISMA_MARK).map((u2) => ({ index: u2.index, system: u2.system, cx: u2.x + (0.1 + DIGIT_W / 2) * k2, lyric: u2.lyric, hyph: u2.hyph }));
 
 // src/score/degree.ts
 function toDegree(p2, fifths) {
@@ -13130,7 +13135,8 @@ var keyHead = (fifths, minor) => keyText(fifths, minor).replace(/=([A-G])([♭�
 function drawJianpu(c10, mine) {
   const lyricParts = [];
   const { song, paper, o: o10, P: P2, tx: tx2, put: put2, notes, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c10;
-  const Y2 = (row2, v) => staffTop(row2) + P2(v);
+  const jk = c10.scale ?? 1, Q2 = (v) => P2(v * jk);
+  const Y2 = (row2, v) => staffTop(row2) + Q2(v);
   for (const r10 of mine) {
     const q2 = per[r10], units = q2.units, tokens = q2.tokens;
     for (let s10 = 0; s10 < nSys; s10++) {
@@ -13158,8 +13164,9 @@ function drawJianpu(c10, mine) {
       tokens,
       units,
       row: (sy2) => rowOf(sy2, r10, 0),
-      noteX: (ch2) => P2(ch2.x + 0.1),
-      noteEnd: (ch2) => P2(ch2.x + 0.1 + DIGIT_W),
+      glyphScale: jk,
+      noteX: (ch2) => P2(ch2.x) + Q2(0.1),
+      noteEnd: (ch2) => P2(ch2.x) + Q2(0.1 + DIGIT_W),
       dynOff: dynOverridden(tokens),
       navMute: (i10) => navWhy(song, paper, q2.p.id, tokens[i10]) ? " art-mute" : ""
     };
@@ -13174,17 +13181,17 @@ function drawJianpu(c10, mine) {
       const row2 = rowOf(s10, r10, 0);
       if (rows[row2]) rows[row2].octBase = base2;
     }
-    const row0 = rowOf(0, r10, 0), hx = P2(MARGIN + ind0 + 0.6);
+    const row0 = rowOf(0, r10, 0), hx = P2(MARGIN + ind0) + Q2(0.6);
     const keyS = keyHead(q2.head.key, q2.head.minor), timeS = `${q2.head.time.beats}/${q2.head.time.beatType}`, hs = tx2("tempo-num");
     const tempoHere = q2.p.id === c10.owner && q2.head.idx.tempo !== void 0;
-    c10.attach(row0, "tempo", () => placeAbove(row0, 0.5, (y2) => {
+    c10.attach(row0, "tempo", () => placeAbove(row0, 0.5 * jk, (y2) => {
       const kw = P2(midTextW(keyS)), tw2 = P2(midTextW(timeS));
       const kt = q2.head.idx.key !== void 0 ? tokens[q2.head.idx.key]?.id : void 0, tt2 = q2.head.idx.time !== void 0 ? tokens[q2.head.idx.time]?.id : void 0;
       put2(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y: y2, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
       put2(row0, { ...tt2 !== void 0 ? { tok: tt2 } : {}, t: "text", x: hx + kw, y: y2, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
       if (tempoHere) tempoAt2(orn, row0, MARGIN + ind0 + 0.6 + midTextW(keyS) + midTextW(timeS) + 0.6, q2.head.bpm, "tempo", q2.head.idx.tempo, c10.prevBpm === null || c10.prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > c10.prevBpm ? "up" : "down", y2);
-      if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row0, x: hx - P2(0.3), y: y2 - hs, w: kw, h: hs * 1.4 });
-      if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row0, x: hx + kw - P2(0.3), y: y2 - hs, w: tw2, h: hs * 1.4 });
+      if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row0, x: hx - Q2(0.3), y: y2 - hs, w: kw, h: hs * 1.4 });
+      if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row0, x: hx + kw - Q2(0.3), y: y2 - hs, w: tw2, h: hs * 1.4 });
     }));
     const spots = [];
     lyricParts.push({ r: r10, lrow: (s10) => rowOf(s10, r10, 0), spots });
@@ -13196,44 +13203,44 @@ function drawJianpu(c10, mine) {
     for (const u2 of units) {
       if (u2.kind === "key") {
         fifths = u2.fifths;
-        const row3 = rowOf(u2.system, r10, 0), s10 = keyHead(u2.fifths, u2.minor), x2 = P2(u2.x + 0.3);
-        put2(row3, { tok: tokens[u2.index]?.id, t: "text", x: x2, y: Y2(row3, BASE_Y - 0.3), s: s10, cls: "jp-head jp-mid", size: P2(MID_TEXT_EM), anchor: "start" });
-        marks.push({ index: u2.index, kind: "key", system: row3, x: x2 - P2(0.3), y: Y2(row3, BASE_Y - 1.6), w: P2(midTextW(s10)), h: P2(2.2) });
+        const row3 = rowOf(u2.system, r10, 0), s10 = keyHead(u2.fifths, u2.minor), x2 = P2(u2.x) + Q2(0.3);
+        put2(row3, { tok: tokens[u2.index]?.id, t: "text", x: x2, y: Y2(row3, BASE_Y - 0.3), s: s10, cls: "jp-head jp-mid", size: Q2(MID_TEXT_EM), anchor: "start" });
+        marks.push({ index: u2.index, kind: "key", system: row3, x: x2 - Q2(0.3), y: Y2(row3, BASE_Y - 1.6), w: Q2(midTextW(s10)), h: Q2(2.2) });
         continue;
       }
       if (u2.kind === "time") {
-        const row3 = rowOf(u2.system, r10, 0), s10 = `${u2.beats}/${u2.beatType}`, x2 = P2(u2.x + 0.3);
-        put2(row3, { tok: tokens[u2.index]?.id, t: "text", x: x2, y: Y2(row3, BASE_Y - 0.3), s: s10, cls: "jp-head jp-mid", size: P2(MID_TEXT_EM), anchor: "start" });
-        marks.push({ index: u2.index, kind: "time", system: row3, x: x2 - P2(0.3), y: Y2(row3, BASE_Y - 1.6), w: P2(midTextW(s10)), h: P2(2.2) });
+        const row3 = rowOf(u2.system, r10, 0), s10 = `${u2.beats}/${u2.beatType}`, x2 = P2(u2.x) + Q2(0.3);
+        put2(row3, { tok: tokens[u2.index]?.id, t: "text", x: x2, y: Y2(row3, BASE_Y - 0.3), s: s10, cls: "jp-head jp-mid", size: Q2(MID_TEXT_EM), anchor: "start" });
+        marks.push({ index: u2.index, kind: "time", system: row3, x: x2 - Q2(0.3), y: Y2(row3, BASE_Y - 1.6), w: Q2(midTextW(s10)), h: Q2(2.2) });
         continue;
       }
       if (u2.kind === "bar") {
-        const row3 = rowOf(u2.system, r10, 0), x2 = P2(u2.x + BAR_DX), y0 = Y2(row3, BAR_Y0), y1 = Y2(row3, BAR_Y1), tok2 = u2.index >= 0 ? tokens[u2.index]?.id : void 0;
-        const line = (lx2, w2) => put2(row3, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "line", x1: lx2, y1: y0, x2: lx2, y2: y1, w: P2(w2), cls: "bar jp-bar" });
+        const row3 = rowOf(u2.system, r10, 0), x2 = P2(u2.x) + Q2(BAR_DX), y0 = Y2(row3, BAR_Y0), y1 = Y2(row3, BAR_Y1), tok2 = u2.index >= 0 ? tokens[u2.index]?.id : void 0;
+        const line = (lx2, w2) => put2(row3, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "line", x1: lx2, y1: y0, x2: lx2, y2: y1, w: Q2(w2), cls: "bar jp-bar" });
         if (u2.style === "final" || u2.repeat === "end") {
-          line(x2 - P2(BAR_GAP + BAR_THICK / 2), BAR_THIN);
+          line(x2 - Q2(BAR_GAP + BAR_THICK / 2), BAR_THIN);
           line(x2, BAR_THICK);
         } else if (u2.style === "double" || u2.repeat) {
-          line(x2 - P2(BAR_GAP), BAR_THIN);
+          line(x2 - Q2(BAR_GAP), BAR_THIN);
           line(x2, BAR_THIN);
         } else line(x2, BAR_THIN);
         const rdot = (dx) => {
-          for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put2(row3, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "path", d: dotPath(x2 + P2(dx), Y2(row3, yy), P2(0.15)), cls: "jp-dot repeat-dot" });
+          for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put2(row3, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "path", d: dotPath(x2 + Q2(dx), Y2(row3, yy), Q2(0.15)), cls: "jp-dot repeat-dot" });
         };
         if (u2.repeat === "start" || u2.repeat === "both") rdot(0.4);
         if (u2.repeat === "end" || u2.repeat === "both") rdot(-(BAR_GAP + BAR_THICK + 0.4));
         if (u2.repeat && u2.times && u2.times > 2) {
           const times = u2.times, cl2 = "nav-mark" + orn.navMute(u2.index);
-          c10.attach(row3, "nav", () => placeAbove(row3, 0.6, (yy) => c10.prims.push({ t: "text", x: x2 - P2(0.6), y: yy, s: `\xD7${times}`, cls: cl2, size: tx2("nav-mark"), anchor: "start" })));
+          c10.attach(row3, "nav", () => placeAbove(row3, 0.6 * jk, (yy) => c10.prims.push({ t: "text", x: x2 - Q2(0.6), y: yy, s: `\xD7${times}`, cls: cl2, size: tx2("nav-mark"), anchor: "start" })));
         }
         bars.push({ system: row3, x: x2 });
         continue;
       }
       if (u2.kind === "clef" || u2.kind === "ottava") {
-        const row3 = rowOf(u2.system, r10, 0), x2 = P2(u2.x + 0.2), t10 = tokens[u2.index];
+        const row3 = rowOf(u2.system, r10, 0), x2 = P2(u2.x) + Q2(0.2), t10 = tokens[u2.index];
         const label = u2.kind === "clef" ? _tIn(o10.locale, "\u8C31\u53F7") : t10.shift === 0 ? "loco" : t10.shift === 2 ? "15ma" : t10.shift > 0 ? "8va" : "8vb";
-        put2(row3, { tok: t10.id, t: "text", x: x2, y: Y2(row3, 0.45), s: label, cls: "jp-staffonly ann", size: P2(1), anchor: "start" });
-        c10.clefs.push({ kind: u2.kind === "clef" ? "mid" : "ottava", paper: paper.id, part: q2.p.id, index: u2.index, system: row3, x: x2 - P2(0.2), y: Y2(row3, -0.5), w: P2(2.6), h: P2(1.3) });
+        put2(row3, { tok: t10.id, t: "text", x: x2, y: Y2(row3, 0.45), s: label, cls: "jp-staffonly ann", size: Q2(1), anchor: "start" });
+        c10.clefs.push({ kind: u2.kind === "clef" ? "mid" : "ottava", paper: paper.id, part: q2.p.id, index: u2.index, system: row3, x: x2 - Q2(0.2), y: Y2(row3, -0.5), w: Q2(2.6), h: Q2(1.3) });
         continue;
       }
       if (u2.kind === "groove") {
@@ -13241,7 +13248,7 @@ function drawJianpu(c10, mine) {
         continue;
       }
       if (u2.kind === "nav") {
-        layNav(orn, u2, (v) => P2(v.x + BAR_DX));
+        layNav(orn, u2, (v) => P2(v.x) + Q2(BAR_DX));
         continue;
       }
       if (u2.kind === "tempo") {
@@ -13249,14 +13256,14 @@ function drawJianpu(c10, mine) {
         continue;
       }
       if (u2.kind !== "chunk" || u2.pad) continue;
-      const row2 = rowOf(u2.system, r10, 0), tok = tokOf(u2), x0 = P2(u2.x + 0.1), cx2 = x0 + P2(DIGIT_W / 2), T2 = tok !== void 0 ? { tok } : {};
+      const row2 = rowOf(u2.system, r10, 0), tok = tokOf(u2), x0 = P2(u2.x) + Q2(0.1), cx2 = x0 + Q2(DIGIT_W / 2), T2 = tok !== void 0 ? { tok } : {};
       const n10 = extraGlyphs(u2), contDash2 = contDash(u2);
       const tailW = (hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + (u2.note && u2.breath ? BREATH_W + (u2.inhale ? INHALE_W : 0) : 0);
-      const step = n10 ? Math.max(DASH_PITCH, (u2.w - tailW) / (n10 + 1)) : 0;
+      const step = n10 ? Math.max(DASH_PITCH * jk, (u2.w - tailW * jk) / (n10 + 1)) : 0;
       const gx = (k2) => cx2 + P2(k2 * step);
       const small = u2.art.includes("ghost");
-      const digit = (x2, s10) => put2(row2, { ...T2, t: "text", x: x2, y: Y2(row2, BASE_Y), s: s10, cls: u2.ghost ? "jp-digit ghost" : small ? "jp-digit art-ghost" : "jp-digit", size: P2(small ? DIGIT_EM * 0.72 : DIGIT_EM), anchor: "middle" });
-      const dash = (x2) => put2(row2, { ...T2, t: "line", x1: x2 - P2(DASH_L / 2), y1: Y2(row2, DASH_Y), x2: x2 + P2(DASH_L / 2), y2: Y2(row2, DASH_Y), w: P2(DASH_W), cls: "jp-dash" });
+      const digit = (x2, s10) => put2(row2, { ...T2, t: "text", x: x2, y: Y2(row2, BASE_Y), s: s10, cls: u2.ghost ? "jp-digit ghost" : small ? "jp-digit art-ghost" : "jp-digit", size: Q2(small ? DIGIT_EM * 0.72 : DIGIT_EM), anchor: "middle" });
+      const dash = (x2) => put2(row2, { ...T2, t: "line", x1: x2 - Q2(DASH_L / 2), y1: Y2(row2, DASH_Y), x2: x2 + Q2(DASH_L / 2), y2: Y2(row2, DASH_Y), w: Q2(DASH_W), cls: "jp-dash" });
       const nUL = underlines(u2);
       if (u2.note && (u2.ghost || !u2.pitch)) {
         if (contDash2) for (let k2 = 0; k2 <= n10; k2++) dash(gx(k2));
@@ -13264,25 +13271,25 @@ function drawJianpu(c10, mine) {
           digit(cx2, "x");
           for (let k2 = 1; k2 <= n10; k2++) dash(gx(k2));
         }
-        if (u2.j === 0) notes.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: P2(DIGIT_W), d: NaN });
-        if (u2.j === 0 && !u2.tie) spots.push({ index: u2.index, sys: u2.system, row: row2, cx0: cx2, mx0: x0 - P2(0.6), mx1: x0 + P2(DIGIT_W) + P2(0.4), lyric: u2.lyric, tok, cls: "ghost", mute: !!q2.p.lyricMute?.has(tokens[u2.index]?.id ?? -1), hyph: !!tokens[u2.index]?.hyph });
+        if (u2.j === 0) notes.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: Q2(DIGIT_W), d: NaN });
+        if (u2.j === 0 && !u2.tie) spots.push({ index: u2.index, sys: u2.system, row: row2, cx0: cx2, mx0: x0 - Q2(0.6), mx1: x0 + Q2(DIGIT_W) + Q2(0.4), lyric: u2.lyric, tok, cls: "ghost", mute: !!q2.p.lyricMute?.has(tokens[u2.index]?.id ?? -1), hyph: !!tokens[u2.index]?.hyph });
       } else if (u2.note && u2.pitch) {
         const d3 = toDegree(u2.pitch, fifths), dots = d3.shift - base2;
         if (contDash2) for (let k2 = 0; k2 <= n10; k2++) dash(gx(k2));
         else {
           digit(cx2, String(d3.degree));
           for (let k2 = 1; k2 <= n10; k2++) dash(gx(k2));
-          if (u2.j === 0 && u2.acc !== null) put2(row2, { ...T2, t: "text", x: cx2 - P2(ACC_DX), y: Y2(row2, ACC_Y), s: accText(d3.acc), cls: "jp-acc", size: P2(ACC_EM), anchor: "middle" });
+          if (u2.j === 0 && u2.acc !== null) put2(row2, { ...T2, t: "text", x: cx2 - Q2(ACC_DX), y: Y2(row2, ACC_Y), s: accText(d3.acc), cls: "jp-acc", size: Q2(ACC_EM), anchor: "middle" });
           for (let k2 = 0; k2 < Math.abs(dots); k2++) {
             const yy = dots > 0 ? DIGIT_TOP - DOT_GAP - DOT_R - k2 * DOT_STEP : (nUL ? UL_Y0 + (nUL - 1) * UL_GAP : BASE_Y) + DOT_GAP + DOT_R + k2 * DOT_STEP;
-            put2(row2, { ...T2, t: "path", d: dotPath(cx2, Y2(row2, yy), P2(DOT_R)), cls: "jp-dot" });
+            put2(row2, { ...T2, t: "path", d: dotPath(cx2, Y2(row2, yy), Q2(DOT_R)), cls: "jp-dot" });
           }
         }
         if (!contDash2) {
           let top = dots > 0 ? DIGIT_TOP - DOT_GAP - DOT_R * 2 - (dots - 1) * DOT_STEP : DIGIT_TOP;
           for (const a10 of ["staccato", "tenuto"].filter((x2) => u2.art.includes(x2))) {
             const g3 = jpGlyph(a10);
-            put2(row2, { ...T2, t: "glyph", x: cx2 - P2(g3.w / 2), y: Y2(row2, top - 0.25), ch: g3.above, cls: artCls(a10) });
+            put2(row2, { ...T2, t: "glyph", x: cx2 - Q2(g3.w / 2), y: Y2(row2, top - 0.25), ch: g3.above, cls: artCls(a10), size: Q2(4) });
             top -= 0.25 + g3.h;
           }
           arcAt.set(u2, { row: row2, cx: cx2, top });
@@ -13290,32 +13297,32 @@ function drawJianpu(c10, mine) {
           if (strong.length) c10.attach(row2, "strength", () => {
             for (const a10 of strong) {
               const g3 = jpGlyph(a10), k2 = a10 === "stress" ? 0.72 : 1;
-              placeAbove(row2, 0.4, (y2) => c10.prims.push({ ...T2, t: "glyph", x: cx2 - P2(g3.w * k2 / 2), y: y2, ch: g3.above, cls: artCls(a10), ...k2 !== 1 ? { size: P2(4 * k2) } : {} }));
+              placeAbove(row2, 0.4 * jk, (y2) => c10.prims.push({ ...T2, t: "glyph", x: cx2 - Q2(g3.w * k2 / 2), y: y2, ch: g3.above, cls: artCls(a10), size: Q2(4 * k2) }));
             }
           });
           const swl = u2.j === 0 ? swellOf(tokens[u2.index]) : void 0, atk = ["sfz", "fp"].filter((x2) => u2.art.includes(x2));
           if (swl || atk.length) layNoteDynamics(orn, row2, u2, { cx: cx2, x0, w: P2(u2.w), tok, cls: void 0, ign, swl, atk });
-          if (u2.whisper) put2(row2, { ...T2, t: "text", x: cx2 + P2(DIGIT_W * 0.55), y: Y2(row2, DIGIT_TOP + 0.5), s: "\xD7", cls: artCls("whisper", "jp-acc whisper"), size: P2(ACC_EM), anchor: "start" });
+          if (u2.whisper) put2(row2, { ...T2, t: "text", x: cx2 + Q2(DIGIT_W * 0.55), y: Y2(row2, DIGIT_TOP + 0.5), s: "\xD7", cls: artCls("whisper", "jp-acc whisper"), size: Q2(ACC_EM), anchor: "start" });
           if (u2.art.includes("roll")) for (let k2 = 0; k2 < 3; k2++) {
             const yy = (nUL ? UL_Y0 + nUL * UL_GAP : BASE_Y) + 0.35 + (Math.min(0, dots) ? -dots * DOT_STEP + 0.2 : 0) + k2 * 0.28;
-            put2(row2, { ...T2, t: "line", x1: cx2 - P2(0.4), y1: Y2(row2, yy + 0.18), x2: cx2 + P2(0.4), y2: Y2(row2, yy - 0.18), w: P2(0.11), cls: artCls("roll", "jp-roll") });
+            put2(row2, { ...T2, t: "line", x1: cx2 - Q2(0.4), y1: Y2(row2, yy + 0.18), x2: cx2 + Q2(0.4), y2: Y2(row2, yy - 0.18), w: Q2(0.11), cls: artCls("roll", "jp-roll") });
           }
         }
-        if (u2.j === 0) notes.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: P2(DIGIT_W), d: NaN });
-        if (u2.j === 0 && !u2.tie) spots.push({ index: u2.index, sys: u2.system, row: row2, cx0: cx2, mx0: x0 - P2(0.6), mx1: x0 + P2(DIGIT_W) + P2(0.4), lyric: u2.lyric, tok, cls: void 0, mute: !!q2.p.lyricMute?.has(tokens[u2.index]?.id ?? -1), hyph: !!tokens[u2.index]?.hyph });
+        if (u2.j === 0) notes.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: Q2(DIGIT_W), d: NaN });
+        if (u2.j === 0 && !u2.tie) spots.push({ index: u2.index, sys: u2.system, row: row2, cx0: cx2, mx0: x0 - Q2(0.6), mx1: x0 + Q2(DIGIT_W) + Q2(0.4), lyric: u2.lyric, tok, cls: void 0, mute: !!q2.p.lyricMute?.has(tokens[u2.index]?.id ?? -1), hyph: !!tokens[u2.index]?.hyph });
       } else if (!u2.note) {
         for (let k2 = 0; k2 <= n10; k2++) digit(gx(k2), "0");
-        if (u2.j === 0 && u2.index >= 0) rests.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: P2(DIGIT_W) });
+        if (u2.j === 0 && u2.index >= 0) rests.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: Q2(DIGIT_W) });
       }
-      if (hasAugDot(u2)) put2(row2, { ...T2, t: "path", d: dotPath(gx(n10) + P2(DIGIT_W / 2 + AUG_DX + AUG_R), Y2(row2, BASE_Y - 0.55), P2(AUG_R)), cls: "jp-dot" });
+      if (hasAugDot(u2)) put2(row2, { ...T2, t: "path", d: dotPath(gx(n10) + Q2(DIGIT_W / 2 + AUG_DX + AUG_R), Y2(row2, BASE_Y - 0.55), Q2(AUG_R)), cls: "jp-dot" });
       if (u2.note && u2.breath) {
-        const bx = gx(n10) + P2(DIGIT_W / 2 + (hasAugDot(u2) ? AUG_DX + 2 * AUG_R : 0) + 0.35);
-        put2(row2, { ...T2, t: "text", x: bx, y: Y2(row2, DIGIT_TOP + 0.35), s: "V", cls: artCls("breath", "jp-acc breath"), size: P2(ACC_EM), anchor: "start" });
-        if (u2.inhale) put2(row2, { ...T2, t: "text", x: bx + P2(1), y: Y2(row2, DIGIT_TOP + 0.35), s: u2.inhale === "big" ? _tIn(o10.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o10.locale, "\u5438##\u8BB0\u53F7"), cls: artCls("inhale", "breath-label"), size: tx2("breath-label"), anchor: "start" });
+        const bx = gx(n10) + Q2(DIGIT_W / 2 + (hasAugDot(u2) ? AUG_DX + 2 * AUG_R : 0) + 0.35);
+        put2(row2, { ...T2, t: "text", x: bx, y: Y2(row2, DIGIT_TOP + 0.35), s: "V", cls: artCls("breath", "jp-acc breath"), size: Q2(ACC_EM), anchor: "start" });
+        if (u2.inhale) put2(row2, { ...T2, t: "text", x: bx + Q2(1), y: Y2(row2, DIGIT_TOP + 0.35), s: u2.inhale === "big" ? _tIn(o10.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o10.locale, "\u5438##\u8BB0\u53F7"), cls: artCls("inhale", "breath-label"), size: tx2("breath-label"), anchor: "start" });
       }
       if (nUL) {
         const bar0 = u2.tick - u2.inBar;
-        ul2.push({ row: row2, x0: x0 - P2(0.05), x1: x0 + P2(DIGIT_W + 0.05) + (hasAugDot(u2) ? P2(AUG_DX + 2 * AUG_R) : 0), level: nUL, group: `${u2.system}|${bar0}|${Math.floor((u2.inBar + 1e-6) / u2.beat)}`, tok });
+        ul2.push({ row: row2, x0: x0 - Q2(0.05), x1: x0 + Q2(DIGIT_W + 0.05) + (hasAugDot(u2) ? Q2(AUG_DX + 2 * AUG_R) : 0), level: nUL, group: `${u2.system}|${bar0}|${Math.floor((u2.inBar + 1e-6) / u2.beat)}`, tok });
       }
     }
     const maxL = Math.max(0, ...ul2.map((e10) => e10.level));
@@ -13329,19 +13336,19 @@ function drawJianpu(c10, mine) {
         let j2 = i10;
         while (j2 + 1 < ul2.length && ul2[j2 + 1].level >= L2 && ul2[j2 + 1].group === ul2[i10].group) j2++;
         const a10 = ul2[i10], b3 = ul2[j2], y2 = Y2(a10.row, UL_Y0 + (L2 - 1) * UL_GAP);
-        put2(a10.row, { ...i10 === j2 && a10.tok !== void 0 ? { tok: a10.tok } : {}, t: "line", x1: a10.x0, y1: y2, x2: b3.x1, y2, w: P2(UL_W), cls: "jp-ul" });
+        put2(a10.row, { ...i10 === j2 && a10.tok !== void 0 ? { tok: a10.tok } : {}, t: "line", x1: a10.x0, y1: y2, x2: b3.x1, y2, w: Q2(UL_W), cls: "jp-ul" });
         i10 = j2 + 1;
       }
     }
     const arc = (a10, b3, cls, lift) => {
       const seg = (row2, x1, x2, top) => {
-        const y2 = Y2(row2, top - lift), len = Math.abs(x2 - x1), h2 = Math.min(len * 0.25, Math.max(P2(0.4), Math.min(P2(1.2), len * 0.12)));
+        const y2 = Y2(row2, top - lift), len = Math.abs(x2 - x1), h2 = Math.min(len * 0.25, Math.max(Q2(0.4), Math.min(Q2(1.2), len * 0.12)));
         put2(row2, { t: "path", d: `M${x1},${y2}Q${(x1 + x2) / 2},${y2 - h2} ${x2},${y2}`, cls });
       };
-      if (a10.row === b3.row) seg(a10.row, a10.cx + P2(0.3), b3.cx - P2(0.3), Math.min(a10.top, b3.top));
+      if (a10.row === b3.row) seg(a10.row, a10.cx + Q2(0.3), b3.cx - Q2(0.3), Math.min(a10.top, b3.top));
       else {
-        seg(a10.row, a10.cx + P2(0.3), P2(c10.right) - P2(0.2), a10.top);
-        seg(b3.row, b3.cx - P2(2.4), b3.cx - P2(0.3), b3.top);
+        seg(a10.row, a10.cx + Q2(0.3), P2(c10.right) - Q2(0.2), a10.top);
+        seg(b3.row, b3.cx - Q2(2.4), b3.cx - Q2(0.3), b3.top);
       }
     };
     const chunks2 = units.filter((v) => v.kind === "chunk" && v.note && !v.pad && arcAt.has(v));
@@ -13361,10 +13368,10 @@ function drawJianpu(c10, mine) {
       let run2 = [], acc = 0, minBase = Infinity;
       const flush2 = () => {
         if (run2.length && run2[0].ratio) {
-          const first = run2[0], last = run2[run2.length - 1], row2 = rowOf(first.system, r10, 0), x1 = P2(first.x + 0.1), x2 = last.system === first.system ? P2(last.x + 0.1 + DIGIT_W) : P2(c10.right), mid = (x1 + x2) / 2;
+          const first = run2[0], last = run2[run2.length - 1], row2 = rowOf(first.system, r10, 0), x1 = P2(first.x) + Q2(0.1), x2 = last.system === first.system ? P2(last.x) + Q2(0.1 + DIGIT_W) : P2(c10.right), mid = (x1 + x2) / 2;
           const top = Math.min(...run2.map((v) => arcAt.get(v)?.top ?? DIGIT_TOP)) - 0.35, num2 = String(first.ratio[0]);
-          put2(row2, { t: "text", x: mid, y: Y2(row2, top), s: num2, cls: "tuplet jp-tuplet", size: P2(1.1), anchor: "middle" });
-          if (!run2.some((v) => underlines(v))) put2(row2, { t: "path", d: `M${x1},${Y2(row2, top - 0.1)}L${x1},${Y2(row2, top - 0.45)}L${mid - P2(0.45)},${Y2(row2, top - 0.45)}M${mid + P2(0.45)},${Y2(row2, top - 0.45)}L${x2},${Y2(row2, top - 0.45)}L${x2},${Y2(row2, top - 0.1)}`, cls: "tuplet-bracket" });
+          put2(row2, { t: "text", x: mid, y: Y2(row2, top), s: num2, cls: "tuplet jp-tuplet", size: Q2(1.1), anchor: "middle" });
+          if (!run2.some((v) => underlines(v))) put2(row2, { t: "path", d: `M${x1},${Y2(row2, top - 0.1)}L${x1},${Y2(row2, top - 0.45)}L${mid - Q2(0.45)},${Y2(row2, top - 0.45)}M${mid + Q2(0.45)},${Y2(row2, top - 0.45)}L${x2},${Y2(row2, top - 0.45)}L${x2},${Y2(row2, top - 0.1)}`, cls: "tuplet-bracket" });
         }
         run2 = [];
         acc = 0;
@@ -13388,18 +13395,22 @@ function drawJianpu(c10, mine) {
     const inkL = measured[r10].inkL;
     caretStops(q2, { cx: (u2) => {
       const k2 = u2.kind === "chunk" ? inkL.get(u2) : void 0;
-      return P2(u2.x - (k2 ? k2 + 0.2 : 0));
+      return P2(u2.x) - (k2 ? P2(k2) + Q2(0.2) : 0);
     }, shiftAt: () => Array.from({ length: q2.staves }, () => 0), rowOf: (sy2, k2) => rowOf(sy2, r10, k2), P: P2, sysStart0: sysStarts[0], cols, slots, heads });
   }
   return { lyricParts };
 }
 
 // src/render/jianpu/geometry.ts
-var jianpuCaretSpan = (row2, half2) => ({ y1: row2.staffTop + CARET_Y0 * 2 * half2, y2: row2.staffTop + CARET_Y1 * 2 * half2 });
-var jianpuPreviewAt = (row2, x2, half2) => ({ x: x2 + (0.1 + DIGIT_W / 2) * 2 * half2, y: row2.staffTop + BASE_Y * 2 * half2, size: DIGIT_EM * 2 * half2 });
-var jianpuBandTop = (row2, half2) => row2.staffTop + CARET_Y0 * 2 * half2;
+var unitOf = (row2, half2) => 2 * half2 * (row2.scale ?? 1);
+var jianpuCaretSpan = (row2, half2) => ({ y1: row2.staffTop + CARET_Y0 * unitOf(row2, half2), y2: row2.staffTop + CARET_Y1 * unitOf(row2, half2) });
+var jianpuPreviewAt = (row2, x2, half2) => {
+  const u2 = unitOf(row2, half2);
+  return { x: x2 + (0.1 + DIGIT_W / 2) * u2, y: row2.staffTop + BASE_Y * u2, size: DIGIT_EM * u2 };
+};
+var jianpuBandTop = (row2, half2) => row2.staffTop + CARET_Y0 * unitOf(row2, half2);
 function jianpuGhost(row2, x2, notes, half2) {
-  const sp2 = 2 * half2, pv2 = jianpuPreviewAt(row2, x2, half2), face = TEXT_FACES[TEXT_STYLES["jp-digit"].face], parts = [];
+  const sp2 = unitOf(row2, half2), pv2 = jianpuPreviewAt(row2, x2, half2), face = TEXT_FACES[TEXT_STYLES["jp-digit"].face], parts = [];
   notes.forEach((n10, k2) => {
     const d3 = toDegree(n10.p, n10.fifths), dots = d3.shift - (row2.octBase ?? 0), dy = -k2 * 2.4 * sp2, Y2 = (v) => row2.staffTop + v * sp2 + dy;
     parts.push(`<text x="${pv2.x}" y="${pv2.y + dy}" font-family='${face}' font-size="${pv2.size}" text-anchor="middle">${d3.degree}</text>`);
@@ -13649,8 +13660,8 @@ function engrave(song, o10) {
   const rowTop = /* @__PURE__ */ new Map();
   const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map();
   const staffTop = (r10) => rowTop.get(r10) + P2(rowAbove.get(r10) ?? 0);
-  const anc = (r10) => DRAWERS[rows[r10].kind].anchors(staffTop(r10), P2(0.5));
-  const body2 = (r10) => DRAWERS[rows[r10].kind].anchors(0, 0.5);
+  const anc = (r10) => DRAWERS[rows[r10].kind].anchors(staffTop(r10), P2(0.5) * rowPar(r10).scale);
+  const body2 = (r10) => DRAWERS[rows[r10].kind].anchors(0, 0.5 * rowPar(r10).scale);
   const rowPar = (r10) => ROW_PARAMS[rows[r10].kind][density];
   const lyricY = (r10) => anc(r10).bottom + P2(lyricOff.get(r10) ?? rowPar(r10).lyricBelow);
   const showPaperLine = song.papers.length > 1 || song.papers.some((p2) => p2.name);
@@ -13740,7 +13751,8 @@ function engrave(song, o10) {
     });
     const pmode = per0.map((q2) => q2.pmode);
     const hasV2 = per0.map((q2) => q2.hasV2);
-    const measured = per0.map((q2, i10) => DRAWERS[kinds[i10]].measure(q2));
+    const kScale = (k2) => ROW_PARAMS[k2][density].scale;
+    const measured = per0.map((q2, i10) => DRAWERS[kinds[i10]].measure(q2, kScale(kinds[i10])));
     const atracks = per0.map((_q, pi) => ({ entries: measured[pi].entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));
     const merged = mergeColumns(atracks), n10 = merged.length;
     const FAM_W = openFams.length ? (o10.chrome?.famGap ?? 0) * ts2 : 0;
@@ -13758,7 +13770,7 @@ function engrave(song, o10) {
     }
     const headAt = (k2, first) => {
       const keys = keyAtCol[k2], base2 = (first ? ind0 : indN) + MARGIN;
-      return Math.max(...per0.map((q2, i10) => DRAWERS[kinds[i10]].lineStart(q2, keys.get(q2.p.id), first, base2)));
+      return Math.max(...per0.map((q2, i10) => DRAWERS[kinds[i10]].lineStart(q2, keys.get(q2.p.id), first, base2, kScale(kinds[i10]))));
     };
     const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
     const ar2 = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o10.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, endPad: BAR_W, lineStart: headAt });
@@ -13791,7 +13803,7 @@ function engrave(song, o10) {
     if (songLook.lyricFit === "rhythm") per.forEach((q2, r10) => {
       if (!lyricsOf[r10]) return;
       const bySys = /* @__PURE__ */ new Map();
-      for (const u2 of DRAWERS[kinds[r10]].lyricAnchors(q2)) {
+      for (const u2 of DRAWERS[kinds[r10]].lyricAnchors(q2, kScale(kinds[r10]))) {
         const arr = bySys.get(u2.system) ?? [];
         bySys.set(u2.system, arr);
         arr.push({ index: u2.index, cx: u2.cx, w: lyrUnit(lyricShow(u2.lyric)), hy: u2.hyph, block: isBlockScript(u2.lyric) && [...lyricShow(u2.lyric)].length <= 1 });
@@ -13813,7 +13825,7 @@ function engrave(song, o10) {
       const row2 = rowOf(s10, r10, k2);
       rowTop.set(row2, 0);
       rowAbove.set(row2, 0);
-      rows[row2] = { top: 0, staffTop: 0, bottom: 0, paper: paper.id, part: parts[r10].id, sys: s10, staff: k2 + 1, inkTop: 0, inkBottom: 0, kind: kinds[r10] };
+      rows[row2] = { top: 0, staffTop: 0, bottom: 0, paper: paper.id, part: parts[r10].id, sys: s10, staff: k2 + 1, inkTop: 0, inkBottom: 0, kind: kinds[r10], ...kScale(kinds[r10]) !== 1 ? { scale: kScale(kinds[r10]) } : {} };
       skies[row2 - rowBase] = new Skyline(right + MARGIN + 8);
       if (per[r10].vrt) sharedRows.push(row2);
     }
@@ -14007,6 +14019,7 @@ function engrave(song, o10) {
       };
       return {
         ...drawCtx,
+        scale: kScale(who),
         put: (row2, p2) => {
           chk(row2);
           put2(row2, p2);
@@ -32444,7 +32457,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-3311175e50c3.mjs");
+      return pick(() => "layout-worker-3b1ec3d9b4b1.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-3e7ec2187a35.mjs");
   }
@@ -62079,4 +62092,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-62783461c39b.mjs.map
+//# sourceMappingURL=moonsinger-cb6c1673a6d3.mjs.map

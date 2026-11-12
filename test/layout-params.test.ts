@@ -9,6 +9,7 @@ import { engrave } from "../src/render/engrave.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 import { initState, TPQ, type Song, type Token } from "../src/score/song.ts";
 import { setNotation } from "../src/score/song-view.ts";
+import { paperOf, lineSp, pageGeoOf, spMm, textScaleOf } from "../src/score/paper.ts";
 
 /** 一条轨：n 个小节，每小节 4 个四分音符（列条目：音 = 弹簧，小节线 = 固定宽）。 */
 function track(bars: number): ArrangeTrack<null> {
@@ -44,7 +45,7 @@ describe("排版参数表", () => {
     assert(jp.top > 0 && jp.bottom < 4 && jp.bottom > jp.top, "数字行有自己的行身");
     // 一首没有歌词、没有记号的长歌，切成简谱：中间那几行（谱头不在、墨在最小值里）的行高 = 数字行的「没歌词」最小行高
     const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
-    let id = 1000; const body = Array.from({ length: 64 }, (_, i) => ({ kind: "note", pitch: { step: "CDEFGAB"[i % 7] as "C", alter: 0, octave: 4 }, dur: TPQ, lyric: null, id: id++ }) as Token);
+    let id = 1000; const body = Array.from({ length: 128 }, (_, i) => ({ kind: "note", pitch: { step: "CDEFGAB"[i % 7] as "C", alter: 0, octave: 4 }, dur: TPQ, lyric: null, id: id++ }) as Token);
     const sp = 10, heights = (barNumbers?: "off") => {
       let s: Song = { ...st0.song, ...(barNumbers ? { barNumbers } : {}), papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...paper.tracks[part]!, ...body] } }] };
       s = setNotation({ ...st0, song: s }, "jianpu").song;
@@ -55,5 +56,29 @@ describe("排版参数表", () => {
     };
     for (const h of heights("off")) eq(h, ROW_PARAMS.jianpu.cozy.rowHNoLyric, "不印小节号：数字行的行高 = 最小值");
     for (const h of heights()) assert(h <= ROW_PARAMS.jianpu.cozy.rowHNoLyric + 1, `印小节号：最多高一格（${h}）——小节号贴着行身，不按五线谱躲符干的 2.4`);
+  });
+  // 验收按拍子算（统筹看第四刀成品样张后定的第 3 处，user「字有点大……有点太舒适了」）：A5 舒适档，四拍子、四分和八分为主的单声部旋律一行约 6 小节（约 24 个四分音符）；三拍子约 8 小节
+  const melody = (beats: number, bars: number, paperKind: "A5" | "A6", compact = false) => {
+    const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
+    const head = paper.tracks[part]!.map((t) => (t.kind === "time" ? { ...t, beats, beatType: 4 } : t));
+    let id = 5000, k = 0; const body: Token[] = [];
+    for (let b = 0; b < bars; b++) for (const d of beats === 4 ? (b % 2 ? [1, 0.5, 0.5, 1, 1] : [1, 1, 0.5, 0.5, 1]) : (b % 2 ? [1, 0.5, 0.5, 1] : [1, 1, 1])) body.push({ kind: "note", id: id++, pitch: { step: "CDEFGAB"[k++ % 7] as "C", alter: 0, octave: 4 }, dur: TPQ * d, lyric: null } as Token);
+    const pp = { ...paperOf(paperKind), ...(compact ? { density: "compact" as const } : {}) };
+    let s: Song = { ...st0.song, paper: pp, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...head, ...body] } }] };
+    s = setNotation({ ...st0, song: s }, "jianpu").song;
+    const sp = 10, ts = textScaleOf(pp), L = engrave(s, { width: lineSp(pp) * sp, sp, locale: "zh", ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: paper.id, part }, parts: [{ id: part, name: "Vocals", first: true }], measure: createTextMeasure((x: string, px: number) => [...x].length * 0.55 * px), autoBars: true, page: pageGeoOf(pp) });
+    const by = new Map<number, number>(); for (const b of L.bars) by.set(b.system, (by.get(b.system) ?? 0) + 1);
+    const digitMm = (L.prims.find((p) => /jp-digit/.test(p.cls ?? "")) as { size: number }).size / sp * spMm(pp);
+    return { perRow: L.systems.map((_, i) => by.get(i) ?? 0).slice(0, -1), digitMm };
+  };
+  it("密度按拍子算：A5 舒适档四拍子一行约 6 小节、三拍子约 8 小节（最后一行不算）", () => {
+    const four = melody(4, 32, "A5"), three = melody(3, 32, "A5");
+    assert(four.perRow.length >= 3 && four.perRow.every((n) => n >= 5 && n <= 7), `四拍子每行 ${four.perRow.join(" ")}`);
+    assert(three.perRow.length >= 3 && three.perRow.every((n) => n >= 7 && n <= 9), `三拍子每行 ${three.perRow.join(" ")}`);
+  });
+  it("数字字号：舒适 3.6 mm、紧凑约 3.0 mm，不跟着纸变（A5、A6 同一档一样大）", () => {
+    eq(Math.round(melody(4, 4, "A5").digitMm * 100) / 100, 3.6, "舒适 A5");
+    eq(Math.round(melody(4, 4, "A6").digitMm * 100) / 100, 3.6, "舒适 A6");
+    eq(Math.round(melody(4, 4, "A5", true).digitMm * 100) / 100, 3, "紧凑 A5");
   });
 });

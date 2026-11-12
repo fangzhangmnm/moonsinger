@@ -71,7 +71,8 @@ describe("简谱数字行", () => {
     assert(glyphs.some((g) => g.ch === "\u{E4A4}"), "保持 = 短横（E4A4）");
     const acc = glyphs.filter((g) => g.ch === "\u{E4A0}");
     eq(acc.length, 2, "重音、次重音都是 >");
-    assert(acc.some((g) => g.size !== undefined) && acc.some((g) => g.size === undefined), "次重音细一号（字号小）");
+    const sz = acc.map((g) => g.size ?? 40).sort((a, b) => a - b);
+    assert(sz[0]! < sz[1]!, "次重音细一号（字号小）");
     const ds = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? ""));
     const gh = ds.find((p) => /art-ghost/.test(p.cls ?? ""));
     assert(gh !== undefined && gh.size! < ds.find((p) => !/ghost/.test(p.cls ?? ""))!.size! && !/(^|\s)ghost(\s|$)/.test(gh.cls ?? ""), "幽灵音 = 数字小一号（不是灰的：灰 = 没写音高）");
@@ -120,7 +121,7 @@ describe("简谱数字行", () => {
     eq([digit(g(P("A", 3), null)), dots(g(P("A", 3), null))].join(","), "6,1", "低八度的 6：一个点");
     assert(g(P("F", 4, 1), 1).includes("♯") && digit(g(P("F", 4, 1), 1)) === "4", "♯4：画升号（shown 不是 null）");
     assert(!g(P("F", 4, 1), null).includes("♯"), "shown = null 不画升降（同排版的规矩）");
-    const cs = GEOMETRY.jianpu.caretSpan(row, 5), a = DRAWERS.jianpu.anchors(row.staffTop, 5);
+    const cs = GEOMETRY.jianpu.caretSpan(row, 5), a = DRAWERS.jianpu.anchors(row.staffTop, 5 * (row.scale ?? 1));   // 行身按这一行的尺寸比例取（第五刀 5-0c）
     assert(cs.y1 < a.top + 1e-6 && cs.y2 > a.bottom - 1e-6, "光标盖住行身");
   });
   it("弧线：延音线（数据里的 tie）、圆滑线（一串连着的一条）；连音 = 组上方一个小数字；反复小节线带点", () => {

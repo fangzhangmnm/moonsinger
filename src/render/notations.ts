@@ -26,11 +26,11 @@ export interface LyricAnchor { index: number; system: number; cx: number; lyric:
 export interface RowDrawer {
   readonly kind: RowKind;
   /** 量（第 3 步）：一条轨 → 列条目 + 每个音的墨往对齐线左边伸多远（光标画在它左边）。纯函数，只看这一条轨。 */
-  measure(q: Track): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> };
+  measure(q: Track, scale: number): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> };
   /** 行首多宽（sp）：base = 框架给的缩进 + 边距；key = 这一行开头生效的调号；first = 这张纸第一行。 */
-  lineStart(q: Track, key: number, first: boolean, base: number): number;
+  lineStart(q: Track, key: number, first: boolean, base: number, scale: number): number;
   /** 歌词让路要的锚点（字的中心）。 */
-  lyricAnchors(q: Track): LyricAnchor[];
+  lyricAnchors(q: Track, scale: number): LyricAnchor[];   // scale = 行里的尺寸比例（排版参数表行一级；五线谱 = 1、不用）
   /** 画（第 5 步）：mine = 这种行的那几条轨在 per 里的下标。交回歌词锚点（字归框架）；挂件往道上登记（attach）。 */
   draw(c: RowDrawCtx, mine: readonly number[]): { lyricParts: LyricPart[] };
   /** 贴挂件的先后（道名 = frame/lanes.ts；框架把各种的并起来按先后贴）。 */
