@@ -11,7 +11,7 @@ import { GLYPH, W, ENGRAVE, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SMUFL } fr
 import { layoutStems } from "../stems.ts";
 import { GLYPH_BOX } from "../glyph-box.gen.ts";
 import { keyText } from "../../score/pitch.ts";
-import { harmonyTheory, type PlacedTag } from "../../theory/index.ts";
+import { harmonyTheory, type PlacedTag, type ChordFold } from "../../theory/index.ts";
 import { baseClef } from "../../score/clef.ts";
 import { MARGIN } from "../frame/params.ts";
 import { TOP_LINE, MID_LINE, BOTTOM_LINE, ART_GLYPH, GLYPH_BREATH, SHARP_POS, FLAT_POS, GLYPH_TUPLET } from "./glyphs.ts";
@@ -42,6 +42,8 @@ export interface StaffDrawCtx {
   keyHints: Layout["keyHints"]; chordTagsOut: Layout["chordTags"]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
   /** 和弦级数（预处理，theory/families.ts）：每一位身上要标的那几处（合租的一家合起来认、标在这一家最下面那一行）；不标 = null。第五刀 5-4。 */
   harmony: ReadonlyMap<string, readonly PlacedTag[]> | null;
+  /** 每条轨的预处理（下标同 per；框架交给所有画法，五线谱现在用不上：叠着的和弦折成和弦名只在数字行上画，第五刀 5-4）。 */
+  aux: readonly { folds?: ReadonlyMap<number, ChordFold> }[];
   /** 纵向：第 r 行的原点（第五线）；歌词基线；（第 s 行、第 r 个声部、第 k 张谱表）→ 行号。第几级 ↔ y 由画法自己算（geometry.ts yAt；第四刀起框架不递 yOf）。 */
   staffTop: (r: number) => number; lyricY: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
   /** 挂件：贴在谱上方 / 下方（天际线）；attach = 往某一道上登记一件（框架按 STAFF_LANES 的先后执行）。 */

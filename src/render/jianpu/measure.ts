@@ -9,7 +9,8 @@ import { SLOT, type ColumnKind } from "../frame/columns.ts";
 import type { ColEntry } from "../frame/arrange.ts";
 import type { PartView } from "../engrave.ts";
 import type { Unit, Chunk, Head } from "../frame/units.ts";
-import { DIGIT_W, ACC_W, ARP_W, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
+import type { ChordFold } from "../../theory/index.ts";
+import { DIGIT_W, ACC_W, ARP_W, chordNameW, CHORD_AMB_W, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
 
 /** 一条要排的简谱轨（一个声部在这张纸上；框架交来的单元已经切好了时值）。 */
 export interface JianpuTrack {
@@ -37,6 +38,12 @@ export function hasAugDot(u: Chunk): boolean {
 }
 /** 数字行的两种写法：digits = 数字（有音高的声部）；x = 鼓的 X 行（音画成 X，没有升降号 / 八度点 / 琶音；UX 稿第 7 节，第五刀 5-4）。 */
 export type JianpuMode = "digits" | "x";
+/** 框架交来的这一条轨的预处理里数字行用得上的：叠着的和弦折成的和弦名（token 下标 → 折法；这条轨的和弦选项是「折叠」才有；第五刀 5-4）。 */
+export interface JianpuAux { folds?: ReadonlyMap<number, ChordFold> }
+/** 这一段画成和弦名吗（接着上一段、画成横线的那一段不算：第一个字形是横线）：是 = 折法。 */
+export const foldOf = (u: Chunk, aux: JianpuAux | undefined): ChordFold | undefined => (u.note && u.pitch && !contDash(u) ? aux?.folds?.get(u.index) : undefined);
+/** 这一段第一个字形（数字 / 和弦名）多宽（sp，数字原大起）。 */
+export const glyphWOf = (u: Chunk, aux: JianpuAux | undefined): number => { const f = foldOf(u, aux); return f ? chordNameW(f.name) : DIGIT_W; };
 /** 这一段要写临时记号的那几个音（叠音 = 每个音各自的；单音 = 它自己的）：只有第一段写（同五线谱）。 */
 export const accsOf = (u: Chunk): (number | null)[] => (u.j !== 0 || !u.note ? [] : u.pitches.length > 1 ? u.accs : [u.acc]);
 /** 这一段画不画琶音的竖波浪（只挂在和弦上：单音的琶音核心那边已经去掉了）。 */
@@ -60,17 +67,18 @@ function unitW(u: Unit): number {
 
 /** 量（设计稿第 3.3 节第 3 步）：这条轨的每个排版单元 → 一个列条目。道号：数字那一道 = 0、歌词那一道 = 1（框架加上这条轨的道基数）。
  *  inkL = 这个音的墨往对齐线左边伸多远（sp；升降号）：光标画在它左边。k = 行里的尺寸比例（排版参数表行一级；数字行自己的宽都乘它，第五刀 5-0c）。 */
-export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits"): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> } {
+export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits", aux?: JianpuAux): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> } {
   const inkL = new Map<Chunk, number>();
   const spItems = (u: Chunk): SpItem[] => {
     if (u.pad) return [];   // 补齐的淡色小节不画、不参加间距（同五线谱）
-    const n = extraGlyphs(u), acc = mode === "digits" && accsOf(u).some((a) => a !== null);   // 和弦：哪个音要写升降号，这一列就往左让出升降号的地方（和弦竖叠，宽不变）
+    const fd = mode === "digits" ? foldOf(u, aux) : undefined, gw = fd ? chordNameW(fd.name) + (fd.ambiguous ? CHORD_AMB_W : 0) : DIGIT_W;   // 折成和弦名 = 按名字的宽占位（UX 稿第 7 节；有歧义的小三角也让出来），不写升降号
+    const n = extraGlyphs(u), acc = mode === "digits" && !fd && accsOf(u).some((a) => a !== null);   // 和弦：哪个音要写升降号，这一列就往左让出升降号的地方（和弦竖叠，宽不变）
     const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;   // 换气的 V（+「吸 / 深吸」）画在音后面：留出来，不压下一个音
     //   左边挂的东西（升降号、琶音）= 这个音往左的最小占地：前面有空就不挪，会撞上前一个音 / 小节线才推这一个音（UX 稿第 7 节；间距那一套本来就这样顶）
-    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = (0.1 + DIGIT_W + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k;
+    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = (0.1 + gw + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k;
     inkL.set(u, Math.max(0, left));
     const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks }];
-    const cx = (0.1 + DIGIT_W / 2) * k;
+    const cx = (0.1 + gw / 2) * k;
     if (u.lyW !== undefined) out.push({ row: 1, left: u.lyW / 2 - cx, right: cx + u.lyW / 2 + 0.4 + (u.hyph ? 0.7 : 0) });   // 按歌词排：字和字之间不撞（同一套顶杆）
     return out;
   };
@@ -80,5 +88,5 @@ export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits"
 /** 行首多宽（sp）：base = 框架给的（名字一栏的缩进 + 边距）；数字行行首不画谱号 / 调号（谱头「1=C 4/4」写在第一行上方），只留一点空。 */
 export const jianpuLineStart = (_q: JianpuTrack, _key: number, _first: boolean, base: number, k = 1): number => base + 0.6 * k;
 /** 歌词锚点：每个带字的音在第几行、字的中心在哪（sp：数字的中心）。拖腔线不算。 */
-export const jianpuLyricAnchors = (q: JianpuTrack, k = 1): { index: number; system: number; cx: number; lyric: string; hyph: boolean }[] =>
-  q.units.filter((u): u is Chunk => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + (0.1 + DIGIT_W / 2) * k, lyric: u.lyric!, hyph: u.hyph }));
+export const jianpuLyricAnchors = (q: JianpuTrack, k = 1, aux?: JianpuAux): { index: number; system: number; cx: number; lyric: string; hyph: boolean }[] =>
+  q.units.filter((u): u is Chunk => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + (0.1 + glyphWOf(u, aux) / 2) * k, lyric: u.lyric!, hyph: u.hyph }));

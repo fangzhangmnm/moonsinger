@@ -33,6 +33,16 @@ export function stackBases(dots: readonly number[]): number[] {
 }
 /** 鼓的 X 行：大写 X 比数字宽，字号按这个比例收到和数字一样宽（不然十六分的一串 X 挨在一起）；幽灵音的小 x 照数字的小号。 */
 export const X_EM = 0.86;
+/** 叠着的和弦折成的和弦名（第五刀 5-4，UX 稿第 7 节「和弦名用窄字、按实际宽度占位」）：字号（sp，数字原大起）、横向压到几成；每个字占多宽（em，写死的表，不现场量；
+ *  表里没有的数字 0.56、别的 0.6）。名字的高（基线往上）。 */
+export const CHORD_EM = 2.0, CHORD_SX = 0.82, CHORD_H = 1.45;
+const CHORD_CH_EM: Readonly<Record<string, number>> = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.7, m: 0.86, a: 0.55, j: 0.26, d: 0.58, i: 0.25, u: 0.57, g: 0.58, s: 0.48, "/": 0.36, "♭": 0.5, "♯": 0.58, "°": 0.4, ø: 0.6, "(": 0.32, ")": 0.32, "+": 0.6 };
+/** 这个和弦名在数字行上占多宽（sp，数字原大起；乘行里的比例才是这一行的）。 */
+export const chordNameW = (s: string): number => [...s].reduce((w, ch) => w + (CHORD_CH_EM[ch] ?? (/[0-9]/.test(ch) ? 0.56 : 0.6)), 0) * CHORD_EM * CHORD_SX;
+/** 有歧义的小三角（名字右下角，编辑器里）占多宽（sp，数字原大起；量的时候也让出来，不然挨着下一个名字）。 */
+export const CHORD_AMB_W = 0.55;
+/** 最低音那个字母的中心离名字左边多远（sp，数字原大起）：有斜杠 = 斜杠后面那个字母（转位的最低音），没有 = 第一个字母（根音就是最低音）。八度点标在它上下。 */
+export const chordBassCx = (s: string): number => { const cs = [...s], i = cs.indexOf("/") + 1; return chordNameW(cs.slice(0, i).join("")) + chordNameW(cs[i] ?? "") / 2; };
 /** 光标在数字行上从哪画到哪（局部 y）。 */
 export const CARET_Y0 = 0.6, CARET_Y1 = 3.9;
 

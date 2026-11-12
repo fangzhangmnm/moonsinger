@@ -818,7 +818,8 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 
 /* 叠音（polyphony，2026-10-08）：单声乐器的声部里下面的音灰掉 */
 .staff-svg .note.chord-mute { fill: var(--muted); stroke: var(--muted); }
-.staff-svg .jp-digit.chord-mute, .staff-svg .jp-acc.chord-mute, .staff-svg .jp-dot.chord-mute { fill: var(--muted); }   /* 简谱：单声乐器的声部里叠着的下面那几个音（同五线谱，第五刀 5-4） */
+.staff-svg .jp-digit.chord-mute, .staff-svg .jp-acc.chord-mute, .staff-svg .jp-dot.chord-mute { fill: var(--muted); }
+.staff-svg path.jp-chord-amb { fill: var(--muted); }   /* 简谱：折成的和弦名还有别的名字也还原得回 = 右下角小三角（编辑器里，点它 = 候选；第五刀 5-4） */   /* 简谱：单声乐器的声部里叠着的下面那几个音（同五线谱，第五刀 5-4） */
 .staff-svg .art-mute { fill: var(--muted); opacity: .5; }   /* 台上那位不认的记号：照画、画灰（出声不受影响；写的时候会说一声） */
 .staff-svg .ottava.off { fill: var(--muted); opacity: .5; }   /* 大谱表上手写的八度线：现在不起作用（音不挪）——画灰、不印（ann），点开说明（谱面分家第五刀 5-3；真做 = 愿望单 W-73） */
 .staff-svg line.ottava-line.off { stroke: var(--muted); opacity: .5; }

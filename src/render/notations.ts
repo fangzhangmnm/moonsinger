@@ -11,6 +11,7 @@ import { measureJianpu, jianpuLineStart, jianpuLyricAnchors, drawJianpu, JIANPU_
 import type { SystemBox } from "./engrave.ts";
 import type { GhostNote } from "./frame/ghost.ts";
 export type { GhostNote } from "./frame/ghost.ts";
+import type { ChordFold } from "../theory/index.ts";
 import type { FoldFamily } from "./staff/index.ts";
 export type { FoldFamily, StaffTrack, StaffDrawCtx, Unit, Chunk } from "./staff/index.ts";
 
@@ -21,16 +22,18 @@ export type Track = StaffTrack;
 /** 框架交给画法的（两种画法共用一个对象；数字行只用其中一部分）。 */
 export type RowDrawCtx = StaffDrawCtx;
 export interface LyricAnchor { index: number; system: number; cx: number; lyric: string; hyph: boolean }
+/** 框架交给画法的这一条轨的预处理（和谱种无关，画法用得上就用）：folds = 叠着的和弦折成的和弦名（这条轨的和弦选项是「折叠」时才有；token 下标 → 折法；第五刀 5-4）。 */
+export interface TrackAux { folds?: ReadonlyMap<number, ChordFold> }
 
 /** 一种行的画法（设计稿第 7 节提案里的 RowDrawer，按两个真的实现收成这个形状）。 */
 export interface RowDrawer {
   readonly kind: RowKind;
   /** 量（第 3 步）：一条轨 → 列条目 + 每个音的墨往对齐线左边伸多远（光标画在它左边）。纯函数，只看这一条轨。 */
-  measure(q: Track, scale: number): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> };
+  measure(q: Track, scale: number, aux?: TrackAux): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> };
   /** 行首多宽（sp）：base = 框架给的缩进 + 边距；key = 这一行开头生效的调号；first = 这张纸第一行。 */
   lineStart(q: Track, key: number, first: boolean, base: number, scale: number): number;
   /** 歌词让路要的锚点（字的中心）。 */
-  lyricAnchors(q: Track, scale: number): LyricAnchor[];   // scale = 行里的尺寸比例（排版参数表行一级；五线谱 = 1、不用）
+  lyricAnchors(q: Track, scale: number, aux?: TrackAux): LyricAnchor[];   // scale = 行里的尺寸比例（排版参数表行一级；五线谱 = 1、不用）
   /** 画（第 5 步）：mine = 这种行的那几条轨在 per 里的下标。交回歌词锚点（字归框架）；挂件往道上登记（attach）。 */
   draw(c: RowDrawCtx, mine: readonly number[]): { lyricParts: LyricPart[] };
   /** 贴挂件的先后（道名 = frame/lanes.ts；框架把各种的并起来按先后贴）。 */
@@ -44,7 +47,7 @@ export interface RowDrawer {
 export const DRAWERS: Readonly<Record<RowKind, RowDrawer>> = {
   staff: { kind: "staff", measure: measureTrack, lineStart: lineStartWidth, lyricAnchors, draw: (c, mine) => drawStaff(c, mine), lanes: STAFF_LANES, anchors },
   // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
-  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
+  jianpu: { kind: "jianpu", measure: (q, k, aux) => measureJianpu(q, k, "digits", aux), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
   // 鼓的 X 行：和数字行同一套量和画（节奏的写法一样），音画成 X、不写升降号 / 八度点 / 琶音（jianpu/draw.ts 的 x 那一路）
   jianpuX: { kind: "jianpuX", measure: (q, k) => measureJianpu(q, k, "x"), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine, "x"), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
 };

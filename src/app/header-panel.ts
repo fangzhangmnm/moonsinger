@@ -86,7 +86,7 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
         const opt = (value: string, label: string, on: boolean) => `<option value="${esc(value)}"${on ? " selected" : ""}>${esc(label)}</option>`;
         const tenants = song.parts.some((p) => p.host === me.id), hosts = song.parts.filter((p) => p.id !== me.id && !p.host);
         return `<div class="ctx-sep"></div><div class="ctx-hint hp-sec">${_t("「{name}」的谱（整首都算）", { name: esc(g.partName(partId)) })}</div><div class="hp-grid">` +
-          `<span class="hp-k">${_t("分解和弦")}</span><select class="hp-sel" data-hp="broken" title="${_t("拆开弹的和弦（一拍 / 半小节 / 一小节里的音凑成一个和弦）要不要标级数；叠在一起的和弦照旧标")}">${opt("on", _t("认"), songViewOf(song).chordsOf(partId) !== "stacked")}${opt("off", _t("不认"), songViewOf(song).chordsOf(partId) === "stacked")}</select>` +
+          `<span class="hp-k">${_t("分解和弦")}</span><select class="hp-sel" data-hp="broken" title="${_t("拆开弹的和弦（一拍 / 半小节 / 一小节里的音凑成一个和弦）要不要标级数；叠在一起的和弦照旧标。「折叠」= 简谱里叠着的和弦写成和弦名（照名字的标准排法还原得回才折，不然照写数字）")}">${opt("on", _t("认"), songViewOf(song).chordsOf(partId) === "auto")}${opt("off", _t("不认"), songViewOf(song).chordsOf(partId) === "stacked")}${opt("fold", _t("认，叠着的折叠成和弦名"), songViewOf(song).chordsOf(partId) === "fold")}</select>` +
           (song.parts.length > 1 ? `<span class="hp-k">${_t("合租")}</span>` + (tenants ? `<span class="hp-v hp-note">${_t("有别的声部挂在这一行上（它是主人），不能再去挂别人")}</span>`
             : `<select class="hp-sel" data-hp="host" title="${_t("挂在别人的谱线上画（合租：只看个大概，音撞在一起就撞；只画音，不画休止 / 歌词 / 力度；点名字 = 拆开来写）")}">${opt("", _t("自己一行"), !me.host)}${hosts.map((p) => opt(p.id, _t("挂在「{name}」上", { name: g.partName(p.id) }), me.host === p.id)).join("")}</select>`) : "") +
           `</div>`;
@@ -132,7 +132,7 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
           apply({ time: el.value === "" ? null : parseTime(el.value) });
         } else if (k === "timeText") { const t = parseTime(el.value); if (t) { timeText = false; apply({ time: t }); } else el.classList.add("bad"); }
         else if (k === "ao") commit(setPaperLook(g.state(), paperId, partId, { autoOttava: el.value === "on" }));
-        else if (k === "broken") { const next = setPartChords(g.state(), partId, el.value === "on" ? "auto" : "stacked"); if (next !== g.state()) { g.updateLook(next, el.value === "on" ? _t("分解和弦：认") : _t("分解和弦：不认")); spot = headerSpot(track(paperId, partId), spot.a); render(); } }   // 这条轨的和弦选项 = 这首歌怎么看（修改锁的看法；第三刀）
+        else if (k === "broken") { const mode = el.value === "fold" ? "fold" : el.value === "on" ? "auto" : "stacked", next = setPartChords(g.state(), partId, mode); if (next !== g.state()) { g.updateLook(next, mode === "fold" ? _t("分解和弦：认，叠着的折叠成和弦名") : mode === "auto" ? _t("分解和弦：认") : _t("分解和弦：不认")); spot = headerSpot(track(paperId, partId), spot.a); render(); } }   // 这条轨的和弦选项 = 这首歌怎么看（修改锁的看法；第三刀）
         else if (k === "host") commit(setPartHost(g.state(), partId, el.value || null));
       });
     },

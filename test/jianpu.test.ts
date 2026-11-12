@@ -4,7 +4,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave, type Prim } from "../src/render/engrave.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 import { initState, TPQ, type Song, type Token } from "../src/score/song.ts";
-import { setNotation } from "../src/score/song-view.ts";
+import { setNotation, setPartChords } from "../src/score/song-view.ts";
 import { GEOMETRY, DRAWERS } from "../src/render/notations.ts";
 import { SIGNS } from "../src/render/signs.ts";
 import { harmonyTheory } from "../src/theory/index.ts";
@@ -97,6 +97,23 @@ describe("简谱数字行", () => {
     assert(fam(Ls).length > 0, "五线谱这一家展开着有级数（比较器不是空的）");
     eq(key(Lj), key(Ls), "两种谱一家每一刻的读法、挂在谁身上、画在哪一行都一样");
     assert(fam(Ls).every((t) => Ls.systems[t.system]!.part === "Y"), "都画在这一家最下面那一位（Y）那一行；X 自己不标");
+  });
+  it("叠着的和弦折叠成和弦名（第五刀 5-4，UX 稿第 7 节）：这条轨选了「折叠」= 还原得回的写成和弦名、按名字的宽占位；有歧义 = 右下角小三角（编辑器里，点它 = 候选）；还原不回 = 照写数字", () => {
+    const e = TPQ / 2, body = [n(P("G"), e, { chord: [P("E"), P("C")] }), n(P("A"), e, { chord: [P("G"), P("E"), P("C")] }), n(P("E", 5), e, { chord: [P("G"), P("C")] }), n(P("C"), e)];   // 八分：间距由宽决定（四分的弹簧够长，名字放得下就不挪）
+    const foldOn = (s: Song): Song => setPartChords({ ...initState(), song: s }, initState().at.part, "fold").song;
+    const on = lay(body, foldOn), off = lay(body);
+    const names = (L: typeof on.L) => L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-chord/.test(p.cls ?? "")).map((p) => p.s);
+    eq(names(on.L).join(" "), "C C6", "C E G = C；C E G A = C6（默认：根音是最低音的）");
+    eq(names(off.L).length, 0, "没选「折叠」= 不折");
+    eq(digits(on.L.prims).filter((d) => d !== "1").length + digits(on.L.prims).filter((d) => d === "1").length, 4, "开放排法那个和弦（C G E）还原不回 = 照写三个数字 + 最后一个单音 1");
+    const amb = on.L.prims.filter((p) => p.t === "path" && /jp-chord-amb/.test(p.cls ?? ""));
+    eq(amb.length, 1, "C6 有歧义（Am7/C 也还原得回）= 一个小三角"); assert(/(^|\s)ann(\s|$)/.test(amb[0]!.cls ?? ""), "小三角只在编辑器里（不印）");
+    const iC6 = on.toks.findIndex((t) => t.kind === "note" && (t.chord?.length ?? 0) === 3);
+    assert(on.L.chordTags.some((h) => h.index === iC6 && h.w < 20), "小三角有点击框（指着那个音，开候选）");
+    const xs = (L: typeof on.L) => L.notes.map((h) => h.x);
+    assert(xs(on.L)[2]! - xs(on.L)[1]! > xs(off.L)[2]! - xs(off.L)[1]! + 1e-6, `和弦名按名字的宽占位（C6 比一个数字宽 = 后面的音往右）：${xs(on.L)[2]! - xs(on.L)[1]!} vs ${xs(off.L)[2]! - xs(off.L)[1]!}`);
+    const arp = lay([n(P("G"), TPQ, { chord: [P("E"), P("C")], art: ["arpeggio"] })], foldOn).L;
+    assert(arp.prims.some((p) => p.t === "text" && /jp-chord/.test(p.cls ?? "")) && arp.prims.some((p) => p.t === "path" && /arpeggio/.test(p.cls ?? "")), "折成名字的和弦上的琶音照画（不静默丢掉）");
   });
   it("下划线按拍连：两个八分在同一拍 = 一条；跨拍 = 断开；十六分 = 两层", () => {
     const e = TPQ / 2, s16 = TPQ / 4;

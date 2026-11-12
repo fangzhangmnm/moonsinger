@@ -53,6 +53,8 @@ export const TEXT_STYLES = {
   "dyn-word": s("serif", 2.0, "staff", 400, true), "dyn-implied": s("sans", 1.3, "staff", 600, true),
   // 简谱数字行（谱面分家第四刀；字号在图元上、宽高查 render/jianpu/glyphs.ts，不现场量）：数字一律不分粗细（UX 稿第 5 节）；谱头「1=C 4/4」和中途换调的字
   "jp-digit": s("sans", 2.5, "staff"), "jp-acc": s("sans", 1.3, "staff"), "jp-head": s("sans", TEMPO_EM, "staff", 600),
+  // 叠着的和弦折成的和弦名（第五刀 5-4）：窄字 = 正文字体横向压（图元的 sx），宽查 render/jianpu/glyphs.ts
+  "jp-chord": s("sans", 2.0, "staff"),
 } satisfies Record<string, TextStyle>;
 export type TextRole = keyof typeof TEXT_STYLES;
 /** 同一种字的变体（样式类里同时有这两个词）：只改粗细。 */

@@ -93,7 +93,7 @@ var S = {
   "\u5220\u6389\u8FD9\u91CC\u7684\u53D8\u5316": { en: "Remove the changes here" },
   "\u300C{name}\u300D\u7684\u8C31\uFF08\u6574\u9996\u90FD\u7B97\uFF09": { en: "\u201C{name}\u201D staff (whole song)" },
   "\u5206\u89E3\u548C\u5F26": { en: "Broken chords" },
-  "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807": { en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way" },
+  "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807\u3002\u300C\u6298\u53E0\u300D= \u7B80\u8C31\u91CC\u53E0\u7740\u7684\u548C\u5F26\u5199\u6210\u548C\u5F26\u540D\uFF08\u7167\u540D\u5B57\u7684\u6807\u51C6\u6392\u6CD5\u8FD8\u539F\u5F97\u56DE\u624D\u6298\uFF0C\u4E0D\u7136\u7167\u5199\u6570\u5B57\uFF09": { en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way \u201CFold\u201D = in numbered notation, stacked chords are written as a chord name (only when the name\u2019s standard voicing gives back exactly these notes; otherwise the numbers stay)." },
   "\u8BA4": { en: "Read" },
   "\u4E0D\u8BA4": { en: "Ignored" },
   "\u5408\u79DF": { en: "Shared staff" },
@@ -104,6 +104,8 @@ var S = {
   "\u8FD9\u4E00\u6BB5\u8C03\u53F7\u4E00\u6837\u7684 {n} \u4E2A\u58F0\u90E8\u4E00\u8D77\u6539\u4E86": { en: "Changed {n} parts in this section that share this key signature" },
   "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4": { en: "Broken chords: read" },
   "\u5206\u89E3\u548C\u5F26\uFF1A\u4E0D\u8BA4": { en: "Broken chords: ignored" },
+  "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D": { en: "Broken chords: read; stacked chords folded into chord names" },
+  "\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D": { en: "Read; fold stacked chords into names" },
   "\u4E50\u8C31": { en: "Score" },
   "\u300C{name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7": { en: "\u201C{name}\u201D was changed elsewhere" },
   "\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002": { en: "Another program changed this file since it was opened or last saved. Overwriting will lose those changes." },
@@ -4790,6 +4792,49 @@ var pinOf = (guess) => {
   const g = guess;
   return { root: { step: g.root.step, alter: g.root.alter }, kind: g.tpl, ...pc(g.bass) !== pc(g.root) ? { bass: { step: g.bass.step, alter: g.bass.alter } } : {} };
 };
+var STEPS_OF_IV = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6];
+var STEPS_OVERRIDE = { aug: { 8: 4 }, aug7: { 8: 4 }, dim7: { 9: 6 }, "7s9": { 3: 1 } };
+var NAT_PC = [0, 2, 4, 5, 7, 9, 11];
+var pcOfSpelled = (x) => ((NAT_PC[stepIndex(x.step)] + x.alter) % 12 + 12) % 12;
+function voicingOf(g, bassOctave) {
+  const t = g.tpl === "5" ? { iv: [0, 7], opt: [] } : TPLS.find((x) => x.id === g.tpl);
+  if (!t) return null;
+  const tones = [];
+  for (const iv of [...t.iv, ...t.opt ?? []]) {
+    const li = (stepIndex(g.root.step) + (STEPS_OVERRIDE[g.tpl]?.[iv] ?? STEPS_OF_IV[iv])) % 7, target = (pc(g.root) + iv) % 12;
+    const alter = ((target - NAT_PC[li]) % 12 + 18) % 12 - 6;
+    if (Math.abs(alter) > 2) return null;
+    tones.push({ step: STEPS[li], alter });
+  }
+  const bpc = pc(g.bass), b = tones.find((x) => pcOfSpelled(x) === bpc);
+  if (!b) return null;
+  const bass = { ...b, octave: bassOctave }, bm = midiOf(bass);
+  const above = tones.filter((x) => pcOfSpelled(x) !== bpc).map((x) => {
+    let p = { ...x, octave: bassOctave - 1 };
+    while (midiOf(p) <= bm) p = { ...p, octave: p.octave + 1 };
+    return p;
+  });
+  return [bass, ...above.sort((x, y) => midiOf(x) - midiOf(y))];
+}
+function foldChord(pitches, at, pin) {
+  if (pitches.length < 2) return null;
+  const auto = readChord(pitches, at.fifths, at.minor ? "la" : "do");
+  if (!auto) return null;
+  const ps = [...pitches].sort((x, y) => midiOf(x) - midiOf(y)), lo = ps[0];
+  const restores = (g) => {
+    const v = voicingOf(g, lo.octave);
+    return !!v && v.length === ps.length && v.every((p, i) => p.step === ps[i].step && p.alter === ps[i].alter && p.octave === ps[i].octave);
+  };
+  const ok = auto.all.filter(restores);
+  if (!ok.length) return null;
+  const ambiguous = new Set(ok.map((g) => g.name)).size > 1;
+  if (pin) {
+    const rd = pinRead(pin, at, auto);
+    if (!rd || !restores(rd.best)) return null;
+    return { name: rd.best.name, bass: lo, ambiguous, read: rd };
+  }
+  return { name: ok[0].name, bass: lo, ambiguous, read: auto };
+}
 var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
 function brokenInBar(bar, prev) {
   const beatLen = beatTicks(bar.beats, bar.beatType), nb = Math.max(1, Math.round(bar.beats * WHOLE / bar.beatType / beatLen));
@@ -4863,6 +4908,7 @@ var western = {
   label: chordLabel,
   pinRead,
   pinOf,
+  fold: foldChord,
   howTo: () => _t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002"),
   explain: (guess) => {
     const g = guess;
@@ -5694,4 +5740,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-2a6526a1e852.mjs.map
+//# sourceMappingURL=encode-worker-0351db4bb88f.mjs.map

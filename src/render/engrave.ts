@@ -18,7 +18,7 @@
 
 import { TEXT_STYLES, lyricSizePx, hyphens, LYRIC_MIN_SX, isBlockScript, textPx, type TextRole, fitLyrics, lyricBlockSx, LYRIC_SPACE, HYPHEN_SX, type LyricFit, type LyricItem, type LyricGaps, type TextMeasure, lyricLook, lyricWidth } from "./text/index.ts";
 import { _tIn, type Lang } from "../i18n/index.ts";
-import { type Song, type PaperSeg, type Token, type Focus, type Staff, isTimed, tempoOwner, sheetEndBpm } from "../score/song.ts";
+import { type Song, type PaperSeg, type Token, type Focus, type Staff, isTimed, tempoOwner, sheetEndBpm, DEFAULT_KEY } from "../score/song.ts";
 import { parseArrangement } from "../score/arrange.ts";
 import { curveOf, SP_DEFAULTS } from "./spacing.ts";
 import { type PercInfo } from "../gm/percussion.ts";
@@ -31,11 +31,11 @@ import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, ROW_STEP, MARGIN, BAR_W, TIT
 import { PAPER_PARAMS, ROW_PARAMS } from "./layout-params.ts";   // 排版参数表（纸一级按谱种、行一级按行的种类）
 import { wrapTitle } from "./frame/furniture.ts";
 // 五线谱这一种：只从它的入口拿（施工单 1b-9 守卫 1：框架不直接 import 字形表、符干、谱号模块）
-import { DRAWERS, NOTATIONS, type RowKind, type FoldFamily, type StaffTrack, type Unit, type Chunk } from "./notations.ts";   // 谱种的表（第四刀）：框架只经过它拿画法，不直接 import staff/ / jianpu/
+import { DRAWERS, NOTATIONS, type RowKind, type FoldFamily, type StaffTrack, type Unit, type Chunk, type TrackAux } from "./notations.ts";   // 谱种的表（第四刀）：框架只经过它拿画法，不直接 import staff/ / jianpu/
 import type { LyricPart, LyricSpot } from "./frame/lyric-spots.ts";
 import { INK_UP_TO, type LaneKind } from "./frame/lanes.ts";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "./frame/arrange.ts";
-import { harmonyTheory, paperHarmony, type PlacedTag } from "../theory/index.ts";
+import { harmonyTheory, paperHarmony, type PlacedTag, type ChordFold } from "../theory/index.ts";
 
 /** tok = 这个图元属于哪个 token（id）：写字头 / 选区 / 强调色不进排版，score-view 按 data-tok 在 DOM 上开关 class（W-17 第 1 刀，2026-10-15）。 */
 export type Prim =
@@ -376,7 +376,14 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     //   横向间距（刀 3，2026-11-09 Claude Opus 5.5；算法 = src/render/spacing.ts）：一列到下一列多远 = 这一刻正在响的音里最短的那个该占的宽；同一行前后两样东西真会撞才顶开；
     //   一行排满只拉 / 压弹簧（小节线、调号这些固定宽的不拉）。对齐线 = 列的 x；符头画在 x + 0.35，临时记号挂在左边、进前一列的空。
     const kScale = (k: RowKind) => ROW_PARAMS[k][density].scale;   // 行里的尺寸比例（这种行自己的字形 / 偏移统一乘它）
-    const measured = per0.map((q, i) => DRAWERS[kinds[i]!].measure(q, kScale(kinds[i]!)));
+    // 叠着的和弦折成和弦名（第五刀 5-4；预处理，和谱种无关，用不用归画法）：这条轨的和弦选项是「折叠」时，每个叠音的音问乐理模块折不折得了（能还原才折）
+    const aux: TrackAux[] = per0.map((q, i) => {
+      const th = harmonyTheory(); if (q.vrt || rowHost[i]! >= 0 || songLook.chordsOf(q.p.id) !== "fold" || !th.fold) return {};
+      const folds = new Map<number, ChordFold>(); let at = { fifths: DEFAULT_KEY, minor: false };
+      q.tokens.forEach((t, k) => { if (t.kind === "key") at = { fifths: t.fifths, minor: t.mode === "minor" }; else if (t.kind === "note" && t.pitch && t.chord?.length) { const f = th.fold!([t.pitch, ...t.chord], at, t.harm); if (f) folds.set(k, f); } });
+      return folds.size ? { folds } : {};
+    });
+    const measured = per0.map((q, i) => DRAWERS[kinds[i]!].measure(q, kScale(kinds[i]!), aux[i]));
     const atracks: ArrangeTrack<Unit>[] = per0.map((_q, pi) => ({ entries: measured[pi]!.entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));   // 声部 2 画在主人那一行 = 和主人一个道基数
     const merged = mergeColumns(atracks), n = merged.length;
     // 行首 = 名字一栏的缩进（框架）+ 各条轨行首要画的（五线谱：谱号 + 那里生效的调号 + 第一行的拍号），取大
@@ -424,7 +431,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     if (songLook.lyricFit === "rhythm") per.forEach((q, r) => {
       if (!lyricsOf[r]) return;
       const bySys = new Map<number, (LyricItem & { index: number })[]>();
-      for (const u of DRAWERS[kinds[r]!].lyricAnchors(q, kScale(kinds[r]!))) {   // 每个带字的音在哪（这种行的画法给的锚点）
+      for (const u of DRAWERS[kinds[r]!].lyricAnchors(q, kScale(kinds[r]!), aux[r])) {   // 每个带字的音在哪（这种行的画法给的锚点）
         const arr = bySys.get(u.system) ?? []; bySys.set(u.system, arr);
         arr.push({ index: u.index, cx: u.cx, w: lyrUnit(lyricShow(u.lyric)), hy: u.hyph, block: isBlockScript(u.lyric) && [...lyricShow(u.lyric)].length <= 1 });   // 一个音上两个以上方块字（日文「だん」这类合租）= 自己收，不带着整段一起变窄（user 11-09「日文有时候有双字合租的…这种时候也变窄到能放下？」）
       }
@@ -588,7 +595,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       parts: per.filter((q, i) => !q.vrt && rowHost[i]! < 0).map((q) => ({ id: q.p.id, tokens: q.tokens, broken: songLook.chordsOf(q.p.id) !== "stacked" })),
       families: famIds.map((fid) => famHere(fid).map((p) => p.id)),
     }) : null;
-    const drawCtx = { song, look: songLook, harmony, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
+    const drawCtx = { song, look: songLook, harmony, aux, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
     // 小节号（v0.9.42；user 2026-10-10「小节号要，可以页面设置toggle，默认是每行开头有。字小一点」）：每行最上面那条的左上角，印这一行第一个小节的号；
     //   每张纸从 1 数（纸 = 曲段），弱起算第 0 小节；第一行是 1 / 0 就不印（出版谱的老规矩）。刀 4b：挂件第 9 样 = 行首那一段天际线往上 0.3。
     //   第四刀起归框架（原来在五线谱的画法里）：它贴在这一行最上面那条上，不归哪一种画法

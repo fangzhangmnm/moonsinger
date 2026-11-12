@@ -45,6 +45,7 @@ import "./chord-name.test.ts";
 import "./minor-key.test.ts";
 import "./chord-pin.test.ts";
 import "./chord-families.test.ts";
+import "./chord-fold.test.ts";
 import "./clef-per-section.test.ts";
 import "./clipboard.test.ts";
 import "./chord.test.ts";
