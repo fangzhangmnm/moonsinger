@@ -3057,7 +3057,8 @@ async function makePdf(fontId: PdfFontId, pick: PdfPick = {}): Promise<{ file: F
     }
     const r = scorePdf({ song, parts, font, fontId, music, title, created: new Date(), measure: view.rawMeasure, autoBars, ...(pick.paper ? { onlyPaper: pick.paper } : {}) });
     const paperName = pick.paper ? (D.st.song.papers.find((p) => p.id === pick.paper)?.name || _t("这一段")) : "";
-    const suffix = [paperName, pick.onlyShown ? parts.map((v) => v.name).join("+") : ""].filter(Boolean).map((x) => fileSafe(x)).join("-");
+    const stored = partLabels(D.st.song, D.extras), storedOf = new Map(D.st.song.parts.map((p, k) => [p.id, stored[k]!]));   // 文件名用歌里存的名字（谱上按界面语言换的是显示，5½）
+    const suffix = [paperName, pick.onlyShown ? parts.map((v) => storedOf.get(v.id) ?? v.name).join("+") : ""].filter(Boolean).map((x) => fileSafe(x)).join("-");
     return { file: new File([r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${suffix ? `-${suffix}` : ""}`)}.pdf`, { type: "application/pdf" }), r };   // 名[-曲段 / 声部]-YYYYMMDD-HHMM（v0.9.47）
 }
 async function exportPdf(fontId: PdfFontId, pick: PdfPick = {}): Promise<void> {

@@ -60812,7 +60812,8 @@ async function makePdf(fontId, pick = {}) {
   }
   const r10 = scorePdf({ song, parts, font, fontId, music, title, created: /* @__PURE__ */ new Date(), measure: view.rawMeasure, autoBars, ...pick.paper ? { onlyPaper: pick.paper } : {} });
   const paperName = pick.paper ? D3.st.song.papers.find((p2) => p2.id === pick.paper)?.name || _t("\u8FD9\u4E00\u6BB5") : "";
-  const suffix = [paperName, pick.onlyShown ? parts.map((v) => v.name).join("+") : ""].filter(Boolean).map((x2) => fileSafe(x2)).join("-");
+  const stored = partLabels(D3.st.song, D3.extras), storedOf = new Map(D3.st.song.parts.map((p2, k2) => [p2.id, stored[k2]]));
+  const suffix = [paperName, pick.onlyShown ? parts.map((v) => storedOf.get(v.id) ?? v.name).join("+") : ""].filter(Boolean).map((x2) => fileSafe(x2)).join("-");
   return { file: new File([r10.bytes], `${stampedCopy(`${docName()}${suffix ? `-${suffix}` : ""}`)}.pdf`, { type: "application/pdf" }), r: r10 };
 }
 async function exportPdf(fontId, pick = {}) {
@@ -62649,4 +62650,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-bfd5ca6e3a1c.mjs.map
+//# sourceMappingURL=moonsinger-38c2735b7786.mjs.map
