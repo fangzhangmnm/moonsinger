@@ -6004,6 +6004,22 @@ function layDynamics(c) {
     });
   }
 }
+function layNoteDynamics(c, row, _ch, a) {
+  const { P, prims } = c, { cx, tok, cls, ign, swl, atk } = a;
+  c.attach(row, "noteDynamics", () => c.placeAbove(row, 0.5, (y) => {
+    let xa = a.x0;
+    for (const k of atk) {
+      const ch = k === "sfz" ? "\uE539" : "\uE534", w = P(GLYPH_BOX[ch]?.[1] ?? 2.6), gx = cx - w / 2;
+      prims.push({ tok, t: "glyph", x: gx, y, ch, cls: ["dyn", ign.has(k) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+      xa = Math.max(xa, gx + w + P(0.3));
+    }
+    if (!swl) return;
+    const ym = y - P(0.5), xb = Math.max(xa + P(1.6), a.x0 + a.w - P(0.8)), H = P(0.35);
+    const cl = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
+    const d = swl === "<" ? `M${xb},${ym - H}L${xa},${ym}L${xb},${ym + H}` : swl === ">" ? `M${xa},${ym - H}L${xb},${ym}L${xa},${ym + H}` : `M${xa},${ym}L${mx},${ym - H}L${xb},${ym}M${xa},${ym}L${mx},${ym + H}L${xb},${ym}`;
+    prims.push({ t: "path", d, cls: cl });
+  }));
+}
 
 // src/render/frame/carets.ts
 function caretStops(q, o) {
@@ -6453,19 +6469,7 @@ function drawStaff(c, mine) {
       });
       const swl = c2.j === 0 ? swellOf(tokens[c2.index]) : void 0;
       const atk = ["sfz", "fp"].filter((x) => c2.art.includes(x));
-      if (swl || atk.length) attach(row, "noteDynamics", () => placeAbove(row, 0.5, (y) => {
-        let xa = nhX(c2);
-        for (const a of atk) {
-          const ch = a === "sfz" ? "\uE539" : "\uE534", w = P(GLYPH_BOX[ch]?.[1] ?? 2.6), gx = cx2 - w / 2;
-          prims.push({ tok: tokOf(c2), t: "glyph", x: gx, y, ch, cls: ["dyn", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-          xa = Math.max(xa, gx + w + P(0.3));
-        }
-        if (!swl) return;
-        const ym = y - P(0.5), xb = Math.max(xa + P(1.6), nhX(c2) + P(c2.w) - P(0.8)), H2 = P(0.35);
-        const cl = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
-        const d2 = swl === "<" ? `M${xb},${ym - H2}L${xa},${ym}L${xb},${ym + H2}` : swl === ">" ? `M${xa},${ym - H2}L${xb},${ym}L${xa},${ym + H2}` : `M${xa},${ym}L${mx},${ym - H2}L${xb},${ym}M${xa},${ym}L${mx},${ym + H2}L${xb},${ym}`;
-        prims.push({ t: "path", d: d2, cls: cl });
-      }));
+      if (swl || atk.length) layNoteDynamics(orn, row, c2, { cx: cx2, x0: nhX(c2), w: P(c2.w), tok: tokOf(c2), cls, ign, swl, atk });
       if (c2.art.includes("arpeggio")) {
         const yTop = yOf(row, dHi) - P(0.7), yBot = yOf(row, dLo) + P(0.7), x0 = nhX(c2) - P(c2.accW + 0.9), amp = P(0.28), step = P(0.5);
         let dd = `M${x0},${yBot}`;
@@ -6654,6 +6658,8 @@ var BAR_GAP = 0.35;
 var BAR_W_J = 1.2;
 var MID_TEXT_EM = 1.4;
 var MID_TEXT_CH = 0.62;
+var BREATH_W = 0.35 + 0.9;
+var INHALE_W = 2.2;
 var dotPath = (cx, cy, r) => {
   const k = 0.5523 * r, f = (v) => (Math.round(v * 100) / 100).toString();
   return `M${f(cx + r)},${f(cy)}C${f(cx + r)},${f(cy + k)} ${f(cx + k)},${f(cy + r)} ${f(cx)},${f(cy + r)}C${f(cx - k)},${f(cy + r)} ${f(cx - r)},${f(cy + k)} ${f(cx - r)},${f(cy)}C${f(cx - r)},${f(cy - k)} ${f(cx - k)},${f(cy - r)} ${f(cx)},${f(cy - r)}C${f(cx + k)},${f(cy - r)} ${f(cx + r)},${f(cy - k)} ${f(cx + r)},${f(cy)}Z`;
@@ -6687,7 +6693,8 @@ function unitW(u) {
       return midTextW(`${u.beats}/${u.beatType}`);
     case "clef":
     case "ottava":
-      return 1.6;
+      return 2.6;
+    // 小灰标「谱号」/「8va」写得下（字号 1 sp，两个汉字 / 四个字母）
     default:
       return 0;
   }
@@ -6697,7 +6704,8 @@ function measureJianpu(q) {
   const spItems = (u) => {
     if (u.pad) return [];
     const n2 = extraGlyphs(u), acc = u.note && u.j === 0 && u.acc !== null;
-    const left = acc ? ACC_W : -0.1, right = 0.1 + DIGIT_W + 0.15 + n2 * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0);
+    const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;
+    const left = acc ? ACC_W : -0.1, right = 0.1 + DIGIT_W + 0.15 + n2 * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW;
     inkL.set(u, Math.max(0, left));
     const out = [{ row: 0, left, right, dur: u.ticks }];
     const cx = 0.1 + DIGIT_W / 2;
@@ -6723,6 +6731,10 @@ function fewestDotsBase(shifts) {
 
 // src/render/jianpu/draw.ts
 var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics"];
+var jpGlyph = (a) => {
+  const d = SIGNS[`art:${a}`]?.draw.jianpu;
+  return d && d.kind === "glyph" ? { above: d.above, w: d.w ?? 1, h: d.h ?? 1 } : null;
+};
 var keyHead = (fifths, minor) => keyText(fifths, minor).replace(/=([A-G])([♭♯])$/, "=$2$1");
 function drawJianpu(c, mine) {
   const lyricParts = [];
@@ -6780,6 +6792,9 @@ function drawJianpu(c, mine) {
     }));
     const spots = [];
     lyricParts.push({ r, lrow: (s2) => rowOf(s2, r, 0), spots });
+    const ign = new Set(q.p.ignores ?? []);
+    const artCls = (a, base2 = "art") => [base2, ign.has(a) ? "art-mute" : ""].filter(Boolean).join(" ");
+    const arcAt = /* @__PURE__ */ new Map();
     const ul = [];
     let fifths = q.head.key;
     for (const u of units) {
@@ -6806,7 +6821,23 @@ function drawJianpu(c, mine) {
           line(x - P(BAR_GAP), BAR_THIN);
           line(x, BAR_THIN);
         } else line(x, BAR_THIN);
+        const rdot = (dx) => {
+          for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put(row2, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "path", d: dotPath(x + P(dx), Y(row2, yy), P(0.15)), cls: "jp-dot repeat-dot" });
+        };
+        if (u.repeat === "start" || u.repeat === "both") rdot(0.4);
+        if (u.repeat === "end" || u.repeat === "both") rdot(-(BAR_GAP + BAR_THICK + 0.4));
+        if (u.repeat && u.times && u.times > 2) {
+          const times = u.times, cl = "nav-mark" + orn.navMute(u.index);
+          c.attach(row2, "nav", () => placeAbove(row2, 0.6, (yy) => c.prims.push({ t: "text", x: x - P(0.6), y: yy, s: `\xD7${times}`, cls: cl, size: tx("nav-mark"), anchor: "start" })));
+        }
         bars.push({ system: row2, x });
+        continue;
+      }
+      if (u.kind === "clef" || u.kind === "ottava") {
+        const row2 = rowOf(u.system, r, 0), x = P(u.x + 0.2), t = tokens[u.index];
+        const label = u.kind === "clef" ? _tIn(o.locale, "\u8C31\u53F7") : t.shift === 0 ? "loco" : t.shift === 2 ? "15ma" : t.shift > 0 ? "8va" : "8vb";
+        put(row2, { tok: t.id, t: "text", x, y: Y(row2, 0.45), s: label, cls: "jp-staffonly ann", size: P(1), anchor: "start" });
+        c.clefs.push({ kind: u.kind === "clef" ? "mid" : "ottava", paper: paper.id, part: q.p.id, index: u.index, system: row2, x: x - P(0.2), y: Y(row2, -0.5), w: P(2.6), h: P(1.3) });
         continue;
       }
       if (u.kind === "groove") {
@@ -6826,10 +6857,19 @@ function drawJianpu(c, mine) {
       const n2 = extraGlyphs(u), contDash = u.note && u.j > 0 && u.base >= TPQ;
       const limit = u.x + u.w - 0.1 - DIGIT_W / 2, step = n2 ? Math.max(DASH_PITCH, (limit - (u.x + 0.1 + DIGIT_W / 2)) / n2) : 0;
       const gx = (k) => cx + P(k * step);
-      const digit = (x, s2) => put(row, { ...T, t: "text", x, y: Y(row, BASE_Y), s: s2, cls: u.ghost ? "jp-digit ghost" : "jp-digit", size: P(DIGIT_EM), anchor: "middle" });
+      const small = u.art.includes("ghost");
+      const digit = (x, s2) => put(row, { ...T, t: "text", x, y: Y(row, BASE_Y), s: s2, cls: u.ghost ? "jp-digit ghost" : small ? "jp-digit art-ghost" : "jp-digit", size: P(small ? DIGIT_EM * 0.72 : DIGIT_EM), anchor: "middle" });
       const dash = (x) => put(row, { ...T, t: "line", x1: x - P(DASH_L / 2), y1: Y(row, DASH_Y), x2: x + P(DASH_L / 2), y2: Y(row, DASH_Y), w: P(DASH_W), cls: "jp-dash" });
       const nUL = underlines(u);
-      if (u.note && u.pitch) {
+      if (u.note && (u.ghost || !u.pitch)) {
+        if (contDash) for (let k = 0; k <= n2; k++) dash(gx(k));
+        else {
+          digit(cx, "x");
+          for (let k = 1; k <= n2; k++) dash(gx(k));
+        }
+        if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: P(DIGIT_W), d: NaN });
+        if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - P(0.6), mx1: x0 + P(DIGIT_W) + P(0.4), lyric: u.lyric, tok, cls: "ghost", mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!tokens[u.index]?.hyph });
+      } else if (u.note && u.pitch) {
         const d = toDegree(u.pitch, fifths), dots = d.shift - base;
         if (contDash) for (let k = 0; k <= n2; k++) dash(gx(k));
         else {
@@ -6841,13 +6881,41 @@ function drawJianpu(c, mine) {
             put(row, { ...T, t: "path", d: dotPath(cx, Y(row, yy), P(DOT_R)), cls: "jp-dot" });
           }
         }
+        if (!contDash) {
+          let top = dots > 0 ? DIGIT_TOP - DOT_GAP - DOT_R * 2 - (dots - 1) * DOT_STEP : DIGIT_TOP;
+          for (const a of ["staccato", "tenuto"].filter((x) => u.art.includes(x))) {
+            const g = jpGlyph(a);
+            put(row, { ...T, t: "glyph", x: cx - P(g.w / 2), y: Y(row, top - 0.25), ch: g.above, cls: artCls(a) });
+            top -= 0.25 + g.h;
+          }
+          arcAt.set(u, { row, cx, top });
+          const strong = ["accent", "marcato", "stress", "unstress"].filter((x) => u.art.includes(x));
+          if (strong.length) c.attach(row, "strength", () => {
+            for (const a of strong) {
+              const g = jpGlyph(a), k = a === "stress" ? 0.72 : 1;
+              placeAbove(row, 0.4, (y) => c.prims.push({ ...T, t: "glyph", x: cx - P(g.w * k / 2), y, ch: g.above, cls: artCls(a), ...k !== 1 ? { size: P(4 * k) } : {} }));
+            }
+          });
+          const swl = u.j === 0 ? swellOf(tokens[u.index]) : void 0, atk = ["sfz", "fp"].filter((x) => u.art.includes(x));
+          if (swl || atk.length) layNoteDynamics(orn, row, u, { cx, x0, w: P(u.w), tok, cls: void 0, ign, swl, atk });
+          if (u.whisper) put(row, { ...T, t: "text", x: cx + P(DIGIT_W * 0.55), y: Y(row, DIGIT_TOP + 0.5), s: "\xD7", cls: artCls("whisper", "jp-acc whisper"), size: P(ACC_EM), anchor: "start" });
+          if (u.art.includes("roll")) for (let k = 0; k < 3; k++) {
+            const yy = (nUL ? UL_Y0 + nUL * UL_GAP : BASE_Y) + 0.35 + (Math.min(0, dots) ? -dots * DOT_STEP + 0.2 : 0) + k * 0.28;
+            put(row, { ...T, t: "line", x1: cx - P(0.4), y1: Y(row, yy + 0.18), x2: cx + P(0.4), y2: Y(row, yy - 0.18), w: P(0.11), cls: artCls("roll", "jp-roll") });
+          }
+        }
         if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: P(DIGIT_W), d: NaN });
-        if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - P(0.6), mx1: x0 + P(DIGIT_W) + P(0.4), lyric: u.lyric, tok, cls: u.ghost ? "ghost" : void 0, mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!tokens[u.index]?.hyph });
+        if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - P(0.6), mx1: x0 + P(DIGIT_W) + P(0.4), lyric: u.lyric, tok, cls: void 0, mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!tokens[u.index]?.hyph });
       } else if (!u.note) {
         for (let k = 0; k <= n2; k++) digit(gx(k), "0");
         if (u.j === 0 && u.index >= 0) rests.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: P(DIGIT_W) });
       }
       if (hasAugDot(u)) put(row, { ...T, t: "path", d: dotPath(gx(n2) + P(DIGIT_W / 2 + AUG_DX + AUG_R), Y(row, BASE_Y - 0.55), P(AUG_R)), cls: "jp-dot" });
+      if (u.note && u.breath) {
+        const bx = gx(n2) + P(DIGIT_W / 2 + (hasAugDot(u) ? AUG_DX + 2 * AUG_R : 0) + 0.35);
+        put(row, { ...T, t: "text", x: bx, y: Y(row, DIGIT_TOP + 0.35), s: "V", cls: artCls("breath", "jp-acc breath"), size: P(ACC_EM), anchor: "start" });
+        if (u.inhale) put(row, { ...T, t: "text", x: bx + P(1), y: Y(row, DIGIT_TOP + 0.35), s: u.inhale === "big" ? _tIn(o.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o.locale, "\u5438##\u8BB0\u53F7"), cls: artCls("inhale", "breath-label"), size: tx("breath-label"), anchor: "start" });
+      }
       if (nUL) {
         const bar0 = u.tick - u.inBar;
         ul.push({ row, x0: x0 - P(0.05), x1: x0 + P(DIGIT_W + 0.05) + (hasAugDot(u) ? P(AUG_DX + 2 * AUG_R) : 0), level: nUL, group: `${u.system}|${bar0}|${Math.floor((u.inBar + 1e-6) / u.beat)}`, tok });
@@ -6867,6 +6935,57 @@ function drawJianpu(c, mine) {
         put(a.row, { ...i === j && a.tok !== void 0 ? { tok: a.tok } : {}, t: "line", x1: a.x0, y1: y, x2: b.x1, y2: y, w: P(UL_W), cls: "jp-ul" });
         i = j + 1;
       }
+    }
+    const arc = (a, b, cls, lift) => {
+      const seg = (row, x1, x2, top) => {
+        const y = Y(row, top - lift), len = Math.abs(x2 - x1), h = Math.min(len * 0.25, Math.max(P(0.4), Math.min(P(1.2), len * 0.12)));
+        put(row, { t: "path", d: `M${x1},${y}Q${(x1 + x2) / 2},${y - h} ${x2},${y}`, cls });
+      };
+      if (a.row === b.row) seg(a.row, a.cx + P(0.3), b.cx - P(0.3), Math.min(a.top, b.top));
+      else {
+        seg(a.row, a.cx + P(0.3), P(c.right) - P(0.2), a.top);
+        seg(b.row, b.cx - P(2.4), b.cx - P(0.3), b.top);
+      }
+    };
+    const chunks = units.filter((v) => v.kind === "chunk" && v.note && !v.pad && arcAt.has(v));
+    for (let i = 1; i < chunks.length; i++) {
+      const b = chunks[i], a = chunks[i - 1];
+      if (b.j > 0 && b.index === a.index || b.j === 0 && b.tie) arc(arcAt.get(a), arcAt.get(b), "tie jp-tie", 0.2);
+    }
+    for (let i = 0; i < chunks.length; i++) {
+      const a = chunks[i];
+      if (a.j !== 0 || !tokens[a.index]?.slur) continue;
+      let j = i;
+      while (j + 1 < chunks.length && (tokens[chunks[j].index]?.slur || chunks[j + 1].index === chunks[j].index)) j++;
+      if (j > i) arc(arcAt.get(a), arcAt.get(chunks[j]), artCls("slur", "slur jp-slur"), 0.75);
+      i = j;
+    }
+    {
+      let run = [], acc = 0, minBase = Infinity;
+      const flush = () => {
+        if (run.length && run[0].ratio) {
+          const first = run[0], last = run[run.length - 1], row = rowOf(first.system, r, 0), x1 = P(first.x + 0.1), x2 = last.system === first.system ? P(last.x + 0.1 + DIGIT_W) : P(c.right), mid = (x1 + x2) / 2;
+          const top = Math.min(...run.map((v) => arcAt.get(v)?.top ?? DIGIT_TOP)) - 0.35, num = String(first.ratio[0]);
+          put(row, { t: "text", x: mid, y: Y(row, top), s: num, cls: "tuplet jp-tuplet", size: P(1.1), anchor: "middle" });
+          if (!run.some((v) => underlines(v))) put(row, { t: "path", d: `M${x1},${Y(row, top - 0.1)}L${x1},${Y(row, top - 0.45)}L${mid - P(0.45)},${Y(row, top - 0.45)}M${mid + P(0.45)},${Y(row, top - 0.45)}L${x2},${Y(row, top - 0.45)}L${x2},${Y(row, top - 0.1)}`, cls: "tuplet-bracket" });
+        }
+        run = [];
+        acc = 0;
+        minBase = Infinity;
+      };
+      for (const v of units) {
+        if (v.kind !== "chunk" || v.pad) continue;
+        const rr = v.ratio ? v.ratio.join(":") : null;
+        if (!rr || run.length && run[0].ratio.join(":") !== rr) {
+          flush();
+          if (!rr) continue;
+        }
+        run.push(v);
+        acc += v.ticks;
+        minBase = Math.min(minBase, v.base);
+        if (acc >= v.ratio[1] * minBase - 1e-6) flush();
+      }
+      flush();
     }
     layDynamics(orn);
     const inkL = measured[r].inkL;
@@ -7694,4 +7813,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-177b54446b0b.mjs.map
+//# sourceMappingURL=layout-worker-26f69ee4579c.mjs.map

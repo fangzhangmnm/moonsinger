@@ -15,7 +15,7 @@ import { harmonyTheory, harmonyTags } from "../../theory/index.ts";
 import { baseClef } from "../../score/clef.ts";
 import { MARGIN } from "../frame/params.ts";
 import { TOP_LINE, MID_LINE, BOTTOM_LINE, ART_GLYPH, GLYPH_BREATH, SHARP_POS, FLAT_POS, GLYPH_TUPLET } from "./glyphs.ts";
-import { layDynamics, layGroove, layNav, layTempo, type OrnCtx } from "../ornaments/index.ts";   // 两种行共用的挂件（第四刀 4-3）
+import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, type OrnCtx } from "../ornaments/index.ts";   // 两种行共用的挂件（第四刀 4-3）
 import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W, type Unit, type Chunk } from "./units.ts";
 import { stemInput, posD, shAt, percAt, clefW } from "./measure.ts";
 import type { Prim, EngraveOpts, Layout, HitNote, RestHit, LyricHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox } from "../engrave.ts";
@@ -365,19 +365,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
       //   突强 / 强后即弱的字对着符头中心（施工单 §2.2 第 5 条，user「还是居中对齐」）；小发夹从符头左缘（有字 = 字后面）到这个音的宽，中线在字的半腰。做不到的画灰
       const swl = c.j === 0 ? swellOf(tokens[c.index]) : undefined;   // 音内起伏 = 演奏法里的那一组（v0.9.44）
       const atk = (["sfz", "fp"] as const).filter((x) => c.art.includes(x));
-      if (swl || atk.length) attach(row, "noteDynamics", () => placeAbove(row, 0.5, (y) => {
-        let xa = nhX(c);
-        for (const a of atk) {
-          const ch = a === "sfz" ? "\u{E539}" : "\u{E534}", w = P(GLYPH_BOX[ch]?.[1] ?? 2.6), gx = cx - w / 2;
-          prims.push({ tok: tokOf(c), t: "glyph", x: gx, y, ch, cls: ["dyn", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-          xa = Math.max(xa, gx + w + P(0.3));
-        }
-        if (!swl) return;
-        const ym = y - P(0.5), xb = Math.max(xa + P(1.6), nhX(c) + P(c.w) - P(0.8)), H = P(0.35);
-        const cl = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
-        const d = swl === "<" ? `M${xb},${ym - H}L${xa},${ym}L${xb},${ym + H}` : swl === ">" ? `M${xa},${ym - H}L${xb},${ym}L${xa},${ym + H}` : `M${xa},${ym}L${mx},${ym - H}L${xb},${ym}M${xa},${ym}L${mx},${ym + H}L${xb},${ym}`;
-        prims.push({ t: "path", d, cls: cl });
-      }));
+      if (swl || atk.length) layNoteDynamics(orn, row, c, { cx, x0: nhX(c), w: P(c.w), tok: tokOf(c), cls, ign, swl, atk });   // 共用挂件（ornaments/index.ts，第四刀 4-4 原样搬出）
       // 琶音（v0.9.45）：和弦左边（临时记号再左边）一条竖的波浪线，从最低的符头到最高的；做不到的（单声的歌手）画灰
       if (c.art.includes("arpeggio")) {
         const yTop = yOf(row, dHi) - P(0.7), yBot = yOf(row, dLo) + P(0.7), x0 = nhX(c) - P(c.accW + 0.9), amp = P(0.28), step = P(0.5);

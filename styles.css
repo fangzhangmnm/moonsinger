@@ -142,6 +142,7 @@ body.listen-mode .ink-caret { display: none; }
 .staff-svg .sel { }
 .staff-svg rect.selbox { fill: var(--accent-soft); opacity: .8; }
 .staff-svg path.tuplet-bracket { fill: none; stroke: var(--ink); stroke-width: 1; }
+.staff-svg text.jp-staffonly { fill: var(--muted); }   /* 简谱数字行上「五线谱才有的记号」的小灰标（谱号 / 8va）：编辑器里看得见、能点，不印（ann） */
 /* 谱面板：svg 一层 + 歌词输入框一层（就地写歌词，不随重画消失） */
 .score { position: relative; }
 .score .sheet { position: relative; }

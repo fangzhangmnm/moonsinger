@@ -12,6 +12,7 @@ import type { LaneKind } from "../frame/lanes.ts";
 import type { Prim, EngraveOpts, DynHit, MarkHit } from "../engrave.ts";
 import type { Unit, Chunk, DynU, NavU } from "../staff/units.ts";
 import { dynDepiction } from "../signs.ts";
+import { GLYPH_BOX } from "../glyph-box.gen.ts";
 
 /** 渐强渐弱和两头的字之间留多少（sp）；比一整行还长 = 写「cresc. - - -」（字的大概宽 / 虚线一节多长、隔多远）；渐到的虚线。原样从 staff/glyphs.ts 搬来。 */
 export const PIN_GAP = 0.7;
@@ -238,4 +239,23 @@ export function layDynamics(c: OrnCtx): void {
   dynItems.forEach((_, i) => { const root = find(i), l = chains.get(root); if (l) l.push(i); else chains.set(root, [i]); });
   const minX = (ch: number[]) => Math.min(...ch.map((i) => dynItems[i]!.x0));
   for (const ch of [...chains.values()].sort((a, b) => minX(a) - minX(b))) { const row = dynItems[ch[0]!]!.row; c.attach(row, "dynamics", () => { c.placeAbove(row, 0.4, (y) => { for (const i of ch) dynItems[i]!.draw(y); }); }); }
+}
+
+/** 音内的起伏（< / > / <>）+ 突强 / 强后即弱：音自己的修饰，挂件第 3 样（刀 4b：这个音自己那一段天际线往上 0.5）。突强 / 强后即弱的字对着音的中心（user「还是居中对齐」）；
+ *  小发夹从音的左缘（有字 = 字后面）到这个音的宽，中线在字的半腰；做不到的画灰。原样从 staff/draw.ts 搬出（第四刀 4-4）：cx = 音的中心、x0 = 音的左缘、w = 这一列的宽（px）。 */
+export function layNoteDynamics(c: OrnCtx, row: number, _ch: Chunk, a: { cx: number; x0: number; w: number; tok: number | undefined; cls: string | undefined; ign: ReadonlySet<string>; swl: "<" | ">" | "<>" | undefined; atk: readonly ("sfz" | "fp")[] }): void {
+  const { P, prims } = c, { cx, tok, cls, ign, swl, atk } = a;
+  c.attach(row, "noteDynamics", () => c.placeAbove(row, 0.5, (y) => {
+    let xa = a.x0;
+    for (const k of atk) {
+      const ch = k === "sfz" ? "\u{E539}" : "\u{E534}", w = P(GLYPH_BOX[ch]?.[1] ?? 2.6), gx = cx - w / 2;
+      prims.push({ tok, t: "glyph", x: gx, y, ch, cls: ["dyn", ign.has(k) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+      xa = Math.max(xa, gx + w + P(0.3));
+    }
+    if (!swl) return;
+    const ym = y - P(0.5), xb = Math.max(xa + P(1.6), a.x0 + a.w - P(0.8)), H = P(0.35);
+    const cl = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
+    const d = swl === "<" ? `M${xb},${ym - H}L${xa},${ym}L${xb},${ym + H}` : swl === ">" ? `M${xa},${ym - H}L${xb},${ym}L${xa},${ym + H}` : `M${xa},${ym}L${mx},${ym - H}L${xb},${ym}M${xa},${ym}L${mx},${ym + H}L${xb},${ym}`;
+    prims.push({ t: "path", d, cls: cl });
+  }));
 }

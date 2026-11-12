@@ -17,6 +17,8 @@ export const DASH_L = 1.0, DASH_W = 0.13, DASH_Y = DIGIT_MID, DASH_PITCH = 1.7, 
 export const BAR_Y0 = 0.75, BAR_Y1 = 3.55, BAR_DX = 0.5, BAR_THIN = 0.12, BAR_THICK = 0.4, BAR_GAP = 0.35, BAR_W_J = 1.2;
 /** 中途换调 / 换拍号写的字（「1=D」「3/4」）占多宽（sp，按字数估：这几个字都是半角）。 */
 export const MID_TEXT_EM = 1.4, MID_TEXT_CH = 0.62;
+/** 换气：音后面的「V」占多宽、「吸 / 深吸」小字占多宽（sp；量的时候留出来）。 */
+export const BREATH_W = 0.35 + 0.9, INHALE_W = 2.2;
 /** 光标在数字行上从哪画到哪（局部 y）。 */
 export const CARET_Y0 = 0.6, CARET_Y1 = 3.9;
 

@@ -9,7 +9,7 @@ import { SLOT, type ColumnKind } from "../frame/columns.ts";
 import type { ColEntry } from "../frame/arrange.ts";
 import type { PartView } from "../engrave.ts";
 import type { Unit, Chunk, Head } from "../staff/units.ts";
-import { DIGIT_W, ACC_W, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH } from "./glyphs.ts";
+import { DIGIT_W, ACC_W, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
 
 /** 一条要排的简谱轨（一个声部在这张纸上；框架交来的单元已经切好了时值）。 */
 export interface JianpuTrack {
@@ -43,7 +43,7 @@ function unitW(u: Unit): number {
     case "bar": return u.repeat ? BAR_W_J + 1.0 : u.style ? BAR_W_J + 0.5 : BAR_W_J;
     case "key": return midTextW("1=♭B");
     case "time": return midTextW(`${u.beats}/${u.beatType}`);
-    case "clef": case "ottava": return 1.6;
+    case "clef": case "ottava": return 2.6;   // 小灰标「谱号」/「8va」写得下（字号 1 sp，两个汉字 / 四个字母）
     default: return 0;
   }
 }
@@ -55,7 +55,8 @@ export function measureJianpu(q: JianpuTrack): { entries: ColEntry<Unit>[]; inkL
   const spItems = (u: Chunk): SpItem[] => {
     if (u.pad) return [];   // 补齐的淡色小节不画、不参加间距（同五线谱）
     const n = extraGlyphs(u), acc = u.note && u.j === 0 && u.acc !== null;
-    const left = acc ? ACC_W : -0.1, right = 0.1 + DIGIT_W + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0);
+    const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;   // 换气的 V（+「吸 / 深吸」）画在音后面：留出来，不压下一个音
+    const left = acc ? ACC_W : -0.1, right = 0.1 + DIGIT_W + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW;
     inkL.set(u, Math.max(0, left));
     const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks }];
     const cx = 0.1 + DIGIT_W / 2;
