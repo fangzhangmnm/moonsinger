@@ -13,7 +13,9 @@ export interface PaperParams {
     /** 歌词字号再乘多少（没写 = 1）：简谱 = 样张的「歌词 0.727 个数字字号」换算出来的（第五刀）。 */ lyricScale?: number;
     /** 左边歌手名的字号再乘多少（没写 = 1）：简谱 = 样张的「名字 0.545 个数字字号」换算出来的（第五刀）。 */ nameScale?: number;
     /** 数字行的小节线从哪画到哪（7-I，等 user 定；没写 = body）：body = 行身（帽子那一层的顶到数字下面，样张的高线）；notes = 只兜住音那一带
-     *  （这一行最高那个数字——和弦叠多高兜多高——的顶，到最深那条下划线的底；帽子、换气、力度、八度点在外面）。 */ barSpan?: "body" | "notes";
+     *  （这一行最高那个数字——和弦叠多高兜多高——的顶，到最深那条下划线的底；帽子、换气、力度、八度点在外面）；
+     *  fixed = 固定的短线：每一行、每一小节一样高，和行里有什么无关——上端 = 数字的顶（不含上八度点），下端 = 数字下面两条下划线那么深（字形表的下划线间距算），两头留边同 notes；
+     *  叠上去的和弦音、第三条下划线、下八度点、帽子、换气、力度都露在线外（统筹 2026-11-12 补的第三种）。user 定了之后没选上的删掉，不留三个开关。 */ barSpan?: "body" | "notes" | "fixed";
 }
 export declare const PAPER_PARAMS: Readonly<Record<NotationId, Readonly<Record<Density, PaperParams>>>>;
 /** 行一级（按这一行的种类 × 版式；单位 sp，从行身算：行身 = 画法的竖向锚点 top–bottom）：行身上面最少留多少（above）、整行最少多高（rowH 有歌词 / rowHNoLyric 没歌词 /

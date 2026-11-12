@@ -8043,6 +8043,7 @@ function drawJianpu(c, mine, mode = "digits") {
           const b = band.get(row2) ?? { top: BASE_Y - DIGIT_H, bot: BASE_Y };
           drawLines(Y(row2, b.top - BAR_PAD), Y(row2, b.bot + BAR_PAD));
         });
+        else if (barSpan === "fixed") drawLines(Y(row2, BASE_Y - DIGIT_H - BAR_PAD), Y(row2, BASE_Y + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD));
         else drawLines(Y(row2, BAR_Y0), Y(row2, BAR_Y1));
         const rdot = (dx) => {
           for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put(row2, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "path", d: dotPath(x + Q(dx), Y(row2, yy), Q(0.15)), cls: "jp-dot repeat-dot" });
@@ -9196,4 +9197,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-049706f229e1.mjs.map
+//# sourceMappingURL=layout-worker-9093bc08d8e3.mjs.map

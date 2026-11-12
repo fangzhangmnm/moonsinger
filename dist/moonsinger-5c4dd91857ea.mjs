@@ -15109,6 +15109,7 @@ function drawJianpu(c10, mine, mode = "digits") {
           const b3 = band.get(row3) ?? { top: BASE_Y - DIGIT_H, bot: BASE_Y };
           drawLines(Y2(row3, b3.top - BAR_PAD), Y2(row3, b3.bot + BAR_PAD));
         });
+        else if (barSpan === "fixed") drawLines(Y2(row3, BASE_Y - DIGIT_H - BAR_PAD), Y2(row3, BASE_Y + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD));
         else drawLines(Y2(row3, BAR_Y0), Y2(row3, BAR_Y1));
         const rdot = (dx) => {
           for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put2(row3, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "path", d: dotPath(x2 + Q2(dx), Y2(row3, yy), Q2(0.15)), cls: "jp-dot repeat-dot" });
@@ -34139,7 +34140,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-049706f229e1.mjs");
+      return pick(() => "layout-worker-9093bc08d8e3.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-89f8a0a0048f.mjs");
   }
@@ -64346,4 +64347,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-05287d34f83a.mjs.map
+//# sourceMappingURL=moonsinger-5c4dd91857ea.mjs.map

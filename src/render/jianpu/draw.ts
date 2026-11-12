@@ -212,6 +212,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
           else line(x, BAR_THIN);
         };
         if (barSpan === "notes") pendingBars.push(() => { const b = band.get(row) ?? { top: BASE_Y - DIGIT_H, bot: BASE_Y }; drawLines(Y(row, b.top - BAR_PAD), Y(row, b.bot + BAR_PAD)); });
+        else if (barSpan === "fixed") drawLines(Y(row, BASE_Y - DIGIT_H - BAR_PAD), Y(row, BASE_Y + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD));   // 固定短线：数字顶 ~ 两条下划线那么深（第二条的底；下划线的位置经过盒子 note-cell.ts 的 UL_DROP）
         else drawLines(Y(row, BAR_Y0), Y(row, BAR_Y1));
         // 反复：双线旁边两个点（课本写法：|: 点在右、:| 点在左、:|: 两边都有）；一共放几遍 > 2 = 上面写「×3」
         const rdot = (dx: number) => { for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put(row, { ...(tok !== undefined ? { tok } : {}), t: "path", d: dotPath(x + Q(dx), Y(row, yy), Q(0.15)), cls: "jp-dot repeat-dot" }); };
