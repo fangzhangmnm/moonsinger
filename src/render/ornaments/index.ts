@@ -49,14 +49,25 @@ export interface OrnCtx {
   noteX: (c: Chunk) => number; noteEnd: (c: Chunk) => number;
   /** 被紧跟着的强后即弱盖掉的力度记号（画灰）；不起作用的跳转（画灰的 class 后缀）。 */
   dynOff: ReadonlySet<number>; navMute: (i: number) => string;
+  /** 不印的提示交给框架最后贴、只躲不推（第八刀 8-5；数字行给，五线谱不给 = 照旧当场画）：part 的图元 / 墨相对锚点，tries = 依次试的锚点（这一行局部 px）。 */
+  hint?: (row: number, h: { part: { ink: { x0: number; x1: number; y0: number; y1: number }; prims: Prim[] }; tries: readonly { x: number; y: number }[]; climb?: number }) => void;
 }
 
+/** 速度记号一共多宽（sp）：词 + 四分音符 + 数（同 tempoAt 的摆法）。不印的提示（8-5）找「速度后面」那个位置用。 */
+export function tempoW(c: OrnCtx, v: number): number { const k = c.RS("tempo-word"); return c.mw("tempo-word", tempoWord(v).it) + 0.7 * k + 1.3 * k + c.mw("tempo-num", `= ${v}`); }
 /** 速度记号画在基线 y（「Andante ♩ = 88」：词 + 四分音符 + 数）；change = 这一段开头比上一段快 / 慢（前面标 ↑ / ↓）。 */
 export function tempoAt(c: OrnCtx, r: number, x0: number, v: number, cls: string, index: number, change: "up" | "down" | undefined, y: number): void {
   const { P, tx, TR, RS, mw, prims, marks } = c;
   const fs = tx("tempo-word"), word = tempoWord(v).it, k = RS("tempo-word"), T = c.tokens[index] ? { tok: c.tokens[index]!.id } : {};   // 速度的字挂速度那个 token（守卫 4，第五刀 5-3）   // 尺子查样式表（v0.16.48 起跟谱，user「速度那一串字号…也应该跟着走」）
   // 这一段开头的速度和上一段不一样 = 前面标一个强调色的 ↑（快了）/ ↓（慢了）提示（user 2026-10-08「不要grey out，而是有变化的时候会标一个东西提示用户」；一样 = 照常画，不标）
-  if (change) prims.push({ t: "text", x: P(x0 - 0.3), y, s: change === "up" ? "↑" : "↓", cls: "tempo-change ann", size: fs, anchor: "end" });
+  if (change) {
+    const ar: Prim = { t: "text", x: 0, y: 0, s: change === "up" ? "↑" : "↓", cls: "tempo-change ann", size: fs, anchor: "end" };
+    if (c.hint) {   // 不印的提示（第八刀 8-5）：最后贴、只躲不推——先试速度字左边（原来的位置），再试速度后面、上面
+      const w = fs * 0.62, end = P(x0 + tempoW(c, v) + 0.3) + w;
+      c.hint(r, { part: { ink: { x0: -w, x1: 0, y0: -fs * 0.8, y1: fs * 0.1 }, prims: [ar] }, tries: [{ x: P(x0 - 0.3), y }, { x: end, y }, { x: P(x0 - 0.3), y: y - fs * 1.1 }, { x: end, y: y - fs * 1.1 }, { x: P(x0 - 0.3), y: y - fs * 2.2 }], climb: fs * 1.1 });
+    }
+    else prims.push({ ...ar, x: P(x0 - 0.3), y });
+  }
   const ww = mw("tempo-word", word), num = `= ${v}`, nw = mw("tempo-num", num);
   prims.push({ ...T, t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
   const gx = x0 + ww + 0.7 * k;
@@ -232,7 +243,11 @@ export function layDynamics(c: OrnCtx): void {
     const k1 = !endU ? undefined : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
     const tail = !endU || against ? (base: number) => {   // 推定的终点：现在的力度往上 / 往下一档（没有终点 / 终点和方向反着）
       const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
-      prims.push({ t: "text", x: labelAbove ? endXd - P(1.2) : endXd + P(0.4), y: base + P(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: tx("dyn-implied"), anchor: "start" });
+      const im: Prim = { t: "text", x: 0, y: 0, s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: tx("dyn-implied"), anchor: "start" }, ix = labelAbove ? endXd - P(1.2) : endXd + P(0.4), iy = base + P(labelAbove ? -1.9 : 0.1);
+      if (c.hint) {   // 不印的提示（第八刀 8-5）：最后贴、只躲不推——先试原来的位置，再往上、往右让
+        const fs = tx("dyn-implied"), w = P(c.mw("dyn-implied", im.s as string)), rr = c.row(s1);
+        c.hint(rr, { part: { ink: { x0: 0, x1: w, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [im] }, tries: [{ x: ix, y: iy }, { x: ix, y: iy - fs * 1.1 }, { x: ix + P(0.8), y: iy }, { x: ix, y: iy - fs * 2.2 }, { x: endXd - w - P(0.4), y: base - P(1.9) }], climb: fs * 1.1 });
+      } else prims.push({ ...im, x: ix, y: iy });
     } : undefined;
     wedgeItems(h.index, h.dir, s0, startX, s1, endXd, false, dynBefore ? dynKey(dynBefore) : undefined, k1, tail);
   });

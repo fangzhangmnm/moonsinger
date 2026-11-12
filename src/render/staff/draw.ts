@@ -38,6 +38,8 @@ export interface StaffDrawCtx {
   /** 输出：图元和各张点击表，都在每一行自己的局部坐标里画（第五线 = 0），框架定了行距再整行挪。
    *  put(行, 图元) = 往那一行的图元表里画（贴挂件回调里画的不用写行，框架知道贴在哪一行）；hitRow = 点击框画在哪一行（和它的 system 不同时才记：歌词）。 */
   put: (row: number, p: Prim) => void; hitRow: (hit: object, row: number) => void;
+  /** 不印的提示交给框架最后贴、只躲不推（第八刀 8-5；五线谱这一刀不用，提示照旧当场画）。 */
+  hint: (row: number, h: { part: { ink: { x0: number; x1: number; y0: number; y1: number }; prims: Prim[] }; tries: readonly { x: number; y: number }[]; climb?: number; onPlace?: (x: number, y: number) => void }) => void;
   prims: Prim[]; notes: HitNote[]; chordHeads: Layout["chordHeads"]; rests: RestHit[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; clefs: ClefHit[];
   keyHints: Layout["keyHints"]; chordTagsOut: Layout["chordTags"]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
   /** 和弦级数（预处理，theory/families.ts）：每一位身上要标的那几处（合租的一家合起来认、标在这一家最下面那一行）；不标 = null。第五刀 5-4。 */

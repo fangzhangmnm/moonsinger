@@ -14,7 +14,7 @@ import type { SongView } from "../../score/song-view.ts";
 import type { Prim, EngraveOpts, HitNote, RestHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox, Layout } from "../engrave.ts";
 import { dynOverridden } from "../../score/perform.ts";
 import { navWhy } from "../../score/repeats.ts";
-import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, tempoAt, type OrnCtx } from "../ornaments/index.ts";
+import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, tempoAt, tempoW, type OrnCtx } from "../ornaments/index.ts";
 import type { TextRole } from "../text/index.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import { MARGIN } from "../frame/params.ts";
@@ -27,6 +27,7 @@ import { headTextW } from "./glyphs.ts";
 import { noteCell, tailW, coreBottom, UL_DROP } from "./note-cell.ts";
 import { keyParts, keyLayout, keyPrims } from "./keytext.ts";
 import { layoutHead } from "../frame/rowhead.ts";
+import type { Part } from "../frame/cell.ts";
 import { scalePrim } from "../skyline.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_DX, AUG_R,
   BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, BREATH_W, INHALE_W, ACC_W, ARP_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, JP_BODY, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, AUG_Y, lowDotY, LOW_DOT_UNDER, GHOST_K, HEAD_EM, MARK_GAP, MARK_GAP2, STACC_W, STACC_H, STACC_STEP, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, TEN_L, TEN_W, TEN_DY, TEN_STEP, MARCATO_EM, UNSTRESS_EM, BREATH_EM, BREATH_Y, MID_TEXT_CH, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, accText } from "./glyphs.ts";
@@ -41,6 +42,8 @@ export interface JianpuDrawCtx {
   /** 行里的尺寸比例（排版参数表行一级；第五刀 5-0c）：数字行自己的尺寸 / 偏移都乘它。没给 = 1。 */
   scale?: number;
   put: (row: number, p: Prim) => void; hitRow: (hit: object, row: number) => void;
+  /** 不印的提示交给框架最后贴、只躲不推（第八刀 8-5）：图元 / 墨相对锚点，tries = 依次试的锚点（这一行局部 px），onPlace 拿到最后的位置再登记点击区。 */
+  hint: (row: number, h: { part: Part; tries: readonly { x: number; y: number }[]; climb?: number; onPlace?: (x: number, y: number) => void }) => void;
   prims: Prim[]; notes: HitNote[]; chordHeads: Layout["chordHeads"]; keyHints: Layout["keyHints"]; chordTagsOut: Layout["chordTags"]; rests: RestHit[]; marks: MarkHit[]; dyns: DynHit[]; clefs: ClefHit[]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
   staffTop: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
   placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
@@ -120,7 +123,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       for (const c0 of pend) spanTo.set(c0, staffEnd[c0.system]!); }
     // 共用挂件（力度那一串、风格、跳转房子、速度；ornaments/index.ts）：音的锚点 = 数字的左右缘
     const orn: OrnCtx = { song, paper, o, notation: "jianpu", P, tx, TR: c.TR, RS: c.RS, mw: c.mw, sp: c.sp, prims: c.prims, dyns: c.dyns, marks, placeAbove, attach: c.attach, right: c.right, left: (sy) => P(MARGIN + (sy === 0 ? ind0 : c.indN)) + Q(0.6), tokens, units, row: (sy) => rowOf(sy, r, 0),   // left = jianpuLineStart（行首竖线往右 0.6）
-      glyphScale: jk, noteX: (ch) => P(ch.x) + Q(0.1), noteEnd: (ch) => P(ch.x) + Q(0.1 + DIGIT_W), dynOff: dynOverridden(tokens), navMute: (i) => (navWhy(song, paper, q.p.id, tokens[i]!) ? " art-mute" : "") };
+      glyphScale: jk, noteX: (ch) => P(ch.x) + Q(0.1), noteEnd: (ch) => P(ch.x) + Q(0.1 + DIGIT_W), dynOff: dynOverridden(tokens), navMute: (i) => (navWhy(song, paper, q.p.id, tokens[i]!) ? " art-mute" : ""), hint: c.hint };   // hint：推定的灰字、速度变了的箭头交给框架最后贴（8-5）
     // 八度基准（UX 稿第 3 节；第五刀 5-4）：整条轨（这张纸上）一个基准——按台上那位的音域定（宿主查好放在 q.p.range）；查不到 = 写的音「点最少」；
     //   按音域定的基准下有音要三个点以上（写得离这件乐器的音域很远）= 极端：退回「点最少」。基准画在每一行「1=」那个字母上下（下面 keyDots）
     //   字母谱（7-B）：tracker 写法自己带八度数字，不用点（tonicOf 只是让基准按 C 分组，给鬼音符之类读 octBase 时不乱）
@@ -138,22 +141,26 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       const kt = q.head.idx.key !== undefined ? tokens[q.head.idx.key]?.id : undefined, tt = q.head.idx.time !== undefined ? tokens[q.head.idx.time]?.id : undefined;   // 谱头的字指着谱头那两个 token（守卫 4：每个 token 都有图元）
       const kw = printKey ? keyLayout(kp, hs).w : 0, tw = headTextW(timeS, hs);
       const chg = c.prevBpm === null || c.prevBpm === q.head.bpm ? undefined : q.head.bpm > c.prevBpm ? "up" as const : "down" as const;
-      // 过渡（8-5 之前）：不印的提示还占着原来的地方——速度变了的「↑ / ↓」画在速度字左边、字母谱 / 鼓有速度时调号提示在拍号和速度之间；8-5 改成最后贴、只躲不推后拿掉这两块留白
-      const hintW = !printKey && tempoHere ? headTextW(keyS, tx("key-hint")) + Q(0.6) : 0, arrowW = chg ? P(0.3) + tx("tempo-change") * 0.7 : 0;
-      const at = layoutHead(hx, [...(printKey ? [{ id: "key", w: kw, gap: 0 }] : []), { id: "time", w: tw, gap: printKey ? Q(0.6) : 0 }, ...(tempoHere ? [{ id: "tempo", w: 0, gap: Q(1.2) + hintW + arrowW }] : [])]);   // 字母谱 / 鼓不印调号：拍号顶到前面
+      const at = layoutHead(hx, [...(printKey ? [{ id: "key", w: kw, gap: 0 }] : []), { id: "time", w: tw, gap: printKey ? Q(0.6) : 0 }, ...(tempoHere ? [{ id: "tempo", w: 0, gap: Q(1.2) }] : [])]);   // 字母谱 / 鼓不印调号：拍号顶到前面；不印的提示不占地方（8-5）
       if (printKey) for (const pr of keyPrims(kp, at.get("key")!, y, hs, "jp-head", kt !== undefined ? { tok: kt } : {}).prims) put(row0, pr);
       put(row0, { ...(tt !== undefined ? { tok: tt } : {}), t: "text", x: at.get("time")!, y, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
       if (tempoHere) tempoAt(orn, row0, at.get("tempo")! / P(1), q.head.bpm, "tempo", q.head.idx.tempo!, chg, y);
-      // 鼓的 X 行 / 字母谱（7-B「调号不写」）：调号不印，编辑器里淡的提示（统筹裁定 5-3：调号是真的状态；打击乐的行写「无调」，7-R）。不印的不占宽、不推印的：
-      //   写在拍号后面（有速度 = 拍号和速度之间留给它的那一块；8-5 再统一改成最后贴、只躲不推）
-      if (!printKey) keyHints.push({ ...(kt !== undefined ? { tok: kt } : {}), system: row0, index: q.head.idx.key ?? 0, x: at.get("time")! + tw + Q(0.6), y, size: tx("key-hint"), s: mode === "x" ? _tIn(o.locale, "无调") : keyS });
+      // 鼓的 X 行 / 字母谱（7-B「调号不写」）：调号不印，编辑器里淡的提示（统筹裁定 5-3：调号是真的状态；打击乐的行写「无调」，7-R）。
+      //   不印的提示最后贴、只躲不推（第八刀 8-5）：先试印的东西后面，再试谱头这一行上面一行
+      if (!printKey) {
+        const ks = mode === "x" ? _tIn(o.locale, "无调") : keyS, ksz = tx("key-hint"), kwh = P(c.mw("key-hint", ks)), end = at.get("end")! + Q(0.6), up = y - hs * 1.15, kIdx = q.head.idx.key ?? 0;
+        const afterTempo = tempoHere ? at.get("tempo")! + P(tempoW(orn, q.head.bpm)) + Q(0.8) : end;   // 有速度：速度后面
+        c.hint(row0, { part: { ink: { x0: 0, x1: kwh, y0: -ksz * 0.8, y1: ksz * 0.2 }, prims: [] }, tries: [{ x: end, y }, { x: afterTempo, y }, { x: hx, y: up }, { x: at.get("time")!, y: up }, { x: afterTempo, y: up }, { x: hx, y: up - hs * 1.15 }], climb: hs * 1.15,
+          onPlace: (x, yy) => { keyHints.push({ ...(kt !== undefined ? { tok: kt } : {}), system: row0, index: kIdx, x, y: yy, size: ksz, s: ks }); } });
+      }
       if (printKey && q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row0, x: at.get("key")! - Q(0.3), y: y - hs, w: kw + Q(0.6), h: hs * 1.4 });
       // 轨开头的谱号记号（五线谱才有的；守卫 4，第五刀 5-3）：谱头那一行上面一个小灰标「谱号」（不印），点得到（谱号的小菜单里能改 / 删）
       for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i]!; if (t.kind === "note" || t.kind === "rest") break; if (t.kind !== "clef") continue;
-        const lw = Q(2.6), ly = y - hs;   // 7-K ②：谱头那一行上面一行、左对齐行首；上下差一个谱头字号
-        put(row0, { tok: t.id, t: "text", x: hx, y: ly, s: _tIn(o.locale, "谱号"), cls: "jp-staffonly ann", size: Q(1.0), anchor: "start" });
-        c.clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: i, system: row0, x: hx, y: ly - Q(1.2), w: lw, h: Q(1.6) });
+        const lw = Q(2.6), ly = y - hs, ci = i;   // 7-K ②：谱头那一行上面一行、左对齐行首；上下差一个谱头字号。不印的提示（8-5）：最后贴、只躲不推
+        c.hint(row0, { part: { ink: { x0: 0, x1: lw, y0: -Q(0.85), y1: Q(0.2) }, prims: [{ tok: t.id, t: "text", x: 0, y: 0, s: _tIn(o.locale, "谱号"), cls: "jp-staffonly ann", size: Q(1.0), anchor: "start" }] },
+          tries: [{ x: hx, y: ly }, { x: hx, y: ly - Q(1.3) }, { x: at.get("end")! + Q(0.6), y }], climb: Q(1.3),
+          onPlace: (x, yy) => { c.clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: ci, system: row0, x, y: yy - Q(1.2), w: lw, h: Q(1.6) }); } });
         break;
       }
       if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row0, x: at.get("time")! - Q(0.3), y: y - hs, w: tw + Q(0.6), h: hs * 1.4 });
@@ -176,9 +183,14 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       if (u.kind === "key") {   // 中途换调：在那一点写新的「1=D」（UX 稿第 3 节）
         fifths = u.fifths;
         const row = rowOf(u.system, r, 0), s = keyHead(u.fifths, u.minor), x = P(u.x) + Q(0.3), yb = Y(row, BASE_Y - 0.3);
-        if (mode === "x" || letters) keyHints.push({ ...(tokens[u.index] ? { tok: tokens[u.index]!.id } : {}), system: row, index: u.index, x, y: yb, size: tx("key-hint"), s: mode === "x" ? _tIn(o.locale, "无调") : s });   // 鼓 / 字母谱：只给提示（同谱头）
-        else for (const pr of keyPrims(keyParts(u.fifths, u.minor, base, c.look.middleC), x, yb, Q(MID_TEXT_EM), "jp-head jp-mid", tokens[u.index] ? { tok: tokens[u.index]!.id } : {}).prims) put(row, pr);   // 中途换调：「1=D₄」（7-Q）
-        marks.push({ index: u.index, kind: "key", system: row, x: x - Q(0.3), y: Y(row, BASE_Y - 1.6), w: Q(keyLayout(keyParts(u.fifths, u.minor, 0, 4), MID_TEXT_EM).w + 0.6), h: Q(2.2) });
+        if (mode === "x" || letters) {   // 鼓 / 字母谱：只给提示（同谱头）。不印的提示最后贴、只躲不推（8-5）：这一列不占宽，提示从数字上面往上找空
+          const ks = mode === "x" ? _tIn(o.locale, "无调") : s, ksz = tx("key-hint"), kwh = P(c.mw("key-hint", ks)), ktok = tokens[u.index] ? { tok: tokens[u.index]!.id } : {}, ki = u.index;
+          c.hint(row, { part: { ink: { x0: 0, x1: kwh, y0: -ksz * 0.8, y1: ksz * 0.2 }, prims: [] }, tries: [-0.45, -1.65, -2.85, -4.05].map((dy) => ({ x, y: Y(row, DIGIT_TOP + dy) })), climb: Q(1.2),
+            onPlace: (hx2, hy) => { keyHints.push({ ...ktok, system: row, index: ki, x: hx2, y: hy, size: ksz, s: ks }); } });
+        } else {
+          for (const pr of keyPrims(keyParts(u.fifths, u.minor, base, c.look.middleC), x, yb, Q(MID_TEXT_EM), "jp-head jp-mid", tokens[u.index] ? { tok: tokens[u.index]!.id } : {}).prims) put(row, pr);   // 中途换调：「1=D₄」（7-Q）
+          marks.push({ index: u.index, kind: "key", system: row, x: x - Q(0.3), y: Y(row, BASE_Y - 1.6), w: Q(keyLayout(keyParts(u.fifths, u.minor, 0, 4), MID_TEXT_EM).w + 0.6), h: Q(2.2) });
+        }
         continue;
       }
       if (u.kind === "time") {
@@ -204,8 +216,9 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       if (u.kind === "clef" || u.kind === "ottava") {   // 五线谱才有的记号落在数字行上：编辑器里画一个小灰标（不印），点得到（谱号 / 八度线的小菜单里能删）
         const row = rowOf(u.system, r, 0), x = P(u.x) + Q(0.2), t = tokens[u.index]!;
         const label = u.kind === "clef" ? _tIn(o.locale, "谱号") : (t as OttavaTok).shift === 0 ? "loco" : (t as OttavaTok).shift === 2 ? "15ma" : (t as OttavaTok).shift > 0 ? "8va" : "8vb";
-        put(row, { tok: t.id, t: "text", x, y: Y(row, 0.45), s: label, cls: "jp-staffonly ann", size: Q(1.0), anchor: "start" });
-        c.clefs.push({ kind: u.kind === "clef" ? "mid" : "ottava", paper: paper.id, part: q.p.id, index: u.index, system: row, x: x - Q(0.2), y: Y(row, -0.5), w: Q(2.6), h: Q(1.3) });
+        const ck = u.kind === "clef" ? "mid" as const : "ottava" as const, ci = u.index;   // 不印的提示（8-5）：不占宽、最后贴、只躲不推
+        c.hint(row, { part: { ink: { x0: 0, x1: Q(2.4), y0: -Q(0.85), y1: Q(0.2) }, prims: [{ tok: t.id, t: "text", x: 0, y: 0, s: label, cls: "jp-staffonly ann", size: Q(1.0), anchor: "start" }] }, tries: [0.45, -0.75, -1.95, -3.15].map((ly) => ({ x, y: Y(row, ly) })), climb: Q(1.2),
+          onPlace: (hx2, hy) => { c.clefs.push({ kind: ck, paper: paper.id, part: q.p.id, index: ci, system: row, x: hx2 - Q(0.2), y: hy - Q(0.95), w: Q(2.6), h: Q(1.3) }); } });
         continue;
       }
       if (u.kind === "groove") { layGroove(orn, u); continue; }   // 风格记号：共用挂件
@@ -226,10 +239,11 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W), d: NaN });
         if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - Q(0.6), mx1: x0 + Q(DIGIT_W) + Q(0.4), lyric: u.lyric, tok, cls: "ghost", mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!(tokens[u.index] as NoteTok | undefined)?.hyph });
       } else if (u.note && u.pitch) {
-        if (fd?.ambiguous && !contDash) {   // 和弦名有歧义 = 右下角小三角（编辑器里，点它 = 候选；不在盒子里：8-5 搬去不印的提示）
-          const tx0 = x0 + Q(chordNameW(fd.name) + 0.05), ty = Y(row, BASE_Y), a = Q(0.45);
-          put(row, { ...T, t: "path", d: `M${tx0},${ty}L${tx0 + a},${ty}L${tx0 + a},${ty - a}Z`, cls: "jp-chord-amb ann" });
-          if (u.j === 0) chordTagsOut.push({ x: tx0 - Q(0.2), y: ty - a - Q(0.3), w: a + Q(0.5), h: a + Q(0.6), read: fd.read, system: row, index: u.index });
+        if (fd?.ambiguous && !contDash) {   // 和弦名有歧义 = 小三角（编辑器里，点它 = 候选）：不印的提示（8-5）——不占宽、最后贴、只躲不推：先试名字右下，再右上、正下（统筹定的先后）
+          const nw = Q(chordNameW(fd.name)), tx0 = x0 + nw + Q(0.05), ty = Y(row, BASE_Y), a = Q(0.45), rd = fd.read, ui = u.index, first = u.j === 0;
+          c.hint(row, { part: { ink: { x0: 0, x1: a, y0: -a, y1: 0 }, prims: [{ ...T, t: "path", d: `M0,0L${a},0L${a},${-a}Z`, cls: "jp-chord-amb ann" }] },
+            tries: [{ x: tx0, y: ty }, { x: tx0, y: Y(row, BASE_Y - CHORD_H) + a }, { x: x0 + nw / 2 - a / 2, y: ty + a + Q(0.35) }],
+            onPlace: (hx2, hy) => { if (first) chordTagsOut.push({ x: hx2 - Q(0.2), y: hy - a - Q(0.3), w: a + Q(0.5), h: a + Q(0.6), read: rd, system: row, index: ui }); } });
         }
         if (u.j === 0) for (const m of nc.members) if (m.i > 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, m.yb - DIGIT_H / 2), w: Q(DIGIT_W) });   // 叠在一起的别的音：各自一块点击区（指着同一个音 token）
         if (!contDash) {

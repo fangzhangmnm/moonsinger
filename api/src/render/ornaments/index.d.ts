@@ -64,7 +64,26 @@ export interface OrnCtx {
     /** 被紧跟着的强后即弱盖掉的力度记号（画灰）；不起作用的跳转（画灰的 class 后缀）。 */
     dynOff: ReadonlySet<number>;
     navMute: (i: number) => string;
+    /** 不印的提示交给框架最后贴、只躲不推（第八刀 8-5；数字行给，五线谱不给 = 照旧当场画）：part 的图元 / 墨相对锚点，tries = 依次试的锚点（这一行局部 px）。 */
+    hint?: (row: number, h: {
+        part: {
+            ink: {
+                x0: number;
+                x1: number;
+                y0: number;
+                y1: number;
+            };
+            prims: Prim[];
+        };
+        tries: readonly {
+            x: number;
+            y: number;
+        }[];
+        climb?: number;
+    }) => void;
 }
+/** 速度记号一共多宽（sp）：词 + 四分音符 + 数（同 tempoAt 的摆法）。不印的提示（8-5）找「速度后面」那个位置用。 */
+export declare function tempoW(c: OrnCtx, v: number): number;
 /** 速度记号画在基线 y（「Andante ♩ = 88」：词 + 四分音符 + 数）；change = 这一段开头比上一段快 / 慢（前面标 ↑ / ↓）。 */
 export declare function tempoAt(c: OrnCtx, r: number, x0: number, v: number, cls: string, index: number, change: "up" | "down" | undefined, y: number): void;
 /** 速度记号（挂件第 7 样）：这一段天际线往上 0.5。 */

@@ -27,6 +27,24 @@ export interface StaffDrawCtx {
      *  put(行, 图元) = 往那一行的图元表里画（贴挂件回调里画的不用写行，框架知道贴在哪一行）；hitRow = 点击框画在哪一行（和它的 system 不同时才记：歌词）。 */
     put: (row: number, p: Prim) => void;
     hitRow: (hit: object, row: number) => void;
+    /** 不印的提示交给框架最后贴、只躲不推（第八刀 8-5；五线谱这一刀不用，提示照旧当场画）。 */
+    hint: (row: number, h: {
+        part: {
+            ink: {
+                x0: number;
+                x1: number;
+                y0: number;
+                y1: number;
+            };
+            prims: Prim[];
+        };
+        tries: readonly {
+            x: number;
+            y: number;
+        }[];
+        climb?: number;
+        onPlace?: (x: number, y: number) => void;
+    }) => void;
     prims: Prim[];
     notes: HitNote[];
     chordHeads: Layout["chordHeads"];

@@ -22,12 +22,12 @@ const COLUMN_KIND: Record<Unit["kind"], ColumnKind> = { bar: "bar", nav: "nav", 
 /** 中途换调 / 换拍号写的那几个字（「1=♭B」「3/4」）大约多宽（sp）。 */
 export const midTextW = (s: string): number => [...s].length * MID_TEXT_CH * MID_TEXT_EM + 0.6;
 /** 不是音的单元在数字行上占多宽（数字行的单位：乘上行里的尺寸比例才是 sp）：小节线一根的宽；换调 / 换拍号 = 写字的宽；谱号 / 八度线（五线谱才有的）= 小灰标的宽；别的（力度、发夹、速度、风格、跳转、写字头）不占地方。 */
-function unitW(u: Unit): number {
+function unitW(u: Unit, printKey: boolean): number {
   switch (u.kind) {
     case "bar": return u.repeat ? BAR_W_J + 1.0 : u.style ? BAR_W_J + 0.5 : BAR_W_J;
-    case "key": return keyLayout(keyParts(u.fifths, u.minor, 0, 4), MID_TEXT_EM).w + 0.6;   // 中途换调写的字「1=♭B₃」（7-Q）：宽从字形算（第八刀 8-4）；八度数字按一位算
+    case "key": return printKey ? keyLayout(keyParts(u.fifths, u.minor, 0, 4), MID_TEXT_EM).w + 0.6 : 0;   // 字母谱 / 鼓不印调号：只给不印的提示，不占宽（8-5）   // 中途换调写的字「1=♭B₃」（7-Q）：宽从字形算（第八刀 8-4）；八度数字按一位算
     case "time": return headTextW(`${u.beats}/${u.beatType}`, MID_TEXT_EM) + 0.6;
-    case "clef": case "ottava": return 2.6;   // 小灰标「谱号」/「8va」写得下（字号 1 sp，两个汉字 / 四个字母）
+    case "clef": case "ottava": return 0;   // 五线谱才有的记号落在数字行上 = 不印的小灰标：不占宽、最后贴、只躲不推（8-5，统筹定）   // 小灰标「谱号」/「8va」写得下（字号 1 sp，两个汉字 / 四个字母）
     default: return 0;
   }
 }
@@ -49,7 +49,7 @@ export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits"
     if (u.lyW !== undefined) out.push({ row: 1, left: u.lyW / 2 - cx, right: cx + u.lyW / 2 + 0.4 + (u.hyph ? 0.7 : 0) });   // 按歌词排：字和字之间不撞（同一套顶杆）
     return out;
   };
-  const entries = q.units.map((u): ColEntry<Unit> => { if (u.kind === "key") fifths = u.fifths; return ({ tick: u.tick, slot: u.kind === "nav" ? u.slot : SLOT[COLUMN_KIND[u.kind]], w: u.kind === "chunk" ? u.w : unitW(u) * k, ...(u.kind === "bar" ? { bar: true } : {}), ...(u.kind === "chunk" ? { chunk: { items: spItems(u), span: u.ticks } } : {}), ref: u }); });
+  const entries = q.units.map((u): ColEntry<Unit> => { if (u.kind === "key") fifths = u.fifths; return ({ tick: u.tick, slot: u.kind === "nav" ? u.slot : SLOT[COLUMN_KIND[u.kind]], w: u.kind === "chunk" ? u.w : unitW(u, mode === "digits" && q.letters === undefined) * k, ...(u.kind === "bar" ? { bar: true } : {}), ...(u.kind === "chunk" ? { chunk: { items: spItems(u), span: u.ticks } } : {}), ref: u }); });
   return { entries, inkL };
 }
 /** 行首多宽（sp）：base = 框架给的（名字一栏的缩进 + 边距）；数字行行首不画谱号 / 调号（谱头「1=C 4/4」写在第一行上方），只留一点空。 */

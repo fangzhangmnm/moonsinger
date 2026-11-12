@@ -7,6 +7,7 @@ import type { LaneKind } from "../frame/lanes.ts";
 import type { LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux } from "./chunk.ts";
+import type { Part } from "../frame/cell.ts";
 /** 简谱数字行贴挂件的先后（从数字往上：演奏法 → 音的修饰 → 力度道 → 跳转 → 速度 → 风格 → 小节号 → 和弦级数；歌词在下面）。和五线谱同一张道名表（frame/lanes.ts）。 */
 export declare const JIANPU_LANES: readonly LaneKind[];
 /** 框架交给数字行的东西（是五线谱那一份的子集：不要纵向 ↔ 音高的几何）。 */
@@ -25,6 +26,16 @@ export interface JianpuDrawCtx {
     scale?: number;
     put: (row: number, p: Prim) => void;
     hitRow: (hit: object, row: number) => void;
+    /** 不印的提示交给框架最后贴、只躲不推（第八刀 8-5）：图元 / 墨相对锚点，tries = 依次试的锚点（这一行局部 px），onPlace 拿到最后的位置再登记点击区。 */
+    hint: (row: number, h: {
+        part: Part;
+        tries: readonly {
+            x: number;
+            y: number;
+        }[];
+        climb?: number;
+        onPlace?: (x: number, y: number) => void;
+    }) => void;
     prims: Prim[];
     notes: HitNote[];
     chordHeads: Layout["chordHeads"];

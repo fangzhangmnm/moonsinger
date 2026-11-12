@@ -13,7 +13,7 @@ import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs,
 import { PLACE, gapOf, groupOf, type PlaceId } from "./place.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_STEP, ACC_EM, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_R, AUG_Y,
   BREATH_W, INHALE_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, LOW_DOT_UNDER, GHOST_K,
-  STACC_W, STACC_H, TEN_L, TEN_W, BREATH_EM, BREATH_Y, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, DOT_GAP,
+  STACC_W, STACC_H, TEN_L, TEN_W, BREATH_EM, BREATH_Y, CHORD_EM, CHORD_SX, CHORD_H, chordNameW, chordBassCx, stackBases, dotPath, DOT_GAP,
   ACC_GLYPH_EM, ACC_RISE, ACC_SEP, accGlyphs, accGlyphsOfText, accRunW, supAccEm, accStroke } from "./glyphs.ts";
 
 export interface NoteCellIn {
@@ -68,7 +68,7 @@ function accRun(gs: readonly { ch: string; box: readonly number[]; dom: number }
 
 export function noteCell(a: NoteCellIn): NoteCellOut {
   const { u, q, mode, aux } = a, T = T0(a.tok), art = a.artCls ?? ((x: string, b = "art") => b || x);
-  const fd = mode === "digits" ? foldOf(u, aux) : undefined, nameW = fd ? chordNameW(fd.name) : 0, lt = lettersOf(q, u, mode, aux), glyphW = fd ? nameW + (fd.ambiguous ? CHORD_AMB_W : 0) : lt ? lt.w : DIGIT_W;
+  const fd = mode === "digits" ? foldOf(u, aux) : undefined, nameW = fd ? chordNameW(fd.name) : 0, lt = lettersOf(q, u, mode, aux), glyphW = fd ? nameW : lt ? lt.w : DIGIT_W;   // 和弦名的歧义小三角不占宽（不印的提示，8-5）
   const x0 = 0.1, cx = x0 + glyphW / 2, n = extraGlyphs(u), contDash = isContDash(u), small = u.art.includes("ghost"), gk = small ? GHOST_K : 1;
   const letters = q.letters !== undefined && mode === "digits", xHead = mode === "digits" && !!q.p.xHead, kit = q.p.perc?.kind === "kit";
   const nUL = underlines(u);

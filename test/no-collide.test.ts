@@ -36,12 +36,8 @@ const ALLOWED: { name: string; ok: (a: Prim, b: Prim) => boolean }[] = [
   { name: "五线谱：幽灵音的括号符头 × 它的加线", ok: (a, b) => a.t === "glyph" && has(a, "ghost") && b.t === "line" && has(b, "ghost") },
   { name: "五线谱：符尾 / 附点挨着符头", ok: (a, b) => a.t === "glyph" && b.t === "glyph" && !a.cls && has(b, "note") },
 ];
-/** 查出来了、等统筹定谁让谁（施工单第六节 2026-11-12 · 7-K「拿不准谁让谁的」⑥ ⑦）：按「谁和谁」认。 */
-const PENDING: Record<string, string> = {
-  "line:bar.jp-bar × text:dyn-implied.ann": "⑥ 数字行的高小节线穿过上面挂的推定灰字（和 7-I 小节线该多高是一件事）",
-  "line:bar.jp-bar × text:tempo-change.ann": "⑥ 数字行的高小节线穿过行首速度变了的「↑」",
-  "text:dyn-implied.ann × text:nav-mark.nav-word": "⑦ 推定的灰字是注解、不进天际线，后贴的跳转字看不见它",
-};
+/** 查出来了、等统筹定谁让谁：按「谁和谁」认。第八刀 8-5（不印的提示最后贴、只躲不推）之后 7-K 的 ⑥ ⑦ 三条都没了，单子是空的；以后再有拿不准的照样往这里加。 */
+const PENDING: Record<string, string> = {};
 /** 五线谱查出来的（这一串只报不修；施工单第六节 7-K「五线谱只报不修」）。 */
 const STAFF_KNOWN: Record<string, string> = {
   "path:brace × rect:cat-bar.ann.cat-1": "花括号压着编辑器的色条", "path:brace × rect:cat-bar.ann.cat-4": "花括号压着编辑器的色条",

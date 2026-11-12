@@ -23,7 +23,9 @@ import { parseArrangement } from "../score/arrange.ts";
 import { curveOf, SP_DEFAULTS } from "./spacing.ts";
 import { type PercInfo } from "../gm/percussion.ts";
 import { MELISMA_MARK, lyricShow, lyricHang } from "../score/lyrics.ts";
-import { Skyline, primInk, shiftPrim } from "./skyline.ts";
+import { Skyline, primInk, shiftPrim, movePrim, primY } from "./skyline.ts";
+import { placeHints } from "./frame/hints.ts";
+import type { Part, Ink } from "./frame/cell.ts";
 import { songInC } from "../score/view-in-c.ts";
 import { songViewOf } from "../score/song-view.ts";
 import { type HarmonyRead } from "../theory/index.ts";
@@ -480,11 +482,15 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     /** 记一段时间里新加的图元和点击区（贴挂件时整块挪、最后整行挪）。 */
     const primRow: number[] = [];   // 第 i 个图元在哪一行（只记这张纸音符层和挂件那一段）
     const hitLists = (): { y: number }[][] => [notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut];
-    const mark = () => ({ p: prims.length, h: hitLists().map((l) => l.length) });
+    /** 不印的提示（第八刀 8-5）：画法登记，印的东西全定了之后最后贴、只躲不推（frame/hints.ts）。tries 是这一行局部坐标里的锚点（px），onPlace 拿到最后的位置再登记点击区。 */
+    const hints: { row: number; part: Part; tries: { x: number; y: number }[]; climb?: number; onPlace?: (x: number, y: number) => void }[] = [];
+    const hint = (row: number, h: { part: Part; tries: readonly { x: number; y: number }[]; climb?: number; onPlace?: (x: number, y: number) => void }) => { hints.push({ row, part: h.part, tries: h.tries.map((t) => ({ ...t })), ...(h.climb ? { climb: h.climb } : {}), ...(h.onPlace ? { onPlace: h.onPlace } : {}) }); };
+    const mark = () => ({ p: prims.length, h: hitLists().map((l) => l.length), k: hints.length });
     const shiftSince = (m: ReturnType<typeof mark>, dy: number) => {
       if (!dy) return;
       for (let i = m.p; i < prims.length; i++) shiftPrim(prims[i], dy);
       hitLists().forEach((l, j) => { for (let i = m.h[j]; i < l.length; i++) l[i].y += dy; });
+      for (let i = m.k; i < hints.length; i++) for (const t of hints[i]!.tries) t.y += dy;   // 贴挂件时在回调里登记的提示跟着整块挪
     };
     /** 新加的图元的墨（不算注解），换成这一行的局部坐标。 */
     const inkSince = (m: ReturnType<typeof mark>, row: number, f: (x0: number, x1: number, y0: number, y1: number) => void) => {
@@ -617,7 +623,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       parts: per.filter((q, i) => !q.vrt && rowHost[i]! < 0).map((q) => ({ id: q.p.id, tokens: q.tokens, broken: songLook.chordsOf(q.p.id) !== "stacked", perc: !!q.p.perc })),   // 打击乐的行在预处理里拦（7-O）
       families: famIds.map((fid) => famHere(fid).map((p) => p.id)),
     }) : null;
-    const drawCtx = { song, look: songLook, harmony, aux, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
+    const drawCtx = { song, look: songLook, harmony, aux, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, hint, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
     // 小节号（v0.9.42；user 2026-10-10「小节号要，可以页面设置toggle，默认是每行开头有。字小一点」）：每行最上面那条的左上角，印这一行第一个小节的号；
     //   每张纸从 1 数（纸 = 曲段），弱起算第 0 小节；第一行是 1 / 0 就不印（出版谱的老规矩）。刀 4b：挂件第 9 样 = 行首那一段天际线往上 0.3。
     //   第四刀起归框架（原来在五线谱的画法里）：它贴在这一行最上面那条上，不归哪一种画法
@@ -730,6 +736,14 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     hitLists().forEach((l, j) => { for (let i = p0.h[j]; i < pEnd.h[j]; i++) { const h = l[i] as { y: number; system: number }; h.y += delta.get(hitRowOf.get(h) ?? h.system) ?? 0; } });
     //   ⑥ 跨行的（歌手牌、花括号、左边连着的竖线、色条）
     drawSystemsChrome();
+    //   ⑦ 不印的提示最后贴（第八刀 8-5）：印的东西（这张纸的音符层、挂件、行首的家具）全定了之后，对着它们的墨给每个提示挑地方——只躲不推
+    if (hints.length) {
+      for (const h of hints) { const d = delta.get(h.row) ?? 0; for (const t of h.tries) t.y += d; }
+      const ys = hints.flatMap((h) => h.tries.map((t) => t.y)), lo = Math.min(...ys) - P(12), hi = Math.max(...ys) + P(12), printed: Ink[] = [];
+      for (let i = p0.p; i < prims.length; i++) { const p = prims[i]!; if (isAnn(p)) continue; const y = primY(p); if (y < lo || y > hi) continue; primInk(p, sp, textW, (x0, x1, y0, y1) => printed.push({ x0, x1, y0, y1 })); }
+      const at = placeHints(printed, hints, P(0.15));
+      hints.forEach((h, k) => { const { x, y } = at[k]!; for (const pr of h.part.prims) { const q = { ...pr }; movePrim(q, x, y); prims.push(q); } h.onPlace?.(x, y); });
+    }
     papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(note ? { note } : {}) });
   }
   // 分页：页框（压在最底下）+ 页码；高 = 最后一页的底
