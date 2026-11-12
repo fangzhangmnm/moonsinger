@@ -17974,6 +17974,7 @@ var ScoreView = class {
   }
   /** 画（给下一帧用的异步入口）：排版现成就画，不现成交给 worker、回来再画。 */
   renderAsync() {
+    this.noteAsk();
     const w2 = this.workerOrNull();
     if (!w2) {
       this.render();
@@ -18044,6 +18045,7 @@ var ScoreView = class {
   }
   render() {
     this.needPaint = false;
+    this.noteAsk();
     const st2 = this.host.get();
     this.layoutNow(true);
     const { sp: sp2, width, strict, page, margins, hscroll } = this.frameNow;
@@ -18102,7 +18104,8 @@ var ScoreView = class {
     if (fk !== this.followKey) {
       const moved2 = this.followKey.slice(0, this.followKey.lastIndexOf("|")) !== base2;
       this.followKey = fk;
-      if (base2 !== this.heldBase && (moved2 || this.caretSeen)) {
+      const scrolledAway = moved2 && this.userScrollAt > this.askAt;
+      if (base2 !== this.heldBase && (moved2 || this.caretSeen) && !scrolledAway) {
         this.heldBase = null;
         span("follow", () => this.follow());
       }
@@ -18483,6 +18486,16 @@ var ScoreView = class {
     return `${st2.at.paper}|${st2.at.part}|${st2.caret}|${st2.sel ? `${st2.sel.from}-${st2.sel.to}` : ""}|${this.lyrics.open ? this.lyrics.system : ""}|${this.marks.open ? this.marks.system : ""}`;
   }
   followKey = "";
+  /** 光标 / 选区 / 编辑框挪到现在这个位置是什么时候（第一次要画它的那一刻；排版在路上时比真画早）：这之后人自己滚过 = 这一次不跟。 */
+  askKey = "";
+  askAt = -1e9;
+  noteAsk() {
+    const b3 = this.baseKey();
+    if (b3 !== this.askKey) {
+      this.askKey = b3;
+      this.askAt = performance.now();
+    }
+  }
   caretSeen = true;
   // 光标那行现在在不在视野里（滚动 / 重画时记；窗口变了要不要跟就看它）
   /** 上一次画的时候每一行（纸 | 声部 | 第几行 | 第几张谱表）的第五线 y（px）：钉住正在写的那一行用（防抖，user 11-09「屏幕上把你正在写的那一行钉住不动 同意」）。 */
@@ -65575,4 +65588,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-747ae67804a7.mjs.map
+//# sourceMappingURL=moonsinger-cf7429262508.mjs.map

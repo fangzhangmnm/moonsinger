@@ -1,5 +1,6 @@
 // test/e2e/pad-toggle.mjs —— 真浏览器 E2E（iPad mini 竖屏 744 × 1133）：开合键盘不把谱拽回光标那儿；点亮着的模式 = 弹出它的键盘 / 混音台（v0.10.42）。
 // created 2026-10-11 by Claude Opus 5.5（user「toggle软键盘之后谱子还是会跳到奇怪的地方」「idiempotent点听，音也应该跳出相应的软键盘」）
+//   2026-11-12 Claude Opus 5.5（MoonSinger小弟）：放完光标马上滚轮滚开不被拽回 + 等法改成等跟随落地、真滚轮（原来时红时绿）
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/pad-toggle.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
@@ -15,12 +16,21 @@ const top = () => p.evaluate(() => Math.round(document.getElementById("score").s
 const padShown = () => p.evaluate(() => !document.getElementById("padPanel").hidden);
 const caretSeen = () => p.evaluate(() => { const sc = document.getElementById("score").getBoundingClientRect(), c = document.querySelector("#score .caret")?.getBoundingClientRect(); return !!c && c.bottom > sc.top && c.top < sc.bottom; });
 const togglePad = async () => { if (await padShown()) { await p.click("#padPanel .hide-pad"); } else await p.click("#padTab"); await p.waitForTimeout(300); };
-// 光标放在开头附近，然后滚开很远
-await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, caret: 5, sel: null }); }); await p.waitForTimeout(200);
-await p.evaluate(() => { document.getElementById("score").scrollTop = 3000; }); await p.waitForTimeout(200);
-const t0 = await top(); check(!(await caretSeen()), "滚开了：光标那行不在视野里", String(t0));
+// 等法（2026-11-12）：光标挪了之后，视图跟过去那一下要等排版回来（光标跨过尾巴 = 整张重排，排版线程里一百来毫秒，负载高更久）。
+//   原来固定等 200 毫秒、再用代码设 scrollTop 滚开：排版没回来就滚开 = 回来时被拽回 = 时红时绿。现在：
+//   frames = 等几帧（下一帧的画把排版发出去）；land = 让主线程把在路上的排版算完、画掉（跟随就落在这一刻，不靠猜时间）；滚开用真滚轮（人滚开走的那条路）。
+const frames = (n = 2) => p.evaluate((k) => new Promise((r) => { const f = () => (k-- > 0 ? requestAnimationFrame(f) : r()); f(); }), n);
+const land = async () => { await frames(2); await p.evaluate(() => { window.__moonsinger.layout(); }); await frames(2); };
+const still = async () => { let a = await top(); for (let i = 0; i < 40; i++) { await frames(3); const b = await top(); if (b === a) return b; a = b; } return a; };
+const wheelAway = async (dy) => { const r = await p.$eval("#score", (e) => { const b = e.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height * 0.4 }; }); await p.mouse.move(r.x, r.y); await p.mouse.wheel(0, dy); };
+const setCaret = (c) => p.evaluate((c) => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, caret: c === "end" ? s.song.papers[0].tracks[s.at.part].length : c, sel: null }); }, c);
+// 光标放在开头附近、跟随落地，然后用滚轮滚开很远
+await setCaret(5); await land(); await still(); await wheelAway(3000);
+const t0 = await still(); check(!(await caretSeen()) && t0 > 1000, "滚开了：光标那行不在视野里", String(t0));
 await togglePad(); const t1 = await top(); await togglePad(); const t2 = await top();
 check(Math.abs(t1 - t0) <= 2 && Math.abs(t2 - t0) <= 2, "开合键盘两次：谱不跳回光标那儿（以前一开合就拽回去）", `${t0} → ${t1} → ${t2}`);
+await setCaret(6); await land(); await still();
+check(await caretSeen(), "滚开之后再挪一下光标（打字、方向键同一条）= 照旧跟过去");
 // 光标在视野里、被弹出来的键盘挡住 = 拉上来
 if (await padShown()) await togglePad();
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), sc = document.getElementById("score"); m.set({ ...s, caret: s.song.papers[0].tracks[s.at.part].length, sel: null }); }); await p.waitForTimeout(300);
@@ -66,6 +76,25 @@ check((await bannerText()) === null, "ResizeObserver 的提示 = 不弹红条");
 await p.evaluate(() => window.dispatchEvent(new ErrorEvent("error", { message: "e2e-boom" }))); await p.waitForTimeout(100);
 check(/e2e-boom/.test((await bannerText()) ?? ""), "别的脚本错误照样弹红条", String(await bannerText()));
 await p.evaluate(() => { const e = document.getElementById("errBanner"); if (e) e.hidden = true; });
+// 放完光标、排版还在路上时就用滚轮滚开：排版回来那一刻不许把人拽回光标那儿（人滚开了不拽回去；施工单第五节 2026-11-12）。
+//   单开一页、谱长 400 小节：光标从尾巴后面挪进谱里 = 整张重排几百毫秒，滚轮一定落在排版回来之前（80 小节只有一百来毫秒，旧代码上 3 次只红 1 次）
+{
+  const q = await (await b.newContext({ viewport: { width: 744, height: 1133 }, hasTouch: true, isMobile: true })).newPage(); q.on("pageerror", (e) => errs.push(e.message));
+  await q.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await q.waitForTimeout(700);
+  const BIG = XML.replace(/<part id="P1">[\s\S]*<\/part>/, `<part id="P1">${Array.from({ length: 400 }, (_, k) => `<measure number="${k + 1}">${k ? "" : A}${N("C")}${N("D")}${N("E")}${N("F")}</measure>`).join("")}</part>`);
+  await q.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); m.setMode("notes"); }, BIG); await q.waitForTimeout(500);
+  const qf = (n = 2) => q.evaluate((k) => new Promise((r) => { const f = () => (k-- > 0 ? requestAnimationFrame(f) : r()); f(); }), n);
+  const qland = async () => { await qf(2); await q.evaluate(() => { window.__moonsinger.layout(); }); await qf(2); };
+  const qtop = () => q.evaluate(() => Math.round(document.getElementById("score").scrollTop));
+  const qstill = async () => { let a = await qtop(); for (let i = 0; i < 60; i++) { await qf(3); const c = await qtop(); if (c === a) return c; a = c; } return a; };
+  const qset = (c) => q.evaluate((c) => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, caret: c === "end" ? s.song.papers[0].tracks[s.at.part].length : c, sel: null }); }, c);
+  await qset("end"); await qland(); await qstill();   // 光标先在尾巴后面（排版开着「最后一行五线画到右边」），落定在谱尾
+  const mid = await q.$eval("#score", (e) => { const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * 0.4 }; });
+  await qset(5); await qf(2); await q.mouse.move(mid.x, mid.y); await q.mouse.wheel(0, -3000); await qland();   // 放到开头（要往上跟一大截），排版还在路上就往上滚一点点
+  const y = await qstill(), seen = await q.evaluate(() => { const sc = document.getElementById("score").getBoundingClientRect(), c = document.querySelector("#score .caret")?.getBoundingClientRect(); return !!c && c.bottom > sc.top && c.top < sc.bottom; });
+  check(!seen && y > 5000, "放完光标、视图还没跟过去时滚轮滚开 = 不被拽回（以前排版一回来就拽到光标那儿）", String(y));
+  await q.context().close();
+}
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`pad-toggle: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

@@ -363,6 +363,7 @@ export class ScoreView {
   }
   /** 画（给下一帧用的异步入口）：排版现成就画，不现成交给 worker、回来再画。 */
   renderAsync(): void {
+    this.noteAsk();
     const w = this.workerOrNull();
     if (!w) { this.render(); return; }
     const st = this.host.get(), g = this.geo(st);
@@ -401,6 +402,7 @@ export class ScoreView {
   paintedFor(st: EditorState): boolean { return this.paintedSt === st; }
   render(): void {
     this.needPaint = false;
+    this.noteAsk();
     const st = this.host.get();
     this.layoutNow(true);
     const { sp, width, strict, page, margins, hscroll } = this.frameNow!;
@@ -455,10 +457,13 @@ export class ScoreView {
     if (this.holdView) this.heldBase = base;   // 点声部名：这个光标位置不跟，直到光标再挪
     // 只是窗口变了（键盘弹出 / 收起、转屏）= 光标那行本来就在视野里才跟（被键盘挡住时拉上来）；自己滚开去看别处了 = 不拽回光标那儿
     //   （v0.10.42；user「toggle软键盘之后谱子还是会跳到奇怪的地方」——原来窗口一变就跟，滚开了再开合键盘 = 跳回光标那行）
+    //   光标挪了、但排版回来之前人自己滚开了（滚轮 / 手指）= 这一次不跟（施工单第五节 2026-11-12：光标跨过尾巴那一下要整张重排、跟随晚到一百来毫秒，
+    //   这当中滚开的人原来会被拽回去；「人滚开了不拽回去」是早就定的规矩）。打字、方向键 = 新的一次挪光标，照旧跟
     if (fk !== this.followKey) {
       const moved = this.followKey.slice(0, this.followKey.lastIndexOf("|")) !== base;
       this.followKey = fk;
-      if (base !== this.heldBase && (moved || this.caretSeen)) { this.heldBase = null; span("follow", () => this.follow()); }
+      const scrolledAway = moved && this.userScrollAt > this.askAt;
+      if (base !== this.heldBase && (moved || this.caretSeen) && !scrolledAway) { this.heldBase = null; span("follow", () => this.follow()); }
     }
     this.caretSeen = this.caretVisible();
     span("overlay", () => this.host.onAnchors?.(this.layout!));   // 谱面上面那一层照着这份排版摆（同一帧；先读完锚点再写 DOM，见 score-overlay.ts）；单独记账（探针 scripts/probe-input-latency.mjs 的「overlay」）
@@ -698,6 +703,9 @@ export class ScoreView {
     return `${st.at.paper}|${st.at.part}|${st.caret}|${st.sel ? `${st.sel.from}-${st.sel.to}` : ""}|${this.lyrics.open ? this.lyrics.system : ""}|${this.marks.open ? this.marks.system : ""}`;
   }
   private followKey = "";
+  /** 光标 / 选区 / 编辑框挪到现在这个位置是什么时候（第一次要画它的那一刻；排版在路上时比真画早）：这之后人自己滚过 = 这一次不跟。 */
+  private askKey = ""; private askAt = -1e9;
+  private noteAsk(): void { const b = this.baseKey(); if (b !== this.askKey) { this.askKey = b; this.askAt = performance.now(); } }
   private caretSeen = true;               // 光标那行现在在不在视野里（滚动 / 重画时记；窗口变了要不要跟就看它）
   /** 上一次画的时候每一行（纸 | 声部 | 第几行 | 第几张谱表）的第五线 y（px）：钉住正在写的那一行用（防抖，user 11-09「屏幕上把你正在写的那一行钉住不动 同意」）。 */
   private pinPrev: { tops: Map<string, number>; song: EditorState["song"]; view: string } | null = null;
