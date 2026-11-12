@@ -36,6 +36,7 @@
       "arrangement": "string",
       "barNumbers": "string",
       "chordTags": "boolean",
+      "expressions": "boolean",
       "lyricFit": "string",
       "middleC": "number",
       "minor": "number",

@@ -6,6 +6,7 @@ import "./audio-queue.test.ts";
 import "./engrave-printable.test.ts";
 import "./score-surface.test.ts";
 import "./song-view.test.ts";
+import "./expressions.test.ts";   // 演奏法和表情不显示（7-G）
 import "./jianpu.test.ts";
 import "./no-collide.test.ts";
 import "./layout-params.test.ts";

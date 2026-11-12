@@ -514,6 +514,18 @@ var S = {
   "\u9875\u9762\u8BBE\u7F6E": { en: "Page settings" },
   "\u7248\u9762": { en: "Layout" },
   "\u770B\u8C31\u65B9\u5F0F": { en: "Key view" },
+  "\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Articulations & dynamics" },
+  "\u663E\u793A": { en: "Show" },
+  "\u4E0D\u663E\u793A": { en: "Hide" },
+  "\u4E0D\u663E\u793A = \u952E\u76D8\u300C\u6F14\u594F\u6CD5\u300D\u300C\u529B\u5EA6\u300D\u4E24\u9875\u4E0A\u7684\u4E1C\u897F\u90FD\u4E0D\u753B\u3001\u4E0D\u5360\u5730\u65B9\uFF08\u8DF3\u97F3\u3001\u91CD\u97F3\u3001\u8FDE\u7EBF\u3001\u547C\u5438\u3001\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u2026\uFF09\uFF0C\u884C\u8DDF\u7740\u53D8\u77EE\uFF1B\u6BCF\u4E00\u6BB5\u7684\u66F2\u6BB5\u63A7\u4EF6\u4E0A\u4E00\u4E2A\u7070\u8272\u7684\u300C\u6298\u53E0 N\u300D\u8BF4\u8FD9\u4E00\u6BB5\u6536\u8D77\u4E86\u51E0\u5904\u3002\u53EA\u7BA1\u753B\uFF1A\u64AD\u653E\u7167\u5199\u7684\u6765\uFF0C\u6B4C\u91CC\u7684\u8BB0\u53F7\u4E00\u4E2A\u4E0D\u52A8\uFF1BPDF \u7167\u773C\u524D\u7684\u6837\u5B50\u5370\u3002": { en: "Hide = nothing from the keyboard's Articulation and Dynamics pages is drawn or takes room (staccato, accents, slurs, breaths, dynamics, hairpins\u2026), so lines get shorter; a gray \u201CFolded N\u201D on each section's controls says how many are tucked away there. Display only: playback follows what's written and no mark in the song changes; the PDF prints what you see." },
+  "\u663E\u793A\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Show articulations & dynamics" },
+  "\u4E0D\u663E\u793A\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Hide articulations & dynamics" },
+  "\u4E0D\u5370\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "without articulations & dynamics" },
+  "\u6298\u53E0 {n}": { en: "Folded {n}" },
+  "\u8FD9\u4E00\u6BB5\u6709 {n} \u5904\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u6CA1\u663E\u793A\uFF08\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u91CC\u5173\u7740\uFF1B\u64AD\u653E\u7167\u5199\u7684\u6765\uFF09\uFF1A\u70B9\u5F00\u53BB\u6253\u5F00": { en: "{n} {n|articulation or dynamic is|articulations or dynamics are} hidden in this section (turned off under Page settings \u203A Reading; playback follows what's written): tap to turn them on" },
+  "\u6539\u5230\u4E86\u6CA1\u663E\u793A\u7684{what}\uFF08\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\uFF09": { en: "You changed hidden {what} (articulations & dynamics are hidden right now; undo brings them back)" },
+  "\u5199\u4E0A\u4E86\uFF0C\u4F46\u73B0\u5728\u6CA1\u663E\u793A\uFF1A{what}\uFF08\u9875\u9762\u8BBE\u7F6E \u2192\u300C\u770B\u8C31\u300D\u91CC\u6253\u5F00\uFF09": { en: "Written, but hidden right now: {what} (turn them on under Page settings \u203A Reading)" },
+  "\u6E10\u5F3A / \u6E10\u5F31": { en: "crescendo / diminuendo" },
   "\u4E2D\u592E C \u53EB": { en: "Middle C is" },
   "\u5B57\u6BCD\u8C31\u53F3\u4E0B\u89D2\u7684\u516B\u5EA6\u6570\u5B57\u4ECE\u54EA\u513F\u6570\u3002": { en: "Where the octave numbers at the bottom right of letter names count from." },
   "\u6807\u7EA7\u6570": { en: "Show degrees" },
@@ -3637,7 +3649,7 @@ function songInC(song, skip) {
 // src/score/song-view.ts
 var NOTATIONS = ["staff", "jianpu", "letters"];
 var CHORDS_MODES = ["stacked", "auto", "fold"];
-var UNWRITTEN = Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4 });
+var UNWRITTEN = Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4, expressions: true });
 var isNotation = (v) => NOTATIONS.includes(v);
 var IN_C_APPLIES = { staff: true, jianpu: false, letters: false };
 var isChords = (v) => CHORDS_MODES.includes(v);
@@ -3655,7 +3667,8 @@ function songViewOf(song) {
     density: densityOf(song.paper ?? paperOf(DEFAULT_PAPER)),
     lyricFit: song.lyricFit === "lyrics" ? "lyrics" : UNWRITTEN.lyricFit,
     barNumbers: song.barNumbers === "off" ? false : UNWRITTEN.barNumbers,
-    middleC: isMiddleC(song.middleC) ? song.middleC : UNWRITTEN.middleC
+    middleC: isMiddleC(song.middleC) ? song.middleC : UNWRITTEN.middleC,
+    expressions: song.expressions === false ? false : UNWRITTEN.expressions
   };
 }
 
@@ -5347,6 +5360,123 @@ function resolveSongLooks(song, noAutoGrand) {
   return out;
 }
 
+// src/render/signs.ts
+var G = (above, below, w, h) => ({ kind: "glyph", above, ...below ? { below } : {}, ...w !== void 0 ? { w } : {}, ...h !== void 0 ? { h } : {} });
+var D = (how) => ({ kind: "drawn", how });
+var T = (s2) => ({ kind: "text", s: s2 });
+var DYN_G = {
+  ppp: { kind: "glyph", above: "\uE52A", ink: [-0.4, 4.3, 1.1, 0.6] },
+  pp: { kind: "glyph", above: "\uE52B", ink: [-0.4, 3, 1.1, 0.6] },
+  p: { kind: "glyph", above: "\uE520", ink: [-0.4, 1.5, 1.1, 0.6] },
+  mp: { kind: "glyph", above: "\uE52C", ink: [-0.1, 3.3, 1.1, 0.6] },
+  mf: { kind: "glyph", above: "\uE52D", ink: [-0.1, 3.3, 1.7, 0.7] },
+  f: { kind: "glyph", above: "\uE522", ink: [-0.6, 1.5, 1.8, 0.6] },
+  ff: { kind: "glyph", above: "\uE52F", ink: [-0.6, 2.5, 1.8, 0.6] },
+  fff: { kind: "glyph", above: "\uE530", ink: [-0.6, 3.4, 1.8, 0.6] }
+};
+var DYN_NAME = (d, l) => ({ ppp: _tIn(l, "\u6781\u5F31"), pp: _tIn(l, "\u5F88\u5F31"), p: _tIn(l, "\u5F31##\u529B\u5EA6"), mp: _tIn(l, "\u4E2D\u5F31"), mf: _tIn(l, "\u4E2D\u5F3A"), f: _tIn(l, "\u5F3A##\u529B\u5EA6"), ff: _tIn(l, "\u5F88\u5F3A"), fff: _tIn(l, "\u6781\u5F3A") })[d];
+var art = (a, name, says, lane, staff, jianpu) => ({ id: `art:${a}`, name, says, lane, draw: { staff, jianpu, letters: jianpu } });
+var ART_SIGNS = {
+  "art:staccato": art("staccato", (l) => _tIn(l, "\u8DF3\u97F3"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u77ED\u4E00\u70B9\u3001\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A2", "\uE4A3", 0.28, 0.28), G("\uE4A8", "\uE4A9", 0.4, 0.9)),
+  // 简谱 = 窄小的楔形（点被八度占了；UX 稿第 5 节）
+  "art:accent": art("accent", (l) => _tIn(l, "\u91CD\u97F3"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u7684\u97F3\u5934\u91CD\u4E00\u70B9"), "strength", G("\uE4A0", "\uE4A1", 1.36, 0.99), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
+  "art:marcato": art("marcato", (l) => _tIn(l, "\u5F3A\u97F3"), (l) => _tIn(l, "\u6BD4\u91CD\u97F3\u66F4\u91CD\u7684\u97F3\u5934"), "strength", G("\uE4AC", "\uE4AD", 1, 1.08), G("\uE4AC", "\uE4AD", 1, 1.08)),
+  "art:stress": art("stress", (l) => _tIn(l, "\u6B21\u91CD\u97F3"), (l) => _tIn(l, "\u6BD4\u91CD\u97F3\u8F7B\u4E00\u6863\u7684\u91CD\uFF08\u56DB\u62CD\u5B50\u91CC\u7684\u7B2C\u4E09\u62CD\u90A3\u79CD\uFF09"), "strength", G("\uE4B6", "\uE4B7", 1, 1), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
+  // 简谱 = 细一号的 >（UX 稿第 5 节：画的时候缩小）
+  "art:unstress": art("unstress", (l) => _tIn(l, "\u5F31\u5316"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u8F7B\u4E00\u70B9"), "strength", G("\uE4B8", "\uE4B9", 1.6, 0.9), G("\uE4B8", "\uE4B9", 1.6, 0.9)),
+  "art:ghost": art("ghost", (l) => _tIn(l, "\u5E7D\u7075\u97F3"), (l) => _tIn(l, "\u51E0\u4E4E\u542C\u4E0D\u89C1\u7684\u97F3\uFF08\u53EA\u7559\u4E2A\u5F71\u5B50\uFF09"), "note", D("\u7B26\u5934\u52A0\u62EC\u53F7"), D("\u6570\u5B57\u753B\u5C0F\u4E00\u53F7")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:tenuto": art("tenuto", (l) => _tIn(l, "\u4FDD\u6301"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u5531 / \u594F\u6EE1\uFF0C\u4E0D\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A4", "\uE4A5", 1.35, 0.17), G("\uE4A4", "\uE4A5", 1.35, 0.17)),
+  "art:breath": art("breath", (l) => _tIn(l, "\u547C\u5438"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u540E\u9762\u6362\u6C14"), "note", G("\uE4CE"), D("\u97F3\u540E\u9762\u4E00\u4E2A V\uFF08\u51FA\u58F0\u7684\u6362\u6C14\u5199\u300CV \u5438\u300D\uFF09")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:sfz": art("sfz", (l) => _tIn(l, "\u7A81\u5F3A"), (l) => _tIn(l, "\u97F3\u5934\u7A81\u7136\u51B2\u4E00\u4E0B\u3001\u518D\u56DE\u5230\u5F53\u4E0B\u7684\u529B\u5EA6"), "noteDynamics", G("\uE539"), T("sfz")),
+  "art:fp": art("fp", (l) => _tIn(l, "\u5F3A\u540E\u5373\u5F31"), (l) => _tIn(l, "\u97F3\u5934\u6309\u5F3A\u3001\u9A6C\u4E0A\u843D\u5230\u5F31\uFF0C\u540E\u9762\u7684\u97F3\u90FD\u662F\u5F31"), "noteDynamics", G("\uE534"), T("fp")),
+  "art:whisper": art("whisper", (l) => _tIn(l, "\u6C14\u58F0"), (l) => _tIn(l, "\u4E0D\u5531\u97F3\u9AD8\u3001\u7528\u6C14\u58F0\u5FF5\uFF08\u97F3\u9AD8\u7167\u5199\u5728\u8C31\u4E0A\uFF09"), "note", D("\xD7 \u7B26\u5934"), D("\u6570\u5B57 + \xD7")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:swellUp": art("swellUp", (l) => _tIn(l, "\u97F3\u5185\u6E10\u5F3A"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5F31\u957F\u5230\u5199\u7684\u529B\u5EA6"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:swellDown": art("swellDown", (l) => _tIn(l, "\u97F3\u5185\u6E10\u5F31"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5199\u7684\u529B\u5EA6\u6536\u5F31"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 >"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 >")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:swellBoth": art("swellBoth", (l) => _tIn(l, "\u97F3\u5185\u9F13\u8D77"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u5148\u957F\u540E\u6536\uFF08messa di voce\uFF09"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <>"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <>")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:arpeggio": art("arpeggio", (l) => _tIn(l, "\u7436\u97F3"), (l) => _tIn(l, "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4E00\u4E2A\u4E2A\u62E8\u51FA\u6765"), "note", D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF"), D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF\uFF08\u591A\u58F0\u90E8 = \u7B2C\u4E94\u5200\uFF09")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:roll": art("roll", (l) => _tIn(l, "\u6EDA\u594F"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09"), "note", D("\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF"), D("\u6570\u5B57\u4E0B\u9762\u4E09\u9053\u77ED\u659C\u7EBF"))
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+};
+var dynSign = (d) => ({ id: `dyn:${d}`, name: () => d, says: (l) => _tIn(l, "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7", { dynName: DYN_NAME(d, l), dyn: d }), lane: "dynamics", draw: { staff: DYN_G[d], jianpu: T(d), letters: T(d) } });
+var DYN_SIGNS = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
+var SIGNS = {
+  ...ART_SIGNS,
+  ...DYN_SIGNS,
+  "hairpin:cresc": { id: "hairpin:cresc", name: (l) => _tIn(l, "\u6E10\u5F3A"), says: (l) => _tIn(l, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 <\uFF08\u592A\u957F\u5199 cresc. - - -\uFF09"), jianpu: D("\u6954\u5F62 <"), letters: D("\u6954\u5F62 <") } },
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "hairpin:dim": { id: "hairpin:dim", name: (l) => _tIn(l, "\u6E10\u5F31"), says: (l) => _tIn(l, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 >\uFF08\u592A\u957F\u5199 dim. - - -\uFF09"), jianpu: D("\u6954\u5F62 >"), letters: D("\u6954\u5F62 >") } },
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  ramp: { id: "ramp", name: (l) => _tIn(l, "\u6E10\u5230"), says: (l) => _tIn(l, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62"), letters: D("\u865A\u7EBF\u6954\u5F62") } }
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+};
+function dynDepiction(d, notation) {
+  const g = SIGNS[`dyn:${d}`].draw[notation];
+  if (g.kind === "text") return g;
+  if (g.kind === "glyph" && g.ink) return { kind: "glyph", glyph: g.above, ink: g.ink };
+  throw new Error(`signs: dyn ${d} has no drawable depiction for ${notation}`);
+}
+
+// src/render/expressions.ts
+var foldsArt = (a) => `art:${a}` in SIGNS;
+var FOLDED_TOKEN_KINDS = /* @__PURE__ */ new Set(["dyn", "hairpin"]);
+function stripNote(t) {
+  const art2 = t.art?.filter((a) => !foldsArt(a));
+  const artChanged = !!t.art && art2.length !== t.art.length;
+  if (!artChanged && !t.slur && !t.inhale) return t;
+  const n2 = { ...t };
+  if (artChanged) {
+    if (art2.length) n2.art = art2;
+    else delete n2.art;
+  }
+  delete n2.slur;
+  delete n2.inhale;
+  return n2;
+}
+function foldExpressions(song) {
+  let changed = false;
+  const papers = song.papers.map((p) => {
+    let pc2 = false;
+    const tracks = {};
+    for (const [id, toks] of Object.entries(p.tracks)) {
+      let tc = false;
+      const out = toks.map((t) => {
+        if (t.kind !== "note") return t;
+        const n2 = stripNote(t);
+        if (n2 !== t) tc = true;
+        return n2;
+      });
+      tracks[id] = tc ? out : toks;
+      if (tc) pc2 = true;
+    }
+    if (pc2) changed = true;
+    return pc2 ? { ...p, tracks } : p;
+  });
+  return changed ? { ...song, papers } : song;
+}
+function foldedMarks(tokens) {
+  const out = [];
+  let inSlur = false;
+  for (const t of tokens) {
+    if (t.kind === "dyn" || t.kind === "hairpin") {
+      out.push({ tok: t.id, what: t.kind });
+      continue;
+    }
+    if (t.kind !== "note") continue;
+    for (const a of t.art ?? []) if (foldsArt(a)) out.push({ tok: t.id, what: `art:${a}` });
+    if (t.slur && !inSlur) out.push({ tok: t.id, what: "slur" });
+    inSlur = !!t.slur;
+  }
+  return out;
+}
+var foldedCount = (tracks) => tracks.reduce((n2, t) => n2 + (t ? foldedMarks(t).length : 0), 0);
+
 // src/render/frame/units.ts
 var MIN_PLAIN = TPQ / 8;
 var NOTATABLE = [];
@@ -5431,6 +5561,10 @@ function unitsOf(tokens, o) {
   };
   tokens.forEach((t, i) => {
     if (i < H) return;
+    if (o.skip?.has(t.kind)) {
+      flushFull();
+      return;
+    }
     if (t.kind === "bar") {
       pushBar(i, false);
       return;
@@ -5788,7 +5922,7 @@ function staffTracks(rows, c) {
     const gap = c.paperLen - c.lens[pi];
     const padT = (dur, id) => ({ kind: "rest", id, dur });
     const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;
-    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS, ...c.restBeats ? { restBeats: true } : {} });
+    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS, ...c.look.expressions ? {} : { skip: FOLDED_TOKEN_KINDS }, ...c.restBeats ? { restBeats: true } : {} });
     shortBars += u.shortBars;
     if (staves === 2) {
       const stf = staffOfTokens(tokens, 2);
@@ -5897,69 +6031,6 @@ function layoutStems(seq, dir, f = LOCAL) {
 
 // src/render/frame/columns.ts
 var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, tail: 4, note: 5 };
-
-// src/render/signs.ts
-var G = (above, below, w, h) => ({ kind: "glyph", above, ...below ? { below } : {}, ...w !== void 0 ? { w } : {}, ...h !== void 0 ? { h } : {} });
-var D = (how) => ({ kind: "drawn", how });
-var T = (s2) => ({ kind: "text", s: s2 });
-var DYN_G = {
-  ppp: { kind: "glyph", above: "\uE52A", ink: [-0.4, 4.3, 1.1, 0.6] },
-  pp: { kind: "glyph", above: "\uE52B", ink: [-0.4, 3, 1.1, 0.6] },
-  p: { kind: "glyph", above: "\uE520", ink: [-0.4, 1.5, 1.1, 0.6] },
-  mp: { kind: "glyph", above: "\uE52C", ink: [-0.1, 3.3, 1.1, 0.6] },
-  mf: { kind: "glyph", above: "\uE52D", ink: [-0.1, 3.3, 1.7, 0.7] },
-  f: { kind: "glyph", above: "\uE522", ink: [-0.6, 1.5, 1.8, 0.6] },
-  ff: { kind: "glyph", above: "\uE52F", ink: [-0.6, 2.5, 1.8, 0.6] },
-  fff: { kind: "glyph", above: "\uE530", ink: [-0.6, 3.4, 1.8, 0.6] }
-};
-var DYN_NAME = (d, l) => ({ ppp: _tIn(l, "\u6781\u5F31"), pp: _tIn(l, "\u5F88\u5F31"), p: _tIn(l, "\u5F31##\u529B\u5EA6"), mp: _tIn(l, "\u4E2D\u5F31"), mf: _tIn(l, "\u4E2D\u5F3A"), f: _tIn(l, "\u5F3A##\u529B\u5EA6"), ff: _tIn(l, "\u5F88\u5F3A"), fff: _tIn(l, "\u6781\u5F3A") })[d];
-var art = (a, name, says, lane, staff, jianpu) => ({ id: `art:${a}`, name, says, lane, draw: { staff, jianpu, letters: jianpu } });
-var ART_SIGNS = {
-  "art:staccato": art("staccato", (l) => _tIn(l, "\u8DF3\u97F3"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u77ED\u4E00\u70B9\u3001\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A2", "\uE4A3", 0.28, 0.28), G("\uE4A8", "\uE4A9", 0.4, 0.9)),
-  // 简谱 = 窄小的楔形（点被八度占了；UX 稿第 5 节）
-  "art:accent": art("accent", (l) => _tIn(l, "\u91CD\u97F3"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u7684\u97F3\u5934\u91CD\u4E00\u70B9"), "strength", G("\uE4A0", "\uE4A1", 1.36, 0.99), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
-  "art:marcato": art("marcato", (l) => _tIn(l, "\u5F3A\u97F3"), (l) => _tIn(l, "\u6BD4\u91CD\u97F3\u66F4\u91CD\u7684\u97F3\u5934"), "strength", G("\uE4AC", "\uE4AD", 1, 1.08), G("\uE4AC", "\uE4AD", 1, 1.08)),
-  "art:stress": art("stress", (l) => _tIn(l, "\u6B21\u91CD\u97F3"), (l) => _tIn(l, "\u6BD4\u91CD\u97F3\u8F7B\u4E00\u6863\u7684\u91CD\uFF08\u56DB\u62CD\u5B50\u91CC\u7684\u7B2C\u4E09\u62CD\u90A3\u79CD\uFF09"), "strength", G("\uE4B6", "\uE4B7", 1, 1), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
-  // 简谱 = 细一号的 >（UX 稿第 5 节：画的时候缩小）
-  "art:unstress": art("unstress", (l) => _tIn(l, "\u5F31\u5316"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u8F7B\u4E00\u70B9"), "strength", G("\uE4B8", "\uE4B9", 1.6, 0.9), G("\uE4B8", "\uE4B9", 1.6, 0.9)),
-  "art:ghost": art("ghost", (l) => _tIn(l, "\u5E7D\u7075\u97F3"), (l) => _tIn(l, "\u51E0\u4E4E\u542C\u4E0D\u89C1\u7684\u97F3\uFF08\u53EA\u7559\u4E2A\u5F71\u5B50\uFF09"), "note", D("\u7B26\u5934\u52A0\u62EC\u53F7"), D("\u6570\u5B57\u753B\u5C0F\u4E00\u53F7")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:tenuto": art("tenuto", (l) => _tIn(l, "\u4FDD\u6301"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u5531 / \u594F\u6EE1\uFF0C\u4E0D\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A4", "\uE4A5", 1.35, 0.17), G("\uE4A4", "\uE4A5", 1.35, 0.17)),
-  "art:breath": art("breath", (l) => _tIn(l, "\u547C\u5438"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u540E\u9762\u6362\u6C14"), "note", G("\uE4CE"), D("\u97F3\u540E\u9762\u4E00\u4E2A V\uFF08\u51FA\u58F0\u7684\u6362\u6C14\u5199\u300CV \u5438\u300D\uFF09")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:sfz": art("sfz", (l) => _tIn(l, "\u7A81\u5F3A"), (l) => _tIn(l, "\u97F3\u5934\u7A81\u7136\u51B2\u4E00\u4E0B\u3001\u518D\u56DE\u5230\u5F53\u4E0B\u7684\u529B\u5EA6"), "noteDynamics", G("\uE539"), T("sfz")),
-  "art:fp": art("fp", (l) => _tIn(l, "\u5F3A\u540E\u5373\u5F31"), (l) => _tIn(l, "\u97F3\u5934\u6309\u5F3A\u3001\u9A6C\u4E0A\u843D\u5230\u5F31\uFF0C\u540E\u9762\u7684\u97F3\u90FD\u662F\u5F31"), "noteDynamics", G("\uE534"), T("fp")),
-  "art:whisper": art("whisper", (l) => _tIn(l, "\u6C14\u58F0"), (l) => _tIn(l, "\u4E0D\u5531\u97F3\u9AD8\u3001\u7528\u6C14\u58F0\u5FF5\uFF08\u97F3\u9AD8\u7167\u5199\u5728\u8C31\u4E0A\uFF09"), "note", D("\xD7 \u7B26\u5934"), D("\u6570\u5B57 + \xD7")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:swellUp": art("swellUp", (l) => _tIn(l, "\u97F3\u5185\u6E10\u5F3A"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5F31\u957F\u5230\u5199\u7684\u529B\u5EA6"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:swellDown": art("swellDown", (l) => _tIn(l, "\u97F3\u5185\u6E10\u5F31"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5199\u7684\u529B\u5EA6\u6536\u5F31"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 >"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 >")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:swellBoth": art("swellBoth", (l) => _tIn(l, "\u97F3\u5185\u9F13\u8D77"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u5148\u957F\u540E\u6536\uFF08messa di voce\uFF09"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <>"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <>")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:arpeggio": art("arpeggio", (l) => _tIn(l, "\u7436\u97F3"), (l) => _tIn(l, "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4E00\u4E2A\u4E2A\u62E8\u51FA\u6765"), "note", D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF"), D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF\uFF08\u591A\u58F0\u90E8 = \u7B2C\u4E94\u5200\uFF09")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:roll": art("roll", (l) => _tIn(l, "\u6EDA\u594F"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09"), "note", D("\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF"), D("\u6570\u5B57\u4E0B\u9762\u4E09\u9053\u77ED\u659C\u7EBF"))
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-};
-var dynSign = (d) => ({ id: `dyn:${d}`, name: () => d, says: (l) => _tIn(l, "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7", { dynName: DYN_NAME(d, l), dyn: d }), lane: "dynamics", draw: { staff: DYN_G[d], jianpu: T(d), letters: T(d) } });
-var DYN_SIGNS = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
-var SIGNS = {
-  ...ART_SIGNS,
-  ...DYN_SIGNS,
-  "hairpin:cresc": { id: "hairpin:cresc", name: (l) => _tIn(l, "\u6E10\u5F3A"), says: (l) => _tIn(l, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 <\uFF08\u592A\u957F\u5199 cresc. - - -\uFF09"), jianpu: D("\u6954\u5F62 <"), letters: D("\u6954\u5F62 <") } },
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "hairpin:dim": { id: "hairpin:dim", name: (l) => _tIn(l, "\u6E10\u5F31"), says: (l) => _tIn(l, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 >\uFF08\u592A\u957F\u5199 dim. - - -\uFF09"), jianpu: D("\u6954\u5F62 >"), letters: D("\u6954\u5F62 >") } },
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  ramp: { id: "ramp", name: (l) => _tIn(l, "\u6E10\u5230"), says: (l) => _tIn(l, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62"), letters: D("\u865A\u7EBF\u6954\u5F62") } }
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-};
-function dynDepiction(d, notation) {
-  const g = SIGNS[`dyn:${d}`].draw[notation];
-  if (g.kind === "text") return g;
-  if (g.kind === "glyph" && g.ink) return { kind: "glyph", glyph: g.above, ink: g.ink };
-  throw new Error(`signs: dyn ${d} has no drawable depiction for ${notation}`);
-}
 
 // src/render/staff/glyphs.ts
 var TOP_LINE2 = 38;
@@ -8273,6 +8344,8 @@ function engrave(song, o) {
     const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id));
     song = songInC(song, (id) => perc.has(id));
   }
+  const foldedPapers = songLook.expressions ? null : new Map(song.papers.map((p) => [p.id, p]));
+  if (!songLook.expressions) song = foldExpressions(song);
   const sp = o.sp, P = (v) => v * sp, ts = o.textScale ?? 1, T2 = (v) => v * sp * ts;
   const density = songLook.density;
   const PPAR = PAPER_PARAMS[songLook.notation][density];
@@ -8423,6 +8496,12 @@ function engrave(song, o) {
       yCur = tail.y + h + P(0.4);
     }
   }
+  function foldedHit(paperId, visible) {
+    const p0 = foldedPapers?.get(paperId);
+    if (!p0) return {};
+    const n2 = foldedCount(visible.map((v) => p0.tracks[v.id]));
+    return n2 ? { folded: n2 } : {};
+  }
   function drawPaper(paper, paperK) {
     right = baseRight;
     if (o.onlyPaper && paper.id !== o.onlyPaper) return;
@@ -8464,7 +8543,7 @@ function engrave(song, o) {
         emptyBox = { x: P(MARGIN), y: yCur, w: P(right - MARGIN), h: T2(3.2) };
         yCur += T2(3.2);
       }
-      papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...emptyBox ? { empty: emptyBox } : {} });
+      papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...emptyBox ? { empty: emptyBox } : {}, ...foldedHit(paper.id, visible) });
       return;
     }
     const lenOf = (t) => t.reduce((n3, x) => n3 + (isTimed(x) ? x.dur : 0), 0);
@@ -8966,7 +9045,7 @@ function engrave(song, o) {
         h.onPlace?.(x, y);
       });
     }
-    papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...note ? { note } : {} });
+    papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...note ? { note } : {}, ...foldedHit(paper.id, visible) });
   }
   const pages = [];
   if (PG) {
@@ -9060,4 +9139,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-eff2a5cf1c8f.mjs.map
+//# sourceMappingURL=layout-worker-9853062f072f.mjs.map

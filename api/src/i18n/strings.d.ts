@@ -589,6 +589,42 @@ export declare const S: {
     readonly 看谱方式: {
         readonly en: "Key view";
     };
+    readonly 演奏法和表情: {
+        readonly en: "Articulations & dynamics";
+    };
+    readonly 显示: {
+        readonly en: "Show";
+    };
+    readonly 不显示: {
+        readonly en: "Hide";
+    };
+    readonly "\u4E0D\u663E\u793A = \u952E\u76D8\u300C\u6F14\u594F\u6CD5\u300D\u300C\u529B\u5EA6\u300D\u4E24\u9875\u4E0A\u7684\u4E1C\u897F\u90FD\u4E0D\u753B\u3001\u4E0D\u5360\u5730\u65B9\uFF08\u8DF3\u97F3\u3001\u91CD\u97F3\u3001\u8FDE\u7EBF\u3001\u547C\u5438\u3001\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u2026\uFF09\uFF0C\u884C\u8DDF\u7740\u53D8\u77EE\uFF1B\u6BCF\u4E00\u6BB5\u7684\u66F2\u6BB5\u63A7\u4EF6\u4E0A\u4E00\u4E2A\u7070\u8272\u7684\u300C\u6298\u53E0 N\u300D\u8BF4\u8FD9\u4E00\u6BB5\u6536\u8D77\u4E86\u51E0\u5904\u3002\u53EA\u7BA1\u753B\uFF1A\u64AD\u653E\u7167\u5199\u7684\u6765\uFF0C\u6B4C\u91CC\u7684\u8BB0\u53F7\u4E00\u4E2A\u4E0D\u52A8\uFF1BPDF \u7167\u773C\u524D\u7684\u6837\u5B50\u5370\u3002": {
+        readonly en: "Hide = nothing from the keyboard's Articulation and Dynamics pages is drawn or takes room (staccato, accents, slurs, breaths, dynamics, hairpins…), so lines get shorter; a gray “Folded N” on each section's controls says how many are tucked away there. Display only: playback follows what's written and no mark in the song changes; the PDF prints what you see.";
+    };
+    readonly 显示演奏法和表情: {
+        readonly en: "Show articulations & dynamics";
+    };
+    readonly 不显示演奏法和表情: {
+        readonly en: "Hide articulations & dynamics";
+    };
+    readonly 不印演奏法和表情: {
+        readonly en: "without articulations & dynamics";
+    };
+    readonly "\u6298\u53E0 {n}": {
+        readonly en: "Folded {n}";
+    };
+    readonly "\u8FD9\u4E00\u6BB5\u6709 {n} \u5904\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u6CA1\u663E\u793A\uFF08\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u91CC\u5173\u7740\uFF1B\u64AD\u653E\u7167\u5199\u7684\u6765\uFF09\uFF1A\u70B9\u5F00\u53BB\u6253\u5F00": {
+        readonly en: "{n} {n|articulation or dynamic is|articulations or dynamics are} hidden in this section (turned off under Page settings › Reading; playback follows what's written): tap to turn them on";
+    };
+    readonly "\u6539\u5230\u4E86\u6CA1\u663E\u793A\u7684{what}\uFF08\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\uFF09": {
+        readonly en: "You changed hidden {what} (articulations & dynamics are hidden right now; undo brings them back)";
+    };
+    readonly "\u5199\u4E0A\u4E86\uFF0C\u4F46\u73B0\u5728\u6CA1\u663E\u793A\uFF1A{what}\uFF08\u9875\u9762\u8BBE\u7F6E \u2192\u300C\u770B\u8C31\u300D\u91CC\u6253\u5F00\uFF09": {
+        readonly en: "Written, but hidden right now: {what} (turn them on under Page settings › Reading)";
+    };
+    readonly "\u6E10\u5F3A / \u6E10\u5F31": {
+        readonly en: "crescendo / diminuendo";
+    };
     readonly "\u4E2D\u592E C \u53EB": {
         readonly en: "Middle C is";
     };

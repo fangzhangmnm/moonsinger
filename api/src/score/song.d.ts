@@ -228,6 +228,8 @@ export interface Song {
     viewInC?: true;
     /** 字母谱里中央 C 叫 C 几（score minor 6，7-B；只写不是 4 的；没写 = C4。读 / 改只走 src/score/song-view.ts）。 */
     middleC?: number;
+    /** 演奏法和表情显示不显示（score minor 8，7-G；只写 false = 不显示；没写 = 显示。读 / 改只走 src/score/song-view.ts）。只管画：播放照写的来。 */
+    expressions?: false;
     hum: Hum;
     parts: PartDef[];
     papers: PaperSeg[];

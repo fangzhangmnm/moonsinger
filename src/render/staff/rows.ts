@@ -3,6 +3,7 @@
 //   框架给：这张纸上看得见的声部、哪几家合租可以叠（这张纸上两位以上、没人在写 / 听模式）。
 //   五线谱定：叠成一行（并成虚拟的多声部轨，merge.ts）、分左右手 / 分声部、挑谱号、一家全是鼓 = 并成一套鼓；声部 2 / 双手谱下面那张各是一条假的轨。
 //   简谱合租各占一行（UX 稿），那是简谱自己的表。
+import { FOLDED_TOKEN_KINDS } from "../expressions.ts";   // 演奏法和表情不显示（7-G）：力度 / 渐强渐弱不建单元
 import type { Song, PaperSeg, Token, NoteTok, ClefName, Focus, Staff } from "../../score/song.ts";
 import { allPitches, staffOfTokens } from "../../score/song.ts";
 import { type Pitch, midiOf, spellMidi } from "../../score/pitch.ts";
@@ -110,7 +111,7 @@ export function staffTracks(rows: StaffRows, c: StaffTracksCtx): { per: StaffTra
     const gap = c.paperLen - c.lens[pi]!;
     const padT = (dur: number, id: number): Token => ({ kind: "rest", id, dur }) as Token;
     const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;   // 补齐的一段 = 一个长休止（按小节切开画；光标在里面的位置 = 落点 Slot.lead，不进排版）
-    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS, ...(c.restBeats ? { restBeats: true } : {}) });
+    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS, ...(c.look.expressions ? {} : { skip: FOLDED_TOKEN_KINDS }), ...(c.restBeats ? { restBeats: true } : {}) });
     shortBars += u.shortBars;
     if (staves === 2) {   // 大谱表：每个音在上还是下（按音高自动 / 手动指定）；光标跟着前一个音
       const stf = staffOfTokens(tokens, 2); let last: Staff = 1;

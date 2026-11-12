@@ -84,7 +84,7 @@ export interface UnitWidths {
 }
 
 export interface Head { key: number; /** 按 C 调看时原来的调。 */ real: number; minor: boolean; time: { beats: number; beatType: number }; bpm: number; idx: Partial<Record<"key" | "time" | "tempo", number>> }
-export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure: TextMeasure; sp: number; ts?: number; rhythm?: boolean; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */ padFrom?: number; /** 复合拍子里的休止按拍切（简谱）。 */ restBeats?: boolean; /** 各种单元多宽（画法给的）。 */ widths: UnitWidths }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
+export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure: TextMeasure; sp: number; ts?: number; rhythm?: boolean; /** 这几种 token 不建单元（不交给量和画）：演奏法和表情不显示（7-G）时 = 力度 / 渐强渐弱（画法交进来，src/render/expressions.ts FOLDED_TOKEN_KINDS；框架不认是哪几种）。 */ skip?: ReadonlySet<string>; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */ padFrom?: number; /** 复合拍子里的休止按拍切（简谱）。 */ restBeats?: boolean; /** 各种单元多宽（画法给的）。 */ widths: UnitWidths }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
   const W = o.widths;
   const H = headLen(tokens);
   let fifths = DEFAULT_KEY, real = DEFAULT_KEY, minor = false, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
@@ -114,6 +114,8 @@ export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; 
   const flushFull = () => { if (o.autoBars && inBar >= len && inBar > 0) pushBar(-1, true); };
   tokens.forEach((t, i) => {
     if (i < H) return;
+    if (o.skip?.has(t.kind)) { flushFull(); return; }   // 不交给排版的种类（演奏法和表情不显示时的力度 / 渐强渐弱，7-G）。flushFull 照留：力度 / 渐强渐弱原来也先「满了就补一条自动小节线」，
+    //   拿掉它们不许改小节线（夹在写满的一小节和人插的「|:」之间的力度会多出一条自动小节线——原来就这样，施工单 7-G 记录里报了；这里只保证显示 / 不显示两边一样）
     if (t.kind === "bar") { pushBar(i, false); return; }
     if (t.kind === "key") {
       flushFull();

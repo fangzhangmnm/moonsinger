@@ -22,8 +22,8 @@ export const CHORDS_MODES: readonly ChordsMode[] = ["stacked", "auto", "fold"];
 /** 文件里没写 = 这些值。写死，永远不变（改它 = 改了所有旧歌的样子）。chordTags / viewInC 在文件里永远是布尔（src/format/contract.ts score minor 5 那段）。
  *  后三样是原来就有的意思（4-5 收进来时照抄，不是新定的）：版式没写 = 舒适（paper.ts densityOf）；歌词排法没写 = 按节奏（v0.9.40 user「默认用修歌词的那个排版方式吧」，
  *  旧歌打开也是按节奏）；小节号没写 = 每行开头印（v0.9.42「默认是每行开头有」）。 */
-export const UNWRITTEN: Readonly<{ notation: NotationId; chordTags: boolean; viewInC: boolean; chords: ChordsMode; density: Density; lyricFit: LyricFit; barNumbers: boolean; middleC: number }> =
-  Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4 });   // middleC：字母谱里中央 C 叫 C4（7-B，user「我们的中央 C 叫 C4 老规矩」）
+export const UNWRITTEN: Readonly<{ notation: NotationId; chordTags: boolean; viewInC: boolean; chords: ChordsMode; density: Density; lyricFit: LyricFit; barNumbers: boolean; middleC: number; expressions: boolean }> =
+  Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4, expressions: true });   // middleC：字母谱里中央 C 叫 C4（7-B，user「我们的中央 C 叫 C4 老规矩」）
 /** 歌词怎么排：按节奏（音的位置只看时值，歌词让路）/ 按歌词（长字把音推开）。 */
 export type LyricFit = "rhythm" | "lyrics";
 
@@ -46,6 +46,8 @@ export interface SongView {
   readonly barNumbers: boolean;
   /** 字母谱里中央 C 叫 C 几（C-4 那个数字；默认 4，可以 3 / 5；7-B）。别的谱种用不上。 */
   readonly middleC: number;
+  /** 演奏法和表情显示不显示（7-G；score minor 8）。false = 键盘「演奏法」「力度」两页上的东西都不交给排版（不画、不占地方；src/render/expressions.ts），播放照写的来。 */
+  readonly expressions: boolean;
 }
 
 const isNotation = (v: unknown): v is NotationId => (NOTATIONS as readonly unknown[]).includes(v);
@@ -74,6 +76,7 @@ export function songViewOf(song: Song): SongView {
     lyricFit: song.lyricFit === "lyrics" ? "lyrics" : UNWRITTEN.lyricFit,
     barNumbers: song.barNumbers === "off" ? false : UNWRITTEN.barNumbers,
     middleC: isMiddleC(song.middleC) ? song.middleC : UNWRITTEN.middleC,
+    expressions: song.expressions === false ? false : UNWRITTEN.expressions,
   };
 }
 
@@ -89,6 +92,12 @@ export function setNotation(st: EditorState, id: NotationId): EditorState {
 export function setMiddleC(st: EditorState, n: number): EditorState {
   const want = n === UNWRITTEN.middleC || !isMiddleC(n) ? undefined : n; if (st.song.middleC === want) return st;
   const song = { ...st.song }; if (want === undefined) delete song.middleC; else song.middleC = want;
+  return { ...st, song };
+}
+/** 演奏法和表情显示 / 不显示（7-G）。显示 = 不写。 */
+export function setExpressions(st: EditorState, on: boolean): EditorState {
+  const want = on === UNWRITTEN.expressions ? undefined : false; if (st.song.expressions === want) return st;
+  const song = { ...st.song }; if (want === undefined) delete song.expressions; else song.expressions = want;
   return { ...st, song };
 }
 /** 和弦标级数开 / 关。开 = 不写。 */
@@ -112,5 +121,5 @@ export function setPartChords(st: EditorState, partId: string, mode: ChordsMode)
 }
 
 /** 这四样在歌里住在哪几个键（歌的顶层三个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。 */
-export const SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC", "middleC"] as const;   // middleC = 字母谱里中央 C 叫 C 几（7-B）
+export const SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC", "middleC", "expressions"] as const;   // middleC = 字母谱里中央 C 叫 C 几（7-B）；expressions = 演奏法和表情显示不显示（7-G）
 export const PART_VIEW_KEYS = ["chords"] as const;

@@ -38,6 +38,7 @@ import type { LyricPart, LyricSpot } from "./frame/lyric-spots.ts";
 import { INK_UP_TO, type LaneKind } from "./frame/lanes.ts";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "./frame/arrange.ts";
 import { harmonyTheory, paperHarmony, type PlacedTag, type ChordFold } from "../theory/index.ts";
+import { foldExpressions, foldedCount } from "./expressions.ts";
 
 /** tok = 这个图元属于哪个 token（id）：写字头 / 选区 / 强调色不进排版，score-view 按 data-tok 在 DOM 上开关 class（W-17 第 1 刀，2026-10-15）。 */
 export type Prim =
@@ -164,7 +165,7 @@ export interface Layout {
   /** 每张纸：曲段名那一条（shown = 画了）、占的竖直范围。刀 1 起曲段控件（‹ k/n › 只看本段 ⋯）归覆盖层，这里只给锚点：
    *  under = 纸底下留的那一条（chrome.underPaper，虚线框）；hidden = 这张纸隐藏着（全部视图里不排、不占地方：top = bottom，v0.16.34 起；原来折叠成一条）；note = 本段视图里隐藏纸顶上那一条说明；
    *  empty = 这张纸上没有声部时空着的那一条；hiddenParts = 这张纸上有、但隐藏着（不排、不占地方）的声部（覆盖层的「隐藏 N」）。 */
-  papers: { id: string; title: (TitleHit & { shown: boolean }); top: number; bottom: number; under?: Box; hidden?: boolean; note?: Box; empty?: Box; hiddenParts: string[] }[];
+  papers: { id: string; title: (TitleHit & { shown: boolean }); top: number; bottom: number; under?: Box; hidden?: boolean; note?: Box; empty?: Box; hiddenParts: string[]; /** 演奏法和表情不显示时，这张纸上看得见的声部折叠了几处（7-G；覆盖层的「折叠 N」小标）。没有 = 0 处或显示着。 */ folded?: number }[];
   pageX: { left: number; right: number };        // 分页时版心左右的边距（px；svg 的 viewBox 往左扩这么多，页框画在负 x）；连续 = 0
   pages: { top: number; h: number }[];           // 分页时每页占的竖直范围（px）；连续 = []
   shortBars: number;   // 拍数和拍号对不上的小节有几个（状态行用；第一小节当弱起不算）
@@ -184,6 +185,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const BUILD = NOTATIONS[songLook.notation].build;   // 建轨 = 这首歌的谱种那一项（第五刀 5-2）
   const lookAt = BUILD.looks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   if (songLook.inCActive) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
+  // 演奏法和表情不显示（7-G）：音身上的演奏法 / 圆滑线 / 出声的换气在这里就拿掉（下标不变），力度 / 渐强渐弱建单元时跳过（staff/rows.ts → frame/units.ts fold）——不交给量和画，行高自己降。
+  //   「折叠 N」按拿掉之前的数（foldedPapers）
+  const foldedPapers = songLook.expressions ? null : new Map(song.papers.map((p) => [p.id, p] as const));
+  if (!songLook.expressions) song = foldExpressions(song);
   const sp = o.sp, P = (v: number) => v * sp, ts = o.textScale ?? 1, T = (v: number) => v * sp * ts;   // P = 谱的尺子；T = 字的尺子（刀 2：紧凑档 ts = 1.4，字和它周围留的地方照舒适档）
   const density = songLook.density;
   const PPAR = PAPER_PARAMS[songLook.notation][density];   // 排版参数表（layout-params.ts）：纸一级按这首歌的谱种；行一级（rowPar）按这一行的种类
@@ -316,6 +321,11 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     if (PG) { tail = { paper: paperId, x: P(MARGIN), y: pageTopY(pageNo) + P(PG.h) + P(1.2), w: P(baseRight - MARGIN), h }; tailBottom = tail.y + h + P(1.0); }
     else { tail = { paper: lastPaper.id, x: P(MARGIN), y: yCur + P(0.6), w: P(baseRight - MARGIN), h }; yCur = tail.y + h + P(0.4); }
   }
+  /** 这张纸上看得见的声部一共折叠了几处（演奏法和表情不显示时；0 = 不写）。 */
+  function foldedHit(paperId: string, visible: readonly PartView[]): { folded?: number } {
+    const p0 = foldedPapers?.get(paperId); if (!p0) return {};
+    const n = foldedCount(visible.map((v) => p0.tracks[v.id])); return n ? { folded: n } : {};
+  }
   function drawPaper(paper: PaperSeg, paperK: number): void {
     right = baseRight;
     if (o.onlyPaper && paper.id !== o.onlyPaper) return;   // 一次只看一张纸（曲段）
@@ -366,7 +376,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     if (!parts.length) {   // 这张纸上没有显示的声部：都隐藏了 = 只有曲段名那一条（「隐藏 N」在上面）；压根没声部 = 空一行（覆盖层写「这张纸上没有声部」）
       drawPaperTitle(T(hiddenParts.length ? 0 : 3.2));
       let emptyBox: Box | undefined; if (!hiddenParts.length) { emptyBox = { x: P(MARGIN), y: yCur, w: P(right - MARGIN), h: T(3.2) }; yCur += T(3.2); }
-      papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(emptyBox ? { empty: emptyBox } : {}) });
+      papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(emptyBox ? { empty: emptyBox } : {}), ...foldedHit(paper.id, visible) });
       return;
     }
     // 1. 每个声部的排版单元（五线谱：staff/rows.ts staffTracks）。补齐的空小节按这张纸最长那条（框架算长度）
@@ -751,7 +761,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const at = placeHints(printed, hints, P(0.15));
       hints.forEach((h, k) => { const { x, y } = at[k]!; for (const pr of h.part.prims) { const q = { ...pr }; movePrim(q, x, y); prims.push(q); } h.onPlace?.(x, y); });
     }
-    papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(note ? { note } : {}) });
+    papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(note ? { note } : {}), ...foldedHit(paper.id, visible) });
   }
   // 分页：页框（压在最底下）+ 页码；高 = 最后一页的底
   const pages: Layout["pages"] = [];

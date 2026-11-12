@@ -18,6 +18,7 @@ export declare const UNWRITTEN: Readonly<{
     lyricFit: LyricFit;
     barNumbers: boolean;
     middleC: number;
+    expressions: boolean;
 }>;
 /** 歌词怎么排：按节奏（音的位置只看时值，歌词让路）/ 按歌词（长字把音推开）。 */
 export type LyricFit = "rhythm" | "lyrics";
@@ -40,6 +41,8 @@ export interface SongView {
     readonly barNumbers: boolean;
     /** 字母谱里中央 C 叫 C 几（C-4 那个数字；默认 4，可以 3 / 5；7-B）。别的谱种用不上。 */
     readonly middleC: number;
+    /** 演奏法和表情显示不显示（7-G；score minor 8）。false = 键盘「演奏法」「力度」两页上的东西都不交给排版（不画、不占地方；src/render/expressions.ts），播放照写的来。 */
+    readonly expressions: boolean;
 }
 /** 这种谱是不是首调（「1」= 这个调的主音）：首调的谱上「按 C 调看」没有意义。 */
 export declare const MOVABLE_DO: Readonly<Record<NotationId, boolean>>;
@@ -53,6 +56,8 @@ export declare function songViewOf(song: Song): SongView;
 export declare function setNotation(st: EditorState, id: NotationId): EditorState;
 /** 字母谱里中央 C 叫 C 几（4 = 不写）。 */
 export declare function setMiddleC(st: EditorState, n: number): EditorState;
+/** 演奏法和表情显示 / 不显示（7-G）。显示 = 不写。 */
+export declare function setExpressions(st: EditorState, on: boolean): EditorState;
 /** 和弦标级数开 / 关。开 = 不写。 */
 export declare function setChordTags(st: EditorState, on: boolean): EditorState;
 /** 按 C 调看开 / 关。关 = 不写。 */
@@ -60,5 +65,5 @@ export declare function setViewInC(st: EditorState, on: boolean): EditorState;
 /** 这条轨的和弦选项。auto = 不写。 */
 export declare function setPartChords(st: EditorState, partId: string, mode: ChordsMode): EditorState;
 /** 这四样在歌里住在哪几个键（歌的顶层三个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。 */
-export declare const SONG_VIEW_KEYS: readonly ["notation", "chordTags", "viewInC", "middleC"];
+export declare const SONG_VIEW_KEYS: readonly ["notation", "chordTags", "viewInC", "middleC", "expressions"];
 export declare const PART_VIEW_KEYS: readonly ["chords"];

@@ -64,7 +64,11 @@ export type FormatFile = keyof typeof FORMAT;
  *  歌词的字里可以带标点（MusicXML 的 <lyric><text> 本来就能写；结尾的挂在字后面、开头的挂在字前面），居中只按字、送去唱 / 算读音 / 判唱不唱得出来之前去掉（score/lyrics.ts lyricHang / lyricCore）。
  *  结构没变，变的是读法：minor 6 以前的版本打开会把带标点的字当成唱不出来（画灰、照字送去唱）= 行为有变化那一级：minor +1、让旧版本提示一次；旧版本照样能开能存，字原样带回。
  *  冻结样本 = test/fixtures/format/minor/score-7/（样本歌里「py,」「你。」）。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 7, lounge: 0, studio: 1 };   // lounge 3（9-2）起小版本从 0 数
+/** score minor 8（7-G，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user 11-11 深夜「显示里面再加一个不显示articulation和表情的选项。打印时也许会用，相当于前面讨论的不overwhelm小孩和初学者」）：
+ *  顶层多一个可选的 expressions（只写 false = 演奏法和表情不显示；没写 = 显示，冻住）。只管画——播放照写的来，歌里的记号一个不动；PDF 跟着眼前的样子。
+ *  旧版本（minor 7）打开 = 不认识这个键、原样带回（未知键直通），照旧全画出来 = 缺功能：minor +1、让旧版本提示一次。归修改锁的「看法」（songLook：锁着能切、锁着期间不写）。
+ *  冻结样本 = test/fixtures/format/minor/score-8/。 */
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 8, lounge: 0, studio: 1 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
@@ -146,6 +150,8 @@ export interface ScoreExtV2 {
   viewInC?: true;
   /** score minor 6（7-B）：字母谱里中央 C 叫 C 几（只写不是 4 的；没写 = C4）。 */
   middleC?: number;
+  /** score minor 8（7-G）：演奏法和表情不显示（只写 false；没写 = 显示）。 */
+  expressions?: false;
 }
 
 // ─── 第 1 版（只给迁移对照；migrate/index.ts）────────────────────────────────────────────

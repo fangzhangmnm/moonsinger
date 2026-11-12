@@ -17,6 +17,7 @@ import { createTextMeasure } from "../src/render/text/index.ts";
 import { surfaceCases, surfacePath, fullSnapshotRaw, tolDiffs, PATH_NOISE_MAX, FULL_VIEWS, type SurfaceGroup } from "./fixtures/layout/full.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
 import { isPrinted } from "../src/export/score-pdf.ts";
+import { FOLDED_TOKEN_KINDS } from "../src/render/expressions.ts";
 
 /** 逐字段相等（NaN = NaN；碰到函数 = 不是平数据）。 */
 const deepEq = (a: unknown, b: unknown, path: string): string | null => {
@@ -131,6 +132,22 @@ describe("谱面排版：全量和点击（守卫 4 / 5）", () => {
       if (c.name === "简谱") eq(reps.get("family")?.length ?? 0, 0, "简谱里没有叠起来的一家（不叠）");
       const expectOnly: EditorOnly[] = c.name === "简谱" || c.name === "字母谱" ? ["unwritten-key", "row-cannot"] : ["unwritten-key", "no-effect"];   // 简谱里大谱表那一位排成数字行（八度线 = 这种行用不上的），五线谱里是大谱表（八度线 = 现在不起作用的）
       assert(expectOnly.every((k) => (only.get(k) ?? 0) > 0), `只在编辑器里有的那几种，测试歌里都碰到了（比较器不是空的）：${[...only].map(([k, n]) => `${k} ${n}`).join("、")}`);
+    });
+    it(`守卫 4（不显示演奏法和表情，7-G）· ${c.name}：印出来的 token = 显示时的减去力度 / 渐强渐弱（音、休止、歌词、照旧画的一样不少）；不画的正好是名单里那些、都算进那一段的「折叠 N」`, () => {
+      const opts = view.opts(c.song), A = engrave(c.song, opts), hidden = { ...c.song, expressions: false as const }, B = engrave(hidden, view.opts(hidden));
+      const printed = (L: Layout) => new Set(L.prims.filter((p) => p.tok !== undefined && isPrinted(p.cls)).map((p) => p.tok as number));
+      const pa = printed(A), pb = printed(B), kindOf = new Map<number, Token>();
+      for (const paper of c.song.papers) for (const ts of Object.values(paper.tracks)) for (const t of ts) kindOf.set(t.id, t);
+      const lost = [...pa].filter((id) => !pb.has(id)), gained = [...pb].filter((id) => !pa.has(id));
+      eq(lost.filter((id) => !FOLDED_TOKEN_KINDS.has(kindOf.get(id)!.kind)).map((id) => `${kindOf.get(id)!.kind}#${id}`).join(" "), "", "不显示时没了、又不在名单里的 token");
+      eq(gained.join(" "), "", "不显示时反而多出来的 token");
+      assert(lost.length > 0, "名单里的确实没了（比较器不是空的）");
+      eq(B.lyrics.length, A.lyrics.length, "歌词一个不少");
+      eq(B.notes.length, A.notes.length, "音一个不少"); eq(B.rests.length, A.rests.length, "休止一个不少");
+      // 没了的力度 / 渐强渐弱：每一个都在某一段的「折叠 N」里数着（那一段的数 ≥ 这一段没了的个数）
+      const lostByPaper = new Map<string, number>();
+      for (const paper of c.song.papers) for (const ts of Object.values(paper.tracks)) for (const t of ts) if (lost.includes(t.id)) lostByPaper.set(paper.id, (lostByPaper.get(paper.id) ?? 0) + 1);
+      for (const [pid, n] of lostByPaper) assert((B.papers.find((p) => p.id === pid)?.folded ?? 0) >= n, `${pid}：「折叠 ${B.papers.find((p) => p.id === pid)?.folded ?? 0}」数着没了的 ${n} 个`);
     });
     it(`守卫 5（点击只指 token 或家具）· ${c.name}：每个带下标的点击框指向对的那条轨里对的那种 token；光标落点在轨长之内`, () => {
       const L = engrave(c.song, view.opts(c.song));

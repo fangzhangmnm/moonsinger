@@ -4,7 +4,7 @@
 const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e?: string): Uint8Array & string; readdirSync(p: URL, o?: object): string[] };
 import { paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
-import { songViewOf, setNotation, setChordTags, setViewInC, setPartChords, UNWRITTEN } from "../src/score/song-view.ts";
+import { songViewOf, setNotation, setChordTags, setViewInC, setPartChords, setExpressions, UNWRITTEN } from "../src/score/song-view.ts";
 import { initState, type Song } from "../src/score/song.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { FORMAT_MINOR } from "../src/format/contract.ts";
@@ -20,7 +20,7 @@ const viewOf = (s: Song) => { const v = songViewOf(s); return { notation: v.nota
 
 describe("这首歌怎么看：没写的意思冻住", () => {
   it("没写 = 五线谱 / 标和弦级数 / 不按 C 调看 / 也认拆开弹的（写死的值，不随 app 的新文档默认变）；新建的歌四样都不写，存出去也不写", () => {
-    eq(JSON.stringify(UNWRITTEN), JSON.stringify({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4 }), "改了这些值 = 改了所有旧歌的样子（后三样第四刀 4-5 收进来，是原来就有的意思）");
+    eq(JSON.stringify(UNWRITTEN), JSON.stringify({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4, expressions: true }), "改了这些值 = 改了所有旧歌的样子（后三样第四刀 4-5 收进来，是原来就有的意思）");
     { const v = songViewOf(initState().song); eq([v.density, v.lyricFit, v.barNumbers].join(","), "cozy,rhythm,true", "版式 / 歌词排法 / 小节号没写 = 舒适 / 按节奏 / 每行开头印");
       const w = songViewOf({ ...initState().song, lyricFit: "lyrics", barNumbers: "off", paper: { ...initState().song.paper ?? paperOf(DEFAULT_PAPER), density: "compact" } });
       eq([w.density, w.lyricFit, w.barNumbers].join(","), "compact,lyrics,false", "写了 = 照写的读"); }
@@ -63,6 +63,26 @@ describe("这首歌怎么看：读写", () => {
     for (const k of ["notation", "chordTags", "viewInC"]) assert(!(k in j2), `切回缺省 = 不写 ${k}`);
     assert(!("chords" in j2.parts[0]));
     const s0 = initState(); eq(setChordTags(s0, true), s0, "本来就是缺省 = 原样（同一个引用）"); eq(setViewInC(s0, false), s0); eq(setNotation(s0, "staff"), s0); eq(setPartChords(s0, part, "auto"), s0);
+  });
+  it("演奏法和表情（7-G，score minor 8）：只写 false = 不显示；切回显示 = 键没了；别的值（true / 字符串）= 没写 = 显示、不写回；读回来一样", () => {
+    const st = setExpressions(initState(), false);
+    eq(scoreJson(save(st.song)).expressions, false); eq(songViewOf(st.song).expressions, false);
+    eq(songViewOf(openBytes("x.mxl", save(st.song)).song).expressions, false, "读回来还是不显示");
+    assert(!("expressions" in scoreJson(save(setExpressions(st, true).song))), "切回显示 = 不写");
+    const s0 = initState(); eq(setExpressions(s0, true), s0, "本来就是显示 = 原样（同一个引用）");
+    for (const odd of [true, "off", 0]) {
+      const o = openBytes("x.mxl", withScoreJson(save(s0.song), (j) => { j.expressions = odd; }));
+      eq(songViewOf(o.song).expressions, true, `写成 ${JSON.stringify(odd)} = 没写 = 显示`); assert(!("expressions" in scoreJson(save(o.song))), "不写回");
+    }
+  });
+  it("冻结样本 score minor 8（7-G）：演奏法和表情不显示读得出来；再存一遍还一样；旧样本（score-7）读出来 = 显示", () => {
+    const exp = JSON.parse(fs.readFileSync(new URL("test/fixtures/format/minor/score-8/expected.json", ROOT), "utf8"));
+    const b = bytesOf("test/fixtures/format/minor/score-8/sample.mxl"), o = openBytes("sample.mxl", b), v = songViewOf(o.song);
+    eq(scoreJson(b).minor, 8); assert(FORMAT_MINOR.score >= 8);
+    eq(exp.songView.expressions, false); eq(v.expressions, false); eq(scoreJson(b).expressions, false);
+    const again = openBytes("x.mxl", saveMxl({ song: o.song, hum: o.song.hum, extras: o.extras, app: "t", date: "2026-11-12T00:00:00.000Z" })).song;
+    eq(songViewOf(again).expressions, false);
+    eq(songViewOf(openBytes("sample.mxl", bytesOf("test/fixtures/format/minor/score-7/sample.mxl")).song).expressions, true, "minor 7 写的：没有这个键 = 显示");
   });
   it("老写法 brokenChords: false（score minor 2–4）读成 \"stacked\"；再存 = 写新键、老键不再写", () => {
     const st = initState(), part = st.song.parts[0]!.id;

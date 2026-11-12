@@ -28,6 +28,8 @@ export interface OverlayHost {
         x: number;
         y: number;
     }): void;
+    /** 「折叠 N」（演奏法和表情不显示时，7-G）：点了 = 开页面设置的「看谱」页（那个开关在那儿）。 */
+    onFolded(): void;
 }
 /** 这一帧要知道的谱面状态（排版器不知道的那些）。 */
 export interface OverlayView {

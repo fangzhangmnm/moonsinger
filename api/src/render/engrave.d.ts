@@ -376,7 +376,8 @@ export interface Layout {
         hidden?: boolean;
         note?: Box;
         empty?: Box;
-        hiddenParts: string[];
+        hiddenParts: string[]; /** 演奏法和表情不显示时，这张纸上看得见的声部折叠了几处（7-G；覆盖层的「折叠 N」小标）。没有 = 0 处或显示着。 */
+        folded?: number;
     }[];
     pageX: {
         left: number;

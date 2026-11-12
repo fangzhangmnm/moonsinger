@@ -17,7 +17,8 @@ import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
 import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
-import { songViewOf, setViewInC, setChordTags, setNotation, setMiddleC, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
+import { songViewOf, setViewInC, setChordTags, setNotation, setMiddleC, setExpressions, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
+import { foldedMarks, type FoldedMark } from "../render/expressions.ts";   // 演奏法和表情不显示时改到 / 写上了它们：轻轻说一句（7-G）
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, spellMidi, KEY_LABEL } from "../score/pitch.ts";
@@ -712,6 +713,7 @@ const overlayHost: import("../ui/score-overlay.ts").OverlayHost = {
     void paper;
     ctxMenu("hidden-list", `<div class="tc-sec">${_t("隐藏着的（点 = 放出来）")}</div>${rows}`, at, (v) => { showPart(v); });
   },
+  onFolded: () => openPaperSheet(),   // 「折叠 N」（7-G）：开页面设置（默认就是「看谱」页，那个开关在那儿）
   onHiddenPapers: (ids, at) => {   // 「隐藏 N 段」（v0.16.34）：每段一行 = 名字 + 「去看」（本段视图翻过去）+「放出来」（取消隐藏，能撤销）
     const rows = ids.map((id) => `<div class="hidp-row"><span class="hidp-name">${esc(paperLabel(id))}</span><button class="btn ctx-item" data-v="go:${esc(id)}">${_t("去看")}</button><button class="btn ctx-item" data-v="show:${esc(id)}">${_t("放出来")}</button></div>`).join("");
     ctxMenu("hidden-papers", `<div class="tc-sec">${_t("隐藏着的曲段（不放、不印）")}</div>${rows}`, at, (v) => {
@@ -903,6 +905,7 @@ function updateExtras(next: Extras, locus: Locus, gesture?: string): void { D.co
 function updateBoth(next: EditorState, nextExtras: Extras, locus: Locus): void { D.commit({ st: next, extras: nextExtras }, { locus }); }
 /** 谱换了之后的副作用（原 applyState；D 换好真相再叫）。userEdit = 你在谱上动了（播放几秒内不拽视图，v0.10.12）；撤销 / 重做不算。 */
 function afterState(prev: EditorState, next: EditorState, moved: boolean, userEdit: boolean): void {
+  if (userEdit && next.song !== prev.song) tellFolded(prev.song, next.song);
   if (next.song.paper !== prev.song.paper) syncDock();   // 换纸 / 密度 = 一行谱的高变了，重判底座贴底还是贴右边
   if (userEdit && (next.song !== prev.song || next.caret !== prev.caret || next.sel !== prev.sel)) view.noteUserEdit();
   if (moved) { sound.allOff(); void prepareBank(); }
@@ -910,6 +913,28 @@ function afterState(prev: EditorState, next: EditorState, moved: boolean, userEd
   schedulePlaybackRefresh();   // 放着的时候改谱：时间线重算（正在响的不动）
   schedulePrewarm();            // 没在放：停下 700 ms 后先把光标附近唱好
   queuePaint();
+}
+/** 演奏法和表情不显示（7-G）时，改到了（删、覆盖、改时值连带、删音之后力度的湮灭）/ 新写上了没显示的记号：轻轻说一句是哪一种，同一种这次打开里只说一次（普通提示，不用警告色）。
+ *  只在改之前、改之后都是「不显示」时看（切这个开关本身不算）；只比引用变了的轨。撤销 / 重做不走这里（afterRestore）。 */
+const foldTold = { gone: new Set<string>(), added: new Set<string>() };
+function tellFolded(a: Song, b: Song): void {
+  if (songViewOf(a).expressions || songViewOf(b).expressions) return;
+  const keys = (ms: FoldedMark[]) => new Map(ms.map((m) => [`${m.tok}|${m.what}`, m.what] as const));
+  const gone = new Set<FoldedMark["what"]>(), added = new Set<FoldedMark["what"]>();
+  for (const pb of b.papers) {
+    const pa = a.papers.find((x) => x.id === pb.id);
+    for (const [part, tb] of Object.entries(pb.tracks)) {
+      const ta = pa?.tracks[part]; if (ta === tb) continue;
+      const ka = keys(foldedMarks(ta ?? [])), kb = keys(foldedMarks(tb));
+      for (const [k, w] of ka) if (!kb.has(k)) gone.add(w);
+      for (const [k, w] of kb) if (!ka.has(k)) added.add(w);
+    }
+  }
+  const name = (w: FoldedMark["what"]) => (w === "dyn" ? _t("力度记号") : w === "hairpin" ? _t("渐强 / 渐弱") : w === "slur" ? _t("连线") : SIGNS[w].name(lang()));
+  const fresh = (ws: Set<FoldedMark["what"]>, told: Set<string>) => [...new Set([...ws].map(name))].filter((n) => !told.has(n) && (told.add(n), true));
+  const g = fresh(gone, foldTold.gone), n = fresh(added, foldTold.added);
+  if (g.length) info(_t("改到了没显示的{what}（演奏法和表情现在不显示；撤销能找回）", { what: g.join(_t("、")) }));
+  if (n.length) info(_t("写上了，但现在没显示：{what}（页面设置 →「看谱」里打开）", { what: n.join(_t("、")) }));
 }
 // 画合并到下一帧（2026-10-17 Claude Fable 5.1；量 + 方案 = ai-docs/20261017-input-latency-probe.md）：状态改了这里只排一帧，重排 / 重画 / 标题 / 挂签 / 清单在 rAF 里做一次。
 //   出声不等它（pad-host / 电脑键盘先响后写）；快弹几个键落在同一帧 = 只重排一次。谁在这一帧之前就要最新的排版 = view.layoutNow()（歌词框 / 记号框 / head / E2E 钩子）。
@@ -1953,6 +1978,9 @@ function openPaperSheet(): void {
       // 字母谱：中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；只在字母谱时显示）
       (look.notation === "letters" ? setItem(_t("中央 C 叫"), sel("mc", MIDDLE_C_NAMES.map((n) => [String(n), n === 4 ? `C${n}（${_t("默认")}）` : `C${n}`] as const), String(look.middleC)), _t("字母谱右下角的八度数字从哪儿数。") + IN_SONG) : "") +
       setItem(_t("和弦"), sel("ct", [["on", _t("标级数")], ["off", _t("不标")]], look.chordTags ? "on" : "off"), _t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选") + IN_SONG) +
+      // 演奏法和表情（7-G；user 11-11 深夜「显示里面再加一个不显示articulation和表情的选项。打印时也许会用，相当于前面讨论的不overwhelm小孩和初学者」）
+      setItem(_t("演奏法和表情"), sel("expr", [["on", _t("显示")], ["off", _t("不显示")]], look.expressions ? "on" : "off"),
+        _t("不显示 = 键盘「演奏法」「力度」两页上的东西都不画、不占地方（跳音、重音、连线、呼吸、力度、渐强渐弱…），行跟着变矮；每一段的曲段控件上一个灰色的「折叠 N」说这一段收起了几处。只管画：播放照写的来，歌里的记号一个不动；PDF 照眼前的样子印。") + IN_SONG) +
       // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」；和歌手牌那个是同一个开关
       (one ? setItem(_t("只看一号轨"), sel("only1", [["off", _t("都看")], ["on", _t("只看「{song}」", { song: partLabels(D.st.song, D.extras)[0] ?? "" })]], only1 ? "on" : "off"), _t("速度、风格、反复写在最上面那位身上；别的声部缩成细行。") + IN_VIEW) : "");
     const layoutPage =
@@ -1989,6 +2017,7 @@ function openPaperSheet(): void {
     else if (k === "inc") setSongLook(setViewInC(D.st, v === "on"), v === "on" ? _t("按 C 调看") : _t("看谱：专业"));
     else if (k === "mc") { const n = Number(v); setSongLook(setMiddleC(D.st, n), _t("中央 C 叫 C{n}", { n })); }
     else if (k === "ct") setSongLook(setChordTags(D.st, v === "on"), v === "on" ? _t("和弦标级数") : _t("和弦不标级数"));
+    else if (k === "expr") setSongLook(setExpressions(D.st, v === "on"), v === "on" ? _t("显示演奏法和表情") : _t("不显示演奏法和表情"));
     else if (k === "only1") { const one = D.st.song.parts[0]; if (one) { for (const q of D.st.song.parts) setPv(q.id, { only: v === "on" && q === one }); afterViewChange(); } }
     else if (k === "paper") { if ((PAPER_KINDS as string[]).includes(v)) setPageLook(setPaper(D.st, v as PaperKind), { kind: "paperSize", label: `${_t("纸张")} ${PAPER_LABEL[v as PaperKind]}` }); }
     else if (k === "density") setPageLook(setDensity(D.st, v as Density), { kind: "density", label: `${_t("版式")} ${DENSITIES.find((z) => z.id === v)?.label ?? v}` });
@@ -2819,6 +2848,7 @@ function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extr
 function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array> }): void {
   if (impro) setImpro(false);
   legacyMp3Note = null;   // 上一首的那句话不带到这一首
+  foldTold.gone.clear(); foldTold.added.clear();   // 「改到 / 写上了没显示的记号」每次打开各说一次（7-G）
   ui.close(); closeInstPage();
   H.load(o.home, { stem: o.stem, named: o.named }); coverTouched = false;   // 换家（歌库 → 别处 = 放下 es 的身份；指针 / store 的「谁开着」在 onHome 里）
   const st0 = initState(song), sd = ensureStartDyns(st0.song, st0.nextId, { reorder: true }), startDyns = sd.added.length, reordered = sd.reordered.length;
@@ -3062,7 +3092,7 @@ function openPdfPanel(): void {
       (someHidden ? `<div class="part-sec">${_t("声部")}</div><div class="set-row">${pick("parts:view", partPick === "view", _t("照分页预览"), _t("隐藏的声部不印，预览里那条细行的位置空着（和预览一样）"))}${pick("parts:shown", partPick === "shown", _t("只排看得见的：{p}", { p: shownNames.join("、") }), _t("隐藏的声部整个拿掉、重新排，不留空位（像抽出来的分谱；和分页预览不一样）"))}</div>` : "") +
       `<div class="offer-msg">${_t("第一次要下载字体（思源黑体，约 {p} MB），之后离线也能用。纸张 = 这首歌的纸（页面设置里改）。", { p: PDF_FONT_MB })}</div>` +
       `<div class="offer-msg">${partPick === "shown" ? _t("只排看得见的声部（{p}）：重新排、不留空位——和分页预览不一样。", { p: esc(shownNames.join("、")) }) : _t("印出来的 = 页面设置里「分页」+ 曲段控件「{p}」看到的样子，去掉按钮和提示；隐藏的{p2}声部不印（预览里那条细行的位置空着）。", { p: paperPick === "one" ? _t("本段") : _t("全部"), p2: paperPick === "one" ? "" : _t("纸 / ") })}</div>` +
-      ((lk) => (lk.viewInC || lk.chordTags) ? `<div class="offer-msg">${_t("照这首歌的看谱方式印：{w}（页面设置 →「看谱」里改）。", { w: [lk.viewInC ? _t("按 C 调看（每个调号上方印「1=原来的调」）") : "", lk.chordTags ? _t("和弦级数") : ""].filter(Boolean).join(_t("、")) })}</div>` : "")(songViewOf(D.st.song)) +   // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
+      ((lk) => (lk.viewInC || lk.chordTags || !lk.expressions) ? `<div class="offer-msg">${_t("照这首歌的看谱方式印：{w}（页面设置 →「看谱」里改）。", { w: [lk.viewInC ? _t("按 C 调看（每个调号上方印「1=原来的调」）") : "", lk.chordTags ? _t("和弦级数") : "", !lk.expressions ? _t("不印演奏法和表情") : ""].filter(Boolean).join(_t("、")) })}</div>` : "")(songViewOf(D.st.song)) +   // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
       `<div class="offer-btns"><button class="btn" data-v="close">${_t("算了")}</button><button class="btn primary" data-v="go">${_t("生成 PDF")}</button></div></div>`;
   };
   draw(); document.body.append(box);

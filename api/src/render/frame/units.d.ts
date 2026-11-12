@@ -205,7 +205,8 @@ export declare function unitsOf(tokens: Token[], o: {
     measure: TextMeasure;
     sp: number;
     ts?: number;
-    rhythm?: boolean; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */
+    rhythm?: boolean; /** 这几种 token 不建单元（不交给量和画）：演奏法和表情不显示（7-G）时 = 力度 / 渐强渐弱（画法交进来，src/render/expressions.ts FOLDED_TOKEN_KINDS；框架不认是哪几种）。 */
+    skip?: ReadonlySet<string>; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */
     padFrom?: number; /** 复合拍子里的休止按拍切（简谱）。 */
     restBeats?: boolean; /** 各种单元多宽（画法给的）。 */
     widths: UnitWidths;
