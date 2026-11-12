@@ -1,6 +1,7 @@
 // geometry.ts —— 简谱数字行的主线程几何（设计稿第 3.3 节末：光标长什么样、鬼音符长什么样）。只吃平数据（这一行的原点 + 半个线间距）。
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-2）。**没有「纵向 = 音高」**：谱面在数字行上不提供竖着拖改音高（施工单第三节「4」）。
-import { CARET_Y0, CARET_Y1, BASE_Y, DIGIT_EM, DIGIT_W, JP_BODY, DIGIT_TOP, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, dotPath, accText } from "./glyphs.ts";
+import { CARET_Y0, CARET_Y1, BASE_Y, DIGIT_EM, DIGIT_W, JP_BODY, DIGIT_TOP, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, stackBases, dotPath, accText } from "./glyphs.ts";
+import { midiOf } from "../../score/pitch.ts";
 import { toDegree } from "../../score/degree.ts";
 import { TEXT_FACES, TEXT_STYLES } from "../text/index.ts";
 import type { GhostNote } from "../frame/ghost.ts";
@@ -15,12 +16,13 @@ export const jianpuCaretSpan = (row: JianpuRowData, half: number): { y1: number;
 export const jianpuPreviewAt = (row: JianpuRowData, x: number, half: number): { x: number; y: number; size: number } => { const u = unitOf(row, half); return { x: x + (0.1 + DIGIT_W / 2) * u, y: row.staffTop + BASE_Y * u, size: DIGIT_EM * u }; };
 /** 选区带的上沿（和光标同一个上沿）。 */
 export const jianpuBandTop = (row: JianpuRowData, half: number): number => row.staffTop + CARET_Y0 * unitOf(row, half);
-/** 数字行的鬼音符（谱面分家第四刀 4-6）：x 处（光标 / 那个音的位置）一个淡的数字 + 升降 + 八度点（按这一行的八度基准；row.octBase）。几个音（叠）= 往上一个叠一个。
+/** 数字行的鬼音符（谱面分家第四刀 4-6）：x 处（光标 / 那个音的位置）一个淡的数字 + 升降 + 八度点（按这一行的八度基准；row.octBase）。几个音（叠）= 从低到高往上一个叠一个（和真画的和弦同一个 stackBases，第五刀 5-4）。
  *  字和排版里的数字同一款（字体属性写在元素上：鬼音符那一层不在 .staff-svg 里，套不上谱的样式表）。 */
 export function jianpuGhost(row: JianpuRowData & { octBase?: number }, x: number, notes: readonly GhostNote[], half: number): string {
   const sp = unitOf(row, half), pv = jianpuPreviewAt(row, x, half), face = TEXT_FACES[TEXT_STYLES["jp-digit"].face], parts: string[] = [];
-  notes.forEach((n, k) => {
-    const d = toDegree(n.p, n.fifths), dots = d.shift - (row.octBase ?? 0), dy = -k * 2.4 * sp, Y = (v: number) => row.staffTop + v * sp + dy;
+  const low = [...notes].sort((a, b) => midiOf(a.p) - midiOf(b.p)), dg = low.map((n) => toDegree(n.p, n.fifths)), dotsOf = dg.map((d) => d.shift - (row.octBase ?? 0)), bases = stackBases(dotsOf);
+  low.forEach((n, k) => {
+    const d = dg[k]!, dots = dotsOf[k]!, dy = (bases[k]! - BASE_Y) * sp, Y = (v: number) => row.staffTop + v * sp + dy;
     parts.push(`<text x="${pv.x}" y="${pv.y + dy}" font-family='${face}' font-size="${pv.size}" text-anchor="middle">${d.degree}</text>`);
     if (n.shown !== null) parts.push(`<text x="${pv.x - ACC_DX * sp}" y="${Y(ACC_Y)}" font-family='${face}' font-size="${ACC_EM * sp}" text-anchor="middle">${accText(d.acc)}</text>`);
     for (let j = 0; j < Math.abs(dots); j++) parts.push(`<path d="${dotPath(pv.x, Y(dots > 0 ? DIGIT_TOP - DOT_GAP - DOT_R - j * DOT_STEP : BASE_Y + DOT_GAP + DOT_R + j * DOT_STEP), DOT_R * sp)}"/>`);

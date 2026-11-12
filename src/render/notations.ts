@@ -72,8 +72,8 @@ export interface Build {
 }
 /** 一种谱：这种谱里怎么建轨、一条轨用哪种行；home = 这种谱的主行（一行都没有的纸按它留高）。 */
 export interface Notation { readonly id: NotationId; readonly home: RowKind; readonly build: Build; rowKindOf(q: Track): RowKind }
-/** 数字行这一刀画得了的：有音高、这张纸上没有叠音、不是叠起来的一家（虚拟轨）/ 声部 2、不是鼓、台上那位不是固定敲一个键（× 符头）。别的照旧五线谱的行（第五刀做多声部）。 */
-const jianpuCan = (q: Track): boolean => !q.vrt && !q.v2 && !q.hasV2 && !q.pmode && !q.p.perc && !q.p.xHead && !q.tokens.some((t) => t.kind === "note" && !!t.chord?.length);
+/** 数字行画得了的：有音高（叠音 = 竖叠，第五刀 5-4）、不是叠起来的一家（虚拟轨）/ 声部 2、不是鼓、台上那位不是固定敲一个键（× 符头）。别的照旧五线谱的行（第五刀后面几步退场）。 */
+const jianpuCan = (q: Track): boolean => !q.vrt && !q.v2 && !q.hasV2 && !q.pmode && !q.p.perc && !q.p.xHead;
 export const NOTATIONS: Readonly<Record<NotationId, Notation>> = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。

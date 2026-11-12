@@ -129,7 +129,8 @@ describe("谱面排版：全量和点击（守卫 4 / 5）", () => {
       }
       assert((reps.get("family")?.length ?? 0) > 0 || c.name === "简谱", "五线谱那份里有叠起来的一家（比较器不是空的）");
       if (c.name === "简谱") eq(reps.get("family")?.length ?? 0, 0, "简谱里没有叠起来的一家（不叠）");
-      assert((only.get("unwritten-key") ?? 0) > 0 && (only.get("no-effect") ?? 0) > 0, `只在编辑器里有的那几种，测试歌里都碰到了（比较器不是空的）：${[...only].map(([k, n]) => `${k} ${n}`).join("、")}`);
+      const expectOnly: EditorOnly[] = c.name === "简谱" ? ["unwritten-key", "row-cannot"] : ["unwritten-key", "no-effect"];   // 简谱里大谱表那一位排成数字行（八度线 = 这种行用不上的），五线谱里是大谱表（八度线 = 现在不起作用的）
+      assert(expectOnly.every((k) => (only.get(k) ?? 0) > 0), `只在编辑器里有的那几种，测试歌里都碰到了（比较器不是空的）：${[...only].map(([k, n]) => `${k} ${n}`).join("、")}`);
     });
     it(`守卫 5（点击只指 token 或家具）· ${c.name}：每个带下标的点击框指向对的那条轨里对的那种 token；光标落点在轨长之内`, () => {
       const L = engrave(c.song, view.opts(c.song));

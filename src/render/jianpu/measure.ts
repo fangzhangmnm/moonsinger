@@ -9,7 +9,7 @@ import { SLOT, type ColumnKind } from "../frame/columns.ts";
 import type { ColEntry } from "../frame/arrange.ts";
 import type { PartView } from "../engrave.ts";
 import type { Unit, Chunk, Head } from "../frame/units.ts";
-import { DIGIT_W, ACC_W, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
+import { DIGIT_W, ACC_W, ARP_W, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
 
 /** 一条要排的简谱轨（一个声部在这张纸上；框架交来的单元已经切好了时值）。 */
 export interface JianpuTrack {
@@ -35,6 +35,10 @@ export function hasAugDot(u: Chunk): boolean {
   if (u.note) return u.dotted && u.base < TPQ * 2 && !contDash(u);
   return u.base >= TPQ ? Math.floor(u.ticks / TPQ + 1e-6) * TPQ < u.ticks - 1e-6 : u.dotted;
 }
+/** 这一段要写临时记号的那几个音（叠音 = 每个音各自的；单音 = 它自己的）：只有第一段写（同五线谱）。 */
+export const accsOf = (u: Chunk): (number | null)[] => (u.j !== 0 || !u.note ? [] : u.pitches.length > 1 ? u.accs : [u.acc]);
+/** 这一段画不画琶音的竖波浪（只挂在和弦上：单音的琶音核心那边已经去掉了）。 */
+export const hasArp = (u: Chunk): boolean => u.note && u.j === 0 && u.pitches.length > 1 && u.art.includes("arpeggio");
 /** 第几层下划线（八分 = 1、十六分 = 2…；四分以上 = 0）。 */
 export const underlines = (u: Chunk): number => (u.base < TPQ ? Math.max(1, Math.round(Math.log2(TPQ / u.base))) : 0);
 
@@ -58,9 +62,10 @@ export function measureJianpu(q: JianpuTrack, k = 1): { entries: ColEntry<Unit>[
   const inkL = new Map<Chunk, number>();
   const spItems = (u: Chunk): SpItem[] => {
     if (u.pad) return [];   // 补齐的淡色小节不画、不参加间距（同五线谱）
-    const n = extraGlyphs(u), acc = u.note && u.j === 0 && u.acc !== null;
+    const n = extraGlyphs(u), acc = accsOf(u).some((a) => a !== null);   // 和弦：哪个音要写升降号，这一列就往左让出升降号的地方（和弦竖叠，宽不变）
     const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;   // 换气的 V（+「吸 / 深吸」）画在音后面：留出来，不压下一个音
-    const left = (acc ? ACC_W : -0.1) * k, right = (0.1 + DIGIT_W + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k;
+    //   左边挂的东西（升降号、琶音）= 这个音往左的最小占地：前面有空就不挪，会撞上前一个音 / 小节线才推这一个音（UX 稿第 7 节；间距那一套本来就这样顶）
+    const left = ((acc ? ACC_W : -0.1) + (hasArp(u) ? ARP_W : 0)) * k, right = (0.1 + DIGIT_W + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k;
     inkL.set(u, Math.max(0, left));
     const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks }];
     const cx = (0.1 + DIGIT_W / 2) * k;

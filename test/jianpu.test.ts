@@ -30,9 +30,38 @@ describe("简谱数字行", () => {
     eq(digits(L.prims).join(""), "12345671");
     assert(L.prims.filter((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")).length === 1, "高八度的 1 上一个点（八度基准 = 点最少：七个音在 0 组）");
   });
-  it("叠音的声部照旧排五线谱的行（这一刀数字行只画单声部；同一张纸上两种行并排 = 过渡）", () => {
-    const { L } = lay([n(P("E")), n(P("G"), TPQ, { chord: [P("C")] })]);
-    assert(L.systems.length > 0 && L.systems.every((r) => r.kind === "staff"), "有叠音 = 五线谱的行");
+  it("和弦竖叠（第五刀 5-4，UX 稿第 7 节）：数字行、从低到高往上叠、同一个 x；只压高不缩宽（和弦那一列和单音一样宽）；每个音自己的升降号和点击框", () => {
+    const { L, toks } = lay([n(P("C")), n(P("G"), TPQ, { chord: [P("E"), P("C", 4, 1)] }), n(P("C")), n(P("C"))]);
+    assert(L.systems.length > 0 && L.systems.every((r) => r.kind === "jianpu"), "有叠音也是数字行");
+    const ds = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? ""));
+    const ch = ds.slice(1, 4), [lo, mid, hi] = ch;
+    eq(ch.map((d) => d.s).join(""), "135", "和弦从低到高画（♯1 3 5）");
+    assert(ch.every((d) => Math.abs(d.x - ch[0]!.x) < 1e-6), "叠着的数字同一个 x");
+    assert(lo!.y > mid!.y && mid!.y > hi!.y, "往上一个叠一个（y 越来越小）");
+    assert(Math.abs(lo!.y - ds[0]!.y) < 1e-6, "最低的那个在行的基线上（和前一个单音同一条基线）");
+    const one = lay([n(P("C")), n(P("C", 4, 1)), n(P("C")), n(P("C"))]).L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "")).map((p) => p.x.toFixed(3));
+    eq([ds[0]!, lo!, ds[4]!, ds[5]!].map((p) => p.x.toFixed(3)).join(" "), one.join(" "), "和弦那一列和同样带 ♯ 的单音一样宽（只压高、不缩宽也不加宽）");
+    const acc = L.prims.find((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-acc/.test(p.cls ?? "") && p.s === "♯");
+    assert(!!acc && acc.y > mid!.y && acc.y < lo!.y + 1e-6, "♯ 挂在它自己那个数字（最低的 1）旁边");
+    const iCh = toks.findIndex((t) => t.kind === "note" && !!t.chord?.length);
+    eq(L.chordHeads.filter((h) => h.index === iCh).length, 2, "叠着的另外两个音各一块点击框（指着同一个音）");
+    assert(L.notes.some((h) => h.index === iCh && Math.abs(h.y - (hi!.y - 9)) < 12), "旋律线（最上面那个）的点击框在最上面那个数字那儿");
+  });
+  it("琶音（第五刀 5-4，UX 稿第 7 节）：和弦左边一条竖的波浪线；左边挂的东西让位——前面有空就不挪，挤了才只推这一个音", () => {
+    const xs = (body: Omit<Token, "id">[], song?: (s: Song) => Song) => { const { L } = lay(body, song); return { L, x: L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "")).map((p) => p.x) }; };
+    const chord = (arp: boolean) => n(P("G"), TPQ, { chord: [P("C")], ...(arp ? { art: ["arpeggio"] } : {}) });
+    //   前面空够 = 同一小节里前面一个全音符（8/4 拍：中间没有小节线——小节线后面的第一个音本来就贴着小节线，左边挂的东西一律往右顶）
+    const eight = (s: Song): Song => ({ ...s, papers: s.papers.map((pp) => ({ ...pp, tracks: Object.fromEntries(Object.entries(pp.tracks).map(([k, ts]) => [k, ts.map((t) => (t.kind === "time" ? { ...t, beats: 8 } : t))])) })) });
+    const loose0 = xs([n(P("C"), TPQ * 4), chord(false), n(P("C"))], eight), loose1 = xs([n(P("C"), TPQ * 4), chord(true), n(P("C"))], eight);
+    const arp = loose1.L.prims.find((p): p is Extract<Prim, { t: "path" }> => p.t === "path" && /arpeggio/.test(p.cls ?? ""));
+    assert(!!arp, "画了琶音");
+    const ax = Number(/^M([\d.]+)/.exec(arp!.d)![1]);
+    assert(ax < loose1.x[1]! - 5, `波浪线在和弦左边（${ax} < ${loose1.x[1]}）`);
+    eq(loose1.x.map((v) => v.toFixed(3)).join(" "), loose0.x.map((v) => v.toFixed(3)).join(" "), "前面空够：加了琶音谁都不挪");
+    const s16 = TPQ / 4, tight = (arpOn: boolean) => xs([n(P("C"), s16), n(P("D"), s16), n(P("E"), s16), n(P("F"), s16), chord(arpOn), n(P("C"))]);
+    const t0 = tight(false), t1 = tight(true);
+    eq(t1.x.slice(0, 4).map((v) => v.toFixed(3)).join(" "), t0.x.slice(0, 4).map((v) => v.toFixed(3)).join(" "), "挤的时候前面的音也不挪");
+    assert(t1.x[4]! > t0.x[4]! + 1, `挤了：和弦这一个往右推（${t0.x[4]} → ${t1.x[4]}）`);
   });
   it("下划线按拍连：两个八分在同一拍 = 一条；跨拍 = 断开；十六分 = 两层", () => {
     const e = TPQ / 2, s16 = TPQ / 4;

@@ -21,6 +21,16 @@ export const JP_BODY = { top: BAR_Y0, bottom: BAR_Y1 } as const;
 export const MID_TEXT_EM = 1.4, MID_TEXT_CH = 0.62;
 /** 换气：音后面的「V」占多宽、「吸 / 深吸」小字占多宽（sp；量的时候留出来）。 */
 export const BREATH_W = 0.35 + 0.9, INHALE_W = 2.2;
+/** 和弦竖叠（第五刀 5-4；UX 稿第 7 节「只压高、不缩宽」）：数字之间留多少（sp）；数字本身多高（基线到上沿）；琶音的竖波浪往左占多宽。 */
+export const CHORD_GAP = 0.25, DIGIT_H = BASE_Y - DIGIT_TOP, ARP_W = 0.9;
+/** 和弦里每个数字的基线（局部 y）：dots = 每个音的八度点数（+ 高、− 低），从最低的音起；最低的那个在行的基线上，往上一个叠一个，
+ *  间距 = 数字高 + 下面那个的高八度点 + 上面这个的低八度点 + CHORD_GAP（有点才让，没点贴紧 = 只压高）。真画的和弦、鬼音符共用这一个。 */
+export function stackBases(dots: readonly number[]): number[] {
+  const up = (d: number) => (d > 0 ? DOT_GAP + 2 * DOT_R + (d - 1) * DOT_STEP : 0), down = (d: number) => (d < 0 ? DOT_GAP + 2 * DOT_R + (-d - 1) * DOT_STEP : 0);
+  const out: number[] = [];
+  dots.forEach((d, k) => { out.push(k === 0 ? BASE_Y : out[k - 1]! - DIGIT_H - up(dots[k - 1]!) - down(d) - CHORD_GAP); });
+  return out;
+}
 /** 光标在数字行上从哪画到哪（局部 y）。 */
 export const CARET_Y0 = 0.6, CARET_Y1 = 3.9;
 
