@@ -250,6 +250,15 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
   - 守卫：`src` 和 `index.html` 里不许再出现原生下拉框的元素（no-native-select）；E2E `test/e2e/dropdown.mjs`；E2E 里选下拉走帮手 `test/e2e/dd.mjs`。
   - 这条只管本仓。别的家族 app 各按各的进度，不拿这条去要求它们（user 同一句）。
 
+## 兼容老文件的规矩（只管本仓；added 2026-11-12 by Claude Fable 5.2）
+
+- user 2026-11-12：「然后是backward compatibility的税不应该太重，而且需要严格隔离，而不是渗透进每一个运行时逻辑」。同日早些：「如果一开始的实现是错的的话，不应该念旧。」
+- 下面是读法（Claude Fable 5.2 归纳，user 没逐字说；user 改口以 user 为准）：
+  - **保的只有**：老文件打得开、人写的东西不丢（家规的格式纪律照旧）。不保「老歌的声音、版面逐样本不变」——怎么演、怎么排是算法，算法改对了老歌跟着变。
+  - **兼容只住在开文件的那一道门里**（`src/format/migrate/` 和读文件的那一层）：老文件进门时一次补成现在的样子。门里面的代码（排版、出声、编辑）只认现在的样子，不写「没写这个键就按旧的来」的分支，不留为了和旧的一样的常数。
+  - 新加一个可选的键：它没写是什么意思，在进门那一处定一次、补成明写的值；运行时拿到的永远是有值的。不为「老的」和「新建的」各留一套默认。
+  - 现状有欠账：出声那一层（`src/score/perform.ts`）每个数后面跟着「没写就用默认表」、乐手配置里「旧的没写 = 照旧」的几处。**不顺手改**；碰到那一块时收成「进门时一次补齐」，先找统筹。
+
 ## 谱面分家：排版 = 框架 + 谱种表 + 每种行的画法（五线谱 / 简谱）（v0.16.108 起；第四刀起有简谱，第五刀起简谱画多声部，第六刀收工；2026-11-11，Claude Opus 5.5；READ before touching `src/render/`）
 
 ADR-0005（`ai-docs/adr/0005-score-surface-five-layers-row-depiction-is-the-unit.md`）+ 设计稿 `ai-docs/20261111-score-surface-architecture.md`（实际接口 = 第 7½ 节）+ 施工单 `ai-docs/20261111-score-surface-construction-plan.md`（1b 的施工记录在第六节）。流程图 = `ai-docs/20261109-pipelines.md` A8⅓。
