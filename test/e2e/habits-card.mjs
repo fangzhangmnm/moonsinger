@@ -27,7 +27,8 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   check(tiles.join(",") === "notation:staff,notation:jianpu,notation:letters,viewInC:off,viewInC:on", "格子：谱种表的三种 + 移调辅助两颗钮", tiles.join(","));
   check(!!(await p.$('.habits-card [data-set="habit:middleC"]')) && !!(await p.$('.habits-card [data-set="habit:chordTagStyle"]')), "中央 C、和弦写法是小下拉（和设置那几行同一处出）");
   const words = await p.$eval(".habits-card", (e) => e.textContent ?? "");
-  check(/玩 tracker 的可以先用这个，不完全一样/.test(words) && /钢琴卷帘、录音还没做/.test(words), "字母谱那句和钢琴卷帘 / 录音还没做");
+  check(!/玩 tracker/.test(words) && !/钢琴卷帘/.test(words), "「习惯看的谱」底下那一行拿掉了（v0.17.38，user「下面那行文字说明不要，图片已经够解释」）");
+  check(!!(await p.$('.habits-card .hab-aid .wbe-row-mark')) && (await p.$eval('.habits-card .hab-aid .wbe-row-note', (e) => e.hidden)), "移调辅助的说明收在标题旁的问号里、默认收着");
   check(!/新手|刚开始|学过|专家|你是哪一种|？/.test(words), "格子不写水平、不写问句");
   check(await p.$$eval(".habits-card .hab-tile .hab-prev svg", (s) => s.length === 3 && s.every((x) => x.querySelectorAll("text").length > 3)), "只有谱那一行带预览（3 张，真排出来的）");
   const sizes = await p.$$eval(".habits-card .hab-tile", (ts) => ts.map((t) => { const r = t.getBoundingClientRect(), v = t.querySelector(".hab-prev").getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), Math.round(v.width), Math.round(v.height)].join("x"); }));
@@ -45,7 +46,7 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   await p.click('.wbe-panel [data-panel-btn="ok"]'); await p.waitForTimeout(300);
   const k1 = await kv(p);
   check(k1["habits-asked"] === "1" && k1["habit-notation"] === "jianpu" && k1["habit-transpose-aid"] === "on" && k1["habit-middle-c"] === "3" && k1["habit-chord-tag-style"] === "root", "「好」= 选了的记进设备、记「问过了」（含和弦写法）", JSON.stringify(k1));
-  check((await rowKind(p)) === "jianpu", "新歌（谱种「跟着软件」）马上按简谱排", await rowKind(p));
+  check((await rowKind(p)) === "jianpu", "后面那首一笔没动的空白歌照新习惯重建、马上按简谱排（第 21 条补）", await rowKind(p));
   check(await p.$eval('.pad-key[data-midi="60"] .kf-big', (e) => e.textContent === "C3").catch(() => false), "键上的字照中央 C 的叫法：中央 C 写 C3");
   await p.reload(); await p.waitForTimeout(3000);
   check(!(await p.$(".habits-card")), "问过了 = 重新载入不再出");
@@ -56,9 +57,9 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   await pickOnPage(p, '[data-set="habit:notation"]', "none"); await pickOnPage(p, '[data-set="habit:middleC"]', "none"); await p.waitForTimeout(200);
   const k2 = await kv(p);
   check(k2["habit-notation"] === null && k2["habit-middle-c"] === null && k2["habit-transpose-aid"] === "on", "设置里改回「没选」= 删掉那一个键，别的不动", JSON.stringify(k2));
-  check((await rowKind(p)) === "staff", "改回没选：照软件的默认（五线谱）", await rowKind(p));
+  check((await rowKind(p)) === "staff", "改回没选：一笔没动的空白歌照软件的默认重建（五线谱）", await rowKind(p));
   await pickOnPage(p, '[data-set="habit:notation"]', "letters"); await p.waitForTimeout(200);
-  check((await rowKind(p)) === "jianpu" && (await kv(p))["habit-notation"] === "letters", "设置里选字母谱：马上生效（字母谱是简谱那一种行）");
+  check((await rowKind(p)) === "jianpu" && (await kv(p))["habit-notation"] === "letters", "设置里选字母谱：一笔没动的空白歌马上照它重建（字母谱是简谱那一种行）");
   // 设置里的「初始设置」：亮着现在的习惯；「以后再说」什么都不改；回到设置
   await p.click('.set-panel [data-v="habits:card"]'); await p.waitForSelector(".habits-card");
   check(await p.$eval('.hab-tile[data-v="letters"]', (e) => e.classList.contains("on")) && await p.$eval('.habits-card [data-h="viewInC"][data-v="on"]', (e) => e.classList.contains("on")), "从设置里打开：亮着现在的习惯（字母谱、按 C 调看）");
@@ -116,10 +117,12 @@ for (const [w, h] of [[320, 700], [360, 760], [390, 844], [430, 900], [744, 1133
   check(await p.waitForSelector(".habits-card", { timeout: 4000 }).then(() => true, () => false), "设置关了：卡出来");
   await ctx.close(); }
 
-// ── 文件一个字节都不跟着变；锁着的歌照样跟着习惯变 ──
+// ── 文件一个字节都不跟着变；锁着的歌（谱种写着「跟着」）照样跟着习惯变 ──
 { const ctx = await b.newContext({ viewport: { width: 1000, height: 900 } }), p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message));
   await p.goto(BASE); await p.waitForTimeout(800);
   for (let i = 0; i < 4; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(30); }
+  // 第 21 条起新歌写具体的值、不跟着习惯；这一段测的是「写着跟着」的歌（老歌的写法 / 页面设置里选了「跟着我的习惯」）：谱种写回 default
+  await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, song: { ...s.song, notation: "default" } }); }); await p.waitForTimeout(150);
   // 存出来的每一份（.mxl 里每个条目）逐字节比；只去掉存的时刻（MusicXML 的 encoding-date、清单的 saved）——那两样每存一次都变，和习惯无关
   const bytesB64 = () => p.evaluate(() => { const m = window.__moonsinger, u = m.bytes();
     return JSON.stringify(m.zipList(u).sort().map((k) => [k, m.zipText(u, k).replace(/<encoding-date>[^<]*<\/encoding-date>/g, "").replace(/"saved": "[^"]*"/g, "")])); });

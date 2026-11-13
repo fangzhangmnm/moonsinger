@@ -871,8 +871,8 @@ export declare const S: {
     readonly 习惯看的谱: {
         readonly en: "Notation I usually read";
     };
-    readonly "\u65B0\u6B4C\u548C\u6CA1\u5355\u72EC\u9009\u8FC7\u7684\u6B4C\u7167\u5B83\u663E\u793A\uFF1B\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002": {
-        readonly en: "New songs, and songs that have not picked their own, are shown this way; each song can still change it in Page settings.";
+    readonly "\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002": {
+        readonly en: "New songs are written with it; songs set to “Follow my habits” in Page settings change with it. Each song can be changed on its own in Page settings.";
     };
     readonly 移调辅助: {
         readonly en: "Transposition aid";
@@ -895,8 +895,8 @@ export declare const S: {
     readonly "\u6253\u5F00\u2026": {
         readonly en: "Open…";
     };
-    readonly "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u6B4C\u91CC\u8FD9\u4E00\u9879\u662F\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D\u65F6\u7167\u5B83\uFF1B\u6B4C\u91CC\u5355\u72EC\u9009\u8FC7\u7684\u7167\u6B4C\u7684\u3002\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": {
-        readonly en: "A habit on this device: used when a song leaves this item at “Follow the software”; a song that picked its own keeps it. Not saved in songs, not synced.";
+    readonly "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": {
+        readonly en: "This device's habits: new songs are written with them (and then stay that way); songs set to “Follow my habits” in Page settings change with them. The habits themselves are not saved in songs and do not sync.";
     };
     readonly 跟系统: {
         readonly en: "System";
@@ -1309,8 +1309,8 @@ export declare const S: {
     readonly "\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002": {
         readonly en: "Only for this session; not saved in the song.";
     };
-    readonly "\u8DDF\u7740\u8F6F\u4EF6\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": {
-        readonly en: "Follow the software (now: {x})";
+    readonly "\u8DDF\u7740\u6211\u7684\u4E60\u60EF\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": {
+        readonly en: "Follow my habits (now: {x})";
     };
     readonly 视图: {
         readonly en: "View";
@@ -1411,6 +1411,9 @@ export declare const S: {
     readonly 边距: {
         readonly en: "Margins";
     };
+    readonly "\u8DDF\u7740\u8F6F\u4EF6\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": {
+        readonly en: "Follow the software (now: {x})";
+    };
     readonly "\u81EA\u5B9A\u4E49\uFF08{x}\uFF09": {
         readonly en: "Custom ({x})";
     };
@@ -1480,8 +1483,8 @@ export declare const S: {
     readonly 谱上的字: {
         readonly en: "Text on the score";
     };
-    readonly "\u628A\u8FD9\u9996\u6B4C\u91CC\u9009\u8FC7\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u6539\u56DE\u8DDF\u7740\u8F6F\u4EF6\uFF08\u80FD\u64A4\u9500\uFF09": {
-        readonly en: "Set every display setting chosen for this song back to following the software (can be undone)";
+    readonly "\u628A\u8FD9\u9996\u6B4C\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u5199\u6210\u6211\u7684\u4E60\u60EF\u73B0\u5728\u7684\u6837\u5B50\uFF08\u6CA1\u8BBE\u4E60\u60EF\u7684\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1B\u80FD\u64A4\u9500\uFF09": {
+        readonly en: "Write this song's display settings as my habits are now (where no habit is set, the software default; can be undone)";
     };
     readonly 页面设置: {
         readonly en: "Page settings";
@@ -1492,11 +1495,11 @@ export declare const S: {
     readonly "\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6": {
         readonly en: "Page: paper and note density";
     };
-    readonly 全部跟着软件: {
-        readonly en: "All follow the software";
+    readonly 套用我的习惯: {
+        readonly en: "Apply my habits";
     };
-    readonly "{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6": {
-        readonly en: "{what}: follow the software";
+    readonly "{what}\uFF1A\u8DDF\u7740\u6211\u7684\u4E60\u60EF": {
+        readonly en: "{what}: follow my habits";
     };
     readonly 简谱: {
         readonly en: "Numbered (jianpu)";

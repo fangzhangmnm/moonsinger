@@ -87,7 +87,7 @@ check(await hidden(), "重做：同理");
   await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
   check((await fileSig()) === sig0, "锁着按「存」：文件一个字节都没变");
   await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
-  check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === "default", "撤销：翻回去（看法那一格锁着也能翻；17-1：回到跟着软件）");
+  check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === false, "撤销：翻回去（看法那一格锁着也能翻；第 21 条：回到新建时写下来的「不用」）");
   // 和弦写法（v0.17.33；统筹 134f74e4：v0.17.32 漏进锁的名单，锁着换不了）：锁着换成根音写法 → 谱上的字从级数变成根音、门不闪、文件不写、能撤销
   const tags = () => p.evaluate(() => [...document.querySelectorAll("#score text.chord-tag")].map((e) => e.textContent?.trim() ?? "").join(" | "));
   await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { paper: s.song.papers[0].id, part: s.at.part }, caret: 0, sel: null }); }); await p.waitForTimeout(250);   // 叠音在第一段（视图只看本段）
@@ -101,7 +101,7 @@ check(await hidden(), "重做：同理");
   await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
   check((await fileSig()) === sig0, "锁着按「存」：文件一个字节都没变（和弦写法）");
   await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
-  check((await p.evaluate(() => window.__moonsinger.state().song.chordTagStyle)) === "default" && (await tags()) === "I", "撤销：回到跟着软件、谱上又是 I");
+  check((await p.evaluate(() => window.__moonsinger.state().song.chordTagStyle)) === "degree" && (await tags()) === "I", "撤销：回到新建时写下来的级数（第 21 条）、谱上又是 I");
   await p.evaluate(() => { const m = window.__moonsinger; m.openHeader(m.state().at.part); }); await p.waitForTimeout(150);
   const pe = await p.evaluate(() => { const g = (q) => { const el = document.querySelector(q); return el ? getComputedStyle(el).pointerEvents : "没有"; }; return { broken: g('.header-panel [data-hp="broken"]'), key: g('.header-panel [data-hp="key"]') }; });
   check(pe.broken === "auto" && pe.key === "none", "谱头面板：「分解和弦」锁着能切（看法），调号改不动", JSON.stringify(pe));
@@ -200,7 +200,7 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
   const fileXml = async () => { const arr = await p.evaluate(async (name) => { const f = await (await (await navigator.storage.getDirectory()).getFileHandle(name)).getFile(); return [...new Uint8Array(await f.arrayBuffer())]; }, FILE);
     const z = unzipSync(new Uint8Array(arr)); return z["score.musicxml"] ? strFromU8(z["score.musicxml"]) : ""; };
   const s0 = await song(), y0 = await rowsY(), sigC = await fileSig();
-  check((await lk()).locked && s0.density === "default" && s0.paper === "default" && s0.bn === "default" && s0.lyr === "default", "锁着；版面四样都跟着软件（17-1）", JSON.stringify(s0));
+  check((await lk()).locked && s0.density === "cozy" && s0.paper === "A5" && s0.bn === "on" && s0.lyr === "rhythm", "锁着；版面四样是新建时写下来的值（第 21 条：舒适、A5、每行开头、按节奏）", JSON.stringify(s0));
   await chip(); await armFlash();
   await pickOnPage(p, '.set-panel [data-pg="density"]', "compact"); await p.waitForTimeout(200);
   { const d = (await song()).density, y1 = await rowsY(), f = await flashed(); check(d === "compact" && y1 !== y0 && !f, "锁着切「紧凑」：切了、谱上变了、门不闪", `${d} ${y0} → ${y1} flash=${f}`); }
@@ -215,7 +215,7 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
   await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
   check((await fileSig()) === sigC, "锁着按「存」：文件一个字节都没变");
   await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
-  check((await song()).lyr === "default", "撤销：翻回去（看法那一格锁着也能翻；回到跟着软件）");
+  check((await song()).lyr === "rhythm", "撤销：翻回去（看法那一格锁着也能翻；回到新建时写下来的「按节奏」）");
   check(await openFile(), "关掉重开"); await p.waitForTimeout(400);
   const s2 = await song();
   check((await lk()).locked && JSON.stringify(s2) === JSON.stringify(s0) && (await rowsY()) === y0 && (await fileSig()) === sigC, "重开 = 文件里的原样（舒适、A5、印小节号、按节奏）", JSON.stringify(s2));

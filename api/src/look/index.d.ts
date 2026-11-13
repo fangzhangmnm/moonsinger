@@ -1,6 +1,6 @@
 import { type Song, type PaperSeg, type Choice, type ClefChoice } from "../score/song.ts";
 import { type Paper, type ReadPaper, type PaperKind, type PaperChoice, type Margins } from "../score/paper.ts";
-import { type SongView, type NotationId, type ChordTagStyle } from "../score/song-view.ts";
+import { type SongView, type NotationId, type ChordTagStyle, type TextLang } from "../score/song-view.ts";
 import { type LookContext, type LookDefaults } from "./habits.ts";
 /** 能跟着软件的那几项（歌级；score.json 顶层同名的键）。arrangement 改声音（第 16 条），textLang 的 "ui" 本身就是跟界面，都不在这里。 */
 export declare const LOOK_KEYS: readonly ["notation", "viewInC", "middleC", "chordTags", "chordTagStyle", "expressions", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"];
@@ -38,7 +38,14 @@ export declare function trackLookOf(song: Song): (paperId: string, partId: strin
 export declare function clefChoiceOf(paper: PaperSeg, partId: string): ClefChoice;
 /** 页面设置里一项选「跟着软件」：这一项写回 "default"。纸跟着软件 = 边距也跟着（边距跟着纸，同 setPaper）；舒适 / 紧凑跟着软件 = 谱高也跟着（同 setDensity）。都已经是 = 原样。 */
 export declare function followDefault(song: Song, key: LookKey): Song;
-/** 「全部跟着软件」：把这首歌里选过的每一项都改回 "default"（一步撤销由宿主走写入口）。都已经是 = 原样。 */
+/** 第 21 条（v0.17.38，统筹 74ea9a53；user「我建议是新建时写下来，跟default只是一个技术上的选项，用户不太会用」）：把歌里「跟着」的那几项写成这一刻它等于的值。
+ *  · born（新建的歌、别家的谱进门）：只换写着 "default" 的（谱上的字：写着 "ui" 的）——别家谱里从 <defaults> 认出来的纸张 / 密度是它自己的，照留；
+ *  · apply（页面设置「套用我的习惯」）：每一样都写成现在的值。
+ *  值 = 有习惯的照习惯、别的照软件当时的默认（defaultsFor(ctx)——和画的时候「跟着」等于什么是同一份）；谱上的字 = 这一刻的界面语言。
+ *  边距、谱高两项的 "default" 意思是「这种纸自己的」「跟着音符密度」，不是跟习惯：born 不动，apply 写回 "default"（和新建的歌一样）。
+ *  没变 = 原样（同一个引用）。三层读法（lookOf）不动：写着 "default" 的老歌照旧跟着。 */
+export declare function stampLooks(song: Song, ctx: LookContext, uiLang: Exclude<TextLang, "ui">, mode: "born" | "apply"): Song;
+/** 「全部跟着软件」：把这首歌里选过的每一项都改回 "default"（一步撤销由宿主走写入口）。都已经是 = 原样。v0.17.38 起页面设置那颗钮换成「套用我的习惯」（stampLooks apply），这个留给测试和以后。 */
 export declare function allDefault(song: Song): Song;
 /** 这首歌里选过的有几项（歌库核对 / 页面设置「全部跟着软件」亮不亮）。 */
 export declare const chosenCount: (song: Song) => number;

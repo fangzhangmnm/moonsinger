@@ -24,15 +24,15 @@ check((await ddValue(p, '[data-pg="only1"]')) === "on", "下拉里是「只看�
 await pickOnPage(p, '[data-pg="only1"]', "off"); await p.waitForTimeout(200);
 check((await shownParts()) === "P1,P2", "再点 = 都看", await shownParts());
 // 歌词怎么排（v0.9.40；user「先试下你说的两个歌词开关吧，approved」）：按歌词（默认）/ 按节奏；进歌里、能撤销
-check((await ddValue(p, '[data-pg="lyr"]')) === "?follow" && (await p.$eval('[data-pg="lyr"]', (e) => e.textContent ?? "")).includes("跟着软件（现在是：按节奏）"), "页面设置里有歌词两种排法；新歌跟着软件，现在是「按节奏」（user「默认用修歌词的那个排版方式吧」；17-1）");
+check((await ddValue(p, '[data-pg="lyr"]')) === "rhythm" && (await p.$eval('[data-pg="lyr"]', (e) => e.textContent ?? "")).includes("按节奏"), "（第 21 条：新歌写下来的「按节奏」）页面设置里有歌词两种排法；新歌跟着软件，现在是「按节奏」（user「默认用修歌词的那个排版方式吧」；17-1）");
 await pickOnPage(p, '[data-pg="lyr"]', "lyrics"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === "lyrics" && (await ddValue(p, '[data-pg="lyr"]')) === "lyrics", "选「按歌词」= 歌里记着、下拉跟着");
 await p.keyboard.press("Escape"); await p.mouse.click(5, 880); await p.waitForTimeout(150);
 await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
-check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === "default", "撤销 = 回到跟着软件（17-1）");
+check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === "rhythm", "撤销 = 回到进门时写下来的「按节奏」（第 21 条）");
 // 小节号（v0.9.42）：纸的设置里「每行开头 / 不印」，默认每行开头；进歌里
 await openSheet();
-check((await ddValue(p, '[data-pg="bn"]')) === "?follow" && (await p.$eval('[data-pg="bn"]', (e) => e.textContent ?? "")).includes("跟着软件（现在是：每行开头）"), "页面设置里有小节号；新歌跟着软件，现在是「每行开头」（17-1）");
+check((await ddValue(p, '[data-pg="bn"]')) === "on" && (await p.$eval('[data-pg="bn"]', (e) => e.textContent ?? "")).includes("每行开头"), "（第 21 条：新歌写下来的「每行开头」）页面设置里有小节号；新歌跟着软件，现在是「每行开头」（17-1）");
 await pickOnPage(p, '[data-pg="bn"]', "off"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === "off" && (await p.$$eval("#score text.bar-no", (e) => e.length)) === 0, "选「不印」= 歌里记着、谱上没有小节号");
 await pickOnPage(p, '[data-pg="bn"]', "on"); await p.waitForTimeout(200);
@@ -47,13 +47,14 @@ check((await p.evaluate(() => window.__moonsinger.state().song.staffMm)) === 6.5
 check((await p.$$eval(".popup-menu [data-id]", () => 0), true) && !/（[^）]*（/.test(await p.$eval('[data-pg="paper"]', (e) => e.textContent ?? "")), "纸张那一项没有括号套括号");
 await pickOnPage(p, '[data-pg="density"]', "compact"); await p.waitForTimeout(200);
 { const sg = await p.evaluate(() => { const s = window.__moonsinger.state().song; return { staffMm: s.staffMm, density: s.density }; }); check(sg.staffMm === "default" && sg.density === "compact", "选「紧凑」= 谱高回到跟着紧凑那一档", JSON.stringify(sg)); }
-// 跟着软件（第 17 条 17-1）：每一项第一格「跟着软件（现在是：X）」；选它 = 写回 default；「全部跟着软件」一步改回
-check((await ddOptions(p, '[data-pg="paper"]').catch(() => []))[0]?.label === "跟着软件（现在是：A5）", "纸张第一格 = 跟着软件（现在是：A5）");
+// 跟着（第 17 条 17-1；第 21 条起在最后一格、叫「跟着我的习惯（现在是：X）」）：选它 = 写回 default；「套用我的习惯」（原「全部跟着软件」）= 一步写成现在的值
+check((await ddOptions(p, '[data-pg="paper"]').catch(() => [])).at(-1)?.label === "跟着我的习惯（现在是：A5）", "纸张最后一格 = 跟着我的习惯（现在是：A5）");
 await pickOnPage(p, '[data-pg="paper"]', "?follow"); await p.waitForTimeout(200);
-check((await p.evaluate(() => window.__moonsinger.state().song.paper)) === "default", "选「跟着软件」= 纸张写回 default");
+check((await p.evaluate(() => window.__moonsinger.state().song.paper)) === "default", "选「跟着我的习惯」= 纸张写回 default");
 await p.click('[data-panel-btn="alldef"]'); await p.waitForTimeout(200);
-check((await p.evaluate(() => { const s = window.__moonsinger.state().song; return ["notation", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"].every((k) => s[k] === "default"); })), "「全部跟着软件」= 选过的都改回 default");
-check(await p.$eval('[data-panel-btn="alldef"]', (e) => e.disabled), "都跟着软件了 = 那颗钮灰着");
+{ const sg = await p.evaluate(() => { const s = window.__moonsinger.state().song; return [s.notation, s.barNumbers, s.lyricFit, JSON.stringify(s.paper), s.density, s.staffMm, s.marginMm].join(","); });
+  check(sg === 'staff,line,rhythm,{"kind":"A5"},cozy,default,default', "「套用我的习惯」= 写成现在的值（没设习惯 = 软件的默认）；谱高、边距回 default", sg); }
+check(await p.$eval('[data-panel-btn="alldef"]', (e) => e.disabled), "已经是现在的值 = 那颗钮灰着");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nonly1: ${pass} passed, ${fail} failed`);

@@ -1262,7 +1262,12 @@ button.chord-cand.is-on { box-shadow: 0 0 0 2px var(--accent) inset; }
 .habits-card { display: flex; flex-direction: column; gap: 14px; }
 .habits-card .hab-lead { color: var(--muted); font-size: 13px; line-height: 1.5; }
 .habits-card .hab-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; }   /* 行名比标题「初始设置」（壳的标题 14px）小一档（统筹 a4c3d030） */
-.habits-card :is(.hab-note, .hab-foot) { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 6px 0 0; }
+/* 移调辅助（v0.17.38）：说明收在标题旁的小问号里（零件 settingRowHtml）；零件把展开的那段排在行头后面，这里挪到两颗钮下面 */
+.habits-card .hab-aid .wbe-row { display: flex; flex-direction: column; border-bottom: 0; }   /* 底下那一组小下拉自己有上沿的线：这一行不再画一条（不然两条叠着） */
+.habits-card .hab-aid .wbe-row-note { order: 2; margin-top: 8px; }
+.habits-card .hab-aid .hab-title { margin-bottom: 0; }
+.wbe-row-note p { margin: 0 0 6px; }   /* 问号里分段的说明（移调辅助三段，v0.17.38） */
+.wbe-row-note p:last-child { margin-bottom: 0; }
 .habits-card .hab-strip { display: flex; gap: 10px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .habits-card .hab-strip::-webkit-scrollbar { display: none; }
 /* 被切的那一侧淡出（左边滑过去了也加，到头的一侧不加；fades() 按滚到哪儿开关） */

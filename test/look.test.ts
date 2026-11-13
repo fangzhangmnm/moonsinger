@@ -7,7 +7,8 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, setPaper, setDensity, setBarNumbers, setLyricFit, type Song } from "../src/score/song.ts";
 import { setNotation, setChordTags } from "../src/score/song-view.ts";
 import { paperOf, detectPaper } from "../src/look/paper.ts";
-import { lookOf, followDefault, allDefault, chosenCount, trackLookOf, paperChoicesOf, marginRow, defaultText, LOOK_KEYS, type LookKey } from "../src/look/index.ts";
+import { lookOf, followDefault, allDefault, chosenCount, trackLookOf, paperChoicesOf, marginRow, defaultText, LOOK_KEYS, stampLooks, type LookKey } from "../src/look/index.ts";
+import { LOOK_OPS } from "../src/app/edit-lock-table.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
 const fs = (await import("node:fs" as string)) as { readdirSync(u: URL, o: { withFileTypes: true }): { name: string; isDirectory(): boolean }[]; readFileSync(u: URL, e: "utf8"): string };
@@ -75,6 +76,38 @@ describe("每一样显示设置：选过的值存了再读回来一样（LOOK_KE
   for (const k of LOOK_KEYS) it(`${k}`, () => {
     const s = { ...initState().song, [k]: CHOSEN[k] } as Song, o = openBytes("x.mxl", save(s));
     eq(JSON.stringify(o.song[k]), JSON.stringify(CHOSEN[k]), "读回来的值"); assert(!lookOf(o.song).follows[k], "读回来算选过的（不是跟着软件）");
+  });
+});
+
+// ── 第 21 条（v0.17.38，统筹 74ea9a53；user「我建议是新建时写下来，跟default只是一个技术上的选项，用户不太会用」）──
+describe("新建的歌把「跟着」写成这一刻的值（stampLooks）", () => {
+  const habits = { notation: "jianpu", viewInC: true, middleC: 3, chordTagStyle: "root" } as const;
+  const SKIP = new Set(["marginMm", "staffMm"]);
+  it("born：新歌存出去，这几项没有一个是 \"default\"（边距、谱高除外）；有习惯的写习惯、别的写软件的默认；谱上的字写界面语言", () => {
+    const s = stampLooks(initState().song, { habits }, "en", "born"), j = scoreJson(save(s));
+    for (const k of LOOK_KEYS) if (SKIP.has(k)) eq(j[k], "default", `${k} 照旧 default`); else assert(j[k] !== "default", `${k} = ${JSON.stringify(j[k])}`);
+    eq([j.notation, j.viewInC, j.middleC, j.chordTagStyle].join(","), "jianpu,true,3,root", "四样习惯照写");
+    eq([j.chordTags, j.expressions, j.barNumbers, j.lyricFit, JSON.stringify(j.paper), j.density].join(","), 'true,true,line,rhythm,{"kind":"A5"},cozy', "没习惯的照软件的默认");
+    eq(j.textLang, "en", "谱上的字 = 界面语言");
+  });
+  it("写下来之后改习惯：这首歌画出来不变；写着 \"default\" 的老歌照旧跟着变", () => {
+    const born = stampLooks(initState().song, { habits }, "zh", "born"), old = initState().song;
+    const a = lookOf(born, { habits }), b = lookOf(born, { habits: { notation: "letters", viewInC: false, middleC: 5, chordTagStyle: "degree" } });
+    eq(JSON.stringify([a.notation, a.viewInC, a.middleC, a.chordTagStyle]), JSON.stringify([b.notation, b.viewInC, b.middleC, b.chordTagStyle]), "新建好的歌不跟着习惯变");
+    eq(lookOf(old, { habits }).notation, "jianpu"); eq(lookOf(old, { habits: { notation: "letters" } }).notation, "letters", "老歌（写着 default）跟着");
+  });
+  it("born 只换写着「跟着」的：别家谱从 <defaults> 认出来的纸张 / 密度、写着具体值的照留；都写着值了 = 同一个引用", () => {
+    const s0 = { ...initState().song, paper: { kind: "A4" as const }, density: "compact" as const, notation: "staff" };
+    const s = stampLooks(s0, { habits }, "zh", "born");
+    eq(JSON.stringify(s.paper), '{"kind":"A4"}'); eq(s.density, "compact"); eq(s.notation, "staff", "写着 staff 的不换成习惯的简谱");
+    eq(stampLooks(s, { habits }, "zh", "born"), s, "再来一遍 = 原样");
+  });
+  it("apply（「套用我的习惯」）：每一样写成现在的值、边距谱高写回 default；没得改 = 同一个引用；修改锁「全部」那一类认它只动了看法", () => {
+    const s0 = { ...initState().song, notation: "letters", paper: { kind: "A4" as const }, staffMm: 6, textLang: "ja" as const };
+    const s = stampLooks(s0, { habits }, "zh", "apply");
+    eq([s.notation, JSON.stringify(s.paper), s.staffMm, s.textLang].join(","), 'jianpu,{"kind":"A5"},default,zh');
+    assert(LOOK_OPS.allLooks!.verify(s0, s), "只动了看法");
+    eq(stampLooks(s, { habits }, "zh", "apply"), s, "已经是现在的值 = 原样（页面设置那颗钮灰着）");
   });
 });
 

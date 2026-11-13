@@ -13,7 +13,7 @@
 import { headClefOf, type Song, type PaperSeg, type Choice, type ClefChoice } from "../score/song.ts";
 import { isPaperKind, PAPER_LABEL, DENSITIES, type Paper, type ReadPaper, type PaperKind, type Density, type PaperChoice, type Margins } from "../score/paper.ts";
 import { paperOf, marginsOf, sizeOf, staffMmFor, STAFF_MM, STAFF_MM_COMPACT, paperSizeText } from "./paper.ts";
-import { isNotation, isMiddleC, isTextLang, IN_C_APPLIES, NOTATIONS, CHORD_TAG_STYLES, type SongView, type ChordsMode, type NotationId, type ChordTagStyle, CHORDS_MODES } from "../score/song-view.ts";
+import { isNotation, isMiddleC, isTextLang, IN_C_APPLIES, NOTATIONS, CHORD_TAG_STYLES, type SongView, type ChordsMode, type NotationId, type ChordTagStyle, type TextLang, CHORDS_MODES } from "../score/song-view.ts";
 import { _t } from "../i18n/index.ts";
 import { BASE_DEFAULTS, defaultsFor, type LookContext, type LookDefaults } from "./habits.ts";
 
@@ -105,7 +105,24 @@ export function followDefault(song: Song, key: LookKey): Song {
   if ([key, ...also].every((k) => song[k] === "default")) return song;
   return { ...song, ...Object.fromEntries([key, ...also].map((k) => [k, "default"])) } as Song;
 }
-/** 「全部跟着软件」：把这首歌里选过的每一项都改回 "default"（一步撤销由宿主走写入口）。都已经是 = 原样。 */
+/** 第 21 条（v0.17.38，统筹 74ea9a53；user「我建议是新建时写下来，跟default只是一个技术上的选项，用户不太会用」）：把歌里「跟着」的那几项写成这一刻它等于的值。
+ *  · born（新建的歌、别家的谱进门）：只换写着 "default" 的（谱上的字：写着 "ui" 的）——别家谱里从 <defaults> 认出来的纸张 / 密度是它自己的，照留；
+ *  · apply（页面设置「套用我的习惯」）：每一样都写成现在的值。
+ *  值 = 有习惯的照习惯、别的照软件当时的默认（defaultsFor(ctx)——和画的时候「跟着」等于什么是同一份）；谱上的字 = 这一刻的界面语言。
+ *  边距、谱高两项的 "default" 意思是「这种纸自己的」「跟着音符密度」，不是跟习惯：born 不动，apply 写回 "default"（和新建的歌一样）。
+ *  没变 = 原样（同一个引用）。三层读法（lookOf）不动：写着 "default" 的老歌照旧跟着。 */
+export function stampLooks(song: Song, ctx: LookContext, uiLang: Exclude<TextLang, "ui">, mode: "born" | "apply"): Song {
+  const D = defaultsFor(ctx), out: Record<string, unknown> = {};
+  for (const k of LOOK_KEYS) {
+    if (k === "marginMm" || k === "staffMm") { if (mode === "apply" && song[k] !== "default") out[k] = "default"; continue; }
+    if (mode === "born" && song[k] !== "default") continue;
+    const v: unknown = k === "paper" ? { kind: D.paper } : D[k];
+    if (JSON.stringify(song[k]) !== JSON.stringify(v)) out[k] = v;
+  }
+  if ((mode === "apply" || song.textLang === "ui") && song.textLang !== uiLang) out.textLang = uiLang;
+  return Object.keys(out).length ? ({ ...song, ...out } as Song) : song;
+}
+/** 「全部跟着软件」：把这首歌里选过的每一项都改回 "default"（一步撤销由宿主走写入口）。都已经是 = 原样。v0.17.38 起页面设置那颗钮换成「套用我的习惯」（stampLooks apply），这个留给测试和以后。 */
 export function allDefault(song: Song): Song {
   if (LOOK_KEYS.every((k) => song[k] === "default")) return song;
   return { ...song, ...Object.fromEntries(LOOK_KEYS.map((k) => [k, "default"])) } as Song;
@@ -131,7 +148,13 @@ const CHORD_TAG_STYLE_SHORT: Record<ChordTagStyle, () => string> = { degree: () 
 /** 「和弦写法」是什么（一句；三处同一份）。 */
 export const CHORD_TAG_STYLE_NOTE = (): string => _t("和弦辅助标出来的字写成级数还是根音。开着移调辅助时根音照换到 C 调之后的写，和眼前的谱对得上。");
 /** 「移调辅助」是什么（一句；设置「界面」页、页面设置、「初始设置」卡同一份）。后半句 = 第 19 条第 7 点的披露之一：键上的字也按 C 调写。 */
-export const TRANSPOSE_AID_NOTE = (): string => _t("调号多的时候把谱换到 C 调来画，只改显示、声音不变；看五线谱时起作用。键上的大字也按 C 调写，小字是实际的音。");
+//   v0.17.38 换成这一版（统筹 28858491；user「移调辅助把文字说明给收到小问号里面，然后你重新把它给讲得清楚一点，优化一下表达」）：三段，卡上的问号、设置「界面」页那一行的问号同一份。
+//   回三段字（不带 HTML）：用的地方各自包成段落。「键上的大字…小字是实际的音」是第 19 条第 7 点的披露之一，照旧在第二段。
+export const TRANSPOSE_AID_NOTE = (): readonly string[] => [
+  _t("调号里升降号多、读着费劲的时候用。"),
+  _t("开了以后，五线谱换到 C 调来画，原来的调照样写在谱上，比如「1=F」。键盘上每个键的大字是这个音在谱上的名字，小字是它实际的音：F 调的歌里，弹出来是 F 的那个键，大字写 C，小字写 F。键的位置不动。"),
+  _t("只改显示，声音和文件都不变。简谱和字母谱用不上它。"),
+];
 /** 「中央 C 叫」是什么（一句；三处同一份）。 */
 export const MIDDLE_C_NOTE = (): string => _t("八度的数字从哪儿数：字母谱、简谱谱头、键上的字、音域旋钮都照它写。只改叫法，文件里、声音里的八度不变。");
 export function defaultText(key: LookKey, ctx: LookContext = {}): string {   // X 跟着这台设备的习惯（第 18 条）

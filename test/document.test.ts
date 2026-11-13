@@ -74,3 +74,19 @@ describe("文档的唯一入口", () => {
     eq(D.history.past.length, 0); eq(D.dirty(), false); eq(log.length, n);
   });
 });
+
+// ── 第 21 条补（v0.17.38，统筹 28858491）：「一笔没动」= 装入之后没有过任何一次真改了歌 / extras 的提交（宿主 main.ts untouchedBlank 只问它 + 有没有家）──
+describe("文档 · 一笔没动（touched）", () => {
+  it("出生 / 装入 = 没动过；只挪光标不算；写一个音、改一项看法、改歌名、改 extras、撤销都算；再装入 = 回到没动过", () => {
+    const { D, st0, ex0 } = make();
+    eq(D.touched(), false, "出生");
+    D.commit({ st: { ...D.st, caret: 0 } }); eq(D.touched(), false, "只挪光标");
+    write(D); eq(D.touched(), true, "写一个音");
+    D.load(st0, ex0); eq(D.touched(), false, "装入 = 回到没动过");
+    D.commit({ st: { ...D.st, song: { ...D.st.song, notation: "jianpu" } } }, { locus: { kind: "songLook", label: "谱种" } }); eq(D.touched(), true, "页面设置换一项（看法）也算");
+    D.load(st0, ex0); D.commit({ st: { ...D.st, song: { ...D.st.song, title: "歌名" } } }); eq(D.touched(), true, "改歌名");
+    D.load(st0, ex0); D.commit({ extras: withCalibration(D.extras, "r1", -3, "n") }); eq(D.touched(), true, "改 extras（混音台、乐手…）");
+    D.load(st0, ex0); write(D); D.load(D.st, D.extras); eq(D.touched(), false); D.commit({ st: D.st }); eq(D.touched(), false, "没变的提交不算");
+    D.load(st0, ex0); write(D); const D2 = D; D2.load(D.st, D.extras); eq(D2.touched(), false); write(D2); D2.undo(); eq(D2.touched(), true, "撤销也算");
+  });
+});

@@ -69,6 +69,9 @@ export interface Document {
   redo(): boolean;
   /** 换歌：真相整个换掉、栈清空、脏的基线 = 现在（不叫 onState / onExtras：宿主自己按开歌的顺序重画）。整份装入不归锁管。 */
   load(st: EditorState, extras: Extras): void;
+  /** 装入（或出生）之后有没有动过：任何一次真改了歌 / extras 的提交都算（内容、看法、歌名、作者栏、混音台…；光标、选区不算），撤销 / 重做也算。
+   *  第 21 条补（v0.17.38，统筹 28858491）：「一笔没动、没有家」= 还没真正建出来——宿主拿它判断改了习惯要不要照新习惯重建（main.ts untouchedBlank，只此一处）。 */
+  touched(): boolean;
   /** 改过没存？ */
   dirty(): boolean;
   /** 脏的是哪一种（见 DirtyKind）。 */
@@ -89,6 +92,7 @@ export function createDocument(init: { st: EditorState; extras: Extras }, hooks:
   const mark = (): SavedMark => ({ song: st.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: hooks.extraDirty?.() ?? 0 });
   let saved: SavedMark = { song: st.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: 0 };   // 出生那一刻不问 extraDirty（宿主的参考窗可能还没建）
   const locked = (): string | null => hooks.lockedWhy?.() ?? null;
+  let touched = false;   // 装入之后动过没有（见 Document.touched）
   /** 真要改的那一下问宿主的修改锁。 */
   const gate = (kind: LocusKind): string | null => hooks.writeGate?.(kind) ?? null;
   function commit(next: { st?: EditorState; extras?: Extras }, o: CommitOpts = {}): CommitResult {
@@ -115,6 +119,7 @@ export function createDocument(init: { st: EditorState; extras: Extras }, hooks:
     }
     const prevSt = st, prevEx = extras;
     st = nextSt; extras = nextEx;
+    if (songChanged || exChanged) touched = true;
     if (!o.silent) {
       if (exChanged) hooks.onExtras(prevEx, nextEx, o.locus ?? { kind: "lounge", label: "" });
       if (nextSt !== prevSt) hooks.onState(prevSt, nextSt, nextSt.at.paper !== prevSt.at.paper || nextSt.at.part !== prevSt.at.part);
@@ -124,7 +129,7 @@ export function createDocument(init: { st: EditorState; extras: Extras }, hooks:
   function restore(r: Restored | null, verb: string): boolean {
     if (!r) return false;
     const prev = { st, extras };
-    history = r.h; st = r.st; extras = r.extras;
+    history = r.h; st = r.st; extras = r.extras; touched = true;
     hooks.onRestored(r, verb, prev);
     return true;
   }
@@ -141,7 +146,8 @@ export function createDocument(init: { st: EditorState; extras: Extras }, hooks:
     run: (c, o) => commit({ st: apply(st, c, hooks.now()) }, o),
     undo: () => step(history.past[history.past.length - 1], _t("撤销"), () => undoH(history, st, extras)),
     redo: () => step(history.future[history.future.length - 1], _t("重做"), () => redoH(history, st, extras)),
-    load: (s, e) => { st = s; extras = e; history = emptyHistory(); saved = mark(); },
+    load: (s, e) => { st = s; extras = e; history = emptyHistory(); saved = mark(); touched = false; },
+    touched: () => touched,
     dirty: () => st.song !== saved.song || extras.thumbnail !== saved.thumbnail || extrasKey(extras) !== saved.key || (hooks.extraDirty?.() ?? 0) !== saved.refs,
     dirtyKind: () => {
       if (extras.thumbnail !== saved.thumbnail || extrasKey(extras) !== saved.key || (hooks.extraDirty?.() ?? 0) !== saved.refs) return "content";

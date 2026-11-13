@@ -3874,7 +3874,7 @@ var S = {
   "\u8FD9\u662F\u4EC0\u4E48": { en: "What's this" },
   "\u6CA1\u9009\uFF08\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1A{x}\uFF09": { en: "Not chosen (software default: {x})" },
   "\u4E60\u60EF\u770B\u7684\u8C31": { en: "Notation I usually read" },
-  "\u65B0\u6B4C\u548C\u6CA1\u5355\u72EC\u9009\u8FC7\u7684\u6B4C\u7167\u5B83\u663E\u793A\uFF1B\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002": { en: "New songs, and songs that have not picked their own, are shown this way; each song can still change it in Page settings." },
+  "\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002": { en: "New songs are written with it; songs set to \u201CFollow my habits\u201D in Page settings change with it. Each song can be changed on its own in Page settings." },
   "\u79FB\u8C03\u8F85\u52A9": { en: "Transposition aid" },
   "\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09": { en: "Off (as written)" },
   "\u6309 C \u8C03\u770B": { en: "Read in C" },
@@ -3882,7 +3882,7 @@ var S = {
   "\u4E2D\u592E C \u53EB": { en: "Middle C is" },
   "\u521D\u59CB\u8BBE\u7F6E": { en: "Initial setup" },
   "\u6253\u5F00\u2026": { en: "Open\u2026" },
-  "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u6B4C\u91CC\u8FD9\u4E00\u9879\u662F\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D\u65F6\u7167\u5B83\uFF1B\u6B4C\u91CC\u5355\u72EC\u9009\u8FC7\u7684\u7167\u6B4C\u7684\u3002\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": { en: "A habit on this device: used when a song leaves this item at \u201CFollow the software\u201D; a song that picked its own keeps it. Not saved in songs, not synced." },
+  "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": { en: "This device's habits: new songs are written with them (and then stay that way); songs set to \u201CFollow my habits\u201D in Page settings change with them. The habits themselves are not saved in songs and do not sync." },
   "\u8DDF\u7CFB\u7EDF": { en: "System" },
   "MIDI \u952E\u76D8": { en: "MIDI keyboard" },
   "\u8FDE\u63A5": { en: "Connect" },
@@ -4020,7 +4020,7 @@ var S = {
   "\u8DDF\u7740\u8FD9\u9996\u6B4C\u5B58\uFF1A\u8FDB\u6B4C\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002": { en: "Saved with this song: it goes into the song, can be undone, and the exported PDF prints it this way." },
   "\u8DDF\u7740\u8FD9\u9996\u6B4C\u7684\u89C6\u56FE\u5B58\uFF1A\u5B58\u7684\u65F6\u5019\u987A\u624B\u5E26\u4E0A\uFF0C\u4E0D\u7B97\u6539\u52A8\u3001\u4E0D\u8FDB\u64A4\u9500\u3002": { en: "Saved with this song's view: it rides along when you save, but doesn't count as a change and isn't in undo." },
   "\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002": { en: "Only for this session; not saved in the song." },
-  "\u8DDF\u7740\u8F6F\u4EF6\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": { en: "Follow the software (now: {x})" },
+  "\u8DDF\u7740\u6211\u7684\u4E60\u60EF\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": { en: "Follow my habits (now: {x})" },
   "\u89C6\u56FE": { en: "View" },
   "\u9875\u9762\uFF08\u5206\u9875\uFF0C\u548C\u5370\u51FA\u6765\u4E00\u6837\uFF09": { en: "Page (paged, same as print)" },
   "\u8FDE\u7EED\uFF08\u4E0D\u5206\u9875\uFF09": { en: "Continuous (no page breaks)" },
@@ -4054,6 +4054,7 @@ var S = {
   "\u5176\u4ED6": { en: "Other" },
   "\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002": { en: "One paper size for the whole song. Bigger paper fits more bars per line; if the screen fits, it's laid out as on paper. No page breaks unless printing." },
   "\u8FB9\u8DDD": { en: "Margins" },
+  "\u8DDF\u7740\u8F6F\u4EF6\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": { en: "Follow the software (now: {x})" },
   "\u81EA\u5B9A\u4E49\uFF08{x}\uFF09": { en: "Custom ({x})" },
   "\u7EB8\u8FB9\u7559\u591A\u5BBD\u3002\u8FD9\u9996\u6B4C\u5E26\u7740\u81EA\u5DF1\u7684\u8FB9\u8DDD\uFF08\u522B\u7684\u8F6F\u4EF6\u5B58\u7684\u8C31\u3001\u8001\u6587\u4EF6\u91CC\u5199\u7740\u7684\uFF09\uFF1B\u9009\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D= \u7528\u8FD9\u5F20\u7EB8\u81EA\u5DF1\u7684\u8FB9\u8DDD\uFF0C\u6362\u7EB8\u65F6\u8DDF\u7740\u6362\u3002": { en: "How much space is left at the edges of the paper. This song carries its own margins (a score saved by another program, or written in an older file); choose Follow the software to use this paper size's own margins, which change when you change the paper." },
   "\u97F3\u7B26\u5BC6\u5EA6": { en: "Note density" },
@@ -4077,12 +4078,12 @@ var S = {
   "\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070": { en: "Note positions depend only on duration, so notes stay put while you type; lyrics make room: borrow space nearby \u2192 shrink the whole line a little \u2192 grey out if it still doesn't fit" },
   "\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09": { en: "Long words push notes apart (the traditional engraving rule)" },
   "\u8C31\u4E0A\u7684\u5B57": { en: "Text on the score" },
-  "\u628A\u8FD9\u9996\u6B4C\u91CC\u9009\u8FC7\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u6539\u56DE\u8DDF\u7740\u8F6F\u4EF6\uFF08\u80FD\u64A4\u9500\uFF09": { en: "Set every display setting chosen for this song back to following the software (can be undone)" },
+  "\u628A\u8FD9\u9996\u6B4C\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u5199\u6210\u6211\u7684\u4E60\u60EF\u73B0\u5728\u7684\u6837\u5B50\uFF08\u6CA1\u8BBE\u4E60\u60EF\u7684\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Write this song's display settings as my habits are now (where no habit is set, the software default; can be undone)" },
   "\u9875\u9762\u8BBE\u7F6E": { en: "Page settings" },
   "\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B": { en: "View: how this page looks on screen" },
   "\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6": { en: "Page: paper and note density" },
-  "\u5168\u90E8\u8DDF\u7740\u8F6F\u4EF6": { en: "All follow the software" },
-  "{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6": { en: "{what}: follow the software" },
+  "\u5957\u7528\u6211\u7684\u4E60\u60EF": { en: "Apply my habits" },
+  "{what}\uFF1A\u8DDF\u7740\u6211\u7684\u4E60\u60EF": { en: "{what}: follow my habits" },
   "\u7B80\u8C31": { en: "Numbered (jianpu)" },
   "\u5B57\u6BCD\u8C31": { en: "Letter names" },
   "\u4E94\u7EBF\u8C31": { en: "Staff" },
@@ -4630,7 +4631,6 @@ var S = {
   "{name}\uFF08\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF09": { en: "{name} (follows the key signature here)" },
   "{name}\uFF08\u624B\u52A8\uFF09": { en: "{name} (manual)" },
   "\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": { en: "Kept on this device; you can leave any of these unpicked and change them later in Settings." },
-  "\u5B57\u6BCD\u8C31\uFF1A\u73A9 tracker \u7684\u53EF\u4EE5\u5148\u7528\u8FD9\u4E2A\uFF0C\u4E0D\u5B8C\u5168\u4E00\u6837\u3002\u94A2\u7434\u5377\u5E18\u3001\u5F55\u97F3\u8FD8\u6CA1\u505A\uFF0C\u505A\u597D\u4E86\u4F1A\u52A0\u5728\u8FD9\u91CC\u3002": { en: "Letter notation: if you use a tracker you can start with this; it is not quite the same. Piano roll and recording are not ready yet; they will be added here when they are." },
   "\u4E0D\u7528": { en: "Off" },
   "\u5566": { en: "la" },
   "\u3093 / \u55EF": { en: "\u3093 (hum)" },
@@ -5454,7 +5454,9 @@ var S = {
   "\u7EA7\u6570": { en: "Degrees" },
   "\u6839\u97F3": { en: "Roots" },
   "\u548C\u5F26\u8F85\u52A9\u6807\u51FA\u6765\u7684\u5B57\u5199\u6210\u7EA7\u6570\u8FD8\u662F\u6839\u97F3\u3002\u5F00\u7740\u79FB\u8C03\u8F85\u52A9\u65F6\u6839\u97F3\u7167\u6362\u5230 C \u8C03\u4E4B\u540E\u7684\u5199\uFF0C\u548C\u773C\u524D\u7684\u8C31\u5BF9\u5F97\u4E0A\u3002": { en: "Whether chord labels are written as degrees or as roots. With the transposition aid on, roots follow the score in C, so they match what you see." },
-  "\u8C03\u53F7\u591A\u7684\u65F6\u5019\u628A\u8C31\u6362\u5230 C \u8C03\u6765\u753B\uFF0C\u53EA\u6539\u663E\u793A\u3001\u58F0\u97F3\u4E0D\u53D8\uFF1B\u770B\u4E94\u7EBF\u8C31\u65F6\u8D77\u4F5C\u7528\u3002\u952E\u4E0A\u7684\u5927\u5B57\u4E5F\u6309 C \u8C03\u5199\uFF0C\u5C0F\u5B57\u662F\u5B9E\u9645\u7684\u97F3\u3002": { en: "When there are many sharps or flats, redraws the score in C; only the display changes, the sound stays the same. Applies to the staff. The big labels on the keys are in C too; the small labels are the actual notes." },
+  "\u8C03\u53F7\u91CC\u5347\u964D\u53F7\u591A\u3001\u8BFB\u7740\u8D39\u52B2\u7684\u65F6\u5019\u7528\u3002": { en: "For when a key signature has many sharps or flats and is hard to read." },
+  "\u5F00\u4E86\u4EE5\u540E\uFF0C\u4E94\u7EBF\u8C31\u6362\u5230 C \u8C03\u6765\u753B\uFF0C\u539F\u6765\u7684\u8C03\u7167\u6837\u5199\u5728\u8C31\u4E0A\uFF0C\u6BD4\u5982\u300C1=F\u300D\u3002\u952E\u76D8\u4E0A\u6BCF\u4E2A\u952E\u7684\u5927\u5B57\u662F\u8FD9\u4E2A\u97F3\u5728\u8C31\u4E0A\u7684\u540D\u5B57\uFF0C\u5C0F\u5B57\u662F\u5B83\u5B9E\u9645\u7684\u97F3\uFF1AF \u8C03\u7684\u6B4C\u91CC\uFF0C\u5F39\u51FA\u6765\u662F F \u7684\u90A3\u4E2A\u952E\uFF0C\u5927\u5B57\u5199 C\uFF0C\u5C0F\u5B57\u5199 F\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\u3002": { en: "When on, staff notation is drawn in C, and the original key is still written on the score, e.g. \u201C1=F\u201D. On the keyboard, the big label on each key is the name the note has on the score, and the small label is the actual note: in a song in F, the key that sounds F shows a big C and a small F. Keys don't move." },
+  "\u53EA\u6539\u663E\u793A\uFF0C\u58F0\u97F3\u548C\u6587\u4EF6\u90FD\u4E0D\u53D8\u3002\u7B80\u8C31\u548C\u5B57\u6BCD\u8C31\u7528\u4E0D\u4E0A\u5B83\u3002": { en: "Display only: the sound and the file don't change. It has no effect in numbered or letter notation." },
   "\u516B\u5EA6\u7684\u6570\u5B57\u4ECE\u54EA\u513F\u6570\uFF1A\u5B57\u6BCD\u8C31\u3001\u7B80\u8C31\u8C31\u5934\u3001\u952E\u4E0A\u7684\u5B57\u3001\u97F3\u57DF\u65CB\u94AE\u90FD\u7167\u5B83\u5199\u3002\u53EA\u6539\u53EB\u6CD5\uFF0C\u6587\u4EF6\u91CC\u3001\u58F0\u97F3\u91CC\u7684\u516B\u5EA6\u4E0D\u53D8\u3002": { en: "Where the octave numbers count from: letter notation, the numbered-notation header, the key labels and the range knob all follow it. Only the naming changes; octaves in the file and in the sound stay the same." },
   "\u8DDF\u7740\u97F3\u7B26\u5BC6\u5EA6": { en: "Follows note density" },
   "\u8FD9\u5F20\u7EB8\u81EA\u5DF1\u7684": { en: "This paper\u2019s own" },
@@ -6365,7 +6367,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.37-2026-11-13";
+var APP_VERSION = "v0.17.38-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -11709,11 +11711,20 @@ function followDefault(song, key) {
   if ([key, ...also].every((k2) => song[k2] === "default")) return song;
   return { ...song, ...Object.fromEntries([key, ...also].map((k2) => [k2, "default"])) };
 }
-function allDefault(song) {
-  if (LOOK_KEYS.every((k2) => song[k2] === "default")) return song;
-  return { ...song, ...Object.fromEntries(LOOK_KEYS.map((k2) => [k2, "default"])) };
+function stampLooks(song, ctx2, uiLang, mode) {
+  const D4 = defaultsFor(ctx2), out = {};
+  for (const k2 of LOOK_KEYS) {
+    if (k2 === "marginMm" || k2 === "staffMm") {
+      if (mode === "apply" && song[k2] !== "default") out[k2] = "default";
+      continue;
+    }
+    if (mode === "born" && song[k2] !== "default") continue;
+    const v = k2 === "paper" ? { kind: D4.paper } : D4[k2];
+    if (JSON.stringify(song[k2]) !== JSON.stringify(v)) out[k2] = v;
+  }
+  if ((mode === "apply" || song.textLang === "ui") && song.textLang !== uiLang) out.textLang = uiLang;
+  return Object.keys(out).length ? { ...song, ...out } : song;
 }
-var chosenCount = (song) => LOOK_KEYS.filter((k2) => song[k2] !== "default").length;
 var notationName = (id2) => ({ staff: _t("\u4E94\u7EBF\u8C31"), jianpu: _t("\u7B80\u8C31"), letters: _t("\u5B57\u6BCD\u8C31") })[id2];
 var NOTATION_NOTE = {
   staff: () => _t("\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A"),
@@ -11724,7 +11735,11 @@ var middleCLabel = (n10) => n10 === 4 ? _t("C{n}\uFF08\u56FD\u9645\u901A\u7528\u
 var CHORD_TAG_STYLE_LABEL = { degree: () => _t("\u7EA7\u6570\uFF08I\u3001V7\uFF09"), root: () => _t("\u6839\u97F3\uFF08C\u3001G7\uFF09") };
 var CHORD_TAG_STYLE_SHORT = { degree: () => _t("\u7EA7\u6570"), root: () => _t("\u6839\u97F3") };
 var CHORD_TAG_STYLE_NOTE = () => _t("\u548C\u5F26\u8F85\u52A9\u6807\u51FA\u6765\u7684\u5B57\u5199\u6210\u7EA7\u6570\u8FD8\u662F\u6839\u97F3\u3002\u5F00\u7740\u79FB\u8C03\u8F85\u52A9\u65F6\u6839\u97F3\u7167\u6362\u5230 C \u8C03\u4E4B\u540E\u7684\u5199\uFF0C\u548C\u773C\u524D\u7684\u8C31\u5BF9\u5F97\u4E0A\u3002");
-var TRANSPOSE_AID_NOTE = () => _t("\u8C03\u53F7\u591A\u7684\u65F6\u5019\u628A\u8C31\u6362\u5230 C \u8C03\u6765\u753B\uFF0C\u53EA\u6539\u663E\u793A\u3001\u58F0\u97F3\u4E0D\u53D8\uFF1B\u770B\u4E94\u7EBF\u8C31\u65F6\u8D77\u4F5C\u7528\u3002\u952E\u4E0A\u7684\u5927\u5B57\u4E5F\u6309 C \u8C03\u5199\uFF0C\u5C0F\u5B57\u662F\u5B9E\u9645\u7684\u97F3\u3002");
+var TRANSPOSE_AID_NOTE = () => [
+  _t("\u8C03\u53F7\u91CC\u5347\u964D\u53F7\u591A\u3001\u8BFB\u7740\u8D39\u52B2\u7684\u65F6\u5019\u7528\u3002"),
+  _t("\u5F00\u4E86\u4EE5\u540E\uFF0C\u4E94\u7EBF\u8C31\u6362\u5230 C \u8C03\u6765\u753B\uFF0C\u539F\u6765\u7684\u8C03\u7167\u6837\u5199\u5728\u8C31\u4E0A\uFF0C\u6BD4\u5982\u300C1=F\u300D\u3002\u952E\u76D8\u4E0A\u6BCF\u4E2A\u952E\u7684\u5927\u5B57\u662F\u8FD9\u4E2A\u97F3\u5728\u8C31\u4E0A\u7684\u540D\u5B57\uFF0C\u5C0F\u5B57\u662F\u5B83\u5B9E\u9645\u7684\u97F3\uFF1AF \u8C03\u7684\u6B4C\u91CC\uFF0C\u5F39\u51FA\u6765\u662F F \u7684\u90A3\u4E2A\u952E\uFF0C\u5927\u5B57\u5199 C\uFF0C\u5C0F\u5B57\u5199 F\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\u3002"),
+  _t("\u53EA\u6539\u663E\u793A\uFF0C\u58F0\u97F3\u548C\u6587\u4EF6\u90FD\u4E0D\u53D8\u3002\u7B80\u8C31\u548C\u5B57\u6BCD\u8C31\u7528\u4E0D\u4E0A\u5B83\u3002")
+];
 var MIDDLE_C_NOTE = () => _t("\u516B\u5EA6\u7684\u6570\u5B57\u4ECE\u54EA\u513F\u6570\uFF1A\u5B57\u6BCD\u8C31\u3001\u7B80\u8C31\u8C31\u5934\u3001\u952E\u4E0A\u7684\u5B57\u3001\u97F3\u57DF\u65CB\u94AE\u90FD\u7167\u5B83\u5199\u3002\u53EA\u6539\u53EB\u6CD5\uFF0C\u6587\u4EF6\u91CC\u3001\u58F0\u97F3\u91CC\u7684\u516B\u5EA6\u4E0D\u53D8\u3002");
 function defaultText(key, ctx2 = {}) {
   const D4 = defaultsFor(ctx2);
@@ -35349,15 +35364,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-f8f34a6f3ad2.mjs");
+      return pick3(() => "singer-worker-2cba3c23359e.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-a7065623bb18.mjs");
+      return pick3(() => "layout-worker-0451911f5d92.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-e2cd52c7f986.mjs");
+      return pick3(() => "encode-worker-256861f32b64.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -46707,7 +46722,11 @@ function openHabitsCard(d3) {
   const chosen = { ...d3.current.notation !== void 0 ? { notation: d3.current.notation } : {}, ...d3.current.viewInC !== void 0 ? { viewInC: d3.current.viewInC } : {} };
   const content = document.createElement("div");
   content.className = "habits-card";
-  content.innerHTML = `<div class="hab-lead">${escapeHtml2(_t("\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002"))}</div><section class="hab-small hab-lang" data-q="${CARD_HABITS.lead}">${d3.lang.html}</section><section class="hab-q" data-q="notation"><div class="hab-title">${escapeHtml2(_t("\u4E60\u60EF\u770B\u7684\u8C31"))}</div><div class="hab-strip">${NOTATIONS.map((id2) => `<button type="button" class="hab-tile" data-h="${CARD_HABITS.tiles}" data-v="${id2}" aria-pressed="false"><span class="hab-prev">${previewSvg(id2, d3.measure)}</span><span class="hab-name">${escapeHtml2(notationName(id2))}</span></button>`).join("")}</div><div class="hab-foot">${escapeHtml2(_t("\u5B57\u6BCD\u8C31\uFF1A\u73A9 tracker \u7684\u53EF\u4EE5\u5148\u7528\u8FD9\u4E2A\uFF0C\u4E0D\u5B8C\u5168\u4E00\u6837\u3002\u94A2\u7434\u5377\u5E18\u3001\u5F55\u97F3\u8FD8\u6CA1\u505A\uFF0C\u505A\u597D\u4E86\u4F1A\u52A0\u5728\u8FD9\u91CC\u3002"))}</div></section><section class="hab-q" data-q="viewInC"><div class="hab-title">${escapeHtml2(_t("\u79FB\u8C03\u8F85\u52A9"))}</div><div class="hab-pair"><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="off" aria-pressed="false">${escapeHtml2(_t("\u4E0D\u7528"))}</button><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="on" aria-pressed="false">${escapeHtml2(_t("\u6309 C \u8C03\u770B"))}</button></div><div class="hab-note">${escapeHtml2(TRANSPOSE_AID_NOTE())}</div></section><section class="hab-small">${d3.rows.html(d3.current)}</section>`;
+  content.innerHTML = `<div class="hab-lead">${escapeHtml2(_t("\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002"))}</div><section class="hab-small hab-lang" data-q="${CARD_HABITS.lead}">${d3.lang.html}</section><section class="hab-q" data-q="notation"><div class="hab-title">${escapeHtml2(_t("\u4E60\u60EF\u770B\u7684\u8C31"))}</div><div class="hab-strip">${NOTATIONS.map((id2) => `<button type="button" class="hab-tile" data-h="${CARD_HABITS.tiles}" data-v="${id2}" aria-pressed="false"><span class="hab-prev">${previewSvg(id2, d3.measure)}</span><span class="hab-name">${escapeHtml2(notationName(id2))}</span></button>`).join("")}</div></section><section class="hab-q hab-aid" data-q="viewInC">` + settingRowHtml({
+    labelHtml: `<span class="hab-title">${escapeHtml2(_t("\u79FB\u8C03\u8F85\u52A9"))}</span>`,
+    notes: [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: TRANSPOSE_AID_NOTE().map((p2) => `<p>${escapeHtml2(p2)}</p>`).join("") }],
+    belowHtml: `<div class="hab-pair"><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="off" aria-pressed="false">${escapeHtml2(_t("\u4E0D\u7528"))}</button><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="on" aria-pressed="false">${escapeHtml2(_t("\u6309 C \u8C03\u770B"))}</button></div>`
+  }) + `</section><section class="hab-small">${d3.rows.html(d3.current)}</section>`;
   const valueOf2 = (h2, v) => h2 === "viewInC" ? v === "on" : v;
   const sync = (reveal) => {
     for (const b3 of content.querySelectorAll("[data-h]")) {
@@ -59630,6 +59649,7 @@ function createDocument(init2, hooks) {
   const mark = () => ({ song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: hooks.extraDirty?.() ?? 0 });
   let saved = { song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: 0 };
   const locked = () => hooks.lockedWhy?.() ?? null;
+  let touched = false;
   const gate2 = (kind) => hooks.writeGate?.(kind) ?? null;
   function commit(next2, o10 = {}) {
     const nextSt0 = next2.st ?? st2, nextEx = next2.extras ?? extras;
@@ -59655,6 +59675,7 @@ function createDocument(init2, hooks) {
     const prevSt = st2, prevEx = extras;
     st2 = nextSt;
     extras = nextEx;
+    if (songChanged || exChanged) touched = true;
     if (!o10.silent) {
       if (exChanged) hooks.onExtras(prevEx, nextEx, o10.locus ?? { kind: "lounge", label: "" });
       if (nextSt !== prevSt) hooks.onState(prevSt, nextSt, nextSt.at.paper !== prevSt.at.paper || nextSt.at.part !== prevSt.at.part);
@@ -59667,6 +59688,7 @@ function createDocument(init2, hooks) {
     history2 = r10.h;
     st2 = r10.st;
     extras = r10.extras;
+    touched = true;
     hooks.onRestored(r10, verb, prev);
     return true;
   }
@@ -59702,7 +59724,9 @@ function createDocument(init2, hooks) {
       extras = e10;
       history2 = emptyHistory();
       saved = mark();
+      touched = false;
     },
+    touched: () => touched,
     dirty: () => st2.song !== saved.song || extras.thumbnail !== saved.thumbnail || extrasKey(extras) !== saved.key || (hooks.extraDirty?.() ?? 0) !== saved.refs,
     dirtyKind: () => {
       if (extras.thumbnail !== saved.thumbnail || extrasKey(extras) !== saved.key || (hooks.extraDirty?.() ?? 0) !== saved.refs) return "content";
@@ -60618,7 +60642,7 @@ function noteStartDynsFilled(_n) {
   startDynsTold = true;
   info(_t("\u8FD9\u9996\u6B4C\u6709 {n} \u5904\u7EB8\u5F00\u5934\u6CA1\u5199\u529B\u5EA6\uFF1A\u8FD9\u4E00\u4E0B\u6539\u8C31\u65F6\u8865\u4E0A\u4E86\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\u90A3\u4E2A\uFF08\u542C\u8D77\u6765\u4E0D\u53D8\uFF09\uFF0C\u5B58\u7684\u65F6\u5019\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6", { n: startDynsMissing }));
 }
-var D3 = createDocument(((st2) => ({ st: st2, extras: templateExtras(st2.song) }))(initState()), {
+var D3 = createDocument(((st2) => ({ st: st2, extras: templateExtras(st2.song) }))(initState(stampLooks(initState().song, { habits: habitsFrom(deviceKvGet) }, lang(), "born"))), {
   now: () => performance.now(),
   normalize: (next2) => {
     const n10 = withStartDyns(next2), g3 = withGrooveData(n10.song);
@@ -61220,9 +61244,20 @@ function setLibRemoved(lib, on2) {
 var KV_LOOP_EDITOR = "loop-editor";
 var habitCtx = { habits: habitsFrom(deviceKvGet) };
 var lookCtx = () => habitCtx;
+var bornSong = (s10) => stampLooks(s10, habitCtx, lang(), "born");
+var songOfOpened = (o10) => o10.ours ? o10.song : bornSong(o10.song);
 function setHabit(k2, v) {
   writeHabit(k2, v);
+  habitsChanged();
+}
+var untouchedBlank = () => H2.home.kind === "none" && !D3.touched();
+function habitsChanged() {
   habitCtx = { habits: habitsFrom(deviceKvGet) };
+  if (untouchedBlank()) {
+    const h2 = H2.home;
+    loadNewSong(h2.kind === "none" ? h2.pendingFolder : null, { stem: H2.stem });
+    diagNote("habits", "rebuilt the untouched blank song");
+  }
   afterHabits();
 }
 function writeHabit(k2, v) {
@@ -61312,8 +61347,7 @@ function openHabitsCardNow(from = "boot", current2) {
       for (const k2 of cardHabitKeys()) writeHabit(k2, c10[k2]);
       deviceKvSet(HABITS_ASKED_KEY, "1");
       diagNote("habits", `ok (${from})`);
-      habitCtx = { habits: habitsFrom(deviceKvGet) };
-      afterHabits();
+      habitsChanged();
       back();
     },
     later: () => {
@@ -62575,14 +62609,14 @@ function askOver(host2, title, msg, okLabel, danger = false) {
 }
 function habitRowHtml(k2, h2) {
   const NONE = "none", none = [NONE, _t("\u6CA1\u9009\uFF08\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1A{x}\uFF09", { x: defaultText(k2, {}) })];
-  if (k2 === "notation") return setItem(_t("\u4E60\u60EF\u770B\u7684\u8C31"), setSel("habit:notation", [none, ...NOTATIONS.map((id2) => [id2, notationName(id2)])], h2.notation ?? NONE), _t("\u65B0\u6B4C\u548C\u6CA1\u5355\u72EC\u9009\u8FC7\u7684\u6B4C\u7167\u5B83\u663E\u793A\uFF1B\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002"));
-  if (k2 === "viewInC") return setItem(_t("\u79FB\u8C03\u8F85\u52A9"), setSel("habit:viewInC", [none, ["off", _t("\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09")], ["on", _t("\u6309 C \u8C03\u770B")]], h2.viewInC === void 0 ? NONE : h2.viewInC ? "on" : "off"), TRANSPOSE_AID_NOTE());
+  if (k2 === "notation") return setItem(_t("\u4E60\u60EF\u770B\u7684\u8C31"), setSel("habit:notation", [none, ...NOTATIONS.map((id2) => [id2, notationName(id2)])], h2.notation ?? NONE), _t("\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002"));
+  if (k2 === "viewInC") return setItem(_t("\u79FB\u8C03\u8F85\u52A9"), setSel("habit:viewInC", [none, ["off", _t("\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09")], ["on", _t("\u6309 C \u8C03\u770B")]], h2.viewInC === void 0 ? NONE : h2.viewInC ? "on" : "off"), TRANSPOSE_AID_NOTE().map((p2) => `<p>${esc13(p2)}</p>`).join(""));
   if (k2 === "chordTagStyle") return setItem(_t("\u548C\u5F26\u5199\u6CD5"), setSel("habit:chordTagStyle", [none, ...CHORD_TAG_STYLES.map((v) => [v, CHORD_TAG_STYLE_LABEL[v]()])], h2.chordTagStyle ?? NONE), CHORD_TAG_STYLE_NOTE());
   return setItem(_t("\u4E2D\u592E C \u53EB"), setSel("habit:middleC", [none, ...MIDDLE_C_NAMES.map((n10) => [String(n10), middleCLabel(n10)])], h2.middleC === void 0 ? NONE : String(h2.middleC)), MIDDLE_C_NOTE());
 }
 function habitRowsHtml() {
   const h2 = habitCtx.habits ?? {};
-  return setItem(_t("\u521D\u59CB\u8BBE\u7F6E"), `<button class="btn" data-v="habits:card">${_t("\u6253\u5F00\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u6B4C\u91CC\u8FD9\u4E00\u9879\u662F\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D\u65F6\u7167\u5B83\uFF1B\u6B4C\u91CC\u5355\u72EC\u9009\u8FC7\u7684\u7167\u6B4C\u7684\u3002\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002")) + HABIT_KEYS.map((k2) => habitRowHtml(k2, h2)).join("");
+  return setItem(_t("\u521D\u59CB\u8BBE\u7F6E"), `<button class="btn" data-v="habits:card">${_t("\u6253\u5F00\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002")) + HABIT_KEYS.map((k2) => habitRowHtml(k2, h2)).join("");
 }
 function readHabitRows(root, keys) {
   const out = {};
@@ -62983,7 +63017,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, activePerfSpec(D3.extras, curRole())?.sing ?? {});
   },
   state: () => D3.st,
-  cssHash: "a5762a520b04",
+  cssHash: "a2a0fbe0b580",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -62996,7 +63030,7 @@ window.__moonsinger = {
   view,
   zipList: (bytes) => Object.keys(unzipSync(bytes)),
   zipText: (bytes, path) => new TextDecoder().decode(unzipSync(bytes)[path]),
-  load: (o10) => loadDoc(o10.song, { home: { kind: "none", pendingFolder: null }, stem: o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references }),
+  load: (o10) => loadDoc(songOfOpened(o10), { home: { kind: "none", pendingFolder: null }, stem: o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references }),
   refHost,
   makePdf: async (pick3) => {
     const { r: r10, file } = await makePdf(pick3);
@@ -63827,7 +63861,7 @@ function openPaperSheet(focus) {
     const look = lookOf(D3.st.song, lookCtx()), p2 = look.paper, movable = !IN_C_APPLIES[look.notation];
     const fileMm = customStaffMm(look);
     const mrow = marginRow(look);
-    const fol = (key) => [FOLLOW, _t("\u8DDF\u7740\u8F6F\u4EF6\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09", { x: defaultText(key, lookCtx()) })];
+    const fol = (key) => [FOLLOW, _t("\u8DDF\u7740\u6211\u7684\u4E60\u60EF\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09", { x: defaultText(key, lookCtx()) })];
     const cur = (key, v) => look.follows[key] ? FOLLOW : v;
     const one = D3.st.song.parts[0], only1 = !!one && pv(one.id).only && D3.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only);
     const lookPage = (
@@ -63839,27 +63873,27 @@ function openPaperSheet(focus) {
         _t("\u53EA\u5F71\u54CD\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B\uFF1A\u6253\u5370\u548C\u5BFC\u51FA\u6C38\u8FDC\u6309\u7EB8\u5206\u9875\u3002") + "<br>" + defs([[_t("\u9875\u9762"), _t("\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u548C\u5370\u51FA\u6765\u7684\u4E00\u6837")], [_t("\u8FDE\u7EED"), _t("\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u9875\u9762\u89C6\u56FE\u4E00\u6837\uFF0C\u53EA\u662F\u4E0D\u5206\u9875")], [_t("\u6A2A\u5377"), _t("\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9")]]) + IN_VIEW
       ) + setItem(
         _t("\u8C31\u79CD"),
-        sel2("nota", ...known(cur("notation", D3.st.song.notation), [fol("notation"), ...NOTATIONS.map((id2) => [id2, notationName(id2)])], cur("notation", look.notation))),
+        sel2("nota", ...known(cur("notation", D3.st.song.notation), [...NOTATIONS.map((id2) => [id2, notationName(id2)]), fol("notation")], cur("notation", look.notation))),
         defs(NOTATIONS.map((id2) => [notationName(id2), NOTATION_NOTE[id2](look.middleC)])) + IN_SONG
       ) + // 名字写这件事本身、默认那一项也说出它是什么（user 11-12 看截图：「这个看谱方式比较让人难以理解它是干什么的」；统筹：不用「方式」「专业」这类要猜的词）；
       //   叫「移调辅助」（user 11-12「我记得我们一开始定的语义是辅助功能啊…这几个看谱里面…主要就都是一些辅助功能」，统筹定名）
       setItem(
         _t("\u79FB\u8C03\u8F85\u52A9"),
-        sel2("inc", [fol("viewInC"), ["off", _t("\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09")], ["on", _t("\u6309 C \u8C03\u770B")]], cur("viewInC", look.viewInC ? "on" : "off"), movable),
+        sel2("inc", [["off", _t("\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09")], ["on", _t("\u6309 C \u8C03\u770B")], fol("viewInC")], cur("viewInC", look.viewInC ? "on" : "off"), movable),
         (movable ? MOVABLE_DO[look.notation] ? _t("\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u79FB\u8C03\u8F85\u52A9\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002") : _t("\u5B57\u6BCD\u8C31\u5199\u7684\u662F\u5B9E\u9645\u7684\u97F3\u540D\uFF0C\u7528\u4E0D\u4E0A\u300C\u79FB\u8C03\u8F85\u52A9\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002") : defs([[_t("\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09"), _t("\u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D")], [_t("\u6309 C \u8C03\u770B"), _t("\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF1B\u952E\u4E0A\u7684\u5927\u5B57\u4E5F\u6309 C \u8C03\u5199\uFF08\u8C31\u4E0A\u753B\u6210\u7684\u540D\u5B57\uFF09\uFF0C\u5C0F\u5B57\u662F\u5B9E\u9645\u7684\u97F3\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8")]])) + IN_SONG
       ) + // 中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；第 18 条起一直在——它管所有写成「字母 + 八度数字」的地方，统筹 b149a4d9 第 4 点）
-      setItem(_t("\u4E2D\u592E C \u53EB"), sel2("mc", [fol("middleC"), ...MIDDLE_C_NAMES.map((n10) => [String(n10), middleCLabel(n10)])], cur("middleC", String(look.middleC))), MIDDLE_C_NOTE() + IN_SONG) + // 和弦辅助 = 标不标（chordTags）、和弦写法 = 标成什么样（chordTagStyle）：一行一个键（第 19 条，统筹 0d97f07a）
-      setItem(_t("\u548C\u5F26\u8F85\u52A9"), sel2("ct", [fol("chordTags"), ["on", _t("\u6807")], ["off", _t("\u4E0D\u6807")]], cur("chordTags", look.chordTags ? "on" : "off")), _t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0B\u9762\u6807\u51FA\u5B83\u662F\u4EC0\u4E48\u548C\u5F26\uFF08\u5199\u6CD5\u5728\u4E0B\u4E00\u884C\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009") + IN_SONG) + setItem(_t("\u548C\u5F26\u5199\u6CD5"), sel2("cts", ...known(cur("chordTagStyle", D3.st.song.chordTagStyle), [fol("chordTagStyle"), ...CHORD_TAG_STYLES.map((v) => [v, CHORD_TAG_STYLE_LABEL[v]()])], cur("chordTagStyle", look.chordTagStyle))), CHORD_TAG_STYLE_NOTE() + IN_SONG) + // 演奏法和表情（7-G；user 11-11 深夜「显示里面再加一个不显示articulation和表情的选项。打印时也许会用，相当于前面讨论的不overwhelm小孩和初学者」）
+      setItem(_t("\u4E2D\u592E C \u53EB"), sel2("mc", [...MIDDLE_C_NAMES.map((n10) => [String(n10), middleCLabel(n10)]), fol("middleC")], cur("middleC", String(look.middleC))), MIDDLE_C_NOTE() + IN_SONG) + // 和弦辅助 = 标不标（chordTags）、和弦写法 = 标成什么样（chordTagStyle）：一行一个键（第 19 条，统筹 0d97f07a）
+      setItem(_t("\u548C\u5F26\u8F85\u52A9"), sel2("ct", [["on", _t("\u6807")], ["off", _t("\u4E0D\u6807")], fol("chordTags")], cur("chordTags", look.chordTags ? "on" : "off")), _t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0B\u9762\u6807\u51FA\u5B83\u662F\u4EC0\u4E48\u548C\u5F26\uFF08\u5199\u6CD5\u5728\u4E0B\u4E00\u884C\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009") + IN_SONG) + setItem(_t("\u548C\u5F26\u5199\u6CD5"), sel2("cts", ...known(cur("chordTagStyle", D3.st.song.chordTagStyle), [...CHORD_TAG_STYLES.map((v) => [v, CHORD_TAG_STYLE_LABEL[v]()]), fol("chordTagStyle")], cur("chordTagStyle", look.chordTagStyle))), CHORD_TAG_STYLE_NOTE() + IN_SONG) + // 演奏法和表情（7-G；user 11-11 深夜「显示里面再加一个不显示articulation和表情的选项。打印时也许会用，相当于前面讨论的不overwhelm小孩和初学者」）
       setItem(
         _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5"),
-        sel2("expr", [fol("expressions"), ["on", _t("\u663E\u793A")], ["off", _t("\u4E0D\u663E\u793A")]], cur("expressions", look.expressions ? "on" : "off")),
+        sel2("expr", [["on", _t("\u663E\u793A")], ["off", _t("\u4E0D\u663E\u793A")], fol("expressions")], cur("expressions", look.expressions ? "on" : "off")),
         _t("\u4E0D\u663E\u793A = \u952E\u76D8\u300C\u6F14\u594F\u6CD5\u300D\u300C\u529B\u5EA6\u300D\u4E24\u9875\u4E0A\u7684\u4E1C\u897F\u90FD\u4E0D\u753B\u3001\u4E0D\u5360\u5730\u65B9\uFF08\u8DF3\u97F3\u3001\u91CD\u97F3\u3001\u8FDE\u7EBF\u3001\u547C\u5438\u3001\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u2026\uFF09\uFF0C\u884C\u8DDF\u7740\u53D8\u77EE\uFF1B\u7B2C\u4E00\u884C\u8C31\u5934\u90A3\u4E00\u884C\u7684\u53F3\u7AEF\u6709\u4E00\u884C\u6DE1\u5B57\u300C\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A\u300D\uFF08\u4E0D\u5370\uFF09\uFF0C\u70B9\u5B83\u56DE\u5230\u8FD9\u91CC\u3002\u53EA\u7BA1\u753B\uFF1A\u64AD\u653E\u7167\u5199\u7684\u6765\uFF0C\u6B4C\u91CC\u7684\u8BB0\u53F7\u4E00\u4E2A\u4E0D\u52A8\uFF1BPDF \u7167\u773C\u524D\u7684\u6837\u5B50\u5370\u3002") + IN_SONG
       ) + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」；和歌手牌那个是同一个开关
       (one ? setItem(_t("\u53EA\u770B\u4E00\u53F7\u8F68"), sel2("only1", [["off", _t("\u90FD\u770B")], ["on", _t("\u53EA\u770B\u300C{song}\u300D", { song: labelsNow()[0] ?? "" })]], only1 ? "on" : "off"), _t("\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF1B\u522B\u7684\u58F0\u90E8\u7F29\u6210\u7EC6\u884C\u3002") + IN_VIEW) : "")
     );
     const layoutPage = setItem(
       _t("\u7EB8\u5F20"),
-      sel2("paper", [fol("paper"), ...PAPER_KINDS.map((k2) => [k2, _t("{paper}\uFF08{note}\uFF09", { paper: PAPER_LABEL[k2], note: PAPER_NOTE[k2] })]), ...p2.kind === "other" ? [["other", _t("{paper}\uFF08{note}\uFF09", { paper: _t("\u5176\u4ED6"), note: paperSizeText(p2) })]] : []], cur("paper", p2.kind)),
+      sel2("paper", [...PAPER_KINDS.map((k2) => [k2, _t("{paper}\uFF08{note}\uFF09", { paper: PAPER_LABEL[k2], note: PAPER_NOTE[k2] })]), ...p2.kind === "other" ? [["other", _t("{paper}\uFF08{note}\uFF09", { paper: _t("\u5176\u4ED6"), note: paperSizeText(p2) })]] : [], fol("paper")], cur("paper", p2.kind)),
       _t("\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002") + IN_SONG
     ) + // 边距（17-2 顺手，统筹 2026-11-13）：这首歌带着自己的边距时才出这一行；第一格跟着软件 = 用这张纸自己的边距，另一格 = 照实写这首歌带着的四边、选它 = 不动
     (mrow ? setItem(
@@ -63870,15 +63904,15 @@ function openPaperSheet(focus) {
     //   每个选项得到什么写进问号（下拉的项只有一行字，不把选项撑长）；问号里只说「常用」，不说「应该」（统筹 2026-11-12）
     setItem(
       _t("\u97F3\u7B26\u5BC6\u5EA6"),
-      sel2("density", [fol("density"), ...DENSITIES.map((z2) => [z2.id, z2.label]), ...fileMm !== null ? [["file", _t("\u81EA\u5B9A\u4E49\uFF08{mm} \u6BEB\u7C73\uFF09", { mm: +fileMm.toFixed(2) })]] : []], fileMm !== null ? "file" : cur("density", look.density)),
+      sel2("density", [...DENSITIES.map((z2) => [z2.id, z2.label]), ...fileMm !== null ? [["file", _t("\u81EA\u5B9A\u4E49\uFF08{mm} \u6BEB\u7C73\uFF09", { mm: +fileMm.toFixed(2) })]] : [], fol("density")], fileMm !== null ? "file" : cur("density", look.density)),
       _t("\u540C\u4E00\u5F20\u7EB8\u4E0A\u6392\u5F97\u677E\u8FD8\u662F\u5BC6\uFF1A\u97F3\u7B26\u591A\u5927\u3001\u884C\u8DDD\u3001\u97F3\u548C\u97F3\u4E4B\u95F4\u7684\u8DDD\u79BB\u4E00\u8D77\u53D8\u3002") + "<br>" + defs([...DENSITIES.map((z2) => [z2.label, z2.note]), ...fileMm !== null ? [[_t("\u81EA\u5B9A\u4E49"), _t("\u522B\u7684\u8F6F\u4EF6\u5B58\u7684\u8C31\u5E26\u7740\u81EA\u5DF1\u7684\u8C31\u9AD8\uFF0C\u7167\u5B83\u6392")]] : []]) + "<br>" + _t("\u5355\u884C\u7684\u8C31\u3001\u7ED9\u65B0\u624B\u770B\u7684\u5E38\u7528\u8212\u9002\uFF1B\u58F0\u90E8\u591A\u7684\u603B\u8C31\u5E38\u7528\u7D27\u51D1\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002") + IN_SONG
     ) + setItem(
       _t("\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019"),
       sel2("reflow", [["fit", _t("\u4E0D\u6298\u884C")], ["reflow", _t("\u6298\u884C")]], reflow ? "reflow" : "fit"),
       defs([[_t("\u4E0D\u6298\u884C"), _t("\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837")], [_t("\u6298\u884C"), _t("\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9")]]) + IN_SESSION
-    ) + setItem(_t("\u5C0F\u8282\u53F7"), sel2("bn", ...known(cur("barNumbers", D3.st.song.barNumbers === "line" ? "on" : D3.st.song.barNumbers), [fol("barNumbers"), ["on", _t("\u6BCF\u884C\u5F00\u5934")], ["off", _t("\u4E0D\u5370")]], cur("barNumbers", look.barNumbers ? "on" : "off"))), _t("\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0") + IN_SONG) + setItem(
+    ) + setItem(_t("\u5C0F\u8282\u53F7"), sel2("bn", ...known(cur("barNumbers", D3.st.song.barNumbers === "line" ? "on" : D3.st.song.barNumbers), [["on", _t("\u6BCF\u884C\u5F00\u5934")], ["off", _t("\u4E0D\u5370")], fol("barNumbers")], cur("barNumbers", look.barNumbers ? "on" : "off"))), _t("\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0") + IN_SONG) + setItem(
       _t("\u6B4C\u8BCD\u6392\u6CD5"),
-      sel2("lyr", ...known(cur("lyricFit", D3.st.song.lyricFit), [fol("lyricFit"), ["rhythm", _t("\u6309\u8282\u594F")], ["lyrics", _t("\u6309\u6B4C\u8BCD")]], cur("lyricFit", look.lyricFit))),
+      sel2("lyr", ...known(cur("lyricFit", D3.st.song.lyricFit), [["rhythm", _t("\u6309\u8282\u594F")], ["lyrics", _t("\u6309\u6B4C\u8BCD")], fol("lyricFit")], cur("lyricFit", look.lyricFit))),
       defs([[_t("\u6309\u8282\u594F"), _t("\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070")], [_t("\u6309\u6B4C\u8BCD"), _t("\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09")]]) + IN_SONG
     ) + // 谱上的字用哪种语言（施工单 12-4；user「页面设置是不是也应该有一个语言，影响打印？」）：这首歌的，走修改锁的「看法」（同小节号、音符密度）
     setItem(_t("\u8C31\u4E0A\u7684\u5B57"), sel2("tl", ...known(D3.st.song.textLang, textLangItems(), look.textLang)), TEXT_LANG_HELP() + IN_SONG);
@@ -63886,8 +63920,8 @@ function openPaperSheet(focus) {
     mountDropdowns(box);
     const all = panel.el.querySelector('[data-panel-btn="alldef"]');
     if (all) {
-      all.disabled = !chosenCount(D3.st.song);
-      all.title = _t("\u628A\u8FD9\u9996\u6B4C\u91CC\u9009\u8FC7\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u6539\u56DE\u8DDF\u7740\u8F6F\u4EF6\uFF08\u80FD\u64A4\u9500\uFF09");
+      all.disabled = stampLooks(D3.st.song, lookCtx(), lang(), "apply") === D3.st.song;
+      all.title = _t("\u628A\u8FD9\u9996\u6B4C\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u5199\u6210\u6211\u7684\u4E60\u60EF\u73B0\u5728\u7684\u6837\u5B50\uFF08\u6CA1\u8BBE\u4E60\u60EF\u7684\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1B\u80FD\u64A4\u9500\uFF09");
     }
     showPage(page);
   };
@@ -63897,11 +63931,11 @@ function openPaperSheet(focus) {
     content: box,
     width: "wide",
     tabs: { tabs: [{ id: "look", label: _t("\u770B\u8C31"), icon: "visibility-show", title: _t("\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B") }, { id: "layout", label: _t("\u7248\u9762"), icon: "file", title: _t("\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6") }], current: page, onPick: (pg) => showPage(pg) },
-    buttons: [{ id: "alldef", label: _t("\u5168\u90E8\u8DDF\u7740\u8F6F\u4EF6") }, { id: "close", label: _t("\u597D"), primary: true }],
+    buttons: [{ id: "alldef", label: _t("\u5957\u7528\u6211\u7684\u4E60\u60EF") }, { id: "close", label: _t("\u597D"), primary: true }],
     closeId: "close",
     onButton: (id2) => {
       if (id2 === "alldef") {
-        setPageLook({ ...D3.st, song: allDefault(D3.st.song) }, { kind: "allLooks", label: _t("\u5168\u90E8\u8DDF\u7740\u8F6F\u4EF6") });
+        setPageLook({ ...D3.st, song: stampLooks(D3.st.song, lookCtx(), lang(), "apply") }, { kind: "allLooks", label: _t("\u5957\u7528\u6211\u7684\u4E60\u60EF") });
         draw();
       }
     },
@@ -63938,7 +63972,7 @@ function openPaperSheet(focus) {
     if (!k2 || v === ODD) return;
     const FOLLOW_KEY = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", cts: "chordTagStyle", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit", margin: "marginMm" };
     if (v === FOLLOW && FOLLOW_KEY[k2]) {
-      const key = FOLLOW_KEY[k2], next2 = { ...D3.st, song: followDefault(D3.st.song, key) }, label = _t("{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6", { what: { nota: _t("\u8C31\u79CD"), inc: _t("\u79FB\u8C03\u8F85\u52A9"), mc: _t("\u4E2D\u592E C \u53EB"), ct: _t("\u548C\u5F26\u8F85\u52A9"), cts: _t("\u548C\u5F26\u5199\u6CD5"), expr: _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5"), paper: _t("\u7EB8\u5F20"), density: _t("\u97F3\u7B26\u5BC6\u5EA6"), bn: _t("\u5C0F\u8282\u53F7"), lyr: _t("\u6B4C\u8BCD\u6392\u6CD5"), margin: _t("\u8FB9\u8DDD") }[k2] ?? key });
+      const key = FOLLOW_KEY[k2], next2 = { ...D3.st, song: followDefault(D3.st.song, key) }, label = _t("{what}\uFF1A\u8DDF\u7740\u6211\u7684\u4E60\u60EF", { what: { nota: _t("\u8C31\u79CD"), inc: _t("\u79FB\u8C03\u8F85\u52A9"), mc: _t("\u4E2D\u592E C \u53EB"), ct: _t("\u548C\u5F26\u8F85\u52A9"), cts: _t("\u548C\u5F26\u5199\u6CD5"), expr: _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5"), paper: _t("\u7EB8\u5F20"), density: _t("\u97F3\u7B26\u5BC6\u5EA6"), bn: _t("\u5C0F\u8282\u53F7"), lyr: _t("\u6B4C\u8BCD\u6392\u6CD5"), margin: _t("\u8FB9\u8DDD") }[k2] ?? key });
       if (next2 !== D3.st) D3.commit({ st: next2 }, { locus: { kind: LOOK_KEY_OP[key], label } });
       draw();
       return;
@@ -64046,7 +64080,7 @@ var showsNow = (song = D3.st.song, extras = D3.extras) => partShow(song, extras.
 var labelsNow = (song = D3.st.song, extras = D3.extras) => showsNow(song, extras).map((x2) => x2.name);
 var roleLabel = (role, extras = D3.extras, song = D3.st.song) => roleNameIn(song, extras.lounge, textLangIn(lookOf(song, lookCtx()), lang()), role);
 var partNameNow = (partId) => partNameOf(D3.st.song, D3.extras.lounge, scoreTextLang(), partId);
-var textLangItems = () => TEXT_LANGS.map((v) => [v, v === "ui" ? _t("\u8DDF\u7740\u754C\u9762\uFF08{lang}\uFF09", { lang: LANG_NAME[lang()] }) : LANG_NAME[v]]);
+var textLangItems = () => [...TEXT_LANGS.filter((v) => v !== "ui"), "ui"].map((v) => [v, v === "ui" ? _t("\u8DDF\u7740\u754C\u9762\uFF08{lang}\uFF09", { lang: LANG_NAME[lang()] }) : LANG_NAME[v]]);
 var TEXT_LANG_HELP = () => _t("\u8F6F\u4EF6\u81EA\u5DF1\u5199\u5728\u8C31\u4E0A\u7684\u5B57\u7528\u54EA\u79CD\u8BED\u8A00\uFF1A\u6CA1\u8D77\u540D\u5B57\u7684\u58F0\u90E8\u5199\u4E50\u5668\u7684\u53EB\u6CD5\u3001\u7B80\u8C31\u9F13\u7684\u56FE\u4F8B\u3001\u300C\u7F16\u6392\u300D\u3001\u51FA\u58F0\u7684\u6362\u6C14\u300C\u5438 / \u6DF1\u5438\u300D\u3002\u6B4C\u8BCD\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u4F60\u8D77\u7684\u58F0\u90E8\u540D\u7167\u5199\u7684\u5370\uFF0C\u4E0D\u7FFB\u3002\u8DDF\u7740\u754C\u9762 = \u8FD9\u53F0\u8BBE\u5907\u662F\u4EC0\u4E48\u8BED\u8A00\u5C31\u5370\u4EC0\u4E48\u8BED\u8A00\u3002");
 function partLooks() {
   const shows = showsNow();
@@ -65357,6 +65391,10 @@ function putDownSong() {
   stopPlay({ prewarm: false });
   sound.allOff();
 }
+function loadNewSong(pendingFolder, rebuild) {
+  const song = bornSong(initState().song);
+  loadDoc(song, { home: { kind: "none", pendingFolder }, stem: rebuild?.stem ?? defaultStem(), named: false, extras: templateExtras(song), ...rebuild ? { keepPanels: true } : {} });
+}
 function loadDoc(song, o10) {
   perfApi.mixBypass = false;
   busMuted.clear();
@@ -65375,8 +65413,10 @@ function loadDocInner(song, o10) {
   if (impro) setImpro(false);
   foldTold.gone.clear();
   foldTold.added.clear();
-  ui2.close();
-  closeInstPage();
+  if (!o10.keepPanels) {
+    ui2.close();
+    closeInstPage();
+  }
   H2.load(o10.home, { stem: o10.stem, named: o10.named });
   coverTouched = false;
   const st0 = initState(song);
@@ -65436,10 +65476,7 @@ async function fileNew() {
     return;
   }
   if (!await H2.leave(_t("\u65B0\u5EFA"))) return;
-  {
-    const song = initState().song;
-    loadDoc(song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: templateExtras(song) });
-  }
+  loadNewSong(null);
   info(_t("\u65B0\u7684\u4E00\u9996"));
 }
 async function fileOpen() {
@@ -65456,7 +65493,7 @@ async function fileOpen() {
 function openPicked(picked, from) {
   try {
     const o10 = openBytes(picked.name, picked.bytes), own = o10.ours && !o10.notices.length;
-    loadDoc(o10.song, { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
+    loadDoc(songOfOpened(o10), { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
     if (o10.notices.length) showError(o10.notices.join(" "));
     if (o10.advice.length) info(o10.advice.join(" "));
     else info(from ? _t("\u4ECE {host} \u6253\u5F00\u4E86 {name}\uFF1A\u8FD9\u662F\u4E00\u4EFD\u62F7\u8D1D\uFF0C\u60F3\u7559\u4E0B\u6765\u5C31\u6309\u300C\u5B58\u300D\u3002", { host: from, name: picked.name }) : _t("\u6253\u5F00\u4E86 {name}", { name: picked.name }));
@@ -66041,7 +66078,7 @@ setInterval(() => {
 }, 1e3);
 function adoptStoreBytes(id2, bytes) {
   const o10 = openBytes(id2, bytes);
-  loadDoc(o10.song, { home: { kind: "gallery", identifier: id2 }, stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
+  loadDoc(songOfOpened(o10), { home: { kind: "gallery", identifier: id2 }, stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
   if (o10.notices.length) showError(o10.notices.join(" "));
   if (o10.advice.length) info(o10.advice.join(" "));
 }
@@ -66065,10 +66102,7 @@ async function newStoreSong() {
   attachForUser();
   if (!await H2.leave(_t("\u65B0\u5EFA"))) return;
   const folder = gallery?.currentFolder() ?? "";
-  {
-    const song = initState().song;
-    loadDoc(song, { home: { kind: "none", pendingFolder: folder }, stem: defaultStem(), named: false, extras: templateExtras(song) });
-  }
+  loadNewSong(folder);
   info(_t("\u65B0\u7684\u4E00\u9996\uFF08\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93\uFF09"));
 }
 async function saveIntoGallery() {
@@ -66629,10 +66663,7 @@ async function signOutFlow() {
       reportError(e10);
     }
   }
-  {
-    const song = initState().song;
-    loadDoc(song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: templateExtras(song) });
-  }
+  loadNewSong(null);
   renderTitle();
   info(f2 ? _t("\u4E0D\u7528\u300C{label}\u300D\u4E86\uFF1A\u5939\u91CC\u7684\u6B4C\u4E00\u9996\u6CA1\u52A8\uFF0C\u518D\u8FDB\u6B4C\u5E93\u53EF\u4EE5\u9009\u5BB6", { label: f2.label }) : _t("\u9000\u51FA\u4E86\uFF1A\u6B4C\u90FD\u8FD8\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u518D\u8FDE\u4E0A\u7F51\u76D8\u5C31\u80FD\u63A5\u7740\u7528"));
 }
@@ -67511,4 +67542,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2769c93ca88e.mjs.map
+//# sourceMappingURL=moonsinger-93508764a67e.mjs.map

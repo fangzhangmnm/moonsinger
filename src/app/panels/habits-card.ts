@@ -11,7 +11,7 @@
 //     预览图在 habits-preview.ts（真排版、墨迹大了整张等比缩到刚好放下、按墨迹居中），格子窄了跟着框等比缩。
 //   · 第二行 移调辅助：两颗一样宽的钮 + 一句说明。第三行起 小下拉（现在只有「中央 C 叫」）：和设置「界面」页那几行是同一处出的行（宿主给 rows）。
 //   · 每一样都可以不选（点亮着的那格 / 那颗 = 取消）。「好」= 交回选了的；「以后再说」/ Esc / 点外面怎么算由宿主定（第一次打开 vs 从设置里打开）。
-import { openPanelShell } from "@internal/workbench-elements";
+import { openPanelShell, settingRowHtml } from "@internal/workbench-elements";
 import { _t } from "../../i18n/index.ts";
 import { escapeHtml as esc } from "../../ui/md-lite.ts";
 import { type RawMeasure } from "../../render/text/index.ts";
@@ -65,10 +65,14 @@ export function openHabitsCard(d: HabitsCardDeps): HabitsCard {
     `<section class="hab-small hab-lang" data-q="${CARD_HABITS.lead}">${d.lang.html}</section>` +
     `<section class="hab-q" data-q="notation"><div class="hab-title">${esc(_t("习惯看的谱"))}</div>` +
       `<div class="hab-strip">${NOTATIONS.map((id) => `<button type="button" class="hab-tile" data-h="${CARD_HABITS.tiles}" data-v="${id}" aria-pressed="false"><span class="hab-prev">${previewSvg(id, d.measure)}</span><span class="hab-name">${esc(notationName(id))}</span></button>`).join("")}</div>` +
-      `<div class="hab-foot">${esc(_t("字母谱：玩 tracker 的可以先用这个，不完全一样。钢琴卷帘、录音还没做，做好了会加在这里。"))}</div></section>` +
-    `<section class="hab-q" data-q="viewInC"><div class="hab-title">${esc(_t("移调辅助"))}</div>` +
-      `<div class="hab-pair"><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="off" aria-pressed="false">${esc(_t("不用"))}</button><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="on" aria-pressed="false">${esc(_t("按 C 调看"))}</button></div>` +
-      `<div class="hab-note">${esc(TRANSPOSE_AID_NOTE())}</div></section>` +
+      `</section>` +   // 底下那一行字（「字母谱：玩 tracker 的…」）拿掉了：图已经够说明（v0.17.38，user「下面那行文字说明不要，图片已经够解释」）
+    // 移调辅助（v0.17.38，统筹 28858491）：说明收进标题旁的小问号——和下面小下拉那几行同一个零件（settingRowHtml + 宿主装好的 wireSettingRows），默认收着；
+    //   零件把展开的那段排在行头后面，这里用 CSS 把它挪到两颗钮下面（styles.css .hab-aid），零件和它的展开不另写
+    `<section class="hab-q hab-aid" data-q="viewInC">` + settingRowHtml({
+      labelHtml: `<span class="hab-title">${esc(_t("移调辅助"))}</span>`,
+      notes: [{ mark: "?", label: _t("这是什么"), html: TRANSPOSE_AID_NOTE().map((p) => `<p>${esc(p)}</p>`).join("") }],
+      belowHtml: `<div class="hab-pair"><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="off" aria-pressed="false">${esc(_t("不用"))}</button><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="on" aria-pressed="false">${esc(_t("按 C 调看"))}</button></div>`,
+    }) + `</section>` +
     `<section class="hab-small">${d.rows.html(d.current)}</section>`;
   const valueOf = (h: string, v: string): string | boolean => (h === "viewInC" ? v === "on" : v);
   const sync = (reveal: boolean) => {

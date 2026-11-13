@@ -18,8 +18,8 @@ await p.evaluate(() => {
 await p.waitForTimeout(300);
 const textLang = () => p.evaluate(() => window.__moonsinger.state().song.textLang);
 const breathLabel = () => p.evaluate(() => [...document.querySelectorAll("#score text.breath-label")].map((e) => e.textContent).join(","));
-check((await textLang()) === "ui", "新歌 = 跟着界面", await textLang());
-check((await breathLabel()) === "吸", "中文界面、跟着界面：换气后面印「吸」", await breathLabel());
+check((await textLang()) === "zh", "新歌 = 新建时写下来的界面语言（第 21 条：不再是跟着界面）", await textLang());
+check((await breathLabel()) === "吸", "中文界面、写着中文：换气后面印「吸」", await breathLabel());
 // 页面设置「版面」页
 const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForTimeout(200); };
 await openSheet();
@@ -31,12 +31,12 @@ check((await breathLabel()) === "in", "谱上印出来的换气字变成英文",
 check(await p.evaluate(() => document.documentElement.dataset.lang) === "zh", "界面语言没变（还是中文）");
 await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(150);
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
-check((await textLang()) === "ui" && (await breathLabel()) === "吸", "能撤销（回到跟着界面）", `${await textLang()} ${await breathLabel()}`);
+check((await textLang()) === "zh" && (await breathLabel()) === "吸", "能撤销（回到新建时写下来的中文）", `${await textLang()} ${await breathLabel()}`);
 // 导出乐谱的面板
 await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="export"]'); await p.waitForTimeout(200);
 await p.click('.offer [data-v="pdf"]'); await p.waitForTimeout(200);
 check(!!(await p.$('.offer .pdf-lang [data-pd="tl"]')), "导出乐谱的面板里写着用哪种语言印");
-check((await ddValue(p, '.offer [data-pd="tl"]')) === "ui", "面板上的值 = 歌里那一项（跟着界面）");
+check((await ddValue(p, '.offer [data-pd="tl"]')) === "zh", "面板上的值 = 歌里那一项（新建时写下来的中文）");
 await pick(p, '.offer [data-pd="tl"]', "en"); await p.waitForTimeout(250);
 check((await textLang()) === "en" && (await ddValue(p, '.offer [data-pd="tl"]')) === "en", "在面板上直接改 = 改的是歌里那一项", await textLang());
 check(!!(await p.$('.offer [data-v="go"]')), "改完面板还开着，能接着生成");
