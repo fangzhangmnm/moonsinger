@@ -117,12 +117,12 @@ describe("刀 3：音距字段（v0.16.43 起不再起作用、音距跟版式�
     for (const sp of ["tight", undefined] as const) {
       const bytes = save({ ...emptySong(), ...(sp ? { spacing: sp } : {}) } as Song), files = unzipSync(bytes), score = JSON.parse(strFromU8(files[".moonsinger/score.json"]!));
       assert(score.spacing === (sp ?? "normal") && !("denseShort" in score), `写：${sp} → ${JSON.stringify(score.spacing)}`);
-      assert(openBytes("x.mxl", bytes).song.spacing === sp, `读：${sp}`);
+      assert(openBytes("x.mxl", bytes).song.spacing === (sp ?? "normal"), `读：${sp}（16-4 A3：内存里也明写）`);
     }
     const files = unzipSync(save(emptySong())), score = JSON.parse(strFromU8(files[".moonsinger/score.json"]!));
     files[".moonsinger/score.json"] = strToU8(JSON.stringify({ ...score, denseShort: "off" }));
     const old = openBytes("x.mxl", zipSync(files));
-    eq(old.song.spacing, undefined, "旧字段读成正常");
+    eq(old.song.spacing, "normal", "旧字段读成正常（明写）");
     const again = JSON.parse(strFromU8(unzipSync(saveMxl({ song: old.song, extras: old.extras, app: "test", date: "2026-11-09" }))[".moonsinger/score.json"]!));
     assert(!("denseShort" in again), "再存一次旧字段就没了（认识的键，不当成不认识的原样带回）");
   });

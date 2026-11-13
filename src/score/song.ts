@@ -19,7 +19,10 @@ import { _t } from "../i18n/index.ts";
 import { type Paper, type PaperKind, type Density, DEFAULT_PAPER, paperOf, densityOf } from "./paper.ts";
 import { latchDown, latchWrite, LATCH_OFF } from "../keyboard/latch.ts";   // 升降 Shift 的那条规则和 /2、渐到同一份（编辑状态机第 2 期，2026-10-15）
 import { type Dir, type Pitch, type Step, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell, keyAlter } from "./pitch.ts";
-import { expandPaper } from "./repeats.ts";   // 谱内反复（循环 import：repeats.ts 只在函数里用 song.ts 的东西，加载顺序无所谓）
+import { expandPaper } from "./repeats.ts";
+import type { GrooveStyle } from "./grooves.gen.ts";
+/** 一种风格出声用的五样（16-4 D：score.json grooves 按值存；插风格记号的那一刻从现行预设抄，src/score/groove.ts withGrooveData）。名字不抄（显示照现行的表）。 */
+export type GrooveData = Pick<GrooveStyle, "meters" | "phase" | "fallback" | "follow" | "swing">;   // 谱内反复（循环 import：repeats.ts 只在函数里用 song.ts 的东西，加载顺序无所谓）
 
 /** 一个四分音符的 tick 数。 */
 export const TPQ = 1680;
@@ -188,29 +191,33 @@ export interface Song {
   rights?: string;
   /** 编排：按什么顺序放哪几张纸（一行字：曲段名 / 序号、×N、括号、最后一个 [循环段]；src/score/arrange.ts）。没有 = 每张纸按顺序各放一遍。
    *  存档 = score.json 可选字段 arrangement（2026-10-08 深夜 Opus 5.5，user「a flat 编排 list 同意」「编排…就是总paper的顶上说一下…就是一行」）。 */
-  arrangement?: string;
+  arrangement: string;
   /** 歌词怎么排（v0.9.40；user 2026-10-10「先试下你说的两个歌词开关吧，approved」→「默认用修歌词的那个排版方式吧」）：没有 = 按节奏（默认：音的位置只看时值，
    *  歌词让路：借旁边的空 → 小一号 → 上下错开 → 还放不下画灰说「挤了」）；lyrics = 按歌词（长字把音推开，出版谱的老规矩）。存档 = score.json 可选字段 lyricFit（只写 "lyrics"）。 */
-  lyricFit?: "lyrics";
+  lyricFit: string;
   /** 小节号（v0.9.42；user「小节号要，可以页面设置toggle，默认是每行开头有」）：没有 = 每行开头印；off = 不印。存档 = score.json 可选字段 barNumbers（只写 "off"）。 */
-  barNumbers?: "off";
+  barNumbers: string;
   /** 音距（v0.16.34，刀 3；src/render/spacing.ts）：没有 = 正常（短音符压紧：十六分 1.9、三十二分 1.6 个线间距）；tight = 紧（整条再收一截）。
    *  user 11-08「正常人都会画密」→ 11-09「可以再紧一点，你这个新版本算正常，然后加一个紧凑的」「松可能不要」。存档 = score.json 可选字段 spacing（只写 "tight"；
    *  v0.16.33 那一小时写的 denseShort: "off" 读成正常）。 */
-  spacing?: "tight";
+  spacing: string;
   /** 这首歌怎么看的三样（谱面分家第三刀，score minor 5；读 / 改只走 src/score/song-view.ts，没写的意思冻住在那里）：
    *  notation = 谱种（只写不是五线谱的；不认识的原样留着）；chordTags = 和弦标级数（只写 false）；viewInC = 按 C 调看（只写 true）。存档 = score.json 同名可选字段。 */
-  notation?: string;
-  chordTags?: false;
-  viewInC?: true;
+  notation: string;
+  chordTags: boolean;
+  viewInC: boolean;
   /** 字母谱里中央 C 叫 C 几（score minor 6，7-B；只写不是 4 的；没写 = C4。读 / 改只走 src/score/song-view.ts）。 */
-  middleC?: number;
+  middleC: number;
   /** 演奏法和表情显示不显示（score minor 8，7-G；只写 false = 不显示；没写 = 显示。读 / 改只走 src/score/song-view.ts）。只管画：播放照写的来。 */
-  expressions?: false;
+  expressions: boolean;
   /** 谱上的字用哪种语言（score minor 10，施工单 12-4，2026-11-12；user「页面设置是不是也应该有一个语言，影响打印？」）："ui" = 跟着界面；"zh" / "en" = 界面语言里的一种；
    *  不认识的（更新的版本写的）原样留着、写回去，画的时候当跟着界面。只管软件自己生成、印出来的字（声部名是目录 / 预设里的乐器名时、简谱鼓的图例、「编排」、出声的换气「吸 / 深吸」）；
    *  歌词、歌名、作者栏、自己起的声部名不动。**必填**：没写的意思在进门那一处定一次（src/format/project.ts songViewFields：没写 = "ui"），新歌明着写 "ui"；运行时永远有值。读 / 改只走 src/score/song-view.ts。 */
   textLang: string;
+  /** 这首歌的风格记号用到的那几种风格，每种出声用的五样（16-4 D，score minor 12；风格 id → GrooveData）。轻重、摇摆、跟多少、小菜单里的说明都只读这一份。
+   *  插风格记号 / 换风格的那一刻从现行预设按值抄（withGrooveData，在文档的写入口规整里）；老歌没有 = 读文件的门口从现行预设补。
+   *  记号指着的风格这里没有（现行预设里也没有）= 这个记号不起作用、画灰、小菜单里明说，不拿别的风格顶上。 */
+  grooves?: Record<string, GrooveData>;
   parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
   papers: PaperSeg[];    // 纸（曲段）的顺序表
 }
@@ -263,12 +270,19 @@ export function headTokens(m: { fifths?: number; minor?: boolean; beats?: number
 }
 export const FIRST_PART = "P1", FIRST_PAPER = "p1";
 /** 新歌：一张纸、一个声部（P1 → 角色 r1 → 麦克风 m1），哼的字默认「嗯」（user 2026-10-07「月读不是有啦嗯哦吗，默认嗯」）。 */
+/** 歌级的显示设置（16-4 A3，score.json 同名键）。 */
+export type SongLookKey = "arrangement" | "lyricFit" | "barNumbers" | "spacing" | "notation" | "chordTags" | "viewInC" | "middleC" | "expressions" | "textLang";
+/** 新建的歌写进去的歌级显示设置（16-4 A3；模板的「谱的扩展」那一块就是这一个对象——src/format/template.ts 原样列出，不另抄）。
+ *  值是原来「没写 = 什么」那张表（song-view.ts 的 UNWRITTEN，16-4 A3 删了）里的同一组，一个没改：编排空、歌词按节奏、小节号每行开头、音距正常、五线谱、和弦标级数、
+ *  不按 C 调看、中央 C 叫 C4、演奏法和表情显示、谱上的字跟着界面。
+ *  **只给构造函数用**（emptySong / songOf；守卫 test/template.test.ts：src/score 里这个名字只出现在这两个函数里）。读的一侧（songViewOf、排版、出声）照歌里写着的读，不碰它。 */
+export const NEW_SONG_LOOK: Readonly<Pick<Song, SongLookKey>> = Object.freeze({ arrangement: "", lyricFit: "rhythm", barNumbers: "line", spacing: "normal", notation: "staff", chordTags: true, viewInC: false, middleC: 4, expressions: true, textLang: "ui" });
 export function emptySong(m: { fifths?: number; beats?: number; beatType?: number; bpm?: number } = {}): Song {
-  return { textLang: "ui", parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m) } }] };   // 谱上的字：新歌明着写「跟着界面」（12-4）
+  return { ...NEW_SONG_LOOK, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m) } }] };   // 显示设置按新建的那一组明写（16-4 A3）
 }
 /** 单 track 的歌（测试 / 读别家单声部谱时顺手用）。 */
 export function songOf(tokens: Token[], rest: Partial<Omit<Song, "parts" | "papers">> = {}): Song {
-  return { textLang: "ui", ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
+  return { ...NEW_SONG_LOOK, ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
 }
 export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", inputAuto: true }; }
 /** 整首歌最大的 token id（新 id 从它后面编；所有纸、所有声部一起算，id 全歌唯一）。 */
@@ -376,7 +390,7 @@ export function stackPitch(st: EditorState, pitch0: Pitch): EditorState {
 }
 /** 只有这一张纸的歌（本段视图的播放范围；user 2026-10-08「为什么在本段视图下播放还是播放全部了？」）。 */
 /** 只要这一张纸（「本段」放 / 导出这一段）。点名要它 = 隐藏的也放（user 2026-10-08「隐藏的歌段在solo预览的时候还是应该可以放的」）：隐藏只管整首放 / 压平件跳过它。 */
-export const songOnlyPaper = (song: Song, paperId: string): Song => { const { arrangement: _a, ...rest } = song; return { ...rest, papers: song.papers.filter((p) => p.id === paperId).map(({ hidden: _h, ...p }) => p) }; };   // 本段 = 只这一张，编排不管
+export const songOnlyPaper = (song: Song, paperId: string): Song => { const rest = { ...song, arrangement: "" }; return { ...rest, papers: song.papers.filter((p) => p.id === paperId).map(({ hidden: _h, ...p }) => p) }; };   // 本段 = 只这一张，编排不管
 
 /** 下标 i 处（i 之前最近的那个记号）生效的调号 / 拍号 / 速度（一条 track 内）。 */
 export function keyAt(tokens: Token[], i: number): number {
@@ -1652,9 +1666,8 @@ export function setRights(st: EditorState, text: string): EditorState {
 }
 /** 编排那一行（空 = 不写 = 每张纸按顺序各放一遍；src/score/arrange.ts）。 */
 export function setArrangement(st: EditorState, text: string): EditorState {
-  const t = text.trim(), song = { ...st.song };
-  if (t) song.arrangement = t; else delete song.arrangement;
-  return (st.song.arrangement ?? "") === t ? st : { ...st, song };
+  const t = text.trim();
+  return st.song.arrangement === t ? st : { ...st, song: { ...st.song, arrangement: t } };   // 空 = 明写 ""（16-4 A3）
 }
 export function setTitle(st: EditorState, title: string): EditorState {
   const t = title.trim(), song = { ...st.song };
@@ -1871,21 +1884,18 @@ export function movePaper(st: EditorState, paperId: string, d: -1 | 1): EditorSt
 }
 /** 小节号印不印（v0.9.42；默认每行开头印）。 */
 export function setBarNumbers(st: EditorState, on: boolean): EditorState {
-  if ((st.song.barNumbers !== "off") === on) return st;
-  const song = { ...st.song }; if (on) delete song.barNumbers; else song.barNumbers = "off";
-  return { ...st, song };
+  const v = on ? "line" : "off"; if (st.song.barNumbers === v) return st;
+  return { ...st, song: { ...st.song, barNumbers: v } };   // 两档都明写（16-4 A3）
 }
 /** 音距两档（v0.16.34；默认正常）。 */
 export function setSpacing(st: EditorState, m: "normal" | "tight"): EditorState {
-  if ((st.song.spacing ?? "normal") === m) return st;
-  const song = { ...st.song }; if (m === "normal") delete song.spacing; else song.spacing = m;
-  return { ...st, song };
+  if (st.song.spacing === m) return st;
+  return { ...st, song: { ...st.song, spacing: m } };
 }
 /** 歌词怎么排（v0.9.40）：按节奏（默认）/ 按歌词。 */
 export function setLyricFit(st: EditorState, v: "lyrics" | "rhythm"): EditorState {
-  if ((st.song.lyricFit ?? "rhythm") === v) return st;
-  const song = { ...st.song }; if (v === "lyrics") song.lyricFit = "lyrics"; else delete song.lyricFit;
-  return { ...st, song };
+  if (st.song.lyricFit === v) return st;
+  return { ...st, song: { ...st.song, lyricFit: v } };
 }
 /** 谱号记号插在光标处（有选区 = 选区开头）；光标前紧挨着就是一个谱号记号 = 改它（v0.9.28）。 */
 export function insertClef(st: EditorState, clef: ClefName): EditorState {

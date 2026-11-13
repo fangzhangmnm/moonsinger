@@ -37,6 +37,47 @@
       "barNumbers": "string",
       "chordTags": "boolean",
       "expressions": "boolean",
+      "grooves": {
+        "pop": {
+          "fallback": "string",
+          "follow": {
+            "bass": "number",
+            "brass": "number",
+            "chromatic-percussion": "number",
+            "ensemble": "number",
+            "ethnic": "number",
+            "guitar": "number",
+            "organ": "number",
+            "percussion": "number",
+            "percussive": "number",
+            "piano": "number",
+            "pipe": "number",
+            "reed": "number",
+            "sound-effects": "number",
+            "strings": "number",
+            "synth-effects": "number",
+            "synth-lead": "number",
+            "synth-pad": "number",
+            "voice": "number"
+          },
+          "meters": {
+            "12/8": {
+              "grid": "number",
+              "weights": [
+                "number"
+              ]
+            },
+            "4/4": {
+              "grid": "number",
+              "weights": [
+                "number"
+              ]
+            }
+          },
+          "phase": "null",
+          "swing": "null"
+        }
+      },
       "lyricFit": "string",
       "middleC": "number",
       "minor": "number",

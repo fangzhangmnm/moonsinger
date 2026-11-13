@@ -7,24 +7,11 @@ export declare const NOTATIONS: readonly NotationId[];
 /** 每条轨的和弦选项三档（设计稿第 3.7 节）：只认叠在一起的和弦 / 也认拆开弹的和弦 / 折叠成和弦名（折叠 = 第五刀，现在画法同 auto）。 */
 export type ChordsMode = "stacked" | "auto" | "fold";
 export declare const CHORDS_MODES: readonly ChordsMode[];
-/** 文件里没写 = 这些值。写死，永远不变（改它 = 改了所有旧歌的样子）。chordTags / viewInC 在文件里永远是布尔（src/format/contract.ts score minor 5 那段）。
- *  后三样是原来就有的意思（4-5 收进来时照抄，不是新定的）：版式没写 = 舒适（paper.ts densityOf）；歌词排法没写 = 按节奏（v0.9.40 user「默认用修歌词的那个排版方式吧」，
- *  旧歌打开也是按节奏）；小节号没写 = 每行开头印（v0.9.42「默认是每行开头有」）。 */
-export declare const UNWRITTEN: Readonly<{
-    notation: NotationId;
-    chordTags: boolean;
-    viewInC: boolean;
-    chords: ChordsMode;
-    density: Density;
-    lyricFit: LyricFit;
-    barNumbers: boolean;
-    middleC: number;
-    expressions: boolean;
-}>;
 /** 谱上的字用哪种语言（12-4）：跟着界面 / 界面语言里的一种。歌里存的不认识的值（更新的版本写的）读成「跟着界面」，原样留在歌里。 */
 export type TextLang = "ui" | Lang;
 /** 界面上能选的（页面设置「版面」页、导出乐谱的面板）。界面多一种语言 = 这里多一项。 */
 export declare const TEXT_LANGS: readonly TextLang[];
+export declare const isTextLang: (v: unknown) => v is TextLang;
 /** 印出来的字用哪种语言：歌里写了一种 = 那一种；跟着界面 = 交进来的界面语言（排版明着吃语言，不读这一页的当前语言）。 */
 export declare function textLangIn(look: Pick<SongView, "textLang">, ui: Lang): Lang;
 /** 歌词怎么排：按节奏（音的位置只看时值，歌词让路）/ 按歌词（长字把音推开）。 */
@@ -53,25 +40,28 @@ export interface SongView {
     /** 谱上的字用哪种语言（12-4；score minor 10）。换成具体的语言用 textLangIn。 */
     readonly textLang: TextLang;
 }
+export declare const isNotation: (v: unknown) => v is NotationId;
 /** 这种谱是不是首调（「1」= 这个调的主音）：首调的谱上「按 C 调看」没有意义。 */
 export declare const MOVABLE_DO: Readonly<Record<NotationId, boolean>>;
 /** 这种谱上「按 C 调看」起不起作用：五线谱 = 起；简谱本来就是首调；字母谱写的是实际的音名（7-B：「按 C 调看」在字母谱下变灰）。 */
 export declare const IN_C_APPLIES: Readonly<Record<NotationId, boolean>>;
+/** 中央 C 叫 C 几：一位整数 0–9 才认（界面上只给 3 / 4 / 5）。 */
+export declare const isMiddleC: (v: unknown) => v is number;
 /** 界面上能选的中央 C 叫法。 */
 export declare const MIDDLE_C_NAMES: readonly number[];
 /** 歌 → 这首歌怎么看（纯函数；不读设备、不读界面语言、不读时钟）。 */
 export declare function songViewOf(song: Song): SongView;
-/** 换谱种。五线谱 = 不写。 */
+/** 换谱种（每一种都明写，16-4 A3）。 */
 export declare function setNotation(st: EditorState, id: NotationId): EditorState;
-/** 字母谱里中央 C 叫 C 几（4 = 不写）。 */
+/** 字母谱里中央 C 叫 C 几。 */
 export declare function setMiddleC(st: EditorState, n: number): EditorState;
-/** 演奏法和表情显示 / 不显示（7-G）。显示 = 不写。 */
+/** 演奏法和表情显示 / 不显示（7-G）。 */
 export declare function setExpressions(st: EditorState, on: boolean): EditorState;
 /** 谱上的字用哪种语言（12-4）。必填的键：跟着界面也明着写 "ui"（存文件时不写进 score.json，进门时补回来）。 */
 export declare function setTextLang(st: EditorState, v: TextLang): EditorState;
-/** 和弦标级数开 / 关。开 = 不写。 */
+/** 和弦标级数开 / 关。 */
 export declare function setChordTags(st: EditorState, on: boolean): EditorState;
-/** 按 C 调看开 / 关。关 = 不写。 */
+/** 按 C 调看开 / 关。 */
 export declare function setViewInC(st: EditorState, on: boolean): EditorState;
 /** 这条轨的和弦选项。auto = 不写。 */
 export declare function setPartChords(st: EditorState, partId: string, mode: ChordsMode): EditorState;

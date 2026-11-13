@@ -41,7 +41,8 @@ describe("谱上的字：进门那一处定没写的意思（12-4）", () => {
     eq(openBytes("x.musicxml", strToU8(xml)).song.textLang, "ui");
   });
   it("不认识的值（更新的版本写的）：原样留在歌里、存回去，画的时候当跟着界面；空串 / 不是字 = 跟着界面", () => {
-    const b = withScoreJson(save(emptySong()), (j) => { j.textLang = "ja"; }), o = openBytes("x.mxl", b);
+    const b = withScoreJson(save(emptySong()), (j) => { j.textLang = "ja"; j.minor = 999; }), o = openBytes("x.mxl", b);   // 比这一版新的那一份（16-4 A3：只有它的怪值原样留）
+    eq(openBytes("x.mxl", withScoreJson(save(emptySong()), (j) => { j.textLang = "ja"; })).song.textLang, "ui", "不比这一版新的 = 读成新建的那一个");
     eq(o.song.textLang, "ja"); eq(songViewOf(o.song).textLang, "ui");
     eq(scoreJson(save(o.song)).textLang, "ja", "写回去");
     for (const bad of ["", 3, null]) eq(openBytes("x.mxl", withScoreJson(save(emptySong()), (j) => { j.textLang = bad; })).song.textLang, "ui", `textLang = ${JSON.stringify(bad)}`);

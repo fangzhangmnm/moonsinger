@@ -10,7 +10,7 @@ import { midiOf } from "../score/pitch.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { scriptLang } from "../score/lang.ts";
 import { gainSegments, noteEnd, noteVelocities, rollHitVelocity, NO_CURVE, lightMarks, ROLL_HZ_MIN, ROLL_HZ_MAX, type PerfSpec, type VelDb } from "../score/perform.ts";
-import { grooveWeights, grooveMapOf, followOf, timeMapOf, type GrooveStyle } from "../score/groove.ts";
+import { grooveWeights, grooveMapOf, followOf, timeMapOf, type GrooveData } from "../score/groove.ts";
 import { toLabScore, singChunks, type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
 import { playSegments } from "../score/repeats.ts";
 import { sfKey, type SfxInfo } from "../gm/sf-key.ts";
@@ -44,7 +44,7 @@ export interface PerformerInfo {
   gm: { sha: string; presetIndex: number; note?: number; sfx?: SfxInfo } | null;
   chunk: SingChunkMode;
   /** 拍子轻重：这位跟多少（按乐器类别，src/score/groove.ts followOf）。 */
-  follow: (s: GrooveStyle) => number;
+  follow: (s: GrooveData) => number;
   /** 跟着演奏者走的效果链（CandidateV2.chain；刀 4）。 */
   chain?: FxV2[];
   /** 着力点（v0.10.27；鼓 / 音效）：敲这个键时采样开头到「砸下去那一下」几秒——录音房提前这么多开始放，砸在写的那一拍上（反向镲 1.4 s）。

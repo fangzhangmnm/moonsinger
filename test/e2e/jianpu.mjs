@@ -41,7 +41,7 @@ check((await p.$eval('.settings-card .set-item:has([data-pg="inc"]) .row-help', 
 await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
 // ③ 能撤销 / 重做（这首歌怎么看进撤销）
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
-check((await S()).song.notation === undefined && (await kinds()).split(",").every((k) => k === "staff"), "撤销 = 回到五线谱");
+check((await S()).song.notation === "staff" && (await kinds()).split(",").every((k) => k === "staff"), "撤销 = 回到五线谱（16-4 A3：明写）");
 await p.keyboard.press("Control+Shift+z"); await p.waitForTimeout(250);
 check((await S()).song.notation === "jianpu", "重做 = 又是简谱");
 // ④ 轻点数字 = 光标到它后面；光标盖住数字行的行身（照样张 = 小节线那一段，第五刀 5-5），不伸到别的行

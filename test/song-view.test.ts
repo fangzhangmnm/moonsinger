@@ -1,10 +1,11 @@
 // 「这首歌怎么看」存进歌文件（谱面分家第三刀，score minor 5；src/score/song-view.ts + src/format/project.ts）。created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟）。
 //   施工单第三节「3」：没写的意思冻住（谱种没写 = 五线谱、和弦标级数没写 = 标、按 C 调看没写 = 不按、每轨和弦选项没写 = auto），读写两头都不许「没写就取 app 现在的默认」；
-//   第 16 条 16-3 起存的时候每样都写；brokenChords: false（minor 2–4）读成 "stacked"；不认识的值原样带回；新建的歌四样都不写；设备上原来那两个键不再读。
+//   第 16 条 16-3 起存的时候每样都写；brokenChords: false（minor 2–4）读成 "stacked"；比这一版新的文件里不认识的值原样带回；新建的歌按 NEW_SONG_LOOK 都写（16-4 A3）；设备上原来那两个键不再读。
 const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e?: string): Uint8Array & string; readdirSync(p: URL, o?: object): string[] };
 import { paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
-import { songViewOf, setNotation, setChordTags, setViewInC, setPartChords, setExpressions, UNWRITTEN } from "../src/score/song-view.ts";
+import { songViewOf, setNotation, setChordTags, setViewInC, setPartChords, setExpressions } from "../src/score/song-view.ts";
+import { NEW_SONG_LOOK } from "../src/score/song.ts";
 import { initState, type Song } from "../src/score/song.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { FORMAT_MINOR } from "../src/format/contract.ts";
@@ -20,7 +21,7 @@ const viewOf = (s: Song) => { const v = songViewOf(s); return { notation: v.nota
 
 describe("这首歌怎么看：没写的意思冻住", () => {
   it("没写 = 五线谱 / 标和弦级数 / 不按 C 调看 / 也认拆开弹的（写死的值，不随 app 的新文档默认变）；新建的歌内存里四样都没写（= 模板的意思），存出去每样都明写（第 16 条 16-3）", () => {
-    eq(JSON.stringify(UNWRITTEN), JSON.stringify({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4, expressions: true }), "改了这些值 = 改了所有旧歌的样子（后三样第四刀 4-5 收进来，是原来就有的意思）");
+    eq(JSON.stringify(NEW_SONG_LOOK), JSON.stringify({ arrangement: "", lyricFit: "rhythm", barNumbers: "line", spacing: "normal", notation: "staff", chordTags: true, viewInC: false, middleC: 4, expressions: true, textLang: "ui" }), "改了这些值 = 改了所有旧歌的样子（后三样第四刀 4-5 收进来，是原来就有的意思）");
     { const v = songViewOf(initState().song); eq([v.density, v.lyricFit, v.barNumbers].join(","), "cozy,rhythm,true", "版式 / 歌词排法 / 小节号没写 = 舒适 / 按节奏 / 每行开头印");
       const w = songViewOf({ ...initState().song, lyricFit: "lyrics", barNumbers: "off", paper: { ...initState().song.paper ?? paperOf(DEFAULT_PAPER), density: "compact" } });
       eq([w.density, w.lyricFit, w.barNumbers].join(","), "compact,lyrics,false", "写了 = 照写的读"); }
@@ -29,7 +30,7 @@ describe("这首歌怎么看：没写的意思冻住", () => {
       const j = setNotation(st, "jianpu");
       eq([songViewOf(j.song).viewInC, songViewOf(j.song).inCActive].join(","), "true,false", "简谱（首调）：存着的值不动，但不起作用"); }
     const st = initState();
-    for (const k of ["notation", "chordTags", "viewInC"]) assert(!(k in st.song), `新建的歌不写 ${k}`);
+    for (const k of ["notation", "chordTags", "viewInC"] as const) eq(st.song[k], NEW_SONG_LOOK[k], `新建的歌明写 ${k}（16-4 A3：按 NEW_SONG_LOOK）`);
     assert(st.song.parts.every((p) => !("chords" in p)), "新建的歌不写声部的 chords");
     eq(JSON.stringify(viewOf(st.song)), JSON.stringify({ notation: "staff", chordTags: true, viewInC: false, chords: "auto" }));
     const j = scoreJson(save(st.song));
@@ -93,9 +94,11 @@ describe("这首歌怎么看：读写", () => {
   });
   it("不认识的值（更新的版本写的）原样带回，画的时候按没写的意思；写坏了的值（类型不对）当没写", () => {
     const st = initState(), part = st.song.parts[0]!.id;
-    const newer = withScoreJson(save(st.song), (j) => { j.notation = "figures"; j.parts[0].chords = "tabs"; });
+    const newer = withScoreJson(save(st.song), (j) => { j.notation = "figures"; j.parts[0].chords = "tabs"; j.minor = 999; });   // 比这一版新的那一份（统筹「A3 的三问」：只有它的怪值原样留）
     const o = openBytes("x.mxl", newer);
-    eq(`${songViewOf(o.song).notation},${songViewOf(o.song).chordsOf(part)}`, "staff,auto", "画法按没写的意思");
+    eq(`${songViewOf(o.song).notation},${songViewOf(o.song).chordsOf(part)}`, "staff,auto", "画法按最基本的那一档");
+    assert(o.notices.some((x) => x.includes("谱种")), "打开时说一句");
+    { const same = openBytes("x.mxl", withScoreJson(save(st.song), (j) => { j.notation = "figures"; })); eq(same.song.notation, "staff", "不比这一版新的怪值 = 读成新建的那一个、不说"); eq(same.notices.length, 0); }
     const j = scoreJson(save(o.song)); eq(`${j.notation},${j.parts[0].chords}`, "figures,tabs", "原样带回");
     const bad = openBytes("x.mxl", withScoreJson(save(st.song), (j) => { j.chordTags = "no"; j.viewInC = 1; j.notation = ""; }));
     eq(JSON.stringify(viewOf(bad.song)), JSON.stringify({ notation: "staff", chordTags: true, viewInC: false, chords: "auto" }));

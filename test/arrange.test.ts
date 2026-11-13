@@ -39,12 +39,12 @@ describe("编排：存、放、导出", () => {
     st = writeDegree(writeDegree(st, 2, "near"), 3, "near");
     void _t; return st;
   };
-  it("setArrangement：去掉两头空格；写空 = 删掉这个字段；没变 = 同一个状态", async () => {
+  it("setArrangement：去掉两头空格；写空 = 明写空串（16-4 A3：每样都写）；没变 = 同一个状态", async () => {
     const { setArrangement, songOnlyPaper } = await import("../src/score/song.ts");
     const st = await two(), a = setArrangement(st, "  A×2 B ");
     eq(a.song.arrangement, "A×2 B"); eq(setArrangement(a, "A×2 B"), a);
-    eq("arrangement" in setArrangement(a, "  ").song, false);
-    eq("arrangement" in songOnlyPaper(a.song, a.song.papers[0].id), false, "本段 = 只这一张，编排不管");
+    eq(setArrangement(a, "  ").song.arrangement, "");
+    eq(songOnlyPaper(a.song, a.song.papers[0].id).arrangement, "", "本段 = 只这一张，编排不管（明写空）");
   });
   it("压平照编排：A×2 B = A 的音出两遍（抄的那遍 id 是新的），B 一遍", async () => {
     const { setArrangement, flattenPart } = await import("../src/score/song.ts");
@@ -64,7 +64,7 @@ describe("编排：存、放、导出", () => {
     const flat = strFromU8(unzipSync(bytes)["score.musicxml"]);
     eq([...flat.matchAll(/<step>([A-G])</g)].map((m) => m[1]).join(" "), "D E C", "B 的两个音在前，A 的在后");
     eq([...flat.matchAll(/<rehearsal[^>]*>([^<]*)</g)].map((m) => m[1]).join(" "), "A", "第二段起写排练记号 = 曲段名");
-    eq("arrangement" in openBytes("x.mxl", saveMxl({ song: (await two()).song, extras: emptyExtras(), app: "test", date: "2026-10-08" })).song, false, "没写 = 不落字段");
+    eq(openBytes("x.mxl", saveMxl({ song: (await two()).song, extras: emptyExtras(), app: "test", date: "2026-10-08" })).song.arrangement, "", "没写编排 = 空串（明写）");
   });
 });
 

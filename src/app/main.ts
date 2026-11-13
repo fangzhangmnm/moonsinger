@@ -20,7 +20,7 @@ import { PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type 
 import { songViewOf, textLangIn, setTextLang, TEXT_LANGS, type TextLang, setViewInC, setChordTags, setNotation, setMiddleC, setExpressions, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { foldedMarks, type FoldedMark } from "../render/expressions.ts";   // 演奏法和表情不显示时改到 / 写上了它们：轻轻说一句（7-G）
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
-import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
+import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveDataIn, withGrooveData, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, spellMidi, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../keyboard/keys.ts";
@@ -154,7 +154,7 @@ function noteStartDynsFilled(_n: number): void {
   info(_t("这首歌有 {n} 处纸开头没写力度：这一下改谱时补上了那里本来生效的那个（听起来不变），存的时候一起写进文件", { n: startDynsMissing }));
 }
 const D = createDocument(((st) => ({ st, extras: templateExtras(st.song) }))(initState()), {
-  now: () => performance.now(), normalize: (next) => withStartDyns(next),
+  now: () => performance.now(), normalize: (next) => { const n = withStartDyns(next), g = withGrooveData(n.song); return g === n.song ? n : { ...n, song: g }; },   // 风格记号用到的拍子表：插 / 换风格的那一刻抄进歌（16-4 D）
   onState: (prev, next, moved) => afterState(prev, next, moved, true), onExtras: (prev, next, locus) => afterExtras(prev, next, locus),
   onRefused: (what) => onLockRefused(what), onRestored: (r, verb, prev) => afterRestore(r, verb, prev), extraDirty: () => refHost.rev(),
   // 修改锁的第 ②③ 道（2026-11-10）：真要改的那一下带着类别去问 lock（被拒 = 门闪一下，在 lock.writeGate 里）；「现在锁着吗」只问不闪
@@ -2009,6 +2009,10 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
   let page: "look" | "layout" = focus === "layout" ? "layout" : "look";   // 打开默认「看谱」这一页
   const sel = (k: string, items: readonly (readonly [string, string])[], cur: string, disabled = false) =>
     dropdownHtml(items.map(([value, label]) => ({ value, label })), cur, { cls: "hp-sel set-sel", attrs: `data-pg="${k}"`, ...(disabled ? { disabled: true } : {}) });
+  /** 歌里写着这一版认不出来的值（只有比这一版新的文件会带来；16-4 A3）：下拉里多一项「这一版不认识（值）」、亮着它；选别的 = 换成认得的那一项。 */
+  const ODD = "?odd";
+  const known = (raw: string, items: readonly (readonly [string, string])[], cur: string): [readonly (readonly [string, string])[], string] =>
+    items.some(([v]) => v === raw) || raw === cur ? [items, cur] : [[...items, [ODD, _t("这一版不认识（{v}）", { v: raw })] as const], ODD];
   /** 「?」里的一张小对照：每个选项一行「名字 — 说明」。 */
   const defs = (rows: readonly (readonly [string, string])[]) => rows.map(([a, b]) => `<b>${a}</b> — ${b}`).join("<br>");
   const where = (s: string) => `<br><span class="set-where">${s}</span>`;
@@ -2024,7 +2028,7 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
       setItem(_t("视图"), sel("flow", [["pages", _t("页面（分页，和印出来一样）")], ["cont", _t("连续（不分页）")], ["scroll", _t("横卷（不折行，往右滚）")]], scrollFlow ? "scroll" : pageFlow ? "pages" : "cont"),
         _t("只影响屏幕上怎么看：打印和导出永远按纸分页。") + "<br>" +
         defs([[_t("页面"), _t("按纸（A4 / A5）的真实高度断页，和印出来的一样")], [_t("连续"), _t("不断页，每一行和页面视图一样，只是不分页")], [_t("横卷"), _t("每张纸一行、一直往右，横着滚；声部名钉在左边")]]) + IN_VIEW) +
-      setItem(_t("谱种"), sel("nota", [["staff", _t("五线谱")], ["jianpu", _t("简谱")], ["letters", _t("字母谱")]], look.notation),
+      setItem(_t("谱种"), sel("nota", ...known(D.st.song.notation, [["staff", _t("五线谱")], ["jianpu", _t("简谱")], ["letters", _t("字母谱")]], look.notation)),
         defs([[_t("五线谱"), _t("按音高画在五条线上")], [_t("简谱"), _t("数字 1–7（首调）")], [_t("字母谱"), _t("实际的音名 C D E F G A B，右上角写升降号、右下角写八度（中央 C = C4）")]]) + IN_SONG) +
       // 名字写这件事本身、默认那一项也说出它是什么（user 11-12 看截图：「这个看谱方式比较让人难以理解它是干什么的」；统筹：不用「方式」「专业」这类要猜的词）；
       //   叫「移调辅助」（user 11-12「我记得我们一开始定的语义是辅助功能啊…这几个看谱里面…主要就都是一些辅助功能」，统筹定名）
@@ -2050,11 +2054,11 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
         _t("单行的谱、给新手看的常用舒适；声部多的总谱常用紧凑。存进 MusicXML 的 scaling 和行距，别的软件打开也一样。") + IN_SONG) +
       setItem(_t("屏幕放不下纸的时候"), sel("reflow", [["fit", _t("不折行")], ["reflow", _t("折行")]], reflow ? "reflow" : "fit"),
         defs([[_t("不折行"), _t("整张纸缩小，行和纸上一样")], [_t("折行"), _t("按屏幕宽排，谱大一点")]]) + IN_SESSION) +
-      setItem(_t("小节号"), sel("bn", [["on", _t("每行开头")], ["off", _t("不印")]], look.barNumbers ? "on" : "off"), _t("每行最上面那条谱的左上角，小字；每张纸从 1 数，弱起算 0") + IN_SONG) +
-      setItem(_t("歌词排法"), sel("lyr", [["rhythm", _t("按节奏")], ["lyrics", _t("按歌词")]], look.lyricFit),
+      setItem(_t("小节号"), sel("bn", ...known(D.st.song.barNumbers === "line" ? "on" : D.st.song.barNumbers, [["on", _t("每行开头")], ["off", _t("不印")]], look.barNumbers ? "on" : "off")), _t("每行最上面那条谱的左上角，小字；每张纸从 1 数，弱起算 0") + IN_SONG) +
+      setItem(_t("歌词排法"), sel("lyr", ...known(D.st.song.lyricFit, [["rhythm", _t("按节奏")], ["lyrics", _t("按歌词")]], look.lyricFit)),
         defs([[_t("按节奏"), _t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 这一行一起缩一点 → 还放不下画灰")], [_t("按歌词"), _t("长的字把音推开（出版谱的老规矩）")]]) + IN_SONG) +
       // 谱上的字用哪种语言（施工单 12-4；user「页面设置是不是也应该有一个语言，影响打印？」）：这首歌的，走修改锁的「看法」（同小节号、音符密度）
-      setItem(_t("谱上的字"), sel("tl", textLangItems(), look.textLang), TEXT_LANG_HELP() + IN_SONG);
+      setItem(_t("谱上的字"), sel("tl", ...known(D.st.song.textLang, textLangItems(), look.textLang)), TEXT_LANG_HELP() + IN_SONG);
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("页面设置")}</div>` +
       setTabsHtml() +
       `<div class="set-page" data-page="look">${lookPage}</div><div class="set-page" data-page="layout">${layoutPage}</div>` +
@@ -2076,7 +2080,7 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
     if (e.target === box || v === "close") close();
   });
   box.addEventListener("change", (e) => {
-    const el = e.target as HTMLButtonElement, k = el.dataset.pg, v = el.value; if (!k) return;
+    const el = e.target as HTMLButtonElement, k = el.dataset.pg, v = el.value; if (!k || v === ODD) return;   // 「这一版不认识」那一项不是一个可选的值
     if (k === "nota") setSongLook(setNotation(D.st, v as NotationId), v === "jianpu" ? _t("简谱") : v === "letters" ? _t("字母谱") : _t("五线谱"));
     else if (k === "inc") setSongLook(setViewInC(D.st, v === "on"), `${_t("移调辅助")} ${v === "on" ? _t("按 C 调看") : _t("不用（照写的调）")}`);
     else if (k === "mc") { const n = Number(v); setSongLook(setMiddleC(D.st, n), _t("中央 C 叫 C{n}", { n })); }
@@ -2764,18 +2768,18 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
   ui.close();
   let end = toks.length; for (let j = i + 1; j < toks.length; j++) if (toks[j].kind === "groove") { end = j; break; }
   view.setSpan({ from: i + 1, to: end });   // 它管的音染色（到下一个风格记号 / 这张纸结尾）
-  const style = grooveStyle(t.style), amount = t.amount ?? 1;
+  const style = grooveDataIn(D.st.song, t.style), amount = t.amount ?? 1;   // 16-4 D：说明、摇摆、跟多少都按歌里这一份现算
   const meters = new Set([`${timeAt(toks, i).beats}/${timeAt(toks, i).beatType}`]);
   for (let j = i + 1; j < end; j++) { const u = toks[j]; if (u.kind === "time") meters.add(`${u.beats}/${u.beatType}`); }
   const hints: string[] = [];
-  if (!style && t.style !== "none") hints.push(_t("这一版不认识「{style}」：不加轻重（换一个风格就好）", { style: t.style }));
+  if (!style && t.style !== "none") hints.push(_t("这首歌里没有「{style}」这种风格的拍子表，现行的预设里也没有：这个记号不起作用（不加轻重、不摇，不拿别的风格顶上）。换一个风格就好", { style: t.style }));
   if (style && t.style !== "none") for (const m of meters) { const [b, bt] = m.split("/").map(Number), d = describeGroove(style, b, bt); if (d) hints.push(`${grooveName(t.style)} ${m}：${d}`); }   // 这个风格在这儿怎么轻重（从数据现算）
   if (style && t.style !== "none") {
     const derived = [...meters].filter((m) => { const [b, bt] = m.split("/").map(Number); return grooveTable(style, b, bt)?.derived; });
     const none = [...meters].filter((m) => { const [b, bt] = m.split("/").map(Number); return !grooveTable(style, b, bt); });
     if (derived.length) hints.push(_t("{p} 这个预设没列：按古典的强弱推{m}", { p: derived.join("、"), m: derived.some((m) => m.endsWith("/8") && Number(m.split("/")[0]) % 3 !== 0 && Number(m.split("/")[0]) > 3) ? _t("（几个八分一组谱上没记，按 2 + 2 + … + 3 推）") : "" }));
     if (none.length) hints.push(_t("{p}：这个预设不加轻重", { p: none.join("、") }));
-    if (style.swing) { const r = swingRatio(t.style, amount), [lo, hi] = style.swing.range;   // 摇摆（v0.9.36）：按数据现算（纪律：做到什么程度明说）
+    if (style.swing) { const r = swingRatio(style, amount), [lo, hi] = style.swing.range;   // 摇摆（v0.9.36）：按数据现算（纪律：做到什么程度明说）
       hints.push(_t("摇摆：一拍里前一个八分占 {p}%（直 = 50%，三连音感 ≈ 67%；幅度只放大 / 缩小比直的多出来的那一截，夹在 {p2}–{p3}%）。这张纸上所有声部一起摇（小月相也是，不分跟多少）；写成连音的音、6/8 这类拍号不摇", { p: Math.round(r * 100), p2: Math.round(lo * 100), p3: Math.round(hi * 100) })); }
     const paper = D.st.song.papers.find((p) => p.id === D.st.at.paper);
     const who = D.st.song.parts.filter((p) => paper?.tracks[p.id]).map((p) => {

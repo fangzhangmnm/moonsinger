@@ -8,6 +8,7 @@ import { paperOf } from "../../../src/score/paper.ts";
 import { percKindOf } from "../../../src/gm/percussion.ts";
 import type { PartView } from "../../../src/render/engrave.ts";
 import { asOpened } from "./opened.ts";
+import { NEW_SONG_LOOK } from "../../../src/score/song.ts";
 
 const Q = TPQ, E = Q / 2, S = Q / 4, H = Q * 2, W = Q * 4, T3 = (E * 2) / 3;
 type Step = "C" | "D" | "E" | "F" | "G" | "A" | "B";
@@ -97,7 +98,7 @@ export function fullSong(): Song {
   for (const x of pedals) (x as { id: number }).id = id++;
 
   return asOpened({   // app 打开之后的样子（每张纸开头补力度，第八刀 8-7）
-    title: "排版分家守卫歌", textLang: "ui", credits: "词曲：守卫\n编：小弟", arrangement: "A B (A)×2 Z", paper: paperOf("A5"),
+    ...NEW_SONG_LOOK, title: "排版分家守卫歌", textLang: "ui", credits: "词曲：守卫\n编：小弟", arrangement: "A B (A)×2 Z", paper: paperOf("A5"),
     parts: [
       { id: "V", role: "r1", mic: "m1" }, { id: "P", role: "r2", mic: "m2" }, { id: "B", role: "r3", mic: "m3" }, { id: "K", role: "r4", mic: "m4" },
       { id: "X", role: "r5", mic: "m5" }, { id: "Y", role: "r6", mic: "m6", host: "X" },

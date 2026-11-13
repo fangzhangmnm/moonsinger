@@ -1,6 +1,6 @@
 import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type Hum } from "../score/song.ts";
 import { rollHitVelocity, lightMarks, type PerfSpec, type VelDb } from "../score/perform.ts";
-import { type GrooveStyle } from "../score/groove.ts";
+import { type GrooveData } from "../score/groove.ts";
 import { type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
 import { type SfxInfo } from "../gm/sf-key.ts";
 import type { FxV2 } from "../format/contract.ts";
@@ -35,7 +35,7 @@ export interface PerformerInfo {
     } | null;
     chunk: SingChunkMode;
     /** 拍子轻重：这位跟多少（按乐器类别，src/score/groove.ts followOf）。 */
-    follow: (s: GrooveStyle) => number;
+    follow: (s: GrooveData) => number;
     /** 跟着演奏者走的效果链（CandidateV2.chain；刀 4）。 */
     chain?: FxV2[];
     /** 着力点（v0.10.27；鼓 / 音效）：敲这个键时采样开头到「砸下去那一下」几秒——录音房提前这么多开始放，砸在写的那一拍上（反向镲 1.4 s）。

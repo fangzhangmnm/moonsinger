@@ -1,5 +1,8 @@
 import { type Paper, type PaperKind, type Density } from "./paper.ts";
 import { type Dir, type Pitch, type Step } from "./pitch.ts";
+import type { GrooveStyle } from "./grooves.gen.ts";
+/** 一种风格出声用的五样（16-4 D：score.json grooves 按值存；插风格记号的那一刻从现行预设抄，src/score/groove.ts withGrooveData）。名字不抄（显示照现行的表）。 */
+export type GrooveData = Pick<GrooveStyle, "meters" | "phase" | "fallback" | "follow" | "swing">;
 /** 一个四分音符的 tick 数。 */
 export declare const TPQ = 1680;
 /** 第一版拍子单位 = 四分音符（x/4 拍号）。 */
@@ -225,29 +228,33 @@ export interface Song {
     rights?: string;
     /** 编排：按什么顺序放哪几张纸（一行字：曲段名 / 序号、×N、括号、最后一个 [循环段]；src/score/arrange.ts）。没有 = 每张纸按顺序各放一遍。
      *  存档 = score.json 可选字段 arrangement（2026-10-08 深夜 Opus 5.5，user「a flat 编排 list 同意」「编排…就是总paper的顶上说一下…就是一行」）。 */
-    arrangement?: string;
+    arrangement: string;
     /** 歌词怎么排（v0.9.40；user 2026-10-10「先试下你说的两个歌词开关吧，approved」→「默认用修歌词的那个排版方式吧」）：没有 = 按节奏（默认：音的位置只看时值，
      *  歌词让路：借旁边的空 → 小一号 → 上下错开 → 还放不下画灰说「挤了」）；lyrics = 按歌词（长字把音推开，出版谱的老规矩）。存档 = score.json 可选字段 lyricFit（只写 "lyrics"）。 */
-    lyricFit?: "lyrics";
+    lyricFit: string;
     /** 小节号（v0.9.42；user「小节号要，可以页面设置toggle，默认是每行开头有」）：没有 = 每行开头印；off = 不印。存档 = score.json 可选字段 barNumbers（只写 "off"）。 */
-    barNumbers?: "off";
+    barNumbers: string;
     /** 音距（v0.16.34，刀 3；src/render/spacing.ts）：没有 = 正常（短音符压紧：十六分 1.9、三十二分 1.6 个线间距）；tight = 紧（整条再收一截）。
      *  user 11-08「正常人都会画密」→ 11-09「可以再紧一点，你这个新版本算正常，然后加一个紧凑的」「松可能不要」。存档 = score.json 可选字段 spacing（只写 "tight"；
      *  v0.16.33 那一小时写的 denseShort: "off" 读成正常）。 */
-    spacing?: "tight";
+    spacing: string;
     /** 这首歌怎么看的三样（谱面分家第三刀，score minor 5；读 / 改只走 src/score/song-view.ts，没写的意思冻住在那里）：
      *  notation = 谱种（只写不是五线谱的；不认识的原样留着）；chordTags = 和弦标级数（只写 false）；viewInC = 按 C 调看（只写 true）。存档 = score.json 同名可选字段。 */
-    notation?: string;
-    chordTags?: false;
-    viewInC?: true;
+    notation: string;
+    chordTags: boolean;
+    viewInC: boolean;
     /** 字母谱里中央 C 叫 C 几（score minor 6，7-B；只写不是 4 的；没写 = C4。读 / 改只走 src/score/song-view.ts）。 */
-    middleC?: number;
+    middleC: number;
     /** 演奏法和表情显示不显示（score minor 8，7-G；只写 false = 不显示；没写 = 显示。读 / 改只走 src/score/song-view.ts）。只管画：播放照写的来。 */
-    expressions?: false;
+    expressions: boolean;
     /** 谱上的字用哪种语言（score minor 10，施工单 12-4，2026-11-12；user「页面设置是不是也应该有一个语言，影响打印？」）："ui" = 跟着界面；"zh" / "en" = 界面语言里的一种；
      *  不认识的（更新的版本写的）原样留着、写回去，画的时候当跟着界面。只管软件自己生成、印出来的字（声部名是目录 / 预设里的乐器名时、简谱鼓的图例、「编排」、出声的换气「吸 / 深吸」）；
      *  歌词、歌名、作者栏、自己起的声部名不动。**必填**：没写的意思在进门那一处定一次（src/format/project.ts songViewFields：没写 = "ui"），新歌明着写 "ui"；运行时永远有值。读 / 改只走 src/score/song-view.ts。 */
     textLang: string;
+    /** 这首歌的风格记号用到的那几种风格，每种出声用的五样（16-4 D，score minor 12；风格 id → GrooveData）。轻重、摇摆、跟多少、小菜单里的说明都只读这一份。
+     *  插风格记号 / 换风格的那一刻从现行预设按值抄（withGrooveData，在文档的写入口规整里）；老歌没有 = 读文件的门口从现行预设补。
+     *  记号指着的风格这里没有（现行预设里也没有）= 这个记号不起作用、画灰、小菜单里明说，不拿别的风格顶上。 */
+    grooves?: Record<string, GrooveData>;
     parts: PartDef[];
     papers: PaperSeg[];
 }
@@ -319,6 +326,13 @@ export declare function headTokens(m?: {
 }, id0?: number): Token[];
 export declare const FIRST_PART = "P1", FIRST_PAPER = "p1";
 /** 新歌：一张纸、一个声部（P1 → 角色 r1 → 麦克风 m1），哼的字默认「嗯」（user 2026-10-07「月读不是有啦嗯哦吗，默认嗯」）。 */
+/** 歌级的显示设置（16-4 A3，score.json 同名键）。 */
+export type SongLookKey = "arrangement" | "lyricFit" | "barNumbers" | "spacing" | "notation" | "chordTags" | "viewInC" | "middleC" | "expressions" | "textLang";
+/** 新建的歌写进去的歌级显示设置（16-4 A3；模板的「谱的扩展」那一块就是这一个对象——src/format/template.ts 原样列出，不另抄）。
+ *  值是原来「没写 = 什么」那张表（song-view.ts 的 UNWRITTEN，16-4 A3 删了）里的同一组，一个没改：编排空、歌词按节奏、小节号每行开头、音距正常、五线谱、和弦标级数、
+ *  不按 C 调看、中央 C 叫 C4、演奏法和表情显示、谱上的字跟着界面。
+ *  **只给构造函数用**（emptySong / songOf；守卫 test/template.test.ts：src/score 里这个名字只出现在这两个函数里）。读的一侧（songViewOf、排版、出声）照歌里写着的读，不碰它。 */
+export declare const NEW_SONG_LOOK: Readonly<Pick<Song, SongLookKey>>;
 export declare function emptySong(m?: {
     fifths?: number;
     beats?: number;

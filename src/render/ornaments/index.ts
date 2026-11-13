@@ -3,7 +3,7 @@
 //   每一样都按行登记（attach(行, 道, …)；统筹审第四刀接口第 3 条：每一行按它自己那种画法的道的先后贴）；一次跨好几行的（发夹、房子）拆成一行一个。
 //   这里不是框架（frame/ 不认字形）：画法 import 它；它认得的只有记号表、文字样式和 Bravura 的速度音符。
 import { DYNS, type Song, type PaperSeg, type Token, type GrooveTok, type NavTok, type PedalKind, PEDAL_KINDS, NAV_LABEL, endingLabel, tempoWord, rampSource } from "../../score/song.ts";
-import { grooveLabel, grooveStyle } from "../../score/groove.ts";
+import { grooveLabel, grooveDataIn } from "../../score/groove.ts";
 import type { NotationId } from "../../score/song-view.ts";
 import { TEMPO_EM, type TextRole } from "../text/index.ts";
 import { GLYPH } from "../smufl.ts";
@@ -91,7 +91,7 @@ export function layTempo(c: OrnCtx, r: number, x0: number, v: number, cls: strin
 /** 风格记号（拍子轻重）：斜体字、和后面那个音左对齐；不认识的预设（以后的版本写的）= 灰字 + 说明（纪律）。挂件第 8 样：速度之后、贴天际线往上 0.5（挤了自然叠上去）。 */
 export function layGroove(c: OrnCtx, u: Unit): void {
   const { P, tx, TR, mw, prims, dyns, tokens } = c;
-  const gt = tokens[u.index] as GrooveTok, gr = c.row(u.system), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
+  const gt = tokens[u.index] as GrooveTok, gr = c.row(u.system), data = grooveDataIn(c.song, gt.style), label = grooveLabel(gt, data), known = gt.style === "none" || !!data;   // 16-4 D：歌里没有这种风格的拍子表 = 不起作用、画灰
   const fs = tx("groove-mark"), gw = P(mw("groove-mark", label)), gx = P(u.x + 0.3);
   c.attach(gr, "groove", () => c.placeAbove(gr, 0.5, (gy) => {
     prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });

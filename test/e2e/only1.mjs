@@ -29,14 +29,14 @@ await pickOnPage(p, '[data-pg="lyr"]', "lyrics"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === "lyrics" && (await ddValue(p, '[data-pg="lyr"]')) === "lyrics", "选「按歌词」= 歌里记着、下拉跟着");
 await p.keyboard.press("Escape"); await p.mouse.click(5, 880); await p.waitForTimeout(150);
 await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
-check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === undefined, "撤销 = 回到按节奏");
+check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === "rhythm", "撤销 = 回到按节奏（16-4 A3：明写）");
 // 小节号（v0.9.42）：纸的设置里「每行开头 / 不印」，默认每行开头；进歌里
 await openSheet();
 check((await ddValue(p, '[data-pg="bn"]')) === "on", "页面设置里有小节号，默认「每行开头」");
 await pickOnPage(p, '[data-pg="bn"]', "off"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === "off" && (await p.$$eval("#score text.bar-no", (e) => e.length)) === 0, "选「不印」= 歌里记着、谱上没有小节号");
 await pickOnPage(p, '[data-pg="bn"]', "on"); await p.waitForTimeout(200);
-check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === undefined, "再选「每行开头」= 回到默认");
+check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === "line", "再选「每行开头」= 明写 line（16-4 A3）");
 // 别家文件写的谱高（统筹 2026-11-12）：音符密度下拉如实显示「自定义（6.5 毫米）」（user「得如实那么说」）；换纸带着它；选了舒适 / 紧凑才换
 await p.keyboard.press("Escape"); await p.mouse.click(5, 880); await p.waitForTimeout(150);
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, song: { ...s.song, paper: { kind: "A5", widthMm: 148, heightMm: 210, marginMm: { l: 16, r: 16, t: 16, b: 16 }, staffMm: 6.5 } } }); }); await p.waitForTimeout(250);

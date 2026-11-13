@@ -3,7 +3,7 @@
 //   「预设可以，你给音乐仓鼠发一个工单，做成数据驱动的」（仓鼠 d960331 grooves-v1.json）。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { TPQ, initState, tr, type Token, type NoteTok, type Song } from "../src/score/song.ts";
-import { classicalWeights, grooveTable, grooveStyle, meterPositions, grooveWeights, grooveMapOf, grooveCategory, followOf, GROOVE_STYLES } from "../src/score/groove.ts";
+import { classicalWeights, grooveTable, grooveStyle, meterPositions, grooveWeights, grooveMapOf, grooveCategory, followOf, GROOVE_STYLES, withGrooveData } from "../src/score/groove.ts";
 import { noteVelocities, gainSegments } from "../src/score/perform.ts";
 import { DYNAMICS_DB } from "../src/format/template.ts";
 import { gainSpec, velSpec } from "./fixtures/spec.ts";
@@ -16,7 +16,7 @@ let nid = 5000;
 const head = () => tr(initState()).slice(0, 3);   // 调 / 拍（4/4）/ 速度 90
 const n = (dur = TPQ, extra: Partial<NoteTok> = {}): Token => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 4 }, dur, lyric: null, ...extra });
 const gr = (style: string, amount?: number): Token => ({ kind: "groove", id: nid++, style, ...(amount !== undefined ? { amount } : {}) });
-const one = (toks: Token[]): Song => { const s = initState().song; return { ...s, papers: [{ ...s.papers[0], tracks: { [s.parts[0].id]: toks } }] }; };
+const one = (toks: Token[]): Song => { const s = initState().song; return withGrooveData({ ...s, papers: [{ ...s.papers[0], tracks: { [s.parts[0].id]: toks } }] }); };   // app 写风格记号那一刻把拍子表抄进歌（16-4 D）
 const full = () => 1;
 
 describe("拍子轻重：数据", () => {
@@ -114,7 +114,7 @@ describe("拍子轻重：存档 / 简谱文字", () => {
     const plain = w.xml.replace(/ id="groove[^"]*"/, "");
     eq(readMusicXml(plain, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.some((t) => t.kind === "groove"), false);
   });
-  it("整首存 / 开（.mxl）：风格记号在纸的 MusicXML 正本里、读回来一样；JSON 不多字段", async () => {
+  it("整首存 / 开（.mxl）：风格记号在纸的 MusicXML 正本里、读回来一样；score.json 只多这首歌用到的风格的拍子表（16-4 D）", async () => {
     const { saveMxl, openBytes, emptyExtras } = await import("../src/format/project.ts");
     const { unzipSync, strFromU8 } = await import("../vendor/fflate/fflate.esm.js");
     const toks = [...head(), gr("march", 0.5), n(), n()], song = one(toks);
@@ -122,7 +122,10 @@ describe("拍子轻重：存档 / 简谱文字", () => {
     const o = openBytes("x.mxl", bytes), back = o.song.papers[0].tracks[o.song.parts[0].id].filter((t) => t.kind === "groove");
     eq(JSON.stringify(back.map((t) => [(t as { style: string }).style, (t as { amount?: number }).amount])), JSON.stringify([["march", 0.5]]));
     eq(o.notices.length, 0);
-    assert(!strFromU8(files[".moonsinger/score.json"]).includes("groove"), "score.json 里没有风格记号");
+    { const sj = JSON.parse(strFromU8(files[".moonsinger/score.json"]));   // 记号在纸的 MusicXML 里；score.json 只有这首歌用到的风格的拍子表（16-4 D）
+      eq(Object.keys(sj.grooves).join(), "march", "score.json 里只有用到的那一种的拍子表");
+      eq(JSON.stringify(Object.keys(sj.grooves.march).sort()), JSON.stringify(["fallback", "follow", "meters", "phase", "swing"]), "只抄出声用的五样，名字不抄");
+      eq(JSON.stringify(o.song.grooves?.march), JSON.stringify(sj.grooves.march), "读回来照文件里那一份"); }
   });
   it("简谱文字：[G=pop] / [G=waltz:150] 往返", () => {
     const txt = toJianpu([gr("pop"), n(), gr("waltz", 1.5), n()], 0);
@@ -164,6 +167,35 @@ describe("拍子轻重：两小节一轮（克拉维）", () => {
     eq(JSON.stringify([back.style, !!back.shift]), JSON.stringify(["latin", true]));
     const txt = toJianpu([t, n()], 0); assert(txt.includes("[G=latin/2-3]"), txt);
     const re = fromJianpu(txt, 0)!.find((x) => x.kind === "groove") as { shift?: boolean }; eq(!!re.shift, true);
+  });
+});
+describe("风格的拍子表按值在歌里（16-4 D）", () => {
+  it("出声只读歌里那一份：改了歌里的表 = 轻重跟着变（不看现行预设）；歌里没有、预设里也没有 = 不起作用（不加轻重、不摇）", () => {
+    const toks = [...head(), gr("pop"), n(), n(), n(), n()], s0 = one(toks), w0 = grooveWeights(toks, [0], grooveMapOf(s0), full);
+    const mine = structuredClone(s0); mine.grooves!.pop!.meters["4/4"]!.weights = mine.grooves!.pop!.meters["4/4"]!.weights.map(() => -1);
+    const w1 = grooveWeights(toks, [0], grooveMapOf(mine), full);
+    assert([...w1.values()].every((v) => v < 0) && JSON.stringify([...w0]) !== JSON.stringify([...w1]), "照歌里那一份");
+    const ghost = [...head(), gr("no-such-style"), n(), n()], sg = one(ghost);
+    eq(sg.grooves?.["no-such-style"], undefined, "预设里没有 = 不抄"); eq(grooveWeights(ghost, [0], grooveMapOf(sg), full).size, 0, "不起作用");
+    const lost = { ...s0, grooves: {} }; eq(grooveWeights(toks, [0], grooveMapOf(lost), full).size, 0, "歌里没有这一份 = 不起作用（不回头查预设）");
+  });
+  it("插 / 换风格的那一刻抄进歌（withGrooveData）：用到的才抄、已有的不覆盖；老歌（score.json 没有 grooves）= 门口从预设补，不说话", async () => {
+    const s = one([...head(), gr("waltz"), n()]);
+    eq(Object.keys(s.grooves ?? {}).join(), "waltz");
+    const mine = structuredClone(s); mine.grooves!.waltz!.fallback = "none"; eq(withGrooveData(mine), mine, "已有的不动、原样返回");
+    const { saveMxl, openBytes, emptyExtras } = await import("../src/format/project.ts");
+    const { unzipSync, zipSync, strFromU8, strToU8 } = await import("../vendor/fflate/fflate.esm.js");
+    const z = unzipSync(saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-11-13" })), j = JSON.parse(strFromU8(z[".moonsinger/score.json"]!));
+    delete j.grooves; z[".moonsinger/score.json"] = strToU8(JSON.stringify(j));
+    const o = openBytes("old.mxl", zipSync(z));
+    eq(JSON.stringify(o.song.grooves?.waltz), JSON.stringify(s.grooves!.waltz), "门口补 = 现行预设那五样"); eq(o.notices.length, 0, "不说话");
+  });
+  it("谱上：歌里没有这种风格的拍子表 = 风格记号画灰", async () => {
+    const { engrave } = await import("../src/render/engrave.ts");
+    const { createTextMeasure } = await import("../src/render/text/index.ts");
+    const s = one([...head(), gr("no-such-style"), n()]), st = { ...initState(s) };
+    const L = engrave(st.song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], locale: "zh", measure: createTextMeasure((x: string) => x.length * 10) } as never);
+    assert(L.prims.some((p: { cls?: string }) => (p.cls ?? "").includes("groove-unknown")), "画灰");
   });
 });
 

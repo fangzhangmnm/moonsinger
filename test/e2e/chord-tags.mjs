@@ -28,7 +28,7 @@ await setChord("off");
 check((await tags()) === "" && (await xs()) === x0, "关 = 没了，音的位置一样（不动排版）", `${x0} / ${await xs()}`);
 check((await songTags()) === false, "关 = 写进歌里（chordTags: false）", String(await songTags()));
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
-check((await tags()) === "V7 I" && (await songTags()) === undefined, "撤销 = 又标上了（进撤销栈）", `${await tags()} / ${await songTags()}`);
+check((await tags()) === "V7 I" && (await songTags()) === true, "撤销 = 又标上了（进撤销栈；16-4 A3：明写 true）", `${await tags()} / ${await songTags()}`);
 await p.keyboard.press("Control+Shift+z"); await p.waitForTimeout(250);
 check((await tags()) === "", "重做 = 又没了", await tags());
 await setChord("on");

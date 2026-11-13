@@ -87,7 +87,7 @@ check(await hidden(), "重做：同理");
   await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
   check((await fileSig()) === sig0, "锁着按「存」：文件一个字节都没变");
   await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
-  check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === undefined, "撤销：翻回去（看法那一格锁着也能翻）");
+  check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === false, "撤销：翻回去（看法那一格锁着也能翻；16-4 A3：明写 false）");
   await p.evaluate(() => { const m = window.__moonsinger; m.openHeader(m.state().at.part); }); await p.waitForTimeout(150);
   const pe = await p.evaluate(() => { const g = (q) => { const el = document.querySelector(q); return el ? getComputedStyle(el).pointerEvents : "没有"; }; return { broken: g('.header-panel [data-hp="broken"]'), key: g('.header-panel [data-hp="key"]') }; });
   check(pe.broken === "auto" && pe.key === "none", "谱头面板：「分解和弦」锁着能切（看法），调号改不动", JSON.stringify(pe));
@@ -181,7 +181,7 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
 // ── 页面设置「版面」那几样走真文件（7-C：纸张 / 版式 / 小节号 / 歌词排法 = 看法）：锁着都切得动、门不闪、存不进、重开原样；解了切紧凑、存 = 文件里是紧凑 ──
 { const chip = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
   const close = async () => { await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
-  const song = () => p.evaluate(() => { const s = window.__moonsinger.state().song; return { paper: s.paper?.kind ?? "A5", density: s.paper?.density ?? "cozy", bn: s.barNumbers ?? "on", lyr: s.lyricFit ?? "rhythm" }; });
+  const song = () => p.evaluate(() => { const s = window.__moonsinger.state().song; return { paper: s.paper?.kind ?? "A5", density: s.paper?.density ?? "cozy", bn: s.barNumbers === "line" ? "on" : s.barNumbers, lyr: s.lyricFit }; });   // 16-4 A3：歌里明写
   const rowsY = () => p.evaluate(() => window.__moonsinger.layout().systems.map((r) => `${Math.round(r.staffTop)}-${Math.round(r.bottom)}`).join(","));   // 每行谱的上沿 / 下沿（紧凑 = 谱小、行距收）
   const fileXml = async () => { const arr = await p.evaluate(async (name) => { const f = await (await (await navigator.storage.getDirectory()).getFileHandle(name)).getFile(); return [...new Uint8Array(await f.arrayBuffer())]; }, FILE);
     const z = unzipSync(new Uint8Array(arr)); return z["score.musicxml"] ? strFromU8(z["score.musicxml"]) : ""; };

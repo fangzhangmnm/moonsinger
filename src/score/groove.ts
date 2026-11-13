@@ -6,22 +6,37 @@
 //   谱上写了音头记号（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）的音 = 写的说了算，拍子轻重不叠上去（「音的强度只能有一种」）。
 //   连过来的音（tie）不是新的音头，不算。摇摆（时值）v0.9.36 起接了：timeMapOf（下面）把它做进放的时候的时间表，三种演奏者同一个扭曲（song.ts swingDelta）。
 import { _t, lang } from "../i18n/index.ts";
-import { type Token, type NoteTok, type Song, type PaperSeg, type GrooveTok, type TempoMap, WHOLE, TPQ, ATTACKS, DEFAULT_TIME, DEFAULT_BPM, artOf, isTimed, paperTicks, tempoMapOf, tempoOwner } from "./song.ts";
+import { type Token, type NoteTok, type Song, type PaperSeg, type GrooveTok, type GrooveData, type TempoMap, WHOLE, TPQ, ATTACKS, DEFAULT_TIME, DEFAULT_BPM, artOf, isTimed, paperTicks, tempoMapOf, tempoOwner } from "./song.ts";
 import { expandPaper } from "./repeats.ts";
 import { GROOVE_STYLES, type GrooveStyle } from "./grooves.gen.ts";
 
-export { GROOVE_STYLES, type GrooveStyle };
+export { GROOVE_STYLES, type GrooveStyle, type GrooveData };
+/** 现行预设（选风格、显示名字、插记号那一刻抄进歌用；出声和说明只读歌里那一份，见 grooveDataIn）。 */
 export const grooveStyle = (id: string): GrooveStyle | null => GROOVE_STYLES.find((s) => s.id === id) ?? null;
+/** 一种预设出声用的那五样（按值抄一份）。 */
+export const grooveDataOf = (s: GrooveStyle): GrooveData => structuredClone({ meters: s.meters, phase: s.phase, fallback: s.fallback, follow: s.follow, swing: s.swing });
+/** 歌里这种风格的那一份（16-4 D）；没有 = null = 这个记号不起作用。"none"（不加轻重）不需要数据。 */
+export const grooveDataIn = (song: Pick<Song, "grooves">, style: string): GrooveData | null => (style === "none" ? null : song.grooves?.[style] ?? null);
+/** 插风格记号 / 换风格的那一刻按值抄进歌（16-4 D）：谱上用到、歌里还没有的风格，从现行预设抄那五样；预设里也没有 = 不抄（记号不起作用、画灰）。
+ *  已经有的不动（不拿现行预设覆盖歌里那一份）。没有要加的 = 原样返回同一个对象。文档写入口的规整（main.ts normalize）和读文件的门口都走它。 */
+export function withGrooveData(song: Song): Song {
+  let add: Record<string, GrooveData> | null = null;
+  for (const p of song.papers) for (const toks of Object.values(p.tracks)) for (const t of toks) {
+    if (t.kind !== "groove" || t.style === "none" || song.grooves?.[t.style] || add?.[t.style]) continue;
+    const s = grooveStyle(t.style); if (s) (add ??= {})[t.style] = grooveDataOf(s);
+  }
+  return add ? { ...song, grooves: { ...(song.grooves ?? {}), ...add } } : song;
+}
 /** 预设的名字（"none" = 「不加轻重」，比预设名「无」好懂）；不认识的预设（以后的版本写的）= 原样显示 id。 */
 export const grooveName = (style: string): string => { const s = grooveStyle(style); return style === "none" ? _t("不加轻重") : s ? (lang() === "zh" ? s.name.zh : s.name.en) : style; };
 /** 预设的英文名（谱面语言，同速度的 Andante；user「风格名用英文」）："none" = none；不认识的预设 = 原样 id。 */
 export const grooveNameEn = (style: string): string => { const s = grooveStyle(style); return style === "none" ? "none" : s ? s.name.en : style; };
 /** 谱上 / MusicXML 里写的字：「Style: Classical」（光写名字像谜语，user「光说一个古典比较谜语人，说风格：古典」；
  *  语言对齐记谱：拉丁不用于演奏指示，古典传统是意大利文、流行 / 爵士谱的风格写英文——user「风格名用英文」）。 */
-export const grooveLabel = (t: Pick<GrooveTok, "style" | "amount" | "shift">): string =>
-  `Style: ${grooveNameEn(t.style)}${t.shift && grooveHasPhase(grooveStyle(t.style)) ? " 2-3" : ""}${t.amount !== undefined && t.amount !== 1 && t.style !== "none" ? ` ×${t.amount}` : ""}`;
+export const grooveLabel = (t: Pick<GrooveTok, "style" | "amount" | "shift">, data: GrooveData | null = grooveStyle(t.style)): string =>
+  `Style: ${grooveNameEn(t.style)}${t.shift && grooveHasPhase(data) ? " 2-3" : ""}${t.amount !== undefined && t.amount !== 1 && t.style !== "none" ? ` ×${t.amount}` : ""}`;
 /** 这个风格有没有两小节一轮的拍号（克拉维）：有 = 菜单里给「3-2 / 2-3」（错开一小节）。 */
-export const grooveHasPhase = (s: GrooveStyle | null): boolean => !!s && Object.values(s.meters).some((m) => (m.bars ?? 1) > 1);
+export const grooveHasPhase = (s: GrooveData | null): boolean => !!s && Object.values(s.meters).some((m) => (m.bars ?? 1) > 1);
 /** 一拍拍分组（同 classicalWeights）：每拍几个十六分 + 拍里第一层细分的步长。 */
 function beatGroups(beats: number, beatType: number): { groups: number[]; sub: number } | null {
   if (!Number.isInteger((beats * 16) / beatType)) return null;
@@ -32,7 +47,7 @@ function beatGroups(beats: number, beatType: number): { groups: number[]; sub: n
 const WORD = (w: number) => (w >= 0.95 ? _t("最重") : w >= 0.7 ? _t("很重") : w >= 0.45 ? _t("重") : w > 0.05 ? _t("稍重") : w > -0.05 ? _t("不变") : w > -0.35 ? _t("稍轻") : _t("轻"));
 const BEAT_NO = [_t("一"), _t("二"), _t("三"), _t("四"), _t("五"), _t("六"), _t("七"), _t("八"), _t("九"), _t("十"), _t("十一"), _t("十二")];
 /** 人话说这个风格在这个拍号下怎么轻重（从数据现算，数据变了说明跟着变）：「一拍 最重 · 二拍 不变 · …；半拍 稍轻；更细的 轻」。 */
-export function describeGroove(s: GrooveStyle, beats: number, beatType: number): string | null {
+export function describeGroove(s: GrooveData, beats: number, beatType: number): string | null {
   const tb = grooveTable(s, beats, beatType), bg = beatGroups(beats, beatType);
   if (!tb || !bg) return null;
   const starts: number[] = []; let at = 0; for (const g of bg.groups) { starts.push(at); at += g; }
@@ -69,7 +84,7 @@ export function classicalWeights(beats: number, beatType: number): { grid: numbe
   return { grid, weights };
 }
 /** 这个风格在这个拍号下的表：列了的用列的；没列 = 按 fallback（古典层级推 / 不加）。 */
-export function grooveTable(s: GrooveStyle, beats: number, beatType: number): { grid: number; weights: number[]; bars: number; derived: boolean } | null {
+export function grooveTable(s: GrooveData, beats: number, beatType: number): { grid: number; weights: number[]; bars: number; derived: boolean } | null {
   const m = s.meters[`${beats}/${beatType}`];
   if (m) return { grid: m.grid, weights: m.weights, bars: m.bars ?? 1, derived: false };
   const c = s.fallback === "classical" ? classicalWeights(beats, beatType) : null;
@@ -100,38 +115,38 @@ export function meterPositions(tokens: readonly Token[], bounds: readonly number
 
 /** 整首（照放的顺序）的风格记号：每张纸开头回到「不加」（风格只管它那张纸）；纸里任何一行写的都算（整张纸一起听），同一时刻两行都写了 = 上面那行。
  *  tick = 压平后从头数（flattenPart 把每张纸补到最长那条的长度，所以纸的起点 = 前面各张纸长度之和）。 */
-export type GrooveMap = { tick: number; style: string | null; amount: number; shift?: boolean }[];   // shift = 错开一小节（2-3）
+export type GrooveMap = { tick: number; style: string | null; amount: number; shift?: boolean; /** 歌里这种风格的那一份（16-4 D）；null = 不起作用 */ data: GrooveData | null }[];   // shift = 错开一小节（2-3）
 export function grooveMapOf(song: Song, order?: readonly string[]): GrooveMap {
   const seq: PaperSeg[] = order ? order.flatMap((id) => song.papers.filter((p) => p.id === id)) : song.papers.filter((p) => !p.hidden);
   const out: GrooveMap = [];
   let at = 0;
   for (const p0 of seq) {
     const p = expandPaper(song, p0, () => -1);   // 谱内反复：和压平（flattenPart）同一个展开，tick 才对得上
-    out.push({ tick: at, style: null, amount: 1 });
+    out.push({ tick: at, style: null, amount: 1, data: null });
     const here: { tick: number; style: string; amount: number; shift: boolean; row: number }[] = [];
     song.parts.forEach((part, row) => {
       let t = 0;
       for (const tok of p.tracks[part.id] ?? []) { if (tok.kind === "groove") here.push({ tick: at + t, style: tok.style, amount: tok.amount ?? 1, shift: !!tok.shift, row }); else if (isTimed(tok)) t += tok.dur; }
     });
     here.sort((a, b) => a.tick - b.tick || b.row - a.row);   // 同一时刻：下面的先、上面的后（后来的算数）
-    for (const g of here) out.push({ tick: g.tick, style: g.style === "none" ? null : g.style, amount: g.amount, ...(g.shift ? { shift: true } : {}) });
+    for (const g of here) out.push({ tick: g.tick, style: g.style === "none" ? null : g.style, amount: g.amount, ...(g.shift ? { shift: true } : {}), data: grooveDataIn(song, g.style) });
     at += paperTicks(p);
   }
   return out;
 }
 
 /** 一个声部（压平、照同一个顺序）每个音的拍子轻重（index → 权重 × 幅度 × 跟多少；0 的不放）。follow = 这位演奏者对这个风格跟多少（0–1）。 */
-export function grooveWeights(tokens: readonly Token[], bounds: readonly number[], map: GrooveMap, follow: (s: GrooveStyle) => number): Map<number, number> {
+export function grooveWeights(tokens: readonly Token[], bounds: readonly number[], map: GrooveMap, follow: (s: GrooveData) => number): Map<number, number> {
   const out = new Map<number, number>();
-  if (!map.some((g) => g.style)) return out;
+  if (!map.some((g) => g.data)) return out;
   const pos = meterPositions(tokens, bounds);
   let tick = 0, k = -1, bar0: number | null = null;   // bar0 = 这个风格记号从第几小节起（两小节一轮的风格按它数单双）
   tokens.forEach((t, i) => {
     if (!isTimed(t)) return;
     while (k + 1 < map.length && map[k + 1].tick <= tick) { k++; bar0 = null; }
     const g = k >= 0 ? map[k] : null; tick += t.dur;
-    if (!g?.style || t.kind !== "note") return;
-    const p = pos.get(i), s = grooveStyle(g.style); if (!p || !s) return;
+    if (!g?.data || t.kind !== "note") return;
+    const p = pos.get(i), s = g.data; if (!p) return;
     if (bar0 === null) bar0 = p.pickup ? p.bar + 1 : p.bar;   // 记号之后第一个音所在的小节 = 一轮的第一小节（是弱起 = 从下一个整小节起，弱起算前一轮的第二小节）
     if (artOf(t as NoteTok).some((a) => ATTACKS.includes(a))) return;   // 写了音头记号 = 写的说了算
     const tb = grooveTable(s, p.beats, p.beatType); if (!tb) return;
@@ -152,13 +167,13 @@ export function grooveCategory(cat: "voice" | "gm" | null | undefined, gm?: { ba
   return null;
 }
 /** 类别里预设没写的 = 0（不跟）。 */
-export const followOf = (s: GrooveStyle, category: string | null): number => (category ? s.follow[category] ?? 0 : 0);
+export const followOf = (s: GrooveData, category: string | null): number => (category ? s.follow[category] ?? 0 : 0);
 
 // ── 摇摆（v0.9.36，2026-10-10 Opus 5.5；user「全量摇摆同意，放在一号轨？」→ 是：跟着风格记号走（风格记号写在每张纸最上面那位身上、管整张纸） ──
 /** 摇多少：风格数据的 swing.ratio（一拍里前一个八分占多少；仓鼠 grooves，Swing = 0.667、范围 0.5–0.75），幅度放大 / 缩小「比直的多出来的那一截」，
  *  夹在数据给的范围里；这个风格不摇 = 0。 */
-export function swingRatio(style: string | null, amount = 1): number {
-  const w = style ? grooveStyle(style)?.swing : null; if (!w) return 0;
+export function swingRatio(data: GrooveData | null, amount = 1): number {
+  const w = data?.swing; if (!w) return 0;
   return Math.min(w.range[1], Math.max(w.range[0], 0.5 + (w.ratio - 0.5) * amount));
 }
 /** 放的时候用的时间表 = 速度表（tempoMapOf）+ 摇摆：风格记号带摇摆的那一段，**整张纸所有歌手一起摇**（时间不分谁跟多少，不然对不上拍；跟多少只管轻重）。
@@ -166,7 +181,7 @@ export function swingRatio(style: string | null, amount = 1): number {
  *  整首没有哪一段摇 = 原样返回速度表（旧歌逐样本不变）。 */
 export function timeMapOf(song: Song, order?: readonly string[]): TempoMap {
   const tempo = tempoMapOf(song, order), g = grooveMapOf(song, order);
-  if (!g.some((e) => swingRatio(e.style, e.amount))) return tempo;
+  if (!g.some((e) => swingRatio(e.data, e.amount))) return tempo;
   const seq: PaperSeg[] = order ? order.flatMap((id) => song.papers.filter((p) => p.id === id)) : song.papers.filter((p) => !p.hidden);   // 同 grooveMapOf
   const spans: { at: number; end: number; origin: number }[] = []; let at = 0;
   for (const p0 of seq) {
@@ -181,6 +196,6 @@ export function timeMapOf(song: Song, order?: readonly string[]): TempoMap {
   }
   const originAt = (tick: number) => (spans.find((s) => tick >= s.at && tick < s.end) ?? spans[spans.length - 1])?.origin ?? 0;
   const bpmAt = (tick: number) => { let b = tempo[0]?.bpm ?? DEFAULT_BPM; for (const e of tempo) if (e.tick <= tick) b = e.bpm; return b; };
-  const out: TempoMap = [...tempo, ...g.map((e) => ({ tick: e.tick, bpm: bpmAt(e.tick), swing: swingRatio(e.style, e.amount), origin: originAt(e.tick) }))];
+  const out: TempoMap = [...tempo, ...g.map((e) => ({ tick: e.tick, bpm: bpmAt(e.tick), swing: swingRatio(e.data, e.amount), origin: originAt(e.tick) }))];
   return out.sort((a, b) => a.tick - b.tick || (a.swing === undefined ? 0 : 1) - (b.swing === undefined ? 0 : 1));   // 同一时刻：速度先、摇摆后
 }

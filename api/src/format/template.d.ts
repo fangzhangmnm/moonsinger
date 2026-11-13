@@ -2,6 +2,8 @@ import type { Dynamic } from "./contract.ts";
 import { type SingMark } from "./performance.ts";
 type Json = Record<string, unknown>;
 export declare const TEMPLATE: {
+    /** 谱的扩展（16-4 A3）：新建的歌写进去的歌级显示设置 = song.ts NEW_SONG_LOOK 这一个对象（同一个引用，不另抄）。 */
+    score: Readonly<Pick<import("../score/song.ts").Song, import("../score/song.ts").SongLookKey>>;
     /** 录音房（16-4 A2，v0.17.17）：新建的轨 / 混音轨 / 总轨 / 每种效果刚插上一格时的样子。数从原处搬来、一个没改（project.ts micTrack / emptyStudio、
      *  ui/plugins.ts freshParams、混音台加发送时的 −12）；效果参数表（engine/fx.ts）只剩量纲、范围、公式。读老文件时门口缺的也按这里补（每种效果按「轨上」那一份）。 */
     studio: {

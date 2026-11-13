@@ -1354,6 +1354,9 @@ export declare const S: {
     readonly "\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002": {
         readonly en: "Listed strictest to loosest; once published under a CC license, published copies can't be taken back. Saved in MusicXML &lt;rights&gt;; written into the file tags with the credits when exporting mp3.";
     };
+    readonly "\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\uFF08{v}\uFF09": {
+        readonly en: "Not known to this version ({v})";
+    };
     readonly "\u8DDF\u7740\u8FD9\u9996\u6B4C\u5B58\uFF1A\u8FDB\u6B4C\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002": {
         readonly en: "Saved with this song: it goes into the song, can be undone, and the exported PDF prints it this way.";
     };
@@ -2161,8 +2164,8 @@ export declare const S: {
     readonly "\u623F\u5B50\uFF1A\u7B2C {nums} \u904D\u8D70\u8FD9\u4E2A\u62EC\u53F7\uFF0C\u522B\u7684\u904D\u8DF3\u8FC7": {
         readonly en: "Ending: pass {nums} takes this bracket, other passes skip it";
     };
-    readonly "\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u300C{style}\u300D\uFF1A\u4E0D\u52A0\u8F7B\u91CD\uFF08\u6362\u4E00\u4E2A\u98CE\u683C\u5C31\u597D\uFF09": {
-        readonly en: "This version doesn't know “{style}”: no beat weighting (pick another style)";
+    readonly "\u8FD9\u9996\u6B4C\u91CC\u6CA1\u6709\u300C{style}\u300D\u8FD9\u79CD\u98CE\u683C\u7684\u62CD\u5B50\u8868\uFF0C\u73B0\u884C\u7684\u9884\u8BBE\u91CC\u4E5F\u6CA1\u6709\uFF1A\u8FD9\u4E2A\u8BB0\u53F7\u4E0D\u8D77\u4F5C\u7528\uFF08\u4E0D\u52A0\u8F7B\u91CD\u3001\u4E0D\u6447\uFF0C\u4E0D\u62FF\u522B\u7684\u98CE\u683C\u9876\u4E0A\uFF09\u3002\u6362\u4E00\u4E2A\u98CE\u683C\u5C31\u597D": {
+        readonly en: "This song has no rhythm table for the style “{style}”, and the current presets don’t have it either: this mark has no effect (no accents, no swing, nothing else stands in). Pick another style";
     };
     readonly "{p} \u8FD9\u4E2A\u9884\u8BBE\u6CA1\u5217\uFF1A\u6309\u53E4\u5178\u7684\u5F3A\u5F31\u63A8{m}": {
         readonly en: "This preset doesn't list {p}: inferred from classical strong and weak beats{m}";
@@ -4288,6 +4291,15 @@ export declare const S: {
     readonly "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09": {
         readonly en: "Tsukuyomi-chan Corpus Terms of Use (derived model)";
     };
+    readonly 歌词怎么排: {
+        readonly en: "how lyrics are laid out";
+    };
+    readonly 音距: {
+        readonly en: "note spacing";
+    };
+    readonly 谱上的字用哪种语言: {
+        readonly en: "language of the text on the score";
+    };
     readonly "\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 {REFERENCES_DIR} \u4E0B\uFF1A{path}": {
         readonly en: "A reference window file isn't under {REFERENCES_DIR}: {path}";
     };
@@ -4389,6 +4401,9 @@ export declare const S: {
     };
     readonly "\u300C{name}\u300D\u7684\u58F0\u97F3\uFF08{path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u4E00\u8D77\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C{name2}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": {
         readonly en: "The sound of “{name}” ({path}) didn't come with this song, so nobody is on stage. Tap “{name2}” at the front of the score to change “Who performs”.";
+    };
+    readonly "\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF0C\u9875\u9762\u8BBE\u7F6E\u91CC\u8FD9\u51E0\u6837\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\uFF1A{keys}\u3002\u753B\u7684\u65F6\u5019\u5148\u6309\u6700\u57FA\u672C\u7684\u90A3\u4E00\u6863\uFF0C\u5B58\u7684\u65F6\u5019\u7167\u539F\u6837\u5199\u56DE\u3002": {
+        readonly en: "This song was saved by a newer MoonSinger; this version doesn’t recognise these page settings: {keys}. They are drawn with the most basic option for now and written back unchanged when you save.";
     };
     readonly 小月相: {
         readonly en: "Tsukuyomi-chan";

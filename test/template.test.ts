@@ -6,6 +6,7 @@ import { templateCandidate, TEMPLATE } from "../src/format/template.ts";
 import { perfSpecProblems } from "../src/format/project.ts";
 import { FX_KINDS } from "../src/engine/fx.ts";
 import { HOST_PARAMS } from "../src/engine/chain.ts";
+import { NEW_SONG_LOOK } from "../src/score/song.ts";
 const fs = (await import("node:fs" as string)) as { readdirSync(u: URL, o: { withFileTypes: true }): { name: string; isDirectory(): boolean }[]; readFileSync(u: URL, e: "utf8"): string };
 const ROOT = new URL("../", import.meta.url);
 const walk = (dir: string): string[] => fs.readdirSync(new URL(dir, ROOT), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}${e.name}/`) : /\.(ts|mjs|js)$/.test(e.name) ? [`${dir}${e.name}`] : []));
@@ -36,6 +37,28 @@ describe("模板的录音房那一块（16-4 A2 / C）", () => {
     const code = (f: string) => fs.readFileSync(new URL(f, ROOT), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
     assert(!/\bdefault\s*:/.test(code("src/engine/fx.ts")) && !/\bdefault\s*:/.test(code("src/engine/chain.ts")), "fx.ts / chain.ts 的参数表不带 default");
     assert(!/\b(CEILING|LIM_ATTACK|LIM_RELEASE|LIM_LOOK_TAUS)\b/.test(code("src/engine/studio.ts")), "studio.ts 没有限幅常数");
+  });
+});
+describe("谱的扩展那一块（16-4 A3 / G）", () => {
+  const code = (f: string) => fs.readFileSync(new URL(f, ROOT), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  it("模板第三块就是 song.ts NEW_SONG_LOOK 这一个对象（不另抄）；原来那张「没写 = 什么」的表（UNWRITTEN）哪儿都没有了", () => {
+    assert(TEMPLATE.score === NEW_SONG_LOOK, "同一个引用");
+    const bad = ["src/"].flatMap(walk).filter((f) => /\bUNWRITTEN\b/.test(code(f)));
+    eq(bad.join("、"), "");
+  });
+  it("NEW_SONG_LOOK 在 src/score 里只出现在声明和新建歌的两个函数（emptySong / songOf）里；排版、出声、核心不碰它", () => {
+    const where: string[] = [];
+    for (const f of ["src/score/", "src/render/", "src/engine/", "src/core/"].flatMap(walk)) {
+      const c = code(f); if (!/\bNEW_SONG_LOOK\b/.test(c)) continue;
+      if (f !== "src/score/song.ts") { where.push(f); continue; }
+      const fns = [...c.matchAll(/export (?:function (\w+)|const (\w+))[^\n]*\n?(?:(?!\nexport )[\s\S])*?\bNEW_SONG_LOOK\b/g)].map((m) => m[1] ?? m[2]);
+      for (const n of fns) if (!["NEW_SONG_LOOK", "emptySong", "songOf"].includes(n!)) where.push(`song.ts ${n}`);
+    }
+    eq(where.join("、"), "");
+  });
+  it("G：总目录里「哪一版程序存的」（app / saved / core）是给人看的——src 里没有一处读它们", () => {
+    const bad = ["src/"].flatMap(walk).filter((f) => /manifest\??\.(app|saved|core)\b|manifest\??\[["'](app|saved|core)["']\]/.test(code(f)));
+    eq(bad.join("、"), "");
   });
 });
 

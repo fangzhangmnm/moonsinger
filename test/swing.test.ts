@@ -2,7 +2,8 @@
 //   created 2026-10-10 by Claude Opus 5.5
 import { describe, it, eq, assert } from "./runner.mjs";
 import { TPQ, initState, tr, timeline, tempoMapOf, swingDelta, flattenPart, type Token, type NoteTok, type Song } from "../src/score/song.ts";
-import { swingRatio, timeMapOf } from "../src/score/groove.ts";
+import { swingRatio, timeMapOf, grooveStyle, grooveDataOf, withGrooveData } from "../src/score/groove.ts";
+const G = (id: string) => (grooveStyle(id) ? grooveDataOf(grooveStyle(id)!) : null);   // 16-4 D：摇摆按歌里那一份算（这里拿现行预设抄一份）
 import { toLabScore } from "./fixtures/lab-score.ts";
 import { lightNotes } from "../src/engine/timeline.ts";
 
@@ -12,7 +13,7 @@ const head = (time?: { beats: number; beatType: number }) => tr(initState()).sli
 const n = (dur = E, extra: Partial<NoteTok> = {}): Token => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 5 }, dur, lyric: "ら", ...extra });
 const gr = (style: string, amount?: number): Token => ({ kind: "groove", id: nid++, style, ...(amount !== undefined ? { amount } : {}) });
 const bar = (): Token => ({ kind: "bar", id: nid++ });
-const one = (toks: Token[]): Song => { const s = initState().song; return { ...s, papers: [{ ...s.papers[0], tracks: { [s.parts[0].id]: toks } }] }; };
+const one = (toks: Token[]): Song => { const s = initState().song; return withGrooveData({ ...s, papers: [{ ...s.papers[0], tracks: { [s.parts[0].id]: toks } }] }); };   // app 写风格记号那一刻把拍子表抄进歌（16-4 D）
 const close = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) < eps;
 const beatSec = 60 / 90;
 
@@ -25,8 +26,8 @@ describe("摇摆：扭曲函数", () => {
     assert(close(swingDelta(E + 100, 100, r), E / 3), "网格从 origin 起数");
   });
   it("摇多少：Swing 0.667；幅度只放大 / 缩小多出来的那一截，夹在 0.5–0.75；不摇的风格 = 0", () => {
-    assert(close(swingRatio("swing"), 0.667)); eq(swingRatio("swing", 2), 0.75); assert(close(swingRatio("swing", 0.5), 0.5835));
-    eq(swingRatio("pop"), 0); eq(swingRatio(null), 0); eq(swingRatio("none"), 0);
+    assert(close(swingRatio(G("swing")), 0.667)); eq(swingRatio(G("swing"), 2), 0.75); assert(close(swingRatio(G("swing"), 0.5), 0.5835));
+    eq(swingRatio(G("pop")), 0); eq(swingRatio(null), 0); eq(swingRatio(G("none")), 0);
   });
 });
 
