@@ -4554,3 +4554,15 @@ user 2026-11-13（打字，原话）：
   - **v0.17.30 收跟进第 1 条**：卡上摆着哪几样只有一份 `CARD_HABITS`（habits-card.ts：tiles / pair / rows），格子 / 钮的 `data-h` 从它拿、小下拉的行从它拿、「好」只写 `cardHabitKeys()`。守卫在 `look-habits`（名单都是习惯、不重复；卡上不写死 data-h；「好」只写 cardHabitKeys、不许照 HABIT_KEYS 全写）——四样现在都在卡上，「不在卡上的那一样值不变」只能结构上钉。
   - **手机上的卡**：加了第四样之后 375 × 667 / 390 × 844 / 414 × 736 不用滚就看得到「好」、中间也不滚；320 × 568 / 360 × 640 中间那一块自己滚、「好」照样在（壳的钮在滚动层外面）。「和弦写法」那个下拉的字长（「没选（照软件的默认：级数（I、V7））」），390 宽时下拉换到名字下面一行。
   - **交付**：单元 1878 过（note-name-outlets 加三条：谱上根音写法的字 = 候选小表的根音名；B♭7、F♯m7♭5、G7/B、G69 / V69；F 大调 B♭7 = IV7、开着移调辅助根音 F7）。E2E 改了的区 125 份全过，4 条并行时并行红 4 份（habits-card、follow、loop、seg-jump），单跑都绿；`habits-card` 44/44（+ 卡上选和弦写法写进设备）。局部放大图 `shot-19-chord-roots-closeup.png`（job tmp）：升降号是正文里的 ♭ / ♯ 字（同 ♭VII 现在的画法），这款字体里 ♭ 两边有点空。v0.17.31 的两张真截图（降 E、移调辅助开、键盘和谱同一张；按住 E♭4 往上滑 = 大字 C♯4、小字 E4）已推 user。零件库那 50 ms 记进家族周账 F-278。
+- 2026-11-13 · v0.17.33 · 修改锁认「和弦写法」（统筹 134f74e4 第 1、2 条）：
+  - **先红**：`test/edit-lock.test.ts` 加一条「锁着换和弦写法 = 放行、类别 songLook、脏是看法」，改之前跑 = 红（「锁着换和弦写法被拦了」），统筹读代码的判断对。
+  - **修**：`SONG_VIEW_KEYS`（song-view.ts）补上 `chordTagStyle`。顺带 `allLooks`（全部跟着软件）和 `sameModuloLooks`（脏分两种）用的是同一张名单，一起好了。
+  - **锁这一边多一张表** `LOOK_KEY_OP`（edit-lock-table.ts）：页面设置里每一样显示设置走哪一类看法，按 `LookKey` 写满（加一样不配类别 = 类型报错）；`PAGE_LOOK_KEYS` 导出。页面设置「跟着软件」那一步原来是一串 if 选类别，改成照这张表走（直接改值的那几处照旧各自写字面量，锁的守卫按字面量找调用点）。名单照旧明写在锁这一边，不从 LOOK_KEYS 推。
+  - **守卫**：① 结构——LOOK_KEYS 每个键都在 `SONG_VIEW_KEYS + PAGE_LOOK_KEYS` 里，配的类别是看法；② 行为——LOOK_KEYS 逐项（12 条）：锁着只改这一项 → 按它那一类放行、进撤销栈、脏是「看法」，「全部跟着软件」的核验也认（值用占位：锁按引用比、不看值，以后加的键自动盖到）；③ `test/look.test.ts` LOOK_KEYS 逐项：选过的值存了再读回来一样、算选过的（样本表按 LookKey 写满）——盖住「写 score.json 那一处」「KNOWN_SCORE_KEYS」「门口」三处靠人记的。反证：名单去掉 chordTagStyle = 单元 3 红、E2E 3 红；写 score.json 那一处去掉它 = 往返那条 + 形状快照红。
+  - **E2E** `edit-lock.mjs` +3：锁着的硬盘文件，纸的设置换「和弦写法」根音 → 谱上 I → C、门不闪、脏是看法、按「存」文件一个字节没变、撤销回到 I。
+  - 打开时那一句里这个键的名字（`LOOK_LABEL`）「和弦辅助」→「和弦写法」。
+  - **「加一样跟着歌走的显示设置要一起动的几处」**（拿一个假键加进 LOOK_KEYS 跑 tsc 核过哪几处会报）：
+    - 类型管着（漏了 tsc 报）：`look/index.ts` 的 follows / followDefault / allDefault（要 Song 上有这个字段）、`defaultText` 的 switch、`lookFromFile`（门口，返回 `Pick<Song, LookKey>`）；`edit-lock-table.ts LOOK_KEY_OP`；`song.ts` 的 `NEW_SONG_LOOK`（`Pick<Song, SongLookKey>`，前提是 SongLookKey 加了）；`look.test.ts CHOSEN`；是习惯的话 `habits.ts HABIT_DEVICE_KEY` / `HABIT_CODEC`（按 HabitKey 写满）。
+    - 守卫管着（漏了测试红）：锁的看法名单（`SONG_VIEW_KEYS` / `PAGE_LOOK_KEYS`，这一版加的）；写 score.json 那一处 + `KNOWN_SCORE_KEYS` + 门口（这一版加的往返）；形状快照（`shape.json`，冻结样本里用了才盖到）；设备键白名单（`storage-whitelist`）；卡上的名单（`CARD_HABITS` 守卫）。
+    - 靠人记：`Song` 字段和 `SongLookKey`、`LOOK_KEYS` 本身；`SongView` / `lookOf` 交出来（要画的话）；`LOOK_LABEL`（打开时那一句的名字，Partial）；`main.ts` 页面设置那一行 + `FOLLOW_KEY` 那张（`Record<string, LookKey>`，不按 LookKey 写满）+ 跟着软件那句的名字表；`FORMAT_MINOR.score` 升一拍 + contract.ts 那段注释；`scripts/freeze-format-sample.mjs` 的 minor 样本 expected.json（v0.17.32 我漏过一次，e63a7e9c 补的）；是习惯的话 `HABIT_KEYS` / `LookDefaults` / `BASE_DEFAULTS`、仓说明白名单；i18n 字。
+  - 单元 1904 过。

@@ -6363,7 +6363,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.32-2026-11-13";
+var APP_VERSION = "v0.17.33-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10627,7 +10627,7 @@ function setPartChords(st2, partId, mode) {
   else np2.chords = want;
   return { ...st2, song: { ...st2.song, parts: st2.song.parts.map((x2) => x2.id === partId ? np2 : x2) } };
 }
-var SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC", "middleC", "expressions", "textLang"];
+var SONG_VIEW_KEYS = ["notation", "chordTags", "chordTagStyle", "viewInC", "middleC", "expressions", "textLang"];
 var PART_VIEW_KEYS = ["chords"];
 
 // src/render/expressions.ts
@@ -35264,7 +35264,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick3(() => "layout-worker-dcd7e0eb1353.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-9a261e973264.mjs");
+      return pick3(() => "encode-worker-8276cdf2b5a5.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -39457,7 +39457,7 @@ var roleOf = (extras, role, hum) => structuredClone(extras.lounge[role] ?? defau
 var nextKey2 = (ids, prefix) => `${prefix}${Math.max(0, ...ids.map((x2) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x2)?.[1] ?? 0))) + 1}`;
 var stampOf = (k2) => ({ version: FORMAT[k2], minor: FORMAT_MINOR[k2], patch: FORMAT_PATCH[k2] });
 var stampFor = (k2, j2) => newerThanMe(j2, k2) ? { version: j2.version, minor: j2.minor, patch: j2.patch ?? 0 } : stampOf(k2);
-var LOOK_LABEL = { notation: () => _t("\u8C31\u79CD"), chordTagStyle: () => _t("\u548C\u5F26\u8F85\u52A9"), lyricFit: () => _t("\u6B4C\u8BCD\u600E\u4E48\u6392"), barNumbers: () => _t("\u5C0F\u8282\u53F7"), textLang: () => _t("\u8C31\u4E0A\u7684\u5B57\u7528\u54EA\u79CD\u8BED\u8A00") };
+var LOOK_LABEL = { notation: () => _t("\u8C31\u79CD"), chordTagStyle: () => _t("\u548C\u5F26\u5199\u6CD5"), lyricFit: () => _t("\u6B4C\u8BCD\u600E\u4E48\u6392"), barNumbers: () => _t("\u5C0F\u8282\u53F7"), textLang: () => _t("\u8C31\u4E0A\u7684\u5B57\u7528\u54EA\u79CD\u8BED\u8A00") };
 function songLookOf(x2, newer, odd, xmlPaper) {
   const a10 = x2?.arrangement, tl2 = x2?.textLang;
   const textLang = typeof tl2 === "string" && TEXT_LANGS.includes(tl2) ? tl2 : newer && typeof tl2 === "string" && tl2 ? (odd.push("textLang"), tl2) : NEW_SONG_LOOK.textLang;
@@ -46491,7 +46491,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "1e8928c45f92d894" : "dev";
+var CORE_HASH = true ? "23d17f4d2af344cc" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -59513,6 +59513,20 @@ function sameModuloLooks(a10, b3) {
   return sameModulo(a10, b3, { song: [...SONG_VIEW_KEYS, ...PAGE_LOOK_KEYS], paper: ["hidden"], part: PART_VIEW_KEYS });
 }
 var PAGE_LOOK_KEYS = ["paper", "marginMm", "density", "staffMm", "barNumbers", "lyricFit"];
+var LOOK_KEY_OP = Object.freeze({
+  notation: "songLook",
+  viewInC: "songLook",
+  middleC: "songLook",
+  chordTags: "songLook",
+  chordTagStyle: "songLook",
+  expressions: "songLook",
+  barNumbers: "barNumbers",
+  lyricFit: "lyricFit",
+  paper: "paperSize",
+  marginMm: "paperSize",
+  density: "density",
+  staffMm: "density"
+});
 
 // src/app/document.ts
 var LOCK_WHAT = { score: _t("\u8C31 / \u6B4C\u540D / \u4F5C\u8005\u680F"), paper: _t("\u7EB8"), paperHidden: _t("\u7EB8"), lounge: _t("\u58F0\u90E8 / \u4E50\u5668"), studio: _t("\u6DF7\u97F3"), cover: _t("\u5C01\u9762") };
@@ -63786,11 +63800,7 @@ function openPaperSheet(focus) {
     const FOLLOW_KEY = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", cts: "chordTagStyle", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit", margin: "marginMm" };
     if (v === FOLLOW && FOLLOW_KEY[k2]) {
       const key = FOLLOW_KEY[k2], next2 = { ...D3.st, song: followDefault(D3.st.song, key) }, label = _t("{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6", { what: { nota: _t("\u8C31\u79CD"), inc: _t("\u79FB\u8C03\u8F85\u52A9"), mc: _t("\u4E2D\u592E C \u53EB"), ct: _t("\u548C\u5F26\u8F85\u52A9"), cts: _t("\u548C\u5F26\u5199\u6CD5"), expr: _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5"), paper: _t("\u7EB8\u5F20"), density: _t("\u97F3\u7B26\u5BC6\u5EA6"), bn: _t("\u5C0F\u8282\u53F7"), lyr: _t("\u6B4C\u8BCD\u6392\u6CD5"), margin: _t("\u8FB9\u8DDD") }[k2] ?? key });
-      if (key === "paper" || key === "marginMm") setPageLook(next2, { kind: "paperSize", label });
-      else if (key === "density") setPageLook(next2, { kind: "density", label });
-      else if (key === "barNumbers") setPageLook(next2, { kind: "barNumbers", label });
-      else if (key === "lyricFit") setPageLook(next2, { kind: "lyricFit", label });
-      else setSongLook(next2, label);
+      if (next2 !== D3.st) D3.commit({ st: next2 }, { locus: { kind: LOOK_KEY_OP[key], label } });
       draw();
       return;
     }
@@ -67362,4 +67372,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-9183be008756.mjs.map
+//# sourceMappingURL=moonsinger-3a3f17ffabe1.mjs.map

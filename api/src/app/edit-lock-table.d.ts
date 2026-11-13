@@ -1,4 +1,5 @@
 import type { Song } from "../score/song.ts";
+import type { LookKey } from "../look/index.ts";
 /** 一类「看法」。 */
 export interface LookOp {
     /** 这类看法进不进文件。进 = 锁着时动过，文档就算「脏了」（脏是和上次存的样子比出来的），只是锁着期间不写；解锁之后照常存
@@ -30,3 +31,10 @@ export declare function lookOpInFile(kind: string | null | undefined): boolean;
 export declare function effectiveKind<K extends string>(claimed: K, fallback: K, prev: Song, next: Song, extrasChanged: boolean): K;
 /** 两首歌只差「看法」（表里所有进文件的看法合起来）吗。脏分成两种时用：只差看法 = looks，别的 = content。 */
 export declare function sameModuloLooks(a: Song, b: Song): boolean;
+/** 版面那几样住在歌顶层的哪几个键（17-1 起纸张和版式是 paper / marginMm / density / staffMm 四个键）。 */
+export declare const PAGE_LOOK_KEYS: readonly ["paper", "marginMm", "density", "staffMm", "barNumbers", "lyricFit"];
+/** 页面设置里每一样显示设置（src/look LOOK_KEYS）改的时候走哪一类看法（v0.17.33，统筹 134f74e4）。按 LookKey 写满：加一样显示设置不在这里配一类 = 类型就报错。
+ *  名单照旧明写在锁这一边（锁是独立的一层，不从 LOOK_KEYS 推出看法）；页面设置「跟着软件」那一步照这张走（main.ts），守卫按 LOOK_KEYS 逐项核这一类真的放行（test/edit-lock.test.ts）。 */
+export declare const LOOK_KEY_OP: {
+    readonly [K in LookKey]: "songLook" | "paperSize" | "density" | "barNumbers" | "lyricFit";
+};

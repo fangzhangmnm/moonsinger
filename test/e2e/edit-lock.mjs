@@ -88,6 +88,20 @@ check(await hidden(), "重做：同理");
   check((await fileSig()) === sig0, "锁着按「存」：文件一个字节都没变");
   await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
   check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === "default", "撤销：翻回去（看法那一格锁着也能翻；17-1：回到跟着软件）");
+  // 和弦写法（v0.17.33；统筹 134f74e4：v0.17.32 漏进锁的名单，锁着换不了）：锁着换成根音写法 → 谱上的字从级数变成根音、门不闪、文件不写、能撤销
+  const tags = () => p.evaluate(() => [...document.querySelectorAll("#score text.chord-tag")].map((e) => e.textContent?.trim() ?? "").join(" | "));
+  await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { paper: s.song.papers[0].id, part: s.at.part }, caret: 0, sel: null }); }); await p.waitForTimeout(250);   // 叠音在第一段（视图只看本段）
+  const chip1 = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
+  const t0 = await tags();
+  await p.mouse.click(chip1.x, chip1.y); await p.waitForSelector(".set-panel");
+  await armFlash(); await pickOnPage(p, '.set-panel [data-pg="cts"]', "root"); await p.waitForTimeout(200); await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(150);
+  const t1 = await tags(), s2 = await lk();
+  check(t0 === "I" && t1 === "C" && !(await flashed()), "锁着在纸的设置里换「和弦写法」根音：谱上的字 I → C、门不闪", `${t0} → ${t1}`);
+  check((await p.evaluate(() => window.__moonsinger.state().song.chordTagStyle)) === "root" && s2.dirtyKind === "looks" && !s2.owes, "脏的是「看法」、没有要存的东西", JSON.stringify(s2));
+  await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
+  check((await fileSig()) === sig0, "锁着按「存」：文件一个字节都没变（和弦写法）");
+  await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
+  check((await p.evaluate(() => window.__moonsinger.state().song.chordTagStyle)) === "default" && (await tags()) === "I", "撤销：回到跟着软件、谱上又是 I");
   await p.evaluate(() => { const m = window.__moonsinger; m.openHeader(m.state().at.part); }); await p.waitForTimeout(150);
   const pe = await p.evaluate(() => { const g = (q) => { const el = document.querySelector(q); return el ? getComputedStyle(el).pointerEvents : "没有"; }; return { broken: g('.header-panel [data-hp="broken"]'), key: g('.header-panel [data-hp="key"]') }; });
   check(pe.broken === "auto" && pe.key === "none", "谱头面板：「分解和弦」锁着能切（看法），调号改不动", JSON.stringify(pe));

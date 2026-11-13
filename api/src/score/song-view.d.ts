@@ -70,6 +70,7 @@ export declare function setChordTagStyle(st: EditorState, v: ChordTagStyle): Edi
 export declare function setViewInC(st: EditorState, on: boolean): EditorState;
 /** 这条轨的和弦选项。内存里 auto = 不存（写法不动，第 17 条四问第 2 条；读的那一侧「没写 = auto」在 src/look）。 */
 export declare function setPartChords(st: EditorState, partId: string, mode: ChordsMode): EditorState;
-/** 这四样在歌里住在哪几个键（歌的顶层三个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。 */
-export declare const SONG_VIEW_KEYS: readonly ["notation", "chordTags", "viewInC", "middleC", "expressions", "textLang"];
+/** 「这首歌怎么看」在歌里住在哪几个键（歌的顶层几个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。
+ *  chordTagStyle（和弦写法，第 19 条）v0.17.33 补进来：v0.17.32 加键时漏了这里，锁着的歌换不了（统筹 134f74e4）；守卫 test/edit-lock.test.ts「页面设置里每一样看法」。 */
+export declare const SONG_VIEW_KEYS: readonly ["notation", "chordTags", "chordTagStyle", "viewInC", "middleC", "expressions", "textLang"];
 export declare const PART_VIEW_KEYS: readonly ["chords"];

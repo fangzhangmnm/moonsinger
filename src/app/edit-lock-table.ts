@@ -14,6 +14,7 @@
 //   说是看法、实际动了别的 = 当内容拒（设计稿 14.2 第 1 条）。
 // 纯数据 + 纯函数：node 直测（test/edit-lock.test.ts）。只 import 类型和两张常量表（17-1 起纸张和版式是歌顶层的键，按键比；原来比纸的字段要拿「没写 = 默认纸」垫，那一处退路搬走了）。
 import type { Song } from "../score/song.ts";
+import type { LookKey } from "../look/index.ts";
 import { SONG_VIEW_KEYS, PART_VIEW_KEYS } from "../score/song-view.ts";   // 两张常量表（「这首歌怎么看」住在哪几个键）
 
 /** 一类「看法」。 */
@@ -111,4 +112,10 @@ export function effectiveKind<K extends string>(claimed: K, fallback: K, prev: S
 /** 两首歌只差「看法」（表里所有进文件的看法合起来）吗。脏分成两种时用：只差看法 = looks，别的 = content。 */
 export function sameModuloLooks(a: Song, b: Song): boolean { return sameModulo(a, b, { song: [...SONG_VIEW_KEYS, ...PAGE_LOOK_KEYS], paper: ["hidden"], part: PART_VIEW_KEYS }); }   // 表里的看法合起来：曲段隐藏 + 这首歌怎么看 + 版面四样；加了别的看法这里要跟着合
 /** 版面那几样住在歌顶层的哪几个键（17-1 起纸张和版式是 paper / marginMm / density / staffMm 四个键）。 */
-const PAGE_LOOK_KEYS = ["paper", "marginMm", "density", "staffMm", "barNumbers", "lyricFit"] as const;
+export const PAGE_LOOK_KEYS = ["paper", "marginMm", "density", "staffMm", "barNumbers", "lyricFit"] as const;
+/** 页面设置里每一样显示设置（src/look LOOK_KEYS）改的时候走哪一类看法（v0.17.33，统筹 134f74e4）。按 LookKey 写满：加一样显示设置不在这里配一类 = 类型就报错。
+ *  名单照旧明写在锁这一边（锁是独立的一层，不从 LOOK_KEYS 推出看法）；页面设置「跟着软件」那一步照这张走（main.ts），守卫按 LOOK_KEYS 逐项核这一类真的放行（test/edit-lock.test.ts）。 */
+export const LOOK_KEY_OP: { readonly [K in LookKey]: "songLook" | "paperSize" | "density" | "barNumbers" | "lyricFit" } = Object.freeze({
+  notation: "songLook", viewInC: "songLook", middleC: "songLook", chordTags: "songLook", chordTagStyle: "songLook", expressions: "songLook",
+  barNumbers: "barNumbers", lyricFit: "lyricFit", paper: "paperSize", marginMm: "paperSize", density: "density", staffMm: "density",
+});

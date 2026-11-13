@@ -119,6 +119,7 @@ export function setPartChords(st: EditorState, partId: string, mode: ChordsMode)
   return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
 }
 
-/** 这四样在歌里住在哪几个键（歌的顶层三个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。 */
-export const SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC", "middleC", "expressions", "textLang"] as const;   // textLang = 谱上的字用哪种语言（12-4）   // middleC = 字母谱里中央 C 叫 C 几（7-B）；expressions = 演奏法和表情显示不显示（7-G）
+/** 「这首歌怎么看」在歌里住在哪几个键（歌的顶层几个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。
+ *  chordTagStyle（和弦写法，第 19 条）v0.17.33 补进来：v0.17.32 加键时漏了这里，锁着的歌换不了（统筹 134f74e4）；守卫 test/edit-lock.test.ts「页面设置里每一样看法」。 */
+export const SONG_VIEW_KEYS = ["notation", "chordTags", "chordTagStyle", "viewInC", "middleC", "expressions", "textLang"] as const;   // textLang = 谱上的字用哪种语言（12-4）   // middleC = 字母谱里中央 C 叫 C 几（7-B）；expressions = 演奏法和表情显示不显示（7-G）
 export const PART_VIEW_KEYS = ["chords"] as const;

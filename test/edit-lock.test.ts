@@ -1,8 +1,8 @@
 // 修改锁（家族「源文件原则上只读：手动解锁才能改」）的纯逻辑：分类表 / 「这首锁着吗」/ 写入口 / 撤销重做 / 脏分两种 / 家的写回 / 编辑会话的保存。
 //   created 2026-11-10 by Claude Fable 5.2（设计稿 = 家族根 ai-docs/20261109-moonsinger-edit-lock-design.md 第八节 + 第十四节补遗）。全是假的 ports，零 DOM、零持久化。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { LOOK_OPS, isLookOp, lookOpInFile, sameExceptPaperHidden, sameExceptSongView, sameModuloLooks, effectiveKind, sameExceptPaperSize, sameExceptDensity, sameExceptBarNumbers, sameExceptLyricFit } from "../src/app/edit-lock-table.ts";
-import { setNotation, setChordTags, setViewInC, setPartChords } from "../src/score/song-view.ts";
+import { LOOK_OPS, isLookOp, lookOpInFile, sameExceptPaperHidden, sameExceptSongView, sameModuloLooks, effectiveKind, sameExceptPaperSize, sameExceptDensity, sameExceptBarNumbers, sameExceptLyricFit, LOOK_KEY_OP, PAGE_LOOK_KEYS } from "../src/app/edit-lock-table.ts";
+import { setNotation, setChordTags, setViewInC, setPartChords, setChordTagStyle, SONG_VIEW_KEYS } from "../src/score/song-view.ts";
 import { createEditLock, type LockHome, type LockStore } from "../src/app/edit-lock.ts";
 import { createDocument, type DocHooks } from "../src/app/document.ts";
 import { createHome, type Home, type HomePorts } from "../src/app/home.ts";
@@ -11,7 +11,7 @@ import { initState, addPaper, setPaperHidden, setPaper, setDensity, setBarNumber
 import { emptyExtras } from "../src/format/project.ts";
 import type { LocusKind } from "../src/score/history.ts";
 import type { FileHandle } from "../src/app/doc-file.ts";
-import { followDefault, allDefault } from "../src/look/index.ts";
+import { followDefault, allDefault, LOOK_KEYS } from "../src/look/index.ts";
 
 describe("修改锁 · 分类表", () => {
   it("表里现在七类看法（曲段隐藏、这首歌怎么看、版面四样：纸张 / 版式 / 小节号 / 歌词排法、全部跟着软件），都进文件；没列的 / 没给的一律不是看法", () => {
@@ -109,6 +109,23 @@ function fakeStore(lockByDefault = true) {
   return { store, unlock: (id: string) => { unlocked.add(id); cb?.([...unlocked]); }, relock: (id: string) => { unlocked.delete(id); cb?.([...unlocked]); }, watches: () => watches };
 }
 
+// ── 页面设置里每一样显示设置，锁都认是看法（v0.17.33，统筹 134f74e4：v0.17.32 加和弦写法时漏了锁的名单，锁着的歌换不了）──
+describe("修改锁 · 页面设置里每一样看法（LOOK_KEYS 逐项）", () => {
+  it("结构：LOOK_KEYS 里每个键都在锁认的看法名单里（这首歌怎么看 SONG_VIEW_KEYS + 版面 PAGE_LOOK_KEYS）；名单明写在锁这一边、不从 LOOK_KEYS 推", () => {
+    const named = new Set<string>([...SONG_VIEW_KEYS, ...PAGE_LOOK_KEYS]);
+    eq(LOOK_KEYS.filter((k) => !named.has(k)).join(","), "", "这几样显示设置锁不认（锁着改不了、脏算成内容）");
+    for (const k of LOOK_KEYS) assert(isLookOp(LOOK_KEY_OP[k]), `${k} 配的类别 ${LOOK_KEY_OP[k]} 不是看法`);
+  });
+  for (const k of LOOK_KEYS) it(`只改「${k}」（锁着）：按它那一类（${LOOK_KEY_OP[k]}）放行、进撤销栈、脏是「看法」；「全部跟着软件」的核验也认`, () => {
+    const { D, log, g } = doc(); g.locked = true;
+    const a = D.st.song, b = { ...a, [k]: "__changed__" } as typeof a;   // 锁按引用比、不看值：用一个占位值，以后加的键自动盖到
+    eq(effectiveKind(LOOK_KEY_OP[k], "content", a, b, false), LOOK_KEY_OP[k], "写入口核验");
+    assert(LOOK_OPS.allLooks!.verify(a, b), "「全部跟着软件」那一步只许动看法：它认不认这个键"); assert(sameModuloLooks(a, b), "两种脏：只差看法");
+    const r = D.commit({ st: { ...D.st, song: b } }, { locus: { kind: LOOK_KEY_OP[k], label: k } });
+    assert(r.ok, "锁着被拦了"); eq(D.history.past.at(-1)?.locus.kind, LOOK_KEY_OP[k]); eq(D.dirtyKind(), "looks"); eq(log.length, 0);
+  });
+});
+
 describe("修改锁 · 这首锁着吗（一处回答，现算）", () => {
   it("还没有家的新歌：这把锁不管，什么都放", () => {
     const { lock, w } = lockWorld();
@@ -194,6 +211,11 @@ describe("修改锁 · 写入口和撤销重做（第 ②③ 道）", () => {
     assert(D.history.past.every((x) => x.locus.kind === "songLook")); eq(D.dirtyKind(), "looks"); eq(log.length, 0);
     assert(!look({ ...setViewInC(D.st, false), song: { ...setViewInC(D.st, false).song, title: "偷改" } }).ok); eq(log.join("|"), "refused:score:谱 / 歌名 / 作者栏");
     assert(D.undo() && D.st.song.parts[0]!.chords === undefined, "撤销这一格也是看法：锁着照样能翻");
+  });
+  it("锁着：和弦写法（chordTagStyle）是这首歌怎么看——放行、类别 songLook、脏是看法（v0.17.33；统筹 134f74e4：v0.17.32 漏进锁的名单）", () => {
+    const { D, log, g } = doc(); g.locked = true;
+    const r = D.commit({ st: setChordTagStyle(D.st, "root") }, { locus: { kind: "songLook", label: "和弦写法 根音" } });
+    assert(r.ok, "锁着换和弦写法被拦了"); eq(D.st.song.chordTagStyle, "root"); eq(D.history.past.at(-1)?.locus.kind, "songLook"); eq(D.dirtyKind(), "looks"); eq(log.length, 0);
   });
   it("标签不是证据：自称曲段隐藏、实际改了曲段名 → 当内容拒", () => {
     const { D, log, g } = doc(); g.locked = true;

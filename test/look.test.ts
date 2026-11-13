@@ -7,7 +7,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, setPaper, setDensity, setBarNumbers, setLyricFit, type Song } from "../src/score/song.ts";
 import { setNotation, setChordTags } from "../src/score/song-view.ts";
 import { paperOf, detectPaper } from "../src/look/paper.ts";
-import { lookOf, followDefault, allDefault, chosenCount, trackLookOf, paperChoicesOf, marginRow, defaultText, LOOK_KEYS } from "../src/look/index.ts";
+import { lookOf, followDefault, allDefault, chosenCount, trackLookOf, paperChoicesOf, marginRow, defaultText, LOOK_KEYS, type LookKey } from "../src/look/index.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
 const fs = (await import("node:fs" as string)) as { readdirSync(u: URL, o: { withFileTypes: true }): { name: string; isDirectory(): boolean }[]; readFileSync(u: URL, e: "utf8"): string };
@@ -62,6 +62,19 @@ describe("跟着软件（第 17 条 17-1）", () => {
     const old = openBytes("x.mxl", withScoreJson(b, (j) => { Object.assign(j, { notation: "staff", chordTags: true, viewInC: false, middleC: 4, expressions: true, barNumbers: "line", lyricFit: "rhythm" }); }));
     eq(chosenCount(old.song), 7, "16-3 起明写着具体值的老歌：七项都算选过的（不猜、不转换）");
     eq(JSON.stringify(lookOf(old.song).follows.paper), "true", "老歌的 score.json 没有纸张那几项、MusicXML 里是 A5 舒适 = 跟着软件");
+  });
+});
+
+// ── 每一样显示设置选过的值存得进去、读得回来（v0.17.33；统筹 134f74e4「加一样跟着歌走的显示设置要一起动的几处」）──
+//   样本表按 LookKey 写满：LOOK_KEYS 加一样、这里不配一个选过的值 = 类型就报错；值存不进 score.json（写的那一处漏了）/ 读的门口不认（KNOWN_SCORE_KEYS、lookFromFile 漏了）= 这里红。
+const CHOSEN: { readonly [K in LookKey]: Song[K] } = {
+  notation: "jianpu", viewInC: true, middleC: 3, chordTags: false, chordTagStyle: "root", expressions: false, barNumbers: "off", lyricFit: "lyrics",
+  paper: { kind: "A4" }, density: "compact", staffMm: 6, marginMm: { l: 11, r: 12, t: 13, b: 14 },
+};
+describe("每一样显示设置：选过的值存了再读回来一样（LOOK_KEYS 逐项）", () => {
+  for (const k of LOOK_KEYS) it(`${k}`, () => {
+    const s = { ...initState().song, [k]: CHOSEN[k] } as Song, o = openBytes("x.mxl", save(s));
+    eq(JSON.stringify(o.song[k]), JSON.stringify(CHOSEN[k]), "读回来的值"); assert(!lookOf(o.song).follows[k], "读回来算选过的（不是跟着软件）");
   });
 });
 

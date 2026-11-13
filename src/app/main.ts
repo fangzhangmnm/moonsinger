@@ -128,6 +128,7 @@ import { makeCoverPng, coverWithBlurb } from "../image/cover.ts";
 import { copyTokens, cutTokens, pasteTokens, selectAll, toJianpu, fromJianpu, fifthsAtSel } from "../score/clipboard.ts";
 import { type Locus, type Restored } from "../score/history.ts";
 import { createDocument, type SavedMark } from "./document.ts";
+import { LOOK_KEY_OP } from "./edit-lock-table.ts";   // 页面设置「跟着软件」：每一样显示设置走哪一类看法（v0.17.33）
 import { createHome, assertNever, type Home } from "./home.ts";
 import { createEditLock, type LockStore } from "./edit-lock.ts";
 import { initEditLockDoor } from "./edit-lock-door.ts";
@@ -2303,9 +2304,7 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
     const FOLLOW_KEY: Record<string, LookKey> = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", cts: "chordTagStyle", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit", margin: "marginMm" };
     if (v === FOLLOW && FOLLOW_KEY[k]) {
       const key = FOLLOW_KEY[k]!, next = { ...D.st, song: followDefault(D.st.song, key) }, label = _t("{what}：跟着软件", { what: ({ nota: _t("谱种"), inc: _t("移调辅助"), mc: _t("中央 C 叫"), ct: _t("和弦辅助"), cts: _t("和弦写法"), expr: _t("演奏法和表情"), paper: _t("纸张"), density: _t("音符密度"), bn: _t("小节号"), lyr: _t("歌词排法"), margin: _t("边距") } as Record<string, string>)[k] ?? key });
-      if (key === "paper" || key === "marginMm") setPageLook(next, { kind: "paperSize", label }); else if (key === "density") setPageLook(next, { kind: "density", label });
-      else if (key === "barNumbers") setPageLook(next, { kind: "barNumbers", label }); else if (key === "lyricFit") setPageLook(next, { kind: "lyricFit", label });
-      else setSongLook(next, label);
+      if (next !== D.st) D.commit({ st: next }, { locus: { kind: LOOK_KEY_OP[key], label } });   // 这一项走哪一类看法 = 锁那一边的表（v0.17.33）
       draw(); return;
     }
     if (k === "nota") setSongLook(setNotation(D.st, v as NotationId), v === "jianpu" ? _t("简谱") : v === "letters" ? _t("字母谱") : _t("五线谱"));

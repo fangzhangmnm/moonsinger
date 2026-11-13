@@ -155,7 +155,7 @@ const stampFor = (k: FormatFile, j: unknown): Json => (newerThanMe(j, k) ? { ver
  *  **比这一版新的那一份**里键认识、值不认识的（以后的谱种 / 排法…）= 原样留在歌里、存的时候照写，画的时候按最基本的那一档（song-view.ts），这里记一句打开时说。
  *  别家的 MusicXML 没有 score.json = 整组按新建的写。 */
 /** 页面设置里这几样的人话名字（打开时那一句用）。 */
-const LOOK_LABEL: Partial<Record<string, () => string>> = { notation: () => _t("谱种"), chordTagStyle: () => _t("和弦辅助"), lyricFit: () => _t("歌词怎么排"), barNumbers: () => _t("小节号"), textLang: () => _t("谱上的字用哪种语言") };
+const LOOK_LABEL: Partial<Record<string, () => string>> = { notation: () => _t("谱种"), chordTagStyle: () => _t("和弦写法"), lyricFit: () => _t("歌词怎么排"), barNumbers: () => _t("小节号"), textLang: () => _t("谱上的字用哪种语言") };
 /** 第 17 条 17-1：能跟着软件的那十一项（看谱那几样 + 版面那几样 + 纸张四项）的读法在 src/look lookFromFile（没写 = "default"，纸张没写 = 从 <defaults> 认一次）；
  *  这里只管住在同一组里的另两样：编排（改声音，第 16 条那一侧；没写 = 空）、谱上的字（"ui" 本身就是跟界面；没写 = "ui"，更新的版本写的不认识的字原样留）。音距（spacing）退役：读到不理。 */
 function songLookOf(x: Json | undefined, newer: boolean, odd: string[], xmlPaper: ReadPaper | undefined): Pick<Song, SongLookKey> {
