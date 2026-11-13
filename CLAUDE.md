@@ -301,7 +301,7 @@ user 同一晚的原话（起因 = 查「新歌为什么整体轻 6 分贝」，
 7. **响度由 user 的耳朵定**：AI 量的、算的 dB / LUFS 只进表，不当依据、不下结论；影响响度的默认值 AI 不提议具体的数。
 8. 老歌里读到的东西照文件显示（声部名是当年存的字就显示那个字），不猜它是人起的还是软件抄的；人觉得烦自己改。
 
-落地：施工单 `ai-docs/20261111-score-surface-construction-plan.md` 第 14、15、16 条；方案 `ai-docs/20261112-no-hidden-things-plan.md`；全表 `ai-docs/20261112-silent-conversions-full-table.md`；经过在纪要 `ai-docs/talks/20261111-two-display-modes-meta.md` 第 135–137 节。
+落地：施工单 `ai-docs/20261111-score-surface-construction-plan.md` 第 14、15、16 条；方案 `ai-docs/20261112-no-hidden-things-plan.md`；全表 `ai-docs/20261112-silent-conversions-full-table.md`；经过在纪要 `ai-docs/talks/20261111-two-display-modes-meta.md` 第 135–137 节。**现在的模型一页讲清 = `ai-docs/20261112-file-discipline-design.md`（设计文件：四个动作、保证什么、每种读不懂的出口、版本记号还剩什么用、走过又退回来的路；动 `src/format/` 之前先读它）。**
 
 ## 谱面分家：排版 = 框架 + 谱种表 + 每种行的画法（五线谱 / 简谱）（v0.16.108 起；第四刀起有简谱，第五刀起简谱画多声部，第六刀收工；2026-11-11，Claude Opus 5.5；READ before touching `src/render/`）
 
