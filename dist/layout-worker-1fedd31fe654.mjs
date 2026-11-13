@@ -8,6 +8,7 @@ function smallWeight(k) {
   return Math.abs(bold - target) < Math.abs(reg - target) ? 600 : 400;
 }
 var JP_MAIN_EM = 2.5;
+var CHORD_ACC_GAP = { tight: 0.05, loose: 0.1 };
 var TEMPO_EM = 1.35;
 var LYRIC_EM = 1.6;
 var LYRIC_LOOK = { cozy: { k: 1, sx: 1, gapFloor: 0.2 }, compact: { k: 1.15, sx: 0.85, gapFloor: 0.2 } };
@@ -775,7 +776,7 @@ var S = {
   "\u548C\u5F26\u8F85\u52A9": { en: "Chord aid" },
   "\u6807": { en: "On" },
   "\u4E0D\u6807": { en: "Don\u2019t show" },
-  "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u6807\u51FA\u5B83\u662F\u4EC0\u4E48\u548C\u5F26\uFF08\u5199\u6CD5\u5728\u4E0B\u4E00\u884C\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009": { en: "Label stacked chords with what chord they are (how they are written is the next row); tap one to see all candidates" },
+  "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0B\u9762\u6807\u51FA\u5B83\u662F\u4EC0\u4E48\u548C\u5F26\uFF08\u5199\u6CD5\u5728\u4E0B\u4E00\u884C\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009": { en: "Label stacked chords underneath with what chord they are (how they are written is the next row); tap one to see all candidates" },
   "\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Articulations & dynamics" },
   "\u663E\u793A": { en: "Show" },
   "\u4E0D\u663E\u793A": { en: "Hide" },
@@ -2186,6 +2187,8 @@ var S = {
   "C{n}\uFF08\u56FD\u9645\u901A\u7528\uFF09": { en: "C{n} (international)" },
   "\u7EA7\u6570\uFF08I\u3001V7\uFF09": { en: "Degrees (I, V7)" },
   "\u6839\u97F3\uFF08C\u3001G7\uFF09": { en: "Roots (C, G7)" },
+  "\u7EA7\u6570": { en: "Degrees" },
+  "\u6839\u97F3": { en: "Roots" },
   "\u548C\u5F26\u8F85\u52A9\u6807\u51FA\u6765\u7684\u5B57\u5199\u6210\u7EA7\u6570\u8FD8\u662F\u6839\u97F3\u3002\u5F00\u7740\u79FB\u8C03\u8F85\u52A9\u65F6\u6839\u97F3\u7167\u6362\u5230 C \u8C03\u4E4B\u540E\u7684\u5199\uFF0C\u548C\u773C\u524D\u7684\u8C31\u5BF9\u5F97\u4E0A\u3002": { en: "Whether chord labels are written as degrees or as roots. With the transposition aid on, roots follow the score in C, so they match what you see." },
   "\u8C03\u53F7\u591A\u7684\u65F6\u5019\u628A\u8C31\u6362\u5230 C \u8C03\u6765\u753B\uFF0C\u53EA\u6539\u663E\u793A\u3001\u58F0\u97F3\u4E0D\u53D8\uFF1B\u770B\u4E94\u7EBF\u8C31\u65F6\u8D77\u4F5C\u7528\u3002\u952E\u4E0A\u7684\u5927\u5B57\u4E5F\u6309 C \u8C03\u5199\uFF0C\u5C0F\u5B57\u662F\u5B9E\u9645\u7684\u97F3\u3002": { en: "When there are many sharps or flats, redraws the score in C; only the display changes, the sound stays the same. Applies to the staff. The big labels on the keys are in C too; the small labels are the actual notes." },
   "\u516B\u5EA6\u7684\u6570\u5B57\u4ECE\u54EA\u513F\u6570\uFF1A\u5B57\u6BCD\u8C31\u3001\u7B80\u8C31\u8C31\u5934\u3001\u952E\u4E0A\u7684\u5B57\u3001\u97F3\u57DF\u65CB\u94AE\u90FD\u7167\u5B83\u5199\u3002\u53EA\u6539\u53EB\u6CD5\uFF0C\u6587\u4EF6\u91CC\u3001\u58F0\u97F3\u91CC\u7684\u516B\u5EA6\u4E0D\u53D8\u3002": { en: "Where the octave numbers count from: letter notation, the numbered-notation header, the key labels and the range knob all follow it. Only the naming changes; octaves in the file and in the sound stay the same." },
@@ -3518,7 +3521,226 @@ var GLYPH_BOX = {
   "\uECA5": [0, 1.328, -2.752, 0.564]
 };
 
+// src/render/jianpu/glyphs.ts
+var FS = 2.5;
+var DIGIT_EM = FS;
+var DIGIT_W = 0.62 * FS;
+var BASE_Y = 2.95;
+var DIGIT_TOP = 1.15;
+var DIGIT_MID = 2.05;
+var UL_Y0 = BASE_Y + 0.273 * FS;
+var UL_GAP = 0.18 * FS;
+var UL_W = 0.059 * FS;
+var DOT_R = 0.082 * FS;
+var DOT_GAP = DIGIT_TOP - (BASE_Y - 0.9 * FS) - 0.082 * FS;
+var DOT_STEP = 0.227 * FS;
+var LOW_DOT_UNDER = DOT_GAP + DOT_R;
+var ACC_EM = 0.59 * FS;
+var ACC_DX = 0.465 * FS;
+var ACC_Y = BASE_Y - 0.364 * FS;
+var ACC_W = 0.41 * FS;
+var DASH_L = 0.545 * FS;
+var DASH_W = 0.073 * FS;
+var DASH_Y = BASE_Y - 0.32 * FS;
+var DASH_PITCH = 0.756 * FS;
+var AUG_R = 0.091 * FS;
+var AUG_DX = 0.8 * 0.62 * FS - 0.31 * FS - 0.091 * FS;
+var AUG_Y = BASE_Y - 0.3 * FS;
+var COL_MIN = 0.756 * FS;
+var COL_MIN_SHORT = 0.492 * FS;
+var BAR_Y0 = BASE_Y - 1.82 * FS;
+var BAR_Y1 = BASE_Y + 1 * FS;
+var BAR_DX = 0.5;
+var BAR_THIN = 0.12;
+var BAR_THICK = 0.4;
+var BAR_GAP = 0.35;
+var BAR_W_J = 0.36 * FS;
+var JP_BODY = { top: BAR_Y0, bottom: BAR_Y1 };
+var MID_TEXT_EM = 1.4;
+var BREATH_W = 0.35 + 0.9;
+var CHORD_GAP = 0.25;
+var DIGIT_H = BASE_Y - DIGIT_TOP;
+function stackBases(dots) {
+  const up = (d) => d > 0 ? DOT_GAP + 2 * DOT_R + (d - 1) * DOT_STEP : 0, down = (d) => d < 0 ? DOT_GAP + 2 * DOT_R + (-d - 1) * DOT_STEP : 0;
+  const out = [];
+  dots.forEach((d, k) => {
+    out.push(k === 0 ? BASE_Y : out[k - 1] - DIGIT_H - up(dots[k - 1]) - down(d) - CHORD_GAP);
+  });
+  return out;
+}
+var X_EM = 0.8;
+var KIT_CHAR = { normal: "\u25CF", x: "\xD7", "circle-x": "\u2297", diamond: "\u25C7", "triangle-up": "\u25B3", "triangle-down": "\u25BD", ti: "\u25BD", la: "\u25A1", plus: "+", slash: "/", slashed1: "\u2298", slashed2: "\u2298" };
+var KIT_EM = 0.62;
+var CHORD_EM = 2;
+var CHORD_SX = 0.82;
+var CHORD_H = 1.45;
+var CHORD_CH_EM = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.7, m: 0.86, a: 0.55, j: 0.26, d: 0.58, i: 0.25, u: 0.57, g: 0.58, s: 0.48, "/": 0.36, "\u266D": 1, "\u266F": 1, "\xB0": 0.4, \u00F8: 0.6, "(": 0.32, ")": 0.32, "+": 0.6 };
+var chordNameW = (s2) => [...s2].reduce((w, ch) => w + (CHORD_CH_EM[ch] ?? (/[0-9]/.test(ch) ? 0.56 : 0.6)), 0) * CHORD_EM * CHORD_SX;
+var chordBassCx = (s2) => {
+  const cs = [...s2], i = cs.indexOf("/") + 1;
+  return chordNameW(cs.slice(0, i).join("")) + chordNameW(cs[i] ?? "") / 2;
+};
+var TEN_DY = 0.136 * FS;
+var MARK_GAP2 = 0.12 * FS;
+var MARCATO_EM = 1.38 * FS;
+var UNSTRESS_EM = 1.82 * FS;
+var MARK_GAP = 0.545 * FS;
+var STACC_W = 0.19 * FS;
+var STACC_H = 0.27 * FS;
+var STACC_STEP = 0.41 * FS;
+var CHEV_W = 0.455 * FS;
+var CHEV_H = 0.364 * FS;
+var CHEV_STROKE = 0.068 * FS;
+var CHEV_STROKE_THIN = 0.032 * FS;
+var CHEV_STEP = 0.545 * FS;
+var TEN_L = 0.455 * FS;
+var TEN_W = 0.064 * FS;
+var TEN_STEP = 0.364 * FS;
+var BREATH_EM = 0.5 * FS;
+var BREATH_Y = BASE_Y - 1.09 * FS;
+var HEAD_EM = 0.773 * FS;
+var GHOST_K = 0.62;
+var CARET_Y0 = BAR_Y0 - 0.15;
+var CARET_Y1 = BAR_Y1 + 0.15;
+var dotPath = (cx, cy, r) => {
+  const k = 0.5523 * r, f = (v) => (Math.round(v * 100) / 100).toString();
+  return `M${f(cx + r)},${f(cy)}C${f(cx + r)},${f(cy + k)} ${f(cx + k)},${f(cy + r)} ${f(cx)},${f(cy + r)}C${f(cx - k)},${f(cy + r)} ${f(cx - r)},${f(cy + k)} ${f(cx - r)},${f(cy)}C${f(cx - r)},${f(cy - k)} ${f(cx - k)},${f(cy - r)} ${f(cx)},${f(cy - r)}C${f(cx + k)},${f(cy - r)} ${f(cx + r)},${f(cy - k)} ${f(cx + r)},${f(cy)}Z`;
+};
+var ACC_GLYPH = {
+  flat: { ch: "\uE260", box: [0, 0.904, -1.756, 0.7], dom: 0.062 },
+  natural: { ch: "\uE261", box: [0, 0.672, -1.364, 1.34], dom: 0.105 },
+  sharp: { ch: "\uE262", box: [0, 0.996, -1.4, 1.392], dom: 0.09 }
+};
+var ACC_FAMILY_DOM = ACC_GLYPH.sharp.dom;
+var FAMILY_LIGHT = 0.8;
+var accStroke = (g, em, main, stem = STEM_REGULAR) => {
+  const align = Math.max(0, ACC_FAMILY_DOM - g.dom), target = SMALL_STEM_K * stem * main, fam = ACC_FAMILY_DOM * em;
+  return align + (fam < FAMILY_LIGHT * target ? (target - fam) / em : 0);
+};
+var ACC_GLYPH_EM = 0.78 * FS;
+var ACC_RISE = 0.2;
+var ACC_SEP = 0.08;
+var accGlyphs = (rel) => rel > 0 ? Array(rel).fill(ACC_GLYPH.sharp) : rel < 0 ? Array(-rel).fill(ACC_GLYPH.flat) : [ACC_GLYPH.natural];
+var accGlyphsOfText = (t) => [...t].map((c) => c === "\u266F" ? ACC_GLYPH.sharp : c === "\u266D" ? ACC_GLYPH.flat : ACC_GLYPH.natural);
+var accRunW = (gs, em) => gs.reduce((w, g, i) => w + (g.box[1] - g.box[0]) * em / 4 + (i ? ACC_SEP : 0), 0);
+var SUP_ACC_FIT = 0.88;
+var supAccEm = (gk = 1) => ACC_GLYPH_EM * (SCRIPT_K * DIGIT_EM * gk) * SUP_ACC_FIT / ACC_EM;
+var HEAD_CH_EM = { "0": 0.555, "1": 0.555, "2": 0.555, "3": 0.555, "4": 0.555, "5": 0.555, "6": 0.555, "7": 0.555, "8": 0.555, "9": 0.555, "=": 0.555, "/": 0.392, A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
+var headTextW = (s2, size) => [...s2].reduce((w, c) => w + (HEAD_CH_EM[c] ?? 0.6), 0) * size;
+var GLYPH_INK = {
+  "0": [0.05, -0.013, 0.506, 0.746, 0.555],
+  "1": [0.088, 0, 0.49, 0.733, 0.555],
+  "2": [0.04, 0, 0.505, 0.746, 0.555],
+  "3": [0.029, -0.013, 0.499, 0.746, 0.555],
+  "4": [0.02, 0, 0.524, 0.733, 0.555],
+  "5": [0.027, -0.013, 0.502, 0.733, 0.555],
+  "6": [0.056, -0.013, 0.512, 0.746, 0.555],
+  "7": [0.049, 0, 0.508, 0.733, 0.555],
+  "8": [0.046, -0.013, 0.509, 0.744, 0.555],
+  "9": [0.044, -0.013, 0.501, 0.746, 0.555],
+  A: [4e-3, 0, 0.604, 0.733, 0.608],
+  B: [0.101, 0, 0.612, 0.733, 0.657],
+  C: [0.058, -0.013, 0.602, 0.746, 0.638],
+  D: [0.101, 0, 0.629, 0.733, 0.688],
+  E: [0.101, 0, 0.534, 0.733, 0.589],
+  F: [0.101, 0, 0.523, 0.733, 0.552],
+  G: [0.058, -0.013, 0.615, 0.746, 0.689],
+  "-": [0.046, 0.245, 0.303, 0.315, 0.347],
+  "\xD7": [0.178, 0.054, 0.822, 0.698, 1],
+  V: [1e-3, 0, 0.575, 0.733, 0.575],
+  X: [0.017, 0, 0.557, 0.733, 0.573],
+  x: [0.015, 0, 0.483, 0.543, 0.498],
+  "\u25CF": [0.05, -0.07, 0.95, 0.83, 1],
+  "\u2297": [0.13, 0.01, 0.87, 0.75, 1],
+  "\u25C7": [0.012, -0.108, 0.988, 0.868, 1],
+  "\u25B3": [0.03, 0.012, 0.97, 0.826, 1],
+  "\u25BD": [0.03, -0.066, 0.97, 0.748, 1],
+  "\u25A1": [0.1, -0.02, 0.9, 0.78, 1],
+  "+": [0.038, 0.116, 0.518, 0.622, 0.555],
+  "/": [0.011, -0.179, 0.377, 0.794, 0.392],
+  "\u2298": [0.13, 0.01, 0.87, 0.75, 1]
+};
+function glyphInk(ch, x, y, size, anchor) {
+  const g = GLYPH_INK[ch] ?? [0.03, 0, 0.525, DIGIT_H / DIGIT_EM, DIGIT_W / DIGIT_EM], ox = anchor === "middle" ? x - g[4] * size / 2 : x;
+  return { x0: ox + g[0] * size, x1: ox + g[2] * size, y0: y - g[3] * size, y1: y - g[1] * size };
+}
+function textInkRun(s2, x, y, size) {
+  let cx = x, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const ch of s2) {
+    const k = glyphInk(ch, cx, y, size, "start");
+    x0 = Math.min(x0, k.x0);
+    x1 = Math.max(x1, k.x1);
+    y0 = Math.min(y0, k.y0);
+    y1 = Math.max(y1, k.y1);
+    cx += (GLYPH_INK[ch]?.[4] ?? DIGIT_W / DIGIT_EM) * size;
+  }
+  return { x0, x1, y0, y1 };
+}
+var LETTER_EM = { A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
+var letterW = (step) => (LETTER_EM[step] ?? 0.66) * DIGIT_W / 0.555;
+var SCRIPT_K = 0.7;
+var SCRIPT_GAP = 0.03 * FS;
+var SUP_DY = -0.45 * FS;
+var SUB_DY = 0.18 * FS;
+var SUB_DROP = 0.2 * FS;
+var SUP_RISE = Math.max(0, -SUP_DY + SCRIPT_K * DIGIT_H - DIGIT_H);
+var letterParts = (p, middleC) => ({ letter: p.step, acc: p.alter > 0 ? "\u266F".repeat(p.alter) : p.alter < 0 ? "\u266D".repeat(-p.alter) : "", oct: String(shownOctave(p.octave, middleC)) });
+var scriptW = (p, middleC) => {
+  const lp = letterParts(p, middleC);
+  return SCRIPT_GAP + Math.max(lp.acc ? accRunW(accGlyphsOfText(lp.acc), supAccEm()) : 0, lp.oct.length * SCRIPT_K * DIGIT_W);
+};
+var letterNoteW = (ps, middleC) => Math.max(...ps.map((p) => letterW(p.step) + scriptW(p, middleC)));
+
+// src/render/chord-text.gen.ts
+var CHORD_ADV = { " ": 0.26, "(": 0.38, ")": 0.38, "+": 0.559, "/": 0.288, "0": 0.559, "1": 0.559, "2": 0.559, "3": 0.559, "4": 0.559, "5": 0.559, "6": 0.559, "7": 0.559, "8": 0.559, "9": 0.559, "?": 0.521, "A": 0.735, "B": 0.665, "C": 0.648, "D": 0.752, "E": 0.642, "F": 0.609, "G": 0.748, "I": 0.388, "V": 0.689, "X": 0.705, "a": 0.585, "d": 0.636, "g": 0.552, "i": 0.34, "j": 0.328, "m": 0.97, "n": 0.659, "o": 0.599, "s": 0.474, "u": 0.655, "v": 0.596, "x": 0.62, "\xB0": 0.4, "\xB7": 0.277, "\xF8": 0.599 };
+var CHORD_SB = { " ": [0, 0], "(": [0.057, 0.032], ")": [0.032, 0.057], "+": [0.065, 0.065], "/": [0, 0], "0": [0.038, 0.038], "1": [0.051, 0.062], "2": [0.045, 0.052], "3": [0.039, 0.051], "4": [0.015, 0.017], "5": [0.046, 0.061], "6": [0.051, 0.041], "7": [0.05, 0.039], "8": [0.036, 0.036], "9": [0.041, 0.051], "?": [0.035, 0.048], "A": [2e-3, 0], "B": [0.032, 0.045], "C": [0.056, 0.038], "D": [0.032, 0.056], "E": [0.032, 0.036], "F": [0.032, 0.037], "G": [0.056, 0.024], "I": [0.032, 0.032], "V": [0, 0], "X": [9e-3, 0.01], "a": [0.047, 0.036], "d": [0.049, 0.016], "g": [0.01, 8e-3], "i": [0.019, 0.016], "j": [-0.017, 0.089], "m": [0.023, 0.026], "n": [0.023, 0.027], "o": [0.05, 0.05], "s": [0.036, 0.042], "u": [0.025, 0.024], "v": [2e-3, 1e-3], "x": [9e-3, 6e-3], "\xB0": [0.045, 0.046], "\xB7": [0.064, 0.064], "\xF8": [0.05, 0.05] };
+var CHORD_CAP = 0.714;
+var CHORD_STEM = 0.137;
+
+// src/render/chord-text.ts
+var { tight: CHORD_TIGHT, loose: CHORD_LOOSE } = CHORD_ACC_GAP;
+var ACC_K = ACC_GLYPH_EM / DIGIT_EM;
+var RISE_K = ACC_RISE / DIGIT_EM;
+var adv = (s2) => [...s2].reduce((w, c) => w + (CHORD_ADV[c] ?? 0.6), 0);
+var chordTextW = (s2, fs) => adv(s2) * fs;
+var lsb = (s2) => CHORD_SB[[...s2][0] ?? ""]?.[0] ?? 0;
+var rsb = (s2) => CHORD_SB[[...s2].at(-1) ?? ""]?.[1] ?? 0;
+function chordTextLayout(label, fs) {
+  const runs = label.match(/[♭♯]+|[^♭♯]+/g) ?? [], pieces = [], em = ACC_K * fs;
+  let x = 0;
+  runs.forEach((run, k) => {
+    if (!/^[♭♯]/.test(run)) {
+      pieces.push({ kind: "text", s: run, x, w: adv(run) * fs });
+      x += adv(run) * fs;
+      return;
+    }
+    const prev = runs[k - 1], next = runs[k + 1], left = !!prev && /[A-G]$/.test(prev);
+    if (prev) x += Math.max(0, (left ? CHORD_TIGHT : CHORD_LOOSE) - rsb(prev)) * fs;
+    accGlyphsOfText(run).forEach((g, i) => {
+      const sk = accStroke(g, em, fs, CHORD_STEM), w = (g.box[1] - g.box[0]) * em / 4 + sk * em;
+      if (i) x += CHORD_TIGHT * fs;
+      pieces.push({ kind: "acc", ch: g.ch, box: g.box, x, w, em, stroke: sk });
+      x += w;
+    });
+    if (next) x += Math.max(0, (left ? CHORD_LOOSE : CHORD_TIGHT) - lsb(next)) * fs;
+  });
+  return { pieces, w: x };
+}
+function chordTextPrims(label, x, y, fs, cls, T2 = {}) {
+  const L = chordTextLayout(label, fs), top = y - (CHORD_CAP + RISE_K) * fs, prims = [];
+  for (const p of L.pieces) {
+    if (p.kind === "text") {
+      prims.push({ ...T2, t: "text", x: x + p.x, y, s: p.s, cls, size: fs, anchor: "start" });
+      continue;
+    }
+    const half = p.stroke * p.em / 2;
+    prims.push({ ...T2, t: "glyph", x: x + p.x + half - p.box[0] * p.em / 4, y: top + half - p.box[2] * p.em / 4, ch: p.ch, cls: cls.replace(/\bchord-tag\b/, "chord-acc"), size: p.em, ...p.stroke > 0 ? { stroke: p.stroke } : {} });
+  }
+  return { prims, w: L.w };
+}
+
 // src/render/skyline.ts
+var chordTagCls = /\bchord-tag\b/;
 var STEP = 0.25;
 var Skyline = class {
   up;
@@ -3581,7 +3803,7 @@ function primInk(p, sp, measure, emit) {
       return;
     }
     case "text": {
-      const size = p.size ?? LYRIC_EM * sp, w = measure(p.s, size) * (p.sx ?? 1), x0 = p.anchor === "middle" ? p.x - w / 2 : p.anchor === "end" ? p.x - w : p.x;
+      const size = p.size ?? LYRIC_EM * sp, w = (chordTagCls.test(p.cls ?? "") ? chordTextW(p.s, size) : measure(p.s, size)) * (p.sx ?? 1), x0 = p.anchor === "middle" ? p.x - w / 2 : p.anchor === "end" ? p.x - w : p.x;
       emit(x0, x0 + w, p.y - size * INK_EST.a, p.y + size * INK_EST.d);
       return;
     }
@@ -4954,8 +5176,8 @@ function thirdDyad(ps, fifths, mode) {
   if (!all.length) return null;
   return { theory: ID, best: all[0], ties: all.filter((g) => g.cost - all[0].cost < 0.1), all, ...mode === "la" ? { mode } : {} };
 }
-var chordLabel = (r) => r.ties.slice(0, 2).map((g) => g.label).join(" / ") + (r.stale ? "?" : "");
-var rootChordLabel = (r) => r.ties.slice(0, 2).map((g) => g.name).join(" / ") + (r.stale ? "?" : "");
+var chordLabel = (r) => r.ties.slice(0, 2).map((g) => g.label).join(" \xB7 ") + (r.stale ? "?" : "");
+var rootChordLabel = (r) => r.ties.slice(0, 2).map((g) => g.name).join(" \xB7 ") + (r.stale ? "?" : "");
 function guessOf(root, tplId, bass, fifths, mode) {
   if (tplId.startsWith(FREE)) {
     const nm = stepName(root) + tplId.slice(FREE.length) + (pc(root) === pc(bass) ? "" : `/${stepName(bass)}`);
@@ -7617,11 +7839,12 @@ function drawStaff(c, mine) {
         const ds = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index)), second = ds.some((dd, k) => k > 0 && Math.abs(ds[k - 1] - dd) === 1);
         const headR = nhX(c2) + nhW(c2) * (second ? 1.95 : 1), sx = stemXOf.get(c2), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
         const atStem = sx !== void 0 && !(low && headR > sx + P(0.1));
-        const label = look.chordTagStyle === "root" ? theory.rootLabel(rd) : theory.label(rd), tx2 = atStem ? sx - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const label = look.chordTagStyle === "root" ? theory.rootLabel(rd) : theory.label(rd), tx2 = atStem ? sx - P(ENGRAVE.stem / 2) : headR + P(0.3);
         const row = atRow ?? RW(c2), cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;
         attach(row, "chordTag", () => placeBelow(row, 0.3, (y) => {
-          prims.push({ t: "text", x: tx2, y, s: label, cls, size: fs, anchor: "start" });
-          chordTagsOut.push({ x: tx2 - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: c2.index, ...atRow !== null ? { part: q.p.id } : {} });
+          const ct = chordTextPrims(label, tx2, y, fs, cls);
+          prims.push(...ct.prims);
+          chordTagsOut.push({ x: tx2 - TR("chord-tag", 0.3), y: y - fs * 1.05, w: ct.w + TR("chord-tag", 0.6), h: fs * 1.4, read: rd, system: row, index: c2.index, ...atRow !== null ? { part: q.p.id } : {} });
         }));
       }
     }
@@ -7679,176 +7902,6 @@ function staffLooks(song, noAutoGrand) {
   const looks = resolveSongLooks(song, trackLookOf(song), noAutoGrand);
   return (paperId, partId) => looks.get(paperId)?.get(partId);
 }
-
-// src/render/jianpu/glyphs.ts
-var FS = 2.5;
-var DIGIT_EM = FS;
-var DIGIT_W = 0.62 * FS;
-var BASE_Y = 2.95;
-var DIGIT_TOP = 1.15;
-var DIGIT_MID = 2.05;
-var UL_Y0 = BASE_Y + 0.273 * FS;
-var UL_GAP = 0.18 * FS;
-var UL_W = 0.059 * FS;
-var DOT_R = 0.082 * FS;
-var DOT_GAP = DIGIT_TOP - (BASE_Y - 0.9 * FS) - 0.082 * FS;
-var DOT_STEP = 0.227 * FS;
-var LOW_DOT_UNDER = DOT_GAP + DOT_R;
-var ACC_EM = 0.59 * FS;
-var ACC_DX = 0.465 * FS;
-var ACC_Y = BASE_Y - 0.364 * FS;
-var ACC_W = 0.41 * FS;
-var DASH_L = 0.545 * FS;
-var DASH_W = 0.073 * FS;
-var DASH_Y = BASE_Y - 0.32 * FS;
-var DASH_PITCH = 0.756 * FS;
-var AUG_R = 0.091 * FS;
-var AUG_DX = 0.8 * 0.62 * FS - 0.31 * FS - 0.091 * FS;
-var AUG_Y = BASE_Y - 0.3 * FS;
-var COL_MIN = 0.756 * FS;
-var COL_MIN_SHORT = 0.492 * FS;
-var BAR_Y0 = BASE_Y - 1.82 * FS;
-var BAR_Y1 = BASE_Y + 1 * FS;
-var BAR_DX = 0.5;
-var BAR_THIN = 0.12;
-var BAR_THICK = 0.4;
-var BAR_GAP = 0.35;
-var BAR_W_J = 0.36 * FS;
-var JP_BODY = { top: BAR_Y0, bottom: BAR_Y1 };
-var MID_TEXT_EM = 1.4;
-var BREATH_W = 0.35 + 0.9;
-var CHORD_GAP = 0.25;
-var DIGIT_H = BASE_Y - DIGIT_TOP;
-function stackBases(dots) {
-  const up = (d) => d > 0 ? DOT_GAP + 2 * DOT_R + (d - 1) * DOT_STEP : 0, down = (d) => d < 0 ? DOT_GAP + 2 * DOT_R + (-d - 1) * DOT_STEP : 0;
-  const out = [];
-  dots.forEach((d, k) => {
-    out.push(k === 0 ? BASE_Y : out[k - 1] - DIGIT_H - up(dots[k - 1]) - down(d) - CHORD_GAP);
-  });
-  return out;
-}
-var X_EM = 0.8;
-var KIT_CHAR = { normal: "\u25CF", x: "\xD7", "circle-x": "\u2297", diamond: "\u25C7", "triangle-up": "\u25B3", "triangle-down": "\u25BD", ti: "\u25BD", la: "\u25A1", plus: "+", slash: "/", slashed1: "\u2298", slashed2: "\u2298" };
-var KIT_EM = 0.62;
-var CHORD_EM = 2;
-var CHORD_SX = 0.82;
-var CHORD_H = 1.45;
-var CHORD_CH_EM = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.7, m: 0.86, a: 0.55, j: 0.26, d: 0.58, i: 0.25, u: 0.57, g: 0.58, s: 0.48, "/": 0.36, "\u266D": 1, "\u266F": 1, "\xB0": 0.4, \u00F8: 0.6, "(": 0.32, ")": 0.32, "+": 0.6 };
-var chordNameW = (s2) => [...s2].reduce((w, ch) => w + (CHORD_CH_EM[ch] ?? (/[0-9]/.test(ch) ? 0.56 : 0.6)), 0) * CHORD_EM * CHORD_SX;
-var chordBassCx = (s2) => {
-  const cs = [...s2], i = cs.indexOf("/") + 1;
-  return chordNameW(cs.slice(0, i).join("")) + chordNameW(cs[i] ?? "") / 2;
-};
-var TEN_DY = 0.136 * FS;
-var MARK_GAP2 = 0.12 * FS;
-var MARCATO_EM = 1.38 * FS;
-var UNSTRESS_EM = 1.82 * FS;
-var MARK_GAP = 0.545 * FS;
-var STACC_W = 0.19 * FS;
-var STACC_H = 0.27 * FS;
-var STACC_STEP = 0.41 * FS;
-var CHEV_W = 0.455 * FS;
-var CHEV_H = 0.364 * FS;
-var CHEV_STROKE = 0.068 * FS;
-var CHEV_STROKE_THIN = 0.032 * FS;
-var CHEV_STEP = 0.545 * FS;
-var TEN_L = 0.455 * FS;
-var TEN_W = 0.064 * FS;
-var TEN_STEP = 0.364 * FS;
-var BREATH_EM = 0.5 * FS;
-var BREATH_Y = BASE_Y - 1.09 * FS;
-var HEAD_EM = 0.773 * FS;
-var GHOST_K = 0.62;
-var CARET_Y0 = BAR_Y0 - 0.15;
-var CARET_Y1 = BAR_Y1 + 0.15;
-var dotPath = (cx, cy, r) => {
-  const k = 0.5523 * r, f = (v) => (Math.round(v * 100) / 100).toString();
-  return `M${f(cx + r)},${f(cy)}C${f(cx + r)},${f(cy + k)} ${f(cx + k)},${f(cy + r)} ${f(cx)},${f(cy + r)}C${f(cx - k)},${f(cy + r)} ${f(cx - r)},${f(cy + k)} ${f(cx - r)},${f(cy)}C${f(cx - r)},${f(cy - k)} ${f(cx - k)},${f(cy - r)} ${f(cx)},${f(cy - r)}C${f(cx + k)},${f(cy - r)} ${f(cx + r)},${f(cy - k)} ${f(cx + r)},${f(cy)}Z`;
-};
-var ACC_GLYPH = {
-  flat: { ch: "\uE260", box: [0, 0.904, -1.756, 0.7], dom: 0.062 },
-  natural: { ch: "\uE261", box: [0, 0.672, -1.364, 1.34], dom: 0.105 },
-  sharp: { ch: "\uE262", box: [0, 0.996, -1.4, 1.392], dom: 0.09 }
-};
-var ACC_FAMILY_DOM = ACC_GLYPH.sharp.dom;
-var FAMILY_LIGHT = 0.8;
-var accStroke = (g, em, main) => {
-  const align = Math.max(0, ACC_FAMILY_DOM - g.dom), target = SMALL_STEM_K * STEM_REGULAR * main, fam = ACC_FAMILY_DOM * em;
-  return align + (fam < FAMILY_LIGHT * target ? (target - fam) / em : 0);
-};
-var ACC_GLYPH_EM = 0.78 * FS;
-var ACC_RISE = 0.2;
-var ACC_SEP = 0.08;
-var accGlyphs = (rel) => rel > 0 ? Array(rel).fill(ACC_GLYPH.sharp) : rel < 0 ? Array(-rel).fill(ACC_GLYPH.flat) : [ACC_GLYPH.natural];
-var accGlyphsOfText = (t) => [...t].map((c) => c === "\u266F" ? ACC_GLYPH.sharp : c === "\u266D" ? ACC_GLYPH.flat : ACC_GLYPH.natural);
-var accRunW = (gs, em) => gs.reduce((w, g, i) => w + (g.box[1] - g.box[0]) * em / 4 + (i ? ACC_SEP : 0), 0);
-var SUP_ACC_FIT = 0.88;
-var supAccEm = (gk = 1) => ACC_GLYPH_EM * (SCRIPT_K * DIGIT_EM * gk) * SUP_ACC_FIT / ACC_EM;
-var HEAD_CH_EM = { "0": 0.555, "1": 0.555, "2": 0.555, "3": 0.555, "4": 0.555, "5": 0.555, "6": 0.555, "7": 0.555, "8": 0.555, "9": 0.555, "=": 0.555, "/": 0.392, A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
-var headTextW = (s2, size) => [...s2].reduce((w, c) => w + (HEAD_CH_EM[c] ?? 0.6), 0) * size;
-var GLYPH_INK = {
-  "0": [0.05, -0.013, 0.506, 0.746, 0.555],
-  "1": [0.088, 0, 0.49, 0.733, 0.555],
-  "2": [0.04, 0, 0.505, 0.746, 0.555],
-  "3": [0.029, -0.013, 0.499, 0.746, 0.555],
-  "4": [0.02, 0, 0.524, 0.733, 0.555],
-  "5": [0.027, -0.013, 0.502, 0.733, 0.555],
-  "6": [0.056, -0.013, 0.512, 0.746, 0.555],
-  "7": [0.049, 0, 0.508, 0.733, 0.555],
-  "8": [0.046, -0.013, 0.509, 0.744, 0.555],
-  "9": [0.044, -0.013, 0.501, 0.746, 0.555],
-  A: [4e-3, 0, 0.604, 0.733, 0.608],
-  B: [0.101, 0, 0.612, 0.733, 0.657],
-  C: [0.058, -0.013, 0.602, 0.746, 0.638],
-  D: [0.101, 0, 0.629, 0.733, 0.688],
-  E: [0.101, 0, 0.534, 0.733, 0.589],
-  F: [0.101, 0, 0.523, 0.733, 0.552],
-  G: [0.058, -0.013, 0.615, 0.746, 0.689],
-  "-": [0.046, 0.245, 0.303, 0.315, 0.347],
-  "\xD7": [0.178, 0.054, 0.822, 0.698, 1],
-  V: [1e-3, 0, 0.575, 0.733, 0.575],
-  X: [0.017, 0, 0.557, 0.733, 0.573],
-  x: [0.015, 0, 0.483, 0.543, 0.498],
-  "\u25CF": [0.05, -0.07, 0.95, 0.83, 1],
-  "\u2297": [0.13, 0.01, 0.87, 0.75, 1],
-  "\u25C7": [0.012, -0.108, 0.988, 0.868, 1],
-  "\u25B3": [0.03, 0.012, 0.97, 0.826, 1],
-  "\u25BD": [0.03, -0.066, 0.97, 0.748, 1],
-  "\u25A1": [0.1, -0.02, 0.9, 0.78, 1],
-  "+": [0.038, 0.116, 0.518, 0.622, 0.555],
-  "/": [0.011, -0.179, 0.377, 0.794, 0.392],
-  "\u2298": [0.13, 0.01, 0.87, 0.75, 1]
-};
-function glyphInk(ch, x, y, size, anchor) {
-  const g = GLYPH_INK[ch] ?? [0.03, 0, 0.525, DIGIT_H / DIGIT_EM, DIGIT_W / DIGIT_EM], ox = anchor === "middle" ? x - g[4] * size / 2 : x;
-  return { x0: ox + g[0] * size, x1: ox + g[2] * size, y0: y - g[3] * size, y1: y - g[1] * size };
-}
-function textInkRun(s2, x, y, size) {
-  let cx = x, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for (const ch of s2) {
-    const k = glyphInk(ch, cx, y, size, "start");
-    x0 = Math.min(x0, k.x0);
-    x1 = Math.max(x1, k.x1);
-    y0 = Math.min(y0, k.y0);
-    y1 = Math.max(y1, k.y1);
-    cx += (GLYPH_INK[ch]?.[4] ?? DIGIT_W / DIGIT_EM) * size;
-  }
-  return { x0, x1, y0, y1 };
-}
-var LETTER_EM = { A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
-var letterW = (step) => (LETTER_EM[step] ?? 0.66) * DIGIT_W / 0.555;
-var SCRIPT_K = 0.7;
-var SCRIPT_GAP = 0.03 * FS;
-var SUP_DY = -0.45 * FS;
-var SUB_DY = 0.18 * FS;
-var SUB_DROP = 0.2 * FS;
-var SUP_RISE = Math.max(0, -SUP_DY + SCRIPT_K * DIGIT_H - DIGIT_H);
-var letterParts = (p, middleC) => ({ letter: p.step, acc: p.alter > 0 ? "\u266F".repeat(p.alter) : p.alter < 0 ? "\u266D".repeat(-p.alter) : "", oct: String(shownOctave(p.octave, middleC)) });
-var scriptW = (p, middleC) => {
-  const lp = letterParts(p, middleC);
-  return SCRIPT_GAP + Math.max(lp.acc ? accRunW(accGlyphsOfText(lp.acc), supAccEm()) : 0, lp.oct.length * SCRIPT_K * DIGIT_W);
-};
-var letterNoteW = (ps, middleC) => Math.max(...ps.map((p) => letterW(p.step) + scriptW(p, middleC)));
 
 // src/render/jianpu/chunk.ts
 var contDash = (u) => u.note && u.j > 0 && u.inBar > 1e-6 && u.base >= TPQ && !u.ratio && Math.abs(u.ticks / TPQ - Math.round(u.ticks / TPQ)) < 1e-6;
@@ -8749,11 +8802,12 @@ function drawJianpu(c, mine, mode = "digits") {
         const pt = placed.get(u.index);
         if (!pt) continue;
         const rd = pt.read, rAt = pt.at === q.p.id ? -1 : per.findIndex((x) => x.p.id === pt.at), atOwn = rAt >= 0 && mineSet.has(rAt);
-        const row = rowOf(u.system, atOwn ? rAt : r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = c.look.chordTagStyle === "root" ? theory.rootLabel(rd) : theory.label(rd), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const row = rowOf(u.system, atOwn ? rAt : r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = c.look.chordTagStyle === "root" ? theory.rootLabel(rd) : theory.label(rd);
         const cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;
         c.attach(row, "chordTag", () => placeBelow(row, 0.3 * jk, (y) => {
-          c.prims.push({ t: "text", x: lx, y, s: label, cls, size: fs, anchor: "start" });
-          chordTagsOut.push({ x: lx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: u.index, ...atOwn ? { part: q.p.id } : {} });
+          const ct = chordTextPrims(label, lx, y, fs, cls);
+          c.prims.push(...ct.prims);
+          chordTagsOut.push({ x: lx - TR("chord-tag", 0.3), y: y - fs * 1.05, w: ct.w + TR("chord-tag", 0.6), h: fs * 1.4, read: rd, system: row, index: u.index, ...atOwn ? { part: q.p.id } : {} });
         }, { min: (BAR_Y1 + 0.3) * jk + fs / P(1) * 0.8 }));
       }
     }
@@ -9868,4 +9922,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-dcd7e0eb1353.mjs.map
+//# sourceMappingURL=layout-worker-1fedd31fe654.mjs.map

@@ -126,6 +126,8 @@ export const NOTATION_NOTE: Record<NotationId, (middleC: number) => string> = {
 export const middleCLabel = (n: number): string => (n === 4 ? _t("C{n}（国际通用）", { n }) : `C${n}`);
 /** 和弦写法（第 19 条；统筹 0d97f07a：「和弦辅助」管标不标、「和弦写法」管标成什么样，一行一个键）：页面设置、设置「界面」页、「初始设置」卡同一份名字。 */
 export const CHORD_TAG_STYLE_LABEL: Record<ChordTagStyle, () => string> = { degree: () => _t("级数（I、V7）"), root: () => _t("根音（C、G7）") };
+/** 短名（不带例子）：「跟着软件（现在是：X）」「没选（照软件的默认：X）」里的 X 不套括号（v0.17.34，统筹 9a542d63；17-2 的同一条规矩）。 */
+const CHORD_TAG_STYLE_SHORT: Record<ChordTagStyle, () => string> = { degree: () => _t("级数"), root: () => _t("根音") };
 /** 「和弦写法」是什么（一句；三处同一份）。 */
 export const CHORD_TAG_STYLE_NOTE = (): string => _t("和弦辅助标出来的字写成级数还是根音。开着移调辅助时根音照换到 C 调之后的写，和眼前的谱对得上。");
 /** 「移调辅助」是什么（一句；设置「界面」页、页面设置、「初始设置」卡同一份）。后半句 = 第 19 条第 7 点的披露之一：键上的字也按 C 调写。 */
@@ -139,7 +141,7 @@ export function defaultText(key: LookKey, ctx: LookContext = {}): string {   // 
     case "viewInC": return D.viewInC ? _t("按 C 调看") : _t("不用");   // 第一格是「跟着软件（现在是：X）」，X 里不再套括号（17-2 顺手）
     case "middleC": return `C${D.middleC}`;
     case "chordTags": return D.chordTags ? _t("标") : _t("不标");
-    case "chordTagStyle": return CHORD_TAG_STYLE_LABEL[D.chordTagStyle]();
+    case "chordTagStyle": return CHORD_TAG_STYLE_SHORT[D.chordTagStyle]();
     case "expressions": return D.expressions ? _t("显示") : _t("不显示");
     case "barNumbers": return D.barNumbers === "line" ? _t("每行开头") : _t("不印");
     case "lyricFit": return D.lyricFit === "rhythm" ? _t("按节奏") : _t("按歌词");

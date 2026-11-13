@@ -27,6 +27,7 @@ import { caretStops } from "../frame/carets.ts";
 import { yAt } from "./geometry.ts";
 import type { SongView } from "../../score/song-view.ts";
 import type { LaneKind } from "../frame/lanes.ts";
+import { chordTextPrims } from "../chord-text.ts";   // 和弦标的字 + 升降号字形（v0.17.34）
 
 /** 框架交给五线谱画法的东西（施工单 1b-6a：原来是 engrave() 里的局部变量）。以后 6b–6d 收窄：挂件改成清单、每行一张图元表、摆的结果不抄回单元。 */
 export interface StaffDrawCtx {
@@ -482,11 +483,11 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
         //   这样会压到这个和弦挂在谱下面的符头（符干朝下 = 符头在符干右边、二度挤开的那个也在右边）= 退回符头右边 + 0.3（原来的位置）。没有符干（全音符）= 符头右边
         const headR = nhX(c) + nhW(c) * (second ? 1.95 : 1), sx = stemXOf.get(c), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
         const atStem = sx !== undefined && !(low && headR > sx + P(0.1));
-        const label = look.chordTagStyle === "root" ? theory.rootLabel(rd) : theory.label(rd), tx = atStem ? sx! - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const label = look.chordTagStyle === "root" ? theory.rootLabel(rd) : theory.label(rd), tx = atStem ? sx! - P(ENGRAVE.stem / 2) : headR + P(0.3);
         const row = atRow ?? RW(c), cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;   // 人挑的 = 换个颜色；对不上了 = 灰 + 「?」（v0.16.87）
         attach(row, "chordTag", () => placeBelow(row, 0.3, (y) => {
-          prims.push({ t: "text", x: tx, y, s: label, cls, size: fs, anchor: "start" });
-          chordTagsOut.push({ x: tx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: c.index, ...(atRow !== null ? { part: q.p.id } : {}) });
+          const ct = chordTextPrims(label, tx, y, fs, cls); prims.push(...ct.prims);   // 字 + 升降号字形（v0.17.34；宽 = 画出来的，src/render/chord-text.ts）
+          chordTagsOut.push({ x: tx - TR("chord-tag", 0.3), y: y - fs * 1.05, w: ct.w + TR("chord-tag", 0.6), h: fs * 1.4, read: rd, system: row, index: c.index, ...(atRow !== null ? { part: q.p.id } : {}) });
         }));
       }
     }

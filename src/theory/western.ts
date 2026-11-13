@@ -141,9 +141,10 @@ function thirdDyad(ps: Pitch[], fifths: number, mode: Mode): ChordRead | null {
   return { theory: ID, best: all[0], ties: all.filter((g) => g.cost - all[0].cost < 0.1), all, ...(mode === "la" ? { mode } : {}) };
 }
 /** 标在谱上的那一行字：打平的用「 / 」连起来（最多两个）。 */
-export const chordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g) => g.label).join(" / ") + (r.stale ? "?" : "");   // 人挑的对不上这几个音了 = 带「?」
+//   两个读法打平 = 中间写「 · 」（v0.17.34，统筹 134f74e4 第 4 条：原来是「 / 」，和转位的斜线撞——根音写法会出现「C/E / Em」）；斜线只表示转位。
+export const chordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g) => g.label).join(" · ") + (r.stale ? "?" : "");   // 人挑的对不上这几个音了 = 带「?」
 /** 根音写法（第 19 条）：和 chordLabel 一样的取法，只是每个读法写它的 name（候选小表里的根音名就是这一个）。 */
-export const rootChordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g) => g.name).join(" / ") + (r.stale ? "?" : "");
+export const rootChordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g) => g.name).join(" · ") + (r.stale ? "?" : "");
 /** 一个和弦（根音 + 种类 + 最低音）在这个调里怎么写（v0.16.87：人挑过的按这个现算；算法和 readChord 里同一套）。种类不认识 = null。 */
 function guessOf(root: Pitch, tplId: string, bass: Pitch, fifths: number, mode: Mode): ChordGuess | null {
   if (tplId.startsWith(FREE)) { const nm = stepName(root) + tplId.slice(FREE.length) + (pc(root) === pc(bass) ? "" : `/${stepName(bass)}`); return { root, bass, tpl: tplId, label: nm, name: nm, cost: 0, omitted: 0, no3: false }; }   // 这一版不认识的种类：只写和弦名，不算级数

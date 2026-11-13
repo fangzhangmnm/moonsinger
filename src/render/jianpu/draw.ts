@@ -29,6 +29,7 @@ import { keyParts, keyLayout, keyPrims } from "./keytext.ts";
 import { layoutHead } from "../frame/rowhead.ts";
 import type { Part } from "../frame/cell.ts";
 import { scalePrim } from "../skyline.ts";
+import { chordTextPrims } from "../chord-text.ts";   // 和弦标的字 + 升降号字形（v0.17.34）
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_GAP, UL_W, DASH_PITCH, BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, DIGIT_H, KIT_CHAR, JP_BODY, HEAD_EM, MARK_GAP, MARK_GAP2, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, MARCATO_EM, UNSTRESS_EM, CHORD_H, chordNameW, dotPath } from "./glyphs.ts";
 
 
@@ -365,12 +366,12 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         if (u.kind !== "chunk" || !u.note || u.j !== 0 || u.index < 0 || u.pad) continue;
         const pt = placed.get(u.index); if (!pt) continue;
         const rd = pt.read, rAt = pt.at === q.p.id ? -1 : per.findIndex((x) => x.p.id === pt.at), atOwn = rAt >= 0 && mineSet.has(rAt);   // 一家的：画在最下面那一位的那一行（不是数字行的 = 画在自己这一行）
-        const row = rowOf(u.system, atOwn ? rAt : r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = c.look.chordTagStyle === "root" ? theory.rootLabel(rd) : theory.label(rd), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const row = rowOf(u.system, atOwn ? rAt : r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = c.look.chordTagStyle === "root" ? theory.rootLabel(rd) : theory.label(rd);
         const cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;   // 人挑的 = 换个颜色；对不上了 = 灰 + 「?」（同五线谱）
         //   最少往下让到行身（小节线那一段）下面 + 字高：数字行没有五条线，数字右边的那一截下面可能一点墨都没有（五线谱靠线挡着），不给最小值就贴在行顶上
         c.attach(row, "chordTag", () => placeBelow(row, 0.3 * jk, (y) => {
-          c.prims.push({ t: "text", x: lx, y, s: label, cls, size: fs, anchor: "start" });
-          chordTagsOut.push({ x: lx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: u.index, ...(atOwn ? { part: q.p.id } : {}) });
+          const ct = chordTextPrims(label, lx, y, fs, cls); c.prims.push(...ct.prims);   // 字 + 升降号字形（v0.17.34，同五线谱）
+          chordTagsOut.push({ x: lx - TR("chord-tag", 0.3), y: y - fs * 1.05, w: ct.w + TR("chord-tag", 0.6), h: fs * 1.4, read: rd, system: row, index: u.index, ...(atOwn ? { part: q.p.id } : {}) });
         }, { min: (BAR_Y1 + 0.3) * jk + (fs / P(1)) * 0.8 }));
       }
     }

@@ -4632,3 +4632,17 @@ user 2026-11-13（打字，原话）：
     - 守卫管着（漏了测试红）：锁的看法名单（`SONG_VIEW_KEYS` / `PAGE_LOOK_KEYS`，这一版加的）；写 score.json 那一处 + `KNOWN_SCORE_KEYS` + 门口（这一版加的往返）；形状快照（`shape.json`，冻结样本里用了才盖到）；设备键白名单（`storage-whitelist`）；卡上的名单（`CARD_HABITS` 守卫）。
     - 靠人记：`Song` 字段和 `SongLookKey`、`LOOK_KEYS` 本身；`SongView` / `lookOf` 交出来（要画的话）；`LOOK_LABEL`（打开时那一句的名字，Partial）；`main.ts` 页面设置那一行 + `FOLLOW_KEY` 那张（`Record<string, LookKey>`，不按 LookKey 写满）+ 跟着软件那句的名字表；`FORMAT_MINOR.score` 升一拍 + contract.ts 那段注释；`scripts/freeze-format-sample.mjs` 的 minor 样本 expected.json（v0.17.32 我漏过一次，e63a7e9c 补的）；是习惯的话 `HABIT_KEYS` / `LookDefaults` / `BASE_DEFAULTS`、仓说明白名单；i18n 字。
   - 单元 1904 过。
+- 2026-11-13 · v0.17.34 · 和弦标的字（统筹 134f74e4 第 3、4 条 + 9a542d63「X 不套括号」+ 1c66b599「和弦上方」那句）：
+  - **升降号贴着所属的字**：新的 `src/render/chord-text.ts`，两种谱、屏幕和 PDF 同一份。一个标 = 几段字（text 图元，类 chord-tag）+ 升降号（glyph 图元，Bravura E260 / E262，类 chord-acc，跟着 is-pinned / is-stale 上色）；没加新的图元形状。
+    - 字号、高低照谱头「1=♭B」那一套（keytext：升降号 = 字的 0.78 倍、顶比大写字母顶高一点）；补粗照 7-P 那条（`accStroke` 多一个参数 = 旁边主字的竖笔），竖笔换成这款衬线半粗「I」量的 0.137。
+    - 谁的：紧跟在大写 A–G 后面 = 那个字母的（B♭、F♯、/B♭）；别的 = 后面那个字的（♭VII、♭5、♯9）。缝按墨到墨：所属那边 0.05、另一边 0.1（字号的倍数；`src/look/text.ts CHORD_ACC_GAP`，排版规则的数住 src/look）；这款字字和字之间看得见的缝中位 0.06（量的）。
+    - 字宽、左右留白、大写字母高、竖笔查这款字自己的：`scripts/gen-chord-outlines.py` 一次生成 PDF 的轮廓和 `src/render/chord-text.gen.ts` 的表（Noto Serif SemiBold）。轮廓加了根音写法要的 A–G、g 和「·」「?」（原来缺，v0.17.32 起根音写法在 PDF 里整串退回黑体——我那一版漏的）；♭ ♯ 不再借进衬线字（谱上是 Bravura 字形）。
+    - 让位：点击框的宽 = 画出来的宽（原来字数 × 0.6）。**天际线**里和弦标的字原来按正文的尺子量（黑体），衬线半粗「VII」实际宽三成——出图时抓到两个标挤到同一行贴在一起（简谱级数「♭VIIV7♯9」）；现在天际线按这款字的表量（`skyline.ts primInk`）。
+  - **打平的分隔**「 / 」→「 · 」（`chordLabel` / `rootChordLabel`）；斜线只表示转位。
+  - **「X 不套括号」**：`defaultText("chordTagStyle")` 回短名「级数 / 根音」（页面设置「跟着软件（现在是：X）」和习惯那几行「没选（照软件的默认：X）」同一处）；选项本身照旧带例子。守卫：每一样、两种习惯下 X 都不带括号。
+  - **「和弦上方」**：页面设置「和弦辅助」那句说明改成「下面」（两种谱都是 placeBelow），song-view.ts、main.ts 两处注释一起改。
+  - **底本**：重冻 3 份（三种谱的「按 C 调看 + 级数」）。变的：17 个和弦标的点击框宽（估的 → 画出来的，都变窄）；五线谱那一份第二行起整体上移 1 个线间距（第一行的「ii/4」按衬线字的真宽不再撞到东西，这一行少让一档）。别的 38 份没动。
+  - **测试**：`test/chord-text.test.ts`（四种位置 × 所属那边缝 ≤ 字距中位、另一边更宽；补粗后主笔画 = 竖笔 0.9；宽 = 画出来的；图元的类）；note-name-outlets 改成从点击框里拼回画出来的字（也核了框盖住了墨）；pdf.test 轮廓的字 = 两种写法 + 字母 + 「·」「?」、不含 ♭ ♯、和字宽表逐字一样；look-rules 登记 ACC_K / RISE_K（字形的数据）。反证：所属那边缝放到 0.2 = 8 红。单元 1916 过。
+  - **PDF**：node 里真写了两份（根音 / 级数）：缺字、缺音乐字形都是 0；用到的字形 = 衬线轮廓的 A–G、m、·…和带描边的 Bravura ♭ ♯。
+  - **图**（job tmp `ct34/v0.17.34-{staff,jianpu}-{root,degree}.png`，每张三行：改前 / 改后 / 备选「升降号再大 1.2 倍」）。大小我照谱头那一套定的（0.78 倍），看着像角标；要不要放大归统筹 / user 看图。
+  - **已知的**：屏幕上的衬线字是设备自己的（`"Noto Serif", "Times New Roman"…`），字宽表是 Noto Serif 的；iPad 上没有 Noto Serif 时多半是 Times，字比表窄一点 = 升降号前后的缝比 PDF 里大一点。根上是屏幕没有 vendor 这款字（PDF 用的是轮廓）；要严丝合缝 = 把这几十个字做成网页字体随 app 发，没做，统筹定。

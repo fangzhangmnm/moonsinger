@@ -92,8 +92,9 @@ export const ACC_GLYPH = {
  *  ② 看齐之后整家再和主字比：参照粗细缩到实际字号后明显轻于「主字竖笔 × 0.9」（不到它的 FAMILY_LIGHT）才一起补，补到那条线为止；数字行、谱头、字母谱角标现在都不用补（♯ 约是线的 85%–89%）。
  *  字号的几成（描边两边各长一半，所以补的就是差多少）；主字竖笔 = vendor 那款黑体「I」量的（src/look/text.ts STEM_REGULAR），同小字补粗。 */
 export const ACC_FAMILY_DOM = ACC_GLYPH.sharp.dom, FAMILY_LIGHT = 0.8;
-export const accStroke = (g: { dom: number }, em: number, main: number): number => {
-  const align = Math.max(0, ACC_FAMILY_DOM - g.dom), target = SMALL_STEM_K * STEM_REGULAR * main, fam = ACC_FAMILY_DOM * em;
+//   stem = 旁边主字的竖笔（字号的倍数）：默认 = 正文黑体常规（数字行、谱头、字母谱角标）；和弦标是衬线半粗，传它自己的（src/render/chord-text.ts，v0.17.34）。
+export const accStroke = (g: { dom: number }, em: number, main: number, stem = STEM_REGULAR): number => {
+  const align = Math.max(0, ACC_FAMILY_DOM - g.dom), target = SMALL_STEM_K * stem * main, fam = ACC_FAMILY_DOM * em;
   return align + (fam < FAMILY_LIGHT * target ? (target - fam) / em : 0);
 };
 /** 数字行上升降号的字号（字形的 size，数字行的单位）：照样张的大小——♭ 的高（含下伸）约等于原来文字 ♭ 的高（0.59 字号的字）。 */

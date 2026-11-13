@@ -1369,8 +1369,8 @@ export declare const S: {
     readonly 不标: {
         readonly en: "Don’t show";
     };
-    readonly "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u6807\u51FA\u5B83\u662F\u4EC0\u4E48\u548C\u5F26\uFF08\u5199\u6CD5\u5728\u4E0B\u4E00\u884C\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009": {
-        readonly en: "Label stacked chords with what chord they are (how they are written is the next row); tap one to see all candidates";
+    readonly "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0B\u9762\u6807\u51FA\u5B83\u662F\u4EC0\u4E48\u548C\u5F26\uFF08\u5199\u6CD5\u5728\u4E0B\u4E00\u884C\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009": {
+        readonly en: "Label stacked chords underneath with what chord they are (how they are written is the next row); tap one to see all candidates";
     };
     readonly 演奏法和表情: {
         readonly en: "Articulations & dynamics";
@@ -5601,6 +5601,12 @@ export declare const S: {
     };
     readonly "\u6839\u97F3\uFF08C\u3001G7\uFF09": {
         readonly en: "Roots (C, G7)";
+    };
+    readonly 级数: {
+        readonly en: "Degrees";
+    };
+    readonly 根音: {
+        readonly en: "Roots";
     };
     readonly "\u548C\u5F26\u8F85\u52A9\u6807\u51FA\u6765\u7684\u5B57\u5199\u6210\u7EA7\u6570\u8FD8\u662F\u6839\u97F3\u3002\u5F00\u7740\u79FB\u8C03\u8F85\u52A9\u65F6\u6839\u97F3\u7167\u6362\u5230 C \u8C03\u4E4B\u540E\u7684\u5199\uFF0C\u548C\u773C\u524D\u7684\u8C31\u5BF9\u5F97\u4E0A\u3002": {
         readonly en: "Whether chord labels are written as degrees or as roots. With the transposition aid on, roots follow the score in C, so they match what you see.";

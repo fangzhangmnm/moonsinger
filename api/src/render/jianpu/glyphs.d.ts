@@ -90,7 +90,7 @@ export declare const ACC_GLYPH: {
 export declare const ACC_FAMILY_DOM: 0.09, FAMILY_LIGHT = 0.8;
 export declare const accStroke: (g: {
     dom: number;
-}, em: number, main: number) => number;
+}, em: number, main: number, stem?: number) => number;
 /** 数字行上升降号的字号（字形的 size，数字行的单位）：照样张的大小——♭ 的高（含下伸）约等于原来文字 ♭ 的高（0.59 字号的字）。 */
 export declare const ACC_GLYPH_EM: number;
 /** 升降号的顶比它那个数字的顶高多少（样张：文字 ♭ 原来就略高出数字顶）。几个升降号之间的缝。 */

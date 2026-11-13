@@ -20,6 +20,10 @@ export function smallWeight(k: number): 400 | 600 {
 }
 /** 数字行的主字字号（jp-digit）：小字的 k = 它的字号 ÷ 这个。 */
 const JP_MAIN_EM = 2.5;
+/** 和弦标里的升降号和旁边的字之间看得见的缝（墨到墨，字号的倍数；v0.17.34，统筹 134f74e4「升降号贴着它所属的字」）：
+ *  tight = 贴着它所属的那个字（B♭ 的 B、♭VII 的 V）——比这款衬线半粗字和字之间看得见的缝的中位 0.06 小一点；loose = 另一边（B♭ 和后面的 7），比字距大，读成「B♭ 7」不是「B ♭7」。
+ *  数是 AI 照量出来的字距起的（施工 Claude Opus 5.5），好不好看归 user 看图。 */
+export const CHORD_ACC_GAP = { tight: 0.05, loose: 0.1 } as const;
 /** 速度那一串的字号（线间距）；「1=X」、和弦级数、风格记号和它一样大。 */
 export const TEMPO_EM = 1.35;
 /** 歌词的字号（线间距；跟谱）。 */

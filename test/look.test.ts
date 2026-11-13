@@ -118,4 +118,9 @@ describe("版面页「边距」那一行（第 17 条 17-2 顺手）", () => {
     eq(JSON.stringify(lookOf(followDefault(other, "marginMm")).paper.marginMm), JSON.stringify({ l: 16, r: 16, t: 16, b: 16 }), "选「跟着软件」之后真的用这个数");
   });
   it("「移调辅助」第一格：跟着软件（现在是：不用）——不再括号套括号", () => { eq(defaultText("viewInC"), "不用"); });
+  it("每一样的「现在是：X」/「照软件的默认：X」里 X 都不带括号（v0.17.34，统筹 9a542d63：和弦写法原来是「级数（I、V7）」，手机上折行）；习惯选了别的也一样", () => {
+    for (const k of LOOK_KEYS) for (const ctx of [{}, { habits: { chordTagStyle: "root", notation: "jianpu", viewInC: true, middleC: 3 } }] as const)
+      assert(!/[（(]/.test(defaultText(k, ctx as never)), `${k}：${defaultText(k, ctx as never)}`);
+    eq(defaultText("chordTagStyle"), "级数");
+  });
 });

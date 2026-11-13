@@ -1156,6 +1156,13 @@ body.print-look #bar, body.print-look .zoom-reset, body.print-look .score-overla
 /* v0.16.87：人挑过的读法 = 墨色（和自动认的分得开）；挑的对不上这几个音了 = 灰（字后面带「?」） */
 .staff-svg text.chord-tag.is-pinned { fill: var(--ink); }
 .staff-svg text.chord-tag.is-stale { fill: var(--muted); }   /* v0.16.34：谱上分析和声那种衬线字（PDF = vendor/fonts/serif 的轮廓） */
+/* 和弦标里的升降号（v0.17.34）：Bravura 字形（src/render/chord-text.ts），颜色跟字一样；补粗的描边同色（只给带描边的上描边色，不然默认 1px 描边） */
+.staff-svg text.chord-acc { fill: var(--accent); }
+.staff-svg text.chord-acc[stroke-width] { stroke: var(--accent); }
+.staff-svg text.chord-acc.is-pinned { fill: var(--ink); }
+.staff-svg text.chord-acc.is-pinned[stroke-width] { stroke: var(--ink); }
+.staff-svg text.chord-acc.is-stale { fill: var(--muted); }
+.staff-svg text.chord-acc.is-stale[stroke-width] { stroke: var(--muted); }
 .ctx-menu.chord-info { min-width: 220px; }
 .chord-cand { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 5px 10px; align-items: baseline; }
 .chord-cand b { font-size: 15px; }

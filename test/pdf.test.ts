@@ -32,13 +32,19 @@ describe("PDF：资产", () => {
     const miss = [...need].map((c) => c.toString(16).toUpperCase()).filter((h) => !out.glyphs[h]);
     eq(miss.join(" "), "", "缺的码位");
   });
-  it("和弦级数会用到的每个字符在衬线字轮廓里都有（v0.16.34；缺了就跑 scripts/gen-chord-outlines.py）", () => {
-    const out = JSON.parse(fs.readFileSync(new URL("vendor/fonts/serif/chord-outlines.json", root), "utf8") as string) as { unitsPerEm: number; glyphs: Record<string, unknown> };
+  it("和弦标会用到的每个字符在衬线字轮廓里都有（v0.16.34；v0.17.34 起两种写法 + 根音字母 + 「·」「?」，♭ ♯ 不是字、是 Bravura 字形；缺了就跑 scripts/gen-chord-outlines.py）", async () => {
+    const out = JSON.parse(fs.readFileSync(new URL("vendor/fonts/serif/chord-outlines.json", root), "utf8") as string) as { unitsPerEm: number; glyphs: Record<string, { adv: number }> };
     eq(out.unitsPerEm, 1000, "和 Bravura 一样 1000 单位一个 em（PDF 里同一个 em 换算）");
     const src = fs.readFileSync(new URL("src/theory/western.ts", root), "utf8") as string;
-    const chars = new Set([...[...src.matchAll(/rs: "([^"]*)"/g)].map((m) => m[1]!).join(""), ..."IVXivx0123456789/() ♭♯"]);
-    const miss = [...chars].filter((c) => !out.glyphs[`T${c.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`]);
-    eq(miss.join(""), "", "缺的字");
+    const chars = new Set([...[...src.matchAll(/(?:rs|sym): "([^"]*)"/g)].map((m) => m[1]!).join(""), ..."IVXivx0123456789/() ABCDEFG·?"]);
+    chars.delete("♭"); chars.delete("♯");
+    const key = (c: string) => `T${c.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`;
+    eq([...chars].filter((c) => !out.glyphs[key(c)]).join(""), "", "缺的字");
+    assert(!out.glyphs[key("♭")] && !out.glyphs[key("♯")], "♭ ♯ 不再借进衬线字（和弦标里的升降号是谱上的 Bravura 字形，src/render/chord-text.ts）");
+    // 排版用的字宽表和轮廓同一次生成：字一样、字宽一样（屏幕排的宽 = PDF 画出来的宽）
+    const G = await import("../src/render/chord-text.gen.ts");
+    eq(Object.keys(G.CHORD_ADV).sort().join(""), Object.keys(out.glyphs).map((k) => String.fromCodePoint(parseInt(k.slice(1), 16))).sort().join(""), "字宽表和轮廓的字一样");
+    for (const [c, a] of Object.entries(G.CHORD_ADV)) eq(a, out.glyphs[key(c)]!.adv / 1000, `「${c}」的字宽`);
   });
   it("字体（思源黑体）= 从 WXHW 拷来的那份（逐字节）；拼音字体退役了（7-J）", () => {
     const sha = (p: string) => createHash("sha256").update(fs.readFileSync(new URL(p, root))).digest("hex");

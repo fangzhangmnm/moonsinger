@@ -716,7 +716,7 @@ function writeAndLocate(write: (s: EditorState) => EditorState, gesture?: string
 let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消旧的（不然会掐掉新音）
 /** 看谱方式「按 C 调看」（v0.16.10）：谱换到 C 调画、每个调号上方写「1=原来的调」；键上大字写谱上画成的名字（第 19 条，原来写级数）。user 11-07「我需要一个残疾人模式…显示的时候…帮我转到 C 大调上面，然后…写一个一等于 F」
  *  「设计里面专门开一个就是 Accessibility 辅助模式的框，这是第一个可选项」「键盘的键位不能动」。
- *  和弦标级数（v0.16.11）：叠音的和弦上方写级数（src/theory/）。user 11-07「我根本看不懂我自己摸的和弦，摸出来是几级和弦，我脑袋根本转不过来」「和弦上标级数…写个深模块…就你自己写」。
+ *  和弦标级数（v0.16.11）：叠音的和弦下面写级数（src/theory/；画在下面那一道，v0.17.34 把原来写的「上方」改对）。user 11-07「我根本看不懂我自己摸的和弦，摸出来是几级和弦，我脑袋根本转不过来」「和弦上标级数…写个深模块…就你自己写」。
  *  谱面分家第三刀（2026-11-11）起这两样是**这首歌的**设置（score.json；读 / 改只走 src/score/song-view.ts，改走 setSongLook = 修改锁的「看法」）。
  *  设备上原来那两个键（device-kv「view-in-c」「chord-tags」）不再读、也不删；不把旧值搬进歌（施工单第三节「3」，user 11-11 夜听过这个后果）。 */
 const view = new ScoreView(scoreEl, {
@@ -2247,7 +2247,7 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
       // 中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；第 18 条起一直在——它管所有写成「字母 + 八度数字」的地方，统筹 b149a4d9 第 4 点）
       setItem(_t("中央 C 叫"), sel("mc", [fol("middleC"), ...MIDDLE_C_NAMES.map((n) => [String(n), middleCLabel(n)] as const)], cur("middleC", String(look.middleC))), MIDDLE_C_NOTE() + IN_SONG) +
       // 和弦辅助 = 标不标（chordTags）、和弦写法 = 标成什么样（chordTagStyle）：一行一个键（第 19 条，统筹 0d97f07a）
-      setItem(_t("和弦辅助"), sel("ct", [fol("chordTags"), ["on", _t("标")], ["off", _t("不标")]], cur("chordTags", look.chordTags ? "on" : "off")), _t("叠在一起的和弦上方标出它是什么和弦（写法在下一行）；点它看全部候选") + IN_SONG) +
+      setItem(_t("和弦辅助"), sel("ct", [fol("chordTags"), ["on", _t("标")], ["off", _t("不标")]], cur("chordTags", look.chordTags ? "on" : "off")), _t("叠在一起的和弦下面标出它是什么和弦（写法在下一行）；点它看全部候选") + IN_SONG) +
       setItem(_t("和弦写法"), sel("cts", ...known(cur("chordTagStyle", D.st.song.chordTagStyle), [fol("chordTagStyle"), ...CHORD_TAG_STYLES.map((v) => [v, CHORD_TAG_STYLE_LABEL[v]()] as const)], cur("chordTagStyle", look.chordTagStyle))), CHORD_TAG_STYLE_NOTE() + IN_SONG) +
       // 演奏法和表情（7-G；user 11-11 深夜「显示里面再加一个不显示articulation和表情的选项。打印时也许会用，相当于前面讨论的不overwhelm小孩和初学者」）
       setItem(_t("演奏法和表情"), sel("expr", [fol("expressions"), ["on", _t("显示")], ["off", _t("不显示")]], cur("expressions", look.expressions ? "on" : "off")),

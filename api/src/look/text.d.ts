@@ -15,6 +15,13 @@ export interface TextStyle {
  *  缩成主字的 k 倍之后，在常规 / 半粗里挑竖笔最接近目标的。半粗在 PDF 里 = 描边 BOLD_STROKE 字号（src/export/pdf.ts 同一个数，测试核着），屏幕 = CSS 600。 */
 export declare const STEM_REGULAR = 0.092, BOLD_STROKE = 0.035, SMALL_STEM_K = 0.9;
 export declare function smallWeight(k: number): 400 | 600;
+/** 和弦标里的升降号和旁边的字之间看得见的缝（墨到墨，字号的倍数；v0.17.34，统筹 134f74e4「升降号贴着它所属的字」）：
+ *  tight = 贴着它所属的那个字（B♭ 的 B、♭VII 的 V）——比这款衬线半粗字和字之间看得见的缝的中位 0.06 小一点；loose = 另一边（B♭ 和后面的 7），比字距大，读成「B♭ 7」不是「B ♭7」。
+ *  数是 AI 照量出来的字距起的（施工 Claude Opus 5.5），好不好看归 user 看图。 */
+export declare const CHORD_ACC_GAP: {
+    readonly tight: 0.05;
+    readonly loose: 0.1;
+};
 /** 速度那一串的字号（线间距）；「1=X」、和弦级数、风格记号和它一样大。 */
 export declare const TEMPO_EM = 1.35;
 /** 歌词的字号（线间距；跟谱）。 */

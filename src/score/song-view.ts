@@ -38,7 +38,7 @@ export type LyricFit = "rhythm" | "lyrics";
 /** 这首歌怎么看。排版、PDF、键盘上的大字、鬼音符、谱面的拖音高都读它，不各读各的歌字段。 */
 export interface SongView {
   readonly notation: NotationId;
-  /** 叠音的和弦上方写级数（乐理模块 src/theory/）。 */
+  /** 叠音的和弦下面写它是什么和弦（乐理模块 src/theory/；两种谱都贴在下面那一道，placeBelow）。 */
   readonly chordTags: boolean;
   /** 标的时候写成什么：级数（V7）还是根音（G7）（第 19 条）。认不出来的值 = 级数。 */
   readonly chordTagStyle: ChordTagStyle;
