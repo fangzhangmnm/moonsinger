@@ -626,7 +626,7 @@ const untouchedNewSong = (): boolean => D.newSong() && H.home.kind === "none" &&
  *  （同新建那一条路；不进撤销、不标脏、不出提示）→ 画的地方都跟着。动过的、有家的歌不碰（第 21 条）。 */
 function habitsChanged(): void {
   habitCtx = { habits: habitsFrom(deviceKvGet) };
-  if (untouchedNewSong()) { const h = H.home; loadNewSong(h.kind === "none" ? h.pendingFolder : null, { stem: H.stem }); diagNote("habits", "rebuilt the untouched new song"); }
+  if (untouchedNewSong()) { const h = H.home; loadNewSong(h.kind === "none" ? h.pendingFolder : null, { stem: H.stem, named: H.named, view: serializeDesk(deskNow()), references: refHost.files() }); diagNote("habits", "rebuilt the untouched new song"); }
   afterHabits();
 }
 function writeHabit<K extends HabitKey>(k: K, v: LookDefaults[K] | undefined): void {
@@ -3322,10 +3322,13 @@ function applyDesk(d: Desk): void {
  *  现在登记的：走带（在放 / 在准备 = 停，同按停、尾巴自然收；小月相正在唱的那句取消、不留预唱）；按着没松的试听音（松开）。 */
 function putDownSong(): void { stopPlay({ prewarm: false }); sound.allOff(); }
 /** 新建一首（三处「新歌」+ 一笔没动的空白歌跟着习惯重建，同一个构造、同一个载入口；第 21 条）：按模板把乐手写进去（第 16 条）、「跟着」的那几项写成这一刻的值。
- *  pendingFolder = 歌库里新建（首笔安家）；rebuild = 重建开着的那首空白歌：文件名不换、开着的面板不关（设置里改习惯时设置面板还开着）。 */
-function loadNewSong(pendingFolder: string | null, rebuild?: { stem: string }): void {
+ *  pendingFolder = 歌库里新建（首笔安家）；rebuild = 重建开着的那首空白歌 = **只换歌本身**（杂事版 v0.17.42，统筹「一处跟进」）：家、文件名和它是不是人起的、
+ *  视图态（排法 / 范围 / 键盘的「1=」长短音域…）、参考窗的卡、开着的面板和键盘收没收，原样带着——这些都不算提交，D.touched 管不到，人可能已经动过。
+ *  视图态里指着歌里东西的（在哪张纸、哪位声部藏着）对一首没动过的新歌是空的，原样带过去不会指错（applyDesk 找不到就不挪）。 */
+function loadNewSong(pendingFolder: string | null, rebuild?: { stem: string; named: boolean; view: unknown; references: Record<string, Uint8Array> }): void {
   const song = bornSong(initState().song);
-  loadDoc(song, { home: { kind: "none", pendingFolder }, stem: rebuild?.stem ?? defaultStem(), named: false, extras: templateExtras(song), isNew: true, ...(rebuild ? { keepPanels: true } : {}) });
+  loadDoc(song, { home: { kind: "none", pendingFolder }, stem: rebuild?.stem ?? defaultStem(), named: rebuild?.named ?? false, extras: templateExtras(song), isNew: true,
+    ...(rebuild ? { keepPanels: true, view: rebuild.view, references: rebuild.references } : {}) });
 }
 function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array>; keepPanels?: boolean; isNew?: boolean }): void {
   perfApi.mixBypass = false; busMuted.clear();   // 效果全关 / 混音轨静音是这次听的，换歌复位
@@ -3347,7 +3350,7 @@ function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean;
   applyDesk(d);
   // 打开 = 上次存时的模式；谱里已经有音 = 键盘先收着，点一下才开（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」「或者默认键盘是关的，点一下才会开。」）。空的新歌照旧开着键盘
   ws.mode = d.mode; if (d.mode !== "listen") lastEditMode = d.mode;
-  if (touchLike) ws.collapsed = D.st.song.papers.some((pp) => Object.values(pp.tracks).some((t) => t.some((x) => x.kind === "note")));  ws.aside = false;   // 鼠标键盘范式：开歌不动键盘（v0.16.89）
+  if (!o.keepPanels) { if (touchLike) ws.collapsed = D.st.song.papers.some((pp) => Object.values(pp.tracks).some((t) => t.some((x) => x.kind === "note")));  ws.aside = false; }   // 鼠标键盘范式：开歌不动键盘（v0.16.89）；重建空白歌 = 键盘收没收照旧（只换歌本身）
   applyWorkspace();
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);

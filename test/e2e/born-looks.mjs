@@ -106,6 +106,27 @@ const openSheet = async (p) => { const c = await p.evaluate(() => { const r = do
   check((await nota(p)) === "jianpu" && (await kind(p)) === "jianpu", "写一个音、设置里把习惯改回五线谱 → 还是简谱");
   await p.context().close(); }
 
+// ── 四、重建只换歌本身（杂事版 v0.17.42，统筹「一处跟进」）：新歌不动，改文件名 + 键盘换一个「1=」+ 视图换成横卷 → 改习惯 → 三样都还在 ──
+{ const p = await page(), stem = () => p.evaluate(() => document.querySelector("#fileBtn")?.textContent ?? "");
+  await p.goto(BASE); await p.waitForTimeout(800);
+  await p.click("#fileBtn"); await p.waitForSelector("#fnIn"); await p.fill("#fnIn", "my-own-name"); await p.press("#fnIn", "Enter"); await p.waitForTimeout(200);
+  const kr = await p.evaluate(() => { const r = document.querySelector(".pad-panel .k-key").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await p.mouse.move(kr.x, kr.y); await p.mouse.wheel(0, 100); await p.waitForTimeout(200);
+  const in0 = await p.evaluate(() => { const i = window.__moonsinger.state().input; return { auto: i.inputAuto, fifths: i.inputFifths }; });
+  const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await p.mouse.click(c.x, c.y); await p.waitForSelector(".set-panel"); await pickOnPage(p, '.set-panel [data-pg="flow"]', "scroll"); await p.waitForTimeout(200);
+  await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+  check((await stem()) === "my-own-name" && in0.auto === false && (await p.evaluate(() => window.__moonsinger.desk().scroll)) === true && !(await p.evaluate(() => window.__moonsinger.history().past)), "（前提）新歌一笔没动：文件名改成自己起的、键盘「1=」拨了一格（手动）、视图横卷", `${await stem()} · ${JSON.stringify(in0)}`);
+  await habit(p, "jianpu");
+  check((await nota(p)) === "jianpu", "（前提）改习惯 = 重建了（谱种照新习惯）");
+  check((await stem()) === "my-own-name", "重建之后：文件名还是自己起的", await stem());
+  const in1 = await p.evaluate(() => { const i = window.__moonsinger.state().input; return { auto: i.inputAuto, fifths: i.inputFifths }; });
+  check(in1.auto === false && in1.fifths === in0.fifths, "重建之后：键盘的「1=」还是拨过的那一格", JSON.stringify(in1));
+  check((await p.evaluate(() => window.__moonsinger.desk().scroll)) === true, "重建之后：视图还是横卷");
+  await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, song: { ...s.song, title: "Hello" } }); }); await p.waitForTimeout(200);
+  check((await stem()).replace(/\s*•$/, "") === "my-own-name", "重建之后再起歌名：文件名不跟着歌名走（还记得是人起的；「•」= 没存）", await stem());
+  await p.context().close(); }
+
 check(!errs.length, "没有页面错误", errs.join(" / "));
 await b.close();
 console.log(`\n  ${pass} passed, ${fail} failed`);
