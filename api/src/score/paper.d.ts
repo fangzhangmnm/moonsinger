@@ -16,6 +16,16 @@ export interface Paper {
     density?: Density;
     staffMm?: number;
 }
+/** 四边边距（mm）。 */
+export type Margins = Paper["marginMm"];
+/** 纸张的选择（第 17 条 17-1；score.json `paper`）：四种之一，或者按值带着的一张（别家的谱带来的大小；以后人自己填的也是这一种）。 */
+export type PaperChoice = {
+    kind: PaperKind;
+} | {
+    kind: "other";
+    widthMm: number;
+    heightMm: number;
+};
 /** 五线谱高（四个线间距）mm：7 mm = 一个线间距 1.75 mm（打谱软件的常用大小）= 舒适档；紧凑 5 mm。 */
 export declare const STAFF_MM = 7, STAFF_MM_COMPACT = 5;
 export declare const DENSITIES: {
@@ -32,7 +42,14 @@ export declare const spMm: (p: Paper) => number;
  *  屏幕（score-view geo）、PDF（score-pdf printOpts）、排版 worker 量字都用它，三处一起改，不然断行不一样。 */
 export declare const textScaleOf: (p: Paper) => number;
 export declare const PAPER_KINDS: PaperKind[];
-export declare const DEFAULT_PAPER: PaperKind;
+export declare const isPaperKind: (v: unknown) => v is PaperKind;
+/** 这一种纸自己的边距（四边一样）。 */
+export declare const marginsOf: (kind: PaperKind) => Margins;
+/** 这一种纸的宽高（mm）。 */
+export declare const sizeOf: (kind: PaperKind) => {
+    w: number;
+    h: number;
+};
 /** 档名后面的一句话（纸的设置面板里）。 */
 export declare const PAPER_NOTE: Record<PaperKind, string>;
 export declare const PAPER_LABEL: Record<PaperKind, string>;

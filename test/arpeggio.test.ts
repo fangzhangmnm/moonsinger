@@ -4,6 +4,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, tr, TPQ, withArt, withPitches, type Token, type NoteTok } from "../src/score/song.ts";
 import { lightNotes } from "../src/engine/timeline.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 let nid = 9900;
 const P = (s: string, o: number) => ({ step: s as "C", alter: 0, octave: o });
@@ -29,7 +30,7 @@ describe("琶音", () => {
   });
   it("MusicXML：和弦里每个音都写 <arpeggiate/>；读回来 = 这个和弦有琶音", () => {
     const info = { id: "P1", name: "Pno", instrumentName: "Piano", sound: "keyboard.piano", program: 1 };
-    const w = writeMusicXml({ parts: [{ info, tokens: [...head(), chord({ art: ["arpeggio"] }), chord(), chord(), chord()] }] }, { software: "t", date: "2026-10-10" });
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: [...head(), chord({ art: ["arpeggio"] }), chord(), chord(), chord()] }] }, { software: "t", date: "2026-10-10" });
     eq((w.xml.match(/<arpeggiate\/>/g) ?? []).length, 3, "三个音各一个");
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.filter((t) => t.kind === "note") as NoteTok[];
     eq(JSON.stringify(back.map((t) => (t.art ?? []).includes("arpeggio"))), "[true,false,false,false]");

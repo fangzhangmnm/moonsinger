@@ -93,7 +93,7 @@ export type ScorePress =
     };
 };
 /** 怎么画、画什么（每次排版 / 打开歌词框都问）：这次打开、这台设备上的看法（不进歌文件的）+ 声部的情况（谁在演、隐藏、单声…）。
- *  这首歌自己的显示设置（谱种 / 和弦标级数 / 按 C 调看 / 每轨和弦选项）不在这里：在歌里，谱面读 songViewOf(get().song)（谱面分家第三刀）。 */
+ *  这首歌自己的显示设置（谱种 / 和弦标级数 / 按 C 调看 / 每轨和弦选项）不在这里：在歌里，谱面读 src/look lookOf(get().song)（谱面分家第三刀）。 */
 export interface ScoreLook {
     /** 要画的声部（隐藏的不在里面；顺序 = 总谱从上到下）。 */
     parts(): PartView[];
@@ -134,7 +134,7 @@ export interface ScoreViewHost {
     set(next: EditorState, opts?: {
         gesture?: string;
     }): void;
-    /** ② 怎么画、画什么（这次打开 / 这台设备上的看法）。这首歌自己的显示设置不在这里：在歌里，谱面读 songViewOf(get().song)。 */
+    /** ② 怎么画、画什么（这次打开 / 这台设备上的看法）。这首歌自己的显示设置不在这里：在歌里，谱面读 src/look lookOf(get().song)。 */
     look: ScoreLook;
     /** 在哪儿排（谱面分家第三刀从 look 里单拎出来）——排版 worker：地址（dist/layout-worker-<hash>.mjs；构建时 define 进主 bundle；没给 / 浏览器没有 OffscreenCanvas = 排版留在主线程）+ 建不起来 / 中途坏了（之后一直走主线程）时宿主记进黑匣子。2026-10-21 */
     worker?: {

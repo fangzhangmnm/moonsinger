@@ -4,7 +4,8 @@
 //     ② 排版：印出来的字（「编排」、换气后面的「吸 / 深吸」）按这一项；不印的提示照旧按界面语言（opts.locale）。跟着界面 = 和原来一模一样。
 //     ③ 修改锁：改这一项算「看法」（songLook 的核验认它；顺手动了别的 = 不认）。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { songViewOf, setTextLang, textLangIn } from "../src/score/song-view.ts";
+import { setTextLang, textLangIn } from "../src/score/song-view.ts";
+import { lookOf } from "../src/look/index.ts";
 import { emptySong, initState, type Song } from "../src/score/song.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { sameExceptSongView } from "../src/app/edit-lock-table.ts";
@@ -24,11 +25,11 @@ describe("谱上的字：进门那一处定没写的意思（12-4）", () => {
   it("新歌明着写「跟着界面」", () => { eq(emptySong().textLang, "ui"); eq(initState().song.textLang, "ui"); });
   it("老文件（minor 9 写的，没有这个键）= 跟着界面，歌里有值", () => {
     const o = openBytes("sample.mxl", bytesOf("test/fixtures/format/minor/score-9/sample.mxl"));
-    eq(o.song.textLang, "ui"); eq(songViewOf(o.song).textLang, "ui");
+    eq(o.song.textLang, "ui"); eq(lookOf(o.song).textLang, "ui");
   });
   it("冻结样本 minor 10（写的 en）读回来 = en", () => {
     const o = openBytes("sample.mxl", bytesOf("test/fixtures/format/minor/score-10/sample.mxl"));
-    eq(o.song.textLang, "en"); eq(songViewOf(o.song).textLang, "en");
+    eq(o.song.textLang, "en"); eq(lookOf(o.song).textLang, "en");
   });
   it("跟着界面也明写 \"ui\"（第 16 条 16-3）；写了一种语言 = 原样写、原样读回", () => {
     const s = emptySong();
@@ -43,7 +44,7 @@ describe("谱上的字：进门那一处定没写的意思（12-4）", () => {
   it("不认识的值（更新的版本写的）：原样留在歌里、存回去，画的时候当跟着界面；空串 / 不是字 = 跟着界面", () => {
     const b = withScoreJson(save(emptySong()), (j) => { j.textLang = "ja"; j.minor = 999; }), o = openBytes("x.mxl", b);   // 比这一版新的那一份（16-4 A3：只有它的怪值原样留）
     eq(openBytes("x.mxl", withScoreJson(save(emptySong()), (j) => { j.textLang = "ja"; })).song.textLang, "ui", "不比这一版新的 = 读成新建的那一个");
-    eq(o.song.textLang, "ja"); eq(songViewOf(o.song).textLang, "ui");
+    eq(o.song.textLang, "ja"); eq(lookOf(o.song).textLang, "ui");
     eq(scoreJson(save(o.song)).textLang, "ja", "写回去");
     for (const bad of ["", 3, null]) eq(openBytes("x.mxl", withScoreJson(save(emptySong()), (j) => { j.textLang = bad; })).song.textLang, "ui", `textLang = ${JSON.stringify(bad)}`);
   });

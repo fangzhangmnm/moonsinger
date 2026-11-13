@@ -27,7 +27,7 @@ export interface PartXml {
 export interface ScoreXml {
     title?: string;
     movementTitle?: string;
-    paper?: Paper;
+    paper: Paper;
     credits?: string;
     rights?: string;
     parts: PartXml[];

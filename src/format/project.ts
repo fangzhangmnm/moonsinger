@@ -20,7 +20,9 @@ import { songPlayOrder } from "../score/arrange.ts";
 import { sungLangsOf } from "../engine/timeline.ts";
 import { FX_KINDS } from "../engine/fx.ts";
 import { withGrooveData } from "../score/groove.ts";
-import { NOTATIONS, TEXT_LANGS, isMiddleC } from "../score/song-view.ts";
+import { TEXT_LANGS } from "../score/song-view.ts";
+import { lookOf, trackLookOf, lookFromFile } from "../look/index.ts";
+import type { Paper } from "../score/paper.ts";   // 「现在怎么画」、每张纸每个声部那几样、读文件时这几项怎么认：只问这一处（第 17 条 17-1）
 import { HOST_PARAMS, writeResolved, lowestMidiOf, songBpm } from "../engine/chain.ts";
 import { performerOf, performers } from "../performers/registry.ts";
 import { serializeDesk, freshDesk } from "../score/desk.ts";
@@ -153,21 +155,16 @@ const stampFor = (k: FormatFile, j: unknown): Json => (newerThanMe(j, k) ? { ver
  *  **比这一版新的那一份**里键认识、值不认识的（以后的谱种 / 排法…）= 原样留在歌里、存的时候照写，画的时候按最基本的那一档（song-view.ts），这里记一句打开时说。
  *  别家的 MusicXML 没有 score.json = 整组按新建的写。 */
 /** 页面设置里这几样的人话名字（打开时那一句用）。 */
-const LOOK_LABEL: Partial<Record<string, () => string>> = { notation: () => _t("谱种"), lyricFit: () => _t("歌词怎么排"), barNumbers: () => _t("小节号"), spacing: () => _t("音距"), textLang: () => _t("谱上的字用哪种语言") };
-function songLookOf(x: Json | undefined, newer: boolean, odd: string[]): Pick<Song, SongLookKey> {
-  const T = NEW_SONG_LOOK, out: Record<string, unknown> = { ...T };
-  const ENUMS: Partial<Record<SongLookKey, readonly string[]>> = { lyricFit: ["rhythm", "lyrics"], barNumbers: ["line", "off"], spacing: ["normal", "tight"], notation: NOTATIONS, textLang: TEXT_LANGS };
-  for (const k of Object.keys(T) as SongLookKey[]) {
-    const v = x?.[k], allowed = ENUMS[k];
-    if (allowed) { if (typeof v === "string" && allowed.includes(v)) out[k] = v; else if (newer && typeof v === "string" && v) { out[k] = v; odd.push(k); } }
-    else if (k === "arrangement") { if (typeof v === "string") out[k] = v; }
-    else if (k === "middleC") { if (isMiddleC(v)) out[k] = v; }
-    else if (typeof v === "boolean") out[k] = v;
-  }
-  return out as Pick<Song, SongLookKey>;
+const LOOK_LABEL: Partial<Record<string, () => string>> = { notation: () => _t("谱种"), lyricFit: () => _t("歌词怎么排"), barNumbers: () => _t("小节号"), textLang: () => _t("谱上的字用哪种语言") };
+/** 第 17 条 17-1：能跟着软件的那十一项（看谱那几样 + 版面那几样 + 纸张四项）的读法在 src/look lookFromFile（没写 = "default"，纸张没写 = 从 <defaults> 认一次）；
+ *  这里只管住在同一组里的另两样：编排（改声音，第 16 条那一侧；没写 = 空）、谱上的字（"ui" 本身就是跟界面；没写 = "ui"，更新的版本写的不认识的字原样留）。音距（spacing）退役：读到不理。 */
+function songLookOf(x: Json | undefined, newer: boolean, odd: string[], xmlPaper: Paper | undefined): Pick<Song, SongLookKey> {
+  const a = x?.arrangement, tl = x?.textLang;
+  const textLang = typeof tl === "string" && (TEXT_LANGS as readonly string[]).includes(tl) ? tl : newer && typeof tl === "string" && tl ? (odd.push("textLang"), tl) : NEW_SONG_LOOK.textLang;
+  return { ...lookFromFile(x, xmlPaper, newer, odd), arrangement: typeof a === "string" ? a : NEW_SONG_LOOK.arrangement, textLang };
 }
 const fpTextOf = (o: Json): string => { const { minor: _m, patch: _p, ...rest } = o; return JSON.stringify(rest, null, 2) + "\n"; };
-const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "grooves", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort", "notation", "chordTags", "viewInC", "middleC", "expressions", "textLang"]);
+const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "grooves", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort", "notation", "chordTags", "viewInC", "middleC", "expressions", "textLang", "paper", "density", "staffMm", "marginMm"]);   // spacing / denseShort = 退役的键：认得、读到不理、不带回
 /** papers[] / parts[] 每一条里这一版认得的键（v0.16.88，设计稿第五节）：别的（更新的版本写的）按段 id / 声部 id 原样带回。
  *  phrases / parts.autoOttava 是退役的键（这一版读的时候已经处理了），算认得、不带回。
  *  规矩（Claude Fable 5.2 2026-11-10 定）：
@@ -284,7 +281,7 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   //   手选的大谱表 = 那张纸自己的 <staves>2；自动变出来的大谱表不写进每段的正本（那张纸照单谱表写），只在压平件里照着画——旧版本打开不会把整个声部都变成大谱表。
   const perc = new Set(song.parts.filter((part) => { const role = lounge[part.role] as Json | undefined, gm = cands(role).find((c) => c.id === role?.active)?.gm as Json | undefined;
     return !!gm && percKindOf({ bank: Number(gm.bank ?? 0), program: Number(gm.program ?? 0), ...(typeof gm.note === "number" ? { note: gm.note } : {}) }) !== null; }).map((p) => p.id));   // 鼓 / 固定敲一件的不自动变大谱表（和排版同一条规矩）
-  const looks = resolveSongLooks(song, perc);
+  const tl = trackLookOf(song), looks = resolveSongLooks(song, tl, perc), paperNow = lookOf(song).paper;   // 每张纸 / 每个声部那几样、用哪一张纸：只问 src/look（第 17 条 17-1）
   const lookAt = (paperId: string, partId: string): ResolvedLook | undefined => looks.get(paperId)?.get(partId);
   const autoOtt = (paperId: string, part: PartDef) => { const l = lookAt(paperId, part.id); return !!l && l.grand !== "explicit" && l.autoOtt; };
   const clefInfo = (paperId: string, part: PartDef): { clef?: ClefName; staves?: 2 } => { const l = lookAt(paperId, part.id); if (!l) return {}; if (l.grand === "explicit") return { staves: 2 }; return l.clef !== "G" ? { clef: l.clef } : {}; };
@@ -295,17 +292,17 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   const papers = song.papers.map((p) => {
     // 自动八度线（v0.9.37）：临时插成带 ms-auto id 的记号写出去（别的软件照样画；自己读回来跳过、照样自动重算）
     const parts = song.parts.flatMap((part, k) => { if (!p.tracks[part.id]) return []; const tokens = autoOtt(p.id, part) ? withAutoOttava(p.tracks[part.id], lookAt(p.id, part.id)?.clef ?? "G") : p.tracks[part.id]; return [{ info: { ...infos[k], ...clefInfo(p.id, part) }, tokens, langs: langsOf(part.id, tokens) }]; });
-    const w = writeMusicXml({ title: song.title, movementTitle: p.name || undefined, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
+    const w = writeMusicXml({ title: song.title, movementTitle: p.name || undefined, paper: paperNow, credits: song.credits, rights: song.rights, parts }, meta);
     files[paperFile(p.id)] = strToU8(w.xml);
     // 音内的力度起伏（MusicXML 表达不了音内的发夹）：声部 → 音的 id → 哪一种
     const swells: Record<string, Record<string, "<" | ">" | "<>">> = {};
     for (const [pid, toks] of Object.entries(p.tracks)) for (const t of toks) { const sw = swellOf(t); if (sw) (swells[pid] ??= {})[String(t.id)] = sw; }   // 演奏法里的音内起伏（v0.9.44）→ 照旧这张表
     // 这一段每个声部的自动八度线开没开（v0.16.88 按段；第 16 条 16-3 起每个在场的声部都明写 true / false，原来只写关了的）
-    const ao = Object.fromEntries(Object.keys(p.tracks).map((pid) => [pid, p.looks?.[pid]?.autoOttava !== false]));
+    const ao = Object.fromEntries(Object.keys(p.tracks).map((pid) => [pid, tl(p.id, pid).autoOttava]));
     return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, swells, hidden: !!p.hidden, autoOttava: ao };
   });
   // 派生的压平件：各声部整首接起来，每张纸起新页（第一个声部写排练记号 = 曲段名）
-  const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k) => {
+  const flat = writeMusicXml({ title: song.title, paper: paperNow, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k) => {
     const f = flattenPart(song, part.id, { tempo: k === 0, order: songPlayOrder(song) });   // 照编排的顺序（重复的纸再写一遍；循环段写一遍）   // 第一个声部带速度：它不在的纸上照那张纸最上面在场的歌手补变速（新歌手只在当前纸以后常见）
     // 谱号（v0.9.28）：每张纸开头按它自己挑好的谱号；和前面接下来的不一样 = 在纸界插一个谱号记号（压平件给别的软件看，画法要对）
     let toks = f.tokens.slice(), starts = f.starts.map((x) => ({ ...x }));
@@ -343,8 +340,10 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
     view: a.view ?? (serializeDesk(freshDesk()) as unknown as Json),   // 视图态（desk）：存时顺手捞进来；没给（无头存 / 副本）= 新的那一份
     grooves: groovesInUse(song),   // 风格记号用到的那几种风格出声用的五样（16-4 D）：只写谱上还用着的
     // 歌级的十样显示设置：照歌里写着的写（16-4 A3：新建时按 NEW_SONG_LOOK 写、门口补过、改设置永远写值；比这一版新的那一份里认不出来的值原样写回）
-    arrangement: song.arrangement, lyricFit: song.lyricFit, barNumbers: song.barNumbers, spacing: song.spacing, notation: song.notation,
-    chordTags: song.chordTags, viewInC: song.viewInC, middleC: song.middleC, expressions: song.expressions, textLang: song.textLang };
+    arrangement: song.arrangement, lyricFit: song.lyricFit, barNumbers: song.barNumbers, notation: song.notation,
+    chordTags: song.chordTags, viewInC: song.viewInC, middleC: song.middleC, expressions: song.expressions, textLang: song.textLang,
+    // 纸张和版式（17-1，score minor 13）：存选择（"default" 或这首歌选的），MusicXML <defaults> 里的数是照「现在怎么画」算出来写给别的软件看的
+    paper: song.paper, density: song.density, staffMm: song.staffMm, marginMm: song.marginMm };
   // 嵌的音源：只写还有候选引用着的（换了音源 = 旧块从歌里丢掉；§10.2）
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a.extras.sounds).filter(([p]) => referenced.has(p)).sort(([x], [y]) => (x < y ? -1 : 1));
@@ -1069,7 +1068,7 @@ function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: 
   let id = 1;
   const renumbered = ps.map((p) => ({ ...p, tracks: Object.fromEntries(parts.flatMap((part) => (p.tracks[part.id] ? [[part.id, p.tracks[part.id].map((t) => ({ ...t, id: id++ }))]] : []))) }));
   const r0 = reads[0];
-  return { ...(r0.title ? { title: r0.title } : {}), ...(r0.paper ? { paper: r0.paper } : {}), ...(r0.credits ? { credits: r0.credits } : {}), ...(r0.rights ? { rights: r0.rights } : {}), ...NEW_SONG_LOOK, parts, papers: renumbered };   // 显示设置：openBytes 最后按 score.json 再定一次（songLookOf）
+  return { ...(r0.title ? { title: r0.title } : {}), ...(r0.credits ? { credits: r0.credits } : {}), ...(r0.rights ? { rights: r0.rights } : {}), ...NEW_SONG_LOOK, parts, papers: renumbered };   // 显示设置：openBytes 最后按 score.json 再定一次（songLookOf）
 }
 
 /** score.json grooves → 歌里的拍子表：每种风格五样形状对得上才收（meters 是表、fallback 是两个字之一、follow 是表）；别的不收（= 这种风格没有拍子表）。 */
@@ -1131,7 +1130,7 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
   // 风格记号的拍子表（16-4 D）：歌里写着的照读（形状对得上的）；谱上用到、歌里没有的 = 门口从现行预设补（withGrooveData）；预设里也没有 = 不补（记号不起作用、画灰）
   const gr = readGrooves(extras.scoreExt?.grooves);
   // 歌级的十样显示设置（16-4 A3）：门口补成明写的；比这一版新的那一份里认不出来的值原样留着，打开时说一句
-  const odd: string[] = [], look = songLookOf(extras.scoreExt, newerThanMe(extras.scoreExt, "score"), odd);
+  const odd: string[] = [], look = songLookOf(extras.scoreExt, newerThanMe(extras.scoreExt, "score"), odd, reads[0]?.paper);   // 纸张：score.json 没写 = 从第一份 MusicXML 的 <defaults> 认一次
   if (odd.length) notices.push(_t("这首歌是更新版本的 MoonSinger 存的，页面设置里这几样这一版不认识：{keys}。画的时候先按最基本的那一档，存的时候照原样写回。", { keys: odd.map((k) => LOOK_LABEL[k]?.() ?? k).join("、") }));
   return { song: withGrooveData({ ...song0, ...look, ...(gr ? { grooves: gr } : {}) }), stem, extras, ours, notices, view: safeView((extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null), references: {}, advice: [] };
 }

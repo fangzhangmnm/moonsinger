@@ -17,7 +17,7 @@ import type { Extras } from "../format/project.ts";
 //   paperHidden = 曲段的隐藏 / 放出来（2026-11-10 从 paper 里拆出来，Claude Fable 5.2）：修改锁的分类表（src/app/edit-lock-table.ts）里唯一的「看法」——锁着也能做。
 //     带这个类别的一步不并格（document.ts commit 里强制 gesture = null）：撤销栈每一格只有一种类别，「按要翻的那一格问锁」才问得准。
 //   paperSize / density / barNumbers / lyricFit = 页面设置「版面」页里走写入口的四样（纸张 / 版式 / 小节号 / 歌词排法；7-C，2026-11-12 Claude Opus 5.5）：也是「看法」，各带只认自己字段的核验。
-export type LocusKind = "score" | "lounge" | "studio" | "cover" | "paper" | "paperHidden" | "songLook" | "paperSize" | "density" | "barNumbers" | "lyricFit";   // （"final" = 定稿 / 改稿，2026-10-16 加、2026-11-10 随定稿退役去掉）
+export type LocusKind = "score" | "lounge" | "studio" | "cover" | "paper" | "paperHidden" | "songLook" | "paperSize" | "density" | "barNumbers" | "lyricFit" | "allLooks";   // allLooks = 页面设置「全部跟着软件」（第 17 条 17-1）：一步把选过的看法都改回 "default"   // （"final" = 定稿 / 改稿，2026-10-16 加、2026-11-10 随定稿退役去掉）
 export interface Locus { kind: LocusKind; label: string }
 export interface Snap { song: Song; extras: Extras; at: Focus; caret: number; sel: { from: number; to: number } | null; locus: Locus }
 export interface History { past: Snap[]; future: Snap[]; lastKey: string | null; lastAt: number }

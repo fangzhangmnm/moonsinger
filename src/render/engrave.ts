@@ -27,7 +27,8 @@ import { Skyline, primInk, shiftPrim, movePrim, primY } from "./skyline.ts";
 import { placeHints } from "./frame/hints.ts";
 import type { Part, Ink } from "./frame/cell.ts";
 import { songInC } from "../score/view-in-c.ts";
-import { songViewOf, textLangIn } from "../score/song-view.ts";
+import { textLangIn } from "../score/song-view.ts";
+import { lookOf } from "../look/index.ts";   // 「现在怎么画」只问这一处（第 17 条）
 import { type HarmonyRead } from "../theory/index.ts";
 import { SCROLL_TAIL, ABBR_REF, NAME_MAX, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SYSTEM_LINE_W, LYRIC_EDGE } from "./frame/params.ts";
 import { PAPER_PARAMS, ROW_PARAMS } from "./layout-params.ts";   // 排版参数表（纸一级按谱种、行一级按行的种类）
@@ -86,7 +87,7 @@ export interface EngraveOpts {
   scroll?: boolean;
   /** 连续排法的纸边距（sp）：和分页同一张纸的几何，只是不断页（user 2026-10-08「连续和分页看到的行宽应该是一样的」「连续只是没有了断页，但是每一行还是一样的」）。 */
   margins?: { l: number; r: number; t: number; b: number };
-  // 按 C 调看、和弦标级数（v0.16.10 / v0.16.13 起是这里的两个选项）：谱面分家第三刀起是歌里的设置，排版自己读（src/score/song-view.ts songViewOf），不再从选项进来。
+  // 按 C 调看、和弦标级数（v0.16.10 / v0.16.13 起是这里的两个选项）：谱面分家第三刀起是歌里的设置，排版自己读（src/look lookOf，原来 src/score/song-view.ts songViewOf），不再从选项进来。
   /** 字的尺子比谱的尺子大多少（刀 2；src/score/paper.ts textScaleOf：舒适 = 1、紧凑 = 1.4）：歌名 / 作者栏 / 编排 / 曲段名、声部名 / 简写、歌词、速度 / 风格 / 反复的字、
    *  「1=F」、小节号、和弦级数、页码，连同它们周围留的地方，都按 sp × textScale 量；字形、线、cresc. / 8va / 「吸」/ 推定的灰字照旧跟谱。量字的换算在文字模块里（measure.width）。没给 = 1。 */
   textScale?: number;
@@ -193,7 +194,7 @@ export interface Layout {
 export function engrave(song: Song, o: EngraveOpts): Layout {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   // 每张纸每个声部怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段；自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳。鼓 / 固定敲一个键的不自动变大谱表
-  const songLook = songViewOf(song), textLang = textLangIn(songLook, o.locale);   // textLang = 印出来的字用哪种语言（12-4：歌里一项，跟着界面 = o.locale）；不印的提示照旧用 o.locale   // 这首歌怎么看（谱面分家第三刀：歌里的设置，只此一处读；按 C 调看的换算之前读）
+  const songLook = lookOf(song), textLang = textLangIn(songLook, o.locale);   // textLang = 印出来的字用哪种语言（12-4：歌里一项，跟着界面 = o.locale）；不印的提示照旧用 o.locale   // 这首歌怎么看（谱面分家第三刀：歌里的设置，只此一处读；按 C 调看的换算之前读）
   const BUILD = NOTATIONS[songLook.notation].build;   // 建轨 = 这首歌的谱种那一项（第五刀 5-2）
   const lookAt = BUILD.looks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   if (songLook.inCActive) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）

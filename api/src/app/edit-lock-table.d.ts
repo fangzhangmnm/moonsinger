@@ -11,9 +11,9 @@ export interface LookOp {
 export declare function sameExceptPaperHidden(a: Song, b: Song): boolean;
 /** 两首歌除了「这首歌怎么看」的那几样（歌顶层的 notation / chordTags / viewInC / middleC + 每个声部的 chords；src/score/song-view.ts）之外一模一样。按引用比；完全没变也算。 */
 export declare function sameExceptSongView(a: Song, b: Song): boolean;
-/** 纸张（A3 横 / A4 / A5 / A6）：纸的种类、尺寸、边距。版式（density）和谱高（staffMm）不许跟着变（换纸只换纸，统筹 2026-11-12）。 */
+/** 纸张（A3 横 / A4 / A5 / A6 / 其他）：歌顶层的 paper 和 marginMm（17-1 起纸张和版式是歌顶层的四个键）。版式和谱高不许跟着变（换纸只换纸，统筹 2026-11-12）。 */
 export declare const sameExceptPaperSize: (a: Song, b: Song) => boolean;
-/** 版式（舒适 / 紧凑）：纸上的 density（和它决定的谱高 staffMm）。纸的种类、尺寸、边距不许跟着变。 */
+/** 版式（舒适 / 紧凑）：歌顶层的 density 和 staffMm。纸的种类、尺寸、边距不许跟着变。 */
 export declare const sameExceptDensity: (a: Song, b: Song) => boolean;
 /** 小节号印不印：歌顶层的 barNumbers。 */
 export declare const sameExceptBarNumbers: (a: Song, b: Song) => boolean;

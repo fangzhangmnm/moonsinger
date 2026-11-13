@@ -87,7 +87,7 @@ check(await hidden(), "重做：同理");
   await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
   check((await fileSig()) === sig0, "锁着按「存」：文件一个字节都没变");
   await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
-  check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === false, "撤销：翻回去（看法那一格锁着也能翻；16-4 A3：明写 false）");
+  check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === "default", "撤销：翻回去（看法那一格锁着也能翻；17-1：回到跟着软件）");
   await p.evaluate(() => { const m = window.__moonsinger; m.openHeader(m.state().at.part); }); await p.waitForTimeout(150);
   const pe = await p.evaluate(() => { const g = (q) => { const el = document.querySelector(q); return el ? getComputedStyle(el).pointerEvents : "没有"; }; return { broken: g('.header-panel [data-hp="broken"]'), key: g('.header-panel [data-hp="key"]') }; });
   check(pe.broken === "auto" && pe.key === "none", "谱头面板：「分解和弦」锁着能切（看法），调号改不动", JSON.stringify(pe));
@@ -181,12 +181,12 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
 // ── 页面设置「版面」那几样走真文件（7-C：纸张 / 版式 / 小节号 / 歌词排法 = 看法）：锁着都切得动、门不闪、存不进、重开原样；解了切紧凑、存 = 文件里是紧凑 ──
 { const chip = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
   const close = async () => { await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
-  const song = () => p.evaluate(() => { const s = window.__moonsinger.state().song; return { paper: s.paper?.kind ?? "A5", density: s.paper?.density ?? "cozy", bn: s.barNumbers === "line" ? "on" : s.barNumbers, lyr: s.lyricFit }; });   // 16-4 A3：歌里明写
+  const song = () => p.evaluate(() => { const s = window.__moonsinger.state().song; return { paper: s.paper === "default" ? "default" : s.paper.kind, density: s.density, bn: s.barNumbers === "line" ? "on" : s.barNumbers, lyr: s.lyricFit }; });   // 17-1：纸张和版式是歌顶层的选择，"default" = 跟着软件
   const rowsY = () => p.evaluate(() => window.__moonsinger.layout().systems.map((r) => `${Math.round(r.staffTop)}-${Math.round(r.bottom)}`).join(","));   // 每行谱的上沿 / 下沿（紧凑 = 谱小、行距收）
   const fileXml = async () => { const arr = await p.evaluate(async (name) => { const f = await (await (await navigator.storage.getDirectory()).getFileHandle(name)).getFile(); return [...new Uint8Array(await f.arrayBuffer())]; }, FILE);
     const z = unzipSync(new Uint8Array(arr)); return z["score.musicxml"] ? strFromU8(z["score.musicxml"]) : ""; };
   const s0 = await song(), y0 = await rowsY(), sigC = await fileSig();
-  check((await lk()).locked && s0.density === "cozy" && s0.paper === "A5" && s0.bn === "on" && s0.lyr === "rhythm", "锁着；版面四样都是默认", JSON.stringify(s0));
+  check((await lk()).locked && s0.density === "default" && s0.paper === "default" && s0.bn === "default" && s0.lyr === "default", "锁着；版面四样都跟着软件（17-1）", JSON.stringify(s0));
   await chip(); await armFlash();
   await pickOnPage(p, '.settings-card [data-pg="density"]', "compact"); await p.waitForTimeout(200);
   { const d = (await song()).density, y1 = await rowsY(), f = await flashed(); check(d === "compact" && y1 !== y0 && !f, "锁着切「紧凑」：切了、谱上变了、门不闪", `${d} ${y0} → ${y1} flash=${f}`); }
@@ -201,7 +201,7 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
   await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
   check((await fileSig()) === sigC, "锁着按「存」：文件一个字节都没变");
   await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
-  check((await song()).lyr === "rhythm", "撤销：翻回去（看法那一格锁着也能翻）");
+  check((await song()).lyr === "default", "撤销：翻回去（看法那一格锁着也能翻；回到跟着软件）");
   check(await openFile(), "关掉重开"); await p.waitForTimeout(400);
   const s2 = await song();
   check((await lk()).locked && JSON.stringify(s2) === JSON.stringify(s0) && (await rowsY()) === y0 && (await fileSig()) === sigC, "重开 = 文件里的原样（舒适、A5、印小节号、按节奏）", JSON.stringify(s2));

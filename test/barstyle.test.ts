@@ -3,6 +3,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, setBarStyle, setRepeatBar, writeBar, tr, TPQ, type Token, type EditorState } from "../src/score/song.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { toJianpu, fromJianpu } from "../src/score/clipboard.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 let nid = 9500;
 const n = (): Token => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 5 }, dur: TPQ, lyric: null });
@@ -22,7 +23,7 @@ describe("段落线 / 终止线", () => {
   it("MusicXML：<bar-style>light-light / light-heavy 往返", () => {
     const info = { id: "P1", name: "V", instrumentName: "月读", sound: "voice.vocals", program: 55 };
     const toks: Token[] = [...head(), n(), n(), n(), n(), { kind: "bar", id: 1, style: "double" }, n(), n(), n(), n(), { kind: "bar", id: 2, style: "final" }];
-    const w = writeMusicXml({ parts: [{ info, tokens: toks }] }, { software: "t", date: "2026-10-10" });
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, { software: "t", date: "2026-10-10" });
     assert(w.xml.includes("<bar-style>light-light</bar-style>") && w.xml.includes("<bar-style>light-heavy</bar-style>"), "写出来了");
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens;
     eq(back.filter((t) => t.kind === "bar").map((t) => (t as { style?: string }).style ?? "|").join(" "), "double final");

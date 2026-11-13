@@ -2,13 +2,15 @@
 // user 2026-10-10「谱号的显示模式跟着谱号而不是乐器，然后先不要双谱线模式，然后加一个可以移八度显示的功能（或者其实这个就是用标准的音乐记号，然后系统自己判断？能不能这样？」
 //   →「默认自动同意」「加格式同意」「中音这个冷门没人用吧，即使做，自动也不会选」「铃铛会很高。8va可以做了吗」。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { initState, insertClef, insertOttava, setClefChoice, clefChoiceOf, setDisplayMark, tr, TPQ, type Token, type EditorState, type Song } from "../src/score/song.ts";
+import { initState, insertClef, insertOttava, setClefChoice, setDisplayMark, tr, TPQ, type Token, type EditorState, type Song } from "../src/score/song.ts";
 import { autoClef, startClef, displayStates, resolveSongClefs, CLEF_SHIFT, ledgerLines } from "../src/score/clef.ts";
 import { diatonicIndex, type Pitch } from "../src/score/pitch.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { engrave } from "../src/render/engrave.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
+import { trackLookOf, clefChoiceOf } from "../src/look/index.ts";
 
 const S = ["C", "D", "E", "F", "G", "A", "B"] as const;
 let nid = 7000;
@@ -57,10 +59,10 @@ describe("每个下标处的谱号 / 八度线", () => {
       { id: "b", name: "B", tracks: { [part]: [...head(), ...run(4, 6)] } },
       { id: "c", name: "C", tracks: { [part]: [...head(), ...run(3, 10)] } },
     ] };
-    const r = resolveSongClefs(song);
+    const r = resolveSongClefs(song, trackLookOf(song));
     eq(["a", "b", "c"].map((p) => r.get(p)?.get(part)).join(" "), "G15ma G F");
     // 这一段手选了谱号（v0.16.88 按段 = 纸头的谱号记号；原来是声部上的谱号）= 每张纸都是它
-    const fixed = resolveSongClefs({ ...song, papers: song.papers.map((p) => ({ ...p, tracks: { [part]: [...head(), { kind: "clef", id: 900, clef: "F" } as Token, ...p.tracks[part].slice(3)] } })) });
+    const fixedSong = { ...song, papers: song.papers.map((p) => ({ ...p, tracks: { [part]: [...head(), { kind: "clef", id: 900, clef: "F" } as Token, ...p.tracks[part].slice(3)] } })) }, fixed = resolveSongClefs(fixedSong, trackLookOf(fixedSong));
     eq(["a", "b", "c"].map((p) => fixed.get(p)?.get(part)).join(" "), "F F F");
   });
 });
@@ -109,7 +111,7 @@ describe("MusicXML 往返", () => {
   const info = { id: "P1", name: "V", instrumentName: "月读", sound: "voice.vocals", program: 55 };
   it("八度谱号 = <clef-octave-change>；中间换谱号 = <attributes><clef>；八度线 = <octave-shift>（8va down、8vb up、stop）；直接换一种 = 读回来还是一个记号", () => {
     const toks: Token[] = [...head(), n("C", 4), { kind: "clef", id: 1, clef: "F" }, n("C", 3), { kind: "ottava", id: 2, shift: 1 }, n("C", 3), { kind: "ottava", id: 3, shift: 2 }, n("D", 3), { kind: "ottava", id: 4, shift: 0 }, n("E", 3)];
-    const w = writeMusicXml({ parts: [{ info: { ...info, clef: "G8vb" }, tokens: toks }] }, { software: "t", date: "2026-10-10" });
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info: { ...info, clef: "G8vb" }, tokens: toks }] }, { software: "t", date: "2026-10-10" });
     assert(w.xml.includes("<clef><sign>G</sign><line>2</line><clef-octave-change>-1</clef-octave-change></clef>"), "开头的八度谱号");
     assert(w.xml.includes("<attributes><clef><sign>F</sign><line>4</line></clef></attributes>"), "中间换低音谱号");
     assert(w.xml.includes('<octave-shift type="down" size="8"/>') && w.xml.includes('<octave-shift type="down" size="15"/>') && w.xml.includes('<octave-shift type="stop" size="15"/>'), "八度线");
@@ -125,7 +127,7 @@ describe(".mxl 往返：自动 / 写明的谱号", () => {
   it("自动挑成低音的声部：存 → 开还是自动（MusicXML 里写的是挑好的低音，score.json 记着 auto）", () => {
     const s = song(), o = openBytes("x.mxl", saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" }));
     eq(clefChoiceOf(o.song.papers[0], o.song.parts[0].id), "auto");
-    eq(resolveSongClefs(o.song).get(o.song.papers[0].id)?.get(o.song.parts[0].id), "F");
+    eq(resolveSongClefs(o.song, trackLookOf(o.song)).get(o.song.papers[0].id)?.get(o.song.parts[0].id), "F");
   });
   it("写明高音 / 低音：存 → 开原样", () => {
     for (const c of ["G", "F"] as const) { const s = song(c), o = openBytes("x.mxl", saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" })); eq(clefChoiceOf(o.song.papers[0], o.song.parts[0].id), c); }

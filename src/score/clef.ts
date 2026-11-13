@@ -172,14 +172,16 @@ export function autoGrand(tokens: readonly Token[], single: ClefName, autoOtt: b
 export interface ResolvedLook { staves: 1 | 2; clef: ClefName; first: ClefName; autoOtt: boolean; grand: "explicit" | "auto" | null }
 /** 整首：每张纸每个声部怎么画（按纸的顺序一路接：自动的谱号和大谱表看这个声部在上一张纸的样子，滞后、不来回跳）。和视图无关——本段 / 全部 / PDF 一样。
  *  noAutoGrand = 不许自动变大谱表的声部（鼓、固定敲一个键的；合租的一家这里自己跳过）。 */
-export function resolveSongLooks(song: Song, noAutoGrand?: ReadonlySet<string>): Map<string, Map<string, ResolvedLook>> {
+/** trackLook = 每张纸每个声部那几样（自动八度线开没开、手选的大谱表）：调用方从 src/look trackLookOf 拿来交进来（第 17 条 17-1：「没写 = 开 / 一行」的退路只在那里；谱这一层不 import 它）。 */
+export type TrackLookFn = (paperId: string, partId: string) => { autoOttava: boolean; grand: boolean };
+export function resolveSongLooks(song: Song, trackLook: TrackLookFn, noAutoGrand?: ReadonlySet<string>): Map<string, Map<string, ResolvedLook>> {
   const out = new Map<string, Map<string, ResolvedLook>>(), last = new Map<string, ClefName>(), lastGrand = new Map<string, boolean>();
   const shared = new Set(song.parts.flatMap((p) => (p.host ? [p.id, p.host] : [])));
   for (const paper of song.papers) {
     const m = new Map<string, ResolvedLook>(); out.set(paper.id, m);
     for (const part of song.parts) {
       const toks = paper.tracks[part.id]; if (!toks) continue;
-      const look = paper.looks?.[part.id] ?? {}, autoOtt = look.autoOttava !== false;
+      const look = trackLook(paper.id, part.id), autoOtt = look.autoOttava;
       const hc = headClefOf(toks), c = hc ?? startClef(toks, undefined, last.get(part.id) ?? null, autoOtt), ds = displayStates(toks, c);   // 纸头手选了谱号 = 开头就是它（和原来「声部写了谱号」一样画）
       const grand = look.grand ? "explicit" : !shared.has(part.id) && !noAutoGrand?.has(part.id) && autoGrand(toks, c, autoOtt, lastGrand.get(part.id) ?? false) ? "auto" : null;
       const fi = toks.findIndex((t) => t.kind === "note"), first = hc ?? (fi >= 0 ? ds.clef[fi] ?? c : c);
@@ -190,8 +192,8 @@ export function resolveSongLooks(song: Song, noAutoGrand?: ReadonlySet<string>):
   return out;
 }
 /** 只要单谱表开头的谱号（老接口；大谱表的不在里面）。 */
-export function resolveSongClefs(song: Song, noAutoGrand?: ReadonlySet<string>): Map<string, Map<string, ClefName>> {
+export function resolveSongClefs(song: Song, trackLook: TrackLookFn, noAutoGrand?: ReadonlySet<string>): Map<string, Map<string, ClefName>> {
   const out = new Map<string, Map<string, ClefName>>();
-  for (const [pid, m] of resolveSongLooks(song, noAutoGrand)) out.set(pid, new Map([...m].flatMap(([k, v]) => (v.staves === 1 ? [[k, v.clef] as const] : []))));
+  for (const [pid, m] of resolveSongLooks(song, trackLook, noAutoGrand)) out.set(pid, new Map([...m].flatMap(([k, v]) => (v.staves === 1 ? [[k, v.clef] as const] : []))));
   return out;
 }

@@ -12,6 +12,10 @@ export type PaperKind = "A3L" | "A4" | "A5" | "A6";   // A3 竖 2026-10-08 user�
  *  staffMm = 五线谱高（四个线间距）mm：别的软件的文件带的大小原样留着；自家只按 density 定（没有 = 舒适 7 / 紧凑 5）。 */
 export type Density = "cozy" | "compact";
 export interface Paper { kind: PaperKind | "other"; widthMm: number; heightMm: number; marginMm: { l: number; r: number; t: number; b: number }; density?: Density; staffMm?: number }
+/** 四边边距（mm）。 */
+export type Margins = Paper["marginMm"];
+/** 纸张的选择（第 17 条 17-1；score.json `paper`）：四种之一，或者按值带着的一张（别家的谱带来的大小；以后人自己填的也是这一种）。 */
+export type PaperChoice = { kind: PaperKind } | { kind: "other"; widthMm: number; heightMm: number };
 
 /** 五线谱高（四个线间距）mm：7 mm = 一个线间距 1.75 mm（打谱软件的常用大小）= 舒适档；紧凑 5 mm。 */
 export const STAFF_MM = 7, STAFF_MM_COMPACT = 5;
@@ -27,7 +31,12 @@ export const textScaleOf = (p: Paper): number => STAFF_MM / staffMmOf(p);
 /** 宽、高、四边边距（mm）。A5 的边距让版心正好放得进 iPad mini 竖屏（触屏 11 px 一格 ≈ 729 px）。A3 横 = 交响总谱 / 大电视（user 2026-10-08「加一个A3横版」）。 */
 const SIZES: Record<PaperKind, { w: number; h: number; m: number }> = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
 export const PAPER_KINDS: PaperKind[] = ["A3L", "A4", "A5", "A6"];
-export const DEFAULT_PAPER: PaperKind = "A5";
+// 跟着软件时用哪一张纸（原来的 DEFAULT_PAPER）第 17 条 17-1 起只在 src/look 里定。
+export const isPaperKind = (v: unknown): v is PaperKind => (PAPER_KINDS as readonly unknown[]).includes(v);
+/** 这一种纸自己的边距（四边一样）。 */
+export const marginsOf = (kind: PaperKind): Margins => { const m = SIZES[kind].m; return { l: m, r: m, t: m, b: m }; };
+/** 这一种纸的宽高（mm）。 */
+export const sizeOf = (kind: PaperKind): { w: number; h: number } => ({ w: SIZES[kind].w, h: SIZES[kind].h });
 /** 档名后面的一句话（纸的设置面板里）。 */
 export const PAPER_NOTE: Record<PaperKind, string> = { A3L: _t("横放：总谱 / 大屏"), A4: _t("正经纸"), A5: _t("小册子，A4 对折"), A6: _t("口袋本") };
 export const PAPER_LABEL: Record<PaperKind, string> = { A3L: _t("A3 横"), A4: "A4", A5: "A5", A6: "A6" };

@@ -5,22 +5,23 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave, type Layout, type Prim } from "../src/render/engrave.ts";
 import { LYRIC_LOOK, LYRIC_MIN_SX } from "../src/render/text/index.ts";
 import { primInk } from "../src/render/skyline.ts";
-import { textScaleOf, paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
+import { textScaleOf, paperOf } from "../src/score/paper.ts";
+import { lookOf } from "../src/look/index.ts";
 import { VIEWS, loadSong, measure } from "./fixtures/layout/cases.ts";
 import { createTextMeasure, LYRIC_EM } from "../src/render/text/index.ts";
 
 /** 「跟字」的类（施工单 §3.2 那张表；歌词 v0.16.43 起改回跟谱）；其余的字（歌词、cresc. / 8va / 吸 / 推定的灰字）跟谱。 */
 const FOLLOW_TEXT = /^(song-title|credits|arr|arr-label|arr-issue|paper-name|part-name|part-badge|page-no)\b/;   // v0.16.48 起速度、1=X、风格、和弦级数、反复的字、小节号跟谱（user「速度那一串字号…也应该跟着走」）   // 歌词 v0.16.43 起跟谱（紧凑 = 配器，user「紧凑的话其实那个小字就够了」）
 const sizeOf = (p: Prim, sp: number) => (p.t === "text" ? p.size ?? LYRIC_EM * sp : p.t === "glyph" ? p.size ?? 4 * sp : 0);
-const compact = (key: string) => { const { song, labels } = loadSong(key), paper = song.paper ?? paperOf(DEFAULT_PAPER); return { song: { ...song, paper: { ...paper, density: "compact" as const, staffMm: undefined } }, labels }; };
+const compact = (key: string) => { const { song, labels } = loadSong(key); return { song: { ...song, density: "compact" as const, staffMm: "default" as const }, labels }; };
 /** 同一首紧凑档的歌排两遍：字的尺子 = 谱（1）/ 字照舒适档（1.4）。量字跟着字号。 */
 function pair(key: string, view = "edit-all"): [Layout, Layout, number] {
-  const { song, labels } = compact(key), v = VIEWS.find((x) => x.name === view)!, o = v.opts(song, labels), ts = textScaleOf(song.paper);
+  const { song, labels } = compact(key), v = VIEWS.find((x) => x.name === view)!, o = v.opts(song, labels), ts = textScaleOf(lookOf(song).paper);
   return [engrave(song, { ...o, textScale: 1, locale: "zh", measure: createTextMeasure(measure) }), engrave(song, { ...o, textScale: ts, locale: "zh", measure: createTextMeasure((s) => measure(s) * ts) }), ts];
 }
 
 describe("刀 2：紧凑档的字照舒适档那么大（textScale = 7 / 5）", () => {
-  it("紧凑档 textScale = 1.4、舒适档 = 1", () => { eq(textScaleOf(paperOf(DEFAULT_PAPER)), 1); assert(Math.abs(textScaleOf({ ...paperOf(DEFAULT_PAPER), density: "compact" }) - 1.4) < 1e-9); });
+  it("紧凑档 textScale = 1.4、舒适档 = 1", () => { eq(textScaleOf(paperOf("A5")), 1); assert(Math.abs(textScaleOf({ ...paperOf("A5"), density: "compact" }) - 1.4) < 1e-9); });
   for (const key of ["once", "v2-2-2-2"]) for (const view of ["edit-all", "print"]) it(`${key} · ${view}：跟字的字号 ×1.4，跟谱的字和字形不变`, () => {
     const [A, B, ts] = pair(key, view), sp = A.sp;
     eq(B.sp, A.sp, "谱的尺子不变"); assert(Math.abs(B.tp - A.tp * ts) < 1e-9, "字的尺子 ×1.4");

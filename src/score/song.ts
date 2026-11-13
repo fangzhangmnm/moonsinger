@@ -16,7 +16,7 @@
 //   · 速度 = 第一个声部的状态机（其余声部的速度记号只是跟着抄、不出声不画）。
 
 import { _t } from "../i18n/index.ts";
-import { type Paper, type PaperKind, type Density, DEFAULT_PAPER, paperOf, densityOf } from "./paper.ts";
+import { type PaperKind, type Density, type PaperChoice, type Margins } from "./paper.ts";
 import { latchDown, latchWrite, LATCH_OFF } from "../keyboard/latch.ts";   // 升降 Shift 的那条规则和 /2、渐到同一份（编辑状态机第 2 期，2026-10-15）
 import { type Dir, type Pitch, type Step, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell, keyAlter } from "./pitch.ts";
 import { expandPaper } from "./repeats.ts";
@@ -180,8 +180,13 @@ export type ClefChoice = "auto" | "grand" | ClefName   // hidden = 不放（压�
 export interface Song {
   /** 歌名（可不填；纸面最上面那一行，存档 = MusicXML <work-title>；user 2026-10-07「纸张的最上面加一个可选的歌名吧，未来也是文件名」）。 */
   title?: string;
-  /** 纸（A4 / A5 / A6 / 别的软件的别的纸）；没有 = 默认 A5（src/score/paper.ts；存档 = MusicXML <defaults>）。整首歌一个。 */
-  paper?: Paper;
+  /** 纸张和版式的选择（第 17 条 17-1，score minor 13；存档 = score.json 同名的四个键，MusicXML <defaults> 只是写给别的软件看的）：
+   *  每一项 = "default"（跟着软件）或这首歌选的值。"default" 现在等于什么、画的时候到底用哪一张纸，只问 src/look（lookOf(song).paper）；谱这一层不判断。
+   *  paper = 纸（四种之一，或者按值带着的「其他」大小）；density = 舒适 / 紧凑；staffMm = 五线谱高（别家的谱带来的、或者以后人自己填的）；marginMm = 四边边距（别家的谱带来的）。整首歌一个。 */
+  paper: Choice<PaperChoice>;
+  density: Choice<Density>;
+  staffMm: Choice<number>;
+  marginMm: Choice<Margins>;
   /** 作者栏：一块纯文本、几行都行（作词作曲、演唱、月读的署名、声明…），纸上照写的显示（标题下面靠右）；可不填。
    *  不自动认「作词：」这类写法（user「你权衡一个plain multiline text vs自动识别（但是这样有hidden convention），你看一下怎么办」→ AI 选纯文本、所见即所得）。
    *  存档 = MusicXML <credit><credit-words>（印在页面上的字）。 */
@@ -197,19 +202,16 @@ export interface Song {
   lyricFit: string;
   /** 小节号（v0.9.42；user「小节号要，可以页面设置toggle，默认是每行开头有」）：没有 = 每行开头印；off = 不印。存档 = score.json 可选字段 barNumbers（只写 "off"）。 */
   barNumbers: string;
-  /** 音距（v0.16.34，刀 3；src/render/spacing.ts）：没有 = 正常（短音符压紧：十六分 1.9、三十二分 1.6 个线间距）；tight = 紧（整条再收一截）。
-   *  user 11-08「正常人都会画密」→ 11-09「可以再紧一点，你这个新版本算正常，然后加一个紧凑的」「松可能不要」。存档 = score.json 可选字段 spacing（只写 "tight"；
-   *  v0.16.33 那一小时写的 denseShort: "off" 读成正常）。 */
-  spacing: string;
-  /** 这首歌怎么看的三样（谱面分家第三刀，score minor 5；读 / 改只走 src/score/song-view.ts，没写的意思冻住在那里）：
-   *  notation = 谱种（只写不是五线谱的；不认识的原样留着）；chordTags = 和弦标级数（只写 false）；viewInC = 按 C 调看（只写 true）。存档 = score.json 同名可选字段。 */
+  // 音距（spacing）第 17 条 17-1 退役：v0.16.43 起没人读（音距跟着舒适 / 紧凑走）= 没有定义；老文件里写着的读到不理、不再写。
+  /** 这首歌怎么看的几样（谱面分家第三刀起；17-1 起每一项多一个值 "default" = 跟着软件，"default" 现在等于什么只在 src/look）：
+   *  notation = 谱种（不认识的原样留着）；chordTags = 和弦标级数；viewInC = 按 C 调看。存档 = score.json 同名的键。 */
   notation: string;
-  chordTags: boolean;
-  viewInC: boolean;
-  /** 字母谱里中央 C 叫 C 几（score minor 6，7-B；只写不是 4 的；没写 = C4。读 / 改只走 src/score/song-view.ts）。 */
-  middleC: number;
-  /** 演奏法和表情显示不显示（score minor 8，7-G；只写 false = 不显示；没写 = 显示。读 / 改只走 src/score/song-view.ts）。只管画：播放照写的来。 */
-  expressions: boolean;
+  chordTags: Choice<boolean>;
+  viewInC: Choice<boolean>;
+  /** 字母谱里中央 C 叫 C 几（score minor 6，7-B）；"default" = 跟着软件（17-1）。 */
+  middleC: Choice<number>;
+  /** 演奏法和表情显示不显示（score minor 8，7-G）；"default" = 跟着软件（17-1）。只管画：播放照写的来。 */
+  expressions: Choice<boolean>;
   /** 谱上的字用哪种语言（score minor 10，施工单 12-4，2026-11-12；user「页面设置是不是也应该有一个语言，影响打印？」）："ui" = 跟着界面；"zh" / "en" = 界面语言里的一种；
    *  不认识的（更新的版本写的）原样留着、写回去，画的时候当跟着界面。只管软件自己生成、印出来的字（声部名是目录 / 预设里的乐器名时、简谱鼓的图例、「编排」、出声的换气「吸 / 深吸」）；
    *  歌词、歌名、作者栏、自己起的声部名不动。**必填**：没写的意思在进门那一处定一次（src/format/project.ts songViewFields：没写 = "ui"），新歌明着写 "ui"；运行时永远有值。读 / 改只走 src/score/song-view.ts。 */
@@ -276,13 +278,15 @@ export function headTokens(m: { fifths?: number; minor?: boolean; beats?: number
 }
 export const FIRST_PART = "P1", FIRST_PAPER = "p1";
 /** 新歌：一张纸、一个声部（P1 → 角色 r1 → 麦克风 m1），哼的字默认「嗯」（user 2026-10-07「月读不是有啦嗯哦吗，默认嗯」）。 */
-/** 歌级的显示设置（16-4 A3，score.json 同名键）。 */
-export type SongLookKey = "arrangement" | "lyricFit" | "barNumbers" | "spacing" | "notation" | "chordTags" | "viewInC" | "middleC" | "expressions" | "textLang";
+/** 一项显示设置的写法（第 17 条 17-1）：没选 = "default"（界面上叫「跟着软件」），选了 = 具体的值。"default" 现在等于什么只在 src/look 里定，谱这一层不判断它。 */
+export type Choice<T> = "default" | T;
+/** 歌级的显示设置（16-4 A3，score.json 同名键；17-1 起多了纸张和版式的四个键，音距退役）。arrangement 改声音（第 16 条那一侧），只是住在这一组里；textLang 的 "ui" 本身就是跟界面，不加 "default"。 */
+export type SongLookKey = "arrangement" | "lyricFit" | "barNumbers" | "notation" | "chordTags" | "viewInC" | "middleC" | "expressions" | "textLang" | "paper" | "density" | "staffMm" | "marginMm";
 /** 新建的歌写进去的歌级显示设置（16-4 A3；模板的「谱的扩展」那一块就是这一个对象——src/format/template.ts 原样列出，不另抄）。
- *  值是原来「没写 = 什么」那张表（song-view.ts 的 UNWRITTEN，16-4 A3 删了）里的同一组，一个没改：编排空、歌词按节奏、小节号每行开头、音距正常、五线谱、和弦标级数、
- *  不按 C 调看、中央 C 叫 C4、演奏法和表情显示、谱上的字跟着界面。
- *  **只给构造函数用**（emptySong / songOf；守卫 test/template.test.ts：src/score 里这个名字只出现在这两个函数里）。读的一侧（songViewOf、排版、出声）照歌里写着的读，不碰它。 */
-export const NEW_SONG_LOOK: Readonly<Pick<Song, SongLookKey>> = Object.freeze({ arrangement: "", lyricFit: "rhythm", barNumbers: "line", spacing: "normal", notation: "staff", chordTags: true, viewInC: false, middleC: 4, expressions: true, textLang: "ui" });
+ *  17-1 起：能跟着软件的每一项都是 "default"（第 17 条定下来的第 2 条）；编排空、谱上的字跟着界面。
+ *  **只给构造函数用**（emptySong / songOf；守卫 test/template.test.ts：src/score 里这个名字只出现在这两个函数里）。读的一侧（src/look、排版、出声）照歌里写着的读，不碰它。 */
+export const NEW_SONG_LOOK: Readonly<Pick<Song, SongLookKey>> = Object.freeze({ arrangement: "", lyricFit: "default", barNumbers: "default", notation: "default", chordTags: "default", viewInC: "default", middleC: "default", expressions: "default", textLang: "ui",
+  paper: "default", density: "default", staffMm: "default", marginMm: "default" });
 export function emptySong(m: { fifths?: number; beats?: number; beatType?: number; bpm?: number } = {}): Song {
   return { ...NEW_SONG_LOOK, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m) } }] };   // 显示设置按新建的那一组明写（16-4 A3）
 }
@@ -1077,11 +1081,7 @@ export function setPaperLook(st: EditorState, paperId: string, partId: string, p
   if (!!nx.grand === !!cur.grand && (nx.autoOttava === false) === (cur.autoOttava === false)) return st;
   return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => (p.id === paperId ? withLooks(p, { ...(p.looks ?? {}), [partId]: nx }) : p)) } };
 }
-/** 谱头面板谱号那一格现在是什么。 */
-export function clefChoiceOf(paper: PaperSeg, partId: string): ClefChoice {
-  if (paper.looks?.[partId]?.grand) return "grand";
-  return headClefOf(paper.tracks[partId]) ?? "auto";
-}
+// 谱头面板谱号那一格现在是什么（clefChoiceOf）：第 17 条 17-1 起在 src/look（「没写 = 不是大谱表」的读法只在那里）。
 /** 选谱号（v0.16.88，user 11-09「可以高音低音grand用户每个sheet选」「一开始是auto」）：一个谱号 = 纸头写一个谱号记号；自动 / 大谱表 = 纸头不写谱号记号。一步撤销。 */
 export function setClefChoice(st: EditorState, paperId: string, partId: string, choice: ClefChoice): EditorState {
   const paper = st.song.papers.find((p) => p.id === paperId), toks = paper?.tracks[partId]; if (!paper || !toks) return st;
@@ -1635,21 +1635,18 @@ export function setDur(st: EditorState, i: number, dur: number): EditorState {
   return next(st, nt);
 }
 /** 改歌名（空 = 不填）。 */
-/** 换纸（整首歌一个）：A5 = 默认，存成「没有」。**换纸只换纸**：版式和别家文件里写的谱高（staffMm）原样带着走——谱高只在选版式时才换（setDensity；
- *  统筹 2026-11-12 裁定，施工单 7-C 记录：原来新建纸会丢掉 staffMm = 换纸顺手改了谱的大小）。 */
+/** 两个写法一样不一样（按值比；setPaper / setDensity 判「已经是这样」用，不判断哪个是默认）。 */
+const sameAs = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+/** 换纸（整首歌一个；17-1）：选了 = 写具体的那一种（选的正好是跟着软件时用的那一张也一样写，「跟着软件」走 src/look withLook）。
+ *  **换纸只换纸**：舒适 / 紧凑和谱高原样带着走（统筹 2026-11-12 裁定，施工单 7-C）；边距跟着纸（别家的谱带来的边距换了纸就不算数了 = 回到 "default"）。 */
 export function setPaper(st: EditorState, kind: PaperKind): EditorState {
-  const song = { ...st.song }, cur = st.song.paper ?? paperOf(DEFAULT_PAPER), density = densityOf(cur);
-  if (kind === DEFAULT_PAPER && density === "cozy" && cur.staffMm === undefined) delete song.paper; else song.paper = { ...paperOf(kind, density), ...(cur.staffMm !== undefined ? { staffMm: cur.staffMm } : {}) };
-  return (st.song.paper?.kind ?? DEFAULT_PAPER) === kind ? st : { ...st, song };
+  const song: Song = { ...st.song, paper: { kind }, marginMm: "default" };
+  return sameAs(song.paper, st.song.paper) && sameAs(song.marginMm, st.song.marginMm) ? st : { ...st, song };   // 已经是这样 = 原样（不多记一步撤销）
 }
-/** 版式：舒适 / 紧凑（整首歌一个；舒适 = 默认，存成「没有」；自家文件不另记 staffMm）。 */
+/** 舒适 / 紧凑（整首歌一个；17-1）：选了 = 写具体的那一档；谱高回到跟着这一档（别家的谱带来的谱高不再算数）。纸和边距不动。 */
 export function setDensity(st: EditorState, d: Density): EditorState {
-  const cur = st.song.paper ?? paperOf(DEFAULT_PAPER);
-  if (densityOf(cur) === d) return st;
-  const paper: Paper = { ...cur }; delete paper.staffMm; if (d === "cozy") delete paper.density; else paper.density = d;
-  const song = { ...st.song };
-  if (paper.kind === DEFAULT_PAPER && !paper.density) delete song.paper; else song.paper = paper;
-  return { ...st, song };
+  const song: Song = { ...st.song, density: d, staffMm: "default" };
+  return sameAs(song.density, st.song.density) && sameAs(song.staffMm, st.song.staffMm) ? st : { ...st, song };
 }
 /** 改作者栏（每行去掉行尾空白、去掉头尾空行；全空 = 不填）。 */
 export function setCredits(st: EditorState, text: string): EditorState {
@@ -1892,11 +1889,6 @@ export function movePaper(st: EditorState, paperId: string, d: -1 | 1): EditorSt
 export function setBarNumbers(st: EditorState, on: boolean): EditorState {
   const v = on ? "line" : "off"; if (st.song.barNumbers === v) return st;
   return { ...st, song: { ...st.song, barNumbers: v } };   // 两档都明写（16-4 A3）
-}
-/** 音距两档（v0.16.34；默认正常）。 */
-export function setSpacing(st: EditorState, m: "normal" | "tight"): EditorState {
-  if (st.song.spacing === m) return st;
-  return { ...st, song: { ...st.song, spacing: m } };
 }
 /** 歌词怎么排（v0.9.40）：按节奏（默认）/ 按歌词。 */
 export function setLyricFit(st: EditorState, v: "lyrics" | "rhythm"): EditorState {

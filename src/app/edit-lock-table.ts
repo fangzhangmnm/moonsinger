@@ -12,10 +12,9 @@
 //
 // **标签不能当证据**：一个操作自己报「我是看法」，写入口放行之前还要用这里的 `verify` 核一遍——这一步除了它该动的那个地方，别的一个引用都没变。
 //   说是看法、实际动了别的 = 当内容拒（设计稿 14.2 第 1 条）。
-// 纯数据 + 纯函数：node 直测（test/edit-lock.test.ts）。只 import 类型、两张常量表和纸的默认值（paper.ts 的 paperOf：「歌里没写纸 = 默认纸」要和写了的比）。
+// 纯数据 + 纯函数：node 直测（test/edit-lock.test.ts）。只 import 类型和两张常量表（17-1 起纸张和版式是歌顶层的键，按键比；原来比纸的字段要拿「没写 = 默认纸」垫，那一处退路搬走了）。
 import type { Song } from "../score/song.ts";
 import { SONG_VIEW_KEYS, PART_VIEW_KEYS } from "../score/song-view.ts";   // 两张常量表（「这首歌怎么看」住在哪几个键）
-import { paperOf, DEFAULT_PAPER, type Paper } from "../score/paper.ts";
 
 /** 一类「看法」。 */
 export interface LookOp {
@@ -71,20 +70,10 @@ function sameList(xs: readonly object[], ys: readonly object[], skip: readonly s
   return true;
 }
 
-/** 两首歌除了纸（Song.paper）上的这几样字段之外一模一样。歌里没写纸 = 默认纸（A5 舒适；setPaper / setDensity 回到默认时会把整个 paper 键删掉）。
- *  纸上的字段按值比（paperOf 每次给新对象，边距是个小对象）；歌的别的键按引用比。 */
-function sameExceptPaperFields(a: Song, b: Song, allow: readonly (keyof Paper)[]): boolean {
-  if (!sameModulo(a, b, { song: ["paper"] })) return false;
-  if (a.paper === b.paper) return true;
-  const pa = (a.paper ?? paperOf(DEFAULT_PAPER)) as unknown as Record<string, unknown>, pb = (b.paper ?? paperOf(DEFAULT_PAPER)) as unknown as Record<string, unknown>;
-  const keys = new Set([...Object.keys(pa), ...Object.keys(pb)]); for (const k of allow) keys.delete(k);
-  for (const k of keys) if (JSON.stringify(pa[k]) !== JSON.stringify(pb[k])) return false;
-  return true;
-}
-/** 纸张（A3 横 / A4 / A5 / A6）：纸的种类、尺寸、边距。版式（density）和谱高（staffMm）不许跟着变（换纸只换纸，统筹 2026-11-12）。 */
-export const sameExceptPaperSize = (a: Song, b: Song): boolean => sameExceptPaperFields(a, b, ["kind", "widthMm", "heightMm", "marginMm"]);
-/** 版式（舒适 / 紧凑）：纸上的 density（和它决定的谱高 staffMm）。纸的种类、尺寸、边距不许跟着变。 */
-export const sameExceptDensity = (a: Song, b: Song): boolean => sameExceptPaperFields(a, b, ["density", "staffMm"]);
+/** 纸张（A3 横 / A4 / A5 / A6 / 其他）：歌顶层的 paper 和 marginMm（17-1 起纸张和版式是歌顶层的四个键）。版式和谱高不许跟着变（换纸只换纸，统筹 2026-11-12）。 */
+export const sameExceptPaperSize = (a: Song, b: Song): boolean => sameModulo(a, b, { song: ["paper", "marginMm"] });
+/** 版式（舒适 / 紧凑）：歌顶层的 density 和 staffMm。纸的种类、尺寸、边距不许跟着变。 */
+export const sameExceptDensity = (a: Song, b: Song): boolean => sameModulo(a, b, { song: ["density", "staffMm"] });
 /** 小节号印不印：歌顶层的 barNumbers。 */
 export const sameExceptBarNumbers = (a: Song, b: Song): boolean => sameModulo(a, b, { song: ["barNumbers"] });
 /** 歌词排法（按节奏 / 按歌词）：歌顶层的 lyricFit。 */
@@ -104,6 +93,8 @@ export const LOOK_OPS: Readonly<Record<string, LookOp>> = Object.freeze({
   density: { inFile: true, verify: sameExceptDensity },
   barNumbers: { inFile: true, verify: sameExceptBarNumbers },
   lyricFit: { inFile: true, verify: sameExceptLyricFit },
+  // 页面设置「全部跟着软件」（第 17 条 17-1）：一步把这首歌里选过的看法都改回 "default"——看谱那几样 + 版面那几样，只许动这些键
+  allLooks: { inFile: true, verify: (a: Song, b: Song) => sameModulo(a, b, { song: [...SONG_VIEW_KEYS, ...PAGE_LOOK_KEYS] }) },
 });
 
 const has = (kind: string | null | undefined): kind is string => kind != null && Object.prototype.hasOwnProperty.call(LOOK_OPS, kind);
@@ -119,5 +110,5 @@ export function effectiveKind<K extends string>(claimed: K, fallback: K, prev: S
 }
 /** 两首歌只差「看法」（表里所有进文件的看法合起来）吗。脏分成两种时用：只差看法 = looks，别的 = content。 */
 export function sameModuloLooks(a: Song, b: Song): boolean { return sameModulo(a, b, { song: [...SONG_VIEW_KEYS, ...PAGE_LOOK_KEYS], paper: ["hidden"], part: PART_VIEW_KEYS }); }   // 表里的看法合起来：曲段隐藏 + 这首歌怎么看 + 版面四样；加了别的看法这里要跟着合
-/** 版面四样住在歌顶层的哪几个键（纸张和版式都在 paper 里：Paper 上只有纸和版式的字段，整个键都是看法）。 */
-const PAGE_LOOK_KEYS = ["paper", "barNumbers", "lyricFit"] as const;
+/** 版面那几样住在歌顶层的哪几个键（17-1 起纸张和版式是 paper / marginMm / density / staffMm 四个键）。 */
+const PAGE_LOOK_KEYS = ["paper", "marginMm", "density", "staffMm", "barNumbers", "lyricFit"] as const;

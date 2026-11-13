@@ -29,7 +29,7 @@ const digitAt = (k) => p.evaluate((k) => { const L = window.__moonsinger.layout(
 check((await p.evaluate(() => document.querySelector("#score .score-overlay .ov-paper-chip use")?.getAttribute("href"))) === "#jianpu-staff", "纸角的「页面设置」钮 = 「1 / ♪」图标（jianpu-staff）");
 await openSheet();
 check((await p.$$eval('.settings-card .set-page[data-page="look"] .row-lab', (es) => es.slice(0, 2).map((e) => e.firstChild.textContent).join(","))) === "视图,谱种" && !(await p.$eval('.settings-card .set-page[data-page="look"]', (e) => e.hidden)), "面板打开在「看谱」页、第一行 = 视图（12-3）、第二行 = 谱种（7-C）");
-check((await ddValue(p, '.settings-card [data-pg="nota"]')) === "staff", "没写谱种 = 下拉里是五线谱");
+check((await ddValue(p, '.settings-card [data-pg="nota"]')) === "?follow" && (await p.$eval('.settings-card [data-pg="nota"]', (e) => e.textContent ?? "")).includes("跟着软件（现在是：五线谱）"), "新歌 = 跟着软件（现在是五线谱）（17-1）");
 check(!(await p.$eval('.settings-card [data-pg="inc"]', (e) => e.disabled)), "五线谱时「按 C 调看」能选");
 // ② 点「简谱」= 谱上是数字行；按 C 调看那两颗变灰、写明为什么
 await pickOnPage(p, '.settings-card [data-pg="nota"]', "jianpu"); await p.waitForTimeout(300);
@@ -41,7 +41,7 @@ check((await p.$eval('.settings-card .set-item:has([data-pg="inc"]) .row-help', 
 await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
 // ③ 能撤销 / 重做（这首歌怎么看进撤销）
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
-check((await S()).song.notation === "staff" && (await kinds()).split(",").every((k) => k === "staff"), "撤销 = 回到五线谱（16-4 A3：明写）");
+check((await S()).song.notation === "default" && (await kinds()).split(",").every((k) => k === "staff"), "撤销 = 回到跟着软件、画成五线谱（17-1）");
 await p.keyboard.press("Control+Shift+z"); await p.waitForTimeout(250);
 check((await S()).song.notation === "jianpu", "重做 = 又是简谱");
 // ④ 轻点数字 = 光标到它后面；光标盖住数字行的行身（照样张 = 小节线那一段，第五刀 5-5），不伸到别的行

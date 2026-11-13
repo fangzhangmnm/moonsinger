@@ -7,7 +7,7 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { _t } from "../i18n/index.ts";
-import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
+import { type Paper, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
 import { NEW_SONG_HEAD, DYNS, withArt, type ClefName, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { ChordPin, PedalTok, PedalKind } from "../score/song.ts";
@@ -34,7 +34,7 @@ export interface PartInfo {
 /** langs = 每个 token 唱的时候按哪种语言（和 tokens 一一对应；写每个音节的 xml:lang 用它，第 16 条 16-3：写文件和唱同一条规矩）；不给 = 按逐音节的规矩（lang.ts syllableLangs）。 */
 export interface PartXml { info: PartInfo; tokens: Token[]; breaks?: Map<number, string>; langs?: readonly (string | null)[] }
 /** padMeasures = 各声部小节数不等时补整小节休止（给别的软件看的压平件要；自家正本不补——读回来会多出休止）。 */
-export interface ScoreXml { title?: string; movementTitle?: string; paper?: Paper; credits?: string; rights?: string; parts: PartXml[]; padMeasures?: boolean }   // rights = 这首歌自己的许可（<identification><rights>）
+export interface ScoreXml { title?: string; movementTitle?: string; paper: Paper; credits?: string; rights?: string; parts: PartXml[]; padMeasures?: boolean }   // rights = 这首歌自己的许可（<identification><rights>）
 export interface WriteMeta { software: string; date: string }
 export interface Written { xml: string; manualBars: Record<string, number[]>; unwritten: string[] }
 
@@ -61,7 +61,7 @@ function defaultsXml(p: Paper): string {
     `<page-margins type="both"><left-margin>${t(m.l)}</left-margin><right-margin>${t(m.r)}</right-margin><top-margin>${t(m.t)}</top-margin><bottom-margin>${t(m.b)}</bottom-margin></page-margins></page-layout>` +
     `<system-layout><system-distance>${compact ? LAYOUT_TENTHS.compact.system : LAYOUT_TENTHS.cozy.system}</system-distance></system-layout><staff-layout><staff-distance>${compact ? LAYOUT_TENTHS.compact.staff : LAYOUT_TENTHS.cozy.staff}</staff-distance></staff-layout></defaults>`;
 }
-/** <defaults> → 纸（按文件自己的 <scaling> 换成 mm 再认档）；没有页面设置 = undefined（= 默认 A5）。默认 A5 原样也记成 undefined（往返不多出字段）。 */
+/** <defaults> → 纸（按文件自己的 <scaling> 换成 mm 再认档）；没有页面设置 = undefined。只有 score.json 里没有纸张那几项（老文件、别家的谱）时门口才用它（17-1）。 */
 function readPaper(root: El): Paper | undefined {
   const d = kid(root, "defaults"), pl = kid(d, "page-layout");
   const n = (el: El | undefined, name: string) => { const v = childText(el, name); return v === undefined ? NaN : Number(v); };
@@ -70,9 +70,7 @@ function readPaper(root: El): Paper | undefined {
   const k = mm / tn, pm = kid(pl, "page-margins"), mg = (name: string) => { const v = n(pm, name); return v >= 0 ? v * k : 15; };
   const sd = n(kid(d, "staff-layout"), "staff-distance"), density = sd > 0 && sd < 65 ? "compact" : "cozy";
   const p = detectPaper(w * k, h * k, { l: mg("left-margin"), r: mg("right-margin"), t: mg("top-margin"), b: mg("bottom-margin") }, k * 40, density);
-  const def = paperOf(DEFAULT_PAPER), same = (a: number, b: number) => Math.abs(a - b) < 0.05;
-  if (p.kind === DEFAULT_PAPER && p.staffMm === undefined && !p.density && same(p.marginMm.l, def.marginMm.l) && same(p.marginMm.r, def.marginMm.r) && same(p.marginMm.t, def.marginMm.t) && same(p.marginMm.b, def.marginMm.b)) return undefined;
-  return p;
+  return p;   // 哪些算「跟着软件」由读文件的门口定（src/look paperChoicesOf，第 17 条 17-1），这里只照文件认出来
 }
 /** 作者栏 → 一块印在第一页右上（标题下面）的字：<credit><credit-words>，几行用换行隔开、右对齐（位置按纸算，tenths，y 从页底往上量）。 */
 function creditXml(text: string, p: Paper): string {
@@ -313,7 +311,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
 
 /** 几条声部 → 整份 MusicXML。manualBars = 声部 id → 人插的小节线（小节序号，1 起）；unwritten = 还没写音高的音（note id，各声部一起）。 */
 export function writeMusicXml(doc: ScoreXml, meta: WriteMeta): Written {
-  const paper = doc.paper ?? paperOf(DEFAULT_PAPER);
+  const paper = doc.paper;   // 「现在怎么画」那一份算出来的纸（src/look；17-1 起调用方必给，这里不垫默认）
   autoSeq = 0;   // 自动八度线的 id 在这一份文件里唯一
   const built = doc.parts.map((p, k) => ({ p, ...partMeasures(p.tokens, p.breaks, k === 0, p.info.clef ?? "G", p.info.staves === 2 ? 2 : 1, p.langs) }));
   const nMeas = Math.max(0, ...built.map((b) => b.measures.length));

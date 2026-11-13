@@ -1366,6 +1366,9 @@ export declare const S: {
     readonly "\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002": {
         readonly en: "Only for this session; not saved in the song.";
     };
+    readonly "\u8DDF\u7740\u8F6F\u4EF6\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": {
+        readonly en: "Follow the software (now: {x})";
+    };
     readonly 视图: {
         readonly en: "View";
     };
@@ -1564,11 +1567,20 @@ export declare const S: {
     readonly 页面设置: {
         readonly en: "Page settings";
     };
+    readonly "\u628A\u8FD9\u9996\u6B4C\u91CC\u9009\u8FC7\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u6539\u56DE\u8DDF\u7740\u8F6F\u4EF6\uFF08\u80FD\u64A4\u9500\uFF09": {
+        readonly en: "Set every display setting chosen for this song back to following the software (can be undone)";
+    };
+    readonly 全部跟着软件: {
+        readonly en: "All follow the software";
+    };
     readonly "\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B": {
         readonly en: "View: how this page looks on screen";
     };
     readonly "\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6": {
         readonly en: "Page: paper and note density";
+    };
+    readonly "{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6": {
+        readonly en: "{what}: follow the software";
     };
     readonly "\u4E2D\u592E C \u53EB C{n}": {
         readonly en: "Middle C = C{n}";
@@ -3694,6 +3706,12 @@ export declare const S: {
     readonly "\u300C{rn}\u300D\u54CD\u5EA6\u6821\u51C6 {next} dB": {
         readonly en: "“{rn}” loudness calibration {next} dB";
     };
+    readonly "\u5F00\u7740\u72EC\u594F\uFF0C\u8FD9\u51E0\u4E2A\u58F0\u90E8\u88AB\u6321\u4F4F\u3001\u4E0D\u8FDB\u8FD9\u4E00\u4EFD\uFF1A{list}": {
+        readonly en: "Solo is on, so these parts are left out of this file: {list}";
+    };
+    readonly "\u8FD9\u51E0\u4E2A\u58F0\u90E8\u9759\u7740\u3001\u4E0D\u8FDB\u8FD9\u4E00\u4EFD\uFF1A{list}": {
+        readonly en: "These parts are muted and left out of this file: {list}";
+    };
     readonly "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u6587\u4EF6\u91CC\u6CA1\u6709": {
         readonly en: "No one is performing yet: the file has no performer for this part";
     };
@@ -4350,9 +4368,6 @@ export declare const S: {
     };
     readonly 歌词怎么排: {
         readonly en: "how lyrics are laid out";
-    };
-    readonly 音距: {
-        readonly en: "note spacing";
     };
     readonly 谱上的字用哪种语言: {
         readonly en: "language of the text on the score";
@@ -5412,6 +5427,12 @@ export declare const S: {
     };
     readonly " data-def=\"{def}\" title=\"\u53CC\u51FB\u56DE {defText}\"": {
         readonly en: " data-def=\"{def}\" title=\"Double-click: back to {defText}\"";
+    };
+    readonly 跟着音符密度: {
+        readonly en: "Follows note density";
+    };
+    readonly 这张纸自己的: {
+        readonly en: "This paper’s own";
     };
     readonly "\u97F3\u548C\u97F3\u4E4B\u95F4\uFF08\u6700\u591A\uFF09": {
         readonly en: "Between notes (at most)";

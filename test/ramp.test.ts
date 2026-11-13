@@ -9,6 +9,7 @@ import { apply } from "../src/score/commands.ts";
 import { engrave } from "../src/render/engrave.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 import { rampDashes, PIN_MIN } from "../src/render/ornaments/index.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 let nid = 4000;
 const dyn = (v: "p" | "mp" | "mf" | "f", ramp = false) => ({ kind: "dyn", id: nid++, value: v, ...(ramp ? { ramp: true } : {}) }) as Token;
@@ -40,13 +41,13 @@ describe("渐到：怎么渐", () => {
 describe("渐到：存（MusicXML）", () => {
   const info = { id: "P1", name: "V", instrumentName: "月读", sound: "voice.vocals", program: 55 };
   it("写成上一个力度记号起的虚线 wedge（id ramp-…）；读回来还是渐到、不多出手写的渐强渐弱", () => {
-    const toks = line([dyn("p"), "n", "n", dyn("f", true), "n"]), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, { software: "t", date: "2026-10-08" });
+    const toks = line([dyn("p"), "n", "n", dyn("f", true), "n"]), w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, { software: "t", date: "2026-10-08" });
     assert(/<wedge type="crescendo" number="1" line-type="dashed" id="ramp-\d+"\/>/.test(w.xml), "虚线 wedge");
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.slice(3);
     eq(back.map((t) => (t.kind === "dyn" ? `${t.value}${(t as { ramp?: true }).ramp ? "~" : ""}` : t.kind[0])).join(" "), "p n n f~ n");
   });
   it("别家的虚线 wedge（没有 ramp- id）= 照旧是手写的渐强渐弱", () => {
-    const xml = writeMusicXml({ parts: [{ info, tokens: line([dyn("p"), "n", "n", dyn("f", true), "n"]) }] }, { software: "t", date: "2026-10-08" }).xml.replace(/ id="ramp-\d+"/, "");
+    const xml = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: line([dyn("p"), "n", "n", dyn("f", true), "n"]) }] }, { software: "t", date: "2026-10-08" }).xml.replace(/ id="ramp-\d+"/, "");
     eq(readMusicXml(xml).parts[0].tokens.filter((t) => t.kind === "hairpin").length, 1);
   });
 });

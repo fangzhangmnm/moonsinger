@@ -20,12 +20,12 @@
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
 import { _t, workerOptions, lang } from "../i18n/index.ts";
-import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, pageGeoOf, textScaleOf } from "../score/paper.ts";
+import { lineSp, spMm, staffMmOf, STAFF_MM, pageGeoOf, textScaleOf } from "../score/paper.ts";
 import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, moveMarkToEnd, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, keySpell, type Pitch } from "../score/pitch.ts";
 import { toC, stepsToC, trackInC } from "../score/view-in-c.ts";
-import { songViewOf } from "../score/song-view.ts";
+import { lookOf } from "../look/index.ts";   // 「现在怎么画」只问这一处（第 17 条）
 import type { HarmonyRead } from "../theory/index.ts";
 import { textStyleCss } from "../render/text/index.ts";
 import { engrave, type EngraveOpts, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
@@ -76,13 +76,13 @@ export type ScorePress =
   | { kind: "listen"; at: At; target: { paper: string; part: string; index: number | null; caret: number; tick: number } };
 
 /** 怎么画、画什么（每次排版 / 打开歌词框都问）：这次打开、这台设备上的看法（不进歌文件的）+ 声部的情况（谁在演、隐藏、单声…）。
- *  这首歌自己的显示设置（谱种 / 和弦标级数 / 按 C 调看 / 每轨和弦选项）不在这里：在歌里，谱面读 songViewOf(get().song)（谱面分家第三刀）。 */
+ *  这首歌自己的显示设置（谱种 / 和弦标级数 / 按 C 调看 / 每轨和弦选项）不在这里：在歌里，谱面读 src/look lookOf(get().song)（谱面分家第三刀）。 */
 export interface ScoreLook {
   /** 要画的声部（隐藏的不在里面；顺序 = 总谱从上到下）。 */
   parts(): PartView[];
   /** 按拍号自动画小节线开着没有（默认开）。 */
   autoBars?(): boolean;
-  // 按 C 调看 / 和弦标级数：谱面分家第三刀起是这首歌的设置，谱面自己从歌里读（src/score/song-view.ts songViewOf），不问宿主。
+  // 按 C 调看 / 和弦标级数：谱面分家第三刀起是这首歌的设置，谱面自己从歌里读（src/look lookOf，第 17 条起），不问宿主。
   /** 范围：segment = 一次只看光标所在的那张纸（曲段），‹ › 翻；all = 全部（隐藏的纸折叠着）。 */
   scope?(): "all" | "segment";
   /** 屏幕放不下纸的时候：true = 按屏宽重新折行；false（默认）= 不折行、整张纸按比例缩小（行和纸上一模一样）。 */
@@ -117,7 +117,7 @@ export interface ScoreSound {
 export interface ScoreViewHost {
   /** ① 编辑状态。gesture = 连续动作的名字（拖 = "drag"）：宿主的 undo 把它们并成一步。 */
   get(): EditorState; set(next: EditorState, opts?: { gesture?: string }): void;
-  /** ② 怎么画、画什么（这次打开 / 这台设备上的看法）。这首歌自己的显示设置不在这里：在歌里，谱面读 songViewOf(get().song)。 */
+  /** ② 怎么画、画什么（这次打开 / 这台设备上的看法）。这首歌自己的显示设置不在这里：在歌里，谱面读 src/look lookOf(get().song)。 */
   look: ScoreLook;
   /** 在哪儿排（谱面分家第三刀从 look 里单拎出来）——排版 worker：地址（dist/layout-worker-<hash>.mjs；构建时 define 进主 bundle；没给 / 浏览器没有 OffscreenCanvas = 排版留在主线程）+ 建不起来 / 中途坏了（之后一直走主线程）时宿主记进黑匣子。2026-10-21 */
   worker?: { url(): string | URL | null; failed?(why: string): void };
@@ -272,7 +272,7 @@ export class ScoreView {
    *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
   private frame(): Frame {
     const f = this.frameAt(this.host.look.layoutWidth?.() ?? this.el.clientWidth);
-    const paper = this.host.get().song.paper ?? paperOf(DEFAULT_PAPER);
+    const paper = lookOf(this.host.get().song).paper;
     this.spAuto = f.sp; this.physPx = spMm(paper) * PX_PER_MM;   // 缩放的换算基准；记住的物理倍数随 frame 变而重算
     this.syncZoom();
     return f;
@@ -280,7 +280,7 @@ export class ScoreView {
   /** 谱面多宽时自动大小一格几 px（宿主判底座贴不贴边用：按贴底时的全宽算，和用户的缩放无关；2026-10-21）。 */
   spaceAt(avail: number): number { return this.frameAt(avail).sp; }
   private frameAt(avail: number): Frame {
-    const st = this.host.get(), paper = st.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
+    const st = this.host.get(), paper = lookOf(st.song).paper, scale = staffMmOf(paper) / STAFF_MM;
     const base = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale;
     // 分页：整页（版心 + 左右边距）要放得下；页高 / 边距按这张纸算（sp）
     const geo = pageGeoOf(paper), page = this.host.look.pages?.() ? geo : null;
@@ -319,7 +319,7 @@ export class ScoreView {
   /** 排版的几何与选项（layoutNow 的同步路和 renderAsync 的 worker 路共用一份）：frame（谱大小 / 纸宽 / 分页）+ 缓存键 + engrave 的选项（不含量字宽的闭包，worker 自己配）。 */
   private geo(st: EditorState): { frame: FrameNow; geoKey: string; opts: Omit<EngraveOpts, "measure"> } {
     const { sp, width, strict, page, margins } = this.frame(), hscroll = !!this.host.look.scroll?.();
-    const paper = st.song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);   // 字的尺子（刀 2：紧凑只缩谱，字照舒适档）
+    const paper = lookOf(st.song).paper, ts = textScaleOf(paper);   // 字的尺子（刀 2：紧凑只缩谱，字照舒适档）
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
     const partsNow = this.host.look.parts(), scopeSeg = (this.host.look.scope?.() ?? "segment") === "segment", autoBars = this.host.look.autoBars?.() ?? true;
     const tailOpen = !st.sel && st.caret >= tr(st).length;   // 写字头在尾巴后面（含补齐的小节里）：最后一行五线画到右边
@@ -502,7 +502,7 @@ export class ScoreView {
     g.setAttribute("class", "ghost-preview"); g.setAttribute("width", String(L.width)); g.setAttribute("height", String(L.height));
     // 升降号和真写下去的那个音一样（v0.10.23）：拼法按那里的调号（同 writePitch 的 keySpell），画不画按调号 + 这一小节前面的临时记号（shownAccAt，和排版同一个规矩）
     const toks = tr(st), at = one >= 0 ? one : st.caret, fifths = keyAt(toks, at);
-    const inC = songViewOf(this.host.get().song).inCActive, shownToks = inC ? trackInC(toks) : toks;   // 按 C 调看（起作用时）：鬼音符也换到 C、按显示出来的谱算升降号
+    const inC = lookOf(this.host.get().song).inCActive, shownToks = inC ? trackInC(toks) : toks;   // 按 C 调看（起作用时）：鬼音符也换到 C、按显示出来的谱算升降号
     // 打击乐的行没有调（7-R，统筹定的规矩）：写的音高 = 敲哪个鼓，鬼音符不画升降号（「是不是打击乐的行」= 宿主给的声部视图 perc，全 app 只在宿主那一处判断）
     const perc = !!this.host.look.parts().find((p) => p.id === st.at.part)?.perc;
     const notes = this.ghostP.map((p0): GhostNote => { const p = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths); return { p, shown: perc ? null : shownAccAt(shownToks, at, p), shift, fifths: inC ? 0 : fifths }; });
@@ -1050,7 +1050,7 @@ export class ScoreView {
       const st0 = this.host.get();
       if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
       const t = tr(this.host.get())[hit.index] as NoteTok;
-      const ax = GEOMETRY[this.layout!.systems[hit.system]!.kind].pitchAxis, d0 = !ax ? NaN : songViewOf(this.host.get().song).inCActive && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;   // 没有「纵向 = 音高」的行（数字行）= 只能横着拖改时值；按 C 调看：显示的第几级 → 实际的第几级
+      const ax = GEOMETRY[this.layout!.systems[hit.system]!.kind].pitchAxis, d0 = !ax ? NaN : lookOf(this.host.get().song).inCActive && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;   // 没有「纵向 = 音高」的行（数字行）= 只能横着拖改时值；按 C 调看：显示的第几级 → 实际的第几级
       if (this.rules.noteDrag) this.drag = { index: hit.index, d0, dur0: t.dur, x0: p.x, y0: p.y, axis: "", pid: e.pointerId, heard: d0, ...(e.pointerType === "mouse" ? { wait: true } : {}), ...(ax ? { steps: ax.stepsOfDrag } : {}) };   // 拖音 = 只在「音」里；鼠标要先长按
       this.el.setPointerCapture(e.pointerId);   // 按下不响（轻点 = 光标，不预览；user 2026-10-08「光标点选不标蓝音的话那么也不用 preview 吧」）；开始拖音高才响
       this.armPress(e, p, hit);

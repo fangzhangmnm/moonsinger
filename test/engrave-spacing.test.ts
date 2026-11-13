@@ -1,7 +1,6 @@
 // engrave-spacing.test.ts —— 刀 3 接进排版器之后的样子（用真的 engrave()）。created 2026-11-09 by Claude Opus 5.5
 // 施工单 ai-docs/20261109-work-order-display-cuts-2-4.md §1.5：§0 那张表的每一行一条。单位 = 线间距（sp = 10）。
 import { describe, it, assert, eq } from "./runner.mjs";
-import { paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
 import { engrave, type Layout } from "../src/render/engrave.ts";
 import { TPQ, headTokens, type Token, type Song } from "../src/score/song.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
@@ -14,7 +13,7 @@ const head = (m: { beats?: number; beatType?: number } = {}): Token[] => headTok
 const S16 = TPQ / 4, T8 = TPQ / 3, W = TPQ * 4;
 function lay(tracks: Record<string, Token[]>, extra: Partial<Song> = {}, width = 900): Layout {
   const parts = Object.keys(tracks).map((pid, k) => ({ id: pid, role: `r${k}`, mic: `m${k}` }));
-  const song = { hum: "n", parts, papers: [{ id: "A", name: "", tracks }], ...extra } as Song;
+  const song = { hum: "n", paper: "default", density: "default", staffMm: "default", marginMm: "default", lyricFit: "default", barNumbers: "default", notation: "default", viewInC: "default", middleC: "default", chordTags: false, expressions: false, arrangement: "", textLang: "ui", parts, papers: [{ id: "A", name: "", tracks }], ...extra } as Song;   // 原来没写的几样照老的读法明写（17-1）
   return engrave(song, { width, sp: 10, at: { paper: "A", part: parts[0].id }, parts: parts.map((p, k) => ({ id: p.id, name: `P${k}`, first: k === 0, clef: "G" as const, hidden: false, badges: [] })), locale: "zh", measure: createTextMeasure((s) => s.length * 10), autoBars: true });
 }
 /** 第 k 个声部第一行谱上每个音的 x（线间距）。 */
@@ -74,7 +73,7 @@ describe("刀 3：整小节休止 + 空小节", () => {
   });
 });
 
-const COMPACT = { paper: { ...paperOf(DEFAULT_PAPER), density: "compact" as const } } as Partial<Song>;
+const COMPACT = { density: "compact" as const } as Partial<Song>;
 describe("刀 3：音距跟版式（v0.16.43；user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧」）", () => {
   it("舒适 = 正常：十六分 1.9、四分 3.6；紧凑 = 紧：1.7、3.0", () => {
     for (const g of gaps(xsOf(lay({ a: sixteen() }), "a"))) assert(near(g, 1.9), `正常 ${g}`);
@@ -108,25 +107,22 @@ describe("刀 3：三首样张 × 六种视图，同一行的符头不叠", () =
   });
 });
 
-describe("刀 3：音距字段（v0.16.43 起不再起作用、音距跟版式；文件里有就原样带着）", () => {
-  it("紧写进 score.json、读回来一样；正常写 normal（第 16 条 16-3）；v0.16.33 写过的 denseShort: \"off\" 读成正常、存的时候丢掉", async () => {
+describe("音距字段退役（第 17 条 17-1：v0.16.43 起没人读 = 没有定义；不写、读到不理）", () => {
+  it("新存的 score.json 里没有 spacing / denseShort；老文件写着的读进来不进歌、再存就没了（认得的键，不当成不认识的原样带回）", async () => {
     const { saveMxl, openBytes, emptyExtras } = await import("../src/format/project.ts");
     const { emptySong } = await import("../src/score/song.ts");
     const { unzipSync, zipSync, strFromU8, strToU8 } = await import("../vendor/fflate/fflate.esm.js" as string) as typeof import("../vendor/fflate/fflate.esm.js");
     const save = (song: Song) => saveMxl({ song, extras: emptyExtras(), app: "test", date: "2026-11-09" });
-    for (const sp of ["tight", undefined] as const) {
-      const bytes = save({ ...emptySong(), ...(sp ? { spacing: sp } : {}) } as Song), files = unzipSync(bytes), score = JSON.parse(strFromU8(files[".moonsinger/score.json"]!));
-      assert(score.spacing === (sp ?? "normal") && !("denseShort" in score), `写：${sp} → ${JSON.stringify(score.spacing)}`);
-      assert(openBytes("x.mxl", bytes).song.spacing === (sp ?? "normal"), `读：${sp}（16-4 A3：内存里也明写）`);
-    }
     const files = unzipSync(save(emptySong())), score = JSON.parse(strFromU8(files[".moonsinger/score.json"]!));
-    files[".moonsinger/score.json"] = strToU8(JSON.stringify({ ...score, denseShort: "off" }));
+    assert(!("spacing" in score) && !("denseShort" in score), "新存的不写");
+    files[".moonsinger/score.json"] = strToU8(JSON.stringify({ ...score, spacing: "tight", denseShort: "off" }));
     const old = openBytes("x.mxl", zipSync(files));
-    eq(old.song.spacing, "normal", "旧字段读成正常（明写）");
+    assert(!("spacing" in old.song), "读进来不进歌");
     const again = JSON.parse(strFromU8(unzipSync(saveMxl({ song: old.song, extras: old.extras, app: "test", date: "2026-11-09" }))[".moonsinger/score.json"]!));
-    assert(!("denseShort" in again), "再存一次旧字段就没了（认识的键，不当成不认识的原样带回）");
+    assert(!("spacing" in again) && !("denseShort" in again), "再存一次就没了");
   });
 });
+
 
 describe("刀 4a：没连杠的符尾往右伸（刀 3 留的）", () => {
   const E4 = { step: "E" as const, octave: 4, alter: 0 }, A5 = { step: "A" as const, octave: 5, alter: 0 };

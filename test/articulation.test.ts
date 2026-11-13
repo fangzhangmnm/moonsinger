@@ -11,6 +11,7 @@ import { toLabScore } from "./fixtures/lab-score.ts";
 import { gainSegments, noteEnd } from "../src/score/perform.ts";
 import { DYNAMICS_DB } from "../src/format/template.ts";
 import { gainSpec, velSpec } from "./fixtures/spec.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 const ACCENT_SEC = gainSpec().accentSec;
 /** 音量曲线乘在一条声音上（原 src/audio/mix.ts applyGain 的参考实现；2026-10-09 乘法搬进录音房 src/engine/studio.ts 后这里留一份对照）。 */
 function applyGain(samples: Float32Array, sr: number, at: number, segs: readonly { t0: number; t1: number; dB: number }[], smoothSec = 0.004): Float32Array {
@@ -73,7 +74,7 @@ describe("修：MusicXML（musicxml.ts）", () => {
   it("强音 = <strong-accent/>，往返原样回来", () => {
     let st = four(); const [a] = noteIdx(st);
     st = select(st, a, a + 1); st = toggleArtSel(st, "marcato");
-    const toks = tr(st), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
+    const toks = tr(st), w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta);
     assert(w.xml.includes("<strong-accent/>"), "强音没写");
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.filter((t) => t.kind === "note");
     deq((back[0] as NoteTok).art, ["marcato"]);
@@ -83,7 +84,7 @@ describe("修：MusicXML（musicxml.ts）", () => {
     st = select(st, a, b + 1); st = toggleArtSel(st, "accent"); st = toggleArtSel(st, "staccato");
     st = select(st, b, b + 1); st = setDynSel(st, "ff");
     st = select(st, d + 1, d + 2); st = toggleArtSel(st, "tenuto"); st = toggleArtSel(st, "breath");
-    const toks = tr(st), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
+    const toks = tr(st), w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta);
     assert(w.xml.includes(`<direction placement="above"><direction-type><dynamics><ff/></dynamics></direction-type></direction>`), "力度没写对");
     assert(/<articulations><staccato\/><accent\/><\/articulations>/.test(w.xml), "演奏法没写对");
     assert(w.xml.includes("<breath-mark/>"), "呼吸没写");
@@ -97,7 +98,7 @@ describe("修：MusicXML（musicxml.ts）", () => {
     let st = initState(); st = { ...st, input: { ...st.input, unit: 4 } };   // 二分
     st = writeDegree(st, 1, "near"); st = { ...st, input: { ...st.input, unit: 5 } }; st = writeDegree(st, 2, "near");   // 二分 + 全音符 = 跨过第一条小节线
     const i = noteIdx(st)[1]; st = select(st, i, i + 1); st = toggleArtSel(st, "staccato"); st = toggleArtSel(st, "breath");
-    const w = writeMusicXml({ parts: [{ info, tokens: tr(st) }] }, meta);
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: tr(st) }] }, meta);
     const pieces = [...w.xml.matchAll(/<note id="n\d+(-2)?">[\s\S]*?<\/note>/g)].map((m) => m[0]).filter((x) => x.includes("<step>D</step>"));
     eq(pieces.length, 2, "拆成两段");
     assert(pieces[0].includes("<staccato/>") && !pieces[0].includes("breath-mark"), "第一段：跳音"); assert(pieces[1].includes("<breath-mark/>") && !pieces[1].includes("staccato"), "最后一段：呼吸");
@@ -130,7 +131,7 @@ describe("修：MusicXML（musicxml.ts）", () => {
   });
   it("大谱表：<staff> 写在 <type> 后面（MusicXML 4.0 的元素顺序）", () => {
     const st = four();
-    const w = writeMusicXml({ parts: [{ info: { ...info, staves: 2 }, tokens: tr(st) }] }, meta);
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info: { ...info, staves: 2 }, tokens: tr(st) }] }, meta);
     const n = /<note id="n\d+">[\s\S]*?<\/note>/.exec(w.xml)![0];
     assert(n.indexOf("<type>") < n.indexOf("<staff>"), n);
   });
@@ -138,7 +139,7 @@ describe("修：MusicXML（musicxml.ts）", () => {
     const st = four(), song = { ...st.song, rights: "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" };
     const bytes = saveMxl({ song, extras: emptyExtras(), app: "test", date: meta.date });
     eq(openBytes("x.mxl", bytes).song.rights, song.rights);
-    const w = writeMusicXml({ rights: "a & b", parts: [{ info, tokens: tr(st) }] }, meta);
+    const w = writeMusicXml({ paper: A5_PAPER, rights: "a & b", parts: [{ info, tokens: tr(st) }] }, meta);
     assert(/<identification><rights>a &amp; b<\/rights><encoding>/.test(w.xml), "rights 要在 encoding 前面（MusicXML 4.0 顺序）");
     eq(readMusicXml(w.xml).rights, "a & b");
   });

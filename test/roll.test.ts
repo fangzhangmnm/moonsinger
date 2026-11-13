@@ -53,7 +53,7 @@ describe("滚奏：写谱 / MusicXML / 画", () => {
     st = toggleArtSel(select(st, i, i + 1), "roll"); assert(!((tr(st)[i] as NoteTok).art ?? []).includes("roll"), "去掉了");
   });
   it("MusicXML 往返：写成 <tremolo type=\"single\">3</tremolo>、读回来是滚奏；一两道斜线（按拍子重复）不当滚奏、说出来", () => {
-    const toks = [...head(), n(60, 4 * TPQ, { art: ["roll"] })], w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
+    const toks = [...head(), n(60, 4 * TPQ, { art: ["roll"] })], w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta);
     assert(/<ornaments><tremolo type="single">3<\/tremolo><\/ornaments>/.test(w.xml), "写了颤音");
     const r = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten });
     assert(r.parts[0]!.tokens.some((t) => t.kind === "note" && (t.art ?? []).includes("roll")), "读回来是滚奏");
@@ -169,6 +169,7 @@ describe("滚奏 7-N 第一批：谱上", () => {
 // 力度记号放在一张纸最后一个音的后面（7-N 第一批第 1 条；user 新版 Once upon a Tale：军鼓 mp + 两个连着的滚奏一直滚到这张纸结束、后面没有音可以挂 fff）
 import { moveMarkToEnd, markAtEnd } from "../src/score/song.ts";
 import { dynLevels } from "../src/score/perform.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 describe("力度记号放纸尾（7-N）", () => {
   const dyn = (value: string): Token => ({ kind: "dyn", id: id++, value }) as Token, hp = (): Token => ({ kind: "hairpin", id: id++, dir: "cresc" }) as Token;
   const stOf = (toks: Token[]) => { const st0 = initState(); return { ...st0, song: withTrack(st0.song, st0.at.paper, st0.at.part, toks), caret: toks.length }; };
@@ -192,7 +193,7 @@ describe("力度记号放纸尾（7-N）", () => {
       const st0 = initState(), L = engrave({ ...withTrack(st0.song, st0.at.paper, st0.at.part, toks), notation } as never, { width: 700, sp: 10, at: st0.at, parts: [{ id: st0.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], locale: "zh", measure: createTextMeasure((s: string) => s.length * 8) } as never);
       assert(L.prims.some((p) => p.tok === fff.id), `${notation}：画了`); assert(L.dyns.some((d) => d.index === toks.length - 1), `${notation}：能点`);
     }
-    const w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta), back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0]!.tokens;
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta), back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0]!.tokens;
     const last = back[back.length - 1]!; assert(last.kind === "dyn" && (last as { value: string }).value === "fff", `读回来：${last.kind}`);
   });
 });

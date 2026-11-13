@@ -9,7 +9,8 @@ import { openBytes } from "../../../src/format/project.ts";
 import { partNames } from "../../../src/format/part-show.ts";
 import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../src/render/engrave.ts";
 import { printOpts, isPrinted } from "../../../src/export/score-pdf.ts";
-import { paperOf, DEFAULT_PAPER, lineSp, pageGeoOf, textScaleOf } from "../../../src/score/paper.ts";
+import { lineSp, pageGeoOf, textScaleOf } from "../../../src/score/paper.ts";
+import { lookOf } from "../../../src/look/index.ts";
 import type { Song } from "../../../src/score/song.ts";
 import { asOpened } from "./opened.ts";
 import { createTextMeasure } from "../../../src/render/text/index.ts";
@@ -39,9 +40,9 @@ export function views(song: Song, labels: string[], editor: boolean, hide: Reado
 /** song = 排之前先换一下这首歌（比如把纸换成舒适档）；没有 = 原样。 */
 type View = { name: string; opts: (song: Song, labels: string[]) => EngraveOpts; song?: (s: Song) => Song };
 /** 量字的尺子跟着字的字号（刀 2：紧凑档 ts = 1.4，屏幕 / PDF 量字都按 LYRIC_EM × sp × ts）。 */
-export const measureFor = (song: Song) => { const k = textScaleOf(song.paper ?? paperOf(DEFAULT_PAPER)); return (s: string) => measure(s) * k; };
+export const measureFor = (song: Song) => { const k = textScaleOf(lookOf(song).paper); return (s: string) => measure(s) * k; };
 export const editorBase = (song: Song, labels: string[], hide?: ReadonlySet<string>) => {
-  const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);
+  const paper = lookOf(song).paper, ts = textScaleOf(paper);
   return { width: lineSp(paper) * SP, sp: SP, locale: "zh", at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: views(song, labels, true, hide), measure: createTextMeasure(measureFor(song)), autoBars: true, ...(ts !== 1 ? { textScale: ts } : {}),
     // 刀 1 前的四个旗（titlePlaceholder / editable / keyHint / paperLabel）和刀 1 后的几何参数 chrome 一起给：新旧两版排版器各认各的，同一份样张两边都能排
     titlePlaceholder: true, editable: true, keyHint: true, paperLabel: "A5", chrome: { underPaper: 2.6, tail: 2.6, famGap: 0.8, navRoom: 16 }, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } } as unknown as EngraveOpts;
@@ -49,10 +50,10 @@ export const editorBase = (song: Song, labels: string[], hide?: ReadonlySet<stri
 export const VIEWS: View[] = [
   { name: "print", opts: (s, l) => printOpts(s, SP, views(s, l, false), createTextMeasure(measureFor(s)), true) },
   // 刀 2：同一首歌换成舒适档的纸再印（大样张本来是紧凑档）——舒适档版面的基线（字和谱一把尺子，刀 2 前后逐个相同）
-  { name: "print-cozy", song: (s) => ({ ...s, paper: { ...(s.paper ?? paperOf(DEFAULT_PAPER)), density: "cozy" as const, staffMm: undefined } }), opts: (s, l) => printOpts(s, SP, views(s, l, false), createTextMeasure(measureFor(s)), true) },
+  { name: "print-cozy", song: (s) => ({ ...s, density: "cozy" as const, staffMm: "default" as const }), opts: (s, l) => printOpts(s, SP, views(s, l, false), createTextMeasure(measureFor(s)), true) },
   { name: "edit-seg", opts: (s, l) => ({ ...editorBase(s, l), onlyPaper: s.papers[0]!.id }) },
   { name: "edit-all", opts: (s, l) => editorBase(s, l) },
-  { name: "edit-pages", opts: (s, l) => { const b = editorBase(s, l); const { margins: _m, ...rest } = b; return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },   // 分页 = 每段底下不留虚线框
+  { name: "edit-pages", opts: (s, l) => { const b = editorBase(s, l); const { margins: _m, ...rest } = b; return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(lookOf(s).paper) } as EngraveOpts; } },   // 分页 = 每段底下不留虚线框
   { name: "listen-all", opts: (s, l) => { const { editable: _e, ...b } = editorBase(s, l) as EngraveOpts & { editable?: boolean }; return { ...b, chrome: { famGap: 0.8, navRoom: 16 }, foldAll: true } as EngraveOpts; } },   // 听 = 不留虚线框
   { name: "edit-all-hidden", opts: (s, l) => editorBase(s, l, new Set(s.parts.length > 1 ? [s.parts[1]!.id] : [])) },
 ];

@@ -67,7 +67,7 @@ describe("排版参数表", () => {
     let id = 5000, k = 0; const body: Token[] = [];
     for (let b = 0; b < bars; b++) for (const d of beats === 4 ? (b % 2 ? [1, 0.5, 0.5, 1, 1] : [1, 1, 0.5, 0.5, 1]) : (b % 2 ? [1, 0.5, 0.5, 1] : [1, 1, 1])) body.push({ kind: "note", id: id++, pitch: { step: "CDEFGAB"[k++ % 7] as "C", alter: 0, octave: 4 }, dur: TPQ * d, lyric: null } as Token);
     const pp = { ...paperOf(paperKind), ...(compact ? { density: "compact" as const } : {}) };
-    let s: Song = { ...st0.song, paper: pp, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...head, ...body] } }] };
+    let s: Song = { ...st0.song, paper: { kind: paperKind }, density: compact ? "compact" : "default", papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...head, ...body] } }] };   // 17-1：纸张和版式是选择
     s = setNotation({ ...st0, song: s }, "jianpu").song;
     const sp = 10, ts = textScaleOf(pp), L = engrave(s, { width: lineSp(pp) * sp, sp, locale: "zh", ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: paper.id, part }, parts: [{ id: part, name: "Vocals", first: true }], measure: createTextMeasure((x: string, px: number) => [...x].length * 0.55 * px), autoBars: true, page: pageGeoOf(pp) });
     const by = new Map<number, number>(); for (const b of L.bars) by.set(b.system, (by.get(b.system) ?? 0) + 1);
@@ -79,7 +79,7 @@ describe("排版参数表", () => {
     const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
     const gap = (q: number) => {
       let id = 6000; const body = Array.from({ length: 4 }, (_, i) => ({ kind: "note", id: id++, pitch: { step: "CDEF"[i] as "C", alter: 0, octave: 4 }, dur: TPQ * q, lyric: null }) as Token);
-      const pp = paperOf("A5"); let s: Song = { ...st0.song, paper: pp, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...paper.tracks[part]!, ...body] } }] };
+      const pp = paperOf("A5"); let s: Song = { ...st0.song, paper: { kind: "A5" }, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...paper.tracks[part]!, ...body] } }] };
       s = setNotation({ ...st0, song: s }, "jianpu").song;
       const sp = 10, L = engrave(s, { width: lineSp(pp) * sp, sp, locale: "zh", at: { paper: paper.id, part }, parts: [{ id: part, name: "Vocals", first: true }], measure: createTextMeasure((x: string, px: number) => [...x].length * 0.55 * px), autoBars: true, page: pageGeoOf(pp) });
       const ds = L.prims.filter((p) => /jp-digit/.test(p.cls ?? "")) as { x: number; size: number }[];

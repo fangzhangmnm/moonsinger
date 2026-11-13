@@ -109,6 +109,13 @@ export function createPerformance(host: PerfHost) {
   let issues: Issue[] = [], issuesKey = "";
   const prepErrs = new Map<string, { cand: string; kind: IssueKind; why: string }>();   // 上一次准备（播放 / 导出）里出不了声的：按声部记，带着当时上场的候选 id——换了人就不算
   const hasNotes = (partId: string): boolean => st().song.papers.some((pp) => (pp.tracks[partId] ?? []).some((t) => t.kind === "note"));
+  /** 这一份 mp3 里没有、因为静着 / 被独奏挡住的声部（第 17 条四问第 3 条：导出的就是听到的，照现在管导出；要补的是看得见）。只算写了音的。没有 = 空字符串。 */
+  function silencedText(): string {
+    const labels = host.labels(), parts = st().song.parts, solo = parts.some((p) => pv(p.id).solo);
+    const out = parts.flatMap((p, k) => (!hasNotes(p.id) ? [] : solo ? (pv(p.id).solo ? [] : [`「${labels[k]}」`]) : pv(p.id).muted ? [`「${labels[k]}」`] : []));
+    if (!out.length) return "";
+    return solo ? _t("开着独奏，这几个声部被挡住、不进这一份：{list}", { list: out.join(_t("、")) }) : _t("这几个声部静着、不进这一份：{list}", { list: out.join(_t("、")) });
+  }
   function computeIssues(): Issue[] {
     const labels = host.labels();
     return st().song.parts.flatMap((p, k): Issue[] => {
@@ -565,7 +572,8 @@ export function createPerformance(host: PerfHost) {
       //   同一分钟再导 = 浏览器 / 系统自己补 (1)——WeebPaint 的规矩：撞名后缀只在能查占用的去处（云端）做，本地下载 / 分享查不了，交给系统）
       const file = new File([r.tagged as unknown as BlobPart], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st().song.papers.find((p) => p.id === st().at.paper)?.name || _t("这一张"))}` : ""}`)}.mp3`, { type: "audio/mpeg" });
       const Q = r.stereo ? _t("立体声") : _t("单声道");
-      offerFile(file, _t("歌声导出好了"), _t("{p} 秒 · mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r.secs.toFixed(1), Q, kbps: r.kbps, size: mp3SizeText(file.size), fromFinal: r.cached ? _t("（用的是这台设备上记着的上次渲好的那份，内容没变）") : kept ? `<div class="offer-msg">${_t("也放进渲染缓存了：歌库里这首的封面上能直接听，内容不变再导出不用再渲。设置「音源与缓存」→「渲染缓存」里看得见、删得掉。")}</div>` : "", fellBack: (fellBack ? `<div class="offer-msg">${_t("许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。")}</div>` : ""), length: (!r.cached && issues.length ? `<div class="offer-msg issue-warn">${_t("这几条轨没出声，mp3 里没有它们：")}${escHtml(issuesText(issues))}</div>` : ""), lines: creditsBlock(lines, _t("署名 · 已写进 mp3 的标签")) }));
+      const silenced = silencedText();   // 静着 / 被独奏挡住的声部：「好了」面板也照实写一句（第 17 条四问第 3 条）
+      offerFile(file, _t("歌声导出好了"), (silenced ? escHtml(silenced) + "<br>" : "") + _t("{p} 秒 · mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r.secs.toFixed(1), Q, kbps: r.kbps, size: mp3SizeText(file.size), fromFinal: r.cached ? _t("（用的是这台设备上记着的上次渲好的那份，内容没变）") : kept ? `<div class="offer-msg">${_t("也放进渲染缓存了：歌库里这首的封面上能直接听，内容不变再导出不用再渲。设置「音源与缓存」→「渲染缓存」里看得见、删得掉。")}</div>` : "", fellBack: (fellBack ? `<div class="offer-msg">${_t("许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。")}</div>` : ""), length: (!r.cached && issues.length ? `<div class="offer-msg issue-warn">${_t("这几条轨没出声，mp3 里没有它们：")}${escHtml(issuesText(issues))}</div>` : ""), lines: creditsBlock(lines, _t("署名 · 已写进 mp3 的标签")) }));
     } catch (e) {
       progress(""); showError(_t("导出失败：{Error}", { Error: (e as Error).message }));
     } finally { exporting = false; }
@@ -608,7 +616,7 @@ export function createPerformance(host: PerfHost) {
   function onSongSwitch(): void { engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; chunkPlans = new Map(); singer.cancelPending(); singer.cancelInflight(); trimLanesForNewSong(); }
 
   return {
-    humOpt, resetLatencyLog, playSong, renderKeep, cancelRender, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, prepare, renderMixForTest, playRange, tickOfCaret, barHeadTick, startPlayback, playPause, resumePlay, pausePlay, replay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, renderMp3, mp3Tag, resourceSnapshot, trimLanesForNewSong, onSongSwitch, jumpPlaybackToPaper, previewTrack,
+    humOpt, resetLatencyLog, playSong, renderKeep, cancelRender, curFlat, songIn, audibleParts, silencedText, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, prepare, renderMixForTest, playRange, tickOfCaret, barHeadTick, startPlayback, playPause, resumePlay, pausePlay, replay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, renderMp3, mp3Tag, resourceSnapshot, trimLanesForNewSong, onSongSwitch, jumpPlaybackToPaper, previewTrack,
     budget: BUDGET, TURN_LEADS,
     issues: (): readonly Issue[] => issues, issueOf: (part: string): Issue | null => issues.find((i) => i.part === part) ?? null, issuesText, refreshIssues,
     get loopOn() { return loopOn; }, get playTl() { return playTl; }, get preparing() { return preparing; }, get paused() { return paused; }, get startMark() { return startMark; }, get exporting() { return exporting; },

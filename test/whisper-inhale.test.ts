@@ -5,6 +5,7 @@ import { initState, tr, withArt, toggleInhaleBefore, toggleArtBefore, symBackspa
 import { toLabScore } from "./fixtures/lab-score.ts";
 import { SING_MARKS } from "../src/format/template.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 let nid = 900;
 const note = (lyric: string, extra: Partial<NoteTok> = {}) => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 5 }, dur: TPQ, lyric, ...extra }) as Token;
@@ -62,7 +63,7 @@ describe("MusicXML 往返", () => {
   it("气声 = <notehead>x</notehead>（和幽灵音一起 = 带括号的 ×）；出声的换气 = <breath-mark/> 旁边 <other-articulation>", () => {
     const info = { id: "P1", name: "V", instrumentName: "月读", sound: "voice.vocals", program: 55 };
     const toks = line([note("つ", { art: ["whisper"] }), note("な", { art: ["ghost", "whisper"] }), note("ぎ", { art: ["breath"], inhale: "soft" }), note("お", { art: ["breath"], inhale: "big" }), note("お", { art: ["breath"] })]);
-    const w = writeMusicXml({ parts: [{ info, tokens: toks }] }, { software: "t", date: "2026-10-10" });
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, { software: "t", date: "2026-10-10" });
     assert(w.xml.includes("<notehead>x</notehead>") && w.xml.includes('<notehead parentheses="yes">x</notehead>'), "× 符头写出来了");
     assert(w.xml.includes("<breath-mark/><other-articulation>inhale</other-articulation>") && w.xml.includes("<other-articulation>inhale-big</other-articulation>"), "出声的换气写出来了");
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.filter((t) => t.kind === "note") as NoteTok[];

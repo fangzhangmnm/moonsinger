@@ -16,6 +16,7 @@ import { engrave } from "../src/render/engrave.ts";
 import { editorBase } from "./fixtures/layout/cases.ts";
 import { openBytes } from "../src/format/project.ts";
 import { FORMAT_MINOR } from "../src/format/contract.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL | string): Uint8Array };
 
 let nid = 9100;
@@ -113,7 +114,7 @@ describe("踏板 · 录音房（规矩八、半音阶不丢音）", async () => 
 describe("踏板 · MusicXML 往返（11-1 第二步）", () => {
   it("三种踏板（含换踏板、纸尾的）写出去再读回来：记号和位置一样；延音带 <pedal>、持音用 number 2、弱音是 una corda / tre corde", () => {
     const toks: Token[] = [...headTokens({}).map((t) => ({ ...t, id: nid++ }) as Token), ped("down"), n("C"), ped("change"), n("D"), ped("up"), ped("down", "sostenuto"), n("E"), ped("up", "sostenuto"), ped("down", "soft"), n("F"), ped("up", "soft"), ped("down")];
-    const w = writeMusicXml({ parts: [{ info: { id: "P1", name: "Pno", instrumentName: "Piano", sound: "keyboard.piano", program: 0 }, tokens: toks }] }, { software: "test", date: "2026-11-12" });
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info: { id: "P1", name: "Pno", instrumentName: "Piano", sound: "keyboard.piano", program: 0 }, tokens: toks }] }, { software: "test", date: "2026-11-12" });
     assert(w.xml.includes('<pedal type="start" number="1"') && w.xml.includes('<pedal type="change" number="1"') && w.xml.includes('<pedal type="sostenuto" number="2"') && w.xml.includes("una corda") && w.xml.includes("tre corde"), "写法");
     const r = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten });
     const sig = (ts: readonly Token[]) => ts.filter((t) => t.kind === "pedal" || t.kind === "note").map((t) => (t.kind === "pedal" ? `${t.which}:${t.act}` : "n")).join(" ");
@@ -122,7 +123,7 @@ describe("踏板 · MusicXML 往返（11-1 第二步）", () => {
   it("写出去的每个踏板自己说清是哪一种、踩下 / 抬起 / 换踏板（设计第 13 节）：把别的踏板全删掉、只留它一个读回来，意思一样", () => {
     const marks = [ped("down"), ped("change"), ped("up"), ped("down", "sostenuto"), ped("up", "sostenuto"), ped("down", "soft"), ped("up", "soft"), ped("change")];
     const toks: Token[] = [...headTokens({}).map((t) => ({ ...t, id: nid++ }) as Token), ...marks.flatMap((m) => [m, n("C")])];
-    const w = writeMusicXml({ parts: [{ info: { id: "P1", name: "Pno", instrumentName: "Piano", sound: "keyboard.piano", program: 0 }, tokens: toks }] }, { software: "test", date: "2026-11-12" });
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info: { id: "P1", name: "Pno", instrumentName: "Piano", sound: "keyboard.piano", program: 0 }, tokens: toks }] }, { software: "test", date: "2026-11-12" });
     const dirs = w.xml.match(/<direction placement="below">(?:(?!<\/direction>).)*?(?:<pedal |pedal\.soft)(?:(?!<\/direction>).)*?<\/direction>/gs) ?? [];
     eq(dirs.length, marks.length, "每个踏板一个方向");
     dirs.forEach((d, k) => {

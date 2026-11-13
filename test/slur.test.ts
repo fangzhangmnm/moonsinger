@@ -3,6 +3,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, writeRest, select, tr, toggleSlurSel, toggleSlurBefore, slurStateSel, type NoteTok, type EditorState } from "../src/score/song.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 const meta = { software: "test", date: "2026-10-08" };
 const info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };
@@ -31,7 +32,7 @@ describe("连线：MusicXML（musicxml.ts）", () => {
   it("往返：一串连着的 = start 在头一个、stop 在被连到的那个；读回来一样", () => {
     let st = four(); const [a, b] = noteIdx(st);
     st = toggleSlurSel(select(st, a, b + 2));   // 1、2 连到 3
-    const toks = tr(st), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
+    const toks = tr(st), w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta);
     eq((w.xml.match(/<slur type="start"/g) ?? []).length, 1); eq((w.xml.match(/<slur type="stop"/g) ?? []).length, 1);
     const r = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten });
     eq(JSON.stringify(r.parts[0].tokens.filter((t) => t.kind === "note").map((t) => !!(t as NoteTok).slur)), JSON.stringify(slurs(st)));
@@ -39,13 +40,13 @@ describe("连线：MusicXML（musicxml.ts）", () => {
   });
   it("最后一个音标了「连到下一个」但后面没有音 = 不写（不留没有 stop 的 start）", () => {
     let st = four(); st = toggleSlurBefore(st)!;
-    const w = writeMusicXml({ parts: [{ info, tokens: tr(st) }] }, meta);
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: tr(st) }] }, meta);
     assert(!w.xml.includes("<slur"), "不该写 slur");
   });
   it("别家谱：两条连线首尾相接（同一个音上 stop + start）= 连成一串", () => {
     let st = four(); const [a, b, c, d] = noteIdx(st);
     st = toggleSlurSel(select(st, a, b + 1)); st = toggleSlurSel(select(st, c, d + 1));   // 1→2、3→4
-    const w = writeMusicXml({ parts: [{ info, tokens: tr(st) }] }, meta);
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: tr(st) }] }, meta);
     // 把 2 上的 stop 后面补一个 start（别家常这么写：一个音既是这条的尾、又是下一条的头）
     const xml = w.xml.replace(/<slur type="stop" number="1"\/>/, `<slur type="stop" number="1"/><slur type="start" number="1"/>`);
     const r = readMusicXml(xml, { manualBars: w.manualBars, unwritten: w.unwritten });

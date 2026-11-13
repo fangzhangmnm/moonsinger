@@ -9,7 +9,8 @@ import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../
 import { printOpts } from "../../../src/export/score-pdf.ts";
 import { yAt, dAt } from "../../../src/render/staff/geometry.ts";
 import { createTextMeasure } from "../../../src/render/text/index.ts";
-import { pageGeoOf, paperOf, DEFAULT_PAPER } from "../../../src/score/paper.ts";
+import { pageGeoOf } from "../../../src/score/paper.ts";
+import { lookOf } from "../../../src/look/index.ts";
 import type { Song } from "../../../src/score/song.ts";
 
 const ROOT = new URL("../../../", import.meta.url);
@@ -30,14 +31,14 @@ export const FULL_VIEWS: FView[] = [
   { name: "print", opts: (s) => printOpts(s, SP, flagged(s, false), createTextMeasure(measureFor(s)), true) },
   { name: "edit-all", opts: (s) => ed(s) },
   { name: "edit-seg", opts: (s) => ({ ...ed(s), onlyPaper: "pb" }) },
-  { name: "edit-pages", opts: (s) => { const { margins: _m, ...rest } = ed(s); return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },
+  { name: "edit-pages", opts: (s) => { const { margins: _m, ...rest } = ed(s); return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(lookOf(s).paper) } as EngraveOpts; } },
   { name: "listen-all", opts: (s) => ({ ...ed(s), chrome: { famGap: 0.8, navRoom: 16 }, foldAll: true }) },
   // 按 C 调看 + 和弦级数：第三刀起是歌里的设置（原来是排版选项 inC / chordTags）。去掉 asFrozen 写的「不标」= 标；开按 C 调看
   { name: "inC-chords", song: (s) => ({ ...s, chordTags: true, viewInC: true }), opts: (s) => ed(s) },
   { name: "scroll", opts: (s) => ({ ...ed(s), scroll: true }) },
   { name: "tail-lyrics", song: (s) => ({ ...s, lyricFit: "lyrics" }), opts: (s) => ({ ...ed(s), at: { paper: "pa", part: "Y" }, tailOpen: true }) },   // 7-J 前叫 tail-raise-lyrics（多一个拼音字体的歌词让位 0.62）
   { name: "hidden-nobars", opts: (s) => ({ ...ed(s, new Set(["V"])), autoBars: false }) },
-  { name: "compact", song: (s) => ({ ...s, paper: { ...(s.paper ?? paperOf(DEFAULT_PAPER)), density: "compact" as const } }), opts: (s) => ed(s) },
+  { name: "compact", song: (s) => ({ ...s, density: "compact" as const }), opts: (s) => ed(s) },
 ];
 
 // ── 长期留的那一套（1b 收尾：脚手架收成几条综合的对抗性测试；底本 = 分家之后的代码存的，scripts/freeze-layout-surface.mjs）──

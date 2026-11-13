@@ -5,6 +5,7 @@
 //   user 11-11 夜拍了这四样存进歌文件（「可以」）。它们决定这首歌怎么印：进撤销、会标脏；归修改锁的「看法」那一类（src/app/edit-lock-table.ts songLook：锁着能切，锁着期间不写文件）。
 //   以前「和弦标级数」「按 C 调看」存在设备上（device-kv chord-tags / view-in-c）：这一刀起不再读那两个键，也不删；不把设备上的旧值搬进歌（user 同一条消息听过这个后果）。
 //
+//   17-1（2026-11-13）：读的那一半（songViewOf）搬进 src/look/index.ts lookOf——每一项多一个值 "default"（跟着软件），它现在等于什么只在那里定。
 //   **照写着的读**（16-4 A3，2026-11-13，统筹「A3 的三问」做法 2）：歌里这几样永远明写——新建的歌按 song.ts NEW_SONG_LOOK 写、读文件的门口补老歌缺的
 //     （src/format/project.ts songLookOf）、改设置的函数永远写值。原来「文件里没写 = UNWRITTEN 里的值」那张冻住的表删了（值一个没改，搬进了 NEW_SONG_LOOK）。
 //   读到不认识的值（只有比这一版新的文件会带来：键认识、值不认识，原样留在歌里、存的时候照写）：画的时候按最基本的那一档（谱种 = 五线谱、歌词 = 按节奏、小节号 = 印、
@@ -12,7 +13,7 @@
 //   每条轨的和弦选项（PartDef.chords）这一版还是「没写 = 也认拆开弹的（auto）」，下一版跟每张纸 / 每个声部的那几样一起改成明写。
 import type { EditorState, Song, PartDef } from "./song.ts";
 import type { Lang } from "../i18n/strings.ts";
-import { type Density, densityOf, paperOf, DEFAULT_PAPER } from "./paper.ts";
+import type { Density } from "./paper.ts";
 
 /** 谱种：五线谱 / 简谱（第四刀）/ 字母谱（7-B：简谱的变体，数字换成实际音名的字母，同一种数字行）。以后 "figures"（设计稿第 7 节）。封闭的联合，不走注册表（ADR-0004：显示 = 库）。 */
 export type NotationId = "staff" | "jianpu" | "letters";
@@ -21,8 +22,6 @@ export const NOTATIONS: readonly NotationId[] = ["staff", "jianpu", "letters"];
 export type ChordsMode = "stacked" | "auto" | "fold";
 export const CHORDS_MODES: readonly ChordsMode[] = ["stacked", "auto", "fold"];
 
-/** 每条轨的和弦选项没写 = 也认拆开弹的（这一版还留着这一样；下一版每个声部明写，见头注释）。 */
-const CHORDS_UNWRITTEN: ChordsMode = "auto";
 /** 谱上的字用哪种语言（12-4）：跟着界面 / 界面语言里的一种。歌里存的不认识的值（更新的版本写的）读成「跟着界面」，原样留在歌里。 */
 export type TextLang = "ui" | Lang;
 /** 界面上能选的（页面设置「版面」页、导出乐谱的面板）。界面多一种语言 = 这里多一项。 */
@@ -63,31 +62,12 @@ export const isNotation = (v: unknown): v is NotationId => (NOTATIONS as readonl
 export const MOVABLE_DO: Readonly<Record<NotationId, boolean>> = { staff: false, jianpu: true, letters: false };
 /** 这种谱上「按 C 调看」起不起作用：五线谱 = 起；简谱本来就是首调；字母谱写的是实际的音名（7-B：「按 C 调看」在字母谱下变灰）。 */
 export const IN_C_APPLIES: Readonly<Record<NotationId, boolean>> = { staff: true, jianpu: false, letters: false };
-const isChords = (v: unknown): v is ChordsMode => (CHORDS_MODES as readonly unknown[]).includes(v);
 /** 中央 C 叫 C 几：一位整数 0–9 才认（界面上只给 3 / 4 / 5）。 */
 export const isMiddleC = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 9;
 /** 界面上能选的中央 C 叫法。 */
 export const MIDDLE_C_NAMES: readonly number[] = [3, 4, 5];
 
-/** 歌 → 这首歌怎么看（纯函数；不读设备、不读界面语言、不读时钟）。 */
-export function songViewOf(song: Song): SongView {
-  const chords = new Map<string, ChordsMode>();
-  for (const p of song.parts) if (isChords(p.chords)) chords.set(p.id, p.chords);
-  const notation = isNotation(song.notation) ? song.notation : "staff", viewInC = song.viewInC;   // 认不出来的谱种（更新的版本写的）= 画成五线谱
-  return {
-    notation,
-    chordTags: song.chordTags,
-    viewInC,
-    inCActive: viewInC && IN_C_APPLIES[notation],
-    chordsOf: (part) => chords.get(part) ?? CHORDS_UNWRITTEN,
-    density: densityOf(song.paper ?? paperOf(DEFAULT_PAPER)),
-    lyricFit: song.lyricFit === "lyrics" ? "lyrics" : "rhythm",   // 认不出来的 = 按节奏画
-    barNumbers: song.barNumbers !== "off",   // 认不出来的 = 印
-    middleC: isMiddleC(song.middleC) ? song.middleC : 4,   // 认不出来的 = C4
-    expressions: song.expressions,
-    textLang: isTextLang(song.textLang) ? song.textLang : "ui",   // 认不出来的 = 跟着界面
-  };
-}
+// 歌 → 这首歌怎么看：第 17 条 17-1 起搬进 src/look（lookOf；"default" 现在等于什么、和弦选项没写的意思都在那里）。这里只留类型、谱种的表和改的函数。
 
 // ── 改（核心的词：算好整份编辑状态交回；宿主走文档写入口，类别 = songLook）──
 
@@ -121,9 +101,9 @@ export function setViewInC(st: EditorState, on: boolean): EditorState {
   if (st.song.viewInC === on) return st;
   return { ...st, song: { ...st.song, viewInC: on } };
 }
-/** 这条轨的和弦选项。auto = 不写。 */
+/** 这条轨的和弦选项。内存里 auto = 不存（写法不动，第 17 条四问第 2 条；读的那一侧「没写 = auto」在 src/look）。 */
 export function setPartChords(st: EditorState, partId: string, mode: ChordsMode): EditorState {
-  const p = st.song.parts.find((x) => x.id === partId), want = mode === CHORDS_UNWRITTEN ? undefined : mode;
+  const p = st.song.parts.find((x) => x.id === partId), want = mode === "auto" ? undefined : mode;
   if (!p || p.chords === want) return st;
   const np: PartDef = { ...p }; if (want === undefined) delete np.chords; else np.chords = want;
   return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };

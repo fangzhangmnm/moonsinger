@@ -132,6 +132,18 @@ export type FormatFile = keyof typeof FORMAT;
  *     原样留着、存的时候照写，画的时候按最基本的那一档（五线谱 / 按节奏 / 印小节号 / C4 / 跟着界面），页面设置那一项写「这一版不认识」，打开时说一句。
  *     原来的「没写 = 冻住的意思」那张表（UNWRITTEN）删了——值一个没改，就是 NEW_SONG_LOOK。
  *  旧读者（score 11）读到 grooves = 不认识的顶层键（照它自己的预设放，数一样），提示一次。 */
+/** score minor 13（第 17 条 17-1，2026-11-13，统筹「v0.17.20 收；17-0 审过」）：显示设置「跟着软件」+ 纸张存选择。
+ *  ① 歌级的七样（notation / viewInC / middleC / chordTags / expressions / barNumbers / lyricFit）多一个合法的值 "default" = 跟着软件（界面「跟着软件（现在是：X）」）；
+ *     意思不变，键照旧散在顶层。新建的歌全是 "default"；读的门口没写 / 写坏了 = 补成 "default" 这个字（不补当时的默认值）。已经写着具体值的歌照写着的、算选过的，不猜不转换。
+ *     "default" 现在等于什么只在 src/look（lookOf）里定；模块外面不判断它。textLang 不加："ui" 本来就是跟界面。arrangement 改声音（第 16 条那一侧），不加。
+ *  ② 新键 paper / density / staffMm / marginMm（顶层）：纸张和版式的选择。paper = "default" | { kind: "A3L"|"A4"|"A5"|"A6" } | { kind: "other", widthMm, heightMm }（别家的谱带来的大小按值）；
+ *     density = "default" | "cozy" | "compact"；staffMm = "default" | 五线谱高 mm；marginMm = "default" | { l, r, t, b } mm。score.json 有其中任何一项 = 以它为准；
+ *     一项都没有（老文件、别家的谱）= 门口从 MusicXML <defaults> 认一次（src/look paperChoicesOf：四种之一 = 选过的；A5 舒适、边距谱高都是那一档的 = "default"）。
+ *     <defaults> 每次照「现在怎么画」算出来写给别的软件看；自家文件有这几项时读的时候不看它。
+ *  ③ spacing（音距）退役：v0.16.43 起没人读 = 没有定义。不写、读到不理（算认得的键，不原样带回）。
+ *  ④ 每张纸 / 每个声部那几样（自动八度线、大谱表、和弦选项）这一版不加「跟着软件」，文件和内存的写法不动；「没写 = 开 / 一行 / auto」的读法收进 src/look trackLookOf / lookOf。
+ *     **以后要是想改自动八度线、和弦选项的默认，先把那一项做成三态（"default" / 开 / 关），再改。**（统筹 17-0 四问第 2 条）
+ *  旧读者（score 12）读到："default" 是不认识的值（谱种 / 排法当成按最基本的那一档、布尔当成新建的那一档），paper 等四个键是不认识的顶层键（原样带回），提示一次。 */
 /** 谱头三样（调号 / 拍号 / 速度；16-6 并进，统筹「v0.17.18 收」①②，不改格式）：每条轨开头都明写着，自家文件三样都写。新建的歌 / 纸 / 声部 = src/score/song.ts NEW_SONG_HEAD
  *  （C 大调、4/4、♩=90；模板「谱的扩展」那一块的 head）；别家的谱没写 = 读的门口（musicxml.ts）补这一份，打开时照实说一句。
  *  程序里沿 token 串扫的起点（song.ts DEFAULT_KEY / DEFAULT_TIME / DEFAULT_BPM、tempoAt 那几处、lab-score / chain 里一段没有音时的 90）是**不带谱头的片段的起点**，
@@ -141,7 +153,7 @@ export type FormatFile = keyof typeof FORMAT;
  *     门口不放「原来没写是什么意思」的第二张表。
  *  ② 新加的「跟着谁」的开关（跟着谱 / 速度 / 音域…），模板里必须是「不跟」：不然老歌里写着的那个数会因为补了一个开关变成不算数。
  *  ③ 新加的数，定模板值的时候按「歌库里每一首都会变成它」来想；交付时写明它让多少首、多少处变成了什么。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 12, lounge: 4, studio: 3 };   // lounge 3（9-2）起小版本从 0 数
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 13, lounge: 4, studio: 3 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
@@ -199,10 +211,13 @@ export interface ScoreExtV2 {
   lyricFit?: "lyrics";
   /** 小节号（v0.9.42 加，可选，不升版本；Opus 5.5）：只写 "off"（不印）；没写 = 每行开头印。 */
   barNumbers?: "off";
-  /** 音距（v0.16.34 加，可选，不升版本；Claude Opus 5.5）：只写 "tight"（紧）；没写 = 正常（短音符压紧）。
-   *  **v0.16.43 起不再起作用**：音距跟版式走（舒适 = 正常、紧凑 = 紧；user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧」），这个字段读到照样原样带着、写回，界面上没有开关了。
-   *  v0.16.33 在开发版上待过一小时的 denseShort（"off" = 原来的松排法，那一档已经拿掉）读的时候丢掉、按正常排。 */
+  /** 音距（v0.16.34 加）：**score minor 13（第 17 条 17-1）退役**——v0.16.43 起没人读，不写、读到不理（算认得的键，不原样带回）。 */
   spacing?: "tight";
+  /** score minor 13（第 17 条 17-1）：纸张和版式的选择，"default" = 跟着软件（见下面 score minor 13 那一段）。 */
+  paper?: "default" | { kind: "A3L" | "A4" | "A5" | "A6" } | { kind: "other"; widthMm: number; heightMm: number };
+  density?: "default" | "cozy" | "compact";
+  staffMm?: "default" | number;
+  marginMm?: "default" | { l: number; r: number; t: number; b: number };
   /** 歌级声部并集（总谱从上到下）：声部 → 角色 id → 麦克风 id；某张纸没有某声部 = 那张纸的 MusicXML 里没那个 part。kind 留给打击乐记谱（现在都是 pitched）。
    *  **声部就是歌手**（2026-10-08 Opus 5.5，user「嗯声部就是歌手」）：role 在 parts 里唯一（读到共用的 = 后面那个拆成一位新歌手，见 project.ts finish）；
    *  一张纸上一位歌手最多一行（tracks 按声部 id 记，天然如此）；跨纸按声部 id 接；mic 可以几位歌手共用（歌手认领麦克风）。不改形状、不升版本。 */

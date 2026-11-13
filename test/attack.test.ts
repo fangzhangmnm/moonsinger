@@ -7,6 +7,7 @@ import { sf2Curve } from "./fixtures/vel-curve.ts";
 import { DYNAMICS_VEL, DYNAMICS_DB } from "../src/format/template.ts";
 import { gainSpec, velSpec } from "./fixtures/spec.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 let nid = 500;
 const note = (art?: NoteTok["art"]) => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 4 }, dur: TPQ, lyric: null, ...(art ? { art } : {}) }) as Token;
@@ -52,7 +53,7 @@ describe("突强 sfz", () => {
 describe("音头：MusicXML", () => {
   it("sfz / fp 写在 <notations><dynamics>，往返原样", () => {
     const toks = line([note(["sfz"]), note(["fp"])]), info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };
-    const w = writeMusicXml({ parts: [{ info, tokens: toks }] }, { software: "test", date: "2026-10-08" });
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, { software: "test", date: "2026-10-08" });
     assert(w.xml.includes("<dynamics><sfz/></dynamics>") && w.xml.includes("<dynamics><fp/></dynamics>"), "写了");
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.filter((t) => t.kind === "note") as NoteTok[];
     eq(JSON.stringify(back.map((t) => t.art)), `[["sfz"],["fp"]]`);
@@ -102,7 +103,7 @@ describe("强度的阶梯：幽灵音 < 弱化 < 不写 < 次重音 < 重音 < �
   });
   it("MusicXML：<stress/> / <unstress/> / 括号符头 往返", () => {
     const info = { id: "P1", name: "V", instrumentName: "月读", sound: "voice.vocals", program: 55 };
-    const toks = line([note(["stress"]), note(["unstress"]), note(["ghost"])]), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, { software: "t", date: "2026-10-08" });
+    const toks = line([note(["stress"]), note(["unstress"]), note(["ghost"])]), w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, { software: "t", date: "2026-10-08" });
     assert(w.xml.includes("<stress/>") && w.xml.includes("<unstress/>") && w.xml.includes('<notehead parentheses="yes">normal</notehead>'), "写出来了");
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.filter((t) => t.kind === "note") as NoteTok[];
     eq(JSON.stringify(back.map((t) => t.art)), `[["stress"],["unstress"],["ghost"]]`);

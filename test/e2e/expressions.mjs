@@ -28,7 +28,7 @@ const closeSheet = async () => { await p.click('.settings-card [data-v="close"]'
 
 check((await dynHits()) === 2 && (await chip()) === null, "显示着：力度 / 渐强渐弱有点击框、没有淡提示", `${await dynHits()} / ${await chip()}`);
 await openSheet();
-check((await ddValue(p, '.settings-card [data-pg="expr"]')) === "on", "页面设置「看谱」页有「演奏法和表情」，默认显示");
+check((await ddValue(p, '.settings-card [data-pg="expr"]')) === "?follow" && (await p.$eval('.settings-card [data-pg="expr"]', (e) => e.textContent ?? "")).includes("跟着软件（现在是：显示）"), "页面设置「看谱」页有「演奏法和表情」，新歌跟着软件、现在是显示（17-1）");
 await pickOnPage(p, '.settings-card [data-pg="expr"]', "off"); await p.waitForTimeout(250);
 check((await S()).song.expressions === false, "选「不显示」= 歌里记着 expressions: false");
 await closeSheet();
@@ -38,7 +38,7 @@ await p.click("#score .score-overlay .ov-fold-hint"); await p.waitForTimeout(250
 check(await p.evaluate(() => { const pg = document.querySelector('.settings-card .set-page[data-page="look"]'), dd = pg?.querySelector('[data-pg="expr"]'); return !!pg && !pg.hidden && !!dd && dd.closest(".set-item").classList.contains("is-target") && document.activeElement === dd; }), "点淡提示 = 开页面设置「看谱」页、落在「演奏法和表情」那一项（高亮、焦点在它的下拉上）");
 await closeSheet();
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
-check((await S()).song.expressions === true && (await chip()) === null && (await dynHits()) === 2, "撤销 = 回到显示、小标没了、点击框回来了");
+check((await S()).song.expressions === "default" && (await chip()) === null && (await dynHits()) === 2, "撤销 = 回到跟着软件（显示）、小标没了、点击框回来了");
 await p.keyboard.press("Control+Shift+z"); await p.waitForTimeout(250);
 check((await S()).song.expressions === false && (await chip()) !== null, "重做 = 又不显示");
 

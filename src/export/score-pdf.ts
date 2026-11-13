@@ -13,7 +13,8 @@ import { textStyleOf, LYRIC_EM, createTextMeasure, type RawMeasure, type TextMea
 import { engrave, type Prim, type PartView, type EngraveOpts } from "../render/engrave.ts";
 import { lang } from "../i18n/index.ts";
 import type { Song } from "../score/song.ts";
-import { paperOf, DEFAULT_PAPER, spMm, lineSp, pageGeoOf, textScaleOf } from "../score/paper.ts";
+import { lookOf } from "../look/index.ts";   // 用哪一张纸只问这一处（第 17 条）
+import { spMm, lineSp, pageGeoOf, textScaleOf } from "../score/paper.ts";
 import { writePdf, type PdfOp, type PdfPage, type Seg, type MusicOutlines, type PdfStats, type Rgb } from "./pdf.ts";
 import type { TtfFont } from "./ttf.ts";
 
@@ -62,12 +63,12 @@ export interface ScorePdfArgs { song: Song; parts: PartView[]; font: TtfFont; mu
   }
 /** 印的排版参数 = 分页预览去掉控件的那一套（光标、选区、占位提示、曲段控件都不要）。分页预览 = 这一套 + 控件开关（test/pdf-wysiwyg.test.ts 核：控件开关不改版面）。 */
 export function printOpts(song: Song, sp: number, parts: PartView[], measure: TextMeasure, autoBars: boolean, onlyPaper?: string): EngraveOpts {
-  const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);
+  const paper = lookOf(song).paper, ts = textScaleOf(paper);
   return { width: lineSp(paper) * sp, sp, locale: lang(), ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measure, autoBars, page: pageGeoOf(paper), ...(onlyPaper ? { onlyPaper } : {}) };   // 看谱方式 = 歌里的那一套（预览 = PDF）；不给 chrome = 不给编辑器留地方
 }
 /** 排版 + 翻成 PDF。返回字节、页数、缺字（这款字体里没有的字 / 轮廓里没有的音乐字形——调用方如实说）。 */
 export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; stats: PdfStats } {
-  const paper = a.song.paper ?? paperOf(DEFAULT_PAPER), sp = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp * textScaleOf(paper);   // 没写字号的字按这个画
+  const paper = lookOf(a.song).paper, sp = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp * textScaleOf(paper);   // 没写字号的字按这个画
   const L = engrave(a.song, printOpts(a.song, sp, a.parts, createTextMeasure(a.measure ?? ((s, px) => textEm(a.font, s) * px)), a.autoBars ?? true, a.onlyPaper));
   const W = paper.widthMm * PT_PER_MM, H = paper.heightMm * PT_PER_MM, dx = L.pageX.left;
   const pages: PdfPage[] = L.pages.map(() => ({ w: W, h: H, ops: [] }));

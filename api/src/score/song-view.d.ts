@@ -1,6 +1,6 @@
-import type { EditorState, Song } from "./song.ts";
+import type { EditorState } from "./song.ts";
 import type { Lang } from "../i18n/strings.ts";
-import { type Density } from "./paper.ts";
+import type { Density } from "./paper.ts";
 /** 谱种：五线谱 / 简谱（第四刀）/ 字母谱（7-B：简谱的变体，数字换成实际音名的字母，同一种数字行）。以后 "figures"（设计稿第 7 节）。封闭的联合，不走注册表（ADR-0004：显示 = 库）。 */
 export type NotationId = "staff" | "jianpu" | "letters";
 export declare const NOTATIONS: readonly NotationId[];
@@ -49,8 +49,6 @@ export declare const IN_C_APPLIES: Readonly<Record<NotationId, boolean>>;
 export declare const isMiddleC: (v: unknown) => v is number;
 /** 界面上能选的中央 C 叫法。 */
 export declare const MIDDLE_C_NAMES: readonly number[];
-/** 歌 → 这首歌怎么看（纯函数；不读设备、不读界面语言、不读时钟）。 */
-export declare function songViewOf(song: Song): SongView;
 /** 换谱种（每一种都明写，16-4 A3）。 */
 export declare function setNotation(st: EditorState, id: NotationId): EditorState;
 /** 字母谱里中央 C 叫 C 几。 */
@@ -63,7 +61,7 @@ export declare function setTextLang(st: EditorState, v: TextLang): EditorState;
 export declare function setChordTags(st: EditorState, on: boolean): EditorState;
 /** 按 C 调看开 / 关。 */
 export declare function setViewInC(st: EditorState, on: boolean): EditorState;
-/** 这条轨的和弦选项。auto = 不写。 */
+/** 这条轨的和弦选项。内存里 auto = 不存（写法不动，第 17 条四问第 2 条；读的那一侧「没写 = auto」在 src/look）。 */
 export declare function setPartChords(st: EditorState, partId: string, mode: ChordsMode): EditorState;
 /** 这四样在歌里住在哪几个键（歌的顶层三个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。 */
 export declare const SONG_VIEW_KEYS: readonly ["notation", "chordTags", "viewInC", "middleC", "expressions", "textLang"];

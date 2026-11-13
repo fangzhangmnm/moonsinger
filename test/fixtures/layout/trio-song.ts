@@ -2,7 +2,6 @@
 //   人声：弱起两个八分、带英文歌词（含标点「sky,」「song.」）、重音、换气、mf；大提琴：竖叠的两音和弦 + 音内鼓起（菱形）+ 换气、p；
 //   八音盒：一拍一个音 + 休止。1=G、4/4、♩=90；行首印小节号。只加不改（改了 = 不相撞检查的名单要重核）。
 import { TPQ, type Song, type Token } from "../../../src/score/song.ts";
-import { paperOf } from "../../../src/score/paper.ts";
 import { asOpened } from "./opened.ts";
 
 const Q = TPQ, E = Q / 2, H = Q * 2, W = Q * 4;
@@ -31,7 +30,8 @@ export function trioSong(): Song {
   const paper = { id: "pa", name: "A", tracks: { V, C, M } };
   return asOpened({   // app 打开之后的样子（每张纸开头补力度，第八刀 8-7）
     title: "MoonSingers", hum: "u", credits: "fangzhangmnm", parts: [{ id: "V", role: "r1", mic: "m1" }, { id: "C", role: "r2", mic: "m2" }, { id: "M", role: "r3", mic: "m3" }],
-    papers: [paper], paper: paperOf("A5"),
+    papers: [paper], paper: "default", density: "default", staffMm: "default", marginMm: "default",
+    lyricFit: "default", barNumbers: "default", notation: "default", viewInC: "default", middleC: "default", chordTags: false, expressions: false, arrangement: "",   // 原来没写、老的读法当「假」：照原样明写（17-1）
   } as unknown as Song);
 }
 export const TRIO_LABELS = ["人声", "大提琴", "八音盒"];

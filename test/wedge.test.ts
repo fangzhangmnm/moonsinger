@@ -9,6 +9,7 @@ import { gainSpec, velSpec } from "./fixtures/spec.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { toJianpu, fromJianpu } from "../src/score/clipboard.ts";
 import { apply } from "../src/score/commands.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 const meta = { software: "test", date: "2026-10-08" };
 const info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };
@@ -79,14 +80,14 @@ describe("渐强渐弱：力度怎么过渡（dynLevels）", () => {
 
 describe("渐强渐弱：MusicXML / 简谱文字", () => {
   it("记号 → <wedge> start，终点那个力度记号前 stop；读回来是同一个位置的记号", () => {
-    const toks = line([dyn("mp"), pin("cresc"), "n", "n", dyn("f"), "n"]), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
+    const toks = line([dyn("mp"), pin("cresc"), "n", "n", dyn("f"), "n"]), w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta);
     eq((w.xml.match(/<wedge type="crescendo"/g) ?? []).length, 1); eq((w.xml.match(/<wedge type="stop"/g) ?? []).length, 1);
     assert(w.xml.indexOf('<wedge type="stop"') < w.xml.indexOf("<f/>"), "stop 在 f 前面");
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens;
     eq(back.slice(3).map((t) => (t.kind === "hairpin" ? `<${t.dir}>` : t.kind === "dyn" ? t.value : t.kind[0])).join(" "), "mp <cresc> n n f n");
   });
   it("一直到谱尾：结尾补 stop", () => {
-    const w = writeMusicXml({ parts: [{ info, tokens: line(["n", pin("dim"), "n", "n"]) }] }, meta);
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: line(["n", pin("dim"), "n", "n"]) }] }, meta);
     eq((w.xml.match(/<wedge type="diminuendo"/g) ?? []).length, 1); eq((w.xml.match(/<wedge type="stop"/g) ?? []).length, 1);
   });
   it("简谱文字：[<] / [>] 往返", () => {
@@ -136,7 +137,7 @@ describe("渐强渐弱：「变到」（7-N 补；终点写到发夹现在结束
     eq(r.did, "beforeHairpin"); eq(kinds(r.st), "dyn:p hairpin note note dyn:f hairpin note");
   });
   it("MusicXML 往返：放在结尾的力度记号读回来还在结尾", () => {
-    const toks = tr(setHairpinTarget(stOf([dyn("pp"), pin("cresc"), "n"]), 4, "f").st), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
+    const toks = tr(setHairpinTarget(stOf([dyn("pp"), pin("cresc"), "n"]), 4, "f").st), w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta);
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens;
     eq(back.filter((t) => t.kind === "note" || t.kind === "dyn" || t.kind === "hairpin").map((t) => (t.kind === "dyn" ? `dyn:${t.value}` : t.kind)).join(" "), "dyn:pp hairpin note dyn:f");
   });

@@ -36,6 +36,7 @@
       "arrangement": "string",
       "barNumbers": "string",
       "chordTags": "boolean",
+      "density": "string",
       "expressions": "boolean",
       "grooves": {
         "pop": {
@@ -79,9 +80,13 @@
         }
       },
       "lyricFit": "string",
+      "marginMm": "string",
       "middleC": "number",
       "minor": "number",
       "notation": "string",
+      "paper": {
+        "kind": "string"
+      },
       "papers": [
         {
           "autoOttava": {
@@ -121,7 +126,7 @@
         }
       ],
       "patch": "number",
-      "spacing": "string",
+      "staffMm": "string",
       "textLang": "string",
       "version": "number",
       "view": {

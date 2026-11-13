@@ -109,6 +109,7 @@ export declare function createPerformance(host: PerfHost): {
     };
     songIn: (s: RenderScope) => Song;
     audibleParts: () => PartDef[];
+    silencedText: () => string;
     micOf: (part: PartDef) => {
         gainDb: number;
         pan: number;

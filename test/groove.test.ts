@@ -9,6 +9,7 @@ import { DYNAMICS_DB } from "../src/format/template.ts";
 import { gainSpec, velSpec } from "./fixtures/spec.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { toJianpu, fromJianpu } from "../src/score/clipboard.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 const fs = (await import("node:fs" as string)) as { readFileSync(p: string | URL): Uint8Array };
 const g = (await import(new URL("../scripts/gen-grooves.mjs", import.meta.url).href)) as { render(): string | null };
 
@@ -107,7 +108,7 @@ describe("拍子轻重：出声", () => {
 describe("拍子轻重：存档 / 简谱文字", () => {
   const meta = { software: "test", date: "2026-10-08" }, info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };
   it("MusicXML：<words> 写名字、id 带预设和幅度；读回来是同一个记号；别家普通的 <words> 不认", () => {
-    const toks = [...head(), gr("pop", 1.5), n(), n()], w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
+    const toks = [...head(), gr("pop", 1.5), n(), n()], w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta);
     assert(/<words font-style="italic" id="groove\.pop\.150\.\d+">Style: Pop ×1\.5<\/words>/.test(w.xml), "MusicXML 里写「Style: Pop ×1.5」");
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.find((t) => t.kind === "groove");
     eq(JSON.stringify(back && { s: (back as { style: string }).style, a: (back as { amount?: number }).amount }), JSON.stringify({ s: "pop", a: 1.5 }));
@@ -163,7 +164,7 @@ describe("拍子轻重：两小节一轮（克拉维）", () => {
     const t = { ...(gr("latin") as object), shift: true } as Token, toks = [...head(), t, n(), n()];
     eq(grooveLabel(t as never), "Style: Latin (son clave) 2-3");
     const meta = { software: "test", date: "2026-10-09" }, info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };
-    const w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta), back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.find((x) => x.kind === "groove") as { style: string; shift?: boolean };
+    const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta), back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.find((x) => x.kind === "groove") as { style: string; shift?: boolean };
     eq(JSON.stringify([back.style, !!back.shift]), JSON.stringify(["latin", true]));
     const txt = toJianpu([t, n()], 0); assert(txt.includes("[G=latin/2-3]"), txt);
     const re = fromJianpu(txt, 0)!.find((x) => x.kind === "groove") as { shift?: boolean }; eq(!!re.shift, true);

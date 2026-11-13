@@ -1,14 +1,15 @@
-// 纸测试：A4 / A5 / A6 认档、别的纸原样留着、存进 MusicXML <defaults> 往返、默认 A5 不多出字段。
+// 纸测试：A4 / A5 / A6 认档、别的纸原样留着、存进 MusicXML <defaults> 往返；17-1 起纸张存选择（"default" 或选的那一种）。
 // created 2026-10-07 by Claude Opus 5.5（user「嗯A4 A5 A6三种，可以定」「默认A5同意」；数据契约草稿 §6¾）
 import { describe, it, eq, assert } from "./runner.mjs";
 import { paperOf, detectPaper, lineSp, PAPER_KINDS } from "../src/score/paper.ts";
 import { emptySong, initState, setPaper, firstTrack } from "../src/score/song.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
+import { lookOf, followDefault } from "../src/look/index.ts";
 import { writeMusicXml } from "../src/format/musicxml.ts";
 
 const save = (song: ReturnType<typeof emptySong>) => saveMxl({ song, extras: emptyExtras(), app: "v0.0.0-test", date: "2026-10-07" });
 const PART = { id: "P1", name: "主唱", instrumentName: "月读", sound: "voice.vocals", program: 55 };
-const doc = (song: ReturnType<typeof emptySong>) => ({ title: song.title, paper: song.paper, credits: song.credits, parts: [{ info: PART, tokens: firstTrack(song) }] });
+const doc = (song: ReturnType<typeof emptySong>) => ({ title: song.title, paper: lookOf(song).paper, credits: song.credits, parts: [{ info: PART, tokens: firstTrack(song) }] });
 
 describe("纸", () => {
   it("一行多宽：纸越大放得越多，A5 放得进 iPad mini 竖屏（11 px 一格）", () => {
@@ -23,11 +24,13 @@ describe("纸", () => {
     eq(detectPaper(210.5, 296, m).kind, "A4"); eq(detectPaper(148, 210, m).kind, "A5"); eq(detectPaper(105, 148, m).kind, "A6");
     const letter = detectPaper(215.9, 279.4, m); eq(letter.kind, "other"); eq(Math.round(letter.widthMm), 216);
   });
-  it("存进 <defaults>、打开还是那张纸；默认 A5 不多出字段", () => {
+  it("纸张存选择（第 17 条 17-1）：选了 A4 = 存 A4、打开还是 A4；选 A5 也是选过的；跟着软件 = 存 \"default\"、打开还是跟着软件（画的时候 = A5）", () => {
     let st = setPaper(initState(), "A4");
-    eq(openBytes("x.mxl", save(st.song)).song.paper?.kind, "A4");
-    st = setPaper(st, "A5"); eq(st.song.paper, undefined, "换回 A5 = 没有字段");
-    eq(openBytes("x.mxl", save(st.song)).song.paper, undefined, "A5 往返不多出字段");
+    eq(JSON.stringify(openBytes("x.mxl", save(st.song)).song.paper), JSON.stringify({ kind: "A4" }));
+    st = setPaper(st, "A5"); eq(JSON.stringify(st.song.paper), JSON.stringify({ kind: "A5" }), "选了 A5 = 写 A5");
+    eq(JSON.stringify(openBytes("x.mxl", save(st.song)).song.paper), JSON.stringify({ kind: "A5" }), "选过的 A5 往返");
+    const f = { ...st, song: followDefault(st.song, "paper") }, back = openBytes("x.mxl", save(f.song)).song;
+    eq(back.paper, "default", "跟着软件往返"); eq(lookOf(back).paper.kind, "A5", "画的时候 = A5");
     const xml = writeMusicXml(doc(emptySong()), { software: "t", date: "d" }).xml;
     assert(/<identification>[\s\S]*<\/identification>\s*<defaults>[\s\S]*<\/defaults>\s*<part-list>/.test(xml), "<defaults> 在 identification 和 part-list 之间（schema 顺序）");
   });
@@ -35,8 +38,9 @@ describe("纸", () => {
     const xml = writeMusicXml(doc(emptySong()), { software: "t", date: "d" }).xml
       .replace(/<defaults>[\s\S]*<\/defaults>/, "<defaults><scaling><millimeters>7.056</millimeters><tenths>40</tenths></scaling><page-layout><page-height>1584</page-height><page-width>1224</page-width><page-margins type=\"both\"><left-margin>85</left-margin><right-margin>85</right-margin><top-margin>85</top-margin><bottom-margin>85</bottom-margin></page-margins></page-layout></defaults>");
     const o = openBytes("letter.musicxml", new TextEncoder().encode(xml));
-    eq(o.song.paper?.kind, "other"); eq(Math.round(o.song.paper!.widthMm), 216);
-    eq(Math.round(openBytes("x.mxl", save(o.song)).song.paper!.heightMm), 279, "再存一遍还是 Letter");
+    const c = o.song.paper as { kind: string; widthMm: number; heightMm: number };
+    eq(c.kind, "other"); eq(Math.round(c.widthMm), 216, "别家的大小按值带着");
+    eq(Math.round(lookOf(openBytes("x.mxl", save(o.song)).song).paper.heightMm), 279, "再存一遍还是 Letter");
   });
 });
 

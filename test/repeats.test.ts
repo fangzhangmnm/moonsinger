@@ -4,6 +4,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { TPQ, type Token, type Song, type PaperSeg, type NavWhat } from "../src/score/song.ts";
 import { playSegments, sliceBySegments, expandPaper, tickOf } from "../src/score/repeats.ts";
+import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 let id = 100;
 const head = (): Token[] => [{ kind: "key", id: id++, fifths: 0 }, { kind: "time", id: id++, beats: 4, beatType: 4 }, { kind: "tempo", id: id++, bpm: 120 }] as Token[];
@@ -51,7 +52,7 @@ describe("谱内反复：放的顺序（普通记谱软件的读法）", () => {
 describe("谱内反复：每条 track 一起展开", () => {
   const paperOf = (tracks: Record<string, Token[]>): { song: Song; paper: PaperSeg } => {
     const paper: PaperSeg = { id: "p1", name: "", tracks };
-    return { song: { papers: [paper], parts: Object.keys(tracks).map((k) => ({ id: k, role: "r" + k, mic: "m" + k })) } as unknown as Song, paper };
+    return { song: { paper: "default", density: "default", staffMm: "default", marginMm: "default", lyricFit: "default", barNumbers: "default", notation: "default", viewInC: "default", middleC: "default", chordTags: false, expressions: false, arrangement: "", textLang: "ui", papers: [paper], parts: Object.keys(tracks).map((k) => ({ id: k, role: "r" + k, mic: "m" + k })) } as unknown as Song, paper };
   };
   it("结构看最上面那位；第二位短了 = 每段补休止，两条一样长", () => {
     const a = track("|: A :| B"), b = [...head(), ...M("x").slice(0, 2)];   // 第二位只有半小节
@@ -89,7 +90,7 @@ describe("谱内反复：存档（MusicXML 原生）/ 简谱文字 / 压平", ()
   const SRC = "|: A [1.] B :| [2.] C |: D :|x3 [Segno] E [To_Coda] F [D.S._al_Coda] [Coda] G [Fine]";
   it("写出去再读回来：反复小节线（含遍数、纸头的 |:）、房子、Segno / Coda / To Coda / D.S. al Coda / Fine 一个不丢、位置不变", async () => {
     const { writeMusicXml, readMusicXml } = await import("../src/format/musicxml.ts");
-    const toks = track(SRC), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
+    const toks = track(SRC), w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta);
     assert(/<barline location="left"><bar-style>heavy-light<\/bar-style><repeat direction="forward"\/><\/barline>/.test(w.xml), "|: = forward repeat");
     assert(/<repeat direction="backward" times="3"\/>/.test(w.xml), ":|x3 = times=3");
     assert(/<ending number="1" type="start">1\.<\/ending>/.test(w.xml) && /<ending number="1" type="stop"\/><repeat direction="backward"\/>/.test(w.xml), "房子 1 收在 :| 上");
@@ -101,7 +102,7 @@ describe("谱内反复：存档（MusicXML 原生）/ 简谱文字 / 压平", ()
   });
   it("别家谱（没有我们的 id）：靠 <sound> / <segno/> / 字认出来", async () => {
     const { writeMusicXml, readMusicXml } = await import("../src/format/musicxml.ts");
-    const toks = track("A [Segno] B [D.S._al_Fine] [Fine]"), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
+    const toks = track("A [Segno] B [D.S._al_Fine] [Fine]"), w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: toks }] }, meta);
     const plain = w.xml.replace(/ id="nav\.[^"]*"/g, "");
     const back = readMusicXml(plain).parts[0].tokens.filter((t) => t.kind === "nav").map((t) => (t as { what: string }).what);
     eq(back.join(" "), "segno dsFine fine");

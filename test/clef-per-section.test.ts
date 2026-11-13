@@ -4,17 +4,18 @@
 //   「可以高音低音grand用户每个sheet选」「一开始是auto，auto也会自动变成grand，你看一下是什么规则」；11-10「一同意」。设计稿 ai-docs/20261110-wave2-four-designs.md 第一节。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
-import { initState, tr, TPQ, addPart, addPaper, addTrack, removeTrack, setClefChoice, clefChoiceOf, setPaperLook, toggleStaff, setFocus, headClefOf, type Token, type Song, type EditorState } from "../src/score/song.ts";
+import { initState, tr, TPQ, addPart, addPaper, addTrack, removeTrack, setClefChoice, setPaperLook, toggleStaff, setFocus, headClefOf, type Token, type Song, type EditorState } from "../src/score/song.ts";
 import { resolveSongLooks } from "../src/score/clef.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { readMusicXml } from "../src/format/musicxml.ts";
 import { spellMidi } from "../src/score/pitch.ts";
+import { trackLookOf, clefChoiceOf } from "../src/look/index.ts";
 
 let id = 9800;
 const nn = (m: number, chord: number[] = []): Token => ({ kind: "note", id: id++, pitch: spellMidi(m, 0), ...(chord.length ? { chord: chord.map((x) => spellMidi(x, 0)) } : {}), dur: TPQ / 2, lyric: null }) as Token;
 const head = () => tr(initState()).slice(0, 3);
 const one = (midis: (number | number[])[]): Song => { const st = initState(); return { ...st.song, papers: [{ ...st.song.papers[0], tracks: { [st.song.parts[0].id]: [...head(), ...midis.map((m) => (Array.isArray(m) ? nn(m[0], m.slice(1)) : nn(m)))] } }] }; };
-const lookOf = (s: Song, paper = s.papers[0].id, part = s.parts[0].id) => resolveSongLooks(s).get(paper)!.get(part)!;
+const lookOf = (s: Song, paper = s.papers[0].id, part = s.parts[0].id) => resolveSongLooks(s, trackLookOf(s)).get(paper)!.get(part)!;
 const save = (s: Song) => saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-11-10T00:00:00.000Z" });
 const rep = <T,>(xs: T[], n: number): T[] => Array.from({ length: n }, () => xs).flat();
 

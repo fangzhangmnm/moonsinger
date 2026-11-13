@@ -5,7 +5,8 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { readChord, chordLabel, degreeOf, western } from "../src/theory/western.ts";
 import { harmonyTags, barsOf, THEORIES, type HarmonyTag } from "../src/theory/index.ts";
 import { initState, tr, headLen, TPQ, type Token, type Song } from "../src/score/song.ts";
-import { setPartChords, songViewOf } from "../src/score/song-view.ts";
+import { setPartChords } from "../src/score/song-view.ts";
+import { lookOf } from "../src/look/index.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { spellMidi } from "../src/score/pitch.ts";
 import type { Pitch } from "../src/score/pitch.ts";
@@ -223,7 +224,7 @@ describe("声部开关：不认分解和弦", () => {
     eq(setPartChords(st, st.at.part, "auto"), st, "本来就开 = 不变");
     eq(off.song.parts[0].chords, "stacked"); eq(setPartChords(off, st.at.part, "auto").song.parts[0].chords, undefined, "再开 = 不写");
     const save = (s: Song) => saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-11-09T00:00:00.000Z" });
-    eq(songViewOf(openBytes("x.mxl", save(off.song)).song).chordsOf(st.at.part), "stacked");
+    eq(lookOf(openBytes("x.mxl", save(off.song)).song).chordsOf(st.at.part), "stacked");
     eq(openBytes("x.mxl", save(st.song)).song.parts[0].chords, undefined);
   });
 });

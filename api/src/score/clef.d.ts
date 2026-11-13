@@ -57,6 +57,11 @@ export interface ResolvedLook {
 }
 /** 整首：每张纸每个声部怎么画（按纸的顺序一路接：自动的谱号和大谱表看这个声部在上一张纸的样子，滞后、不来回跳）。和视图无关——本段 / 全部 / PDF 一样。
  *  noAutoGrand = 不许自动变大谱表的声部（鼓、固定敲一个键的；合租的一家这里自己跳过）。 */
-export declare function resolveSongLooks(song: Song, noAutoGrand?: ReadonlySet<string>): Map<string, Map<string, ResolvedLook>>;
+/** trackLook = 每张纸每个声部那几样（自动八度线开没开、手选的大谱表）：调用方从 src/look trackLookOf 拿来交进来（第 17 条 17-1：「没写 = 开 / 一行」的退路只在那里；谱这一层不 import 它）。 */
+export type TrackLookFn = (paperId: string, partId: string) => {
+    autoOttava: boolean;
+    grand: boolean;
+};
+export declare function resolveSongLooks(song: Song, trackLook: TrackLookFn, noAutoGrand?: ReadonlySet<string>): Map<string, Map<string, ResolvedLook>>;
 /** 只要单谱表开头的谱号（老接口；大谱表的不在里面）。 */
-export declare function resolveSongClefs(song: Song, noAutoGrand?: ReadonlySet<string>): Map<string, Map<string, ClefName>>;
+export declare function resolveSongClefs(song: Song, trackLook: TrackLookFn, noAutoGrand?: ReadonlySet<string>): Map<string, Map<string, ClefName>>;
