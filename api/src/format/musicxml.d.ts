@@ -70,7 +70,7 @@ export interface ReadScore {
         tokens: Token[];
     }[];
     dropped: Record<string, number>;
-    /** 第一个声部的谱头这一份文件没写、用了这一版的默认开的（速度 ♩=DEFAULT_BPM / 调号 C 大调 / 拍号 4/4）：别家的谱打开时照实说一句（第 16 条，全表 2-11）。自家文件三样都写。 */
+    /** 第一个声部的谱头这一份文件没写、用了这一版的默认开的（新建的谱头 NEW_SONG_HEAD：♩=90 / C 大调 / 4/4）：别家的谱打开时照实说一句（第 16 条，全表 2-11）。自家文件三样都写。 */
     unwrittenHead: {
         tempo: boolean;
         key: boolean;

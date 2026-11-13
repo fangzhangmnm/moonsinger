@@ -120,6 +120,17 @@ export function sustainOf(cat: Catalog, bank: number, program: number, note?: nu
   const row = cat.rows.find((r) => r.bank === bank && r.program === program && r.note === note && r.sustain) ?? cat.rows.find((r) => r.bank === bank && r.program === program && r.sustain);
   return row?.sustain?.id ?? null;
 }
+/** GS 预设上场 / 试听时带的键设置：鼓件 = 固定那个键；音效（GM 116–128，仓鼠 v8 的 sampleKey）= **默认固定原速**（note = 原速键）+ 按值抄原速键和音高锚点（sfx）；
+ *  其余不带（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）。 */
+//   2026-11-13（16-6）从 main.ts 搬来：上场时抄进乐手的和乐器页「现在的默认」（src/performers/defaults.ts）问的是同一个函数。
+export function castArgsOf(cat: Catalog, bank: number, program: number, drumNote?: number): { note?: number; sfx?: { key: number; midi?: number; centsPerKey?: number }; gapSec?: number; canSwell?: boolean } {
+  // 连断的底色也是目录（仓鼠 v11 的 joint，按 GM 号逐个）按值给的；没有 = 不写 = 0（user「你不能按乐器一刀切」「让音乐仓鼠准备一下分类用的元数据」）
+  const gap = jointOf(cat, bank, program, drumNote)?.gapSec, sus = sustainOf(cat, bank, program, drumNote);
+  const g = { ...(gap ? { gapSec: gap } : {}), ...(sus && sus !== "sustained" ? { canSwell: false } : {}) };   // 仓鼠 v11 实测：不是一直能持续的 = 音内变强做不到
+  if (drumNote !== undefined) return { note: drumNote, ...g };
+  const sk = sampleKeyOf(cat, bank, program); if (!sk) return g;
+  return { note: sk.key, sfx: { key: sk.key, ...(sk.midi !== undefined ? { midi: sk.midi } : {}), ...(sk.centsPerKey ? { centsPerKey: sk.centsPerKey } : {}) }, ...g };
+}
 /** 这个预设在 GS 里的力度层（仓鼠 v11 实测；在 key 那个键上测的）。没有 = null。 */
 export function velLayersOf(cat: Catalog, bank: number, program: number, note?: number): { count: number; ranges: [number, number][]; key?: number } | null {
   const row = cat.rows.find((r) => r.bank === bank && r.program === program && r.note === note && r.velLayers) ?? cat.rows.find((r) => r.bank === bank && r.program === program && r.velLayers);

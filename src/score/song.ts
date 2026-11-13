@@ -223,7 +223,12 @@ export interface Song {
 }
 /** 光标 / 选中落在哪条 track（哪张纸 × 哪个声部）。 */
 export interface Focus { paper: string; part: string }
+/** 沿 token 串扫的起点（调号 / 拍号 / 速度）：是不带谱头的片段的起点，不是歌的默认——完整的歌每条轨开头都写着这三样，走不到（契约 contract.ts 写了这一句；
+ *  统筹 2026-11-13「v0.17.18 收」①②：tempoAt 那几处、lab-score / chain 里一段没有音时的 90 不动）。 */
 export const DEFAULT_KEY = 0, DEFAULT_TIME = { beats: 4, beatType: 4 }, DEFAULT_BPM = 90;
+/** 新建的谱头（C 大调 / 4/4 / ♩=90）：新歌、新纸、新声部开头写进去的三样，别家的谱没写时读的门口补的也是它（musicxml.ts，打开时说一句）。
+ *  模板「谱的扩展」那一块的 head 就是这一个对象（template.ts 原样列出，不另抄）；数和上面扫描的起点是同一组。只给 headTokens 用（守卫 test/template.test.ts）。 */
+export const NEW_SONG_HEAD: Readonly<{ fifths: number; minor: boolean; beats: number; beatType: number; bpm: number }> = Object.freeze({ fifths: DEFAULT_KEY, minor: false, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM });
 
 /** 输入状态（不进数据）：写的时候下一个音长什么样。 */
 export type Acc = -2 | -1 | 0 | 1 | 2;
@@ -260,12 +265,13 @@ export interface EditorState {
   lead?: number;
 }
 
-/** 一条 track 开头的三个谱头记号（id 从 id0 起连着编）。 */
+/** 一条 track 开头的三个谱头记号（id 从 id0 起连着编）：m 里没给的 = 新建的谱头（NEW_SONG_HEAD）。 */
 export function headTokens(m: { fifths?: number; minor?: boolean; beats?: number; beatType?: number; bpm?: number } = {}, id0 = 1): Token[] {
+  const H = NEW_SONG_HEAD, minor = m.minor ?? H.minor;
   return [
-    { kind: "key", id: id0, fifths: m.fifths ?? DEFAULT_KEY, ...(m.minor ? { mode: "minor" as const } : {}) },
-    { kind: "time", id: id0 + 1, beats: m.beats ?? DEFAULT_TIME.beats, beatType: m.beatType ?? DEFAULT_TIME.beatType },
-    { kind: "tempo", id: id0 + 2, bpm: m.bpm ?? DEFAULT_BPM },
+    { kind: "key", id: id0, fifths: m.fifths ?? H.fifths, ...(minor ? { mode: "minor" as const } : {}) },
+    { kind: "time", id: id0 + 1, beats: m.beats ?? H.beats, beatType: m.beatType ?? H.beatType },
+    { kind: "tempo", id: id0 + 2, bpm: m.bpm ?? H.bpm },
   ];
 }
 export const FIRST_PART = "P1", FIRST_PAPER = "p1";

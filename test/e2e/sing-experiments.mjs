@@ -48,11 +48,11 @@ check(!(await p.evaluate(() => JSON.stringify(window.__moonsinger.extras()).incl
 // 原始输出增益（16-4 B）：乐手身上的 instrument.outputGainDb；一步 0.5 dB、「默认」= 抄模板、走撤销
 const og = () => p.evaluate(() => { const m = window.__moonsinger, x = m.extras(), r = x.lounge[m.state().song.parts[0].role]; return r.candidates.find((c) => c.id === r.active).instrument.outputGainDb; });
 const ogRow = () => p.evaluate(() => [...document.querySelectorAll(".inst-page .ip-k")].find((e) => e.textContent === "原始输出增益")?.nextElementSibling?.textContent ?? "");
-check((await og()) === 6.52 && /\+6\.52 dB/.test(await ogRow()) && !(await p.$('.inst-page [data-v="og:def"]')), "原始输出增益：新歌 = +6.52 dB（写在乐手身上），在默认上就不出「默认」钮", `${await og()} ${await ogRow()}`);
+check((await og()) === 6.52 && /\+6\.52 dB/.test(await ogRow()) && !(await p.$('.inst-page [data-v="def:og"]')), "原始输出增益：新歌 = +6.52 dB（写在乐手身上），在默认上就不出「默认」钮", `${await og()} ${await ogRow()}`);
 await p.$eval('.inst-page [data-v="og:0.5"]', (e) => e.click()); await p.waitForTimeout(150);
-check((await og()) === 7.02 && /\+7\.02 dB/.test(await ogRow()) && !!(await p.$('.inst-page [data-v="og:def"]')), "+0.5 = 7.02、出「默认」钮", String(await og()));
+check((await og()) === 7.02 && /\+7\.02 dB/.test(await ogRow()) && !!(await p.$('.inst-page [data-v="def:og"]')), "+0.5 = 7.02、出「默认」钮", String(await og()));
 await p.waitForTimeout(1800);   // 连着调同一行并成一步（gesture，1.5 s 内）：隔开再点「默认」，撤销才是单独的一步
-await p.$eval('.inst-page [data-v="og:def"]', (e) => e.click()); await p.waitForTimeout(150);
+await p.$eval('.inst-page [data-v="def:og"]', (e) => e.click()); await p.waitForTimeout(150);
 check((await og()) === 6.52, "「默认」= 抄模板现在的值（6.52，照样写成数）", String(await og()));
 await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
 check((await og()) === 7.02, "撤销回到 7.02", String(await og()));

@@ -43,8 +43,8 @@ const inst = await p.evaluate(() => { const el = document.querySelector('[data-v
   return { shown: !document.querySelector(".inst-page, #inst")?.hidden, inView: r.top >= 0 && r.bottom <= innerHeight, val: v.querySelector(".ip-val")?.textContent ?? "" }; });
 check(!!inst && inst.inView, "点它 = 乐器页「响度」那一行在屏幕里", JSON.stringify(inst));
 check(!!inst && /[-−]6/.test(inst.val), "乐器页写着 −6", JSON.stringify(inst));
-check(!!(await p.$('[data-v="cal:def"]')), "乐器页有「默认」钮（−6 不是默认）");
-await p.click('[data-v="cal:def"]'); await p.waitForTimeout(200);
+check(!!(await p.$('[data-v="def:cal"]')), "乐器页有「默认」钮（−6 不是默认）");
+await p.click('[data-v="def:cal"]'); await p.waitForTimeout(200);
 check((await cal()) === 0, "「默认」= 0", String(await cal()));
 await p.keyboard.press("Escape"); await p.waitForTimeout(200);
 await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(300);

@@ -22,7 +22,9 @@ import { sideDocked } from "../app/workspace.ts";
 
 export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string;   // color = 类别色（卡片顶边，v0.9.31）
   /** 上场那位乐手自己的「响度」（dB，候选的 calibrationDb；乐器页「响度」那一行）：渲染时和推子相加。不是 0 = 推子旁边照实写出来（第 14 条：推子写 0、实际轻 6 dB 是看不见的那一处）。 */
-  performerDb: number }   // refs = 在几张纸上（0 = 能删）
+  performerDb: number;
+  /** 上场那位乐手身上除了「响度」以外和现在的默认不一样的有几处（16-6，performers/defaults.ts 一处算）：不是 0 = 推子旁边「乐手 N 处不同」，点了去乐器页顶上那一句。 */
+  performerDiffs: number }   // refs = 在几张纸上（0 = 能删）
 export interface StudioHost {
   strips(): StudioStrip[];
   setGain(id: string, dB: number): void;
@@ -33,8 +35,8 @@ export interface StudioHost {
   close(): void;
   /** 删一位一张纸都不在的歌手（歌手管理；纸上不删）。 */
   deletePart(id: string): void;
-  /** 去这位歌手的乐器页、落在「响度」那一行（推子旁边「乐手 −6 dB」那颗钮）。 */
-  openPerformer(id: string): void;
+  /** 去这位歌手的乐器页：at = "cal" 落在「响度」那一行（推子旁边「乐手 −6 dB」那颗钮）；"sum" 落在顶上「和现在的默认不一样的有几处」那一句（「乐手 N 处不同」，16-6）。 */
+  openPerformer(id: string, at: "cal" | "sum"): void;
   /** 总轨（2026-10-10 刀 3）：增益 dB + 母线限幅开关；进歌（studio.json master）。 */
   master(): { gainDb: number; limiter: boolean; limiterParams: LimiterParamsV2 };
   setMasterGain(dB: number): void;
@@ -328,7 +330,8 @@ export class Studio {
       if (b.where.startsWith("key:")) this.open = { track: strip, fx: b.where.slice(4) };
       this.render(); this.host.tabChanged?.(this.tab);
     }
-    else if (v === "perfdb" && strip) this.host.openPerformer(strip);
+    else if (v === "perfdb" && strip) this.host.openPerformer(strip, "cal");
+    else if (v === "perfdiff" && strip) this.host.openPerformer(strip, "sum");
     else if (v === "limiter") { this.host.toggleLimiter(); this.render(); }
     else if (v === "delbus" && strip) { if (this.open?.track === strip) this.open = null; this.host.removeBus(strip); this.render(); }
     else if ((v === "busleft" || v === "busright") && strip) { this.host.moveBus(strip, v === "busleft" ? -1 : 1); this.render(); }
@@ -612,7 +615,9 @@ export class Studio {
     const strips = this.host.strips(), singers = strips.map((s, k) => {
       // 乐手自己的响度不是 0 = 推子旁边照实写出来，点它去乐器页那一行（第 14 条，2026-11-12）；是 0 = 不写
       const perf = s.performerDb ? `<button class="btn strip-perfdb" data-v="perfdb" title="${_t("这位乐手自己的响度（乐器页「响度」那一行），和推子相加：推子 {g}、乐手 {p} = 这条轨一共 {t}。点这里去乐器页改", { g: dbText(s.gainDb), p: dbText(s.performerDb), t: dbText(s.gainDb + s.performerDb) })}">${_t("乐手 {p}", { p: dbText(s.performerDb) })}</button>` : "";
-      const body = tab === "basic" ? row(_t("增益"), HINT.gain, `<output>${dbText(s.gainDb)}</output>${perf}`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") +
+      // 乐手身上别的几处和现在的默认不一样（16-6，照「乐手 −6 dB」那一颗的样子）：只数响度以外的，点了去乐器页顶上那一句
+      const perfDiff = s.performerDiffs ? `<button class="btn strip-perfdiff" data-v="perfdiff" title="${_t("这位乐手身上有 {n} 处和现在的默认不一样（响度另算）。点这里去乐器页看是哪几处", { n: s.performerDiffs })}">${_t("乐手 {n} 处不同", { n: s.performerDiffs })}</button>` : "";
+      const body = tab === "basic" ? row(_t("增益"), HINT.gain, `<output>${dbText(s.gainDb)}</output>${perf}${perfDiff}`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") +
           row(_t("声像"), HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW +
           `<div class="btn-row">` +
             `<button class="btn" data-v="partleft" title="${_t("往前挪一位（谱上这个声部也往上挪）")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="partright" title="${_t("往后挪一位（谱上这个声部也往下挪）")}"${k === strips.length - 1 ? " disabled" : ""}>›</button></div>` +

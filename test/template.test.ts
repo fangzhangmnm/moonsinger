@@ -6,7 +6,7 @@ import { templateCandidate, TEMPLATE } from "../src/format/template.ts";
 import { perfSpecProblems } from "../src/format/project.ts";
 import { FX_KINDS } from "../src/engine/fx.ts";
 import { HOST_PARAMS } from "../src/engine/chain.ts";
-import { NEW_SONG_LOOK } from "../src/score/song.ts";
+import { NEW_SONG_LOOK, NEW_SONG_HEAD, emptySong } from "../src/score/song.ts";
 const fs = (await import("node:fs" as string)) as { readdirSync(u: URL, o: { withFileTypes: true }): { name: string; isDirectory(): boolean }[]; readFileSync(u: URL, e: "utf8"): string };
 const ROOT = new URL("../", import.meta.url);
 const walk = (dir: string): string[] => fs.readdirSync(new URL(dir, ROOT), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}${e.name}/`) : /\.(ts|mjs|js)$/.test(e.name) ? [`${dir}${e.name}`] : []));
@@ -41,8 +41,8 @@ describe("模板的录音房那一块（16-4 A2 / C）", () => {
 });
 describe("谱的扩展那一块（16-4 A3 / G）", () => {
   const code = (f: string) => fs.readFileSync(new URL(f, ROOT), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-  it("模板第三块就是 song.ts NEW_SONG_LOOK 这一个对象（不另抄）；原来那张「没写 = 什么」的表（UNWRITTEN）哪儿都没有了", () => {
-    assert(TEMPLATE.score === NEW_SONG_LOOK, "同一个引用");
+  it("模板第三块就是 song.ts NEW_SONG_LOOK / NEW_SONG_HEAD 这两个对象（不另抄）；原来那张「没写 = 什么」的表（UNWRITTEN）哪儿都没有了", () => {
+    assert(TEMPLATE.score.look === NEW_SONG_LOOK && TEMPLATE.score.head === NEW_SONG_HEAD, "同一个引用");
     const bad = ["src/"].flatMap(walk).filter((f) => /\bUNWRITTEN\b/.test(code(f)));
     eq(bad.join("、"), "");
   });
@@ -53,6 +53,18 @@ describe("谱的扩展那一块（16-4 A3 / G）", () => {
       if (f !== "src/score/song.ts") { where.push(f); continue; }
       const fns = [...c.matchAll(/export (?:function (\w+)|const (\w+))[^\n]*\n?(?:(?!\nexport )[\s\S])*?\bNEW_SONG_LOOK\b/g)].map((m) => m[1] ?? m[2]);
       for (const n of fns) if (!["NEW_SONG_LOOK", "emptySong", "songOf"].includes(n!)) where.push(`song.ts ${n}`);
+    }
+    eq(where.join("、"), "");
+  });
+  it("谱头三样（16-6）：新歌开头就是 NEW_SONG_HEAD 那一份；src/score 里这个名字只在声明和 headTokens 里，排版、出声、核心不碰它", () => {
+    const h = emptySong().papers[0]!.tracks.P1!, H = NEW_SONG_HEAD;
+    eq(JSON.stringify(h.map((t) => (t.kind === "key" ? [t.fifths, t.mode ?? "major"] : t.kind === "time" ? [t.beats, t.beatType] : t.kind === "tempo" ? [t.bpm] : t.kind))), JSON.stringify([[H.fifths, H.minor ? "minor" : "major"], [H.beats, H.beatType], [H.bpm]]));
+    const where: string[] = [];
+    for (const f of ["src/score/", "src/render/", "src/engine/", "src/core/"].flatMap(walk)) {
+      const c = code(f); if (!/\bNEW_SONG_HEAD\b/.test(c)) continue;
+      if (f !== "src/score/song.ts") { where.push(f); continue; }
+      const fns = [...c.matchAll(/export (?:function (\w+)|const (\w+))[^\n]*\n?(?:(?!\nexport )[\s\S])*?\bNEW_SONG_HEAD\b/g)].map((m) => m[1] ?? m[2]);
+      for (const n of fns) if (!["NEW_SONG_HEAD", "headTokens"].includes(n!)) where.push(`song.ts ${n}`);
     }
     eq(where.join("、"), "");
   });

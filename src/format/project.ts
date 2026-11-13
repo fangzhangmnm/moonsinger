@@ -13,7 +13,7 @@ import { _t } from "../i18n/index.ts";
 import { DEFAULT_CONCEPT } from "../gm/default-concept.gen.ts";
 import { partNames, currentLabelOf } from "./part-show.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
-import { DEFAULT_BPM, swellOf, withArt, SWELL_ART, type Swell, type Song, type GrooveData, type SongLookKey, NEW_SONG_LOOK, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, type PartLook, CLEFS, flattenPart, familyOrder, headClefOf, withLooks, headLen } from "../score/song.ts";
+import { NEW_SONG_HEAD, swellOf, withArt, SWELL_ART, type Swell, type Song, type GrooveData, type SongLookKey, NEW_SONG_LOOK, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, type PartLook, CLEFS, flattenPart, familyOrder, headClefOf, withLooks, headLen } from "../score/song.ts";
 import { resolveSongLooks, displayStates, withAutoOttava, type ResolvedLook } from "../score/clef.ts";
 import { percKindOf, hitSecByKeyOf } from "../gm/percussion.ts";
 import { songPlayOrder } from "../score/arrange.ts";
@@ -272,7 +272,8 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   const labels = partNames(song, lounge, song.textLang === "zh" || song.textLang === "en" ? song.textLang : "en");
   const infoOf = (part: PartDef, k: number): PartInfo => {
     const role = lounge[part.role] as Json | undefined, active = cands(role).find((c) => c.id === role?.active), mic = mics.find((m) => m.id === part.mic);
-    return { id: part.id, name: labels[k], instrumentName: String(active?.name ?? ""), sound: String(role?.sound ?? DEFAULT_SOUND),
+    return { id: part.id, name: labels[k], instrumentName: String(active?.name ?? ""), sound: typeof role?.sound === "string" ? role.sound : "",   // 休息室里没有这个角色 = 不写 <instrument-sound>：存的时候不替读不到的东西造内容（统筹 2026-11-13，16-6）
+     
       program: Number((active?.gm as Json | undefined)?.program ?? 55),
       variant: typeof (active?.gm as Json | undefined)?.variant === "string" ? { library: "MoonSinger", name: String((active!.gm as Json).variant) } : undefined,
       pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : undefined };
@@ -390,6 +391,9 @@ export interface Opened { song: Song; stem: string; extras: Extras; ours: boolea
 // 显示成什么（名字、简写）只走 src/format/part-show.ts（唯一出口，12-4）：这里不再有 roleName / partLabels。
 /** 这个角色是什么（MusicXML 官方 <instrument-sound> id；user「角色名可以和xml的乐器 功能语义对齐，用最官方的正规的」）。还没有角色快照 = 新角色的。 */
 export function roleSound(extras: Extras, role: string): string { return String(extras.lounge[role]?.sound ?? DEFAULT_SOUND); }
+/** 歌里写着的这个角色是什么（同上的 id）；休息室里没有这个角色 = null（乐器页照实说「没写」，存 MusicXML 不写 <instrument-sound>；统筹 2026-11-13，16-6）。
+ *  上面的 roleSound 只给声部颜色用（没有乐手时按新建角色那一份的类别上色——视图上的，统筹定不动；名字那里本来就写「（没有乐手）」）。 */
+export function writtenRoleSound(extras: Extras, role: string): string | null { const s = (extras.lounge[role] as { sound?: unknown } | undefined)?.sound; return typeof s === "string" && s ? s : null; }
 /** 给角色起名字 / 清掉名字（12-4：名字和乐器分开）。空串 = 回到没起（谱上写乐器的叫法）；起的名字原样存、什么语言都不翻。还没有角色快照 = 先按默认的建一份。 */
 export function withRoleName(extras: Extras, role: string, name: string, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), n = name.trim();
@@ -845,6 +849,18 @@ export function withSfxFixed(extras: Extras, role: string, on: boolean, hum: Hum
   const hit = hitSecByKeyOf(i); if (hit) i.hitSecByKey = hit; else delete i.hitSecByKey;   // 着力点跟着 note 从目录重抄（16-4 E）：固定 = 那一个键；按写的音变调 = 有音高，没有这个键
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
+/** 候选身上一个点分路径的值（没有 = undefined）。 */
+export function candPath(c: Json | null | undefined, path: string): unknown { let o: unknown = c; for (const k of path.split(".")) { if (!o || typeof o !== "object") return undefined; o = (o as Json)[k]; } return o; }
+/** 乐器页「默认」钮（16-6）：把台上那位身上这几个路径改成 from（「现在新上场」那一位，插件 castNow 给的）里的值——按值抄；from 里没有的 = 拿掉这个键。没人上场 = 原样。 */
+export function withActiveKeys(extras: Extras, role: string, from: Json, paths: readonly string[], hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
+  for (const path of paths) {
+    const ks = path.split("."), last = ks.pop()!; let o = c;
+    for (const k of ks) { if (!o[k] || typeof o[k] !== "object") o[k] = {}; o = o[k] as Json; }
+    const v = candPath(from, path); if (v === undefined) delete o[last]; else o[last] = structuredClone(v);
+  }
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
 /** 月读分段唱的粒度（上场那位；没写 = 每句）。user「开关是歌手的属性，可以有不同的粒度」。 */
 export function activeSingChunk(extras: Extras, role: string): "phrase" | "sheet" | "whole" {
   const i = activeInstrument(extras, role);
@@ -914,7 +930,8 @@ function refuseBadIds(bad: Partial<Record<IdKind, number>>): void {
 }
 /** 别家的谱没写速度 / 调号 / 拍号 = 用这一版的默认开的：照实说一句（第 16 条，全表 2-11；走打开时那一串「要告诉人的话」，不往文件里改——存的时候写的是眼前这一份）。 */
 function headNotice(r: ReadScore, o: Opened): Opened {
-  const u = r.unwrittenHead, what = [u.tempo ? _t("这份谱没写速度，按 ♩={bpm} 开的。", { bpm: DEFAULT_BPM }) : "", u.key ? _t("这份谱没写调号，按 C 大调开的。") : "", u.time ? _t("这份谱没写拍号，按 4/4 开的。") : ""].filter(Boolean);
+  const u = r.unwrittenHead, H = NEW_SONG_HEAD;   // 补的就是新建的谱头那一份（musicxml.ts 读的门口）
+  const what = [u.tempo ? _t("这份谱没写速度，按 ♩={bpm} 开的。", { bpm: H.bpm }) : "", u.key ? _t("这份谱没写调号，按 C 大调开的。") : "", u.time ? _t("这份谱没写拍号，按 {t} 开的。", { t: `${H.beats}/${H.beatType}` }) : ""].filter(Boolean);
   return what.length ? { ...o, notices: [what.join(" "), ...o.notices] } : o;
 }
 /** 一份读进来的 MusicXML → 一张纸（token id 之后在 songFromReads 里统一重编）。 */

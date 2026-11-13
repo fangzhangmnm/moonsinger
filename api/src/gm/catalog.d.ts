@@ -255,6 +255,18 @@ export declare function jointOf(cat: Catalog, bank: number, program: number, not
 } | null;
 /** 这个预设能不能一直响（仓鼠 v11 实测）："sustained" / "decaying" / "oneshot"；没有 = null。 */
 export declare function sustainOf(cat: Catalog, bank: number, program: number, note?: number): string | null;
+/** GS 预设上场 / 试听时带的键设置：鼓件 = 固定那个键；音效（GM 116–128，仓鼠 v8 的 sampleKey）= **默认固定原速**（note = 原速键）+ 按值抄原速键和音高锚点（sfx）；
+ *  其余不带（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）。 */
+export declare function castArgsOf(cat: Catalog, bank: number, program: number, drumNote?: number): {
+    note?: number;
+    sfx?: {
+        key: number;
+        midi?: number;
+        centsPerKey?: number;
+    };
+    gapSec?: number;
+    canSwell?: boolean;
+};
 /** 这个预设在 GS 里的力度层（仓鼠 v11 实测；在 key 那个键上测的）。没有 = null。 */
 export declare function velLayersOf(cat: Catalog, bank: number, program: number, note?: number): {
     count: number;

@@ -3256,6 +3256,12 @@ export declare const S: {
     readonly "\u3089 / \u5566": {
         readonly en: "ら (la)";
     };
+    readonly "\u6539\u56DE\u73B0\u5728\u7684\u9ED8\u8BA4\uFF08\u5199\u8FDB\u6B4C\u91CC\uFF1B\u80FD\u64A4\u9500\uFF09": {
+        readonly en: "Change back to the current default (written into the song; can be undone)";
+    };
+    readonly 默认: {
+        readonly en: "Default";
+    };
     readonly "{p}\u524D\u300C{mark}\u300D{p2}": {
         readonly en: "“{mark}” before {p}{p2}";
     };
@@ -3439,8 +3445,17 @@ export declare const S: {
     readonly "\u6574\u4E2A\u97F3\u6572\u6EE1\uFF0C\u6BCF\u79D2 {hz} \u4E0B\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\uFF08\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230 / \u97F3\u5185\u8D77\u4F0F / \u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u91CC\uFF09\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B": {
         readonly en: "Fills the whole note, {hz} hits per second; each hit uses the dynamic at the moment it lands (crescendos, ramps, in-note swells and fp are all in each hit's velocity); accents and the like only on the first hit";
     };
+    readonly 琶音: {
+        readonly en: "Arpeggio";
+    };
+    readonly "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u63D0\u65E9 {ms}\uFF0C\u6700\u4E0A\u9762\u90A3\u4E2A\u97F3\u51C6\u65F6\u843D\u62CD\uFF08\u6700\u591A\u644A\u5230\u8FD9\u4E2A\u97F3\u4E00\u534A\u957F\uFF09": {
+        readonly en: "Chord notes start {ms} earlier from low to high; the top note lands on the beat (spread over at most half the note)";
+    };
     readonly "\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09": {
         readonly en: "How marks are performed (this performer's own settings, saved in the song with them)";
+    };
+    readonly "\u73B0\u5728\u7684\u9ED8\u8BA4\uFF1A{v}": {
+        readonly en: "Current default: {v}";
     };
     readonly "\u4EBA\u58F0\uFF08\u8FDE\u7740\u5531\uFF09": {
         readonly en: "Voice (legato)";
@@ -3460,11 +3475,26 @@ export declare const S: {
     readonly "MIDI \u529B\u5EA6": {
         readonly en: "MIDI velocity";
     };
+    readonly 现在的默认: {
+        readonly en: "Current default";
+    };
     readonly "\u54CD\u5EA6 dB": {
         readonly en: "Loudness dB";
     };
     readonly 第几份录音: {
         readonly en: "Recording #";
+    };
+    readonly 突强: {
+        readonly en: "Sforzando";
+    };
+    readonly 强后即弱: {
+        readonly en: "Forte-piano";
+    };
+    readonly "{p}\u524D {mark}": {
+        readonly en: "before {p}: {mark}";
+    };
+    readonly 这位: {
+        readonly en: "This one";
     };
     readonly "\u6EDA\u594F\u7684\u97F3\u4E0A\u6309\u529B\u5EA6\u505A\uFF08\u58F0\u97F3\u8F7D\u597D\u540E\u663E\u793A\u7EA6\u51E0\u6863\uFF09\u3002": {
         readonly en: "On rolled notes this is done with velocity (shown once the sound is loaded).";
@@ -3496,6 +3526,12 @@ export declare const S: {
     readonly "\u627E\u6587\u4EF6\u2026": {
         readonly en: "Find file…";
     };
+    readonly "\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u7684\u300C{k}\u300D": {
+        readonly en: "“{k}” (not known to this version)";
+    };
+    readonly "\uFF08\u5173\u7740\uFF09": {
+        readonly en: " (off)";
+    };
     readonly 响度: {
         readonly en: "Loudness";
     };
@@ -3505,23 +3541,11 @@ export declare const S: {
     readonly "\u5927\u58F0 1 dB": {
         readonly en: "1 dB louder";
     };
-    readonly "\u56DE\u5230\u9ED8\u8BA4 {d}": {
-        readonly en: "Back to default {d}";
-    };
-    readonly 默认: {
-        readonly en: "Default";
-    };
     readonly "\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u8FD9\u4E2A\u5E93\u7684\u9ED8\u8BA4\u662F {d}\u3002\u5E93\u548C\u5E93\u4E4B\u95F4\u5C31\u5728\u8FD9\u4E00\u4E2A\u6570\u4E0A\u5BF9\u9F50\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u4E5F\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u662F\u8FD9\u9996\u6B4C\u7684\u51B3\u5B9A\uFF0C\u53E6\u7B97": {
         readonly en: "This performer's own volume: this library's default is {d}. Libraries are matched to each other on this one number, and stacked parts don't hit the ceiling and get squashed; the mixer fader is a decision for this song and is separate";
     };
     readonly 这位自己的效果: {
         readonly en: "This performer’s own effects";
-    };
-    readonly "\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u7684\u300C{k}\u300D": {
-        readonly en: "“{k}” (not known to this version)";
-    };
-    readonly "\uFF08\u5173\u7740\uFF09": {
-        readonly en: " (off)";
     };
     readonly "\u8DDF\u7740\u8FD9\u4F4D\u6F14\u594F\u8005\u8D70\u7684\u6548\u679C\uFF08\u7434\u7BB1\u3001\u97F3\u7BB1\u8FD9\u4E00\u7C7B\uFF09\uFF1A\u51FA\u58F0\u65F6\u6392\u5728\u6DF7\u97F3\u53F0\u4E0A\u8FD9\u6761\u8F68\u7684\u6548\u679C\u524D\u9762\uFF1B\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u5C31\u6362\u6210\u90A3\u4E00\u4F4D\u8EAB\u4E0A\u7684\u3002\u8FD9\u91CC\u53EA\u5217\u51FA\u6765\uFF0C\u8FD9\u4E00\u7248\u4E0D\u80FD\u5728\u8FD9\u91CC\u6539": {
         readonly en: "Effects that travel with this performer (the instrument body, an amp and the like): in the sound they come before this track’s effects on the mixer; when someone else takes the stage, theirs are used instead. Listed here only — this version can’t edit them here.";
@@ -3531,9 +3555,6 @@ export declare const S: {
     };
     readonly "\u7F1D\u5927 10 ms\uFF08\u66F4\u65AD\uFF09": {
         readonly en: "Gap 10 ms larger (more detached)";
-    };
-    readonly "\u56DE\u5230\u9ED8\u8BA4 {p} ms": {
-        readonly en: "Back to default {p} ms";
     };
     readonly "\u4E0D\u5199\u8BB0\u53F7\u7684\u97F3\u548C\u4E0B\u4E00\u4E2A\u97F3\u4E4B\u95F4\u7559\u7684\u7F1D\uFF1A0 = \u8FDE\u7740\u3002{d}\u8FDE\u7EBF\uFF08\u8FDE\u594F\uFF09\u3001\u4FDD\u6301\u7684\u97F3\u4E0D\u7559\u7F1D\uFF1B\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u8DF3\u97F3\u53E6\u7B97": {
         readonly en: "Gap left between unmarked notes and the next note: 0 = connected. {d}Slurred (legato) and tenuto notes leave no gap; a breath separates here; staccato is separate";
@@ -3550,9 +3571,6 @@ export declare const S: {
     readonly "\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09": {
         readonly en: "Faster roll (2 more hits per second)";
     };
-    readonly 回到这件乐器的默认: {
-        readonly en: "Back to this instrument's default";
-    };
     readonly "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u6BCF\u4E00\u4E0B\u90FD\u662F\u6574\u4E0B\u6572\uFF1A\u60F3\u8F7B\u4E00\u70B9\uFF0C\u5C31\u5728\u8FD9\u4E2A\u97F3\u4E0A\u518D\u52A0\u5E7D\u7075\u97F3\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": {
         readonly en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands — crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Every hit is a full stroke: for a softer roll, also mark the note as a ghost note. Defaults: drums 12, pitched 14 (per second).";
     };
@@ -3565,14 +3583,20 @@ export declare const S: {
     readonly "\u6DF1\u4E00\u70B9\uFF08+3 dB\uFF09": {
         readonly en: "Deeper (+3 dB)";
     };
-    readonly "\u56DE\u5230\u9ED8\u8BA4 {d} dB": {
-        readonly en: "Back to default {d} dB";
-    };
     readonly "\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}": {
         readonly en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}";
     };
     readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": {
         readonly en: "Dynamic markings → loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers — only loudness changes: {table}";
+    };
+    readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 MIDI \u529B\u5EA6\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{table}": {
+        readonly en: "Dynamics → MIDI velocity (accent +{accentVel}, marcato +{marcatoVel}; other marks under “How marks are played” below): {table}";
+    };
+    readonly 记号怎么唱: {
+        readonly en: "How marks are sung";
+    };
+    readonly "\u8C31\u4E0A\u7684\u8BB0\u53F7\u53D8\u6210\u5531\u6CD5\u6838\u5FC3\u8BA4\u7684\u5B57\u524D\u8BB0\u53F7\uFF08^ = \u987F\u4E00\u4E0B\u4E0D\u6362\u6C14\uFF0Cv = \u6362\u6C14\uFF09\uFF1A{table}": {
+        readonly en: "Marks in the score become the singing core’s before-syllable marks (^ = short stop without a breath, v = breath): {table}";
     };
     readonly "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u8FD9\u4E00\u4F4D\u7684\uFF09": {
         readonly en: "What notes without lyrics are sung as (this performer’s own)";
@@ -3582,6 +3606,15 @@ export declare const S: {
     };
     readonly "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D": {
         readonly en: "This version can't sound it (the other software's original instrument): pick another “Who performs”";
+    };
+    readonly "\u548C\u73B0\u5728\u7684\u9ED8\u8BA4\u4E0D\u4E00\u6837\u7684\u6709 {n} \u5904\uFF1A": {
+        readonly en: "{n} differ from the current default: ";
+    };
+    readonly 和现在的默认都一样: {
+        readonly en: "All the same as the current default";
+    };
+    readonly "\uFF08\u8FD8\u6709 {n} \u884C\u8981\u7B49\u97F3\u4E50\u76EE\u5F55\u8F7D\u597D\u518D\u6BD4\uFF09": {
+        readonly en: " ({n} more rows will be compared once the instrument catalog has loaded)";
     };
     readonly "\u56DE\u5230\u8C31\uFF08Esc\uFF09": {
         readonly en: "Back to the score (Esc)";
@@ -3619,17 +3652,20 @@ export declare const S: {
     readonly "\u8C31\u4E0A\u5199\u300C{rn}\u300D": {
         readonly en: "Shown on the score as “{rn}”";
     };
+    readonly "MusicXML \u7684\u4E50\u5668\u4EE3\u53F7\uFF1A\u6B4C\u91CC\u6CA1\u5199": {
+        readonly en: "MusicXML instrument code: not written in the song";
+    };
     readonly 改名在声部管理: {
         readonly en: "rename it under Parts";
+    };
+    readonly "\u300C{rn}\u300D{what}\u6539\u56DE\u73B0\u5728\u7684\u9ED8\u8BA4": {
+        readonly en: "“{rn}”: {what} changed back to the current default";
     };
     readonly "\u300C{rn}\u300D\u97F3\u548C\u97F3\u4E4B\u95F4 {p} ms": {
         readonly en: "“{rn}” between notes {p} ms";
     };
     readonly "\u300C{rn}\u300D\u97F3\u5185\u8D77\u4F0F {d} dB": {
         readonly en: "“{rn}” in-note swell {d} dB";
-    };
-    readonly "\u300C{rn}\u300D\u6EDA\u594F\u56DE\u5230\u9ED8\u8BA4": {
-        readonly en: "“{rn}” roll back to default";
     };
     readonly "\u300C{rn}\u300D\u6EDA\u594F\u6BCF\u79D2 {n} \u4E0B": {
         readonly en: "“{rn}” roll: {n} per second";
@@ -4339,8 +4375,8 @@ export declare const S: {
     readonly "\u8FD9\u4EFD\u8C31\u6CA1\u5199\u8C03\u53F7\uFF0C\u6309 C \u5927\u8C03\u5F00\u7684\u3002": {
         readonly en: "This score has no key signature; opened in C major.";
     };
-    readonly "\u8FD9\u4EFD\u8C31\u6CA1\u5199\u62CD\u53F7\uFF0C\u6309 4/4 \u5F00\u7684\u3002": {
-        readonly en: "This score has no time signature; opened in 4/4.";
+    readonly "\u8FD9\u4EFD\u8C31\u6CA1\u5199\u62CD\u53F7\uFF0C\u6309 {t} \u5F00\u7684\u3002": {
+        readonly en: "This score does not write a time signature; opened as {t}.";
     };
     readonly "\u8FD9\u4E2A\u6587\u4EF6\u89E3\u4E0D\u5F00\uFF08\u4E0D\u662F\u5B8C\u6574\u7684 .mxl\uFF1F\uFF09\uFF1A{Error}": {
         readonly en: "This file can't be unpacked (not a complete .mxl?): {Error}";
@@ -5176,9 +5212,6 @@ export declare const S: {
     readonly "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09": {
         readonly en: " (the performer on stage ignores this: drawn gray on the score, sound unaffected)";
     };
-    readonly 琶音: {
-        readonly en: "Arpeggio";
-    };
     readonly "\u7436\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u548C\u5F26\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u594F\u51FA\uFF08\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u6CE2\u6D6A\u7EBF\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": {
         readonly en: "Arpeggio: rolls the chord before the cursor (or the selection) low to high (a wavy line left of the chord); tap again to remove";
     };
@@ -5203,14 +5236,8 @@ export declare const S: {
     readonly "\u5F3A\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u6BD4\u91CD\u97F3\u66F4\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": {
         readonly en: "Marcato: the note before the cursor (or the selection) heavier than an accent; tap again to remove";
     };
-    readonly 突强: {
-        readonly en: "Sforzando";
-    };
     readonly "\u7A81\u5F3A sfz\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u97F3\u5934\u731B\u5730\u51B2\u4E00\u4E0B\u518D\u843D\u56DE\u6765\uFF1B\u548C\u91CD\u97F3 / \u5F3A\u97F3 / fp \u4E92\u65A5": {
         readonly en: "Sforzando sfz: the note before the cursor (or the selection) jolts at the attack and falls back; excludes accent / marcato / fp";
-    };
-    readonly 强后即弱: {
-        readonly en: "Forte-piano";
     };
     readonly "\u5F3A\u540E\u5373\u5F31 fp\uFF1A\u97F3\u5934 f\uFF0C\u9A6C\u4E0A\u843D\u5230 p\uFF0C\u4E4B\u540E\u7684\u97F3\u90FD\u662F p\uFF1B\u548C\u91CD\u97F3 / \u5F3A\u97F3 / sfz \u4E92\u65A5": {
         readonly en: "Forte-piano fp: attacks at f, falls right to p, and later notes stay p; excludes accent / marcato / sfz";
@@ -5365,11 +5392,29 @@ export declare const S: {
     readonly " data-def=\"{def}\" title=\"\u53CC\u51FB\u56DE {defText}\"": {
         readonly en: " data-def=\"{def}\" title=\"Double-click: back to {defText}\"";
     };
+    readonly "\u97F3\u548C\u97F3\u4E4B\u95F4\uFF08\u6700\u591A\uFF09": {
+        readonly en: "Between notes (at most)";
+    };
+    readonly "{n} \u4E2A\u952E\u63D0\u524D\u5F00\u59CB\u653E\uFF0C\u6700\u591A {ms} ms": {
+        readonly en: "{n} keys start early, up to {ms} ms";
+    };
+    readonly 不提前: {
+        readonly en: "No early start";
+    };
     readonly "SoundFont \u4E50\u5668": {
         readonly en: "SoundFont instrument";
     };
     readonly "SoundFont \u4E50\u5668\uFF08TinySoundFont \u51FA\u58F0\uFF09": {
         readonly en: "SoundFont instrument (sounds via TinySoundFont)";
+    };
+    readonly "\u529B\u5EA6##MIDI": {
+        readonly en: "Velocity";
+    };
+    readonly 修八度: {
+        readonly en: "Octave fix";
+    };
+    readonly 着力点: {
+        readonly en: "Hit point";
     };
     readonly "\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668": {
         readonly en: "The performer on stage isn't a SoundFont instrument";
@@ -5386,26 +5431,14 @@ export declare const S: {
     readonly "\u529B\u5EA6\u6DF1\u5EA6\u6309\u9F13\u4EF6 / \u97F3\u533A\u4E0D\u4E00\u6837\uFF1A{ds}\uFF08\u5E93\u91CC\u5199\u7684\uFF1B\u89C4\u8303\u9ED8\u8BA4 960\uFF09\u3002\u54CD\u5EA6 = \u6DF1\u5EA6 \u00F7 960 \u00D7 40\u00B7log10(\u529B\u5EA6 \u00F7 127)\u3002": {
         readonly en: "Velocity depth differs by drum / key range: {ds} (set by the library; the SoundFont default is 960). Loudness = depth ÷ 960 × 40·log10(velocity ÷ 127). ";
     };
-    readonly "\u529B\u5EA6##MIDI": {
-        readonly en: "Velocity";
-    };
     readonly "\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09": {
         readonly en: "A little softer (MIDI velocity −8)";
     };
     readonly "\u91CD\u4E00\u70B9\uFF08+8\uFF09": {
         readonly en: "A little harder (+8)";
     };
-    readonly "\u56DE\u5230 {def}": {
-        readonly en: "Back to {def}";
-    };
-    readonly "\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002{depth}{dynamicsVel}{L}": {
-        readonly en: "Notes without a dynamic use this velocity (MIDI 1–127). {depth}{dynamicsVel}{L}";
-    };
-    readonly "\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{L}": {
-        readonly en: "Dynamics follow this performer's velocity table (accent +{accentVel}, marcato +{marcatoVel}; for other marks see “How marks are performed” below): {L}";
-    };
-    readonly "\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A{p}": {
-        readonly en: "This performer came on stage earlier: dynamics still only change volume: {p}";
+    readonly "\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002{depth}{L}": {
+        readonly en: "Notes without a dynamic mark use this velocity (MIDI 1–127). {depth}{L}";
     };
     readonly "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 {count} \u4E2A\u529B\u5EA6\u5C42{p}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002": {
         readonly en: "This GS sound has {count} velocity layers{p}: crossing a layer = a different recording, so timbre changes, not just loudness.";
@@ -5418,6 +5451,12 @@ export declare const S: {
     };
     readonly 固定原速: {
         readonly en: "Fixed speed";
+    };
+    readonly "\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF08\u97F3\u9AD8\u5BF9\u9F50\uFF09": {
+        readonly en: "Follows the written pitch (pitch aligned)";
+    };
+    readonly 按写的音变调: {
+        readonly en: "Follows the written pitch";
     };
     readonly "\u6BCF\u4E2A\u97F3\u90FD\u6572\u539F\u901F\u952E\uFF1A\u5199\u8C31\u6309\u952E\u3001\u64AD\u653E\u90FD\u662F\u539F\u6765\u7684\u6837\u5B50\uFF1B\u8C31\u4E0A\u5199\u7684\u97F3\u9AD8\u7167\u7559\uFF0C\u53EA\u662F\u4E0D\u62FF\u6765\u51FA\u58F0": {
         readonly en: "Every note strikes the original-speed key: writing, keys and playback all sound original; the written pitch stays on the score, it's just not used for sound";
@@ -5439,9 +5478,6 @@ export declare const S: {
     };
     readonly "\uFF1B\u8FD9\u4E2A\u97F3\u6548\u539F\u901F\u65F6\u542C\u4E0D\u51FA\u97F3\u9AD8\uFF0C\u6CA1\u6CD5\u5BF9\u9F50": {
         readonly en: "; this sound effect has no audible pitch at original speed, so it can't align";
-    };
-    readonly 修八度: {
-        readonly en: "Octave fix";
     };
     readonly "{p}{tr} \u534A\u97F3": {
         readonly en: "{p}{tr} semitones";
@@ -5466,6 +5502,9 @@ export declare const S: {
     };
     readonly "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3": {
         readonly en: "Rarely needed: a fallback when a sound is itself off by octaves (e.g. GS Guitar Harmonics is two octaves high); once fixed, what you write is what sounds";
+    };
+    readonly "\u91C7\u6837\u5F00\u5934\u5230\u300C\u7838\u4E0B\u53BB\u90A3\u4E00\u4E0B\u300D\u6709\u591A\u8FDC\uFF1A\u653E\u7684\u65F6\u5019\u63D0\u524D\u8FD9\u4E48\u591A\u5F00\u59CB\uFF0C\u8BA9\u7838\u4E0B\u53BB\u90A3\u4E00\u4E0B\u843D\u5728\u5199\u7684\u90A3\u4E00\u62CD\u4E0A\uFF08\u53CD\u5411\u9572\u8FD9\u7C7B\u6700\u660E\u663E\uFF09\u3002\u6309\u6BCF\u4E2A\u6572\u7684\u952E\u6309\u503C\u8BB0\u5728\u8FD9\u4F4D\u8EAB\u4E0A\uFF0C\u6570\u662F\u6253\u51FB\u4E50\u8868\u91CC\u5B9E\u6D4B\u7684": {
+        readonly en: "How far the hit is from the start of the sample: playback starts this much earlier so the hit lands on the written beat (most obvious with reverse cymbals). Stored by value on this performer for each key struck; the numbers are measured in the percussion table";
     };
     readonly "\u4E0D\u56FA\u5B9A\u539F\u901F\uFF08\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF09": {
         readonly en: "Not fixed speed (transposes by the written note)";
@@ -5524,6 +5563,9 @@ export declare const S: {
     readonly 原始输出增益: {
         readonly en: "Raw output gain";
     };
+    readonly 分段唱: {
+        readonly en: "Sing in segments";
+    };
     readonly 没写: {
         readonly en: "not set";
     };
@@ -5542,23 +5584,20 @@ export declare const S: {
     readonly "\u6539\u4E86\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u5B58\u8FDB\u6B4C\u91CC\u3001\u80FD\u64A4\u9500": {
         readonly en: "Changing it re-sings the lines that use it; saved in the song, can be undone";
     };
-    readonly 分段唱: {
-        readonly en: "Sing in segments";
-    };
     readonly 每句: {
         readonly en: "Per line";
-    };
-    readonly "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5": {
-        readonly en: "Cut at rests (rests ≥ 0.25 s): least memory; editing a line only re-sings that line";
     };
     readonly 每张纸: {
         readonly en: "Per sheet";
     };
-    readonly 一张纸一段: {
-        readonly en: "One segment per sheet";
-    };
     readonly 一整首: {
         readonly en: "Whole song";
+    };
+    readonly "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5": {
+        readonly en: "Cut at rests (rests ≥ 0.25 s): least memory; editing a line only re-sings that line";
+    };
+    readonly 一张纸一段: {
+        readonly en: "One segment per sheet";
     };
     readonly "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09": {
         readonly en: "Sing it all at once (the old way; long songs may run out of memory on iPad)";
@@ -7164,6 +7203,12 @@ export declare const S: {
     };
     readonly "\u4E50\u624B {p}": {
         readonly en: "Performer {p}";
+    };
+    readonly "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u6709 {n} \u5904\u548C\u73B0\u5728\u7684\u9ED8\u8BA4\u4E0D\u4E00\u6837\uFF08\u54CD\u5EA6\u53E6\u7B97\uFF09\u3002\u70B9\u8FD9\u91CC\u53BB\u4E50\u5668\u9875\u770B\u662F\u54EA\u51E0\u5904": {
+        readonly en: "This performer differs from the current default in {n} places (loudness counted separately). Click to see which on the instrument page";
+    };
+    readonly "\u4E50\u624B {n} \u5904\u4E0D\u540C": {
+        readonly en: "Performer: {n} differ";
     };
     readonly "\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09": {
         readonly en: "Move earlier (this part also moves up on the score)";

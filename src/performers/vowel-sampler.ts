@@ -4,7 +4,7 @@ import { registerPerformer } from "./registry.ts";
 import { HUM_KANA } from "../engine/timeline.ts";
 import type { NoteEv } from "../engine/studio.ts";
 import { TSUKUYOMI_RANGE } from "./tsukuyomi.ts";
-import { CALIBRATION_DEFAULT_DB } from "../format/template.ts";
+import { CALIBRATION_DEFAULT_DB, templateCandidate } from "../format/template.ts";
 
 export const vowelSampler = registerPerformer({
   guid: "b9d4e7a2-51c6-4f0b-8e3d-7a9c2f6b1d58", kind: "performer", name: "vowel-sampler", version: 1, label: _t("小月相（元音）"),
@@ -15,6 +15,7 @@ export const vowelSampler = registerPerformer({
   connected: false, dynamics: "gain", grooveCategory: "voice", removable: false,
   defaultCalibrationDb: () => CALIBRATION_DEFAULT_DB,   // 现行的那一个默认（第 14 条）
   info: () => ({ gm: null, chunk: "phrase" }),
+  castNow: () => ({ cand: templateCandidate("vowel-sampler"), pending: [] }),   // 「现在的默认」（16-6）= 模板那一位
   prepare: async (ctx) => { await ctx.ensureVowels(); },
   track: ({ id, notes, gain, chain, hum, info }) => ({
     track: { id, kind: "vowel", kana: HUM_KANA[hum ?? "n"], notes: notes.map((n): NoteEv => ({ t0: n.t0, t1: n.t1, key: n.midi, vel: n.vel ?? info.velocity, preset: 0 })), gain, ...(chain?.length ? { chain } : {}) },

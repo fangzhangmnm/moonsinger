@@ -53,7 +53,20 @@ export type AuditionTarget = { inst: AuditionInst; key: (midi: number) => number
 export type Notation = { xHead?: true; perc?: PercKind };
 /** 乐器页「怎么演」里这位自报的一行（ADR-0004 §2.5「槽旁的参数行由插件自报，不是 main.ts 写死」；2026-10-15 刀 5 之一）：
  *  control / note = HTML 片段（宿主的 row() 排版；按钮带 data-v，按到了回 onInspector）；place = 放哪：主块（默认）/ 「高级」折叠 / 末尾。 */
-export interface InspectorRow { label: string; control: string; note?: string; place?: "adv" | "tail" }
+/** 乐器页上的一行。id = 和「现在的默认」比的那一行（DefaultRowDef.id，16-6；不比的行不给）；value = 这一行的值写成一句话（「现在的默认」那一句用同一个函数在默认的那一位上再算一次）。 */
+export interface InspectorRow { label: string; control: string; note?: string; place?: "adv" | "tail"; id?: string; value?: string }
+type Cand = Record<string, unknown>;
+/** 乐器页上能和「现在的默认」比的一行（16-6，统筹 2026-11-13）。keys = 候选身上这一行管的路径（点分；整张表 / 整个数组也行），每个会改声音的键恰好落在一行上
+ *  （守卫 test/performer-defaults.test.ts：按「这位的声音变不变」核）。when = 这位有没有这一行（按能力字段和台上这位的身份，不按引擎名）。
+ *  要问音乐目录、目录还没载的那几行 = 插件 castNow 报 pending（先不比）。resettable: false = 只标出来、没有「默认」钮（这位自己的效果：没有编辑入口，清了界面上做不回来）。
+ *  same = 怎么算一样（没给 = 逐字节比 JSON）。reset = 改回默认要连带改别的（没给 = 把 keys 从默认那一位原样抄过来）。 */
+export interface DefaultRowDef {
+  id: string; label: () => string; keys: readonly string[];
+  when?(p: PerformerPlugin, cur: Cand): boolean;
+  resettable?: false;
+  same?(cur: Cand, def: Cand): boolean;
+  reset?(extras: Extras, role: string, def: Cand, hum: Hum): Extras;
+}
 export interface InspectorCtx extends RoleCtx {
   hum: Hum;
   /** 这个声部显示成什么（宿主从唯一出口 src/format/part-show.ts 拿，12-4；插件不自己拼声部名）。撤销的话里用。 */
@@ -63,10 +76,6 @@ export interface InspectorCtx extends RoleCtx {
   esc(s: string): string;
   /** 一个选项钮（亮 = 现在是它）。 */
   chip(v: string, label: string, on: boolean, title?: string): string;
-  /** 力度换算表（每个力度记号 → 这位的 MIDI 力度或 dB；有 GS 力度层再加一行）。L = 这位在一个键上的「力度 → dB」（和出声同一个函数，7-N；null = 不知道，不写 dB 那一行）。 */
-  dynTable(layers: { count: number; ranges: [number, number][] } | null, L: ((vel: number) => number | null) | null): string;
-  /** 这一份库里一个预设的 L 曲线（字节在手边才有；7-N）。 */
-  velCurve(sha: string, bank: number, program: number): VelCurve | null;
   /** 这次打开里手边有的子集字节（找到过 / 加进来的；歌里嵌的在候选的 bytes 里）。没有 = undefined（声音载好后宿主会重画）。 */
   bankBytes(sha256: string): Uint8Array | undefined;
 }
@@ -117,6 +126,11 @@ export interface PerformerPlugin {
   notation?(ctx: RoleCtx): Notation;
   /** 按键试听用谁出声（没有 = 这位不能试听）。 */
   audition?(ctx: AuditionCtx): AuditionTarget | null;
+  /** 这位「现在新上场」会带着什么（16-6）：模板 + 音乐目录按值抄的那几样 + 库报的响度。cur = 台上这位（身份——库、音色、固定敲哪个键——照它）。
+   *  目录没载、又要靠它的那几样 = pending 里列出路径（那几行先不比、不算）。乐器页的「现在的默认」、「默认」钮、混音台「乐手 N 处不同」都问它（performers/defaults.ts）。 */
+  castNow(cur: Cand, catalog: Catalog | null): { cand: Cand; pending: readonly string[] };
+  /** 这位自己的、能和「现在的默认」比的行（16-6；通用的那几行在 performers/defaults.ts）。id 和 inspector 那几行的 id 对上。 */
+  readonly defaultRows?: readonly DefaultRowDef[];
   /** 乐器页「怎么演」里这位自己的参数行（通用的——响度 / 音和音之间 / 力度记号 dB 表 / 哼的字——宿主按能力字段摆）。 */
   inspector?(ctx: InspectorCtx): InspectorRow[];
   /** 自己那几行的按钮按到了（data-v）：改成什么；不认识 = null。 */

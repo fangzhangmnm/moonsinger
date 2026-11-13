@@ -4,14 +4,14 @@
 // 用它的只有三处（统筹第 3 条）：新建（按值抄）、读文件的门口（缺的补；project.ts completeCandidate）、界面上的「默认」钮。
 //   出声的代码（src/score、src/engine、src/core）不许 import 这个文件——它们拿到的永远是写全的（守卫 test/template.test.ts）。
 // 分三块：休息室（三种出厂乐手）/ 录音房（轨、混音轨、总轨、每种效果）/ 谱的扩展（歌级的显示设置）。
-//   谱的扩展那一块的值住在 src/score/song.ts NEW_SONG_LOOK（新建歌的构造函数在谱那一层、谱那一层不 import 模板；统筹「A3 的三问」做法 2），这里原样列出同一个对象，不另抄。
-//   每张纸 / 每个声部的那几样（大谱表、自动八度线、纸隐藏、和弦选项、合租）下一版跟着收进来。
+//   谱的扩展那一块的值住在 src/score/song.ts NEW_SONG_LOOK / NEW_SONG_HEAD（新建歌的构造函数在谱那一层、谱那一层不 import 模板；统筹「A3 的三问」做法 2），这里原样列出同一个对象，不另抄。
+//   每张纸 / 每个声部的那几样（大谱表、自动八度线、纸隐藏、和弦选项、合租）不收进来：显示设置，不改出声（user 2026-11-13「视图上面的东西倒随意一点」）。
 // 「从目录抄」的几样不在这里放数：SoundFont 的缝（gapSec）、能不能音内渐强（canSwell）、着力点（hitSecByKey）——新上场那一刻从音乐目录那一行按值抄；
 //   这里的 gapSec 0 / canSwell true 只是门口给「老歌里没写」的那一位补的（和改之前一样）。
 import { _t } from "../i18n/index.ts";
 import type { Dynamic } from "./contract.ts";
 import { TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, TSUKUYOMI_MODEL, type SingMark } from "./performance.ts";
-import { NEW_SONG_LOOK } from "../score/song.ts";
+import { NEW_SONG_LOOK, NEW_SONG_HEAD } from "../score/song.ts";
 
 type Json = Record<string, unknown>;
 /** 两路都有的演奏法（键 = project.ts ART_KEYS_BY 的交集）。 */
@@ -20,8 +20,9 @@ const ART_BOTH = { staccatoGate: 0.5, gapSec: 0, gapShare: 0.25, breathSec: 0.16
 const ROLL_HZ = { drum: 12, pitched: 14 } as const;
 
 export const TEMPLATE = {
-  /** 谱的扩展（16-4 A3）：新建的歌写进去的歌级显示设置 = song.ts NEW_SONG_LOOK 这一个对象（同一个引用，不另抄）。 */
-  score: NEW_SONG_LOOK,
+  /** 谱的扩展（16-4 A3）：look = 新建的歌写进去的歌级显示设置（song.ts NEW_SONG_LOOK）；head = 新歌 / 新纸 / 新声部的谱头三样，调号 C 大调、拍号 4/4、♩=90
+   *  （song.ts NEW_SONG_HEAD；16-6 并进来，统筹「v0.17.18 收」①②）。都是同一个引用，不另抄。 */
+  score: { look: NEW_SONG_LOOK, head: NEW_SONG_HEAD },
   /** 录音房（16-4 A2，v0.17.17）：新建的轨 / 混音轨 / 总轨 / 每种效果刚插上一格时的样子。数从原处搬来、一个没改（project.ts micTrack / emptyStudio、
    *  ui/plugins.ts freshParams、混音台加发送时的 −12）；效果参数表（engine/fx.ts）只剩量纲、范围、公式。读老文件时门口缺的也按这里补（每种效果按「轨上」那一份）。 */
   studio: {

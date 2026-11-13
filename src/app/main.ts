@@ -78,11 +78,12 @@ import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
 import { Finder, type FinderPick, type FinderNobody, type OwnPick, DEFAULT_PINS, type PinTile } from "../ui/finder.ts";
 import { createHeaderPanel } from "./header-panel.ts";
 import { createInstSettings } from "./panels/inst-settings.ts";
+import { defaultsReport } from "../performers/defaults.ts";   // 混音台「乐手 N 处不同」（16-6）
 import { DYN_GLYPH } from "../render/smufl.ts";
 import { Studio, MASTER as STUDIO_MASTER, STEREO_TABS } from "../ui/studio.ts";
 import { resolveChain } from "../ui/plugins.ts";
 import { coreInfo } from "../core/version.ts";
-import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, sustainOf, GS_LIBRARY_ID, gmKey, conceptOfIds, type Catalog, type Concept } from "../gm/catalog.ts";
+import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, castArgsOf, sampleKeyOf, GS_LIBRARY_ID, gmKey, conceptOfIds, type Catalog, type Concept } from "../gm/catalog.ts";
 import { creditsSections, sectionsHtml } from "./credits-doc.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { partShow, partNameOf, roleNameIn, roleGivenName, roleInstrumentLabel, type PartShow } from "../format/part-show.ts";   // 声部显示成什么：唯一出口（12-4）
@@ -820,6 +821,12 @@ const canStack = (): boolean => performerOf(engineNow())?.poly ?? false;
 let auditionHint: HintRange = null;   // 找人视图里 pad 提示的音域 = 试听台上那位的
 let auditionMute = false, auditionGen = 0;   // 找人视图：点开的那件没人能演 = 试听键盘静音（F-210）；auditionGen = 后点的说了算（setAudition）
 let catalogNow: Catalog | null = null;   // 目录（找人视图 / 乐器声部的音域要它；第一次用到时载，260 KB）
+/** 混音台卡片「乐手 N 处不同」（16-6）：上场那位身上除了「响度」以外和现在的默认不一样的有几处（performers/defaults.ts 一处算）。要问目录、目录没载 = 去载，载好重画混音台。 */
+function performerDiffsOf(role: string): number {
+  const r = defaultsReport(D.extras, role, catalogNow);
+  if (r.pending && !catalogNow) void loadCatalog().then((c) => { catalogNow = c; if (studio.isOpen) studio.render(); }).catch(() => undefined);
+  return r.rows.filter((x) => x.id !== "cal").length;
+}
 const ui = createOverlayRegistry();   // 盖层登记（F-17 第 1 期，2026-10-14）：原来那个「现在开着的面板怎么关」的闭包协议收成一个对象；开新的 = 旧的先关，自己收了只在还是现在这层时清
 // 整页在哪（谱 / 乐器页 / 乐器目录）= ui.page（刀 3 之二，2026-10-14）：原来五个各自维护的旗（乐器页开着 / 目录开着 / 只弹着玩 / 关了回乐器页 / 小卡的重画）从这儿推；
 //   这里读 ui.page 不读 finder 对象——pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
@@ -1731,19 +1738,9 @@ async function setAudition(p: FinderPick | FinderNobody | null): Promise<void> {
     const bank = await sources.fetchSound(GS, (done) => progress(_t("下载 {name} {bytes}%", { name: GS.name, bytes: Math.round((done / GS.bytes) * 100) }))); progress("");
     const subset = subsetSf2(bank, [{ bank: p.provider.bank, program: p.provider.program }]), sha256 = await sha256Hex(subset);
     if (gen !== auditionGen) return;
-    audition = { from: pickFrom(p), bank: p.provider.bank, program: p.provider.program, ...(cat ? gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note) : {}), sha256, subset, label: p.provider.gmName };   // 音效默认固定原速（上场后也是）
+    audition = { from: pickFrom(p), bank: p.provider.bank, program: p.provider.program, ...(cat ? castArgsOf(cat, p.provider.bank, p.provider.program, p.provider.note) : {}), sha256, subset, label: p.provider.gmName };   // 音效默认固定原速（上场后也是）
     sound.allOff(); await engine.bank(sha256, subset); noteAuditionBank(sha256);
   } catch (e) { progress(""); audition = null; showError(_t("试听不了：{Error}", { Error: (e as Error).message })); }
-}
-/** GS 预设上场 / 试听时带的键设置：鼓件 = 固定那个键；音效（GM 116–128，仓鼠 v8 的 sampleKey）= **默认固定原速**（note = 原速键）+ 按值抄原速键和音高锚点（sfx）；
- *  其余不带（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）。 */
-function gsKeyArgs(cat: Catalog, bank: number, program: number, drumNote?: number): { note?: number; sfx?: { key: number; midi?: number; centsPerKey?: number }; gapSec?: number; canSwell?: boolean } {
-  // 连断的底色也是目录（仓鼠 v11 的 joint，按 GM 号逐个）按值给的；没有 = 不写 = 0（user「你不能按乐器一刀切」「让音乐仓鼠准备一下分类用的元数据」）
-  const gap = jointOf(cat, bank, program, drumNote)?.gapSec, sus = sustainOf(cat, bank, program, drumNote);
-  const g = { ...(gap ? { gapSec: gap } : {}), ...(sus && sus !== "sustained" ? { canSwell: false } : {}) };   // 仓鼠 v11 实测：不是一直能持续的 = 音内变强做不到
-  if (drumNote !== undefined) return { note: drumNote, ...g };
-  const sk = sampleKeyOf(cat, bank, program); if (!sk) return g;
-  return { note: sk.key, sfx: { key: sk.key, ...(sk.midi !== undefined ? { midi: sk.midi } : {}), ...(sk.centsPerKey ? { centsPerKey: sk.centsPerKey } : {}) }, ...g };
 }
 /** 用试听台上那位放本声部的开头（前 8 秒；走录音房，不写谱）。 */
 async function playHeadWith(p: FinderPick): Promise<void> {
@@ -1794,7 +1791,7 @@ async function castPick(p: FinderPick): Promise<void> {
   if (p.kind === "voice") { const vid = p.light ? CANDIDATE_ID.light : CANDIDATE_ID.full; next = withSwap(withCastAs(next, role, vid, ca, hum), role, vid, hum, { prev, before: base.extras }); }
   else {
     const { subset, sha256 } = audition!, inf = sf2Info(subset);
-    next = withSf2Candidate(next, role, { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false, calibrationDb: performerOf("soundfont")!.defaultCalibrationDb(GS.id),   // 新上场的响度 = 库报的（9-3）
+    next = withSf2Candidate(next, role, { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...castArgsOf(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false, calibrationDb: performerOf("soundfont")!.defaultCalibrationDb(GS.id),   // 新上场的响度 = 库报的（9-3）
       origin: { name: GS.name, fileSha256: GS.sha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, hum);
     const id = activeId(next, role);
     next = withSwap(withCastAs(next, role, id, ca, hum), role, id, hum, { prev, fresh: true, before: base.extras });   // 新上场的这位记下「作为这件乐器」+ 换上台那一刻的设置指纹（R3），下台那位没调过 = 删（R2）
@@ -1885,7 +1882,7 @@ const KV_MIXER_ROWS = "mixer-rows";   // 混音台贴底显示几排（v0.16.14�
 const studio = new Studio($("stage"), {
   rowsPref: () => { const v = deviceKvGet(KV_MIXER_ROWS); return v && /^[1-9]\d?$/.test(v) ? Number(v) : "auto"; },
   setRowsPref: (v) => deviceKvSet(KV_MIXER_ROWS, String(v)),
-  strips: () => { const labels = labelsNow(), cols = partColorIndices(D.st.song.parts.map((p) => roleSound(D.extras, p.role))); return D.st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], color: TAB20[cols[k]], refs: D.st.song.papers.filter((pp) => pp.tracks[p.id]).length, performer: activeCandidateName(D.extras, p.role) ?? _t("（没人上场）"), performerDb: activeCalibrationDb(D.extras, p.role), ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo })); },
+  strips: () => { const labels = labelsNow(), cols = partColorIndices(D.st.song.parts.map((p) => roleSound(D.extras, p.role))); return D.st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], color: TAB20[cols[k]], refs: D.st.song.papers.filter((pp) => pp.tracks[p.id]).length, performer: activeCandidateName(D.extras, p.role) ?? _t("（没人上场）"), performerDb: activeCalibrationDb(D.extras, p.role), performerDiffs: performerDiffsOf(p.role), ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo })); },
   setGain: (id, dB) => { const p = D.st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(D.extras, p.mic, { gainDb: dB }), { kind: "studio", label: _t("{id} 增益 {p}{p2} dB", { id: partLabel(id), p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, `mix:gain:${id}`); },
   setPan: (id, pan) => { const p = D.st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(D.extras, p.mic, { pan }), { kind: "studio", label: _t("{id} 声像 {pan}", { id: partLabel(id), pan: Math.abs(pan) < 0.025 ? _t("中") : pan < 0 ? _t("左 {p}", { p: Math.round(-pan * 100) }) : _t("右 {p}", { p: Math.round(pan * 100) }) }) }, `mix:pan:${id}`); },
   toggleMute: (id) => { setPv(id, { muted: !pv(id).muted }); afterViewChange(); },   // 放着的时候马上静（录音房推子到底、发送一起停）+ 时间线重算（v0.10.38；user「我mute了之后它的reverb为什么还是进了reverb轨？」）
@@ -1927,7 +1924,7 @@ const studio = new Studio($("stage"), {
     return all.filter((b) => b.id !== key && !reaches(b.id, key)).map((b) => ({ id: b.id, name: b.name })); },
   /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
   deletePart: (id) => deleteSinger(id),
-  openPerformer: (id) => { goToPartInst(id); instEl.querySelector<HTMLElement>('[data-v="cal:-1"]')?.closest(".ip-v")?.scrollIntoView({ block: "center" }); },   // 推子旁边「乐手 −6 dB」：去乐器页「响度」那一行（第 14 条）
+  openPerformer: (id, at) => { goToPartInst(id); (at === "sum" ? instEl.querySelector<HTMLElement>(".ip-diff-sum") : instEl.querySelector<HTMLElement>('[data-v="cal:-1"]')?.closest(".ip-v"))?.scrollIntoView({ block: "center" }); },   // 推子旁边「乐手 −6 dB」：去乐器页「响度」那一行（第 14 条）
 });
 /** 录音室 = 底座里（键盘那个位子；和键盘互斥），谱留着能看（2026-10-10 user「录音室的键盘位化，和键盘互相排斥」；之前是全屏页）。 */
 /** 混音台 = 「听」的键盘（v0.10.2；user「能不能混音台就是听的键盘，不用单独一个键，就是不同功能有不同键盘」）：打开 = 切到听（底座 = 混音台）；收起 = 收起底座（底下那粒 tab 叫回来）。 */

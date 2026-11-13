@@ -8,7 +8,7 @@
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { _t } from "../i18n/index.ts";
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { DYNS, withArt, type ClefName, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
+import { NEW_SONG_HEAD, DYNS, withArt, type ClefName, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { ChordPin, PedalTok, PedalKind } from "../score/song.ts";
 import { pinXmlKind, xmlKindToPin } from "../theory/index.ts";
@@ -24,7 +24,7 @@ export interface PartInfo {
   staves?: 2;               // 大谱表（上高音下低音；每个音带 <staff>）
   name: string;             // 声部名 = 角色名（谱号前面那个）
   instrumentName: string;   // 上场的候选的名字（给别的软件看）
-  sound: string;            // MusicXML 官方乐器语义 id（= 角色是什么声部，如 voice.vocals；src/score/roles.ts）
+  sound: string;            // MusicXML 官方乐器语义 id（= 角色是什么声部，如 voice.vocals；src/score/roles.ts）；空 = 不写 <instrument-sound>（休息室里没有这个角色，16-6）
   program: number;          // GM 音色号 1–128
   variant?: { library: string; name: string };   // <virtual-instrument>（我们的变体）
   volume?: number;          // 0–100（MusicXML <volume>）
@@ -327,7 +327,7 @@ export function writeMusicXml(doc: ScoreXml, meta: WriteMeta): Written {
     return `<part id="${b.p.info.id}">\n${ms.join("\n")}\n</part>`;
   });
   const partList = doc.parts.map(({ info: P }) =>
-    `<score-part id="${P.id}"><part-name>${esc(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc(P.instrumentName)}</instrument-name><instrument-sound>${esc(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc(P.variant.library)}</virtual-library><virtual-name>${esc(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== undefined ? `<volume>${P.volume}</volume>` : ""}${P.pan !== undefined ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part>`).join("");
+    `<score-part id="${P.id}"><part-name>${esc(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc(P.instrumentName)}</instrument-name>${P.sound ? `<instrument-sound>${esc(P.sound)}</instrument-sound>` : ""}${P.variant ? `<virtual-instrument><virtual-library>${esc(P.variant.library)}</virtual-library><virtual-name>${esc(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== undefined ? `<volume>${P.volume}</volume>` : ""}${P.pan !== undefined ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part>`).join("");
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
@@ -346,7 +346,7 @@ const DIR_READ = new Set(["octave-shift", "dynamics", "wedge", "metronome", "seg
 /** 认不得、但常见的几种，数的时候说人话（其余 = 「别的方向记号」）。 */
 const DIR_LABEL: Record<string, () => string> = { rehearsal: () => _t("排练记号"), dashes: () => _t("虚线（如渐强渐弱的延续线）"), bracket: () => _t("括线"), "string-mute": () => _t("弱音器记号"), "harp-pedals": () => _t("竖琴踏板图"), damp: () => _t("止音记号"), "damp-all": () => _t("止音记号") };
 export interface ReadScore { title: string; movementTitle: string; paper?: Paper; credits?: string; rights?: string; parts: { info: ReadPart; tokens: Token[] }[]; dropped: Record<string, number>;
-  /** 第一个声部的谱头这一份文件没写、用了这一版的默认开的（速度 ♩=DEFAULT_BPM / 调号 C 大调 / 拍号 4/4）：别家的谱打开时照实说一句（第 16 条，全表 2-11）。自家文件三样都写。 */
+  /** 第一个声部的谱头这一份文件没写、用了这一版的默认开的（新建的谱头 NEW_SONG_HEAD：♩=90 / C 大调 / 4/4）：别家的谱打开时照实说一句（第 16 条，全表 2-11）。自家文件三样都写。 */
   unwrittenHead: { tempo: boolean; key: boolean; time: boolean } }
 export interface ReadHints { manualBars?: Record<string, number[]>; unwritten?: string[] }   // 自家文件的 .moonsinger/score.json（这张纸的）；别家文件 = 没有
 
@@ -420,7 +420,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
   const parts = partEls.map((pe, pi) => {
     const pid = pe.attrs.id ?? `P${pi + 1}`, info: ReadPart = infos.find((x) => x.id === pid) ?? { id: pid, name: "" };
     const manual = hints?.manualBars ? new Set(hints.manualBars[pid] ?? []) : null;
-    const H = { fifths: DEFAULT_KEY, minor: false, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
+    const H = { ...NEW_SONG_HEAD, gotKey: false, gotTime: false, gotTempo: false };   // 没写的 = 新建的谱头（模板「谱的扩展」的 head；打开时说一句，headNotice）
     // 谱头 = 第一个音之前、每种记号第一次出现的那个；同一种再出现（谱头后面紧跟着插的）= 记号 token
     const body: Token[] = [];
     let headPhase = true, divisions = TPQ, voice: string | null = null;

@@ -616,7 +616,7 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 /* 断了的引用（第 16 条）：卡片名字下面一行、那一页那一格下面一句；红字 */
 .strip .strip-broken { display: block; height: 20px; padding: 0 6px; margin: 2px 0; font-size: 11px; border-radius: 6px; color: var(--danger); border-color: var(--danger); background: transparent; }
 .fx-note.strip-broken-note { color: var(--danger); }
-.strip .strip-perfdb { height: 20px; padding: 0 5px; margin-left: 4px; font-size: 11px; border-radius: 6px; color: var(--muted); vertical-align: middle; }
+.strip :is(.strip-perfdb, .strip-perfdiff) { height: 20px; padding: 0 5px; margin-left: 4px; font-size: 11px; border-radius: 6px; color: var(--muted); vertical-align: middle; }
 .strip .strip-ms .btn.mute { background: color-mix(in srgb, var(--danger) 15%, var(--panel)); border-color: var(--danger); color: var(--danger); }
 .strip .strip-ms .btn.solo { background: color-mix(in srgb, var(--accent) 15%, var(--panel)); border-color: var(--accent); color: var(--accent); }
 .strip-who { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1084,6 +1084,23 @@ body:not(.print-look) .staff-svg .nav-mark.sel, body:not(.print-look) .staff-svg
 .ip-marks th { text-align: left; font-weight: 500; padding: 3px 12px 3px 0; white-space: nowrap; color: var(--ink); vertical-align: top; }
 .ip-marks td { padding: 3px 0; color: var(--ink); }
 .ip-marks tr.ign th, .ip-marks tr.ign td { color: var(--muted); }
+/* 16-6：和现在的默认不一样的行（只陈述、不猜谁改的）——名字前一个小圆点；「现在的默认」一句灰字；表类的行把现在的默认那一排摆在下面、格子对齐 */
+.ip-k.is-diff::before, .ip-marks tr.is-diff th::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
+.ip-def { font-size: 12px; line-height: 1.45; color: var(--muted); margin-top: 3px; }
+.ip-marks td .ip-def { margin-top: 1px; }
+.ip-defbtn { margin-left: 6px; }
+.ip-marks td .ip-defbtn { height: 22px; padding: 0 6px; font-size: 12px; }
+.dyn-tab tr.ip-def-row th, .dyn-tab tr.ip-def-row td { color: var(--muted); }
+.dyn-tab td.is-diff { position: relative; }
+.dyn-tab td.is-diff::after { content: ""; position: absolute; top: 2px; right: 1px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+.ip-diff-sum { font-size: 13px; line-height: 1.6; margin: 0 0 8px; color: var(--ink); }
+.ip-diff-sum .btn.link { height: auto; padding: 0 2px; border: 0; background: none; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font-size: inherit; }
+.ip-faint { color: var(--muted); }
+.ip-flash { animation: ip-flash 1.2s ease-out; }
+@keyframes ip-flash { from { background: color-mix(in srgb, var(--accent) 22%, transparent); } to { background: transparent; } }
+/* 修改锁锁着：点、灰字、顶上那一句、混音台那一颗照样显示；顶上那一句和混音台那两颗只是跳过去，照样能点；「默认」钮灰着（统筹 16-6 补的第四条） */
+body.doc-locked .inst-page .ip-diff-sum { pointer-events: auto; }
+body.doc-locked .inst-page .ip-defbtn { opacity: .45; }
 .staff-svg .dyn-implied { fill: var(--muted); }   /* 渐强渐弱没写终点：走一档推定的终点（灰字披露） */
 
 /* 走带（2026-10-10 Opus 5.5）：播放线 / 正在响的音 / 起点 / 听模式 */
@@ -1206,6 +1223,7 @@ body.doc-locked .inst-page .ip-card { pointer-events: none; opacity: .72; }
 body.doc-locked .inst-page .ip-pad { pointer-events: auto; opacity: 1; }
 body.doc-locked .studio :is(.studio-strips, .fx-panel, .mix-menu) :is(input, select, button, textarea) { pointer-events: none; opacity: .55; }
 body.doc-locked .studio .strip-ms button { pointer-events: auto; opacity: 1; }
+body.doc-locked .studio :is(.strip-perfdb, .strip-perfdiff) { pointer-events: auto; opacity: 1; }   /* 「乐手 −6 dB」「乐手 N 处不同」只是去乐器页（16-6） */
 /* 修改锁：界面那一层补齐（v0.16.99；设计稿第三节「推子、乐器、谱都不收改动」）。改内容的控件变淡、点不动；
    看的（展开一行、进乐器页看、返回、好）和「隐藏 / 显示曲段」（看法，user 11-09）照常。写入口和库照旧各拦一层。 */
 body.doc-locked [data-ov="add"] { pointer-events: none; opacity: .4; }

@@ -83,6 +83,9 @@ export interface Opened {
 }
 /** 这个角色是什么（MusicXML 官方 <instrument-sound> id；user「角色名可以和xml的乐器 功能语义对齐，用最官方的正规的」）。还没有角色快照 = 新角色的。 */
 export declare function roleSound(extras: Extras, role: string): string;
+/** 歌里写着的这个角色是什么（同上的 id）；休息室里没有这个角色 = null（乐器页照实说「没写」，存 MusicXML 不写 <instrument-sound>；统筹 2026-11-13，16-6）。
+ *  上面的 roleSound 只给声部颜色用（没有乐手时按新建角色那一份的类别上色——视图上的，统筹定不动；名字那里本来就写「（没有乐手）」）。 */
+export declare function writtenRoleSound(extras: Extras, role: string): string | null;
 /** 给角色起名字 / 清掉名字（12-4：名字和乐器分开）。空串 = 回到没起（谱上写乐器的叫法）；起的名字原样存、什么语言都不翻。还没有角色快照 = 先按默认的建一份。 */
 export declare function withRoleName(extras: Extras, role: string, name: string, hum: Hum): Extras;
 /** 角色改成某个乐器概念（乐器目录里挑了 / 点回旧候选）：官方 id + 概念 by value（含谱上的叫法、简写）。**名字不动**（12-4）：没起的照旧没起 = 谱上跟着换成新乐器的叫法；
@@ -301,6 +304,10 @@ export declare function withVelocity(extras: Extras, role: string, v: number, hu
 export declare function withCalibration(extras: Extras, role: string, dB: number, hum: Hum): Extras;
 /** 固定原速开 / 关：开 = 每个音都敲原速键（note = sfx.key）；关 = 按写的音敲（可再开音高对齐）。不是音效 = 原样。 */
 export declare function withSfxFixed(extras: Extras, role: string, on: boolean, hum: Hum): Extras;
+/** 候选身上一个点分路径的值（没有 = undefined）。 */
+export declare function candPath(c: Json | null | undefined, path: string): unknown;
+/** 乐器页「默认」钮（16-6）：把台上那位身上这几个路径改成 from（「现在新上场」那一位，插件 castNow 给的）里的值——按值抄；from 里没有的 = 拿掉这个键。没人上场 = 原样。 */
+export declare function withActiveKeys(extras: Extras, role: string, from: Json, paths: readonly string[], hum: Hum): Extras;
 /** 月读分段唱的粒度（上场那位；没写 = 每句）。user「开关是歌手的属性，可以有不同的粒度」。 */
 export declare function activeSingChunk(extras: Extras, role: string): "phrase" | "sheet" | "whole";
 /** 小月相的原始输出乘多少（dB，16-4 B；上场那位不是小月相 / 缺了 = NaN：出声那一层报缺数，不替它补）。 */
