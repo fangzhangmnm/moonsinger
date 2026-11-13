@@ -5,6 +5,7 @@ import { _t, lang } from "../i18n/index.ts";
 import { conceptName, defLabel, zhOnly } from "./catalog-i18n.ts";
 import { INSTRUMENT_FILES } from "./instruments.gen.ts";
 import { getBytes } from "../resources.ts";
+import { GS_LIBRARY_ID } from "./library-ids.ts";
 
 export interface GmRef { program: number; bank: number; note?: number }
 export interface Concept {
@@ -157,8 +158,8 @@ export function octaveDisclosure(nt: Concept["notation"] | undefined, oc: Octave
     : _t("GS 这个音色实测：耳朵听到的比键名{p} {perceived} 半音。", { p: oc.perceived > 0 ? _t("高") : _t("低"), perceived: Math.abs(oc.perceived) }));
   return parts.join("");
 }
-/** GS 在家族音源库里的 id（sampleKey 只对它成立）。 */
-export const GS_LIBRARY_ID = "generaluser-gs-2.0.3";
+/** GS 在家族音源库里的 id（sampleKey 只对它成立）。常数住在 library-ids.ts（读文件的门口也要用，不拖进这里的取数），这里照旧导出。 */
+export { GS_LIBRARY_ID } from "./library-ids.ts";
 /** 谱上写的角色名：目录里的英文名首字母大写（打谱惯例；Vocals / Piano 同款）。 */
 /** 谱上写的名字 = 目录的谱上名（v15）；老目录没有 = 百科英文名去掉括号、首字母大写（原来整个百科名上谱：「Western concert flute」「Solid-body electric guitar (Fender Stratocaster)」）。 */
 export const roleNameOf = (c: Concept): string => c.scoreName?.en || c.names.en.replace(/\s*\([^)]*\)/g, "").trim().replace(/^./, (ch) => ch.toUpperCase());

@@ -132,6 +132,7 @@ export declare function lightNotes(tokens: Token[], tempoMap: TempoMap, poly?: b
     t0: number;
     t1: number;
     vel?: number;
+    stacc?: true;
 }[];
 export declare const HUM_KANA: Record<Hum, string>;
 export declare function buildTimeline(inp: TimelineInput): Timeline;

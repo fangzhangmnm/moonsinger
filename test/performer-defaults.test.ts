@@ -57,7 +57,7 @@ const leaves = (o: Record<string, unknown>, pre: string[] = []): string[] => Obj
   const p = [...pre, k];
   return v && typeof v === "object" && !Array.isArray(v) && !(v instanceof Uint8Array) ? leaves(v as Record<string, unknown>, p) : k === "chain" ? [p.join(".")] : Array.isArray(v) || v instanceof Uint8Array ? [] : [p.join(".")];
 });
-const ALT: Record<string, string[]> = { chunk: ["sheet", "whole"], hum: ["a", "la"], mark: ["v", "^", "O"], at: ["this", "next"] };
+const ALT: Record<string, string[]> = { chunk: ["sheet", "whole"], hum: ["a", "la"], mark: ["v", "^", "O"], at: ["this", "next"], pedal: ["down", "up"] };   // pedal = 没写踏板记号时留不留（踏板 11-3）
 /** 改一下（照人能做到的样子）：音效固定的那个键 = 关掉固定原速（同乐器页那颗开关）；效果链 = 加一格；数 = 挪一点（移调挪一个八度）；开关取反；字换一个。 */
 function bumped(x: Extras, path: string): Extras {
   if (path === "instrument.note") return withSfxFixed(x, role, false, "n");

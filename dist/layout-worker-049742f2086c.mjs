@@ -839,6 +839,7 @@ var S = {
   "\u72EC\u594F": { en: "Solo" },
   "\u53EA\u770B\u5B83": { en: "Only this" },
   "\u4E0D\u51FA\u58F0": { en: "Silent" },
+  "\u7559\u4F4F\u97F3": { en: "Keep the notes" },
   "{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220": { en: "{p}{p2}: empty lyric slots don't open a box; lyrics already written can still be tapped to edit or delete" },
   "\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC": { en: " (vowel version) only hums" },
   "\u4E0D\u5531\u6B4C\u8BCD": { en: " doesn't sing lyrics" },
@@ -994,12 +995,14 @@ var S = {
   "\u5EF6\u97F3\u8E0F\u677F": { en: "Sustain pedal" },
   "\u6301\u97F3\u8E0F\u677F": { en: "Sostenuto pedal" },
   "\u5F31\u97F3\u8E0F\u677F": { en: "Soft pedal" },
+  "\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7559\u4F4F\u97F3\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "This player keeps the notes when no pedal is written, so the pedal is already down here: this press has no effect (greyed)" },
   "\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "The pedal is already down here: this press does nothing (greyed)" },
   "\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740\uFF1A\u8FD9\u4E2A\u62AC\u8D77\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "The pedal isn't down here: this lift does nothing (greyed)" },
   "\u8E0F\u677F\u8BB0\u53F7\u6302\u5728\u97F3\u4E0A\uFF1A\u8FD9\u5F20\u7EB8\u4E0A\u5149\u6807\u9644\u8FD1\u8FD8\u6CA1\u6709\u97F3": { en: "Pedal marks hang on notes: there are no notes near the cursor on this sheet yet" },
   "\u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\uFF08\u9009\u533A\u5F00\u5934\u8E29\u4E0B\u3001\u7ED3\u5C3E\u62AC\u8D77\uFF09": { en: "Hold this passage (press at the start of the selection, lift at its end)" },
   "\u8FD9\u4E2A\u97F3\u4E0A\u5DF2\u7ECF\u6709\u4E86\uFF1A\u518D\u70B9 = \u53BB\u6389": { en: "Already on this note: tap again to remove" },
   "\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09": { en: " (from the note before the cursor)" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7559\u4F4F\u97F3\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": { en: "No effect (greyed): this player keeps the notes when no pedal is written, so the pedal is already down here" },
   "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": { en: "No effect (greyed): the pedal is already down here" },
   "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740": { en: "No effect (greyed): the pedal isn't down here" },
   "\u8FD9\u91CC\u4E4B\u524D\u6CA1\u8E29\u7740\uFF0C\u6362\u8E0F\u677F = \u8E29\u4E0B": { en: "The pedal wasn't down before this, so a change = a press" },
@@ -2221,6 +2224,7 @@ var S = {
   "\u529B\u5EA6##MIDI": { en: "Velocity" },
   "\u4FEE\u516B\u5EA6": { en: "Octave fix" },
   "\u7740\u529B\u70B9": { en: "Hit point" },
+  "\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6": { en: "When no pedal is written" },
   "\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668": { en: "The performer on stage isn't a SoundFont instrument" },
   "\u529B\u5EA6\u6DF1\u5EA6 = \u5E93\u91CC\u7ED9\u8FD9\u4EF6\u4E50\u5668\u5199\u7684\uFF08\u58F0\u97F3\u8F7D\u597D\u540E\u663E\u793A\uFF09\uFF1B\u54CD\u5EA6 = \u6DF1\u5EA6 \xF7 960 \xD7 40\xB7log10(\u529B\u5EA6 \xF7 127)\u3002": { en: "Velocity depth = what the library sets for this instrument (shown once the sound is loaded); loudness = depth \xF7 960 \xD7 40\xB7log10(velocity \xF7 127). " },
   "\u8FD9\u4EF6\u4E50\u5668\u6309\u591A\u91CD\u90FD\u4E00\u6837\u54CD\uFF08\u5E93\u91CC\u8FD9\u4E48\u5B9A\u7684\uFF1A\u529B\u5EA6\u6DF1\u5EA6 0\uFF09\u3002": { en: "This instrument sounds equally loud however hard you play (the library sets it so: velocity depth 0). " },
@@ -2251,9 +2255,16 @@ var S = {
   "\u5F52\u96F6": { en: "Reset" },
   "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3": { en: "Rarely needed: a fallback when a sound is itself off by octaves (e.g. GS Guitar Harmonics is two octaves high); once fixed, what you write is what sounds" },
   "\u91C7\u6837\u5F00\u5934\u5230\u300C\u7838\u4E0B\u53BB\u90A3\u4E00\u4E0B\u300D\u6709\u591A\u8FDC\uFF1A\u653E\u7684\u65F6\u5019\u63D0\u524D\u8FD9\u4E48\u591A\u5F00\u59CB\uFF0C\u8BA9\u7838\u4E0B\u53BB\u90A3\u4E00\u4E0B\u843D\u5728\u5199\u7684\u90A3\u4E00\u62CD\u4E0A\uFF08\u53CD\u5411\u9572\u8FD9\u7C7B\u6700\u660E\u663E\uFF09\u3002\u6309\u6BCF\u4E2A\u6572\u7684\u952E\u6309\u503C\u8BB0\u5728\u8FD9\u4F4D\u8EAB\u4E0A\uFF0C\u6570\u662F\u6253\u51FB\u4E50\u8868\u91CC\u5B9E\u6D4B\u7684": { en: "How far the hit is from the start of the sample: playback starts this much earlier so the hit lands on the written beat (most obvious with reverse cymbals). Stored by value on this performer for each key struck; the numbers are measured in the percussion table" },
+  "\u4E0D\u7559": { en: "Don't keep" },
+  "\u81EA\u5DF1\u7684\u97F3\u6E90\u6587\u4EF6\uFF0C\u76EE\u5F55\u4E0D\u8BA4\u8BC6\u5B83": { en: "Your own sound file: the catalog does not know it" },
+  "\u76EE\u5F55\u91CC\u6CA1\u6709\u6807\u6210\u81EA\u5DF1\u4E00\u76F4\u54CD": { en: "Not marked in the catalog as ringing on by itself" },
+  "\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u5C31\u8E29\u7740\uFF1A\u5199\u7684\u7ED3\u5C3E\u5230\u4E86\u4E5F\u4E0D\u505C\uFF0C\u54CD\u5230\u540C\u4E00\u4E2A\u97F3\u518D\u5F39\u3001\u5199\u4E86\u62AC\u8D77\u6216\u8FD9\u4E00\u6BB5\u7ED3\u675F\uFF1B\u9760\u8FD9\u4E2A\u7559\u4F4F\u7684\u97F3\u91CC\uFF0C\u8DF3\u97F3\u7167\u5199\u7684\u677E": { en: "Sustain pedal is down at the start of every section: notes keep sounding past their written end, until the same key is played again, a lift is written, or the section ends; staccato notes held only by this still stop as written" },
+  "\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF1A\u7167\u5199\u7684\u65F6\u503C\u505C\uFF08\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709\uFF09": { en: "Sustain pedal is up at the start of every section: notes stop at their written length (the instrument's own release still sounds)" },
+  "\u51FA\u5382\uFF1A{side}\u2014\u2014{why}": { en: "Factory: {side} \u2014 {why}" },
   "\u4E0D\u56FA\u5B9A\u539F\u901F\uFF08\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF09": { en: "Not fixed speed (transposes by the written note)" },
   "\u300C{rn}\u300D\u97F3\u9AD8\u5BF9\u9F50{on}": { en: "\u201C{rn}\u201D pitch align{on}" },
   "\u300C{rn}\u300D\u4FEE\u516B\u5EA6 / \u79FB\u8C03 {next} \u534A\u97F3": { en: "\u201C{rn}\u201D octave fix / transpose {next} semitones" },
+  "\u300C{rn}\u300D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\uFF1A{p}": { en: "\u201C{rn}\u201D when no pedal is written: {p}" },
   "\u300C{rn}\u300D\u529B\u5EA6 {p}": { en: "\u201C{rn}\u201D velocity {p}" },
   "\u9F50\u5E73": { en: "Leveling" },
   "\u6BCF\u4E2A\u5B57\u7684\u54CD\u5EA6\u5F80\u6574\u53E5\u7684\u4E2D\u4F4D\u6570\u62C9\u51E0\u6210\uFF1A\u5173 = \u7167\u5FF5\u7684\u65F6\u5019\u81EA\u5DF1\u7684\u8F7B\u91CD\uFF08\u5B57\u548C\u5B57\u4E4B\u95F4\u54CD\u5EA6\u4E0D\u53EF\u63A7\uFF09\uFF1B0.8 = \u62C9\u516B\u6210\uFF08\u9ED8\u8BA4\uFF1B2026-10-14 \u5230 10-17 \u9ED8\u8BA4\u5173\u8FC7\uFF09\u3002\u56E2\u5B50 C \u6BB5\u7B2C 10 \u5C0F\u8282\u300C\u305D\u300D\u7684\u7834\u97F3\u662F\u9F50\u5E73\u300C\u6BCF\u5B57\u91CD\u8D77\u300D\u5728\u5B57\u7684\u8FB9\u754C\u4E0A\u8DF3\u51FA\u6765\u7684\u53F0\u9636\uFF0C\u300C\u8FDE\u7EED\u300D\u4E0D\u8DF3": { en: "How far each syllable's loudness is pulled toward the line's median: off = as spoken (loudness between syllables is uncontrolled); 0.8 = 80% (default). Restarting per syllable can step at syllable boundaries and crackle; \u201CContinuous\u201D doesn't step" },
@@ -7228,8 +7239,41 @@ function layPedals(c) {
       down = null;
       lineSpan(d.idx, d.sys, d.x + nmW + P(PEDAL.textGap), endSys, endX, notches, hookIdx);
     };
+    const STUB = P(1.2);
+    const stub = (u, p, kind) => {
+      const it = rowOf(p.sys), N = P(PEDAL.notch), H = P(PEDAL.hook), id = tokens[u.index].id;
+      if (kind === "up") {
+        const b = p.x - P(PEDAL.hookIn);
+        it.taken.push([b - STUB, b + P(0.6)]);
+        it.main.push((y) => {
+          prims.push({ tok: id, t: "path", d: `M${b - STUB},${y}L${b},${y}L${b},${y - H}`, cls });
+          dyns.push({ index: u.index, kind: "pedal", system: c.rowLow(p.sys), x: b - STUB, y: y - H - P(0.4), w: STUB + P(0.6), h: H + P(0.8) });
+        });
+      } else {
+        const x = p.x;
+        it.taken.push([x - N - STUB, x + N + STUB]);
+        it.main.push((y) => {
+          prims.push({ tok: id, t: "path", d: `M${x - N - STUB},${y}L${x - N},${y}L${x},${y - H}L${x + N},${y}L${x + N + STUB},${y}`, cls });
+          dyns.push({ index: u.index, kind: "pedal", system: c.rowLow(p.sys), x: x - N - P(0.3), y: y - H - P(0.4), w: 2 * N + P(0.6), h: H + P(0.8) });
+        });
+      }
+    };
+    let dflt = which === "sustain" && !!c.pedalHeld;
     for (const u of mine) {
       const p = at2(u);
+      if (dflt) {
+        if (u.act === "down") {
+          grey(u, p, nm);
+          continue;
+        }
+        if (u.act === "change") {
+          stub(u, p, "change");
+          continue;
+        }
+        stub(u, p, "up");
+        dflt = false;
+        continue;
+      }
       if (u.act === "down" || u.act === "change" && !down) {
         if (down) {
           grey(u, p, nm);
@@ -7425,6 +7469,7 @@ function drawStaff(c, mine) {
       row: (sy) => rowOf(sy, r, 0),
       rowLow: (sy) => rowOf(sy, r, q.staves - 1),
       ignores: q.p.ignores ?? [],
+      ...q.p.pedalHeld ? { pedalHeld: true } : {},
       rowEnd: (sy) => P(staffEnd[sy]),
       contentEnd: (sy) => P(rowContentEnd(sy)),
       // 踏板挂在最下面那张谱表下面（11-1）
@@ -8489,6 +8534,7 @@ function drawJianpu(c, mine, mode = "digits") {
       placeBelow: (row, gap, d, o2) => placeBelow(row, gap, d, o2),
       rowLow: (sy) => rowOf(sy, r, 0),
       ignores: q.p.ignores ?? [],
+      ...q.p.pedalHeld ? { pedalHeld: true } : {},
       rowEnd: (sy) => P(staffEnd[sy]),
       contentEnd: (sy) => {
         let e = -Infinity;
@@ -9975,4 +10021,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-66273c98ab80.mjs.map
+//# sourceMappingURL=layout-worker-049742f2086c.mjs.map

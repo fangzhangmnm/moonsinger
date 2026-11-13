@@ -861,29 +861,29 @@ export function setDynSel(st: EditorState, value: Dyn | null, ramp?: boolean): E
 }
 /** 踏板（11-1）：第 at 个 token 之前这一种踏板踩着没有——从这条轨这张纸的开头照记号数（不起作用的不改状态；换踏板 = 踩着）。
  *  默认 = 抬着（乐手的默认 = 11-3，到时候从这里接）。和出声同一个读法（score/pedal.ts sustainSpans）。 */
-export function pedalDownAt(toks: readonly Token[], at: number, which: PedalKind): boolean {
-  let down = false;
+export function pedalDownAt(toks: readonly Token[], at: number, which: PedalKind, startDown = false): boolean {   // startDown = 这一段开头就踩着（乐手默认留住音，踏板 11-3；只有延音那一种由宿主给）
+  let down = startDown;
   for (let i = headLen(toks as Token[]); i < Math.min(at, toks.length); i++) { const t = toks[i]!; if (t.kind === "pedal" && t.which === which) down = t.act !== "up"; }
   return down;
 }
 /** 光标处（markAnchor 那个音）这一种踏板：那个音前面踩着没有（down，不算挂在它身上的那个）+ 它身上已经挂着的这一种的记号（mark）。符号层「踏板」小菜单的字跟着它。 */
-export function pedalHere(st: EditorState, which: PedalKind): { down: boolean; mark: PedalTok | null } | null {
+export function pedalHere(st: EditorState, which: PedalKind, startDown = false): { down: boolean; mark: PedalTok | null } | null {
   const toks = tr(st), an = markAnchor(st); if (an < 0) return null;
   const a = runBefore(toks, an); let mark: PedalTok | null = null;
   for (let i = a; i < an; i++) { const t = toks[i]!; if (t.kind === "pedal" && t.which === which) mark = t; }
-  return { down: pedalDownAt(toks, a, which), mark };
+  return { down: pedalDownAt(toks, a, which, startDown), mark };
 }
 /** 符号层「踏板」（11-1，设计稿第 6 节）：踏板记号挂在 markAnchor 那个音上（同力度：写完一个音按 = 从这个音起）。
  *  那个音上已经有同一种踏板的记号：同一个动作 = 去掉（再按一下撤回），别的动作 = 改成这个。有选区 = 「把这一段踩住」：选区第一个音前面踩下、选区后面抬起（act 不看）。
  *  回 idle = 写上的那个不起作用（这里本来就踩着又踩 = "already"；本来没踩又抬 = "notDown"）：照写、画灰，调用方说一句为什么。 */
-export function insertPedal(st: EditorState, which: PedalKind, act: PedalTok["act"]): { st: EditorState; did: "added" | "changed" | "removed" | "span" | "none"; idle?: "already" | "notDown" } {
+export function insertPedal(st: EditorState, which: PedalKind, act: PedalTok["act"], startDown = false): { st: EditorState; did: "added" | "changed" | "removed" | "span" | "none"; idle?: "already" | "notDown" } {
   const toks = tr(st), an = markAnchor(st);
   if (an < 0) return { st, did: "none" };
   if (st.sel) {
     const end = Math.min(st.sel.to, toks.length), nt = toks.slice(), id = st.nextId;
     nt.splice(end, 0, { kind: "pedal", id: id + 1, which, act: "up" });
     nt.splice(an, 0, { kind: "pedal", id, which, act: "down" });
-    const idle = pedalDownAt(toks, an, which) ? "already" as const : undefined;
+    const idle = pedalDownAt(toks, an, which, startDown) ? "already" as const : undefined;
     return { st: next({ ...st, nextId: id + 2 }, nt, { sel: { from: st.sel.from + (an >= st.sel.from ? 0 : 1), to: end + 2 }, caret: end + 2, log: [] }), did: "span", ...(idle ? { idle } : {}) };
   }
   const a = runBefore(toks, an), nt = toks.slice();
@@ -892,11 +892,11 @@ export function insertPedal(st: EditorState, which: PedalKind, act: PedalTok["ac
     const old = toks[k] as PedalTok;
     if (old.act === act) { nt.splice(k, 1); return { st: next(st, nt, shiftAt(st, -1, k)), did: "removed" }; }
     nt[k] = { ...old, act };
-    const idle = act === "down" && pedalDownAt(toks, k, which) ? "already" as const : act === "up" && !pedalDownAt(toks, k, which) ? "notDown" as const : undefined;
+    const idle = act === "down" && pedalDownAt(toks, k, which, startDown) ? "already" as const : act === "up" && !pedalDownAt(toks, k, which, startDown) ? "notDown" as const : undefined;
     return { st: next(st, nt), did: "changed", ...(idle ? { idle } : {}) };
   }
   const id = st.nextId; nt.splice(an, 0, { kind: "pedal", id, which, act });
-  const idle = act === "down" && pedalDownAt(toks, an, which) ? "already" as const : act === "up" && !pedalDownAt(toks, an, which) ? "notDown" as const : undefined;
+  const idle = act === "down" && pedalDownAt(toks, an, which, startDown) ? "already" as const : act === "up" && !pedalDownAt(toks, an, which, startDown) ? "notDown" as const : undefined;
   return { st: next({ ...st, nextId: id + 1 }, nt, shiftAt(st, 1, an)), did: "added", ...(idle ? { idle } : {}) };
 }
 /** 渐强 / 渐弱记号放在 markAnchor 那个音上（从这个音起）：那儿已经有同方向的 = 去掉，反方向的 = 换。 */

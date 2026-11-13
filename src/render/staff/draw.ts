@@ -115,7 +115,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
   const ornOf = (q: StaffTrack, r: number, noteEnd?: (ch: Chunk) => number): OrnCtx => {
     const hit = ornCache.get(r); if (hit && !noteEnd) return hit;
     const oc: OrnCtx = { song, paper, o, notation: "staff", P, tx, TR, RS, mw, sp, prims, dyns, marks, placeAbove, placeBelow: (row, gap, d, o2) => placeBelow(row, gap, d, o2), attach, right, left: (sy) => P(MARGIN + (sy === 0 ? ind0 : indN)), tokens: q.tokens, units: q.units, row: (sy) => rowOf(sy, r, 0),
-      rowLow: (sy) => rowOf(sy, r, q.staves - 1), ignores: q.p.ignores ?? [], rowEnd: (sy) => P(staffEnd[sy]!), contentEnd: (sy) => P(rowContentEnd(sy)),   // 踏板挂在最下面那张谱表下面（11-1）
+      rowLow: (sy) => rowOf(sy, r, q.staves - 1), ignores: q.p.ignores ?? [], ...(q.p.pedalHeld ? { pedalHeld: true } : {}), rowEnd: (sy) => P(staffEnd[sy]!), contentEnd: (sy) => P(rowContentEnd(sy)),   // 踏板挂在最下面那张谱表下面（11-1）
       noteX: (ch) => P(ch.x + 0.35), noteEnd: noteEnd ?? ((ch) => P(ch.x + 0.35)), dynOff: dynOverridden(q.tokens), navMute: (i) => (navWhy(song, paper, q.p.id, q.tokens[i]!) ? " art-mute" : "") };
     ornCache.set(r, oc); return oc;
   };

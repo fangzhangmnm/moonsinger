@@ -17,6 +17,7 @@ export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
 export const PERC_OUT = join(ROOT, "src", "gm", "percussion.gen.ts");
 export const DEFAULT_OUT = join(ROOT, "src", "gm", "default-concept.gen.ts");   // 新歌默认那一位的概念（12-4）
 export const LABELS_OUT = join(ROOT, "src", "gm", "concept-labels.gen.ts");     // 每个概念现行的谱上叫法 + 简写（12-4 改口）
+export const RING_OUT = join(ROOT, "src", "gm", "ring.gen.ts");                 // 踏板 11-3：哪些音色的乐器「不去管它就一直响」（概念上的 ring 栏）
 export const VERSION = 15;   // v15 = 2026-11-07（仓鼠 adc0249：概念加 scoreName = 谱上名（Western concert flute → Flute、型号 → 功能名），13 个简写改正；user 11-07「为什么我从era里面选的flute在sheet上面显示western concept flute」「不只是长笛，而是系统的看一下」）
 //   v14 = 2026-11-07（仓鼠 eec835f：GM 122 Breath Noise 改挂长笛、奏法 = 气声、年份 ≈前 51,000，「呼吸」不再有 GM 号；user 11-07「midi breath不是呼吸是演奏技巧」，家族周账 F-212）
 //   v13 = 2026-10-10（仓鼠 7447213：不分音高的鼓谱写法 percussion / pitched:false / 着力点 hitSec / GS 扩展鼓键 extraDrumKeys；纯增量。工单 ai-docs/20261010-hamster-workorder-percussion-notation.md）
@@ -130,6 +131,26 @@ export const CONCEPT_LABELS: { readonly byWikidata: Record<string, ConceptLabel>
 `;
 }
 
+/** 踏板 11-3（2026-11-13 Claude Opus 5.5（MoonSinger小弟）；统筹「11-3 的数据定了」+ 答两问）：乐器概念上可选的一栏 ring: { kind: "free", why: { zh, en } }
+ *  = 这件乐器不去管它就一直响、止音要人特意做（竖琴、筝…）。上场那一刻和读老文件的门口要同步拿到（不能等找人视图 fetch 目录），所以按值烤进源码，同 percussion.gen.ts。
+ *  键 = GS 货架上的音色「bank:program[:note]」，只认本尊那一行（relation self）；平替不算（平替演的是别的乐器）。kind 现在只有 "free"；概念上没有这一栏 = 没标。 */
+export function renderRing() {
+  const p = join(DST, FILES.gmMap); if (!existsSync(p)) return null;
+  const gm = JSON.parse(readFileSync(p, "utf8")), conceptsById = new Map(JSON.parse(readFileSync(join(DST, FILES.concepts), "utf8")).concepts.map((c) => [c.id, c]));
+  const out = {};
+  for (const r of gm.rows ?? []) {
+    if (r.relation !== "self" || !r.concept) continue;
+    const ring = conceptsById.get(r.concept)?.ring;
+    if (!ring || ring.kind !== "free" || !ring.why?.zh || !ring.why?.en) continue;
+    out[`${r.bank}:${r.program}${typeof r.note === "number" ? `:${r.note}` : ""}`] = { zh: ring.why.zh, en: ring.why.en };
+  }
+  const keys = Object.keys(out).sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  return `// 生成物：node scripts/gen-instruments.mjs（目录 v${VERSION} 的乐器概念上的 ring 栏）。勿手改。
+// GS 货架上的音色（「bank:program[:note]」，只认本尊）→ 这件乐器不去管它就一直响的依据（中 / 英）。不在表里 = 目录没标成自己一直响。
+export const RING_FREE: Readonly<Record<string, { readonly zh: string; readonly en: string }>> = ${JSON.stringify(Object.fromEntries(keys.map((k) => [k, out[k]])), null, 1)};
+`;
+}
+
 if (fileURLToPath(import.meta.url) === process.argv[1]) {
   if (!existsSync(SRC)) { console.error(`找不到源 ${SRC}`); process.exit(1); }
   mkdirSync(DST, { recursive: true });
@@ -139,5 +160,6 @@ if (fileURLToPath(import.meta.url) === process.argv[1]) {
   writeFileSync(PERC_OUT, renderPerc());
   writeFileSync(DEFAULT_OUT, renderDefaultConcept());
   writeFileSync(LABELS_OUT, renderLabels());
+  writeFileSync(RING_OUT, renderRing());
   console.log(`[gen-instruments] v${VERSION} → vendor/instruments/ + ${OUT}`);
 }

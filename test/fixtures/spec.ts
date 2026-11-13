@@ -6,4 +6,4 @@ const L = TEMPLATE.lounge;
 /** 按音量走的（小月相 / 元音版那一路）。 */
 export const gainSpec = (over: Partial<GainSpec> = {}): GainSpec => ({ path: "gain", ...L.articulation.gain, dynamicsDb: { ...L.dynamicsDb }, sing: structuredClone(L.sing), ...over });
 /** 按力度敲的（SoundFont 那一路）。 */
-export const velSpec = (over: Partial<VelSpec> = {}): VelSpec => ({ path: "velocity", ...L.articulation.velocity, dynamicsVel: { ...L.dynamicsVel }, sing: {}, ...over });
+export const velSpec = (over: Partial<VelSpec> = {}): VelSpec => ({ path: "velocity", ...L.articulation.velocity, pedal: "up", dynamicsVel: { ...L.dynamicsVel }, sing: {}, ...over });   // pedal（踏板 11-3）出厂按乐器、不在模板里：测试默认不留

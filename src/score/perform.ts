@@ -23,7 +23,7 @@ export interface PerfCommon {
 /** 按音量走力度的（小月相 / 元音版）：力度 = dB 表；重音那一组是 dB。 */
 export interface GainSpec extends PerfCommon { path: "gain"; dynamicsDb: Record<Dyn, number>; accentDb: number; marcatoDb: number; accentSec: number; sfzDb: number; sfzSec: number; stressDb: number; unstressDb: number; ghostDb: number }
 /** 按力度敲的（SoundFont）：力度 = MIDI 力度表；重音那一组是力度格；没终点的渐强渐弱走 wedgeStepVel。 */
-export interface VelSpec extends PerfCommon { path: "velocity"; dynamicsVel: Record<Dyn, number>; accentVel: number; marcatoVel: number; wedgeStepVel: number; sfzVel: number; stressVel: number; unstressVel: number; ghostVel: number; /** 弱音踏板踩着期间起的音加多少力度（MIDI 格，负 = 轻；踏板 11-2）。 */ softVel: number }
+export interface VelSpec extends PerfCommon { path: "velocity"; dynamicsVel: Record<Dyn, number>; accentVel: number; marcatoVel: number; wedgeStepVel: number; sfzVel: number; stressVel: number; unstressVel: number; ghostVel: number; /** 弱音踏板踩着期间起的音加多少力度（MIDI 格，负 = 轻；踏板 11-2）。 */ softVel: number; /** 没写踏板记号时留不留住音：每一段开头延音踏板的状态（踏板 11-3）。 */ pedal: "down" | "up" }
 export type PerfSpec = GainSpec | VelSpec;
 /** 音量曲线的一段：t0–t1（秒，谱的时钟）这段多少 dB；-Infinity = 静音。 */
 export interface GainSeg { t0: number; t1: number; dB: number }

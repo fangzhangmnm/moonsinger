@@ -66,6 +66,8 @@ export interface PartView {
     ignores?: readonly string[];
     lyricMute?: ReadonlySet<number>;
     noLyrics?: string;
+    /** 没写踏板记号时留住音（踏板 11-3，宿主从台上这位的 articulation.pedal 查好）：每一段开头延音踏板就踩着——这一截不画；之后写的抬起 / 换踏板画成实色带一小段线；又写的踩下画灰（统筹「默认留住音的那一截怎么画」）。 */
+    pedalHeld?: boolean;
     /** 台上那位的音域（MIDI；宿主从演奏者 / 乐器目录查好，排版不认识乐器目录）：简谱每一行的八度基准按它定；没有 = 按写的音「点最少」（第五刀 5-4）。 */
     range?: {
         lo: number;

@@ -123,6 +123,12 @@ export type FormatFile = keyof typeof FORMAT;
  *  articulation.softVel：弱音踏板踩着期间起的音加多少 MIDI 力度（负 = 轻）。只有按力度敲的乐手（SoundFont）有：按音量走的不认踏板，设计里的 softDb 因此没有定义（不读的键不定义，ART_KEYS_BY 的规矩）。
  *  新建 = 模板（format/template.ts）；老文件（lounge ≤ 4）没写 = 读文件的门口按模板补，不说话、不算改过；存的时候写。
  *  旧读者（lounge 4）读到：不认识的键，弱音踏板在它那里本来就不出声（画灰），提示一次。 */
+/** lounge minor 6（踏板 11-3，2026-11-13 Claude Opus 5.5（MoonSinger小弟）；统筹「踏板 11-3 的数据定了」，user 2026-11-13「好，可以，就那么办」；设计稿第 14 节）：新加一个键——
+ *  articulation.pedal："down" = 没写踏板记号时留住音（每一段开头延音踏板就踩着）/ "up" = 不留。只有这两个值，没有「自动」（只看文件就知道这位留不留）。
+ *  只在认延音踏板的乐手（现在 = SoundFont）身上；不认踏板的没有定义（同 softVel）。
+ *  新上场 = 照目录的短名单写成具体的（src/gm/ring.ts：目录标了「不去管它就一直响」= down，名单里没有的、自己的音源文件 = up）；
+ *  老文件（lounge ≤ 5）没写 = 读文件的门口照现在的名单补，不说话、不算改过；存的时候写。值读不懂、文件不比这一版新 = 照名单补；比这一版新 = 原样留着、照写。
+ *  旧读者（lounge 5）读到：不认识的键，在它那里没写踏板 = 每段开头都抬着（= up）；提示一次。 */
 /** studio minor 3（第 16 条 16-4 A2 + C，2026-11-12 夜，统筹「v0.17.16 收」）：总轨多一个键 master.limiterParams（限幅器的四个数，见 LimiterParamsV2）。
  *  另外几样意思不变、从此由门口保证明写：效果格的 on（老文件没写 = 开）、轨的 bypass（没写 = 不旁通）、效果参数表里每个参数（没写 = 门口按模板补——新插一格的那一份）。
  *  存的时候不再补、不再替声部建轨；新建的歌 / 新加的声部在建的那一刻按模板建好混音轨。旧读者（studio 2）读到 limiterParams = 不认识的键（照它自己的常数限幅，数一样），提示一次。 */
@@ -163,7 +169,7 @@ export type FormatFile = keyof typeof FORMAT;
  *  模板 / 新歌 = "default"（"default" 现在等于什么只在 src/look：软件的默认 = 级数，设备上能记成习惯）。MusicXML 里不写（同 chordTags）。chordTags（标不标）的意思不变。
  *  读的门口照文件纪律第四节：没写 = 模板的值 "default"、存的时候写下来、不说；值读不懂、这一份不比这一版新 = "default"、不说；比这一版新、值不认识 = 原样留着、
  *  存的时候照写、画的时候按级数，页面设置那一项「这一版不认识」、打开时一句话。旧读者（13）读到 = 比自己新的小版本，不认识的键原样带回、说一次。冻结样本 minor/score-14。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 14, lounge: 5, studio: 3 };   // lounge 3（9-2）起小版本从 0 数
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 14, lounge: 6, studio: 3 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
@@ -347,7 +353,9 @@ export interface CandidateV2 {
     /** 滚奏每秒几下（16-4 F，lounge minor 4 起只写数）。老文件的 null（= 按乐器）/ 没写 = 读文件的门口按这位是不是鼓补（鼓 12、有音高的 14，format/template.ts），存的时候写数。 */
     rollHz?: number;
     /** 弱音踏板踩着期间起的音加多少力度（MIDI 格，负 = 轻；踏板 11-2，lounge minor 5）。只有按力度敲的写（按音量走的小月相 / 元音版不认踏板，这个键没有定义）。 */
-    softVel?: number };
+    softVel?: number;
+    /** 没写踏板记号时留不留住音（踏板 11-3，lounge minor 6）："down" = 每一段开头延音踏板就踩着、"up" = 抬着。只有认延音踏板的写。 */
+    pedal?: "down" | "up" };
   //   2026-10-08 加（可选，不升版本；Claude Opus 5.5；user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）：上面这些 = 记号怎么解读的数；
   //   16-4 A 起（2026-11-12 夜）：没写 = 读文件的门口按模板（format/template.ts）补、存的时候写，出声那一层只吃写全的（原来是「没写 = performance.ts MARK_DEFAULTS」）
   //   2026-10-08 深夜再加（可选，不升版本；Opus 5.5）：stressDb / stressVel（次重音）、unstressDb / unstressVel（弱化）、ghostDb / ghostVel（幽灵音）——强度的其余几级。

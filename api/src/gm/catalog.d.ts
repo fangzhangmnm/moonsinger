@@ -282,8 +282,8 @@ export declare function conceptOfIds(cat: Catalog, ids: {
 } | undefined): Concept | undefined;
 /** 乐器页「八度」那一行说的话（v0.9.32；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：没有可说的 = null。clefLabel = 谱号的中文名（「高音 15ma」）。 */
 export declare function octaveDisclosure(nt: Concept["notation"] | undefined, oc: OctaveCheck | null, clefLabel: (c: string) => string): string | null;
-/** GS 在家族音源库里的 id（sampleKey 只对它成立）。 */
-export declare const GS_LIBRARY_ID = "generaluser-gs-2.0.3";
+/** GS 在家族音源库里的 id（sampleKey 只对它成立）。常数住在 library-ids.ts（读文件的门口也要用，不拖进这里的取数），这里照旧导出。 */
+export { GS_LIBRARY_ID } from "./library-ids.ts";
 /** 谱上写的角色名：目录里的英文名首字母大写（打谱惯例；Vocals / Piano 同款）。 */
 /** 谱上写的名字 = 目录的谱上名（v15）；老目录没有 = 百科英文名去掉括号、首字母大写（原来整个百科名上谱：「Western concert flute」「Solid-body electric guitar (Fender Stratocaster)」）。 */
 export declare const roleNameOf: (c: Concept) => string;

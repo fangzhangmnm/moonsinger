@@ -2,7 +2,7 @@
 // 不守「vendor = 源仓」：和图标库一样，vendor 是拷来的快照，源仓改了这边想要时跑 node scripts/gen-instruments.mjs 取货（user「和svg一样是拷贝snapshot过来而不是跨项目引用，以后我改那边就是这边取货就行」）。
 import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(p: string | URL): Uint8Array; existsSync(p: string): boolean };
-const g = (await import(new URL("../scripts/gen-instruments.mjs", import.meta.url).href)) as { render(): string | null; renderPerc(): string | null; renderDefaultConcept(): string | null; renderLabels(): string | null };
+const g = (await import(new URL("../scripts/gen-instruments.mjs", import.meta.url).href)) as { render(): string | null; renderPerc(): string | null; renderDefaultConcept(): string | null; renderLabels(): string | null; renderRing(): string | null };
 import { INSTRUMENT_FILES } from "../src/gm/instruments.gen.ts";
 import { loadCatalogFromJson, providersOf, gmKey, groupConcepts, jointOf, roleNameOf, SORT_LABEL, type Catalog, type SortMode } from "../src/gm/catalog.ts";
 import { partShow } from "../src/format/part-show.ts";
@@ -20,6 +20,10 @@ describe("挑乐器数据", () => {
   it("concept-labels.gen.ts（每个概念现行的谱上叫法 + 简写，12-4）是最新的", () => {
     const out = g.renderLabels(); if (out === null) return;
     eq(fs.readFileSync(new URL("../src/gm/concept-labels.gen.ts", import.meta.url)).toString() === out, true);
+  });
+  it("ring.gen.ts（踏板 11-3：概念上的 ring 栏 → 音色）是最新的", () => {
+    const out = g.renderRing(); if (out === null) return;
+    eq(fs.readFileSync(new URL("../src/gm/ring.gen.ts", import.meta.url)).toString() === out, true);
   });
   it("percussion.gen.ts（鼓谱表，v13 起）是最新的", () => {
     const out = g.renderPerc(); if (out === null) return;

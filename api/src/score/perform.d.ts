@@ -41,7 +41,8 @@ export interface VelSpec extends PerfCommon {
     stressVel: number;
     unstressVel: number;
     ghostVel: number; /** 弱音踏板踩着期间起的音加多少力度（MIDI 格，负 = 轻；踏板 11-2）。 */
-    softVel: number;
+    softVel: number; /** 没写踏板记号时留不留住音：每一段开头延音踏板的状态（踏板 11-3）。 */
+    pedal: "down" | "up";
 }
 export type PerfSpec = GainSpec | VelSpec;
 /** 音量曲线的一段：t0–t1（秒，谱的时钟）这段多少 dB；-Infinity = 静音。 */

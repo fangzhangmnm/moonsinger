@@ -133,8 +133,8 @@ export function songLangOf(tokens: readonly Token[], hum: Hum): SingLang {
 /** 滚奏一下的力度（7-N）：perform.ts rollHitVelocity 给的那个函数。 */
 export type RollVel = ReturnType<typeof rollHitVelocity>;
 /** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。marks = 修的记号怎么落到这一路上（跳音截短、呼吸处收短一口气）；不给 = 照谱满长。 */
-export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: ReturnType<typeof lightMarks> & { /** 滚奏每秒几下（按敲的键 / 音高）；没给 = 这位不认滚奏，照一个长音放。 */ rollHz?: (midi: number) => number; }, velOf?: (index: number, art: readonly string[]) => number, rollVel?: RollVel): { midi: number; t0: number; t1: number; vel?: number }[] {
-  type N = { midi: number; t0: number; t1: number; vel?: number; roll?: true; segs?: { index: number; t0: number; t1: number }[] };   // segs = 滚奏音的每一段（连音线连过去的几段；7-N：每一下按落在哪一段取力度）
+export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: ReturnType<typeof lightMarks> & { /** 滚奏每秒几下（按敲的键 / 音高）；没给 = 这位不认滚奏，照一个长音放。 */ rollHz?: (midi: number) => number; }, velOf?: (index: number, art: readonly string[]) => number, rollVel?: RollVel): { midi: number; t0: number; t1: number; vel?: number; stacc?: true }[] {
+  type N = { midi: number; t0: number; t1: number; vel?: number; roll?: true; stacc?: true; segs?: { index: number; t0: number; t1: number }[] };   // stacc = 写了跳音（踏板 11-3 规矩六要；拼轨之前 holdByPedals 用完就拿掉）   // segs = 滚奏音的每一段（连音线连过去的几段；7-N：每一下按落在哪一段取力度）
   const notes: N[] = [];
   let open = new Map<number, N>();   // 上一个音正在响的各音高（连音线按音高接；力度跟第一段）
   for (const { index, tok, t0, t1 } of timeline(tokens, tempoMap)) {
@@ -148,16 +148,16 @@ export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, ma
     const rank = arp ? new Map([...ps].map((q) => midiOf(q)).sort((a, b) => a - b).map((m, k) => [m, k] as const)) : null;
     for (const p of ps) {
       const midi = midiOf(p), prev = tok.tie ? open.get(midi) : undefined;
-      if (prev) { prev.t1 = prev.roll ? t1 : marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1; prev.segs?.push({ index, t0, t1 }); nextOpen.set(midi, prev); continue; }
+      if (prev) { prev.t1 = prev.roll ? t1 : marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1; prev.segs?.push({ index, t0, t1 }); if ((tok.art ?? []).includes("staccato")) prev.stacc = true; else delete prev.stacc; nextOpen.set(midi, prev); continue; }   // 连过来的：跳音看最后那一段
       const roll = !!marks?.rollHz && (tok.art ?? []).includes("roll");   // 滚奏：整个音（连音线连过去的也算）敲满，见下面
-      const n = { midi, t0: rank ? t0 - (ps.length - 1 - (rank.get(midi) ?? 0)) * arp : t0, t1: roll ? t1 : marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1, ...(velOf ? { vel: velOf(index, tok.art ?? []) } : {}), ...(roll ? { roll: true as const, segs: [{ index, t0, t1 }] } : {}) }; notes.push(n); nextOpen.set(midi, n);
+      const n = { midi, t0: rank ? t0 - (ps.length - 1 - (rank.get(midi) ?? 0)) * arp : t0, t1: roll ? t1 : marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1, ...(velOf ? { vel: velOf(index, tok.art ?? []) } : {}), ...(roll ? { roll: true as const, segs: [{ index, t0, t1 }] } : {}), ...(!roll && (tok.art ?? []).includes("staccato") ? { stacc: true as const } : {}) }; notes.push(n); nextOpen.set(midi, n);
     }
     open = nextOpen;
   }
   // 滚奏（v0.16.64；user 11-07「标准滚奏记号 可以，但是要可以调整密度」）：这个音的整段切成一串等长的敲击，每秒 rollHz 下（演奏者的设置 / 乐器默认）。
   //   每一下的力度（7-N，user 11-12「这个滚奏完全没法用啊」）：按力度敲的演奏者 = rollVel 按这一下敲下去那一刻的力度水平算（渐强渐弱 / 渐到 / 音内起伏 / 强后即弱都在每一下的力度里，
   //   连音线连过去的几段各用各的；见 perform.ts rollHitVelocity）；按音量曲线走力度的 = 每一下 = 这个音的力度，渐强渐弱和音内起伏走音量曲线（gainSegments，按时间走）
-  const out: { midi: number; t0: number; t1: number; vel?: number }[] = [];
+  const out: { midi: number; t0: number; t1: number; vel?: number; stacc?: true }[] = [];
   for (const n of notes) {
     if (!n.roll || !marks?.rollHz) { const { segs: _s, roll: _r, ...rest } = n; out.push(rest); continue; }
     const hz = Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, marks.rollHz(n.midi))), len = n.t1 - n.t0, k = Math.max(1, Math.round(len * hz)), d = len / k, segs = n.segs ?? [];
@@ -226,8 +226,9 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const rollVel: RollVel | undefined = rollVel0 && soft ? (h) => { const v = rollVel0(h); return soft(h.t) ? softened(v, softVel) : v; } : rollVel0;
     const notes0 = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(sp), ...(rollHz ? { rollHz } : {}) }, velOf, rollVel);
     // 键按多久 = 谱上的延音 / 持音踏板 → 照写的时值
-    const sus = pk.includes("sustain") ? pedalSpans(tokens, map, bounds, "sustain") : [], sost = pk.includes("sostenuto") ? pedalSpans(tokens, map, bounds, "sostenuto") : [];
-    const notes = holdByPedals(notes0, sus, sost);
+    //   延音那一种每一段开头的状态 = 这位身上写的「没写踏板记号时留不留」（踏板 11-3，规矩一；按力度敲的才有这个键，出声的代码不带默认）
+    const sus = pk.includes("sustain") ? pedalSpans(tokens, map, bounds, "sustain", sp.path === "velocity" && sp.pedal === "down") : [], sost = pk.includes("sostenuto") ? pedalSpans(tokens, map, bounds, "sostenuto") : [];
+    const notes = holdByPedals(notes0, sus, sost).map(({ stacc: _s, ...n }) => n);   // stacc 只给规矩六用，不进轨
     // 快引擎：音符表 → 这位的轨，怎么拼归插件（元音版 / SoundFont 的键 / 着力点都在它自己那里；ADR-0004）
     const built = info.plugin.track?.({ id: part.id, notes, gain, ...(info.chain?.length ? { chain: info.chain } : {}), hum: info.hum, info });
     if (!built) { unplayable.push({ part: part.id, why: _t("「{label}」不会按音符表出声", { label: info.plugin.label }) }); continue; }

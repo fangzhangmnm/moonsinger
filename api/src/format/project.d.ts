@@ -1,4 +1,5 @@
 import { type Song } from "../score/song.ts";
+import { type RingFactory, type PedalDefault } from "../gm/ring.ts";
 import { FORMAT, type Dynamic, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";
 import { FINAL_MP3_ENTRY, type FinalRecord } from "./final.ts";
 export { FINAL_MP3_ENTRY, type FinalRecord };
@@ -288,6 +289,12 @@ export declare const GAP_MAX_SEC = 0.2;
 export declare function rollHzDefaultOf(extras: Extras, role: string): number;
 /** 改上场那位的滚奏密度（乐器页；每秒几下，ROLL_HZ_MIN … ROLL_HZ_MAX；null = 「默认」= 抄现行的出厂值，照样写成数，16-4 F）。没人上场 = 原样。v0.16.64 */
 export declare function withRollHz(extras: Extras, role: string, hz: number | null, hum: Hum): Extras;
+/** 一位 SoundFont 乐手的「出厂」留不留（踏板 11-3）：按它的音色问 src/gm/ring.ts（门口补、上场写、乐器页「默认」都是这一份）。 */
+export declare function ringFactoryOf(c: Json): RingFactory;
+/** 上场那位没写踏板记号时留不留住音（踏板 11-3）："down" / "up"；不是按力度敲的（不认踏板）/ 没人上场 = null。 */
+export declare function activePedalDefault(extras: Extras, role: string): PedalDefault | null;
+/** 改上场那位的「没写踏板记号时留不留」（乐器页两格；null = 「默认」= 照这件乐器出厂的，抄名单现在的值、照样写成具体的，同滚奏密度）。没人上场 = 原样。 */
+export declare function withPedalDefault(extras: Extras, role: string, v: PedalDefault | null, hum: Hum): Extras;
 /** 音内起伏多深能调到哪（dB；乐器页一档 3 dB；7-N，2026-11-12）。出厂值在 template.ts（6）。 */
 export declare const SWELL_DB_MIN = 3, SWELL_DB_MAX = 24;
 /** 改上场那位的音内起伏多深（articulation.swellDb，dB；字段本来就有、格式不动；null = 回到默认 6）。没人上场 = 原样。 */

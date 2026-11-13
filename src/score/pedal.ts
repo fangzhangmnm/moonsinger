@@ -5,14 +5,14 @@
 import { timeline, type Token, type TempoMap, type PedalKind } from "./song.ts";
 
 /** 一种踏板踩着的一段（秒）：踩下那一刻、抬起那一刻（纸尾还踩着 = 纸尾）、中间换踏板的时刻（从小到大）。 */
-export interface PedalSpan { down: number; up: number; changes: number[] }
+export interface PedalSpan { down: number; up: number; changes: number[]; /** 靠默认留住的那一截到哪一刻（踏板 11-3 规矩六）：这一段开头就踩着（乐手的默认 = 留住）、到谱上第一次写的换踏板 / 抬起为止。谱上写的踩下开的 = 没有。 */ auto?: number }
 /** 延音那一种（11-1 起的名字，留着）。 */
 export type SustainSpan = PedalSpan;
 
 /** 一段（压平后的整条声部，bounds = 每张纸从第几个 token 起）里这一种踏板踩着的几段。
  *  踏板记号挂在后面那个音 / 休止上（时刻 = 它的起点）；纸尾的（后面这张纸里没有音 / 休止了）= 纸尾那一刻。每张纸开头抬着（规矩一 / 七）。
  *  不起作用的（已经踩着又踩、没踩就抬）不改状态；没踩就「换踏板」= 踩下（换完本来就是踩着的）。三种踏板同一个读法（谱上的状态机和 song.ts pedalDownAt 一样）。 */
-export function pedalSpans(tokens: readonly Token[], tempoMap: TempoMap | undefined, bounds: readonly number[] = [0], which: PedalKind = "sustain"): PedalSpan[] {
+export function pedalSpans(tokens: readonly Token[], tempoMap: TempoMap | undefined, bounds: readonly number[] = [0], which: PedalKind = "sustain", startDown = false): PedalSpan[] {
   const tl = timeline(tokens as Token[], tempoMap), spans: PedalSpan[] = [];
   const starts = [...new Set([0, ...bounds])].sort((a, b) => a - b);
   for (let k = 0; k < starts.length; k++) {
@@ -21,13 +21,14 @@ export function pedalSpans(tokens: readonly Token[], tempoMap: TempoMap | undefi
     if (!timed.length) continue;
     const end = timed[timed.length - 1]!.t1;
     const at = (i: number): number => timed.find((x) => x.index > i)?.t0 ?? end;   // 挂在后面那个音 / 休止上；后面没有 = 纸尾
-    let cur: PedalSpan | null = null;
+    // 这一段开头的状态（规矩一）：startDown = 乐手默认留住音（踏板 11-3）= 一开头就踩着，靠默认留住的那一截到谱上第一次写的换踏板 / 抬起
+    let cur: PedalSpan | null = startDown ? { down: timed[0]!.t0, up: end, changes: [], auto: end } : null;
     for (let i = a; i < b; i++) {
       const t = tokens[i]!; if (t.kind !== "pedal" || t.which !== which) continue;
       const s = at(i);
       if (t.act === "down") { if (!cur) cur = { down: s, up: end, changes: [] }; }
-      else if (t.act === "up") { if (cur) { cur.up = s; spans.push(cur); cur = null; } }
-      else if (cur) { if (s > cur.down) cur.changes.push(s); } else cur = { down: s, up: end, changes: [] };
+      else if (t.act === "up") { if (cur) { cur.up = s; if (cur.auto !== undefined) cur.auto = Math.min(cur.auto, s); spans.push(cur); cur = null; } }
+      else if (cur) { if (s > cur.down) cur.changes.push(s); if (cur.auto !== undefined) cur.auto = Math.min(cur.auto, s); } else cur = { down: s, up: end, changes: [] };
     }
     if (cur) spans.push(cur);   // 纸尾还踩着 = 纸尾抬起
   }
@@ -48,14 +49,16 @@ export function holdBySustain<N extends { midi: number; t0: number; t1: number }
  *  二（延音）：从「写的结尾，或被持音留到的那一刻」算起，落在延音踩着的一段里（踩下之后、抬起之前）= 到下一个「换踏板 / 抬起」才松；那一刻键还按着的不受影响（接着被新的一脚兜住）。
  *  三：被踏板留着的音（写的结尾之后那一截），同一个音高又弹一次 = 旧的在那一刻松（照乐器自己的收尾收）。
  *  输入不改，回新的一串（先后不变）；被留长了的记下写的结尾 w1（追音用，规矩八）。 */
-export function holdByPedals<N extends { midi: number; t0: number; t1: number }>(notes: readonly N[], sustain: readonly PedalSpan[], sostenuto: readonly PedalSpan[]): HeldNote<N>[] {
+export function holdByPedals<N extends { midi: number; t0: number; t1: number; stacc?: true }>(notes: readonly N[], sustain: readonly PedalSpan[], sostenuto: readonly PedalSpan[]): HeldNote<N>[] {
   if (!sustain.length && !sostenuto.length) return notes.slice();
   const catches = sostenuto.flatMap((s) => { const pts = [s.down, ...s.changes, s.up]; return pts.slice(0, -1).map((d, k) => ({ down: d, up: pts[k + 1]! })); });
   const out: HeldNote<N>[] = notes.map((n) => {
     let e = n.t1;
     for (const c of catches) if (n.t0 <= c.down + 1e-9 && n.t1 > c.down + 1e-9 && c.up > e) e = c.up;   // 四：持音抓住了 = 留到它抬起
     const sp = sustain.find((s) => s.down < e - 1e-9 && e < s.up - 1e-9);
-    if (sp) e = Math.min(sp.up, ...sp.changes.filter((c) => c >= e - 1e-9));   // 二
+    // 六（踏板 11-3）：靠默认留住的那一截里，跳音照写的松（不写记号也有一个止音的办法）；谱上写了踩下之后照规范，跳音也被留住
+    const staccFree = !!sp && !!n.stacc && sp.auto !== undefined && n.t1 < sp.auto - 1e-9;
+    if (sp && !staccFree) e = Math.min(sp.up, ...sp.changes.filter((c) => c >= e - 1e-9));   // 二
     return e > n.t1 + 1e-9 ? { ...n, t1: e, w1: n.t1 } : n;
   });
   // 规矩三：同音高再弹 = 被留着的那个在那一刻松（只看被踏板留长的那一截：写的结尾之后）

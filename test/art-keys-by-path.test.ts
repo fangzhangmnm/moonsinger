@@ -38,7 +38,7 @@ const ALL_ART = [...new Set([...ART_KEYS_BY.gain, ...ART_KEYS_BY.velocity, "tenu
 /** 改一下值：开关取反；缝试大一点（缝的上限要缝比「这个音长度的几分之几」大才起作用）；数乘一下再挪一点。 */
 const bumped = (k: string, s: Record<string, any>): Record<string, any> => {
   if (k === "dynamicsDb" || k === "dynamicsVel") { const t = s[k] ?? TEMPLATE.lounge[k]; return { ...s, [k]: { ...t, mf: t.mf - 3 } }; }   // 另一路的表：这一路的规格里没有，补一张再改
-  const v = s[k], next = typeof v === "boolean" ? !v : k === "rollHz" ? 23 : k === "gapSec" ? 0.05 : typeof v === "number" ? (v === 0 ? 0.07 : v * 0.73 + (v < 1 ? 0.01 : 1)) : 0.3;
+  const v = s[k], next = typeof v === "boolean" ? !v : k === "pedal" ? (v === "down" ? "up" : "down") : k === "rollHz" ? 23 : k === "gapSec" ? 0.05 : typeof v === "number" ? (v === 0 ? 0.07 : v * 0.73 + (v < 1 ? 0.01 : 1)) : 0.3;
   return { ...s, [k]: next };
 };
 const reads = (path: "gain" | "velocity", k: string): boolean => ENGINES[path].some((e) => [false, true].some((full) => {

@@ -36,6 +36,8 @@ export interface OrnCtx {
     rowLow: (s: number) => number;
     /** 台上这位不认的记号（PartView.ignores：演奏法的名字 + 踏板「pedal:sustain」…）：画灰。 */
     ignores: readonly string[];
+    /** 这位没写踏板记号时留住音（PartView.pedalHeld，踏板 11-3）：每一段（这张纸）开头延音踏板就踩着。 */
+    pedalHeld?: boolean;
     /** 第 s 行的线画到哪（px；五线 / 数字行的行尾，最后一根小节线）；contentEnd = 这一行内容的右缘（所有声部的列里最右那一列，不过行尾）。踏板的线用。 */
     rowEnd: (s: number) => number;
     contentEnd: (s: number) => number;

@@ -82,6 +82,32 @@ describe("踏板 · 键按多久（规矩一、二、三、七）", () => {
     const vs = notesOf(two([ped("down", "soft"), n("C"), ped("up", "soft"), n("D")], []), "vowel-sampler"), vp = notesOf(two([n("C"), n("D")], []), "vowel-sampler");
     eq(JSON.stringify(vs), JSON.stringify(vp), "元音版不认踏板 = 照写的");
   });
+  // 11-3（2026-11-13）：这位身上写的「没写踏板记号时留不留」= 每一段开头延音踏板的状态（规矩一）；靠默认留住的那一截里跳音照写的松（规矩六）
+  const notesDef = (sg: { song: Song; parts: PartDef[] }, pedal: "down" | "up") => {
+    const t = buildTimeline({ song: sg.song, order: sg.song.papers.map((p) => p.id), parts: sg.parts, info: () => ({ ...info("soundfont"), spec: velSpec({ pedal }) }), singOpt: { leadIn: LEAD_IN } });
+    return (t.tracks[0] as { notes: { t0: number; t1: number; w1?: number }[] }).notes;
+  };
+  const stacc = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B"): Token => ({ ...(n(step) as Extract<Token, { kind: "note" }>), art: ["staccato"] }) as Token;
+  it("默认留住：每一段一开头就踩着——没写记号的音留到抬起 / 纸尾；写了抬起之后照写；下一段开头回到默认；默认不留 = 照写", () => {
+    const sg = two([n("C"), n("D"), ped("up"), n("E"), n("F")], [n("G"), n("A")]);
+    const ns = notesDef(sg, "down"), up = notesDef(sg, "up");
+    assert(near(ns[0]!.t1, 2 * Q), `C 留到第 2 拍的抬起，实得 ${ns[0]!.t1 / Q} 拍`);
+    assert(near(ns[2]!.t1, 3 * Q) && near(ns[3]!.t1, 4 * Q), "抬起之后的 E、F 照写的");
+    assert(near(ns[4]!.t1, ns[5]!.t1) && ns[4]!.t1 > ns[4]!.t0 + Q + 1e-6, `第二张纸开头回到默认：G 留到纸尾（${ns[4]!.t1 / Q} 拍）`);
+    eq(up.map((x) => (x.t1 / Q).toFixed(3)).join(","), "1.000,2.000,3.000,4.000,5.000,6.000", "默认不留 = 照写的时值");
+  });
+  it("默认留住时又写踩下 = 不起作用（出声和没写一样）；换踏板 = 那一刻留着的全松、接着踩着", () => {
+    const a = notesDef(two([ped("down"), n("C"), n("D"), n("E")], []), "down"), b = notesDef(two([n("C"), n("D"), n("E")], []), "down");
+    eq(JSON.stringify(a), JSON.stringify(b), "踩着又踩 = 一样");
+    const c = notesDef(two([n("C"), ped("change"), n("D"), n("E")], []), "down");
+    assert(near(c[0]!.t1, Q) && c[1]!.t1 > 2 * Q + 1e-6, `换踏板：C 在第 1 拍松、D 接着被留住（C ${c[0]!.t1 / Q}、D ${c[1]!.t1 / Q}）`);
+  });
+  it("规矩六：靠默认留住的那一截里跳音照写的松；谱上写了踩下之后照规范，跳音也被留住", () => {
+    const ns = notesDef(two([stacc("C"), n("D"), ped("up"), n("E"), ped("down"), stacc("F"), n("G")], []), "down");
+    assert(ns[0]!.t1 < Q - 1e-6, `默认留住那一截里的跳音 C 照写的（${ns[0]!.t1 / Q} 拍）`);
+    assert(near(ns[1]!.t1, 2 * Q), "D 被默认留到抬起（第 2 拍）");
+    assert(ns[3]!.t1 > 4 * Q + 1e-6, `谱上写的踩下之后，跳音 F 也被留住（${ns[3]!.t1 / Q} 拍）`);
+  });
   it("反复跳回去：补上跳到的那一刻的踏板状态（第一遍结尾踩着的不带进第二遍）", () => {
     const bar = (repeat: "start" | "end"): Token => ({ kind: "bar", id: nid++, repeat }) as Token;
     const ns = notesOf(two([bar("start"), ped("down"), n("C"), n("D"), bar("end")], []), "soundfont");
@@ -237,6 +263,20 @@ describe("踏板 · 各自写明意思（删 / 挪 / 复制一个，别的不变
     sameOthers(s, pasted, -1, "粘贴");
     const tail = tr(pasted).slice(toks.length).filter((t): t is PedalTok => t.kind === "pedal").map((t) => t.act).join(" ");
     eq(tail, clip.filter((t): t is PedalTok => t.kind === "pedal").map((t) => t.act).join(" "), "贴进去的踏板记号和复制的一样（换踏板 / 踩下）");
+  });
+  // 踏板 11-3（统筹「默认留住音的那一截怎么画」97ad2367）：这一截不画；起作用但没有线可收的记号照实色画（抬起 = 钩 + 一小段线、换踏板 = 尖 + 两边各一小段）；又写的踩下画灰；抬起之后写的踩下照常
+  it("这位默认留住音时的画法：又写的踩下 = 灰；换踏板 / 抬起 = 实色、没有名字；抬起之后写的踩下照常画名字；默认不留的同一段照常", () => {
+    const s = st0([n("C"), ped("down"), n("D"), ped("change"), n("E"), ped("up"), n("F"), ped("down"), n("G"), n("A")]);
+    const [dRed, chg, up, d2] = tr(s).filter((t) => t.kind === "pedal").map((t) => t.id);
+    const base = editorBase(s.song, ["P"]) as unknown as { parts: Record<string, unknown>[] }, held = { ...base, parts: base.parts.map((v) => ({ ...v, pedalHeld: true })) };
+    const L = engrave(s.song, held as never), inkOf = (id: number) => L.prims.filter((p) => p.tok === id);
+    const mute = (p: { cls?: string }) => /(^|\s)art-mute(\s|$)/.test(p.cls ?? ""), named = (p: { t: string }) => p.t === "glyph" || p.t === "text";
+    assert(inkOf(dRed!).length > 0 && inkOf(dRed!).every(mute), "默认留住时又写的踩下：灰");
+    assert(inkOf(chg!).length > 0 && !inkOf(chg!).some(mute) && !inkOf(chg!).some(named), "换踏板：实色的尖（带两边一小段线），不画名字");
+    assert(inkOf(up!).length > 0 && !inkOf(up!).some(mute) && !inkOf(up!).some(named), "抬起：实色的钩（带一小段线）");
+    assert(inkOf(d2!).some(named) && !inkOf(d2!).some(mute), "抬起之后写的踩下：照常画名字");
+    const P = engrave(s.song, base as never), plain = (id: number) => P.prims.filter((p) => p.tok === id);
+    assert(plain(dRed!).some(named) && !plain(dRed!).some(mute), "默认不留：同一个踩下照常画名字（换人之后画法跟着变，数据不动）");
   });
   it("变的只有起不起作用：删掉踩下之后，后面那个抬起变成「没踩就抬」——出声照写的、谱上画灰", () => {
     const s = st0([ped("down"), n("C"), n("D"), ped("up"), n("E")]), up = tr(s)[3 + 3] as PedalTok;

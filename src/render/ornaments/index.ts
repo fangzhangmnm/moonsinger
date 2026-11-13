@@ -35,6 +35,8 @@ export interface OrnCtx {
   rowLow: (s: number) => number;
   /** 台上这位不认的记号（PartView.ignores：演奏法的名字 + 踏板「pedal:sustain」…）：画灰。 */
   ignores: readonly string[];
+  /** 这位没写踏板记号时留住音（PartView.pedalHeld，踏板 11-3）：每一段（这张纸）开头延音踏板就踩着。 */
+  pedalHeld?: boolean;
   /** 第 s 行的线画到哪（px；五线 / 数字行的行尾，最后一根小节线）；contentEnd = 这一行内容的右缘（所有声部的列里最右那一列，不过行尾）。踏板的线用。 */
   rowEnd: (s: number) => number; contentEnd: (s: number) => number;
   /** 这一行的右边界（sp）。 */
@@ -425,8 +427,28 @@ export function layPedals(c: OrnCtx): void {
       const d = down!; down = null;
       lineSpan(d.idx, d.sys, d.x + nmW + P(PEDAL.textGap), endSys, endX, notches, hookIdx);
     };
+    /** 靠默认踩着的那一截里起作用的记号（踏板 11-3，统筹「默认留住音的那一截怎么画」）：没有「Ped.」和线可收，照实色画、带一小段线，屏幕和印出来一样。
+     *  抬起 = 钩 + 左边一小段线；换踏板 = 尖 + 两边各一小段（形状同不起作用的「抬起」那个没有线的画法，这里是实色）。 */
+    const STUB = P(1.2);
+    const stub = (u: PedalU, p: { sys: number; x: number }, kind: "up" | "change") => {
+      const it = rowOf(p.sys), N = P(PEDAL.notch), H = P(PEDAL.hook), id = tokens[u.index]!.id;
+      if (kind === "up") {
+        const b = p.x - P(PEDAL.hookIn); it.taken.push([b - STUB, b + P(0.6)]);
+        it.main.push((y) => { prims.push({ tok: id, t: "path", d: `M${b - STUB},${y}L${b},${y}L${b},${y - H}`, cls }); dyns.push({ index: u.index, kind: "pedal", system: c.rowLow(p.sys), x: b - STUB, y: y - H - P(0.4), w: STUB + P(0.6), h: H + P(0.8) }); });
+      } else {
+        const x = p.x; it.taken.push([x - N - STUB, x + N + STUB]);
+        it.main.push((y) => { prims.push({ tok: id, t: "path", d: `M${x - N - STUB},${y}L${x - N},${y}L${x},${y - H}L${x + N},${y}L${x + N + STUB},${y}`, cls }); dyns.push({ index: u.index, kind: "pedal", system: c.rowLow(p.sys), x: x - N - P(0.3), y: y - H - P(0.4), w: 2 * N + P(0.6), h: H + P(0.8) }); });
+      }
+    };
+    // 这一段开头靠默认踩着（这位没写踏板记号时留住音，踏板 11-3）：这一截不画；到谱上第一次写的抬起为止
+    let dflt = which === "sustain" && !!c.pedalHeld;
     for (const u of mine) {
       const p = at(u);
+      if (dflt) {
+        if (u.act === "down") { grey(u, p, nm); continue; }   // 默认留住时又写踩下：不起作用（画灰）
+        if (u.act === "change") { stub(u, p, "change"); continue; }
+        stub(u, p, "up"); dflt = false; continue;   // 抬起：从这里起照谱上写的
+      }
       if (u.act === "down" || (u.act === "change" && !down)) {
         if (down) { grey(u, p, nm); continue; }   // 已经踩着又踩：不起作用
         const it = rowOf(p.sys), id = tokens[u.index]!.id;

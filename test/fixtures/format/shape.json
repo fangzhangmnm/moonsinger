@@ -192,6 +192,7 @@
             "ghostVel": "number",
             "marcatoDb": "number",
             "marcatoVel": "number",
+            "pedal": "string",
             "rollHz": "number",
             "sfzDb": "number",
             "sfzSec": "number",

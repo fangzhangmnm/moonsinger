@@ -16,6 +16,7 @@ import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/ffla
 import { NEW_SONG_HEAD, swellOf, withArt, SWELL_ART, type Swell, type Song, type GrooveData, type SongLookKey, NEW_SONG_LOOK, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, type PartLook, CLEFS, flattenPart, familyOrder, headClefOf, withLooks, headLen } from "../score/song.ts";
 import { resolveSongLooks, displayStates, withAutoOttava, type ResolvedLook } from "../score/clef.ts";
 import { percKindOf, hitSecByKeyOf } from "../gm/percussion.ts";
+import { ringFactory, type RingFactory, type PedalDefault } from "../gm/ring.ts";
 import { songPlayOrder } from "../score/arrange.ts";
 import { sungLangsOf } from "../engine/timeline.ts";
 import { FX_KINDS } from "../engine/fx.ts";
@@ -107,6 +108,9 @@ function completeCandidate(c0: Json): Json {
     // 着力点（16-4 E）：鼓 / 固定敲一件的没写（或缺几个键）= 按目录补；有音高的不补（写了的原样留着，出声照写的读）
     const i = c.instrument as Json, want = hitSecByKeyOf({ bank: Number(i.bank), program: Number(i.program), ...(typeof i.note === "number" ? { note: i.note } : {}) });
     if (want) c.instrument = { ...i, hitSecByKey: table(i.hitSecByKey, want) };
+    // 没写踏板记号时留不留（踏板 11-3）：没写 / 读不懂 = 照现在的名单补（src/gm/ring.ts；名单里没有的、自己的音源文件 = up）
+    const a = c.articulation as Json;
+    if (a && typeof a === "object" && a.pedal !== "down" && a.pedal !== "up") c.articulation = { ...a, pedal: ringFactoryOf(c).pedal };
   }
   return c;
 }
@@ -184,7 +188,7 @@ const CAND_KEYS = new Set(["id", "name", "castAs", "asCast", "instrument", "gm",
 const ART_BOTH = ["staccatoGate", "gapSec", "gapShare", "breathSec", "breathShare", "fpSec", "swellDb", "canSwell", "arpeggioSec", "rollHz"];
 export const ART_KEYS_BY = {
   gain: new Set([...ART_BOTH, "accentDb", "marcatoDb", "accentSec", "sfzDb", "sfzSec", "stressDb", "unstressDb", "ghostDb"]),
-  velocity: new Set([...ART_BOTH, "accentVel", "marcatoVel", "wedgeStepVel", "sfzVel", "stressVel", "unstressVel", "ghostVel", "softVel"]),
+  velocity: new Set([...ART_BOTH, "accentVel", "marcatoVel", "wedgeStepVel", "sfzVel", "stressVel", "unstressVel", "ghostVel", "softVel", "pedal"]),
 } as const;
 /** 力度那张表按路分（16-4，统筹 2026-11-12 夜）：按音量走的 = dynamicsDb；按力度敲的 = dynamicsVel + articulation.wedgeStepVel。另一路的（老文件里 SoundFont 身上的 dynamicsDb / wedgeStepDb、
  *  小月相身上的 dynamicsVel / wedgeStepVel）在这一版格式里没有定义 = 存的时候不写。 */
@@ -687,6 +691,7 @@ export function withSf2Candidate(extras: Extras, role: string, c: Sf2CandidateAr
   const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), ...(c.sfx ? { sfx: { ...c.sfx } } : {}), ...(hit ? { hitSecByKey: hit } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
   const T = templateCandidate("soundfont"), art: Json = { ...(T.articulation as Json), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)), ...(c.canSwell === false ? { canSwell: false } : {}) };   // 缝 / 能不能音内渐强 = 调用方从目录那一行按值给
   if (c.bank === 128 || c.note !== undefined) art.rollHz = TEMPLATE.lounge.rollHz.drum;   // 鼓（整套 / 固定敲一件）：滚奏的出厂密度是鼓那一档
+  art.pedal = ringFactory({ library: c.origin.library ?? null, bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}) }).pedal;   // 没写踏板记号时留不留（踏板 11-3）：照目录的短名单写成具体的
   list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, calibrationDb: c.calibrationDb, chain: [], dynamicsVel: T.dynamicsVel, articulation: art, defaults: T.defaults, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC), transpose: T.transpose });
   r.candidates = list; r.active = id;
   return { ...extras, lounge: { ...extras.lounge, [role]: r }, sounds: path ? { ...extras.sounds, [path]: c.subset } : extras.sounds };
@@ -774,7 +779,7 @@ export function activePerfSpec(extras: Extras, role: string): PerfSpec | null {
     sfzDb: a.sfzDb, sfzSec: Math.max(0.01, a.sfzSec), stressDb: a.stressDb, unstressDb: a.unstressDb, ghostDb: a.ghostDb };
   const dv = (c.dynamicsVel ?? {}) as Record<Dynamic, number>;
   return { path, ...common, dynamicsVel: Object.fromEntries(DYN_KEYS.map((d) => [d, clamp(dv[d], 1, 127)])) as Record<Dynamic, number>, accentVel: a.accentVel, marcatoVel: a.marcatoVel,
-    wedgeStepVel: a.wedgeStepVel, sfzVel: a.sfzVel, stressVel: a.stressVel, unstressVel: a.unstressVel, ghostVel: a.ghostVel, softVel: a.softVel };
+    wedgeStepVel: a.wedgeStepVel, sfzVel: a.sfzVel, stressVel: a.stressVel, unstressVel: a.unstressVel, ghostVel: a.ghostVel, softVel: a.softVel, pedal: (a as unknown as Json).pedal as "down" | "up" };
 }
 const DYN_KEYS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const;
 /** 送进录音房之前的那一处查（统筹 2026-11-12 夜第 5 条；core/render.ts performerInfoOf 叫它）：这位的数缺了哪些 / 不是数的有哪些（空 = 没毛病）。缺 = 明着报错，不在音频线程里抛。 */
@@ -783,6 +788,7 @@ export function perfSpecProblems(sp: PerfSpec, velocity: number): string[] {
   for (const [k, v] of Object.entries(sp)) {
     if (k === "path" || k === "sing") continue;
     if (k === "canSwell") { if (typeof v !== "boolean") bad.push(k); continue; }
+    if (k === "pedal") { if (v !== "down" && v !== "up") bad.push(k); continue; }   // 没写踏板记号时留不留（踏板 11-3）：只有两个值
     if (k === "dynamicsDb" || k === "dynamicsVel") { for (const d of DYN_KEYS) if (!Number.isFinite((v as Record<string, number>)?.[d])) bad.push(`${k}.${d}`); continue; }
     if (!Number.isFinite(v as number)) bad.push(k);
   }
@@ -798,6 +804,22 @@ export function withRollHz(extras: Extras, role: string, hz: number | null, hum:
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
   const v = hz === null ? (isDrumCand(c) ? TEMPLATE.lounge.rollHz.drum : TEMPLATE.lounge.rollHz.pitched) : Math.round(Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, hz)));
   c.articulation = { ...((c.articulation ?? {}) as Json), rollHz: v };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
+/** 一位 SoundFont 乐手的「出厂」留不留（踏板 11-3）：按它的音色问 src/gm/ring.ts（门口补、上场写、乐器页「默认」都是这一份）。 */
+export function ringFactoryOf(c: Json): RingFactory {
+  const i = (c.instrument ?? {}) as Json, lib = ((((i.source as Json | undefined)?.origin as Json | undefined)?.library) as string | undefined) ?? null;
+  return ringFactory({ library: lib, bank: Number(i.bank), program: Number(i.program), ...(typeof i.note === "number" ? { note: i.note } : {}) });
+}
+/** 上场那位没写踏板记号时留不留住音（踏板 11-3）："down" / "up"；不是按力度敲的（不认踏板）/ 没人上场 = null。 */
+export function activePedalDefault(extras: Extras, role: string): PedalDefault | null {
+  const c = activeCandidate(extras, role); if (!c || dynPathOf(c) !== "velocity") return null;
+  const v = (c.articulation as Json | undefined)?.pedal; return v === "down" || v === "up" ? v : null;
+}
+/** 改上场那位的「没写踏板记号时留不留」（乐器页两格；null = 「默认」= 照这件乐器出厂的，抄名单现在的值、照样写成具体的，同滚奏密度）。没人上场 = 原样。 */
+export function withPedalDefault(extras: Extras, role: string, v: PedalDefault | null, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
+  c.articulation = { ...((c.articulation ?? {}) as Json), pedal: v ?? ringFactoryOf(c).pedal };
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
 /** 音内起伏多深能调到哪（dB；乐器页一档 3 dB；7-N，2026-11-12）。出厂值在 template.ts（6）。 */

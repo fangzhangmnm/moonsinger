@@ -1,8 +1,8 @@
 // soundfont.ts —— 演奏者插件：SoundFont 2 的一个预设（TinySoundFont 在录音房里实时合成；库 = 歌里嵌的 / 弱引用解析出的子集）。created 2026-10-14 by Claude Fable 5.1（ADR-0004）
 //   能叠音；不唱字；鼓 / 音效的着力点（hitSec）和谱上的画法（× 符头 / 鼓谱）在这里（原 main.ts hitOf / partViews）；每个音敲哪个键 = src/gm/sf-key.ts（固定原速 / 音高对齐 / 修八度）。
-import { _t } from "../i18n/index.ts";
+import { _t, lang } from "../i18n/index.ts";
 import { registerPerformer, type InspectorRow } from "./registry.ts";
-import { activeGm, activeVelocity, activeTranspose, activePerfSpec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, withActiveKeys, candPath, type GmCandidate } from "../format/project.ts";
+import { activeGm, activeVelocity, activeTranspose, activePerfSpec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, withActiveKeys, candPath, activePedalDefault, withPedalDefault, type GmCandidate } from "../format/project.ts";
 import { TEMPLATE, CALIBRATION_DEFAULT_DB, templateCandidate } from "../format/template.ts";   // 乐器页的「默认」和新上场的响度问模板（这里只有乐器页那一半和新建可以问，统筹 2026-11-12 夜第 3 条）
 import { velLayersOf, octaveCheckOf, conceptOfIds, octaveDisclosure, castArgsOf, GS_LIBRARY_ID } from "../gm/catalog.ts";
 import { sf2VelocityDepths, sf2HalfVelocityDb } from "../gm/sf2-subset.ts";
@@ -10,6 +10,7 @@ import { canAlign } from "../gm/sf-key.ts";
 import { CLEF_LABEL } from "../score/clef.ts";
 import type { ClefName } from "../score/song.ts";
 import { percKindOf, hitSecByKeyOf } from "../gm/percussion.ts";
+import { ringFactory } from "../gm/ring.ts";
 import { sfKey } from "../gm/sf-key.ts";
 import type { NoteEv } from "../engine/studio.ts";
 
@@ -53,7 +54,7 @@ export const soundfont = registerPerformer({
     if (args && i.sfx) { if (args.sfx) { inst.note = args.note; inst.sfx = { ...args.sfx }; } else { delete inst.note; delete inst.sfx; } }
     const hit = hitSecByKeyOf({ bank, program, ...(note !== undefined ? { note } : {}) }); if (hit) inst.hitSecByKey = hit; else delete inst.hitSecByKey;
     const art = { ...(t.articulation as Json), rollHz: bank === 128 || inst.note !== undefined ? TEMPLATE.lounge.rollHz.drum : TEMPLATE.lounge.rollHz.pitched,
-      gapSec: args?.gapSec ?? 0, canSwell: args?.canSwell ?? true };
+      gapSec: args?.gapSec ?? 0, canSwell: args?.canSwell ?? true, pedal: ringFactory({ library: lib, bank, program, ...(note !== undefined ? { note } : {}) }).pedal };   // 踏板 11-3：出厂 = 目录的短名单（烤进源码，不等目录载）
     return { cand: { ...t, instrument: inst, articulation: art, calibrationDb: calFor(lib) }, pending: gs && !catalog ? ["articulation.gapSec", "articulation.canSwell", "instrument.note", "instrument.sfx"] : [] };
   },
   defaultRows: [
@@ -64,6 +65,8 @@ export const soundfont = registerPerformer({
       reset: (extras, role, def, hum) => withSfxFixed(withActiveKeys(extras, role, def, ["instrument.note", "instrument.sfx"], hum), role, candPath(def, "instrument.note") !== undefined, hum) },
     { id: "tr", label: () => _t("修八度"), keys: ["transpose"], when: (_p, c) => candPath(c, "instrument.note") === undefined },
     { id: "hit", label: () => _t("着力点"), keys: ["instrument.hitSecByKey"], when: (_p, c) => candPath(c, "instrument.bank") === 128 || typeof candPath(c, "instrument.note") === "number" },
+    // 没写踏板记号时留不留（踏板 11-3）：「默认」钮 = 照这件乐器出厂的（castNow 里那一份 = 目录的短名单）
+    { id: "pedal", label: () => _t("没写踏板记号时"), keys: ["articulation.pedal"] },
   ],
   info: ({ extras, role, presetIndex, velCurve }) => {
     const g = activeGm(extras, role), c = g ? velCurve(g.subsetSha256, g.bank, g.program) : null, tr = activeTranspose(extras, role);
@@ -133,6 +136,18 @@ export const soundfont = registerPerformer({
       const text = octaveDisclosure(cpt?.notation, oc, (c) => CLEF_LABEL[c as ClefName] ?? c);
       if (text) rows.push({ label: _t("八度"), control: "", note: esc(text) });
     }
+    // 没写踏板记号时留不留住音（踏板 11-3；统筹「11-3 的数据定了」）：两格 + 乐器页统一的「默认」钮（= 照这件乐器出厂的）+ 一句出厂是哪一边、依据是什么（对每件乐器都说得出）
+    { const cur = activePedalDefault(extras, role);
+      if (active && cur) {
+        const f = ringFactory({ library: active.origin.library ?? null, bank: active.bank, program: active.program, ...(active.note !== undefined ? { note: active.note } : {}) });
+        const side = f.pedal === "down" ? _t("留住音") : _t("不留");
+        const why = f.reason === "free" ? (lang() === "zh" ? f.why!.zh : f.why!.en) : f.reason === "own" ? _t("自己的音源文件，目录不认识它") : _t("目录里没有标成自己一直响");
+        rows.push({ id: "pedal", value: cur === "down" ? _t("留住音") : _t("不留"), label: _t("没写踏板记号时"),
+          control: chip("pedal:down", _t("留住音"), cur === "down", _t("每一段开头延音踏板就踩着：写的结尾到了也不停，响到同一个音再弹、写了抬起或这一段结束；靠这个留住的音里，跳音照写的松")) +
+            chip("pedal:up", _t("不留"), cur === "up", _t("每一段开头延音踏板抬着：照写的时值停（乐器自己的收尾照样有）")),
+          note: esc(_t("出厂：{side}——{why}", { side, why })) });
+      }
+    }
     return rows;
   },
   onInspector: (v, { extras, role, hum, roleLabel }) => {
@@ -140,6 +155,7 @@ export const soundfont = registerPerformer({
     if (v === "sfx:fixed") { const on = g?.note === undefined; return { extras: withSfxFixed(extras, role, on, hum), label: `「${rn}」${on ? _t("固定原速") : _t("不固定原速（按写的音变调）")}`, silence: true }; }
     if (v === "sfx:align") { const on = !g?.sfx?.align; return { extras: withSfxAlign(extras, role, on, hum), label: _t("「{rn}」音高对齐{on}", { rn, on: on ? _t("开") : _t("关") }), silence: true }; }
     if (v.startsWith("tr:")) { const d = Number(v.slice(3)), next = d === 0 ? 0 : activeTranspose(extras, role) + d; return { extras: withTranspose(extras, role, next, hum), label: _t("「{rn}」修八度 / 移调 {next} 半音", { rn, next }), gesture: "transpose", silence: true }; }
+    if (v === "pedal:down" || v === "pedal:up") { const p = v.slice(6) as "down" | "up"; return { extras: withPedalDefault(extras, role, p, hum), label: _t("「{rn}」没写踏板记号时：{p}", { rn, p: p === "down" ? _t("留住音") : _t("不留") }), silence: true }; }
     if (v.startsWith("vel:")) { const next = activeVelocity(extras, role) + Number(v.slice(4)) / 127; return { extras: withVelocity(extras, role, next, hum), label: _t("「{rn}」力度 {p}", { rn, p: Math.max(1, Math.min(127, Math.round(next * 127))) }), gesture: "vel" }; }
     return null;
   },

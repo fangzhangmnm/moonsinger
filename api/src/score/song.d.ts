@@ -499,16 +499,16 @@ export declare function markAnchor(st: EditorState): number;
 export declare function setDynSel(st: EditorState, value: Dyn | null, ramp?: boolean): EditorState;
 /** 踏板（11-1）：第 at 个 token 之前这一种踏板踩着没有——从这条轨这张纸的开头照记号数（不起作用的不改状态；换踏板 = 踩着）。
  *  默认 = 抬着（乐手的默认 = 11-3，到时候从这里接）。和出声同一个读法（score/pedal.ts sustainSpans）。 */
-export declare function pedalDownAt(toks: readonly Token[], at: number, which: PedalKind): boolean;
+export declare function pedalDownAt(toks: readonly Token[], at: number, which: PedalKind, startDown?: boolean): boolean;
 /** 光标处（markAnchor 那个音）这一种踏板：那个音前面踩着没有（down，不算挂在它身上的那个）+ 它身上已经挂着的这一种的记号（mark）。符号层「踏板」小菜单的字跟着它。 */
-export declare function pedalHere(st: EditorState, which: PedalKind): {
+export declare function pedalHere(st: EditorState, which: PedalKind, startDown?: boolean): {
     down: boolean;
     mark: PedalTok | null;
 } | null;
 /** 符号层「踏板」（11-1，设计稿第 6 节）：踏板记号挂在 markAnchor 那个音上（同力度：写完一个音按 = 从这个音起）。
  *  那个音上已经有同一种踏板的记号：同一个动作 = 去掉（再按一下撤回），别的动作 = 改成这个。有选区 = 「把这一段踩住」：选区第一个音前面踩下、选区后面抬起（act 不看）。
  *  回 idle = 写上的那个不起作用（这里本来就踩着又踩 = "already"；本来没踩又抬 = "notDown"）：照写、画灰，调用方说一句为什么。 */
-export declare function insertPedal(st: EditorState, which: PedalKind, act: PedalTok["act"]): {
+export declare function insertPedal(st: EditorState, which: PedalKind, act: PedalTok["act"], startDown?: boolean): {
     st: EditorState;
     did: "added" | "changed" | "removed" | "span" | "none";
     idle?: "already" | "notDown";

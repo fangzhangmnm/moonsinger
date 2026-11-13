@@ -56,7 +56,7 @@ import { linkParam, withoutLinkParam, planLink, fetchLink, sniff, fileNameFor } 
 import { createModelSources, MODEL_SOURCE_DEFAULT } from "../sources/models.ts";
 import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
-import { withCastAs, candidateJson, activeCalibrationDb, templateExtras, activeHum, withHum } from "../format/project.ts";
+import { withCastAs, candidateJson, activeCalibrationDb, templateExtras, activeHum, withHum, activePedalDefault } from "../format/project.ts";
 import type { CandidateV2, Sf2Source } from "../format/contract.ts";
 import { contentFingerprintOf, moveBus, saveMxl, openBytes, emptyExtras, roleSound, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, activePerfSpec, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
@@ -2472,7 +2472,9 @@ const NO_KEY_WHY = (): string => _t("打击乐的行没有调：写的音高 = �
 function partViews(): PartView[] {
   const labels = labelsNow(), mutes = lyricMutes(), tl = scoreTextLang(), looks = partLooks();   // 谱上的字用的语言（12-4）：名字 / 简写 / 鼓图例
   return D.st.song.parts.map((p, k) => {
-    const v = pv(p.id), badges = [v.muted ? _t("静音") : "", v.solo ? _t("独奏") : "", v.only ? _t("只看它") : "", issueParts.has(p.id) ? _t("不出声") : ""].filter(Boolean);   // 12-2（2026-11-12）：眼睛 / 喇叭搬进小卡以后，谱上靠名字下面的角标看得见这些状态（不印）   // 静 / 独 / 只 / 隐 现在是名字下面的四颗小钮（toggles，亮着 = 开），角标只剩「不出声」   // 不出声 = 清单里有它（§2.2½ 出口 ①）
+    // 踏板 11-3：这位没写踏板记号时留住音 = 名字下面一个「留住音」角标（统筹「默认留住音的那一截怎么画」：这一截谱上不画，披露放在这里；只在屏幕上、不印）
+    const held = activePedalDefault(D.extras, p.role) === "down" && !!performerOf(activeInstrument(D.extras, p.role)?.engine)?.pedals?.includes("sustain");
+    const v = pv(p.id), badges = [v.muted ? _t("静音") : "", v.solo ? _t("独奏") : "", v.only ? _t("只看它") : "", issueParts.has(p.id) ? _t("不出声") : "", held ? _t("留住音") : ""].filter(Boolean);   // 12-2（2026-11-12）：眼睛 / 喇叭搬进小卡以后，谱上靠名字下面的角标看得见这些状态（不印）   // 静 / 独 / 只 / 隐 现在是名字下面的四颗小钮（toggles，亮着 = 开），角标只剩「不出声」   // 不出声 = 清单里有它（§2.2½ 出口 ①）
     const eng = activeInstrument(D.extras, p.role)?.engine ?? "unknown", plug = performerOf(eng);
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
@@ -2480,7 +2482,7 @@ function partViews(): PartView[] {
     // 台上那位的音域（简谱的八度基准按它定；人声 = 插件自报，乐器 = 目录里角色那件乐器的；鼓 / 固定敲一个键的不要；目录没载 = 先没有，partLooks 载好了会重画）
     const nota = notationOfRole(p.role), rg = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p.role);
     const kitNames = nota.perc?.kind === "kit" ? kitNamesOf(p.id, tl) : undefined;   // 整套鼓：用到的鼓件 → 名字（按谱上的字用的语言；简谱的图例印）
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), ...(rg ? { range: { lo: rg.lo, hi: rg.hi } } : {}), ...(kitNames ? { kitNames } : {}), id: p.id, name: looks.names[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...nota, ignores: [...ignoredFor(p.role), ...pedalIgnoredFor(p.role)] };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
+    return { ...(held ? { pedalHeld: true } : {}), ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), ...(rg ? { range: { lo: rg.lo, hi: rg.hi } } : {}), ...(kitNames ? { kitNames } : {}), id: p.id, name: looks.names[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...nota, ignores: [...ignoredFor(p.role), ...pedalIgnoredFor(p.role)] };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -2932,11 +2934,13 @@ function pedalIgnoredWhy(which: PedalKind): string | null {
   const role = curPart().role, pl = performerOf(activeInstrument(D.extras, role)?.engine);
   return pl && !pl.pedals?.includes(which) ? _t("{who}不认{p}：写在谱上了（画灰），出声不受影响", { who: activeCandidateName(D.extras, role) || _t("台上这位"), p: PEDAL_NAME[which] }) : null;
 }
+/** 这一种踏板每一段开头是不是靠默认踩着（踏板 11-3）：只有延音那一种，看光标所在声部台上这位的「没写踏板记号时留不留」。菜单的字、不起作用的判断都算上它。 */
+const pedalStart = (which: PedalKind): boolean => which === "sustain" && activePedalDefault(D.extras, curPart().role) === "down";
 /** 写了一个踏板记号之后：不起作用的说为什么、台上这位不认的明说（照写、画灰）。 */
 function disclosePedal(which: PedalKind, idle: "already" | "notDown" | undefined): void {
   const why = pedalIgnoredWhy(which);
   if (why) { info(why); return; }
-  if (idle === "already") info(_t("这里本来就踩着：这个踩下不起作用（画灰）"));
+  if (idle === "already") info(pedalStart(which) ? _t("这位没写踏板记号时留住音，这里本来就踩着：这个踩下不起作用（画灰）") : _t("这里本来就踩着：这个踩下不起作用（画灰）"));
   else if (idle === "notDown") info(_t("这里本来没踩着：这个抬起不起作用（画灰）"));
 }
 /** 符号层「踏板」：三种踏板各一行（设计第 6 节；11-2 加了持音、弱音两行）。每一行的字跟着光标前那个音那儿这一种现在踩没踩（没踩 = 踩下；踩着 = 抬起 / 换踏板）；
@@ -2946,7 +2950,7 @@ function openPedalMenu(): void {
   if (!pedalHere(D.st, "sustain")) { info(_t("踏板记号挂在音上：这张纸上光标附近还没有音")); return; }
   const item = (v: string, label: string, on = false, title = "") => `<button class="btn ctx-item${on ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</button>`;
   const rows = KINDS.map((which) => {
-    const here = pedalHere(D.st, which)!, why = pedalIgnoredWhy(which);
+    const here = pedalHere(D.st, which, pedalStart(which))!, why = pedalIgnoredWhy(which);   // 字跟着光标处的状态（算上默认，设计第 6 节）
     const acts: PedalTok["act"][] = here.down ? PEDAL_ACTS[which].filter((a) => a !== "down") : ["down"];
     if (here.mark && !acts.includes(here.mark.act)) acts.unshift(here.mark.act);   // 那个音上已经挂着的（哪怕不起作用）也列出来、亮着，点了 = 去掉
     const body = D.st.sel
@@ -2959,7 +2963,7 @@ function openPedalMenu(): void {
     { x: r.left + r.width / 2, y: r.top - 4 },
     (v) => {
       const [which, kind, act] = v.split(":") as [PedalKind, string, PedalTok["act"] | undefined];
-      const res = insertPedal(D.st, which, kind === "span" ? "down" : act!);
+      const res = insertPedal(D.st, which, kind === "span" ? "down" : act!, pedalStart(which));
       if (res.did === "none") return;
       update(res.st);
       if (res.did !== "removed") disclosePedal(which, res.idle);
@@ -2968,8 +2972,8 @@ function openPedalMenu(): void {
 /** 点谱上的踏板记号：换成踩下 / 抬起 / 换踏板，或删掉；顶上说这是什么、不起作用的说为什么。 */
 function openPedalMarkMenu(i: number, at: { x: number; y: number }): void {
   const toks = tr(D.st), t = toks[i]; if (!t || t.kind !== "pedal") return;
-  const before = pedalDownAt(toks, i, t.which), why = pedalIgnoredWhy(t.which);
-  const idle = t.act === "down" && before ? _t("不起作用（画灰）：这里本来就踩着") : t.act === "up" && !before ? _t("不起作用（画灰）：这里本来没踩着") : t.act === "change" && !before ? _t("这里之前没踩着，换踏板 = 踩下") : "";
+  const before = pedalDownAt(toks, i, t.which, pedalStart(t.which)), why = pedalIgnoredWhy(t.which);
+  const idle = t.act === "down" && before ? (pedalStart(t.which) && !toks.slice(0, i).some((x) => x.kind === "pedal" && x.which === t.which) ? _t("不起作用（画灰）：这位没写踏板记号时留住音，这里本来就踩着") : _t("不起作用（画灰）：这里本来就踩着")) : t.act === "up" && !before ? _t("不起作用（画灰）：这里本来没踩着") : t.act === "change" && !before ? _t("这里之前没踩着，换踏板 = 踩下") : "";
   ctxMenu("pedal-menu",
     `<div class="ctx-hint ctx-what">${esc(PEDAL_NAME[t.which])}：${esc(SIGNS[`pedal:${t.which}`].says(lang()))}</div>` +
     (idle ? `<div class="ctx-hint">${esc(idle)}</div>` : "") + (why ? `<div class="ctx-hint">${esc(why)}</div>` : "") +
@@ -2979,7 +2983,7 @@ function openPedalMarkMenu(i: number, at: { x: number; y: number }): void {
       if (v === "del") { update(editMarkAt(D.st, i, null)); return; }
       const act = v.slice(4) as PedalTok["act"], nx = editMarkAt(D.st, i, { act }); if (nx === D.st) return;
       update(nx);
-      const now = pedalDownAt(tr(D.st), i, t.which);
+      const now = pedalDownAt(tr(D.st), i, t.which, pedalStart(t.which));
       disclosePedal(t.which, act === "down" && now ? "already" : act === "up" && !now ? "notDown" : undefined);
     });
 }
