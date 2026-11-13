@@ -75,7 +75,7 @@ describe("文档的唯一入口", () => {
   });
 });
 
-// ── 第 21 条补（v0.17.38，统筹 28858491）：「一笔没动」= 装入之后没有过任何一次真改了歌 / extras 的提交（宿主 main.ts untouchedBlank 只问它 + 有没有家）──
+// ── 第 21 条补（v0.17.38，统筹 28858491）：「一笔没动」= 装入之后没有过任何一次真改了歌 / extras 的提交（宿主 main.ts untouchedNewSong 只问它 + 新建出来的 + 有没有家）──
 describe("文档 · 一笔没动（touched）", () => {
   it("出生 / 装入 = 没动过；只挪光标不算；写一个音、改一项看法、改歌名、改 extras、撤销都算；再装入 = 回到没动过", () => {
     const { D, st0, ex0 } = make();
@@ -88,5 +88,14 @@ describe("文档 · 一笔没动（touched）", () => {
     D.load(st0, ex0); D.commit({ extras: withCalibration(D.extras, "r1", -3, "n") }); eq(D.touched(), true, "改 extras（混音台、乐手…）");
     D.load(st0, ex0); write(D); D.load(D.st, D.extras); eq(D.touched(), false); D.commit({ st: D.st }); eq(D.touched(), false, "没变的提交不算");
     D.load(st0, ex0); write(D); const D2 = D; D2.load(D.st, D.extras); eq(D2.touched(), false); write(D2); D2.undo(); eq(D2.touched(), true, "撤销也算");
+  });
+  // v0.17.39（统筹审 v0.17.38）：没有家的不只是新歌——iPad 上选的文件、别家的谱、有读不进来的东西的，打开了也没有家。改习惯只许重建「新建那条路建出来的」
+  it("走新建那条路建出来的（newSong）：出生 = 是；装入没点名 = 不是（打开文件、歌库、换回…都是）；点名 new = 是；动没动不影响它", () => {
+    const { D, st0, ex0 } = make();
+    eq(D.newSong(), true, "出生（开 app 那一首）");
+    D.load(st0, ex0); eq(D.newSong(), false, "装入没点名 = 打开的");
+    D.load(st0, ex0, "new"); eq(D.newSong(), true, "新建那条路点名");
+    write(D); eq(D.newSong(), true, "动过了还是新建出来的（动没动归 touched）");
+    D.load(st0, ex0); eq(D.newSong(), false, "再装入别的 = 清掉");
   });
 });

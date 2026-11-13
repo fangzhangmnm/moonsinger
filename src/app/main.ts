@@ -615,13 +615,15 @@ const bornSong = (s: Song): Song => stampLooks(s, habitCtx, lang(), "born");
 const songOfOpened = (o: { song: Song; ours: boolean }): Song => (o.ours ? o.song : bornSong(o.song));
 /** 改一样习惯（undefined = 没选）：记进设备 → 换一份 → 画的地方都跟着（谱面、键上的字、页面设置 / 设置开着的那页）。不写文件、不进撤销、不标脏。 */
 function setHabit<K extends HabitKey>(k: K, v: LookDefaults[K] | undefined): void { writeHabit(k, v); habitsChanged(); }
-/** 这首歌还没真正建出来：一笔没动（装入之后没有过任何一次提交，D.touched）、没有家（第 21 条补，统筹 28858491）。判断只此一处。 */
-const untouchedBlank = (): boolean => H.home.kind === "none" && !D.touched();
+/** 这首歌还没真正建出来 = 三样都成立（第 21 条补，统筹 28858491；判断只此一处）：
+ *  ① 走新建那条路建出来的（D.newSong：开 app 那一首、loadNewSong）——v0.17.39 补（统筹审 v0.17.38）：没有家的不只是新歌，iPad 上选的文件、别家的谱、有读不进来的东西的打开了也没有家，原来改习惯会把它们换成空白新歌；
+ *  ② 没有家（歌库里新建、等着安家的也算）；③ 一笔没动（装入之后没有过任何一次提交，D.touched）。 */
+const untouchedNewSong = (): boolean => D.newSong() && H.home.kind === "none" && !D.touched();
 /** 设备上的习惯写完之后的唯一出口（卡上的「好」、设置「界面」页那几行都走这里；以后从账号同步来的也走这里）：换一份习惯 → 开着的是还没真正建出来的空白歌 = 照新的习惯重建一遍
  *  （同新建那一条路；不进撤销、不标脏、不出提示）→ 画的地方都跟着。动过的、有家的歌不碰（第 21 条）。 */
 function habitsChanged(): void {
   habitCtx = { habits: habitsFrom(deviceKvGet) };
-  if (untouchedBlank()) { const h = H.home; loadNewSong(h.kind === "none" ? h.pendingFolder : null, { stem: H.stem }); diagNote("habits", "rebuilt the untouched blank song"); }
+  if (untouchedNewSong()) { const h = H.home; loadNewSong(h.kind === "none" ? h.pendingFolder : null, { stem: H.stem }); diagNote("habits", "rebuilt the untouched new song"); }
   afterHabits();
 }
 function writeHabit<K extends HabitKey>(k: K, v: LookDefaults[K] | undefined): void {
@@ -3296,16 +3298,16 @@ function putDownSong(): void { stopPlay({ prewarm: false }); sound.allOff(); }
  *  pendingFolder = 歌库里新建（首笔安家）；rebuild = 重建开着的那首空白歌：文件名不换、开着的面板不关（设置里改习惯时设置面板还开着）。 */
 function loadNewSong(pendingFolder: string | null, rebuild?: { stem: string }): void {
   const song = bornSong(initState().song);
-  loadDoc(song, { home: { kind: "none", pendingFolder }, stem: rebuild?.stem ?? defaultStem(), named: false, extras: templateExtras(song), ...(rebuild ? { keepPanels: true } : {}) });
+  loadDoc(song, { home: { kind: "none", pendingFolder }, stem: rebuild?.stem ?? defaultStem(), named: false, extras: templateExtras(song), isNew: true, ...(rebuild ? { keepPanels: true } : {}) });
 }
-function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array>; keepPanels?: boolean }): void {
+function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array>; keepPanels?: boolean; isNew?: boolean }): void {
   perfApi.mixBypass = false; busMuted.clear();   // 效果全关 / 混音轨静音是这次听的，换歌复位
   putDownSong();   // 打开另一首 / 新建 = 先放下手里的这一首（只有这一个收尾点）
   loadingDoc = true;   // 整份装入不归修改锁管；装入期间锁态的变化先不动界面（下面 applyWorkspace 一次摆好）
   try { loadDocInner(song, o); } finally { loadingDoc = false; }
   lock.refresh(); lockDoor.sync(); applyWorkspace();   // 这首歌的锁态（歌库里的 = 库说了算；硬盘文件 = 这一次打开默认锁着）
 }
-function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array>; keepPanels?: boolean }): void {
+function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array>; keepPanels?: boolean; isNew?: boolean }): void {
   if (impro) setImpro(false);
   foldTold.gone.clear(); foldTold.added.clear();   // 「改到 / 写上了没显示的记号」每次打开各说一次（7-G）
   if (!o.keepPanels) { ui.close(); closeInstPage(); }   // 重建空白歌（第 21 条）不关：人正在设置里改习惯
@@ -3313,7 +3315,7 @@ function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean;
   const st0 = initState(song);   // 开歌不补、不理顺（第 16 条：开文件时不顺手改；人改谱时每张纸开头补力度照旧，见 update()）
   startDynsMissing = ensureStartDyns(st0.song, st0.nextId).added.length; startDynsTold = false;   // 只数，不改
   encodedSnap = null;   // 换了一份文档：还在路上的那一轮保存取的快照是上一份的，不许落到这份头上（见 es 的 onSaved）
-  D.load(st0, o.extras);   // 换歌 / 云端覆盖重载 = 另一首的历史；基线 = 打开的样子
+  D.load(st0, o.extras, o.isNew ? "new" : undefined);   // 换歌 / 云端覆盖重载 = 另一首的历史；基线 = 打开的样子；isNew 只有 loadNewSong 给（别的装入 = 打开的，改习惯不碰）
   const d = o.view ? unserializeDesk(o.view) : freshDesk();
   applyDesk(d);
   // 打开 = 上次存时的模式；谱里已经有音 = 键盘先收着，点一下才开（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」「或者默认键盘是关的，点一下才会开。」）。空的新歌照旧开着键盘

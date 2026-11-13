@@ -9,6 +9,7 @@
 import { chromium } from "./pw.mjs";
 import { pick, pickOnPage, ddOptions } from "./dd.mjs";
 import { unzipSync, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
+import { fileURLToPath } from "node:url";
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const BASE = process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/", PREFIX = "moonsinger-5b1e7c0a92d34f6e:";
@@ -70,6 +71,30 @@ const openSheet = async (p) => { const c = await p.evaluate(() => { const r = do
   check((await nota(p)) === "staff", "（前提）打开的文件是五线谱");
   await habit(p, "staff"); await habit(p, "jianpu");
   check((await nota(p)) === "staff", "有家的歌（打开的文件）：改习惯不跟");
+  await p.context().close(); }
+
+// ── 二½、打开的、没有家、还没动的歌：改习惯 = 不碰（v0.17.39；统筹审 v0.17.38：没有家的不只是新歌）──
+//   走 iPad 那条路：没有系统的选文件框 = <input type=file>，拿不到句柄；别家的谱（twinkle.musicxml）就算有句柄也没有家
+{ const p = await page();
+  await p.goto(BASE); await p.waitForTimeout(700);
+  await p.evaluate(() => { window.showOpenFilePicker = undefined; });
+  const notes = () => p.evaluate(() => window.__moonsinger.state().song.papers.reduce((n, pp) => n + Object.values(pp.tracks).flat().filter((t) => t.kind === "note").length, 0));
+  const stem = () => p.evaluate(() => document.querySelector("#fileBtn")?.textContent ?? "");
+  const openLocal = async (file) => {
+    const [fc] = await Promise.all([p.waitForEvent("filechooser"), (async () => { await p.click("#setBtn"); await p.click('.main-menu [data-v="open"]'); })()]);
+    await fc.setFiles(file); await p.waitForTimeout(700);
+  };
+  await openLocal(fileURLToPath(new URL("../fixtures/twinkle.musicxml", import.meta.url)));
+  const n0 = await notes(), s0 = await stem();
+  check(n0 > 0, "（前提）别家的谱打开了", `${n0} 个音 · ${s0}`);
+  await habit(p, "jianpu");
+  check((await notes()) === n0 && (await stem()) === s0, "别家的谱（没有家）打开不动、改习惯：歌还在（音数、文件名不变）", `${await notes()} 个音 · ${await stem()}`);
+  const own = Buffer.from(await p.evaluate(() => Array.from(window.__moonsinger.bytes())));
+  await openLocal({ name: "own-copy.mxl", mimeType: "application/vnd.recordare.musicxml", buffer: own });
+  const n1 = await notes(), s1 = await stem();
+  check(n1 === n0 && s1 === "own-copy", "（前提）没有句柄的自家文件打开了", `${n1} 个音 · ${s1}`);
+  await habit(p, "staff");
+  check((await notes()) === n1 && (await stem()) === s1, "没有句柄的自家文件打开不动、改习惯：歌还在（音数、文件名不变）", `${await notes()} 个音 · ${await stem()}`);
   await p.context().close(); }
 
 // ── 三、第一次打开：卡上选简谱点「好」→ 后面那首空白歌是简谱；写一个音、设置里把习惯改回五线谱 → 还是简谱 ──
