@@ -26,8 +26,23 @@ export declare const FLUSH_NOW_MS = 120;
  *  （哪一个数他自己也不确定；干净时排队读数正好是 1 ms，所以多半是这一项——**没证实**）→ 线划在 30：比干净的读数加量的误差（锚点最多差一个 10 ms 的定时器间隔）高，比四十多低。
  *  v0.16.30 这条线也管当场清；user 用下来「响应延迟非常的顺手，非常的快」。v0.16.31 把 30–120 这一档改成只在空当清：当场清会掐到正在响的音。 */
 export declare const FLUSH_IDLE_MS = 30;
+/** 「这一次声音起来时多算了多少」的账（纯逻辑，test/feel-text.test.ts；施工单「手感横幅照实说」，2026-11-12 Claude Opus 5.5（MoonSinger小弟））：
+ *  起来 / 回前台 / 换出声口那几次量到的记下来，**清（flush）之后重量的那一次不记**——清完从零重新量、读到几毫秒是必然的（复盘 ai-docs/20261108-key-latency-postmortem.md 后记二、三），
+ *  不能拿它盖掉起来时那个数。只记账，不影响起、清、垫脚的任何行为。seq = 记过几次（「点了重启声音之后新的那一次」靠它认）。 */
+export declare function createStartBurstLog(): {
+    measured(why: string, ms: number): void;
+    get(): {
+        ms: number | null;
+        seq: number;
+    };
+};
 /** 起来之后量到多算了：当场清不清（纯逻辑）。连着 2 次清完还是多 = 这一次不再清。 */
 export declare function shouldAutoFlush(burstMs: number, doneInARow: number): boolean;
+/** 这一次打开里，声音设备最近一次起来时量到的多算了多少（ms；清过不归零、没量过 = null）+ 量过几次。只读（手感横幅照实说）。 */
+export declare const audioStartBurst: () => {
+    ms: number | null;
+    seq: number;
+};
 /** 现在大约排着多少毫秒（还没量出来 / 没在跑 = null）。离起来越久越不准：音频的钟和墙上的钟每分钟会差出几毫秒。 */
 export declare function audioQueuedMs(): number | null;
 /** ② 清掉排着的：suspend 完了再 resume；重新起来时（statechange → running）重新量。who = 谁要清的。 */

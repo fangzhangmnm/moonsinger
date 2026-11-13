@@ -193,6 +193,18 @@ export declare const S: {
     readonly "\u5220\u4E86 {db} \u4E2A\u5E93\u3001{ls} \u4E2A\u952E\uFF1B\u8FD8\u5269 {residue} \u5904\u6B8B\u7559\uFF08\u679A\u4E3E\u4E0D\u5230\u7684\u5E73\u53F0 / \u521A\u88AB\u91CD\u5EFA\uFF09\uFF0C\u91CD\u5F00\u540E\u518D\u505A\u4E00\u904D\u5C31\u6CA1\u4E86\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002": {
         readonly en: "Deleted {db} databases and {ls} keys; {residue} leftovers remain (platforms that can't be enumerated / just recreated). Do it once more after reopening and they'll be gone. Tap OK to reopen.";
     };
+    readonly "\u8FD9\u6B21\u58F0\u97F3\u8D77\u6765\u65F6\u591A\u7B97\u4E86 {n} ms\uFF1A\u6309\u952E\u53EF\u80FD\u665A\u8FD9\u4E48\u591A": {
+        readonly en: "Audio started {n} ms ahead this time: keys may be this late";
+    };
+    readonly "\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u81F3\u5C11 {qd} ms\uFF08\u91CF\u4E0D\u5230\u5DF2\u7ECF\u4EA4\u51FA\u53BB\u7684\u90A3\u4E00\u622A\uFF09\u00B7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \u00B7 \u5230\u51FA\u58F0 {s} ms \u00B7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms": {
+        readonly en: "Audio is backed up: at least {qd} ms (it cannot see what was already handed to the device) · tap here to clear it | main-thread wait {q} ms · to sound {s} ms · audio block usual {t} ms / longest {a} ms";
+    };
+    readonly "\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \u00B7 \u5230\u51FA\u58F0 {s} ms \u00B7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \u00B7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \u00B7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": {
+        readonly en: "Keys are late: main-thread wait {q} ms · to sound {s} ms · longest main-thread stall {st} ms · audio block usual {t} ms / longest {a} ms · slowest step {slow} (tap to hide this time)";
+    };
+    readonly "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \u00B7 \u5230\u51FA\u58F0 {s} ms \u00B7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \u00B7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": {
+        readonly en: "Key feel: main-thread wait {q} ms · to sound {s} ms · longest main-thread stall {st} ms · audio block usual {t} ms / longest {a} ms (tap to hide this time)";
+    };
     readonly 没有升降号: {
         readonly en: "no sharps or flats";
     };
@@ -526,14 +538,14 @@ export declare const S: {
     readonly 选中的里面没有能加附点的时值: {
         readonly en: "Nothing selected can take a dot";
     };
-    readonly "\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u5927\u7EA6 {qd} ms\uFF08\u542C\u5230\u7684\u6BD4\u6309\u4E0B\u665A\u8FD9\u4E48\u591A\uFF09\u00B7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \u00B7 \u5230\u51FA\u58F0 {s} ms \u00B7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms": {
-        readonly en: "Audio is backed up: about {qd} ms (what you hear is this late) · tap here to clear it | main-thread wait {q} ms · to sound {s} ms · audio block usual {t} ms / longest {a} ms";
+    readonly 重启声音: {
+        readonly en: "Restart audio";
     };
-    readonly "\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \u00B7 \u5230\u51FA\u58F0 {s} ms \u00B7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \u00B7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \u00B7 \u58F0\u97F3\u6392\u961F {qd} ms \u00B7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": {
-        readonly en: "Keys are late: main-thread wait {q} ms · to sound {s} ms · longest main-thread stall {st} ms · audio block usual {t} ms / longest {a} ms · audio backed up {qd} ms · slowest step {slow} (tap to hide this time)";
+    readonly 声音重启了: {
+        readonly en: "Audio restarted";
     };
-    readonly "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \u00B7 \u5230\u51FA\u58F0 {s} ms \u00B7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \u00B7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \u00B7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": {
-        readonly en: "Key feel: main-thread wait {q} ms · to sound {s} ms · longest main-thread stall {st} ms · audio block usual {t} ms / longest {a} ms · audio backed up {qd} ms (tap to hide this time)";
+    readonly "\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00": {
+        readonly en: "Rebuilt, but the audio device has not come up yet: press again, or close the app and reopen it";
     };
     readonly 其他纸: {
         readonly en: "Other sheets";
@@ -916,9 +928,6 @@ export declare const S: {
     readonly "\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5": {
         readonly en: "A global pool on this device: spoken lines are shared across songs and survive restarts; regenerable — clearing only means re-speaking";
     };
-    readonly 重启声音: {
-        readonly en: "Restart audio";
-    };
     readonly "\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B": {
         readonly en: "Press this when the sound is off (keys respond late, or there is no sound): it rebuilds the path to the speaker and throws away any audio still waiting to play. Anything sounding right now will cut out for a moment";
     };
@@ -1065,12 +1074,6 @@ export declare const S: {
     };
     readonly 删: {
         readonly en: "Delete";
-    };
-    readonly 声音重启了: {
-        readonly en: "Audio restarted";
-    };
-    readonly "\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00": {
-        readonly en: "Rebuilt, but the audio device has not come up yet: press again, or close the app and reopen it";
     };
     readonly "\u4E0B\u8F7D {name} {bytes}%": {
         readonly en: "Downloading {name} {bytes}%";

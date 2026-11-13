@@ -1271,7 +1271,10 @@ body.doc-locked .parts-mgr .pm-card :is(button, input, select):not([data-v^="mor
 .header-panel .hp-note { font-size: 12px; color: var(--muted); }
 
 /* 手感探针的那一行小字（v0.16.23）：浮在键盘上沿，超标才出现，点一下这次打开不再显示 */
-.feel-chip { position: fixed; z-index: var(--z-menu); font: 12px/1.3 inherit; font-family: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--warn); background: var(--bg); color: var(--ink); text-align: left; white-space: normal; box-shadow: 0 1px 4px rgba(0,0,0,.15); cursor: pointer; }
+.feel-chip { position: fixed; z-index: var(--z-menu); font: 12px/1.3 inherit; font-family: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--warn); background: var(--bg); color: var(--ink); text-align: left; white-space: normal; box-shadow: 0 1px 4px rgba(0,0,0,.15); display: flex; align-items: center; gap: 6px; }
+.feel-chip .feel-msg { all: unset; cursor: pointer; flex: 1 1 auto; min-width: 0; }
+.feel-chip .feel-revive { flex: none; height: 26px; padding: 0 8px; font-size: 12px; }
+.feel-chip[hidden], .feel-chip .feel-revive[hidden] { display: none; }
 
 /* 键盘总闸（v0.16.52，src/app/input-gate.ts）：人自己拔着（「弹」）= 会往谱上写的那一排灰掉、点不动（升降留着：只改弹出来的音）；和乐器目录里那套 .is-locked 同一个样子，
    但「弹」钮自己照样能点（再点 = 接回去）。键盘想写而写不了的时候「弹」钮晃一下。 */

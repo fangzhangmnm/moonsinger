@@ -3460,6 +3460,10 @@ var S = {
   "\u5173\u95ED": { en: "Close" },
   "\u5220\u4E86 {db} \u4E2A\u5E93\u3001{ls} \u4E2A\u952E\uFF0C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u6CA1\u6709\u6B8B\u7559\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002": { en: "Deleted {db} databases and {ls} keys; nothing is left on this device. Tap OK to reopen." },
   "\u5220\u4E86 {db} \u4E2A\u5E93\u3001{ls} \u4E2A\u952E\uFF1B\u8FD8\u5269 {residue} \u5904\u6B8B\u7559\uFF08\u679A\u4E3E\u4E0D\u5230\u7684\u5E73\u53F0 / \u521A\u88AB\u91CD\u5EFA\uFF09\uFF0C\u91CD\u5F00\u540E\u518D\u505A\u4E00\u904D\u5C31\u6CA1\u4E86\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002": { en: "Deleted {db} databases and {ls} keys; {residue} leftovers remain (platforms that can't be enumerated / just recreated). Do it once more after reopening and they'll be gone. Tap OK to reopen." },
+  "\u8FD9\u6B21\u58F0\u97F3\u8D77\u6765\u65F6\u591A\u7B97\u4E86 {n} ms\uFF1A\u6309\u952E\u53EF\u80FD\u665A\u8FD9\u4E48\u591A": { en: "Audio started {n} ms ahead this time: keys may be this late" },
+  "\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u81F3\u5C11 {qd} ms\uFF08\u91CF\u4E0D\u5230\u5DF2\u7ECF\u4EA4\u51FA\u53BB\u7684\u90A3\u4E00\u622A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms": { en: "Audio is backed up: at least {qd} ms (it cannot see what was already handed to the device) \xB7 tap here to clear it | main-thread wait {q} ms \xB7 to sound {s} ms \xB7 audio block usual {t} ms / longest {a} ms" },
+  "\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Keys are late: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 slowest step {slow} (tap to hide this time)" },
+  "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Key feel: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms (tap to hide this time)" },
   "\u6CA1\u6709\u5347\u964D\u53F7": { en: "no sharps or flats" },
   "{n} \u4E2A\u5347\u53F7": { en: "{n} {n|sharp|sharps}" },
   "{n} \u4E2A\u964D\u53F7": { en: "{n} {n|flat|flats}" },
@@ -3571,9 +3575,9 @@ var S = {
   "\u518D\u77ED\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86": { en: "No shorter note value exists" },
   "\u518D\u957F\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86": { en: "No longer note value exists" },
   "\u9009\u4E2D\u7684\u91CC\u9762\u6CA1\u6709\u80FD\u52A0\u9644\u70B9\u7684\u65F6\u503C": { en: "Nothing selected can take a dot" },
-  "\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u5927\u7EA6 {qd} ms\uFF08\u542C\u5230\u7684\u6BD4\u6309\u4E0B\u665A\u8FD9\u4E48\u591A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms": { en: "Audio is backed up: about {qd} ms (what you hear is this late) \xB7 tap here to clear it | main-thread wait {q} ms \xB7 to sound {s} ms \xB7 audio block usual {t} ms / longest {a} ms" },
-  "\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Keys are late: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms \xB7 slowest step {slow} (tap to hide this time)" },
-  "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Key feel: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms (tap to hide this time)" },
+  "\u91CD\u542F\u58F0\u97F3": { en: "Restart audio" },
+  "\u58F0\u97F3\u91CD\u542F\u4E86": { en: "Audio restarted" },
+  "\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00": { en: "Rebuilt, but the audio device has not come up yet: press again, or close the app and reopen it" },
   "\u5176\u4ED6\u7EB8": { en: "Other sheets" },
   "\u65B0\u7684\u4E00\u6BB5": { en: "New section" },
   "\u9690\u85CF\u7740\u7684\uFF08\u70B9 = \u653E\u51FA\u6765\uFF09": { en: "Hidden (tap = show)" },
@@ -3701,7 +3705,6 @@ var S = {
   "\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58": { en: "Tsukuyomi-chan's speech cache" },
   "\u6E05\u7A7A\u5FF5\u7F13\u5B58": { en: "Clear speech cache" },
   "\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5": { en: "A global pool on this device: spoken lines are shared across songs and survive restarts; regenerable \u2014 clearing only means re-speaking" },
-  "\u91CD\u542F\u58F0\u97F3": { en: "Restart audio" },
   "\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B": { en: "Press this when the sound is off (keys respond late, or there is no sound): it rebuilds the path to the speaker and throws away any audio still waiting to play. Anything sounding right now will cut out for a moment" },
   "\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58": { en: "Engine load and memory" },
   "\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5": { en: "Tsukuyomi-chan's engine WASM memory only grows; only a restart returns it. Spoken lines will need re-speaking" },
@@ -3751,8 +3754,6 @@ var S = {
   "\u8FD9\u4E00\u7248\u6E32\u7684": { en: "rendered by this version" },
   "\u6B4C\u5E93\u91CC\uFF1A{names}": { en: "In the library: {names}" },
   "\u5220": { en: "Delete" },
-  "\u58F0\u97F3\u91CD\u542F\u4E86": { en: "Audio restarted" },
-  "\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00": { en: "Rebuilt, but the audio device has not come up yet: press again, or close the app and reopen it" },
   "\u4E0B\u8F7D {name} {bytes}%": { en: "Downloading {name} {bytes}%" },
   "{name} \u7559\u5728\u8BBE\u5907\u4E0A\u4E86": { en: "{name} is kept on this device" },
   "\u5DF2\u7ECF\u662F\u6700\u65B0\u7248": { en: "Already up to date" },
@@ -6048,7 +6049,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.9-2026-11-12";
+var APP_VERSION = "v0.17.10-2026-11-12";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -34747,15 +34748,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-831191b26ab4.mjs");
+      return pick(() => "singer-worker-a198a3f1de0e.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-714d957ac9f7.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-1036e1b1d233.mjs");
+      return pick(() => "layout-worker-ebd3231bb3c9.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-b19513e824d9.mjs");
+      return pick(() => "encode-worker-d18025ce3f8f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35050,6 +35051,14 @@ function createQueueMeter() {
 var BURST_SETTLE_MS = 600;
 var FLUSH_NOW_MS = 120;
 var FLUSH_IDLE_MS = 30;
+function createStartBurstLog() {
+  let ms = null, seq = 0;
+  return { measured(why2, b3) {
+    if (why2 === "flush") return;
+    ms = b3;
+    seq++;
+  }, get: () => ({ ms, seq }) };
+}
 function shouldAutoFlush(burstMs, doneInARow) {
   return burstMs > FLUSH_NOW_MS && doneInARow < 2;
 }
@@ -35057,6 +35066,8 @@ var autoCount = 0;
 var flushAt = -1e9;
 var flushBroken = false;
 var queue = createQueueMeter();
+var startLog = createStartBurstLog();
+var audioStartBurst = () => startLog.get();
 var queueTimer;
 var queueUntil = 0;
 var burstNoted = true;
@@ -35085,6 +35096,7 @@ function armQueue(why2) {
         everRan = true;
         retirePrimer();
       }
+      startLog.measured(queueWhy, b3);
       const go = !flushBroken && shouldAutoFlush(b3, autoCount), took = queue.anchorAt();
       noteFn(`start burst (${queueWhy}): device start took \u2248 ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead \u2248 ${b3} ms${go ? " \u2192 flush" : flushBroken && b3 > FLUSH_IDLE_MS ? " (auto flush off this session)" : b3 > FLUSH_NOW_MS ? ` (gave up after ${autoCount} flushes)` : b3 > FLUSH_IDLE_MS ? " (will clear when nothing is sounding)" : ""}`);
       if (go && queueWhy === "revive") {
@@ -35501,6 +35513,16 @@ function describe(s10, b3) {
   const lanes = s10.lanes.length ? s10.lanes.map((l10, i10) => _t("\u9053 {p}\uFF1A\u5806 {wasm}{p2} + \u5FF5\u7F13\u5B58 {cache}", { p: i10 + 1, wasm: sizeText(l10.wasm), p2: l10.base !== void 0 ? _t("\uFF08\u521A\u8D77\u6765 {base}\uFF09", { base: sizeText(l10.base) }) : "", cache: sizeText(l10.cache) })).join("\uFF1B") : _t("\u5C0F\u6708\u76F8\u5F15\u64CE\u6CA1\u8D77");
   const audio = s10.audioBusy === null ? _t("\u97F3\u9891\u7EBF\u7A0B\uFF1A\u6CA1\u5728\u62A5") : _t("\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 {p}%{AUDIO_HOT}", { p: Math.round(s10.audioBusy * 100), AUDIO_HOT: s10.audioBusy > AUDIO_HOT ? _t("\uFF08\u70ED\uFF1A\u53EF\u80FD\u7206\u97F3\uFF09") : "" });
   return _t("\u80FD\u7B97\u5230\u7684\u5360\u7528 {s} / \u9884\u7B97 {total}\uFF08{lanes}\uFF1B\u5F55\u97F3\u623F\u91CC {chunks} \u5757 {chunkBytes}\uFF1B\u97F3\u6E90\u5185\u5B58 {soundMem}\uFF09\u3002{audio}\u3002", { s: sizeText(totalBytes(s10)), total: sizeText(b3.total), lanes, chunks: s10.chunks, chunkBytes: sizeText(s10.chunkBytes), soundMem: sizeText(s10.soundMem), audio });
+}
+
+// src/app/feel-text.ts
+var START_BURST_SHOW_MS = 30;
+function feelBanner(r10, late, startBurst, slow) {
+  const revive = startBurst !== null && startBurst > START_BURST_SHOW_MS;
+  const start = revive ? _t("\u8FD9\u6B21\u58F0\u97F3\u8D77\u6765\u65F6\u591A\u7B97\u4E86 {n} ms\uFF1A\u6309\u952E\u53EF\u80FD\u665A\u8FD9\u4E48\u591A", { n: startBurst }) + " \uFF5C " : "";
+  const flush2 = (r10.queued ?? 0) > 100;
+  if (flush2) return { flush: flush2, revive, text: start + _t("\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u81F3\u5C11 {qd} ms\uFF08\u91CF\u4E0D\u5230\u5DF2\u7ECF\u4EA4\u51FA\u53BB\u7684\u90A3\u4E00\u622A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms", { qd: r10.queued ?? 0, q: r10.queue, s: r10.toSound, t: r10.audioTypical, a: r10.audioStep }) };
+  return { flush: flush2, revive, text: start + (late ? _t("\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, t: r10.audioTypical, a: r10.audioStep, slow }) : _t("\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, t: r10.audioTypical, a: r10.audioStep })) };
 }
 
 // src/app/feel-probe.ts
@@ -45645,7 +45667,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "8eb27b3b853c6bed" : "dev";
+var CORE_HASH = true ? "dda800a39a847348" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -59820,15 +59842,25 @@ function auditionTarget() {
   } });
   return t10 ? { ...t10, gainDb: ch2.gainDb + t10.gainDb, pan: ch2.pan } : null;
 }
-var feelChip = document.createElement("button");
-feelChip.type = "button";
+var feelChip = document.createElement("div");
 feelChip.className = "feel-chip";
 feelChip.hidden = true;
 document.body.appendChild(feelChip);
+var feelMsg = document.createElement("button");
+feelMsg.type = "button";
+feelMsg.className = "feel-msg";
+feelChip.appendChild(feelMsg);
+var feelRevive = document.createElement("button");
+feelRevive.type = "button";
+feelRevive.className = "btn feel-revive";
+feelRevive.textContent = _t("\u91CD\u542F\u58F0\u97F3");
+feelRevive.hidden = true;
+feelChip.appendChild(feelRevive);
 var feelMuted = false;
 var feelText = "";
 var feelFlush = false;
-feelChip.addEventListener("click", () => {
+var feelRv = false;
+feelMsg.addEventListener("click", () => {
   if (feelFlush) {
     flushAudio("tap");
     feelText = "";
@@ -59837,6 +59869,27 @@ feelChip.addEventListener("click", () => {
   feelMuted = true;
   feelChip.hidden = true;
 });
+feelRevive.addEventListener("click", () => {
+  feelRevive.disabled = true;
+  void manualRevive("banner").then((ok2) => {
+    feelRevive.disabled = false;
+    feelText = "";
+    info(ok2 ? _t("\u58F0\u97F3\u91CD\u542F\u4E86") : _t("\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00"));
+  });
+});
+function manualRevive(from) {
+  const before = audioStartBurst();
+  diagNote("audio", `revive by hand (${from}): start burst before ${before.ms ?? "?"} ms`);
+  warmAudio();
+  const t02 = performance.now(), after = () => {
+    const a10 = audioStartBurst();
+    if (a10.seq !== before.seq) diagNote("audio", `revive by hand (${from}): start burst after ${a10.ms ?? "?"} ms`);
+    else if (performance.now() - t02 < 4e3) setTimeout(after, 100);
+    else diagNote("audio", `revive by hand (${from}): no new start measured within 4 s`);
+  };
+  setTimeout(after, 100);
+  return reviveAudio("manual");
+}
 var KV_FEEL_ALWAYS = "feel-always";
 var feelAlways = false;
 var KV_PRIMER = "audio-primer";
@@ -59862,7 +59915,8 @@ var feel = createFeelProbe({
     }
     if (feelMuted || text2 === feelText && !feelChip.hidden) return;
     feelText = text2;
-    feelChip.textContent = text2;
+    feelMsg.textContent = text2;
+    feelRevive.hidden = !feelRv;
     feelChip.hidden = false;
     const r10 = padEl.getBoundingClientRect();
     if (r10.height > 0) {
@@ -59879,10 +59933,10 @@ var feel = createFeelProbe({
   note: (msg) => diagNote("feel", `${msg}; slowest ${slowestStep()}`),
   text: (r10, late) => {
     if (!feelAlways) return "";
-    feelFlush = (r10.queued ?? 0) > 100;
-    const qd = r10.queued === null ? "?" : String(r10.queued);
-    if (feelFlush) return _t("\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u5927\u7EA6 {qd} ms\uFF08\u542C\u5230\u7684\u6BD4\u6309\u4E0B\u665A\u8FD9\u4E48\u591A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms", { qd, q: r10.queue, s: r10.toSound, t: r10.audioTypical, a: r10.audioStep });
-    return late ? _t("\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, t: r10.audioTypical, a: r10.audioStep, qd, slow: slowestStep() }) : _t("\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, t: r10.audioTypical, a: r10.audioStep, qd });
+    const b3 = feelBanner(r10, late, audioStartBurst().ms, late ? slowestStep() : "");
+    feelFlush = b3.flush;
+    feelRv = b3.revive;
+    return b3.text;
   }
 });
 var soundsHeld = /* @__PURE__ */ new Set();
@@ -61152,8 +61206,7 @@ function openSettings() {
     else if (v === "audio:revive") {
       const b3 = e10.target.closest("button");
       b3.disabled = true;
-      warmAudio();
-      void reviveAudio("manual").then((ok2) => {
+      void manualRevive("settings").then((ok2) => {
         b3.disabled = false;
         info(ok2 ? _t("\u58F0\u97F3\u91CD\u542F\u4E86") : _t("\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00"));
       });
@@ -61343,7 +61396,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "ddbef3ec768c",
+  cssHash: "99726ffd9e92",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -65787,4 +65840,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-9b1cb2f6961e.mjs.map
+//# sourceMappingURL=moonsinger-b5c5c86e30e6.mjs.map

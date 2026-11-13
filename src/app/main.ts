@@ -40,7 +40,8 @@ import type { LyricReading } from "../ui/lyric-editor.ts";
 import { RULES, lockedRules, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, MODE_ICON, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
-import { holdAudio, releaseAudio, audioCtxIfAny, warmAudio, onAudioNote, noteKeyAsleep, audioQueuedMs, flushAudio, idleFlushAudio, audioShown, reviveAudio, setPrimer, primerOn } from "../singer/audio.ts";
+import { holdAudio, releaseAudio, audioCtxIfAny, warmAudio, onAudioNote, noteKeyAsleep, audioQueuedMs, flushAudio, idleFlushAudio, audioShown, reviveAudio, setPrimer, primerOn, audioStartBurst } from "../singer/audio.ts";
+import { feelBanner } from "./feel-text.ts";
 import { createFeelProbe } from "./feel-probe.ts";   // 手感探针（v0.16.23）：按下 → 接到 → 出声三段 + 主线程 / 音频时钟停顿，超标露数字
 import { SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS } from "../format/performance.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
@@ -568,12 +569,24 @@ function auditionTarget(): { inst: AuditionInst; key: (midi: number) => number; 
  *  原来（刀 3，v0.9.5–v0.10.42）：每按一下让 worker 只唱光标 / 刚写下那个字一秒——iPad 上一条工作道、和预唱抢，按键常常迟到。 */
 /** 手感探针（v0.16.23，Claude Fable 5.1；来龙去脉在 src/app/feel-probe.ts 头注释）：超标 = 键盘上沿一行小字 + 黑匣子一条；点那行字 = 这次打开不再显示。
  *  「最慢一步」= 分账秒表（perf-trace）里上一次花得最久的那个 span：是键盘重画、谱重画还是顶栏，一眼看出主线程在忙什么。 */
-const feelChip = document.createElement("button"); feelChip.type = "button"; feelChip.className = "feel-chip"; feelChip.hidden = true; document.body.appendChild(feelChip);
+const feelChip = document.createElement("div"); feelChip.className = "feel-chip"; feelChip.hidden = true; document.body.appendChild(feelChip);
+// 横幅 = 一行字（点 = 收起 / 清掉）+ 起来时多算超过 30 ms 时后面一颗「重启声音」（和设置里那一颗同一个动作；施工单「手感横幅照实说」，2026-11-12）
+const feelMsg = document.createElement("button"); feelMsg.type = "button"; feelMsg.className = "feel-msg"; feelChip.appendChild(feelMsg);
+const feelRevive = document.createElement("button"); feelRevive.type = "button"; feelRevive.className = "btn feel-revive"; feelRevive.textContent = _t("重启声音"); feelRevive.hidden = true; feelChip.appendChild(feelRevive);
 // 点一下 = 收起这一次（user 11-08「我把那个点掉之后，后面我按键它就不弹出了」「每次慢都能看到它…因为我们现在是 debug」）：原来是「这次打开都不再显示」。
 //   下一次再晚（探针先收起过一回：数字回到门槛下 5 秒、或 20 秒没按键）照样露。
 //   排着的声音多（听到的晚、别的数都正常）= 这行字变成「点这里清掉」：点 = flushAudio（要在点按里做），不收起，接着看排队的数掉没掉（v0.16.28）。
-let feelMuted = false, feelText = "", feelFlush = false;
-feelChip.addEventListener("click", () => { if (feelFlush) { flushAudio("tap"); feelText = ""; return; } feelMuted = true; feelChip.hidden = true; });
+let feelMuted = false, feelText = "", feelFlush = false, feelRv = false;
+feelMsg.addEventListener("click", () => { if (feelFlush) { flushAudio("tap"); feelText = ""; return; } feelMuted = true; feelChip.hidden = true; });
+feelRevive.addEventListener("click", () => { feelRevive.disabled = true; void manualRevive("banner").then((ok) => { feelRevive.disabled = false; feelText = ""; info(ok ? _t("声音重启了") : _t("换过了，但声音设备还没起来：再按一次，或者把 app 关掉重开")); }); });
+/** 人点「重启声音」（设置里那一颗 / 手感横幅上那一颗，同一个动作）：黑匣子记点之前这次起来时多算了多少、点之后新的那一次多算了多少（新的那一次起来后约 0.6 s 才量定，后台等最多 4 s）。 */
+function manualRevive(from: "settings" | "banner"): Promise<boolean> {
+  const before = audioStartBurst(); diagNote("audio", `revive by hand (${from}): start burst before ${before.ms ?? "?"} ms`);
+  warmAudio();   // 还没出过声 = 先建、先叫醒（这一下在点按的手势里）
+  const t0 = performance.now(), after = (): void => { const a = audioStartBurst(); if (a.seq !== before.seq) diagNote("audio", `revive by hand (${from}): start burst after ${a.ms ?? "?"} ms`); else if (performance.now() - t0 < 4000) setTimeout(after, 100); else diagNote("audio", `revive by hand (${from}): no new start measured within 4 s`); };
+  setTimeout(after, 100);
+  return reviveAudio("manual");
+}
 const KV_FEEL_ALWAYS = "feel-always";   // 设置 → 开发者：显示手感数字（默认关）。关 = 永不显示，晚了也不弹（user 11-08「关掉的时候就是一直不显示，而不是慢了会弹出来」）；黑匣子照记
 let feelAlways = false;
 // 垫脚（src/singer/audio.ts ⑥）：iPad 才用（冷启动多算声音只在那儿量到过；电脑上起得干净）；设置 → 开发者能关着对照。还没证实，证实了再把开关拿掉。
@@ -589,7 +602,7 @@ const feel = createFeelProbe({
   report: (text) => {
     if (!text || !feelAlways) { feelMuted = false; feelText = ""; feelChip.hidden = true; return; }   // 开关关着 = 永不显示（探针照量、黑匣子照记）
     if (feelMuted || (text === feelText && !feelChip.hidden)) return;   // 字没变 = 不碰 DOM（探针每帧都报；别让量手感的东西自己拖手）
-    feelText = text; feelChip.textContent = text; feelChip.hidden = false;
+    feelText = text; feelMsg.textContent = text; feelRevive.hidden = !feelRv; feelChip.hidden = false;
     const r = padEl.getBoundingClientRect();
     if (r.height > 0) { feelChip.style.left = `${Math.round(r.left + 8)}px`; feelChip.style.top = `${Math.max(0, Math.round(r.top - feelChip.offsetHeight - 4))}px`; feelChip.style.maxWidth = `${Math.max(160, Math.round(r.width - 16))}px`; }
     else { feelChip.style.left = "8px"; feelChip.style.top = ""; feelChip.style.bottom = "8px"; feelChip.style.maxWidth = "calc(100vw - 16px)"; }
@@ -597,12 +610,8 @@ const feel = createFeelProbe({
   note: (msg) => diagNote("feel", `${msg}; slowest ${slowestStep()}`),
   text: (r, late) => {
     if (!feelAlways) return "";   // 关着 = 不显示，也不白拼这行字（探针超标时每帧都来问）
-    feelFlush = (r.queued ?? 0) > 100;   // 平时空当里会自己清（audio.ts ②）；到了横幅会自己露出来的量（FEEL_LIMITS.queued）还没清掉 = 点这一行手动清
-    const qd = r.queued === null ? "?" : String(r.queued);
-    if (feelFlush) return _t("声音排着队：大约 {qd} ms（听到的比按下晚这么多）· 点这里清掉 ｜ 等主线程 {q} ms · 到出声 {s} ms · 声音块 平常 {t} ms / 最长 {a} ms", { qd, q: r.queue, s: r.toSound, t: r.audioTypical, a: r.audioStep });
-    return late
-      ? _t("按键晚了：等主线程 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 平常 {t} ms / 最长 {a} ms · 声音排队 {qd} ms · 最慢一步 {slow}（点一下收起这一次）", { q: r.queue, s: r.toSound, st: r.stall, t: r.audioTypical, a: r.audioStep, qd, slow: slowestStep() })
-      : _t("手感：等主线程 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 平常 {t} ms / 最长 {a} ms · 声音排队 {qd} ms（点一下收起这一次）", { q: r.queue, s: r.toSound, st: r.stall, t: r.audioTypical, a: r.audioStep, qd });
+    const b = feelBanner(r, late, audioStartBurst().ms, late ? slowestStep() : "");   // 字怎么拼 = src/app/feel-text.ts（「声音排队」那一项拿掉了，起来时多算了多少照实写）
+    feelFlush = b.flush; feelRv = b.revive; return b.text;
   },
 });
 const soundsHeld = new Set<string>(); let soundAt = 0;   // 按键试听：哪些来源还按着、最后一次按 / 松是什么时候（空当里清排队要看）
@@ -1498,8 +1507,7 @@ function openSettings(): void {
     else if (v === "midi:connect") void midi.connect();
     else if (v === "audio:revive") {
       const b = (e.target as HTMLElement).closest("button")!; b.disabled = true;
-      warmAudio();   // 还没出过声 = 先建、先叫醒（这一下在点按的手势里）
-      void reviveAudio("manual").then((ok) => { b.disabled = false; info(ok ? _t("声音重启了") : _t("换过了，但声音设备还没起来：再按一次，或者把 app 关掉重开")); });
+      void manualRevive("settings").then((ok) => { b.disabled = false; info(ok ? _t("声音重启了") : _t("换过了，但声音设备还没起来：再按一次，或者把 app 关掉重开")); });
     }
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);

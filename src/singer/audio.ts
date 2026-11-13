@@ -156,10 +156,20 @@ export const FLUSH_NOW_MS = 120;
  *  （哪一个数他自己也不确定；干净时排队读数正好是 1 ms，所以多半是这一项——**没证实**）→ 线划在 30：比干净的读数加量的误差（锚点最多差一个 10 ms 的定时器间隔）高，比四十多低。
  *  v0.16.30 这条线也管当场清；user 用下来「响应延迟非常的顺手，非常的快」。v0.16.31 把 30–120 这一档改成只在空当清：当场清会掐到正在响的音。 */
 export const FLUSH_IDLE_MS = 30;
+/** 「这一次声音起来时多算了多少」的账（纯逻辑，test/feel-text.test.ts；施工单「手感横幅照实说」，2026-11-12 Claude Opus 5.5（MoonSinger小弟））：
+ *  起来 / 回前台 / 换出声口那几次量到的记下来，**清（flush）之后重量的那一次不记**——清完从零重新量、读到几毫秒是必然的（复盘 ai-docs/20261108-key-latency-postmortem.md 后记二、三），
+ *  不能拿它盖掉起来时那个数。只记账，不影响起、清、垫脚的任何行为。seq = 记过几次（「点了重启声音之后新的那一次」靠它认）。 */
+export function createStartBurstLog(): { measured(why: string, ms: number): void; get(): { ms: number | null; seq: number } } {
+  let ms: number | null = null, seq = 0;
+  return { measured(why, b) { if (why === "flush") return; ms = b; seq++; }, get: () => ({ ms, seq }) };
+}
 /** 起来之后量到多算了：当场清不清（纯逻辑）。连着 2 次清完还是多 = 这一次不再清。 */
 export function shouldAutoFlush(burstMs: number, doneInARow: number): boolean { return burstMs > FLUSH_NOW_MS && doneInARow < 2; }
 let autoCount = 0, flushAt = -1e9, flushBroken = false;   // flushBroken = 这次打开里有一次清完没起来：之后不再自动清（点横幅那一行手动清照旧）
 const queue = createQueueMeter();
+const startLog = createStartBurstLog();
+/** 这一次打开里，声音设备最近一次起来时量到的多算了多少（ms；清过不归零、没量过 = null）+ 量过几次。只读（手感横幅照实说）。 */
+export const audioStartBurst = (): { ms: number | null; seq: number } => startLog.get();
 let queueTimer: ReturnType<typeof setInterval> | undefined, queueUntil = 0, burstNoted = true, queueWhy = "", armAt = 0;
 /** 起了一次 / 清了一次之后盯 20 秒（10 ms 一下：锚点的误差就是这个间隔）：等时钟动、量这一次多算了多少，记一条、该清就清。之后 audioQueuedMs 随问随算。 */
 function armQueue(why: string): void {
@@ -174,6 +184,7 @@ function armQueue(why: string): void {
     const b = queue.burst();
     if (b !== null && !burstNoted) {
       burstNoted = true; if (!everRan) { everRan = true; retirePrimer(); }
+      startLog.measured(queueWhy, b);   // 只记账（手感横幅）：清之后重量的那一次不记
       const go = !flushBroken && shouldAutoFlush(b, autoCount), took = queue.anchorAt();
       noteFn(`start burst (${queueWhy}): device start took ≈ ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead ≈ ${b} ms${go ? " → flush" : flushBroken && b > FLUSH_IDLE_MS ? " (auto flush off this session)" : b > FLUSH_NOW_MS ? ` (gave up after ${autoCount} flushes)` : b > FLUSH_IDLE_MS ? " (will clear when nothing is sounding)" : ""}`);
       if (go && queueWhy === "revive") {   // ⑤ 换完出声口的这一次起来又多算了（硬件是现起的）：这时候硬件醒着，再换一次

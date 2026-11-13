@@ -3,6 +3,7 @@
 import "./smoke.test.ts";
 import "./feel-probe.test.ts";
 import "./audio-queue.test.ts";
+import "./feel-text.test.ts";
 import "./engrave-printable.test.ts";
 import "./score-surface.test.ts";
 import "./song-view.test.ts";
