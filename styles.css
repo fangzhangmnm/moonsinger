@@ -1241,26 +1241,28 @@ button.chord-cand.is-on { box-shadow: 0 0 0 2px var(--accent) inset; }
 .song-panel .lock-line-what .ico { width: 16px; height: 16px; }
 .song-panel :is(input, textarea):disabled { opacity: .55; background: color-mix(in srgb, var(--muted) 12%, var(--panel)); cursor: default; -webkit-user-select: none; user-select: none; }
 .song-panel label.btn.is-disabled { opacity: .35; cursor: default; pointer-events: none; }
-/* 第一次打开的卡：这台设备看谱的习惯（第 18 条；src/app/panels/habits-card.ts）。一张普通的卡（面板外壳）：大的在上（看什么谱、移调辅助：一行一格、预览横着铺满），小的辅助一组在最下面（一行、小钮、不带预览） */
-.habits-card { display: flex; flex-direction: column; gap: 16px; }
+/* 「初始设置」卡（第 18 条 + 卡第二版，统筹 b7a48b84 / d871aadf；src/app/panels/habits-card.ts）：一张普通的卡（面板外壳）。
+   第一行 习惯看的谱 = 一行小卡片横着滑（吸附），格子大小固定（预览 150 × 92 按固定大小画、超出的裁掉，不随格子 / 内容变）；第二行 移调辅助 = 两颗一样宽的钮；第三行起 = 小下拉（和设置同一处出的行） */
+.habits-card { display: flex; flex-direction: column; gap: 14px; }
 .habits-card .hab-lead { color: var(--muted); font-size: 13px; line-height: 1.5; }
-.habits-card .hab-title { font-weight: 600; font-size: 16px; margin-bottom: 6px; }
-.habits-card :is(.hab-note, .hab-foot) { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0 0 6px; }
-.habits-card .hab-foot { margin: 6px 0 0; }
-.habits-card .hab-tiles { display: flex; flex-direction: column; gap: 8px; }
-.habits-card .hab-tile { display: flex; flex-direction: column; align-items: stretch; gap: 2px; width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.habits-card .hab-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; }   /* 行名比标题「初始设置」（壳的标题 14px）小一档（统筹 a4c3d030） */
+.habits-card :is(.hab-note, .hab-foot) { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 6px 0 0; }
+.habits-card .hab-strip { display: flex; gap: 10px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.habits-card .hab-strip::-webkit-scrollbar { display: none; }
+/* 被切的那一侧淡出（左边滑过去了也加，到头的一侧不加；fades() 按滚到哪儿开关） */
+.habits-card .hab-strip.fade-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.habits-card .hab-strip.fade-l { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px); mask-image: linear-gradient(to right, transparent, #000 28px); }
+.habits-card .hab-strip.fade-l.fade-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+.habits-card .hab-tile { flex: none; width: 150px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); font: inherit; cursor: pointer; box-sizing: border-box; }
+.habits-card .hab-tile:last-child { scroll-snap-align: end; }
 .habits-card .hab-tile.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.habits-card .hab-prev { display: block; width: var(--hab-prev-w, 150px); height: var(--hab-prev-h, 92px); overflow: hidden; flex: none; }
+.habits-card .hab-prev svg { display: block; width: 100%; height: 100%; background: transparent; pointer-events: none; }
 .habits-card .hab-name { font-weight: 600; font-size: 15px; }
-.habits-card .hab-sub { color: var(--muted); font-size: 13px; }
-.habits-card .hab-prev { display: block; margin-top: 4px; }
-.habits-card .hab-prev svg { display: block; width: 100%; height: auto; max-height: 150px; background: transparent; pointer-events: none; }
-.habits-card .hab-small { border-top: 1px solid var(--line); padding-top: 12px; }
-.habits-card .hab-row { display: flex; align-items: center; gap: 10px; }
-.habits-card .hab-k { font-size: 14px; white-space: nowrap; }
-.habits-card .hab-btns { display: grid; grid-template-columns: repeat(3, auto); gap: 6px; }
-.habits-card .hab-mini { height: 30px; font-size: 13px; padding: 0 10px; white-space: nowrap; }
-.habits-card .hab-mini.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-.habits-card .hab-small .hab-note { margin-top: 6px; }
+.habits-card .hab-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.habits-card .hab-btn { height: 40px; justify-content: center; font-size: 15px; }
+.habits-card .hab-btn.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.habits-card .hab-small { border-top: 1px solid var(--line); padding-top: 4px; }
 body.doc-locked .inst-page .ip-card { pointer-events: none; opacity: .72; }
 body.doc-locked .inst-page .ip-pad { pointer-events: auto; opacity: 1; }
 body.doc-locked .studio :is(.studio-strips, .fx-panel, .mix-menu) :is(input, select, button, textarea) { pointer-events: none; opacity: .55; }

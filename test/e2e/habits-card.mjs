@@ -1,6 +1,8 @@
-// test/e2e/habits-card.mjs —— 真浏览器 E2E：这台设备看谱的习惯 + 第一次打开问一次的卡（施工单第 18 条第三版；统筹 f73b128a / b149a4d9 / eff00542）。
+// test/e2e/habits-card.mjs —— 真浏览器 E2E：这台设备看谱的习惯 + 「初始设置」卡（施工单第 18 条第三版；卡第二版 = 统筹 b7a48b84 / d871aadf）。
 // created 2026-11-13 by Claude Opus 5.5（MoonSinger小弟）。别的 E2E 都当成「问过了」（pw.mjs）；这一份用 newContext({ firstOpen: true }) 测卡。
-// 守：全新的设备 = 卡出来；有别的面板开着 = 等它走了再出；格子 = 谱种表的每一种 + 移调辅助两格 + 中央 C 三颗小钮；字母谱那格照实写、卡底下说钢琴卷帘 / 录音还没做；
+// 守：全新的设备 = 卡出来（标题「初始设置」）；有别的面板开着 = 等它走了再出；格子 = 谱种表的每一种（一行横着滑、大小固定、预览 150 × 92 不随内容变）
+//   + 移调辅助两颗钮 + 中央 C 一个小下拉（和设置那一行同一处出）；字母谱和「钢琴卷帘、录音还没做」那一行小字；
+//   从设置「界面」页「初始设置」打开 = 亮着现在的习惯、「以后再说」/ 关掉什么都不改也不动「问过了」、收了回到设置；
 //   Esc = 这次收起、不记、重新载入还问；「好」= 选了的记进设备、不再问，新歌按简谱 / 按 C 调看排、键上的字写 C3；「以后再说」= 什么都不记、不再问；
 //   设置「界面」页三行改习惯马上生效、改回「没选」回到软件的默认；锁着的歌照样跟着习惯变；习惯怎么换，存出来的文件逐字节一样。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/habits-card.mjs（MS_E2E_BASE 可改地址）
@@ -19,19 +21,23 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   await p.goto(BASE);
   const shown = await p.waitForSelector(".habits-card", { timeout: 6000 }).then(() => true, () => false);
   check(shown, "全新的设备：开 app 之后那张卡出来了");
+  check((await p.$eval(".wbe-panel .wbe-panel-title", (e) => e.textContent)) === "初始设置", "标题叫「初始设置」");
   const tiles = await p.$$eval(".habits-card [data-h]", (bs) => bs.map((x) => `${x.dataset.h}:${x.dataset.v}`));
-  check(tiles.join(",") === "notation:staff,notation:jianpu,notation:letters,viewInC:off,viewInC:on,middleC:3,middleC:4,middleC:5", "格子：谱种表的三种 + 移调辅助两格 + 中央 C 三颗", tiles.join(","));
+  check(tiles.join(",") === "notation:staff,notation:jianpu,notation:letters,viewInC:off,viewInC:on", "格子：谱种表的三种 + 移调辅助两颗钮", tiles.join(","));
+  check(!!(await p.$('.habits-card [data-set="habit:middleC"]')), "中央 C 是一个小下拉（和设置那一行同一处出）");
   const words = await p.$eval(".habits-card", (e) => e.textContent ?? "");
-  check(/玩 tracker 的可以先用这个，不完全一样/.test(words) && /钢琴卷帘、录音还没做/.test(words), "字母谱那格照实写；钢琴卷帘 / 录音还没做");
-  check(!/新手|刚开始|学过|专家/.test(words), "格子不写水平");
-  check(await p.$$eval(".habits-card .hab-tile .hab-prev svg", (s) => s.length === 5 && s.every((x) => x.querySelectorAll("text").length > 5)), "每一大格都有真排出来的预览（5 张）");
-  check(await p.$$eval(".habits-card .hab-small [data-h]", (s) => s.every((x) => !x.querySelector("svg"))), "小的辅助（中央 C）不带预览");
+  check(/玩 tracker 的可以先用这个，不完全一样/.test(words) && /钢琴卷帘、录音还没做/.test(words), "字母谱那句和钢琴卷帘 / 录音还没做");
+  check(!/新手|刚开始|学过|专家|你是哪一种|？/.test(words), "格子不写水平、不写问句");
+  check(await p.$$eval(".habits-card .hab-tile .hab-prev svg", (s) => s.length === 3 && s.every((x) => x.querySelectorAll("text").length > 3)), "只有谱那一行带预览（3 张，真排出来的）");
+  const sizes = await p.$$eval(".habits-card .hab-tile", (ts) => ts.map((t) => { const r = t.getBoundingClientRect(), v = t.querySelector(".hab-prev").getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), Math.round(v.width), Math.round(v.height)].join("x"); }));
+  const [, , pw, ph] = sizes[0].split("x").map(Number);
+  check(new Set(sizes).size === 1 && Math.abs(pw / ph - 150 / 92) < 0.05, "三格一样大、预览按 150 × 92 等比（不随预览的内容变）", sizes.join(" "));
   await p.keyboard.press("Escape"); await p.waitForTimeout(250);
   check(!(await p.$(".habits-card")) && (await kv(p))["habits-asked"] === null, "Esc = 收起、不记「问过了」");
   await p.reload(); const again = await p.waitForSelector(".habits-card", { timeout: 6000 }).then(() => true, () => false);
   check(again, "重新载入：没问过 = 还问");
   // 「好」：选简谱 + 按 C 调看 + C3
-  await p.click('.hab-tile[data-v="jianpu"]'); await p.click('.hab-tile[data-h="viewInC"][data-v="on"]'); await p.click('.hab-mini[data-v="3"]');
+  await p.click('.hab-tile[data-v="jianpu"]'); await p.click('.habits-card [data-h="viewInC"][data-v="on"]'); await pick(p, '.habits-card [data-set="habit:middleC"]', "3");
   await p.click('.hab-tile[data-v="staff"]'); await p.click('.hab-tile[data-v="staff"]');   // 点亮着的那格 = 取消；点两下回到没选
   check((await p.$$eval('.habits-card .on[data-h="notation"]', (s) => s.length)) === 0, "点亮着的那格 = 取消（每一问都可以不选）");
   await p.click('.hab-tile[data-v="jianpu"]');
@@ -52,8 +58,43 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   check((await rowKind(p)) === "staff", "改回没选：照软件的默认（五线谱）", await rowKind(p));
   await pickOnPage(p, '[data-set="habit:notation"]', "letters"); await p.waitForTimeout(200);
   check((await rowKind(p)) === "jianpu" && (await kv(p))["habit-notation"] === "letters", "设置里选字母谱：马上生效（字母谱是简谱那一种行）");
+  // 设置里的「初始设置」：亮着现在的习惯；「以后再说」什么都不改；回到设置
+  await p.click('.set-panel [data-v="habits:card"]'); await p.waitForSelector(".habits-card");
+  check(await p.$eval('.hab-tile[data-v="letters"]', (e) => e.classList.contains("on")) && await p.$eval('.habits-card [data-h="viewInC"][data-v="on"]', (e) => e.classList.contains("on")), "从设置里打开：亮着现在的习惯（字母谱、按 C 调看）");
+  const before = JSON.stringify(await kv(p));
+  await p.click('.hab-tile[data-v="staff"]'); await p.click('.wbe-panel [data-panel-btn="later"]'); await p.waitForTimeout(300);
+  check(JSON.stringify(await kv(p)) === before && !!(await p.$(".set-panel")), "从设置里打开点「以后再说」：什么都不改、回到设置", JSON.stringify(await kv(p)));
+  await p.click('.set-panel [data-v="habits:card"]'); await p.waitForSelector(".habits-card");
+  await p.click('.hab-tile[data-v="staff"]'); await p.click('.wbe-panel [data-panel-btn="ok"]'); await p.waitForTimeout(300);
+  check((await kv(p))["habit-notation"] === "staff" && !!(await p.$(".set-panel")), "从设置里打开点「好」：照写、回到设置");
   await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200);
   await ctx.close(); }
+
+// ── 没问过的设备从设置里打开、点「以后再说」= 不动「问过了」 ──
+{ const { ctx, p } = await fresh();
+  await p.goto(BASE); await p.waitForSelector(".habits-card", { timeout: 6000 });
+  await p.keyboard.press("Escape"); await p.waitForTimeout(250);
+  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".set-panel");
+  await p.click('.set-panel [data-v="habits:card"]'); await p.waitForSelector(".habits-card");
+  await p.click('.wbe-panel [data-panel-btn="later"]'); await p.waitForTimeout(250);
+  check((await kv(p))["habits-asked"] === null, "没问过的设备：从设置里打开点「以后再说」= 不动「问过了」");
+  await ctx.close(); }
+
+// ── 一行小卡片：放不下 = 露出来的永远是「整数格 + 半格」、被切的那一侧淡出；放得下 = 不滑（统筹 1dda0433）──
+for (const [w, h] of [[320, 700], [360, 760], [390, 844], [430, 900], [744, 1133]]) {
+  const ctx = await b.newContext({ viewport: { width: w, height: h }, firstOpen: true }), p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message));
+  await p.goto(BASE); await p.waitForSelector(".habits-card", { timeout: 6000 }); await p.waitForTimeout(300);
+  const cut = (side) => p.evaluate((side) => { const s = document.querySelector(".hab-strip"), r = s.getBoundingClientRect(), x = side === "r" ? r.right : r.left;
+    for (const t of s.querySelectorAll(".hab-tile")) { const q = t.getBoundingClientRect(); if (x > q.left + 0.5 && x < q.right - 0.5) return (x - q.left) / q.width; } return null; }, side);
+  const st = await p.$eval(".hab-strip", (s) => ({ scroll: s.scrollWidth > s.clientWidth + 1, fl: s.classList.contains("fade-l"), fr: s.classList.contains("fade-r") }));
+  if (!st.scroll) { check(!st.fl && !st.fr, `${w} 宽：三格放得下 = 不滑、不淡出`); await ctx.close(); continue; }
+  const r0 = await cut("r");
+  check(r0 !== null && r0 >= 0.3 && r0 <= 0.7 && st.fr && !st.fl, `${w} 宽：右边界切在一格的 30%–70%、右边淡出`, `${r0?.toFixed(2)} ${JSON.stringify(st)}`);
+  await p.$eval(".hab-strip", (s) => { s.style.scrollSnapType = "none"; s.scrollLeft = s.scrollWidth; }); await p.waitForTimeout(150);
+  const l1 = await cut("l"), st1 = await p.$eval(".hab-strip", (s) => ({ fl: s.classList.contains("fade-l"), fr: s.classList.contains("fade-r") }));
+  check(l1 !== null && l1 >= 0.3 && l1 <= 0.7 && st1.fl && !st1.fr, `${w} 宽：滑到最右 = 左边露半格、左边淡出、到头的一侧不淡出`, `${l1?.toFixed(2)} ${JSON.stringify(st1)}`);
+  await ctx.close();
+}
 
 // ── 「以后再说」= 什么都不记、不再问 ──
 { const { ctx, p } = await fresh();

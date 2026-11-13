@@ -89,9 +89,9 @@ import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf
 import { partShow, partNameOf, roleNameIn, roleGivenName, roleInstrumentLabel, type PartShow } from "../format/part-show.ts";   // 声部显示成什么：唯一出口（12-4）
 import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES } from "../score/paper.ts";
 import { paperSizeText } from "../look/paper.ts";
-import { lookOf, notationName, NOTATION_NOTE, middleCLabel, MIDDLE_C_NOTE, trackLookOf, followDefault, allDefault, chosenCount, defaultText, customStaffMm, marginRow, type LookKey, type LookContext, type LookDefaults, type HabitKey, HABIT_KEYS } from "../look/index.ts";
+import { lookOf, notationName, NOTATION_NOTE, middleCLabel, MIDDLE_C_NOTE, trackLookOf, followDefault, allDefault, chosenCount, defaultText, customStaffMm, marginRow, type LookKey, type LookContext, type LookDefaults, type HabitKey, type Habits, HABIT_KEYS } from "../look/index.ts";
 import { habitsFrom, HABIT_CODEC, HABIT_DEVICE_KEY, HABITS_ASKED_KEY } from "../look/habits.ts";
-import { openHabitsCard, type HabitsCard } from "./panels/habits-card.ts";   // 这台设备的习惯（第 18 条）   // 「现在怎么画」和「跟着软件」只问这一处（第 17 条）
+import { openHabitsCard, type HabitsCard, type HabitRows } from "./panels/habits-card.ts";   // 这台设备的习惯（第 18 条）   // 「现在怎么画」和「跟着软件」只问这一处（第 17 条）
 import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
@@ -624,14 +624,16 @@ function offerHabitsCardWhenFree(): void {
     clearInterval(t); openHabitsCardNow();
   }, 1200);
 }
-function openHabitsCardNow(): void {
+/** from = boot（第一次打开问一次）/ settings（设置「界面」页「初始设置」那一颗；卡第二版）。从设置里打开的：「以后再说」/ 关掉 = 什么都不改、不动「问过了」，收了回到设置。 */
+function openHabitsCardNow(from: "boot" | "settings" = "boot"): void {
   const close = () => { habitsCard?.close(); habitsCard = null; ui.closed(close); };
   const gone = () => { habitsCard = null; ui.closed(close); };
+  const back = () => { if (from === "settings") openSettings(); };
   ui.open({ k: "sheet", close });
-  habitsCard = openHabitsCard({ measure: view.rawMeasure, current: habitCtx.habits ?? {},
-    done: (c) => { gone(); for (const k of HABIT_KEYS) writeHabit(k, c[k]); deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", "asked: ok"); habitCtx = { habits: habitsFrom(deviceKvGet) }; afterHabits(); },
-    later: () => { gone(); deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", "asked: later"); },
-    dismissed: () => { gone(); diagNote("habits", "dismissed (ask again next open)"); } });
+  habitsCard = openHabitsCard({ measure: view.rawMeasure, current: habitCtx.habits ?? {}, rows: cardRows,
+    done: (c) => { gone(); for (const k of HABIT_KEYS) writeHabit(k, c[k]); deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", `ok (${from})`); habitCtx = { habits: habitsFrom(deviceKvGet) }; afterHabits(); back(); },
+    later: () => { gone(); if (from === "boot") deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", `later (${from})`); back(); },
+    dismissed: () => { gone(); diagNote("habits", `dismissed (${from})`); back(); } });
 }
 const KV_PRIMER = "audio-primer", IS_IOS = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const PRIMER_URL = new URLSearchParams(location.search).get("primer");
@@ -1468,15 +1470,34 @@ function askOver(host: HTMLElement, title: string, msg: string, okLabel: string,
     layer.addEventListener("click", (e) => { e.stopPropagation(); const a = (e.target as HTMLElement).closest<HTMLElement>("[data-ask]")?.dataset.ask; if (e.target === layer || a === "no") done(false); else if (a === "ok") done(true); });
   });
 }
-/** 设置「界面」页那三行（第 18 条）：这台设备的习惯，各自第一格「没选（照软件的默认：X）」，后面是选项（名字照页面设置里的叫法）。 */
-function habitRowsHtml(): string {
-  const h = habitCtx.habits ?? {}, NONE = "none";
-  const none = (k: HabitKey): [string, string] => [NONE, _t("没选（照软件的默认：{x}）", { x: defaultText(k, {}) })];
-  const where = _t("这台设备的习惯：歌里这一项是「跟着软件」时照它；歌里单独选过的照歌的。不进歌、不同步。");
-  return setItem(_t("习惯看的谱"), setSel("habit:notation", [none("notation"), ...NOTATIONS.map((id): [string, string] => [id, notationName(id)])], h.notation ?? NONE), where) +
-    setItem(_t("移调辅助"), setSel("habit:viewInC", [none("viewInC"), ["off", _t("不用（照写的调）")], ["on", _t("按 C 调看")]], h.viewInC === undefined ? NONE : h.viewInC ? "on" : "off"), _t("调号多的时候把谱换到 C 调来画，只改显示、声音不变；看五线谱时起作用。") + " " + where) +
-    setItem(_t("中央 C 叫"), setSel("habit:middleC", [none("middleC"), ...MIDDLE_C_NAMES.map((n): [string, string] => [String(n), middleCLabel(n)])], h.middleC === undefined ? NONE : String(h.middleC)), MIDDLE_C_NOTE() + " " + where);
+/** 一样习惯的那一行（设置「界面」页、「初始设置」卡第三行起的小下拉同一处出；第 18 条 + 卡第二版）：第一格「没选（照软件的默认：X）」，后面是选项（名字照页面设置里的叫法）；
+ *  「?」里只留这一样自己的那一句（统筹 b7a48b84）。下拉的 data-set = habit:<哪一样>：设置里改了马上写（openSettings 的 change），卡里的到「好」才读（readHabitRows）。 */
+function habitRowHtml(k: HabitKey, h: Habits): string {
+  const NONE = "none", none: [string, string] = [NONE, _t("没选（照软件的默认：{x}）", { x: defaultText(k, {}) })];
+  if (k === "notation") return setItem(_t("习惯看的谱"), setSel("habit:notation", [none, ...NOTATIONS.map((id): [string, string] => [id, notationName(id)])], h.notation ?? NONE), _t("新歌和没单独选过的歌照它显示；每首歌在页面设置里能单独换。"));
+  if (k === "viewInC") return setItem(_t("移调辅助"), setSel("habit:viewInC", [none, ["off", _t("不用（照写的调）")], ["on", _t("按 C 调看")]], h.viewInC === undefined ? NONE : h.viewInC ? "on" : "off"), _t("调号多的时候把谱换到 C 调来画，只改显示、声音不变；看五线谱时起作用。"));
+  return setItem(_t("中央 C 叫"), setSel("habit:middleC", [none, ...MIDDLE_C_NAMES.map((n): [string, string] => [String(n), middleCLabel(n)])], h.middleC === undefined ? NONE : String(h.middleC)), MIDDLE_C_NOTE());
 }
+/** 设置「界面」页：「初始设置」那一行（打开那张卡）+ 每样习惯一行。 */
+function habitRowsHtml(): string {
+  const h = habitCtx.habits ?? {};
+  return setItem(_t("初始设置"), `<button class="btn" data-v="habits:card">${_t("打开…")}</button>`, _t("这台设备的习惯：歌里这一项是「跟着软件」时照它；歌里单独选过的照歌的。不进歌、不同步。")) +
+    HABIT_KEYS.map((k) => habitRowHtml(k, h)).join("");
+}
+/** 读几行习惯下拉现在选着的（「没选」/ 认不出 = 不在里面）。 */
+function readHabitRows(root: HTMLElement, keys: readonly HabitKey[]): Habits {
+  const out: Record<string, unknown> = {};
+  for (const k of keys) { const raw = root.querySelector<HTMLButtonElement>(`[data-set="habit:${k}"]`)?.value ?? "none"; const v = raw === "none" ? undefined : HABIT_CODEC[k].parse(raw); if (v !== undefined) out[k] = v; }
+  return out as Habits;
+}
+/** 「初始设置」卡第三行起的小下拉：现在只有「中央 C 叫」（第 19 条的和弦标法到时加在这里）。 */
+const CARD_ROW_KEYS: readonly HabitKey[] = ["middleC"];
+const cardRows: HabitRows = {
+  keys: CARD_ROW_KEYS,
+  html: (cur) => CARD_ROW_KEYS.map((k) => habitRowHtml(k, cur)).join(""),
+  mount: (root) => { mountDropdowns(root); wireSettingRows(root); },
+  read: (root) => readHabitRows(root, CARD_ROW_KEYS),
+};
 /** 设置里改了一行习惯：none = 没选；别的按设备键值的写法认（认不出 = 没选）。 */
 function onHabitRow(k: HabitKey, raw: string): void {
   if (k === "notation") setHabit("notation", raw === "none" ? undefined : HABIT_CODEC.notation.parse(raw));
@@ -1640,6 +1661,7 @@ function openSettings(): void {
     else if (v === "src:default:voice") { const a = box.querySelector<HTMLInputElement>("#srcIn"); if (a) a.value = MODEL_SOURCE_DEFAULT; models.source = MODEL_SOURCE_DEFAULT; }
     else if (v === "src:default:gs") { const b = box.querySelector<HTMLInputElement>("#sndIn"); if (b) b.value = SOUNDS_SOURCE_DEFAULT; sources.source = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "midi:connect") void midi.connect();
+    else if (v === "habits:card") { close(); openHabitsCardNow("settings"); }   // 「初始设置」那一颗（卡第二版）：收了设置开卡，卡收了回到设置
     else if (v === "factory") { close(); void runFactoryReset({
       attached: () => hasStore(), dirtyCount: () => requireStore().files.dirty.count(), openUnsaved: () => dirty(),
       prepare: async () => { H.release(); singer.restart(); if (hasStore()) await detachStore(); },   // 放下身份（es 不再写）、关掉举着念缓存库的 worker、dispose store；不 drain、不造逃生副本（说明 sheet 已经说清）

@@ -868,11 +868,11 @@ export declare const S: {
     readonly "\u6CA1\u9009\uFF08\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1A{x}\uFF09": {
         readonly en: "Not chosen (software default: {x})";
     };
-    readonly "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u6B4C\u91CC\u8FD9\u4E00\u9879\u662F\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D\u65F6\u7167\u5B83\uFF1B\u6B4C\u91CC\u5355\u72EC\u9009\u8FC7\u7684\u7167\u6B4C\u7684\u3002\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": {
-        readonly en: "A habit on this device: used when a song leaves this item at “Follow the software”; a song that picked its own keeps it. Not saved in songs, not synced.";
-    };
     readonly 习惯看的谱: {
         readonly en: "Notation I usually read";
+    };
+    readonly "\u65B0\u6B4C\u548C\u6CA1\u5355\u72EC\u9009\u8FC7\u7684\u6B4C\u7167\u5B83\u663E\u793A\uFF1B\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002": {
+        readonly en: "New songs, and songs that have not picked their own, are shown this way; each song can still change it in Page settings.";
     };
     readonly 移调辅助: {
         readonly en: "Transposition aid";
@@ -889,8 +889,14 @@ export declare const S: {
     readonly "\u4E2D\u592E C \u53EB": {
         readonly en: "Middle C is";
     };
-    readonly 设置: {
-        readonly en: "Settings";
+    readonly 初始设置: {
+        readonly en: "Initial setup";
+    };
+    readonly "\u6253\u5F00\u2026": {
+        readonly en: "Open…";
+    };
+    readonly "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u6B4C\u91CC\u8FD9\u4E00\u9879\u662F\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D\u65F6\u7167\u5B83\uFF1B\u6B4C\u91CC\u5355\u72EC\u9009\u8FC7\u7684\u7167\u6B4C\u7684\u3002\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": {
+        readonly en: "A habit on this device: used when a song leaves this item at “Follow the software”; a song that picked its own keeps it. Not saved in songs, not synced.";
     };
     readonly 跟系统: {
         readonly en: "System";
@@ -939,6 +945,9 @@ export declare const S: {
     };
     readonly 检查更新: {
         readonly en: "Check for updates";
+    };
+    readonly 设置: {
+        readonly en: "Settings";
     };
     readonly "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6CA1\u6709 IndexedDB\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u53EA\u5728\u5185\u5B58\u91CC": {
         readonly en: "This browser has no IndexedDB: spoken lyrics are kept in memory only";
@@ -1471,20 +1480,20 @@ export declare const S: {
     readonly 谱上的字: {
         readonly en: "Text on the score";
     };
-    readonly 页面设置: {
-        readonly en: "Page settings";
-    };
     readonly "\u628A\u8FD9\u9996\u6B4C\u91CC\u9009\u8FC7\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u6539\u56DE\u8DDF\u7740\u8F6F\u4EF6\uFF08\u80FD\u64A4\u9500\uFF09": {
         readonly en: "Set every display setting chosen for this song back to following the software (can be undone)";
     };
-    readonly 全部跟着软件: {
-        readonly en: "All follow the software";
+    readonly 页面设置: {
+        readonly en: "Page settings";
     };
     readonly "\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B": {
         readonly en: "View: how this page looks on screen";
     };
     readonly "\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6": {
         readonly en: "Page: paper and note density";
+    };
+    readonly 全部跟着软件: {
+        readonly en: "All follow the software";
     };
     readonly "{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6": {
         readonly en: "{what}: follow the software";
@@ -3121,26 +3130,17 @@ export declare const S: {
     readonly "{name}\uFF08\u624B\u52A8\uFF09": {
         readonly en: "{name} (manual)";
     };
-    readonly "\u73A9 tracker \u7684\u53EF\u4EE5\u5148\u7528\u8FD9\u4E2A\uFF0C\u4E0D\u5B8C\u5168\u4E00\u6837": {
-        readonly en: "If you use a tracker, you can start with this; it is not quite the same";
-    };
     readonly 啦: {
         readonly en: "la";
     };
-    readonly "\u9009\u4E86\u7684\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF1A\u65B0\u6B4C\u548C\u6CA1\u5355\u72EC\u9009\u8FC7\u7684\u6B4C\u7167\u5B83\u663E\u793A\uFF0C\u6BCF\u9996\u6B4C\u968F\u65F6\u80FD\u5355\u72EC\u6362\uFF1B\u4EE5\u540E\u5728\u300C\u8BBE\u7F6E \u203A \u754C\u9762\u300D\u91CC\u6539\u3002\u90FD\u53EF\u4EE5\u4E0D\u9009\u3002": {
-        readonly en: "What you pick is kept on this device: new songs, and songs that have not picked their own, are shown this way; each song can still change it any time. Change it later in “Settings › UI”. You can leave any of these unpicked.";
+    readonly "\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": {
+        readonly en: "Kept on this device; you can leave any of these unpicked and change them later in Settings.";
     };
-    readonly "\u4F60\u4E60\u60EF\u770B\u54EA\u79CD\u8C31\uFF1F": {
-        readonly en: "Which notation do you usually read?";
+    readonly "\u5B57\u6BCD\u8C31\uFF1A\u73A9 tracker \u7684\u53EF\u4EE5\u5148\u7528\u8FD9\u4E2A\uFF0C\u4E0D\u5B8C\u5168\u4E00\u6837\u3002\u94A2\u7434\u5377\u5E18\u3001\u5F55\u97F3\u8FD8\u6CA1\u505A\uFF0C\u505A\u597D\u4E86\u4F1A\u52A0\u5728\u8FD9\u91CC\u3002": {
+        readonly en: "Letter notation: if you use a tracker you can start with this; it is not quite the same. Piano roll and recording are not ready yet; they will be added here when they are.";
     };
-    readonly "\u94A2\u7434\u5377\u5E18\u3001\u5F55\u97F3\u8FD8\u6CA1\u505A\uFF0C\u505A\u597D\u4E86\u4F1A\u52A0\u5728\u8FD9\u91CC": {
-        readonly en: "Piano roll and recording are not ready yet; they will be added here when they are";
-    };
-    readonly "\u8981\u4E0D\u8981\u79FB\u8C03\u8F85\u52A9\uFF1F": {
-        readonly en: "Use the transpose aid?";
-    };
-    readonly 看谱的习惯: {
-        readonly en: "How you read music";
+    readonly 不用: {
+        readonly en: "Off";
     };
     readonly "\u3093 / \u55EF": {
         readonly en: "ん (hum)";
@@ -5131,9 +5131,6 @@ export declare const S: {
     readonly "\u6253\u5F00\u2026\uFF08.mxl / .musicxml\uFF09": {
         readonly en: "Open… (.mxl / .musicxml)";
     };
-    readonly "\u6253\u5F00\u2026": {
-        readonly en: "Open…";
-    };
     readonly 选区: {
         readonly en: "Selection";
     };
@@ -5595,9 +5592,6 @@ export declare const S: {
     };
     readonly "\u516B\u5EA6\u7684\u6570\u5B57\u4ECE\u54EA\u513F\u6570\uFF1A\u5B57\u6BCD\u8C31\u3001\u7B80\u8C31\u8C31\u5934\u3001\u952E\u4E0A\u7684\u5B57\u3001\u97F3\u57DF\u65CB\u94AE\u90FD\u7167\u5B83\u5199\u3002\u53EA\u6539\u53EB\u6CD5\uFF0C\u6587\u4EF6\u91CC\u3001\u58F0\u97F3\u91CC\u7684\u516B\u5EA6\u4E0D\u53D8\u3002": {
         readonly en: "Where the octave numbers count from: letter notation, the numbered-notation header, the key labels and the range knob all follow it. Only the naming changes; octaves in the file and in the sound stay the same.";
-    };
-    readonly 不用: {
-        readonly en: "Off";
     };
     readonly 跟着音符密度: {
         readonly en: "Follows note density";
