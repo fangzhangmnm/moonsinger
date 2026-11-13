@@ -15,13 +15,15 @@ import { isPaperKind, PAPER_LABEL, DENSITIES, type Paper, type ReadPaper, type P
 import { paperOf, marginsOf, sizeOf, staffMmFor, STAFF_MM, STAFF_MM_COMPACT, paperSizeText } from "./paper.ts";
 import { isNotation, isMiddleC, isTextLang, IN_C_APPLIES, NOTATIONS, type SongView, type ChordsMode, type NotationId, CHORDS_MODES } from "../score/song-view.ts";
 import { _t } from "../i18n/index.ts";
+import { BASE_DEFAULTS, defaultsFor, type LookContext, type LookDefaults } from "./habits.ts";
 
 /** 能跟着软件的那几项（歌级；score.json 顶层同名的键）。arrangement 改声音（第 16 条），textLang 的 "ui" 本身就是跟界面，都不在这里。 */
 export const LOOK_KEYS = ["notation", "viewInC", "middleC", "chordTags", "expressions", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"] as const;
 export type LookKey = typeof LOOK_KEYS[number];
 
 /** "default" 现在等于什么（只在这里；改了 = 所有跟着软件的歌跟着变）。纸的边距和谱高没有自己的一个数：边距 = 这张纸自己的，谱高 = 这一档的。 */
-const DEFAULTS = { notation: "staff" as NotationId, viewInC: false, middleC: 4, chordTags: true, expressions: true, barNumbers: "line" as const, lyricFit: "rhythm" as const, paper: "A5" as PaperKind, density: "cozy" as Density };
+// "default" 现在等于什么：src/look/habits.ts。设备上没选习惯 = BASE_DEFAULTS（软件的默认）；选了的习惯只盖它自己那一项（第 18 条，随 LookContext 交进来）。纸的边距和谱高没有自己的一个数：边距 = 这张纸自己的，谱高 = 这一档的。
+export { BASE_DEFAULTS, HABIT_KEYS, defaultsFor, type HabitKey, type Habits, type LookContext, type LookDefaults } from "./habits.ts";
 /** 每张纸 / 每个声部那几样「没写」的意思（第 17 条四问第 2 条：这一轮不加「跟着软件」，但退路收进这里）：自动八度线没写 = 开、大谱表没写 = 一行、和弦选项没写 = 也认拆开弹的。
  *  以后要是想改自动八度线、和弦选项的默认，先把那一项做成三态（"default" / 开 / 关），再改这里（契约 contract.ts 记了这一句）。 */
 const UNWRITTEN_TRACK = { autoOttava: true, grand: false, chords: "auto" as ChordsMode };
@@ -32,39 +34,42 @@ export interface Look extends SongView {
   readonly paper: Paper;
   /** 每一项是不是跟着软件（true）——页面设置「跟着软件（现在是：X）」那一格亮不亮。模块外面问它，不自己比 "default"。 */
   readonly follows: { readonly [K in LookKey]: boolean };
+  /** 这一次「跟着软件」用的那张表（设备上没选习惯 = BASE_DEFAULTS；第 18 条）。 */
+  readonly base: LookDefaults;
 }
 
 const pick = <T,>(v: Choice<T>, d: T): T => (v === "default" ? d : v);
 
 /** 歌 → 这首歌现在怎么画（纯函数；不读设备、不读界面语言、不读时钟）。认不出来的值（比这一版新的文件带来的）按最基本的那一档画：谱种 = 五线谱、歌词 = 按节奏、小节号 = 印、中央 C = C4、谱上的字 = 跟着界面。 */
-export function lookOf(song: Song): Look {
+export function lookOf(song: Song, ctx: LookContext = {}): Look {   // ctx = 当时的情况（这台设备的习惯）；不给 = 都没选。存文件只用不给的那一份（文件一个字节都不跟着习惯变）
+  const D = defaultsFor(ctx);
   const chords = new Map<string, ChordsMode>();
   for (const p of song.parts) if ((CHORDS_MODES as readonly unknown[]).includes(p.chords)) chords.set(p.id, p.chords as ChordsMode);
-  const n0 = pick(song.notation, DEFAULTS.notation), notation = isNotation(n0) ? n0 : "staff";
-  const viewInC = pick(song.viewInC, DEFAULTS.viewInC) === true, mc = pick(song.middleC, DEFAULTS.middleC);
-  const lf = pick(song.lyricFit, DEFAULTS.lyricFit), bn = pick(song.barNumbers, DEFAULTS.barNumbers);
+  const n0 = pick(song.notation, D.notation), notation = isNotation(n0) ? n0 : "staff";
+  const viewInC = pick(song.viewInC, D.viewInC) === true, mc = pick(song.middleC, D.middleC);
+  const lf = pick(song.lyricFit, D.lyricFit), bn = pick(song.barNumbers, D.barNumbers);
   const follows = Object.fromEntries(LOOK_KEYS.map((k) => [k, song[k] === "default"])) as Look["follows"];
   return {
     notation, viewInC, inCActive: viewInC && IN_C_APPLIES[notation],
-    chordTags: pick(song.chordTags, DEFAULTS.chordTags) !== false,
+    chordTags: pick(song.chordTags, D.chordTags) !== false,
     chordsOf: (part) => chords.get(part) ?? UNWRITTEN_TRACK.chords,
-    density: densityIn(song),
+    density: densityIn(song, D),
     lyricFit: lf === "lyrics" ? "lyrics" : "rhythm",
     barNumbers: bn !== "off",
     middleC: isMiddleC(mc) ? mc : 4,
-    expressions: pick(song.expressions, DEFAULTS.expressions) !== false,
+    expressions: pick(song.expressions, D.expressions) !== false,
     textLang: isTextLang(song.textLang) ? song.textLang : "ui",
-    paper: paperIn(song),
-    follows,
+    paper: paperIn(song, D),
+    follows, base: D,
   };
 }
-const densityIn = (song: Song): Density => { const d = pick(song.density, DEFAULTS.density); return d === "compact" ? "compact" : "cozy"; };
+const densityIn = (song: Song, D: LookDefaults): Density => { const d = pick(song.density, D.density); return d === "compact" ? "compact" : "cozy"; };
 /** 边距跟着软件时用哪个：这张纸自己的（「其他」大小的纸没有自己的 = 用默认那张纸的）。 */
-const ownMargins = (kind: PaperKind | "other"): Margins => marginsOf(kind === "other" ? DEFAULTS.paper : kind);
+const ownMargins = (kind: PaperKind | "other", D: LookDefaults): Margins => marginsOf(kind === "other" ? D.paper : kind);
 /** 这首歌画的时候用的纸（每个字段都有值）。 */
-function paperIn(song: Song): Paper {
-  const c: PaperChoice = song.paper === "default" ? { kind: DEFAULTS.paper } : song.paper, density = densityIn(song);
-  const base = c.kind === "other" ? { kind: "other" as const, widthMm: c.widthMm, heightMm: c.heightMm, marginMm: ownMargins("other") } : paperOf(c.kind);
+function paperIn(song: Song, D: LookDefaults): Paper {
+  const c: PaperChoice = song.paper === "default" ? { kind: D.paper } : song.paper, density = densityIn(song, D);
+  const base = c.kind === "other" ? { kind: "other" as const, widthMm: c.widthMm, heightMm: c.heightMm, marginMm: ownMargins("other", D) } : paperOf(c.kind);
   const marginMm: Margins = song.marginMm === "default" ? base.marginMm : song.marginMm;
   const staffMm = song.staffMm === "default" ? staffMmFor(density) : song.staffMm;
   return { kind: base.kind, widthMm: base.widthMm, heightMm: base.heightMm, marginMm, density, staffMm };
@@ -77,7 +82,7 @@ export const customStaffMm = (look: Look): number | null => (!look.follows.staff
 export function marginRow(look: Look): { follow: string; custom: string } | null {
   if (look.follows.marginMm) return null;
   const n = (v: number) => +v.toFixed(2), sides = (m: Margins) => _t("上 {t} · 下 {b} · 左 {l} · 右 {r} 毫米", { t: n(m.t), b: n(m.b), l: n(m.l), r: n(m.r) });
-  const own = ownMargins(look.paper.kind), even = own.l === own.r && own.l === own.t && own.l === own.b;
+  const own = ownMargins(look.paper.kind, look.base), even = own.l === own.r && own.l === own.t && own.l === own.b;
   return { follow: even ? _t("{mm} 毫米", { mm: n(own.l) }) : sides(own), custom: sides(look.paper.marginMm) };
 }
 /** 每张纸 / 每个声部那几样（第 17 条四问第 2 条）：排版、存档都只问这一个口子。文件和内存的写法不动（PaperSeg.looks 只存大谱表 = true、自动八度线 = false）。 */
@@ -108,17 +113,30 @@ export function allDefault(song: Song): Song {
 export const chosenCount = (song: Song): number => LOOK_KEYS.filter((k) => song[k] !== "default").length;
 
 /** 页面设置第一格「跟着软件（现在是：X）」的 X。 */
-export function defaultText(key: LookKey): string {
+/** 谱种的名字（页面设置的下拉、设置「习惯看的谱」那一行、第一次打开的卡都从这里拿；加一种谱 = Record 逼着这里多一个名字，几处自动多一格）。 */
+export const notationName = (id: NotationId): string => ({ staff: _t("五线谱"), jianpu: _t("简谱"), letters: _t("字母谱") } as Record<NotationId, string>)[id];
+/** 每种谱一句说明（页面设置的问号、第一次打开的卡）；字母谱那句的中央 C 跟着叫法。 */
+export const NOTATION_NOTE: Record<NotationId, (middleC: number) => string> = {
+  staff: () => _t("按音高画在五条线上"),
+  jianpu: () => _t("数字 1–7（首调）"),
+  letters: (mc) => _t("实际的音名 C D E F G A B，右上角写升降号、右下角写八度（中央 C = C{n}）", { n: mc }),
+};
+/** 「中央 C 叫」的选项上写什么（页面设置、设置「界面」页、第一次打开的卡同一份）。 */
+export const middleCLabel = (n: number): string => (n === 4 ? _t("C{n}（国际通用）", { n }) : `C${n}`);
+/** 「中央 C 叫」是什么（一句；三处同一份）。 */
+export const MIDDLE_C_NOTE = (): string => _t("八度的数字从哪儿数：字母谱、简谱谱头、键上的字、音域旋钮都照它写。只改叫法，文件里、声音里的八度不变。");
+export function defaultText(key: LookKey, ctx: LookContext = {}): string {   // X 跟着这台设备的习惯（第 18 条）
+  const D = defaultsFor(ctx);
   switch (key) {
-    case "notation": return ({ staff: _t("五线谱"), jianpu: _t("简谱"), letters: _t("字母谱") } as Record<NotationId, string>)[DEFAULTS.notation];
-    case "viewInC": return DEFAULTS.viewInC ? _t("按 C 调看") : _t("不用");   // 第一格是「跟着软件（现在是：X）」，X 里不再套括号（17-2 顺手）
-    case "middleC": return `C${DEFAULTS.middleC}`;
-    case "chordTags": return DEFAULTS.chordTags ? _t("标级数") : _t("不标");
-    case "expressions": return DEFAULTS.expressions ? _t("显示") : _t("不显示");
-    case "barNumbers": return DEFAULTS.barNumbers === "line" ? _t("每行开头") : _t("不印");
-    case "lyricFit": return DEFAULTS.lyricFit === "rhythm" ? _t("按节奏") : _t("按歌词");
-    case "paper": return PAPER_LABEL[DEFAULTS.paper];
-    case "density": return DENSITIES.find((z) => z.id === DEFAULTS.density)?.label ?? DEFAULTS.density;
+    case "notation": return notationName(D.notation);
+    case "viewInC": return D.viewInC ? _t("按 C 调看") : _t("不用");   // 第一格是「跟着软件（现在是：X）」，X 里不再套括号（17-2 顺手）
+    case "middleC": return `C${D.middleC}`;
+    case "chordTags": return D.chordTags ? _t("标级数") : _t("不标");
+    case "expressions": return D.expressions ? _t("显示") : _t("不显示");
+    case "barNumbers": return D.barNumbers === "line" ? _t("每行开头") : _t("不印");
+    case "lyricFit": return D.lyricFit === "rhythm" ? _t("按节奏") : _t("按歌词");
+    case "paper": return PAPER_LABEL[D.paper];
+    case "density": return DENSITIES.find((z) => z.id === D.density)?.label ?? D.density;
     case "staffMm": return _t("跟着音符密度");
     case "marginMm": return _t("这张纸自己的");
   }
@@ -135,7 +153,8 @@ export function paperChoicesOf(p: ReadPaper | undefined): Pick<Song, "paper" | "
   const staffMm: Choice<number> = p.staffMm === undefined || Math.abs(p.staffMm - want) < 0.05 ? "default" : p.staffMm;
   const own = p.kind === "other" ? null : marginsOf(p.kind), same = (a: Margins, b: Margins) => (["l", "r", "t", "b"] as const).every((k) => Math.abs(a[k] - b[k]) < 0.05);
   const marginMm: Choice<Margins> = own && same(p.marginMm, own) ? "default" : { ...p.marginMm };
-  const plain = p.kind === DEFAULTS.paper && density === "default" && staffMm === "default" && marginMm === "default";
+  const plain = p.kind === BASE_DEFAULTS.paper &&   // 读文件认「跟着软件」只用软件的默认（文件的意思不跟着设备的习惯变）
+    density === "default" && staffMm === "default" && marginMm === "default";
   const paper: Choice<PaperChoice> = plain ? "default" : p.kind === "other" ? { kind: "other", widthMm: p.widthMm, heightMm: p.heightMm } : { kind: p.kind };
   return { paper, density, staffMm, marginMm };
 }

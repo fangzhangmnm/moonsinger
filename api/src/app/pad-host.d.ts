@@ -8,6 +8,8 @@ import type { InputGate } from "./input-gate.ts";
 /** main.ts 给的那一组访问器：谱的状态与写、出声、页 / 模式、鬼音符、锁、披露、符号格要看的、菜单。 */
 export interface PadGlue {
     state(): EditorState;
+    /** 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字照它写。 */
+    middleC(): number;
     /** gesture = 撤销并步的名字（同一个名字、挨得近的几下并成一步撤销；单声乐器「后按的算数」用）。 */
     update(next: EditorState, gesture?: string): void;
     /** 写一个音并回刚写的下标（-1 = 没写成）。 */

@@ -103,6 +103,12 @@ export function keyInterval(f0: number, f1: number): { steps: number; semis: num
 /** 挪八度（Alt+↑↓）。 */
 export function octaveBy(p: Pitch, d: number): Pitch { return { ...p, octave: p.octave + d }; }
 
+/** 给人看的八度数字：中央 C 叫 C 几（middleC；4 = 国际通用，「C3」「C5」两种叫法也有人用；第 18 条起设备上能记成习惯）。
+ *  文件、MusicXML、出声里的八度永远是标准的，不经过这里。 */
+export const shownOctave = (octave: number, middleC: number): number => octave - 4 + middleC;
+/** 给人看的音名（C♯4 / B♭3，八度照中央 C 叫 C 几）：界面上「字母 + 八度数字」都走这一个出口——键上的字、音域旋钮、字母谱、简谱谱头的八度（统筹 b149a4d9 第 2 点）。 */
+export const noteName = (p: Pitch, middleC: number): string => `${p.step}${p.alter > 0 ? "♯".repeat(p.alter) : "♭".repeat(-p.alter)}${shownOctave(p.octave, middleC)}`;
+/** 记录 / 诊断用的音名（标准八度、ASCII 升降）；给人看的走 noteName。 */
 export function pitchName(p: Pitch): string { return `${p.step}${p.alter > 0 ? "#".repeat(p.alter) : "b".repeat(-p.alter)}${p.octave}`; }
 
 export const samePitch = (a: Pitch | null, b: Pitch | null): boolean =>

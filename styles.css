@@ -78,7 +78,8 @@ button, input, select { font: inherit; color: inherit; }
 .notice-stack.docked-top { top: calc(var(--safe-top) + 54px); bottom: auto; left: 50%; }
 /* 开着面板（.offer：设置 / 导出 / 问一句 / 定稿…）时 toast 挪到顶上，别压住面板的钮（库自己只认 .backdrop[data-open]，本仓的面板是 .offer；
    2026-10-21 底座贴底后谱那一块变矮、toast 落在屏幕中间 = 正好压住居中的卡片，E2E final / issues 点不到「mp3」） */
-body:has(.offer:not([hidden])) .notice-stack { top: calc(var(--safe-top) + 54px); bottom: auto; left: 50%; }
+/* 面板外壳（.wbe-panel，零件库；「这首歌」、第一次打开的卡…）也是模态的面板，同一条（v0.17.28：原来只认 .offer，「打开了 x.mxl」压在「这首歌」面板中间那一行上） */
+body:has(:is(.offer:not([hidden]), .wbe-panel)) .notice-stack { top: calc(var(--safe-top) + 54px); bottom: auto; left: 50%; }
 /* 提示条躲不开开着的小卡 / 小菜单时（main.ts dodgeNotices）：提示条上没有按钮的部分让点击穿过去，按钮照样能点 */
 .notice-stack.notice-through > .toast { pointer-events: none; }
 .notice-stack.notice-through > .toast :is(button, a, [role="button"]) { pointer-events: auto; }
@@ -1237,8 +1238,28 @@ button.chord-cand.is-on { box-shadow: 0 0 0 2px var(--accent) inset; }
 .song-panel .lock-line { justify-content: space-between; gap: 8px; padding: 6px 10px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 8px; background: color-mix(in srgb, var(--muted) 10%, var(--panel)); color: var(--muted); font-size: 14px; }
 .song-panel .lock-line-what { display: inline-flex; align-items: center; gap: 6px; }
 .song-panel .lock-line-what .ico { width: 16px; height: 16px; }
-.song-panel :is(input, textarea):disabled { opacity: .55; cursor: default; -webkit-user-select: none; user-select: none; }
+.song-panel :is(input, textarea):disabled { opacity: .55; background: color-mix(in srgb, var(--muted) 12%, var(--panel)); cursor: default; -webkit-user-select: none; user-select: none; }
 .song-panel label.btn.is-disabled { opacity: .35; cursor: default; pointer-events: none; }
+/* 第一次打开的卡：这台设备看谱的习惯（第 18 条；src/app/panels/habits-card.ts）。一张普通的卡（面板外壳）：大的在上（看什么谱、移调辅助：一行一格、预览横着铺满），小的辅助一组在最下面（一行、小钮、不带预览） */
+.habits-card { display: flex; flex-direction: column; gap: 16px; }
+.habits-card .hab-lead { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.habits-card .hab-title { font-weight: 600; font-size: 16px; margin-bottom: 6px; }
+.habits-card :is(.hab-note, .hab-foot) { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0 0 6px; }
+.habits-card .hab-foot { margin: 6px 0 0; }
+.habits-card .hab-tiles { display: flex; flex-direction: column; gap: 8px; }
+.habits-card .hab-tile { display: flex; flex-direction: column; align-items: stretch; gap: 2px; width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.habits-card .hab-tile.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.habits-card .hab-name { font-weight: 600; font-size: 15px; }
+.habits-card .hab-sub { color: var(--muted); font-size: 13px; }
+.habits-card .hab-prev { display: block; margin-top: 4px; }
+.habits-card .hab-prev svg { display: block; width: 100%; height: auto; max-height: 150px; background: transparent; pointer-events: none; }
+.habits-card .hab-small { border-top: 1px solid var(--line); padding-top: 12px; }
+.habits-card .hab-row { display: flex; align-items: center; gap: 10px; }
+.habits-card .hab-k { font-size: 14px; white-space: nowrap; }
+.habits-card .hab-btns { display: grid; grid-template-columns: repeat(3, auto); gap: 6px; }
+.habits-card .hab-mini { height: 30px; font-size: 13px; padding: 0 10px; white-space: nowrap; }
+.habits-card .hab-mini.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.habits-card .hab-small .hab-note { margin-top: 6px; }
 body.doc-locked .inst-page .ip-card { pointer-events: none; opacity: .72; }
 body.doc-locked .inst-page .ip-pad { pointer-events: auto; opacity: 1; }
 body.doc-locked .studio :is(.studio-strips, .fx-panel, .mix-menu) :is(input, select, button, textarea) { pointer-events: none; opacity: .55; }

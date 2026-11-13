@@ -10,7 +10,7 @@ export const AREAS = {
   // 谱面：手势（点 / 长按 / 拖 / 框选 / 把手）、排版、显示、谱上记号
   score: ["layout-count", "header-hit", "header-panel", "dropdown", "expressions", "hairpin-to", "minor-key", "credits-listen", "chord-pick", "clef-section", "pad-paradigm", "select", "finger", "rest", "row-pin", "lift", "sel-tweak", "top-sels", "undo", "caret-end", "clef", "auto-ottava", "shared-staff", "hscroll", "only1", "text-lang", "notice-dodge",
     "zoom", "ctrl-zoom", "dock-zoom", "scroll", "swell-art", "phrase", "repeat", "transpose", "arrange", "pad-ghost", "listen-ghost", "start-dyn",
-    "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow", "title-keys", "overlay-touch", "status-hit", "jianpu", "part-names", "pedal", "tall-group"],
+    "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow", "title-keys", "overlay-touch", "status-hit", "jianpu", "part-names", "pedal", "tall-group", "habits-card"],
   // 键盘（pad）：音键 / 符号格 / 几种锁 / 歌词框 / 记号菜单
   pad: ["unplug", "mono-later-wins", "stack-caps", "pad-key-auto", "view-in-c", "chord-tags", "pad-toggle", "pad-ghost", "dyn-levels", "ramp", "groove", "clef", "repeat", "finder-keys", "modes", "landscape-widgets",
     "dock-zoom", "save-keys", "swell-art", "start-dyn", "lyric-dash", "phrase", "sel-tweak", "title-keys", "midi", "pedal", "dock-side", "finder-width", "finder-memory", "finder-names", "cast-back", "audition-banks", "part-toggles", "finder-accordion", "finder-hide", "finder-trynew", "header-panel", "pad-follow"],
@@ -103,6 +103,8 @@ export const AREA_OF_PATH = [
   [/^src\/app\/panels\/settings-libs\.ts$/, ["store"]],
   // 删掉的库不自己下回来（v0.17.25）：记号在 sources/removed.ts，拦在 worker 和解析链 → 歌库那一区（lib-removed、settings-libs）+ 放
   [/^src\/sources\/removed\.ts$/, ["store", "play"]],
+  // 第一次打开问一次的卡（第 18 条：这台设备看谱的习惯）：卡本身 + 习惯管到谱面 / 键上的字 → 谱面、键盘
+  [/^src\/app\/panels\/habits-card\.ts$/, ["score", "pad"]],
   [/^src\/app\/panels\//, ["pad", "studio", "play"]],
   [/^assets\//, ["play", "export"]],
   // 其余 src 没登记 = 整套（宁多跑不漏跑；登记了再缩）

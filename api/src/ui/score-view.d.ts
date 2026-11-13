@@ -1,5 +1,6 @@
 import { type EditorState } from "../score/song.ts";
 import { type Pitch } from "../score/pitch.ts";
+import { type LookContext } from "../look/index.ts";
 import type { HarmonyRead } from "../theory/index.ts";
 import { type Layout, type PartView, type ClefHit } from "../render/engrave.ts";
 import { type RawMeasure } from "../render/text/index.ts";
@@ -99,6 +100,8 @@ export interface ScoreLook {
     parts(): PartView[];
     /** 按拍号自动画小节线开着没有（默认开）。 */
     autoBars?(): boolean;
+    /** 当时的情况（第 18 条）：这台设备的习惯（歌里「跟着软件」的那几项照它）。宿主读设备、给一份；画、排版缓存的键、排版 worker 都用这一份。没给 = 都没选。 */
+    lookCtx?(): LookContext;
     /** 范围：segment = 一次只看光标所在的那张纸（曲段），‹ › 翻；all = 全部（隐藏的纸折叠着）。 */
     scope?(): "all" | "segment";
     /** 屏幕放不下纸的时候：true = 按屏宽重新折行；false（默认）= 不折行、整张纸按比例缩小（行和纸上一模一样）。 */
@@ -205,6 +208,8 @@ export declare class ScoreView {
      *  放不下（手机）：默认不折行 = 整张纸按比例缩小；选了「折行」= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
      *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
     private frame;
+    /** 这台设备的习惯（宿主给的；第 18 条）。 */
+    private lookCtx;
     /** 谱面多宽时自动大小一格几 px（宿主判底座贴不贴边用：按贴底时的全宽算，和用户的缩放无关；2026-10-21）。 */
     spaceAt(avail: number): number;
     private frameAt;

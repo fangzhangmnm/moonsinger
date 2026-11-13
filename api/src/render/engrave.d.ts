@@ -3,6 +3,7 @@ import { type Lang } from "../i18n/index.ts";
 import { type Song, type Token, type Focus, type Staff } from "../score/song.ts";
 import { type PercInfo } from "../gm/percussion.ts";
 import type { Ink } from "./frame/cell.ts";
+import { type LookContext } from "../look/index.ts";
 import { type HarmonyRead } from "../theory/index.ts";
 import { type RowKind } from "./notations.ts";
 /** tok = 这个图元属于哪个 token（id）：写字头 / 选区 / 强调色不进排版，score-view 按 data-tok 在 DOM 上开关 class（W-17 第 1 刀，2026-10-15）。 */
@@ -123,6 +124,8 @@ export interface EngraveOpts {
         t: number;
         b: number;
     };
+    /** 当时的情况（第 18 条）：这台设备的习惯——歌里某一项是「跟着软件」时照它（谱种 / 移调辅助 / 中央 C 叫 C 几）。平数据，随请求进排版 worker、进排版缓存的键。不给 = 都没选（印 / 测试的底本）。 */
+    look?: LookContext;
     /** 字的尺子比谱的尺子大多少（刀 2；src/look/paper.ts textScaleOf：舒适 = 1、紧凑 = 1.4）：歌名 / 作者栏 / 编排 / 曲段名、声部名 / 简写、歌词、速度 / 风格 / 反复的字、
      *  「1=F」、小节号、和弦级数、页码，连同它们周围留的地方，都按 sp × textScale 量；字形、线、cresc. / 8va / 「吸」/ 推定的灰字照旧跟谱。量字的换算在文字模块里（measure.width）。没给 = 1。 */
     textScale?: number;

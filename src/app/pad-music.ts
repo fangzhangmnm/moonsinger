@@ -2,7 +2,7 @@
 // created 2026-10-15 by Claude Fable 5.1（键盘模块刀 2；原来长在 pad.ts 里的 scales / pitch / song 调用原样搬来，算法不变）。
 //   user 2026-10-14「键盘确实是前端，音乐知识比如和弦有几个是外部注入的，所以一个键盘的前端库，一个是负责生成音乐知识的深模块。以后我们马上要做和弦键盘，也是一样的」
 //   键盘只认「第 k 级」；k 是什么音、叫什么、MIDI 几号，都从这里拿。以后的和弦键盘 = 另一个 PadMusic（cell(k) = 第 k 个和弦）。
-import { type Pitch, HOME, diatonicIndex, tonicStepIndex, pitchName, alterBy, midiOf, KEY_LABEL } from "../score/pitch.ts";
+import { HOME, diatonicIndex, tonicStepIndex, noteName, alterBy, midiOf, KEY_LABEL, type Pitch } from "../score/pitch.ts";
 import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
 import { type EditorState, inputKey, inputScaleOf, keyAt, timeAt, tempoAt, tr } from "../score/song.ts";
 import { _t } from "../i18n/index.ts";
@@ -16,8 +16,6 @@ export function homeTonic(fifths: number): number {
   const t = tonicStepIndex(fifths), h = diatonicIndex(HOME);
   return t + 7 * Math.floor((h - t) / 7);
 }
-/** 音名的人话写法：C♯4 / B♭3。 */
-export const pretty = (p: Pitch): string => pitchName(p).replace(/#/g, "♯").replace(/b(?=\d)|b(?=b)/g, "♭");
 /** 「1=」旋钮上的字：调 + 调式名（小字）。 */
 const keyLabel = (f: number, sc: Scale) => `<span class="kk">1=${KEY_LABEL[f] ?? "?"}</span><small>${sc.name}</small>`;
 /** 调式在滚轮里的样子：名字 + 从主音起的音级（羽调式 = 6 1 2 3 5）。 */
@@ -41,15 +39,16 @@ export interface PadMusicHost extends PadMusic {
   scaleIdAt(i: number): string;
 }
 
-export function createPadMusic(get: () => EditorState): PadMusicHost {
+/** middleC = 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字、音域旋钮照它写。 */
+export function createPadMusic(get: () => EditorState, middleC: () => number): PadMusicHost {
   const f = (): number => inputKey(get()), sc = (): Scale => scaleById(inputScaleOf(get()));
   const keySig = (st: EditorState): number => keyAt(tr(st), st.sel ? st.sel.from : st.caret);
   const at = (k: number) => ladderAt(sc(), k, homeTonic(f()), f());
   const pitchAt = (k: number): Pitch => at(k).pitch;
   return {
-    sig: () => `${f()}|${inputScaleOf(get())}`,
-    cell: (k): PadCell => { const r = at(k); return { deg: degLabel(r.deg), oct: r.oct, abs: pretty(r.pitch), midi: midiOf(r.pitch), ...(r.deg.deg === 1 && r.deg.alt === 0 ? { tonic: true } : {}) }; },
-    altered: (k, a) => pretty(alterBy(pitchAt(k), a)),
+    sig: () => `${f()}|${inputScaleOf(get())}|${middleC()}`,   // 中央 C 的叫法变了 = 键上的字重写
+    cell: (k): PadCell => { const r = at(k); return { deg: degLabel(r.deg), oct: r.oct, abs: noteName(r.pitch, middleC()), midi: midiOf(r.pitch), ...(r.deg.deg === 1 && r.deg.alt === 0 ? { tonic: true } : {}) }; },
+    altered: (k, a) => noteName(alterBy(pitchAt(k), a), middleC()),
     anchor: (layout) => (layout === "absolute" ? ladderFirstAtOrAbove(sc(), 60, homeTonic(f()), f()) : ladderHome(sc(), homeTonic(f()), f())),
     keyChoices: () => {
       const st = get(), name = `1=${KEY_LABEL[f()] ?? "?"} ${sc().name}`, ks = keySig(st);

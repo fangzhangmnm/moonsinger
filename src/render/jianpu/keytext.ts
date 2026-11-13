@@ -3,7 +3,7 @@
 //   字母后面右下角一个八度数字，意思是不带点的 1（小调写「6=」= 不带点的 6）是哪个音；字形同字母谱（大字母 + 右下角小数字，粗细照 7-P），升降号在字母前面（简谱老写法）、用 Bravura（同 7-P）。
 //   数字跟着这首歌「中央 C 叫 C 几」（middleC）走，和字母谱一致。谱头那一行、中途换调写的字都用这一份；宽从字形表算（不现场量；量的时候也用得上）。
 import type { Prim } from "../engrave.ts";
-import { keyText } from "../../score/pitch.ts";
+import { keyText, shownOctave } from "../../score/pitch.ts";
 import { fromDegree } from "../../score/degree.ts";
 import { DIGIT_EM, DIGIT_H, SCRIPT_K, SCRIPT_GAP, SUB_DY, ACC_GLYPH_EM, ACC_RISE, accGlyphsOfText, accRunW, headTextW, accStroke } from "./glyphs.ts";
 
@@ -13,7 +13,7 @@ export interface KeyParts { pre: string; acc: string; letter: string; oct: strin
 export function keyParts(fifths: number, minor: boolean, base: number | null, middleC: number): KeyParts {
   const m = /^([16]=)([A-G])([♭♯]?)$/.exec(keyText(fifths, minor));
   const pre = m?.[1] ?? (minor ? "6=" : "1="), letter = m?.[2] ?? "?", acc = m?.[3] ?? "";
-  const oct = base === null ? "" : String(fromDegree(minor ? 6 : 1, base, 0, fifths).octave - 4 + middleC);
+  const oct = base === null ? "" : String(shownOctave(fromDegree(minor ? 6 : 1, base, 0, fifths).octave, middleC));
   return { pre, acc, letter, oct };
 }
 /** 一个字的大小（数字行的单位，或 px）下：「1=」、升降号、字母、角标各占多宽、从哪起（相对写的起点）；一共多宽。 */

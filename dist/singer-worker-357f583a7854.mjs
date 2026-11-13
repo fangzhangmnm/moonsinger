@@ -1,322 +1,14 @@
-// src/look/text.ts
-var s = (face, em, ruler, weight = 400, italic = false) => ({ face, weight, italic, em, ruler });
-var STEM_REGULAR = 0.092;
-var BOLD_STROKE = 0.035;
-var SMALL_STEM_K = 0.9;
-function smallWeight(k) {
-  const target = SMALL_STEM_K * STEM_REGULAR, reg = k * STEM_REGULAR, bold = k * (STEM_REGULAR + BOLD_STROKE);
-  return Math.abs(bold - target) < Math.abs(reg - target) ? 600 : 400;
-}
-var JP_MAIN_EM = 2.5;
-var TEMPO_EM = 1.35;
-var LYRIC_EM = 1.6;
-var LYRIC_LOOK = { cozy: { k: 1, sx: 1, gapFloor: 0.2 }, compact: { k: 1.15, sx: 0.85, gapFloor: 0.2 } };
-var LYRIC_MIN_SX = 0.5;
-var TEXT_STYLES = {
-  "song-title": s("sans", 2.8, "text", 600),
-  credits: s("sans", 1.25, "text"),
-  arr: s("sans", 1.25, "text"),
-  "arr-label": s("sans", 1.25, "text"),
-  "arr-issue": s("sans", 1.1, "text", 400, true),
-  "paper-name": s("sans", 1.6, "text", 600),
-  "part-name": s("sans", LYRIC_EM * 0.85, "text", 600),
-  "part-badge": s("sans", 1, "text", 600),
-  // 谱上的记号字（速度、1=X、风格、和弦级数、反复的字、小节号）跟谱（v0.16.48；user 11-09「M F 它跟着走没问题，关键是它这个速度的那一串字号，是不是也应该跟着走？…速度啊，音高啊，那一串」）；歌名 / 曲段名 / 歌手名这些标签照旧跟字
-  "tempo-word": s("sans", TEMPO_EM, "staff", 600),
-  "tempo-num": s("sans", TEMPO_EM, "staff"),
-  "tempo-change": s("sans", TEMPO_EM, "staff", 700),
-  "key-label": s("sans", TEMPO_EM, "staff"),
-  /** 专业模式 C 调的淡「1=C」（覆盖层写、不印）：和「1=F」一样跟谱。 */
-  "key-hint": s("sans", TEMPO_EM, "staff"),
-  "groove-mark": s("sans", TEMPO_EM, "staff", 600, true),
-  "chord-tag": s("serif", TEMPO_EM, "staff", 600),
-  "nav-word": s("sans", TEMPO_EM * 1.05, "staff", 600, true),
-  "nav-mark": s("sans", TEMPO_EM * 1.05, "staff", 600),
-  // 反复的字（房子「1.」、×3、D.C.…）：屏幕一直是粗的，PDF 原来印细的——统一成粗的
-  "bar-no": s("sans", 1.05, "staff"),
-  "page-no": s("sans", 1.2, "text"),
-  lyric: s("lyric", LYRIC_EM, "staff"),
-  ottava: s("sans", 1.3, "staff"),
-  "breath-label": s("sans", 1.15, "staff"),
-  "dyn-word": s("serif", 2, "staff", 400, true),
-  "dyn-implied": s("sans", 1.3, "staff", 600, true),
-  // 简谱数字行（谱面分家第四刀；字号在图元上、宽高查 render/jianpu/glyphs.ts，不现场量）：数字一律不分粗细（UX 稿第 5 节）；谱头「1=C 4/4」和中途换调的字
-  "jp-digit": s("sans", 2.5, "staff"),
-  "jp-acc": s("sans", 1.3, "staff"),
-  "jp-letter-sup": s("sans", 1.75, "staff", smallWeight(1.75 / JP_MAIN_EM)),
-  "jp-letter-sub": s("sans", 1.75, "staff", smallWeight(1.75 / JP_MAIN_EM)),
-  // 字母谱的角标（7-L）：半粗，学小字号专用字形的思路——缩小了笔画不跟着变细；字号在图元上（字母的 SCRIPT_K 倍） "jp-head": s("sans", TEMPO_EM, "staff"),   // 谱头「1=C 3/4」：常规粗细（第五刀起照样张；字号在图元上 = 0.773 个数字字号）
-  // 叠着的和弦折成的和弦名（第五刀 5-4）：窄字 = 正文字体横向压（图元的 sx），宽查 render/jianpu/glyphs.ts
-  "jp-chord": s("sans", 2, "staff"),
-  // 数字行连音的小数字（8-3；7-P 小字补粗：字号 1.1 = 主字的 0.44 倍 → 算出来的粗细）
-  "jp-tuplet": s("sans", 1.1, "staff", smallWeight(1.1 / JP_MAIN_EM)),
-  // 简谱数字行上的力度（pp…ff、sfz、fp）：和数字同一款字、常规粗细、斜体，约数字的 0.8（user 11-11「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）
-  "jp-dyn": s("sans", 2, "staff", 400, true),
-  // 简谱整套鼓的图例（5-6，统筹裁定）：行首名字下面「● 大鼓 / 小鼓」，正文字体小一号、跟字的尺子（同名字）
-  "jp-legend": s("sans", 1.05, "text")
+var __defProp = Object.defineProperty;
+var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+}) : x)(function(x) {
+  if (typeof require !== "undefined") return require.apply(this, arguments);
+  throw Error('Dynamic require of "' + x + '" is not supported');
+});
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
-var GHOST_DIGIT_K = 0.62;
-var LYRIC_SPACE = 0.6;
-var HYPHEN_SX = 0.8;
-var GAP_MIN = 0.5;
-var GAP_FLOOR = 0.2;
-var DEFAULT_GAPS = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
-
-// src/render/text/style.ts
-var TEXT_FACES = {
-  sans: `system-ui, -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", sans-serif`,
-  serif: `"Noto Serif", "Times New Roman", Times, Georgia, serif`,
-  lyric: `system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`
-};
-var isBlockScript = (s2) => /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af\uff66-\uff9f]/.test(s2);
-var VARIANTS = [{ role: "part-name", when: "empty", weight: 400 }, { role: "jp-digit", when: "art-ghost", weight: smallWeight(GHOST_DIGIT_K) }];
-function textPx(role, sp, ts = 1) {
-  const st = TEXT_STYLES[role];
-  return st.ruler === "text" ? st.em * sp * ts : st.em * sp;
-}
-
-// src/render/text/lyric-fit.ts
-function solveLyrics(items, blockSx, minSx, gaps, widen = true, bounds) {
-  const n2 = items.length, f = items.map((it) => it.block ? blockSx : 1), tight = /* @__PURE__ */ new Set();
-  if (!n2) return { pos: [], f, tight };
-  const c = items.map((it) => it.cx);
-  const w = items.map((it) => it.w), halfL = c.map((x, i) => i > 0 ? Math.abs(c[i - 1] - x) / 2 : Infinity), halfR = c.map((x, i) => i < n2 - 1 ? Math.abs(c[i + 1] - x) / 2 : Infinity);
-  const gb = items.slice(0, -1).map((it, i) => gaps.space + (it.hy && !(it.block || items[i + 1].block) ? gaps.hyphen : 0));
-  const aLo = (i) => c[i] - Math.max(0.2, Math.min(w[i] * f[i] / 2 - 0.15, halfL[i])), aHi = (i) => c[i] + Math.max(0.2, Math.min(w[i] * f[i] / 2 - 0.15, halfR[i]));
-  const bL = bounds?.left ?? -Infinity, bR = bounds?.right ?? Infinity;
-  const edge = (i, x) => {
-    const a = bL + w[i] * f[i] / 2, b = bR - w[i] * f[i] / 2;
-    return a > b ? a : Math.min(Math.max(x, a), b);
-  };
-  const lo = (i) => edge(i, aLo(i)), hi = (i) => edge(i, aHi(i));
-  const G2 = new Array(Math.max(0, n2 - 1)).fill(1), floor = gaps.floor ?? GAP_FLOOR;
-  const d = (i) => (w[i] * f[i] + w[i + 1] * f[i + 1]) / 2 + Math.max(floor, gb[i] * Math.min(f[i], f[i + 1]) * G2[i]);
-  const L = new Array(n2), start = new Array(n2);
-  const step = (i) => {
-    const a = i > 0 ? L[i - 1] + d(i - 1) : -Infinity, b = lo(i);
-    if (a > b) {
-      L[i] = a;
-      start[i] = start[i - 1];
-    } else {
-      L[i] = b;
-      start[i] = i;
-    }
-  };
-  const pushFrom = (s2, to) => {
-    L[s2] = lo(s2);
-    start[s2] = s2;
-    for (let i = s2 + 1; i <= to; i++) step(i);
-  };
-  step(0);
-  for (let i = 1; i < n2; i++) {
-    step(i);
-    if (L[i] <= hi(i) + 1e-9) continue;
-    const s2 = start[i], keep = f.slice(s2, i + 1), can = (j) => !items[j].block;
-    {
-      const keepG = G2.slice(s2, i), fitsG = (t) => {
-        for (let j = s2; j < i; j++) G2[j] = Math.min(keepG[j - s2], t);
-        pushFrom(s2, i);
-        for (let j = s2; j <= i; j++) if (L[j] > hi(j) + 1e-9) return false;
-        return true;
-      };
-      if (fitsG(GAP_MIN)) {
-        let a2 = GAP_MIN, b2 = 1;
-        for (let k = 0; k < 16 && Math.floor(a2 * 100) !== Math.floor(b2 * 100); k++) {
-          const m = (a2 + b2) / 2;
-          if (fitsG(m)) a2 = m;
-          else b2 = m;
-        }
-        fitsG(Math.max(GAP_MIN, Math.floor(a2 * 100) / 100));
-        continue;
-      }
-    }
-    const fits = (t) => {
-      for (let j = s2; j <= i; j++) if (can(j)) f[j] = Math.min(keep[j - s2], t);
-      pushFrom(s2, i);
-      for (let j = s2; j <= i; j++) if (L[j] > hi(j) + 1e-9) return false;
-      return true;
-    };
-    const top = Math.max(...keep);
-    if (!items.slice(s2, i + 1).some((_, k) => can(s2 + k)) || !fits(minSx)) {
-      fits(minSx);
-      tight.add(i - 1);
-      tight.add(i);
-      L[i] = Math.min(L[i], hi(i));
-      continue;
-    }
-    let a = minSx, b = top;
-    for (let k = 0; k < 20 && Math.floor(a * 100) !== Math.floor(b * 100); k++) {
-      const m = (a + b) / 2;
-      if (fits(m)) a = m;
-      else b = m;
-    }
-    fits(Math.max(minSx, Math.floor(a * 100) / 100));
-  }
-  const clashes = (mark) => {
-    let k = 0;
-    for (let i = 0; i < n2; i++) {
-      step(i);
-      if (L[i] > hi(i) + 1e-9) {
-        k += L[i] - hi(i);
-        mark?.add(i - 1);
-        mark?.add(i);
-        L[i] = hi(i);
-      }
-    }
-    return k;
-  };
-  if (widen) {
-    const over = new Array(n2).fill(0);
-    for (let i = 0; i < n2; i++) {
-      step(i);
-      over[i] = Math.max(0, L[i] - hi(i));
-      if (over[i] > 0) L[i] = hi(i);
-    }
-    const tryAt = (from, set, undo) => {
-      const sL = [], sO = [], sS = [];
-      set();
-      let delta = 0, j = Math.max(0, from);
-      for (; j < n2; j++) {
-        const oldL = L[j];
-        sL.push(oldL);
-        sO.push(over[j]);
-        sS.push(start[j]);
-        step(j);
-        let o = 0;
-        if (L[j] > hi(j) + 1e-9) {
-          o = L[j] - hi(j);
-          L[j] = hi(j);
-        }
-        delta += o - over[j];
-        over[j] = o;
-        if (j > from + 1 && Math.abs(L[j] - oldL) < 1e-12) {
-          j++;
-          break;
-        }
-      }
-      if (delta <= 1e-6) return true;
-      undo();
-      for (let k = 0; k < sL.length; k++) {
-        L[from + k] = sL[k];
-        over[from + k] = sO[k];
-        start[from + k] = sS[k];
-      }
-      return false;
-    };
-    const relax = (arr, skip, fromOf) => {
-      for (let round = 0; round < 14; round++) {
-        let moved2 = false;
-        for (let i = 0; i < arr.length; i++) {
-          if (skip(i) || arr[i] >= 1) continue;
-          const was = arr[i], next = Math.min(1, Math.round((was + 0.05) * 100) / 100);
-          if (tryAt(fromOf(i), () => {
-            arr[i] = next;
-          }, () => {
-            arr[i] = was;
-          })) moved2 = true;
-        }
-        if (!moved2) break;
-      }
-    };
-    if (f.some((v, i) => v < 1 && !items[i].block)) relax(f, (i) => !!items[i].block, (i) => Math.max(0, i - 1));
-    if (G2.some((v) => v < 1)) relax(G2, () => false, (i) => i + 1);
-  }
-  tight.clear();
-  clashes(tight);
-  tight.delete(-1);
-  const R = new Array(n2);
-  R[n2 - 1] = hi(n2 - 1);
-  for (let i = n2 - 2; i >= 0; i--) R[i] = Math.min(hi(i), R[i + 1] - d(i));
-  const D2 = new Array(n2);
-  D2[0] = 0;
-  for (let i = 1; i < n2; i++) D2[i] = D2[i - 1] + d(i - 1);
-  const blocks = [];
-  for (let i = 0; i < n2; i++) {
-    blocks.push({ sum: c[i] - D2[i], cnt: 1 });
-    while (blocks.length > 1 && blocks[blocks.length - 2].sum / blocks[blocks.length - 2].cnt > blocks[blocks.length - 1].sum / blocks[blocks.length - 1].cnt) {
-      const t = blocks.pop();
-      blocks[blocks.length - 1].sum += t.sum;
-      blocks[blocks.length - 1].cnt += t.cnt;
-    }
-  }
-  const y = [];
-  for (const b of blocks) for (let k = 0; k < b.cnt; k++) y.push(b.sum / b.cnt);
-  const pos = y.map((v, i) => {
-    const l = L[i] - D2[i], r = Math.max(L[i], R[i]) - D2[i];
-    return Math.min(Math.max(v, l), r) + D2[i];
-  });
-  for (let i = 1; i < n2; i++) if (!tight.has(i) && pos[i] < pos[i - 1] + d(i - 1) - 1e-6) pos[i] = pos[i - 1] + d(i - 1);
-  return { pos, f, tight };
-}
-function lyricBlockSx(items, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS, bounds) {
-  if (!items.some((it) => it.block)) return 1;
-  const badBlocks = (t) => {
-    const r = solveLyrics(items, t, minSx, gaps, false, bounds);
-    let k = 0;
-    for (const i of r.tight) if (items[i].block) k++;
-    return k;
-  };
-  let best = 1, bestN = badBlocks(1);
-  for (let t = 0.95; bestN && t >= minSx - 1e-9; t = Math.round((t - 0.05) * 100) / 100) {
-    const k = badBlocks(t);
-    if (k < bestN) {
-      best = t;
-      bestN = k;
-    }
-  }
-  return best;
-}
-function fitLyrics(items, blockSx = 1, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS, bounds) {
-  const r = solveLyrics(items, blockSx, minSx, gaps, true, bounds);
-  return items.map((it, i) => ({ dx: r.pos[i] - it.cx, sx: r.f[i], tight: r.tight.has(i) }));
-}
-function hyphens(syls, hyphenW, lonely) {
-  return syls.map((l, n2) => {
-    if (!l.hy) return null;
-    const r = syls[n2 + 1], same = !!r && r.row === l.row;
-    if (!same) return { x: l.x + lonely, hf: 1 };
-    if (l.hw === void 0 || r.hw === void 0) return { x: (l.x + (l.hw ?? l.nw ?? 0) + r.x - (r.hw ?? r.nw ?? 0)) / 2, hf: 1 };
-    const hf = Math.min(l.sx ?? 1, r.sx ?? 1), a = l.x + l.hw, b = r.x - r.hw;
-    if (!(l.cjk || r.cjk) && b - a < hyphenW * hf - 1e-6) return null;
-    return { x: (a + b) / 2, hf };
-  });
-}
-
-// src/render/text/measure.ts
-function createTextMeasure(raw) {
-  const byPx = /* @__PURE__ */ new Map();
-  const at2 = (s2, px) => {
-    let m = byPx.get(px);
-    if (!m) byPx.set(px, m = /* @__PURE__ */ new Map());
-    let v = m.get(s2);
-    if (v === void 0) m.set(s2, v = raw(s2, px));
-    return v;
-  };
-  return {
-    width(role, s2, sp, ts) {
-      const st = TEXT_STYLES[role];
-      return at2(s2, LYRIC_EM * sp * ts) * st.em / LYRIC_EM / sp / ts * (st.ruler === "text" ? ts : 1);
-    },
-    widthPx(s2, px, sp, ts) {
-      const ref = LYRIC_EM * sp * ts;
-      return at2(s2, ref) * px / ref;
-    }
-  };
-}
-var lyricFont = (px) => `${px}px ${TEXT_FACES.lyric}`;
-function canvasMeasure(ctx) {
-  return (s2, px) => {
-    const f = lyricFont(px);
-    if (ctx.font !== f) ctx.font = f;
-    return ctx.measureText(s2).width;
-  };
-}
-var lyricLook = (ts) => ts > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
-var lyricWidth = (m, s2, sp, ts) => m.width("lyric", s2, sp, ts) * lyricLook(ts).k * lyricLook(ts).sx;
-var lyricSizePx = (sp, ts) => LYRIC_EM * lyricLook(ts).k * sp;
-
-// src/render/text/baseline.ts
-var INK_EST = { a: 0.8, d: 0.22 };
 
 // src/i18n/strings.ts
 var S = {
@@ -607,6 +299,14 @@ var S = {
   "\u5F00\u53D1\u8005##\u9875\u7B7E": { en: "Dev" },
   "\u5F00\u53D1\u8005\uFF1A\u8BD5\u9A8C\u5F00\u5173\u3001\u8FD8\u539F\u51FA\u5382": { en: "Dev: experimental switches, factory reset" },
   "\u8FD9\u662F\u4EC0\u4E48": { en: "What's this" },
+  "\u6CA1\u9009\uFF08\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1A{x}\uFF09": { en: "Not chosen (software default: {x})" },
+  "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u6B4C\u91CC\u8FD9\u4E00\u9879\u662F\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D\u65F6\u7167\u5B83\uFF1B\u6B4C\u91CC\u5355\u72EC\u9009\u8FC7\u7684\u7167\u6B4C\u7684\u3002\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": { en: "A habit on this device: used when a song leaves this item at \u201CFollow the software\u201D; a song that picked its own keeps it. Not saved in songs, not synced." },
+  "\u4E60\u60EF\u770B\u7684\u8C31": { en: "Notation I usually read" },
+  "\u79FB\u8C03\u8F85\u52A9": { en: "Transposition aid" },
+  "\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09": { en: "Off (as written)" },
+  "\u6309 C \u8C03\u770B": { en: "Read in C" },
+  "\u8C03\u53F7\u591A\u7684\u65F6\u5019\u628A\u8C31\u6362\u5230 C \u8C03\u6765\u753B\uFF0C\u53EA\u6539\u663E\u793A\u3001\u58F0\u97F3\u4E0D\u53D8\uFF1B\u770B\u4E94\u7EBF\u8C31\u65F6\u8D77\u4F5C\u7528\u3002": { en: "When there are many sharps or flats, redraws the score in C; only the display changes, the sound stays the same. Applies to the staff." },
+  "\u4E2D\u592E C \u53EB": { en: "Middle C is" },
   "\u8BBE\u7F6E": { en: "Settings" },
   "\u8DDF\u7CFB\u7EDF": { en: "System" },
   "MIDI \u952E\u76D8": { en: "MIDI keyboard" },
@@ -757,22 +457,10 @@ var S = {
   "\u6A2A\u5377": { en: "Horizontal scroll" },
   "\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9": { en: "One line per sheet, running right and scrolled sideways; part names stay pinned at the left" },
   "\u8C31\u79CD": { en: "Notation" },
-  "\u4E94\u7EBF\u8C31": { en: "Staff" },
-  "\u7B80\u8C31": { en: "Numbered (jianpu)" },
-  "\u5B57\u6BCD\u8C31": { en: "Letter names" },
-  "\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A": { en: "Pitches drawn on the five lines" },
-  "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09": { en: "Digits 1\u20137 (movable do)" },
-  "\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C4\uFF09": { en: "Actual note names C D E F G A B, sharp/flat at the top right, octave at the bottom right (middle C = C4)" },
-  "\u79FB\u8C03\u8F85\u52A9": { en: "Transposition aid" },
-  "\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09": { en: "Off (as written)" },
-  "\u6309 C \u8C03\u770B": { en: "Read in C" },
   "\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u79FB\u8C03\u8F85\u52A9\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002": { en: "Numbered notation is already movable-do (1 = the key's tonic), so the transposition aid doesn't apply; your choice is kept and works again on staff." },
   "\u5B57\u6BCD\u8C31\u5199\u7684\u662F\u5B9E\u9645\u7684\u97F3\u540D\uFF0C\u7528\u4E0D\u4E0A\u300C\u79FB\u8C03\u8F85\u52A9\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002": { en: "Letter notation writes the actual note names, so the transposition aid doesn't apply; your choice is kept and works again on staff." },
   "\u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D": { en: "Draw in the actual key; big key labels show note names" },
   "\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8": { en: "Draw the score in C with \u201C1=original key\u201D above every key signature; big key labels show degrees; the keys stay where they are" },
-  "\u4E2D\u592E C \u53EB": { en: "Middle C is" },
-  "C{n}\uFF08\u56FD\u9645\u901A\u7528\uFF09": { en: "C{n} (international)" },
-  "\u5B57\u6BCD\u8C31\u53F3\u4E0B\u89D2\u7684\u516B\u5EA6\u6570\u5B57\u4ECE\u54EA\u513F\u6570\u3002": { en: "Where the octave numbers at the bottom right of letter names count from." },
   "\u548C\u5F26\u8F85\u52A9": { en: "Chord aid" },
   "\u6807\u7EA7\u6570": { en: "Show degrees" },
   "\u4E0D\u6807": { en: "Don\u2019t show" },
@@ -819,6 +507,9 @@ var S = {
   "\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B": { en: "View: how this page looks on screen" },
   "\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6": { en: "Page: paper and note density" },
   "{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6": { en: "{what}: follow the software" },
+  "\u7B80\u8C31": { en: "Numbered (jianpu)" },
+  "\u5B57\u6BCD\u8C31": { en: "Letter names" },
+  "\u4E94\u7EBF\u8C31": { en: "Staff" },
   "\u4E2D\u592E C \u53EB C{n}": { en: "Middle C = C{n}" },
   "\u663E\u793A\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Show articulations & dynamics" },
   "\u4E0D\u663E\u793A\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Hide articulations & dynamics" },
@@ -1360,6 +1051,13 @@ var S = {
   "\u624B\u52A8\uFF1A\u952E\u76D8\u6309 {pad} \u6392\uFF0C\u548C\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF081={k}\uFF09\u4E0D\u4E00\u6837\u3002\u70B9\u5F00\u300C1=\u300D\uFF0C\u8C03\u5F0F\u90A3\u4E00\u5217\u6700\u4E0A\u9762\u7684\u300C\u8DDF\u8C31\u300D= \u56DE\u5230\u8DDF\u7740\u8C31\u8D70": { en: "Manual: the keyboard is laid out in {pad}, which differs from the key signature here (1={k}). Open \u201C1=\u201D and pick \u201CFollow score\u201D at the top of the mode column to follow the score again" },
   "{name}\uFF08\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF09": { en: "{name} (follows the key signature here)" },
   "{name}\uFF08\u624B\u52A8\uFF09": { en: "{name} (manual)" },
+  "\u73A9 tracker \u7684\u53EF\u4EE5\u5148\u7528\u8FD9\u4E2A\uFF0C\u4E0D\u5B8C\u5168\u4E00\u6837": { en: "If you use a tracker, you can start with this; it is not quite the same" },
+  "\u5566": { en: "la" },
+  "\u9009\u4E86\u7684\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF1A\u65B0\u6B4C\u548C\u6CA1\u5355\u72EC\u9009\u8FC7\u7684\u6B4C\u7167\u5B83\u663E\u793A\uFF0C\u6BCF\u9996\u6B4C\u968F\u65F6\u80FD\u5355\u72EC\u6362\uFF1B\u4EE5\u540E\u5728\u300C\u8BBE\u7F6E \u203A \u754C\u9762\u300D\u91CC\u6539\u3002\u90FD\u53EF\u4EE5\u4E0D\u9009\u3002": { en: "What you pick is kept on this device: new songs, and songs that have not picked their own, are shown this way; each song can still change it any time. Change it later in \u201CSettings \u203A UI\u201D. You can leave any of these unpicked." },
+  "\u4F60\u4E60\u60EF\u770B\u54EA\u79CD\u8C31\uFF1F": { en: "Which notation do you usually read?" },
+  "\u94A2\u7434\u5377\u5E18\u3001\u5F55\u97F3\u8FD8\u6CA1\u505A\uFF0C\u505A\u597D\u4E86\u4F1A\u52A0\u5728\u8FD9\u91CC": { en: "Piano roll and recording are not ready yet; they will be added here when they are" },
+  "\u8981\u4E0D\u8981\u79FB\u8C03\u8F85\u52A9\uFF1F": { en: "Use the transpose aid?" },
+  "\u770B\u8C31\u7684\u4E60\u60EF": { en: "How you read music" },
   "\u3093 / \u55EF": { en: "\u3093 (hum)" },
   "\u3042 / \u554A": { en: "\u3042 (ah)" },
   "\u304A / \u54E6": { en: "\u304A (oh)" },
@@ -2173,6 +1871,11 @@ var S = {
   ' data-def="{def}" title="\u53CC\u51FB\u56DE {defText}"': { en: ' data-def="{def}" title="Double-click: back to {defText}"' },
   "\u4E0A {t} \xB7 \u4E0B {b} \xB7 \u5DE6 {l} \xB7 \u53F3 {r} \u6BEB\u7C73": { en: "top {t} \xB7 bottom {b} \xB7 left {l} \xB7 right {r} mm" },
   "{mm} \u6BEB\u7C73": { en: "{mm} mm" },
+  "\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A": { en: "Pitches drawn on the five lines" },
+  "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09": { en: "Digits 1\u20137 (movable do)" },
+  "\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C{n}\uFF09": { en: "The actual note names C D E F G A B, with sharps and flats at the upper right and the octave at the lower right (middle C = C{n})" },
+  "C{n}\uFF08\u56FD\u9645\u901A\u7528\uFF09": { en: "C{n} (international)" },
+  "\u516B\u5EA6\u7684\u6570\u5B57\u4ECE\u54EA\u513F\u6570\uFF1A\u5B57\u6BCD\u8C31\u3001\u7B80\u8C31\u8C31\u5934\u3001\u952E\u4E0A\u7684\u5B57\u3001\u97F3\u57DF\u65CB\u94AE\u90FD\u7167\u5B83\u5199\u3002\u53EA\u6539\u53EB\u6CD5\uFF0C\u6587\u4EF6\u91CC\u3001\u58F0\u97F3\u91CC\u7684\u516B\u5EA6\u4E0D\u53D8\u3002": { en: "Where the octave numbers count from: letter notation, the numbered-notation header, the key labels and the range knob all follow it. Only the naming changes; octaves in the file and in the sound stay the same." },
   "\u4E0D\u7528": { en: "Off" },
   "\u8DDF\u7740\u97F3\u7B26\u5BC6\u5EA6": { en: "Follows note density" },
   "\u8FD9\u5F20\u7EB8\u81EA\u5DF1\u7684": { en: "This paper\u2019s own" },
@@ -2800,19 +2503,19 @@ var PREFIX = "moonsinger-5b1e7c0a92d34f6e:";
 var _mem = /* @__PURE__ */ new Map();
 function _ls() {
   try {
-    const ls = globalThis.localStorage;
-    ls.getItem(PREFIX + "__probe");
-    return ls;
+    const ls2 = globalThis.localStorage;
+    ls2.getItem(PREFIX + "__probe");
+    return ls2;
   } catch {
     return null;
   }
 }
 function deviceKvGet(key) {
   const k = PREFIX + key;
-  const ls = _ls();
-  if (ls) {
+  const ls2 = _ls();
+  if (ls2) {
     try {
-      return ls.getItem(k);
+      return ls2.getItem(k);
     } catch {
     }
   }
@@ -2856,3559 +2559,1439 @@ function lookup(key, l = lang()) {
 function _t(key, params) {
   return fill(lookup(key), params);
 }
-function _tIn(l, key, params) {
-  return fill(lookup(key, l), params);
-}
 
-// src/score/paper.ts
-var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u97F3\u7B26\u5927\uFF0C\u4E00\u9875\u653E\u5F97\u5C11") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u97F3\u7B26\u5C0F\uFF0C\u4E00\u9875\u653E\u5F97\u591A\uFF08\u6B4C\u540D\u548C\u58F0\u90E8\u540D\u7167\u5927\u7684\uFF0C\u6B4C\u8BCD\u7528\u5C0F\u5B57\uFF09") }];
-var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF0CA4 \u5BF9\u6298"), A6: _t("\u53E3\u888B\u672C") };
-var PAPER_LABEL = { A3L: _t("A3 \u6A2A"), A4: "A4", A5: "A5", A6: "A6" };
-
-// src/score/pitch.ts
-var STEPS = ["C", "D", "E", "F", "G", "A", "B"];
-var STEP_SEMI = [0, 2, 4, 5, 7, 9, 11];
-var HOME = { step: "D", alter: 0, octave: 4 };
-var stepIndex = (s2) => STEPS.indexOf(s2);
-function midiOf(p) {
-  return (p.octave + 1) * 12 + STEP_SEMI[stepIndex(p.step)] + p.alter;
-}
-function diatonicIndex(p) {
-  return p.octave * 7 + stepIndex(p.step);
-}
-var SHARP_ORDER = ["F", "C", "G", "D", "A", "E", "B"];
-var FLAT_ORDER = ["B", "E", "A", "D", "G", "C", "F"];
-function keyAlter(step, fifths) {
-  if (fifths > 0) return SHARP_ORDER.slice(0, fifths).includes(step) ? 1 : 0;
-  if (fifths < 0) return FLAT_ORDER.slice(0, -fifths).includes(step) ? -1 : 0;
-  return 0;
-}
-function tonicStepIndex(fifths) {
-  return (4 * fifths % 7 + 7) % 7;
-}
-function spellMidi(midi, fifths, prefer = fifths < 0 ? -1 : 1) {
-  const cands = [];
-  for (const step of STEPS) for (let o = Math.floor(midi / 12) - 2; o <= Math.floor(midi / 12); o++) {
-    const alter = midi - midiOf({ step, alter: 0, octave: o });
-    if (Math.abs(alter) <= 1) cands.push({ step, alter, octave: o });
-  }
-  return cands.find((p) => p.alter === keyAlter(p.step, fifths)) ?? cands.find((p) => p.alter === prefer) ?? cands.find((p) => p.alter === 0) ?? cands[0];
-}
-function transposeInterval(p, steps, semis) {
-  const d = diatonicIndex(p) + steps, step = STEPS[(d % 7 + 7) % 7], octave = Math.floor(d / 7);
-  return { step, alter: midiOf(p) + semis - midiOf({ step, alter: 0, octave }), octave };
-}
-function keyInterval(f0, f1) {
-  let semis = (7 * (f1 - f0) % 12 + 12) % 12;
-  if (semis > 6) semis -= 12;
-  let steps = ((tonicStepIndex(f1) - tonicStepIndex(f0)) % 7 + 7) % 7;
-  if (semis < 0 && steps > 0) steps -= 7;
-  return { steps, semis };
-}
-var KEY_LABEL = { [-7]: "C\u266D", [-6]: "G\u266D", [-5]: "D\u266D", [-4]: "A\u266D", [-3]: "E\u266D", [-2]: "B\u266D", [-1]: "F", 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F\u266F", 7: "C\u266F" };
-var MINOR_LABEL = { [-7]: "A\u266D", [-6]: "E\u266D", [-5]: "B\u266D", [-4]: "F", [-3]: "C", [-2]: "G", [-1]: "D", 0: "A", 1: "E", 2: "B", 3: "F\u266F", 4: "C\u266F", 5: "G\u266F", 6: "D\u266F", 7: "A\u266F" };
-var keyText = (fifths, minor = false) => minor ? `6=${MINOR_LABEL[fifths] ?? "?"}` : `1=${KEY_LABEL[fifths] ?? "?"}`;
-
-// src/score/repeats.ts
-function navWhy(song, paper, partId, t) {
-  if (!(t.kind === "nav" || t.kind === "bar" && t.repeat)) return null;
-  const owner = tempoOwner(song, paper);
-  if (owner && owner !== partId) return _t("\u53CD\u590D / \u8DF3\u8F6C\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C");
-  if (t.kind === "nav" && (t.what === "ds" || t.what === "dsFine" || t.what === "dsCoda") && !paper.tracks[partId]?.some((x) => x.kind === "nav" && x.what === "segno")) return _t("\u8FD9\u5F20\u7EB8\u4E0A\u6CA1\u6709 Segno\uFF0CD.S. \u8DF3\u4E0D\u4E86");
-  if (t.kind === "nav" && (t.what === "dcCoda" || t.what === "dsCoda") && !paper.tracks[partId]?.some((x) => x.kind === "nav" && x.what === "toCoda")) return _t("\u6CA1\u6709 To Coda\uFF1A\u8DF3\u56DE\u6765\u4E4B\u540E\u4E00\u8DEF\u653E\u5230\u7EB8\u5C3E");
-  return null;
-}
-
-// src/score/song.ts
-var TPQ = 1680;
-var WHOLE = TPQ * 4;
-var LADDER = [TPQ / 8, TPQ / 4, TPQ / 2, TPQ, TPQ * 2, WHOLE];
-var MIN_DUR = TPQ / 8 * 4 / 7;
-var MAX_DUR = WHOLE * 4;
-var NAV_LABEL = { segno: "Segno", coda: "Coda", fine: "Fine", toCoda: "To Coda", dc: "D.C.", dcFine: "D.C. al Fine", dcCoda: "D.C. al Coda", ds: "D.S.", dsFine: "D.S. al Fine", dsCoda: "D.S. al Coda" };
-var endingLabel = (nums) => nums && nums.length ? nums.map((n2) => `${n2}.`).join(" ") : "1.";
-var SWELL_NAME = { "<": _t("\u97F3\u5185\u6E10\u5F3A"), ">": _t("\u97F3\u5185\u6E10\u5F31"), "<>": _t("\u97F3\u5185\u9F13\u8D77") };
-var ART_NAME = { staccato: _t("\u8DF3\u97F3"), accent: _t("\u91CD\u97F3"), marcato: _t("\u5F3A\u97F3"), sfz: _t("\u7A81\u5F3A"), fp: _t("\u5F3A\u540E\u5373\u5F31"), tenuto: _t("\u4FDD\u6301"), breath: _t("\u547C\u5438"), stress: _t("\u6B21\u91CD\u97F3"), unstress: _t("\u5F31\u5316"), ghost: _t("\u5E7D\u7075\u97F3"), whisper: _t("\u6C14\u58F0"), swellUp: _t("\u97F3\u5185\u6E10\u5F3A"), swellDown: _t("\u97F3\u5185\u6E10\u5F31"), swellBoth: _t("\u97F3\u5185\u9F13\u8D77"), arpeggio: _t("\u7436\u97F3"), roll: _t("\u6EDA\u594F") };
-function swellOf(t) {
-  if (t?.kind !== "note" || !t.art) return void 0;
-  return t.art.includes("swellUp") ? "<" : t.art.includes("swellDown") ? ">" : t.art.includes("swellBoth") ? "<>" : void 0;
-}
-var DYNS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
-var DEFAULT_DYN = "mf";
-var PEDAL_KINDS = ["sustain", "sostenuto", "soft"];
-var CLEFS = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
-var SPLIT_MIDI = 60;
-var DEFAULT_KEY = 0;
-var DEFAULT_TIME = { beats: 4, beatType: 4 };
-var DEFAULT_BPM = 90;
-var NEW_SONG_HEAD = Object.freeze({ fifths: DEFAULT_KEY, minor: false, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM });
-var NEW_SONG_LOOK = Object.freeze({
-  arrangement: "",
-  lyricFit: "default",
-  barNumbers: "default",
-  notation: "default",
-  chordTags: "default",
-  viewInC: "default",
-  middleC: "default",
-  expressions: "default",
-  textLang: "ui",
-  paper: "default",
-  density: "default",
-  staffMm: "default",
-  marginMm: "default"
-});
-var isTimed = (t) => t.kind === "note" || t.kind === "rest";
-var isMark = (t) => t.kind === "key" || t.kind === "time" || t.kind === "tempo";
-function headLen(tokens) {
-  let n2 = 0;
-  while (n2 < tokens.length && isMark(tokens[n2])) n2++;
-  return n2;
-}
-function prevPitch(tokens, i) {
-  for (let j = i - 1; j >= 0; j--) {
-    const t = tokens[j];
-    if (t.kind === "note" && t.pitch) return t.pitch;
-  }
-  return null;
-}
-function effectivePitch(tokens, i) {
-  const t = tokens[i];
-  if (t.kind === "note" && t.pitch) return t.pitch;
-  return prevPitch(tokens, i) ?? HOME;
-}
-var allPitches = (t) => t.pitch ? [t.pitch, ...t.chord ?? []] : [];
-function tempoAt(tokens, i) {
-  let v = DEFAULT_BPM;
-  for (let j = 0; j < i && j < tokens.length; j++) {
-    const t = tokens[j];
-    if (t.kind === "tempo") v = t.bpm;
-  }
-  return v;
-}
-var TEMPO_WORDS = [
-  { from: 0, it: "Largo", zh: _t("\u5E7F\u677F"), typical: 50 },
-  { from: 60, it: "Larghetto", zh: _t("\u5C0F\u5E7F\u677F"), typical: 63 },
-  { from: 66, it: "Adagio", zh: _t("\u67D4\u677F"), typical: 70 },
-  { from: 76, it: "Andante", zh: _t("\u884C\u677F"), typical: 88 },
-  { from: 100, it: "Moderato", zh: _t("\u4E2D\u677F"), typical: 108 },
-  { from: 112, it: "Allegretto", zh: _t("\u5C0F\u5FEB\u677F"), typical: 116 },
-  { from: 120, it: "Allegro", zh: _t("\u5FEB\u677F"), typical: 132 },
-  { from: 156, it: "Vivace", zh: _t("\u6D3B\u677F"), typical: 160 },
-  { from: 176, it: "Presto", zh: _t("\u6025\u677F"), typical: 184 },
-  { from: 200, it: "Prestissimo", zh: _t("\u6700\u6025\u677F"), typical: 208 }
-];
-function tempoWord(bpm) {
-  let w = TEMPO_WORDS[0];
-  for (const x of TEMPO_WORDS) if (bpm >= x.from) w = x;
-  return w;
-}
-function beatTicks(beats, beatType) {
-  return beatType === 8 && beats >= 3 && beats % 3 === 0 ? WHOLE * 3 / 8 : WHOLE / beatType;
-}
-var artOf = (t) => t.art ?? [];
-function rampTarget(tokens, i, end = tokens.length) {
-  for (let j = i + 1; j < end; j++) {
-    const t = tokens[j];
-    if (t.kind === "hairpin") return -1;
-    if (t.kind === "dyn") return t.ramp ? j : -1;
-  }
-  return -1;
-}
-function rampSource(tokens, j, start = 0) {
-  for (let k = j - 1; k >= start; k--) {
-    const t = tokens[k];
-    if (t.kind === "hairpin") return "hairpin";
-    if (t.kind === "dyn") return k;
-  }
-  return "none";
-}
-var HEADER_KINDS = /* @__PURE__ */ new Set(["key", "time", "tempo", "clef"]);
-function headerSpot(tokens, i) {
-  let a = Math.max(0, Math.min(i, tokens.length)), b = a;
-  while (a > 0 && HEADER_KINDS.has(tokens[a - 1].kind)) a--;
-  while (b < tokens.length && HEADER_KINDS.has(tokens[b].kind)) b++;
-  return { a, b, head: a === 0 };
-}
-function headClefOf(tokens) {
-  if (!tokens) return null;
-  const spot = headerSpot(tokens, 0);
-  for (let i = spot.a; i < spot.b; i++) {
-    const t = tokens[i];
-    if (t.kind === "clef") return t.clef;
-  }
-  return null;
-}
-function tempoOwner(song, paper) {
-  return song.parts.find((p) => paper.tracks[p.id])?.id ?? null;
-}
-function sheetEndBpm(song, paper) {
-  const o = tempoOwner(song, paper);
-  return o ? tempoAt(paper.tracks[o], paper.tracks[o].length) : null;
-}
-function autoStaffs(tokens, staves) {
-  let last = 1;
-  return tokens.map((t, i) => {
-    if (staves !== 2) return 1;
-    if (t.kind === "note") last = midiOf(effectivePitch(tokens, i)) < SPLIT_MIDI ? 2 : 1;
-    return last;
-  });
-}
-function staffOfTokens(tokens, staves) {
-  const auto = autoStaffs(tokens, staves);
-  let last = 1;
-  return tokens.map((t, i) => {
-    if (staves !== 2) return 1;
-    const s2 = (t.kind === "note" || t.kind === "rest") && t.staff ? t.staff : t.kind === "note" ? auto[i] : last;
-    last = s2;
-    return s2;
-  });
-}
-function swingDelta(T2, origin, r) {
-  const u = ((T2 - origin) % TPQ + TPQ) % TPQ, h = TPQ / 2;
-  return (u <= h ? u * 2 * r : r * TPQ + (u - h) * 2 * (1 - r)) - u;
-}
-var SWING_GRID = TPQ / 16;
-function timeline(tokens, tempoMap) {
+// src/singer/en-front.mjs
+var UNITS = /* @__PURE__ */ new Set(["\u0251\u02D0", "\u0254\u02D0", "i\u02D0", "u\u02D0", "\u025C\u02D0", "a\u026A", "e\u026A", "o\u028A", "a\u028A", "\u0254\u026A"]);
+var VOWEL_CH = /* @__PURE__ */ new Set([..."aeiou\u026A\u028A\u025B\u0254\xE6\u0251\u028C\u0259\u025C\u025A\u025D"]);
+function nucleusStarts(tokens) {
   const out = [];
-  let t = 0, bar = 0, sec = 0, bpm = DEFAULT_BPM, k = 0, sw = 0, org = 0, bt = DEFAULT_TIME.beatType;
-  tokens.forEach((tok, index) => {
-    if (tok.kind === "bar") {
-      bar = t;
-      return;
-    }
-    if (tok.kind === "tempo") {
-      if (!tempoMap) bpm = tok.bpm;
-      return;
-    }
-    if (tok.kind === "time") {
-      bt = tok.beatType;
-      return;
-    }
-    if (!isTimed(tok)) return;
-    if (tempoMap) {
-      while (k < tempoMap.length && tempoMap[k].tick <= t) {
-        const e = tempoMap[k];
-        bpm = e.bpm;
-        if (e.swing !== void 0) {
-          sw = e.swing;
-          org = e.origin ?? 0;
+  for (let i = 0; i < tokens.length; i++) {
+    if (!VOWEL_CH.has(tokens[i])) continue;
+    out.push(i);
+    if (UNITS.has(tokens[i] + (tokens[i + 1] ?? ""))) i++;
+  }
+  return out;
+}
+function makeEnglishFront({ g2p, encodeTokens: encodeTokens2, idMap }) {
+  function phonemizeWords(words) {
+    const all = [], prosody = [], keptSung = [], keptWord = [], nuclei = [];
+    const tokens = [];
+    words.forEach((w, wi) => {
+      const r = g2p.phonemize(w);
+      const starts = new Set(nucleusStarts(r.tokens));
+      nuclei.push(starts.size);
+      if (!starts.size) return;
+      if (all.length) {
+        all.push(" ");
+        prosody.push([0, 0, 0]);
+      }
+      r.tokens.forEach((t, i) => {
+        all.push(t);
+        prosody.push(r.prosody[i]);
+        if (idMap[t]) {
+          tokens.push(t);
+          keptSung.push(starts.has(i));
+          keptWord.push(wi);
         }
-        k++;
-      }
-    }
-    const len = tok.dur / TPQ * (60 / bpm);
-    const swOn = sw !== 0 && (bt === 4 || bt === 2) && tok.dur % SWING_GRID === 0;
-    const d0 = swOn ? swingDelta(t, org, sw) : 0, d1 = swOn ? swingDelta(t + tok.dur, org, sw) : 0;
-    if (d0 || d1) {
-      const spt = 60 / (bpm * TPQ);
-      out.push({ index, tok, start: t, inBar: t - bar, bpm, t0: sec + d0 * spt, t1: sec + len + d1 * spt, dw0: d0, dw1: d1 });
-    } else out.push({ index, tok, start: t, inBar: t - bar, bpm, t0: sec, t1: sec + len });
-    t += tok.dur;
-    sec += len;
-  });
-  return out;
-}
-
-// src/score/arrange.ts
-var REP = /^(?:[×xX*])(\d+)/;
-function parseArrangement(text, papers, l = lang()) {
-  const src = (text ?? "").trim();
-  if (!src) return { order: papers.filter((p) => !p.hidden).map((p) => p.id), loop: null, issues: [], explicit: false };
-  const issues = [];
-  let i = 0;
-  const ws = () => {
-    while (i < src.length && /[\s、,，→]/.test(src[i])) i++;
-  };
-  const findPaper = (name) => {
-    const byName = papers.find((p) => p.name.trim() === name);
-    if (byName) return byName.id;
-    if (/^\d+$/.test(name)) {
-      const k = Number(name);
-      if (k >= 1 && k <= papers.length) return papers[k - 1].id;
-    }
-    return null;
-  };
-  const rep = () => {
-    const save = i;
-    while (src[i] === " ") i++;
-    const m = REP.exec(src.slice(i));
-    if (!m) {
-      i = save;
-      return null;
-    }
-    i += m[0].length;
-    return Number(m[1]);
-  };
-  const seq = (close) => {
-    const out = [];
-    for (; ; ) {
-      ws();
-      if (i >= src.length) {
-        if (close) issues.push({ at: src.length, len: 0, why: _tIn(l, "\u5C11\u4E86\u300C{close}\u300D", { close }) });
-        return out;
-      }
-      const c = src[i];
-      if (close && c === close) {
-        i++;
-        return out;
-      }
-      if (c === ")" || c === "]") {
-        issues.push({ at: i, len: 1, why: _tIn(l, "\u591A\u4E86\u300C{c}\u300D", { c }) });
-        i++;
-        continue;
-      }
-      if (c === "[") return out;
-      let node;
-      const at2 = i;
-      if (c === "(") {
-        i++;
-        node = { kind: "rep", body: seq(")"), n: 1 };
-      } else {
-        let name = "";
-        while (i < src.length && !/[\s、,，→()[\]×*]/.test(src[i]) && !(/[xX]/.test(src[i]) && /\d/.test(src[i + 1] ?? "") && name)) name += src[i++];
-        if (!name) {
-          issues.push({ at: i, len: 1, why: _tIn(l, "\u770B\u4E0D\u61C2\u300C{p}\u300D", { p: src[i] }) });
-          i++;
-          continue;
-        }
-        const paper = findPaper(name);
-        if (!paper) {
-          issues.push({ at: at2, len: name.length, why: _tIn(l, "\u6CA1\u6709\u53EB\u300C{name}\u300D\u7684\u7EB8\uFF08\u5199\u66F2\u6BB5\u540D\uFF0C\u6216\u8005\u7B2C\u51E0\u5F20\u7EB8\u7684\u5E8F\u53F7\uFF09", { name }) });
-          node = { kind: "rep", body: [], n: 1 };
-        } else node = { kind: "ref", paper, text: name, at: at2 };
-      }
-      const n2 = rep();
-      if (n2 !== null) {
-        if (n2 < 1 || n2 > 99) issues.push({ at: at2, len: i - at2, why: _tIn(l, "\u91CD\u590D\u6B21\u6570\u8981\u5728 1 \u5230 99 \u4E4B\u95F4") });
-        if (n2 >= 1) node = { kind: "rep", body: [node], n: Math.min(99, n2) };
-      }
-      out.push(node);
-    }
-  };
-  const main = seq(null);
-  let loopNodes = null;
-  ws();
-  if (i < src.length && src[i] === "[") {
-    const at2 = i;
-    i++;
-    loopNodes = seq("]");
-    if (!loopNodes.length) issues.push({ at: at2, len: i - at2, why: _tIn(l, "\u5FAA\u73AF\u6BB5\u662F\u7A7A\u7684") });
-    ws();
-    if (i < src.length) {
-      issues.push({ at: i, len: src.length - i, why: _tIn(l, "\u5FAA\u73AF\u6BB5\u53EA\u80FD\u653E\u5728\u6700\u540E\uFF1A\u540E\u9762\u7684\u6C38\u8FDC\u653E\u4E0D\u5230") });
-    }
-  }
-  const expand = (ns) => ns.flatMap((n2) => n2.kind === "ref" ? [n2.paper] : Array.from({ length: n2.n }, () => expand(n2.body)).flat());
-  const loop = loopNodes ? expand(loopNodes) : null;
-  return { order: expand(main), loop: loop && loop.length ? loop : null, issues, explicit: true };
-}
-
-// src/look/spacing.ts
-var LOOSE = [[TPQ / 8, 2.2], [TPQ / 4, 2.2], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
-var DENSE = [[TPQ / 8, 1.6], [TPQ / 4, 1.9], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
-var TIGHT = [[TPQ / 8, 1.5], [TPQ / 4, 1.7], [TPQ / 2, 2.35], [TPQ, 3], [TPQ * 2, 3.6], [TPQ * 4, 4.2]];
-var SP_DEFAULTS = { pad: 0.3, emptyBar: 4.5 };
-var NOTEHEAD_X = 0.35;
-
-// src/render/spacing.ts
-function indexRods(rods, n2) {
-  const into = Array.from({ length: n2 }, () => []);
-  for (const r of rods) into[r.to]?.push(r);
-  return { into };
-}
-var isZero = (c) => c.fixed !== void 0 && c.fixed <= EPS;
-var EPS = 1e-6;
-var lerpLog = (pts, ticks) => {
-  if (ticks <= pts[0][0]) return pts[0][1];
-  const last = pts[pts.length - 1], prev = pts[pts.length - 2];
-  if (ticks >= last[0]) return last[1] + (last[1] - prev[1]) / Math.log2(last[0] / prev[0]) * Math.log2(ticks / last[0]);
-  for (let k = 1; k < pts.length; k++) {
-    const a = pts[k - 1], b = pts[k];
-    if (ticks <= b[0]) return a[1] + (b[1] - a[1]) * Math.log2(ticks / a[0]) / Math.log2(b[0] / a[0]);
-  }
-  return last[1];
-};
-var curveOf = (m) => {
-  const t = typeof m === "object" ? m : m === true || m === "normal" ? DENSE : m === "tight" ? TIGHT : LOOSE;
-  return (ticks) => lerpLog(t, ticks);
-};
-function idealGaps(cols, endTick, o) {
-  const out = new Array(cols.length).fill(0), sounding = /* @__PURE__ */ new Map();
-  cols.forEach((c, k) => {
-    if (c.fixed !== void 0) {
-      out[k] = c.fixed;
-      return;
-    }
-    for (const it of c.items) {
-      if (it.dur !== void 0 && it.dur > EPS) sounding.set(it.row, { dur: it.dur, end: c.tick + it.dur });
-      else sounding.delete(it.row);
-    }
-    let next = endTick;
-    for (let j = k + 1; j < cols.length; j++) if (cols[j].tick > c.tick + EPS) {
-      next = cols[j].tick;
-      break;
-    }
-    const dt = next - c.tick;
-    if (dt <= EPS) return;
-    let d = Infinity;
-    for (const a of sounding.values()) if (a.end > c.tick + EPS) d = Math.min(d, a.dur);
-    out[k] = d === Infinity ? Math.min(o.curve(dt), o.emptyBar) : o.curve(d) * Math.min(1, dt / d);
-  });
-  return out;
-}
-function rodsOf(cols, o) {
-  const rods = [], last = /* @__PURE__ */ new Map();
-  let wall = null;
-  cols.forEach((c, k) => {
-    if (isZero(c)) return;
-    if (c.fixed !== void 0) {
-      for (const l of last.values()) rods.push({ from: l.col, to: k, min: l.right + o.pad });
-      if (wall && !last.size) rods.push({ from: wall.col, to: k, min: wall.right });
-      last.clear();
-      wall = { col: k, right: c.fixed };
-      return;
-    }
-    for (const it of c.items) {
-      const l = last.get(it.row);
-      if (l) rods.push({ from: l.col, to: k, min: Math.max(l.right + it.left + o.pad, it.clear !== void 0 && l.inkR !== void 0 ? l.inkR + it.left + it.clear : -Infinity) });
-      else if (wall) rods.push({ from: wall.col, to: k, min: wall.right + it.left });
-      last.set(it.row, { col: k, right: it.right, ...it.inkR !== void 0 ? { inkR: it.inkR } : {} });
-    }
-  });
-  return rods;
-}
-function lineGaps(cols, gaps, ix, from, to, s2, even) {
-  const g = [];
-  for (let k = from; k < to; k++) g.push(cols[k].fixed !== void 0 ? gaps[k] : gaps[k] * (1 + s2));
-  if (!even) return g;
-  const seg = [];
-  let n2 = 0;
-  for (let k = from; k < to; k++) {
-    if (cols[k].fixed !== void 0 && !isZero(cols[k])) n2++;
-    seg.push(n2);
-  }
-  const need = /* @__PURE__ */ new Map();
-  for (let k = from; k < to; k++) for (const r of ix.into[k] ?? []) {
-    if (r.from < from || cols[r.from].fixed !== void 0 || seg[r.from - from] !== seg[k - from]) continue;
-    let sum = 0;
-    for (let j = r.from; j < k; j++) sum += g[j - from];
-    if (sum > EPS && r.min > sum + EPS) need.set(seg[k - from], Math.max(need.get(seg[k - from]) ?? 1, r.min / sum));
-  }
-  if (need.size) for (let k = from; k < to; k++) {
-    const f = need.get(seg[k - from]);
-    if (f && cols[k].fixed === void 0) g[k - from] = g[k - from] * f;
-  }
-  return g;
-}
-var leftOf = (c) => c.fixed !== void 0 ? 0 : c.items.reduce((m, it) => Math.max(m, it.left), 0);
-var rightOf = (c) => c.fixed !== void 0 ? c.fixed : c.items.reduce((m, it) => Math.max(m, it.right), 0);
-function placeLine(cols, gaps, rods, from, to, s2, even = false) {
-  const n2 = to - from, xs = new Array(n2).fill(0);
-  if (n2 <= 0) return { xs, end: 0 };
-  const ix = "into" in rods ? rods : indexRods(rods, cols.length), lg = lineGaps(cols, gaps, ix, from, to, s2, even);
-  const gap = (k) => lg[k - from];
-  for (let k = from; k < to; k++) {
-    let x = k === from ? 0 : xs[k - 1 - from] + gap(k - 1);
-    x = Math.max(x, leftOf(cols[k]));
-    for (const r of ix.into[k] ?? []) if (r.from >= from) x = Math.max(x, xs[r.from - from] + r.min);
-    xs[k - from] = x;
-  }
-  for (let k = to - 2; k >= from; k--) if (isZero(cols[k])) xs[k - from] = xs[k + 1 - from];
-  const lastK = to - 1;
-  return { xs, end: xs[n2 - 1] + Math.max(gap(lastK), rightOf(cols[lastK])) };
-}
-function fitLine(cols, gaps, rods, from, to, width, opt) {
-  const ix = "into" in rods ? rods : indexRods(rods, cols.length), at2 = (s3) => placeLine(cols, gaps, ix, from, to, s3, !!opt.even), nat = at2(0);
-  const solve = (lo, hi2) => {
-    for (let i = 0; i < 48; i++) {
-      const mid = (lo + hi2) / 2;
-      if (at2(mid).end > width) hi2 = mid;
-      else lo = mid;
-    }
-    return lo;
-  };
-  if (nat.end > width + EPS) {
-    const tight = at2(-opt.squeeze);
-    if (tight.end > width + EPS) return { ...tight, stretch: -opt.squeeze, over: true };
-    const s3 = solve(-opt.squeeze, 0);
-    return { ...at2(s3), stretch: s3, over: false };
-  }
-  if (!opt.justify) return { ...nat, stretch: 0, over: false };
-  let hi = 1;
-  while (at2(hi).end < width && hi < 4096) hi *= 2;
-  if (at2(hi).end < width) return { ...nat, stretch: 0, over: false };
-  const s2 = solve(0, hi);
-  return { ...at2(s2), stretch: s2, over: false };
-}
-
-// src/gm/percussion.gen.ts
-var PERC = { "0:119": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 1.389, "kitKey": 57 }, "0:120": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.057 }, "0:121": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.077 }, "0:122": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:123": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:124": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:125": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:126": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:127": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:35": { "staff": 5, "line": 8, "head": "normal", "stem": "down", "hitSec": 0.037, "name": { "zh": "\u5927\u9F13", "en": "Acoustic Bass Drum" } }, "128:0:36": { "staff": 5, "line": 7, "head": "normal", "stem": "down", "hitSec": 7e-3, "name": { "zh": "\u5927\u9F13", "en": "Bass Drum 1" } }, "128:0:37": { "staff": 5, "line": 3, "head": "slashed1", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u5C0F\u9F13\uFF08\u9F13\u8FB9\u4FA7\u51FB\uFF09", "en": "Side Stick" } }, "128:0:38": { "staff": 5, "line": 3, "head": "normal", "stem": "up", "hitSec": 7e-3, "name": { "zh": "\u5C0F\u9F13", "en": "Acoustic Snare" } }, "128:0:39": { "staff": 5, "line": -2, "head": "plus", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u62CD\u624B", "en": "Hand Clap" } }, "128:0:40": { "staff": 5, "line": 3, "head": "slash", "stem": "up", "hitSec": 7e-3, "name": { "zh": "\u5C0F\u9F13", "en": "Electric Snare" } }, "128:0:41": { "staff": 5, "line": 6, "head": "normal", "stem": "up", "hitSec": 0.017, "name": { "zh": "\u843D\u5730\u9F13", "en": "Low Floor Tom" } }, "128:0:42": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u811A\u8E0F\u94B9\uFF08\u95ED\u9572\uFF09", "en": "Closed Hi Hat" } }, "128:0:43": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.017, "name": { "zh": "\u843D\u5730\u9F13", "en": "High Floor Tom" } }, "128:0:44": { "staff": 5, "line": 9, "head": "x", "stem": "down", "hitSec": 0.012, "name": { "zh": "\u811A\u8E0F\u94B9\uFF08\u811A\u8E29\uFF09", "en": "Pedal Hi-Hat" } }, "128:0:45": { "staff": 5, "line": 4, "head": "normal", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u7B52\u9F13", "en": "Low Tom" } }, "128:0:46": { "staff": 5, "line": -1, "head": "circle-x", "stem": "up", "hitSec": 0.022, "name": { "zh": "\u811A\u8E0F\u94B9\uFF08\u5F00\u9572\uFF09", "en": "Open Hi-Hat" } }, "128:0:47": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 7e-3, "name": { "zh": "\u7B52\u9F13", "en": "Low-Mid Tom" } }, "128:0:48": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u7B52\u9F13", "en": "Hi-Mid Tom" } }, "128:0:49": { "staff": 5, "line": -2, "head": "x", "stem": "up", "hitSec": 0.057, "name": { "zh": "\u788E\u97F3\u94B9", "en": "Crash Cymbal 1" } }, "128:0:50": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u7B52\u9F13", "en": "High Tom" } }, "128:0:51": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u53E0\u97F3\u94B9", "en": "Ride Cymbal 1" } }, "128:0:52": { "staff": 5, "line": -3, "head": "normal", "stem": "up", "hitSec": 0.027, "name": { "zh": "\u4E2D\u56FD\u94B9", "en": "Chinese Cymbal" } }, "128:0:53": { "staff": 5, "line": 0, "head": "diamond", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u53E0\u97F3\u94B9\uFF08\u6572\u9572\u5E3D\uFF09", "en": "Ride Bell" } }, "128:0:54": { "staff": 5, "line": 1, "head": "diamond", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u94C3\u9F13", "en": "Tambourine" } }, "128:0:55": { "staff": 5, "line": -4, "head": "x", "stem": "up", "hitSec": 0.067, "name": { "zh": "\u6C34\u94B9", "en": "Splash Cymbal" } }, "128:0:56": { "staff": 5, "line": 1, "head": "triangle-down", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u725B\u94C3", "en": "Cowbell" } }, "128:0:57": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.057, "name": { "zh": "\u788E\u97F3\u94B9", "en": "Crash Cymbal 2" } }, "128:0:58": { "staff": 5, "line": 0, "head": "ti", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u98A4\u97F3\u5668", "en": "Vibraslap" } }, "128:0:59": { "staff": 5, "line": 2, "head": "x", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u53E0\u97F3\u94B9", "en": "Ride Cymbal 2" } }, "128:0:60": { "staff": 5, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u90A6\u54E5\u9F13", "en": "Hi Bongo" } }, "128:0:61": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3, "name": { "zh": "\u90A6\u54E5\u9F13", "en": "Low Bongo" } }, "128:0:62": { "staff": 5, "line": 1, "head": "custom", "stem": "up", "smufl": "noteheadXOrnate", "hitSec": 0.012, "name": { "zh": "\u5EB7\u52A0\u9F13\uFF08\u95F7\u51FB\uFF09", "en": "Mute Hi Conga" } }, "128:0:63": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u5EB7\u52A0\u9F13\uFF08\u5F00\u653E\u51FB\uFF09", "en": "Open Hi Conga" } }, "128:0:64": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 0.017, "name": { "zh": "\u5EB7\u52A0\u9F13", "en": "Low Conga" } }, "128:0:65": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u5929\u5DF4\u9F13", "en": "High Timbale" } }, "128:0:66": { "staff": 5, "line": 7, "head": "normal", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u5929\u5DF4\u9F13", "en": "Low Timbale" } }, "128:0:67": { "staff": 5, "line": -2, "head": "triangle-down", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u963F\u54E5\u54E5\u94C3", "en": "High Agogo" } }, "128:0:68": { "staff": 5, "line": -1, "head": "triangle-down", "stem": "up", "hitSec": 7e-3, "name": { "zh": "\u963F\u54E5\u54E5\u94C3", "en": "Low Agogo" } }, "128:0:69": { "staff": 5, "line": 2, "head": "diamond", "stem": "up", "hitSec": 0.032, "name": { "zh": "\u94C1\u6C99\u94C3", "en": "Cabasa" } }, "128:0:70": { "staff": 5, "line": 4, "head": "diamond", "stem": "up", "hitSec": 0.032, "name": { "zh": "\u6C99\u69CC", "en": "Maracas" } }, "128:0:71": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.072, "name": { "zh": "\u5DF4\u897F\u54E8\uFF08\u77ED\uFF09", "en": "Short Whistle" } }, "128:0:72": { "staff": 5, "line": -3, "head": "ti", "stem": "up", "hitSec": 0.022, "name": { "zh": "\u5DF4\u897F\u54E8\uFF08\u957F\uFF09", "en": "Long Whistle" } }, "128:0:73": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u522E\u74DC\uFF08\u77ED\u522E\uFF09", "en": "Short Guiro" } }, "128:0:74": { "staff": 5, "line": -1, "head": "slashed1", "stem": "up", "hitSec": 0.222, "name": { "zh": "\u522E\u74DC\uFF08\u957F\u522E\uFF09", "en": "Long Guiro" } }, "128:0:75": { "staff": 5, "line": 0, "head": "la", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u51FB\u6728", "en": "Claves" } }, "128:0:76": { "staff": 5, "line": 5, "head": "la", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u6886\u5B50 (\u4E50\u5668)", "en": "Hi Wood Block" } }, "128:0:77": { "staff": 5, "line": 7, "head": "la", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u6886\u5B50 (\u4E50\u5668)", "en": "Low Wood Block" } }, "128:0:78": { "staff": 5, "line": 8, "head": "x", "stem": "up", "hitSec": 0.062, "name": { "zh": "\u594E\u5361\u9F13\uFF08\u95F7\uFF09", "en": "Mute Cuica" } }, "128:0:79": { "staff": 5, "line": 8, "head": "slashed2", "stem": "up", "hitSec": 0.042, "name": { "zh": "\u594E\u5361\u9F13\uFF08\u5F00\u653E\uFF09", "en": "Open Cuica" } }, "128:0:80": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u4E09\u89D2\u94C1\uFF08\u95F7\uFF09", "en": "Mute Triangle" } }, "128:0:81": { "staff": 5, "line": 0, "head": "triangle-up", "stem": "up", "hitSec": 0.022, "name": { "zh": "\u4E09\u89D2\u94C1\uFF08\u5F00\u653E\uFF09", "en": "Open Triangle" } }, "128:0:27": { "staff": 5, "line": 8, "head": "slash", "stem": "up", "hitSec": 0.012, "name": { "zh": "Laser (High Q)", "en": "Laser (High Q)" } }, "128:0:28": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 0.012, "name": { "zh": "Slap", "en": "Slap" } }, "128:0:29": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.092, "name": { "zh": "Scratch Push", "en": "Scratch Push" } }, "128:0:30": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.077, "name": { "zh": "Scratch Pull", "en": "Scratch Pull" } }, "128:0:31": { "staff": 5, "line": -1, "head": "plus", "stem": "up", "hitSec": 7e-3, "name": { "zh": "Sticks", "en": "Sticks" } }, "128:0:32": { "staff": 5, "line": 10, "head": "plus", "stem": "up", "hitSec": 2e-3, "name": { "zh": "Square Click", "en": "Square Click" } }, "128:0:33": { "staff": 5, "line": 10, "head": "x", "stem": "up", "hitSec": 2e-3, "name": { "zh": "Metronome Click", "en": "Metronome Click" } }, "128:0:34": { "staff": 5, "line": 10, "head": "triangle-up", "stem": "up", "hitSec": 2e-3, "name": { "zh": "Metronome Bell", "en": "Metronome Bell" } }, "128:0:82": { "staff": 5, "line": 5, "head": "diamond", "stem": "up", "hitSec": 0.027, "name": { "zh": "Shaker", "en": "Shaker" } }, "128:0:83": { "staff": 5, "line": 3, "head": "triangle-down", "stem": "up", "hitSec": 0.072, "name": { "zh": "Jingle Bell", "en": "Jingle Bell" } }, "128:0:84": { "staff": 5, "line": 2, "head": "ti", "stem": "up", "name": { "zh": "Belltree", "en": "Belltree" } }, "128:0:85": { "staff": 5, "line": 2, "head": "la", "stem": "up", "hitSec": 2e-3, "name": { "zh": "Castanets", "en": "Castanets" } }, "128:0:86": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 7e-3, "name": { "zh": "Mute Surdo", "en": "Mute Surdo" } }, "128:0:87": { "staff": 5, "line": 4, "head": "slash", "stem": "up", "hitSec": 0.027, "name": { "zh": "Open Surdo", "en": "Open Surdo" } }, "0:112": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 84, "from": "Q1621499" }, "0:113": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 67, "from": "Q395212" }, "0:115": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 76, "from": "Q957212" }, "0:116": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.027, "kitKey": 87, "from": "Q221769" }, "0:117": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 45, "from": "Q849349" }, "0:118": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3, "from": "Q1327480" } };
-
-// src/gm/percussion.ts
-function percOf(bank, program, note) {
-  if (bank === 128) return note === void 0 ? null : PERC[`128:0:${note}`] ?? null;
-  return (note !== void 0 ? PERC[`${bank}:${program}:${note}`] : void 0) ?? PERC[`${bank}:${program}`] ?? null;
-}
-
-// src/score/lyrics.ts
-var MELISMA_MARK = "\u30FC";
-var ELISION = "\u203F";
-var CJK_CHAR = /[぀-ヿ\p{Script=Han}]/u;
-var lyricShow = (s2) => s2.split(ELISION).reduce((a, b) => !a ? b : CJK_CHAR.test(a.slice(-1)) && CJK_CHAR.test(b.slice(0, 1)) ? a + b : `${a}${ELISION}${b}`, "");
-var TRAIL_PUNCT = "\u3002\uFF0E\uFF0C\u3001,.!\uFF01?\uFF1F;\uFF1B:\uFF1A\u2026\u300D\u300F\u201D\uFF09)\u300B\u3009\u3011\u3015]";
-var LEAD_PUNCT = "\u300C\u300E\u201C\uFF08(\u300A\u3008\u3010\u3014[";
-var isTrail = (c) => TRAIL_PUNCT.includes(c);
-var isLead = (c) => LEAD_PUNCT.includes(c);
-function lyricHang(s2) {
-  const cs = [...s2];
-  let a = 0, b = cs.length;
-  while (a < b && isLead(cs[a])) a++;
-  while (b > a && isTrail(cs[b - 1])) b--;
-  if (a === b) return { lead: "", core: "", trail: "" };
-  return { lead: cs.slice(0, a).join(""), core: cs.slice(a, b).join(""), trail: cs.slice(b).join("") };
-}
-var SMALL = /* @__PURE__ */ new Set([..."\u3083\u3085\u3087\u3041\u3043\u3045\u3047\u3049\u308E\u3095\u3096\u30E3\u30E5\u30E7\u30A1\u30A3\u30A5\u30A7\u30A9\u30EE\u30F5\u30F6", "\u3063", "\u30C3"]);
-
-// src/render/glyph-box.gen.ts
-var GLYPH_BOX = {
-  "\uE040": [0, 1.464, -4, 0],
-  "\uE041": [4e-3, 1.468, -4, 0],
-  "\uE042": [4e-3, 2.432, -4, 0],
-  "\uE047": [0.016, 2.2, -3.036, 0.108],
-  "\uE048": [-0.016, 3.82, -3.592, 0.632],
-  "\uE050": [0, 2.684, -4.392, 2.632],
-  "\uE052": [0, 2.684, -4.392, 3.512],
-  "\uE053": [0, 2.684, -5.28, 2.632],
-  "\uE054": [0, 2.684, -5.276, 2.632],
-  "\uE062": [-0.02, 2.736, -1.048, 2.54],
-  "\uE064": [-0.02, 2.736, -1.048, 2.976],
-  "\uE069": [0, 1.528, -1, 1],
-  "\uE080": [0.08, 1.8, -1.004, 1],
-  "\uE081": [0.08, 1.256, -1.004, 1],
-  "\uE082": [0.08, 1.704, -1.016, 1.028],
-  "\uE083": [0.08, 1.604, -0.996, 1.004],
-  "\uE084": [0.08, 1.8, -1.004, 1],
-  "\uE085": [0.08, 1.532, -0.984, 1.004],
-  "\uE086": [0.08, 1.656, -1.004, 0.996],
-  "\uE087": [0.08, 1.684, -0.996, 1],
-  "\uE088": [0.08, 1.664, -1.036, 1.036],
-  "\uE089": [0.08, 1.656, -1.004, 0.996],
-  "\uE0A2": [0, 1.688, -0.5, 0.5],
-  "\uE0A3": [0, 1.18, -0.5, 0.5],
-  "\uE0A4": [0, 1.18, -0.5, 0.5],
-  "\uE0A7": [0, 1.508, -0.5, 0.5],
-  "\uE0A8": [0, 1.336, -0.5, 0.5],
-  "\uE0A9": [0, 1.16, -0.5, 0.5],
-  "\uE0AA": [0, 0.988, -0.504, 0.504],
-  "\uE0AD": [0, 1.14, -0.5, 0.5],
-  "\uE0AE": [0, 1.044, -0.5, 0.5],
-  "\uE0AF": [-4e-3, 0.996, -0.5, 0.5],
-  "\uE0B1": [0, 0.996, -0.5, 0.5],
-  "\uE0B2": [0, 1, -0.5, 0.5],
-  "\uE0B3": [0, 0.996, -0.5, 0.5],
-  "\uE0B8": [0, 1.252, -0.5, 0.5],
-  "\uE0B9": [0, 1.252, -0.5, 0.5],
-  "\uE0BB": [0, 1.276, -0.5, 0.5],
-  "\uE0BC": [0, 1.14, -0.5, 0.5],
-  "\uE0BE": [0, 1.172, -0.5, 0.5],
-  "\uE0C4": [0, 1.276, -0.5, 0.5],
-  "\uE0C5": [0, 1.14, -0.5, 0.5],
-  "\uE0C7": [0, 1.168, -0.5, 0.5],
-  "\uE0CC": [0, 1.112, -0.5, 0.5],
-  "\uE0CD": [0, 1.112, -0.5, 0.5],
-  "\uE0CF": [-0.32, 1.5, -0.668, 0.66],
-  "\uE0D0": [-0.316, 1.504, -0.672, 0.656],
-  "\uE0D1": [-0.268, 1.544, -0.64, 0.568],
-  "\uE0D2": [-0.292, 1.52, -0.672, 0.536],
-  "\uE0D3": [-0.088, 1.732, -0.592, 0.628],
-  "\uE0D4": [-0.072, 1.744, -0.604, 0.616],
-  "\uE0D8": [1e-3, 1.666, -0.564, 0.564],
-  "\uE0D9": [0, 0.98, -0.564, 0.564],
-  "\uE0DB": [0, 0.98, -0.564, 0.564],
-  "\uE0F5": [0, 0.436, -0.724, 0.724],
-  "\uE0F6": [-0.144, 0.292, -0.724, 0.724],
-  "\uE101": [0, 2.12, -1, 1],
-  "\uE102": [0, 3.92, -1, 1],
-  "\uE103": [0, 3.12, -1, 1],
-  "\uE106": [0, 2.12, -1, 1],
-  "\uE1D2": [0, 1.836, -0.544, 0.548],
-  "\uE1D3": [0, 1.364, -3.5, 0.58],
-  "\uE1D5": [0, 1.328, -3.5, 0.564],
-  "\uE1D7": [0, 2.264, -3.492, 0.552],
-  "\uE1D9": [0, 2.324, -3.492, 0.552],
-  "\uE1DB": [0, 2.252, -4.092, 0.552],
-  "\uE1E7": [0, 0.4, -0.2, 0.2],
-  "\uE222": [-0.6, 0.6, -1.112, 1.12],
-  "\uE240": [0, 1.056, -0.036, 3.24],
-  "\uE241": [0, 1.224, -3.232, 0.056],
-  "\uE242": [0, 1.116, -8e-3, 3.252],
-  "\uE243": [0, 1.164, -3.248, 0.036],
-  "\uE244": [0, 1.044, -0.596, 3.248],
-  "\uE245": [0, 1.092, -3.248, 0.688],
-  "\uE260": [0, 0.904, -1.756, 0.7],
-  "\uE261": [0, 0.672, -1.364, 1.34],
-  "\uE262": [0, 0.996, -1.4, 1.392],
-  "\uE263": [0, 0.988, -0.508, 0.5],
-  "\uE264": [0, 1.644, -1.748, 0.7],
-  "\uE4A0": [0, 1.356, -0.98, -4e-3],
-  "\uE4A1": [0, 1.356, 0, 0.976],
-  "\uE4A2": [0, 0.336, -0.336, 0],
-  "\uE4A3": [0, 0.336, 0, 0.336],
-  "\uE4A4": [-4e-3, 1.352, -0.192, 0],
-  "\uE4A5": [-4e-3, 1.352, 0, 0.192],
-  "\uE4A8": [4e-3, 0.356, -1.16, 0],
-  "\uE4A9": [4e-3, 0.356, 0, 1.16],
-  "\uE4AC": [-4e-3, 0.94, -1.012, 4e-3],
-  "\uE4AD": [-4e-3, 0.94, 0, 1.016],
-  "\uE4B6": [0, 0.932, -0.948, -0.02],
-  "\uE4B7": [0.016, 0.944, 0, 0.936],
-  "\uE4B8": [0, 1.528, -0.828, 0],
-  "\uE4B9": [4e-3, 1.532, 0, 0.828],
-  "\uE4CE": [4e-3, 0.608, -1.004, -8e-3],
-  "\uE4E3": [0, 1.128, -0.036, 0.54],
-  "\uE4E4": [0, 1.128, -0.568, 8e-3],
-  "\uE4E5": [4e-3, 1.08, -1.492, 1.5],
-  "\uE4E6": [0, 0.988, -0.696, 1.004],
-  "\uE4E7": [0, 1.28, -0.716, 2],
-  "\uE4E8": [0, 1.452, -1.704, 2],
-  "\uE511": [0, 3.54, -1.852, 0.04],
-  "\uE512": [0, 3.356, -1.852, 0.04],
-  "\uE515": [0, 5.26, -1.844, 0.04],
-  "\uE520": [-0.356, 1.464, -1.096, 0.568],
-  "\uE522": [-0.564, 1.456, -1.776, 0.608],
-  "\uE52A": [-0.368, 4.292, -1.096, 0.568],
-  "\uE52B": [-0.328, 2.912, -1.096, 0.568],
-  "\uE52C": [-0.08, 3.3, -1.096, 0.568],
-  "\uE52D": [-0.08, 3.272, -1.724, 0.66],
-  "\uE52F": [-0.54, 2.44, -1.776, 0.608],
-  "\uE530": [-0.62, 3.32, -1.776, 0.608],
-  "\uE534": [-0.564, 2.476, -1.776, 0.608],
-  "\uE539": [0, 2.932, -1.776, 0.608],
-  "\uE650": [0, 4.076, -2.22, 0.032],
-  "\uE655": [0, 1.8, -1.8, 0],
-  "\uE659": [0, 4.428, -2.364, 0.06],
-  "\uE880": [0, 1.272, -1.5, 0.032],
-  "\uE881": [0.04, 1.024, -1.488, 0],
-  "\uE882": [0.04, 1.316, -1.5, 0.024],
-  "\uE883": [0.04, 1.224, -1.5, 0.032],
-  "\uE884": [0.04, 1.252, -1.488, 0],
-  "\uE885": [0.04, 1.308, -1.492, 0.032],
-  "\uE886": [0.04, 1.256, -1.5, 0.032],
-  "\uE887": [0.12, 1.332, -1.488, 0.016],
-  "\uE888": [0.04, 1.292, -1.5, 0.032],
-  "\uE889": [0.04, 1.256, -1.5, 0.032],
-  "\uEAA9": [-0.132, 1.168, -0.476, 0],
-  "\uECA5": [0, 1.328, -2.752, 0.564]
-};
-
-// src/render/skyline.ts
-var STEP = 0.25;
-var Skyline = class {
-  up;
-  dn;
-  /** 行高要算进去的那部分（歌词另算——它有自己的行距规矩）：最高 / 最低。 */
-  hUp = Infinity;
-  hDn = -Infinity;
-  constructor(widthSp) {
-    const n2 = Math.max(1, Math.ceil(widthSp / STEP) + 1);
-    this.up = new Float64Array(n2).fill(Infinity);
-    this.dn = new Float64Array(n2).fill(-Infinity);
-  }
-  span(x0, x1) {
-    const n2 = this.up.length;
-    return [Math.max(0, Math.min(n2 - 1, Math.floor(x0 / STEP))), Math.max(0, Math.min(n2 - 1, Math.floor(x1 / STEP)))];
-  }
-  /** 记一块墨（count = 算不算进行高）。 */
-  ink(x0, x1, y0, y1, count = true) {
-    if (!(x1 >= x0) || !(y1 >= y0)) return;
-    const [a, b] = this.span(x0, x1);
-    for (let i = a; i <= b; i++) {
-      if (y0 < this.up[i]) this.up[i] = y0;
-      if (y1 > this.dn[i]) this.dn[i] = y1;
-    }
-    if (count) {
-      if (y0 < this.hUp) this.hUp = y0;
-      if (y1 > this.hDn) this.hDn = y1;
-    }
-  }
-  /** x0–x1 这一段往上最远到哪（没有墨 = Infinity）。 */
-  top(x0, x1) {
-    const [a, b] = this.span(x0, x1);
-    let v = Infinity;
-    for (let i = a; i <= b; i++) if (this.up[i] < v) v = this.up[i];
-    return v;
-  }
-  /** x0–x1 这一段往下最远到哪（没有墨 = −Infinity）。 */
-  bottom(x0, x1) {
-    const [a, b] = this.span(x0, x1);
-    let v = -Infinity;
-    for (let i = a; i <= b; i++) if (this.dn[i] > v) v = this.dn[i];
-    return v;
-  }
-};
-function primInk(p, sp, measure, emit) {
-  switch (p.t) {
-    case "glyph": {
-      const size = p.size ?? 4 * sp, k = size / 4;
-      let x = p.x;
-      for (const ch of p.ch) {
-        const b = GLYPH_BOX[ch];
-        if (b) {
-          emit(x + b[0] * k, x + b[1] * k, p.y + b[2] * k, p.y + b[3] * k);
-          x += b[1] * k;
-        } else {
-          emit(x, x + k, p.y - k / 2, p.y + k / 2);
-          x += k;
-        }
-      }
-      return;
-    }
-    case "text": {
-      const size = p.size ?? LYRIC_EM * sp, w = measure(p.s, size) * (p.sx ?? 1), x0 = p.anchor === "middle" ? p.x - w / 2 : p.anchor === "end" ? p.x - w : p.x;
-      emit(x0, x0 + w, p.y - size * INK_EST.a, p.y + size * INK_EST.d);
-      return;
-    }
-    case "line": {
-      const h = p.w / 2;
-      flatten([[p.x1, p.y1], [p.x2, p.y2]], sp, h, emit);
-      return;
-    }
-    case "rect":
-      emit(p.x, p.x + p.w, p.y, p.y + p.h);
-      return;
-    case "path":
-      for (const poly of pathPolys(p.d)) flatten(poly, sp, 0, emit);
-      return;
-  }
-}
-function flatten(pts, sp, pad, emit) {
-  if (pts.length === 1) {
-    const [x, y] = pts[0];
-    emit(x - pad, x + pad, y - pad, y + pad);
-    return;
-  }
-  const cell2 = STEP * sp;
-  for (let i = 1; i < pts.length; i++) {
-    const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
-    if (ay === by || ax === bx) {
-      emit(Math.min(ax, bx) - pad, Math.max(ax, bx) + pad, Math.min(ay, by) - pad, Math.max(ay, by) + pad);
-      continue;
-    }
-    const n2 = Math.max(1, Math.ceil(Math.abs(bx - ax) / cell2));
-    for (let k = 0; k < n2; k++) {
-      const x0 = ax + (bx - ax) * k / n2, x1 = ax + (bx - ax) * (k + 1) / n2, y0 = ay + (by - ay) * k / n2, y1 = ay + (by - ay) * (k + 1) / n2;
-      emit(Math.min(x0, x1) - pad, Math.max(x0, x1) + pad, Math.min(y0, y1) - pad, Math.max(y0, y1) + pad);
-    }
-  }
-}
-function numAt(d, i) {
-  while (i < d.length && (d[i] === "," || d[i] === " ")) i++;
-  const s2 = i;
-  if (d[i] === "-" || d[i] === "+") i++;
-  while (i < d.length) {
-    const ch = d.charCodeAt(i);
-    if (ch >= 48 && ch <= 57 || ch === 46) i++;
-    else if ((ch === 101 || ch === 69) && (d[i + 1] === "-" || d[i + 1] === "+")) i += 2;
-    else if (ch === 101 || ch === 69) i++;
-    else break;
-  }
-  return i > s2 ? [Number(d.slice(s2, i)), i] : null;
-}
-function pathPolys(d) {
-  const out = [];
-  let cur = [], x = 0, y = 0, i = 0;
-  const v = [];
-  while (i < d.length) {
-    const c = d[i].toUpperCase();
-    i++;
-    v.length = 0;
-    for (let r = numAt(d, i); r; r = numAt(d, i)) {
-      v.push(r[0]);
-      i = r[1];
-    }
-    if (c === "M") {
-      if (cur.length) out.push(cur);
-      x = v[0];
-      y = v[1];
-      cur = [[x, y]];
-      for (let k = 2; k + 1 < v.length; k += 2) {
-        x = v[k];
-        y = v[k + 1];
-        cur.push([x, y]);
-      }
-    } else if (c === "L") for (let k = 0; k + 1 < v.length; k += 2) {
-      x = v[k];
-      y = v[k + 1];
-      cur.push([x, y]);
-    }
-    else if (c === "Q") for (let k = 0; k + 3 < v.length; k += 4) {
-      const cx = v[k], cy = v[k + 1], ex = v[k + 2], ey = v[k + 3];
-      for (let n2 = 1; n2 <= 8; n2++) {
-        const t = n2 / 8, u = 1 - t;
-        cur.push([u * u * x + 2 * u * t * cx + t * t * ex, u * u * y + 2 * u * t * cy + t * t * ey]);
-      }
-      x = ex;
-      y = ey;
-    }
-    else if (c === "C") for (let k = 0; k + 5 < v.length; k += 6) {
-      const ax = v[k], ay = v[k + 1], bx = v[k + 2], by = v[k + 3], ex = v[k + 4], ey = v[k + 5];
-      for (let n2 = 1; n2 <= 8; n2++) {
-        const t = n2 / 8, u = 1 - t;
-        cur.push([u * u * u * x + 3 * u * u * t * ax + 3 * u * t * t * bx + t * t * t * ex, u * u * u * y + 3 * u * u * t * ay + 3 * u * t * t * by + t * t * t * ey]);
-      }
-      x = ex;
-      y = ey;
-    }
-    else if (c === "Z" && cur.length) {
-      cur.push(cur[0]);
-      x = cur[0][0];
-      y = cur[0][1];
-    }
-  }
-  if (cur.length) out.push(cur);
-  return out;
-}
-function shiftPrim(p, dy) {
-  if (!dy) return;
-  switch (p.t) {
-    case "glyph":
-    case "text":
-    case "rect":
-      p.y += dy;
-      return;
-    case "line":
-      p.y1 += dy;
-      p.y2 += dy;
-      return;
-    case "path": {
-      const d = p.d;
-      let out = "", i = 0;
-      for (let c = d.indexOf(","); c >= 0; c = d.indexOf(",", i)) {
-        let e = c + 1;
-        if (d[e] === "-") e++;
-        while (e < d.length) {
-          const ch = d.charCodeAt(e);
-          if (ch >= 48 && ch <= 57 || ch === 46) e++;
-          else if ((ch === 101 || ch === 69) && (d[e + 1] === "-" || d[e + 1] === "+")) e += 2;
-          else if (ch === 101 || ch === 69) e++;
-          else break;
-        }
-        out += d.slice(i, c + 1) + String(Number(d.slice(c + 1, e)) + dy);
-        i = e;
-      }
-      p.d = out + d.slice(i);
-      return;
-    }
-    default: {
-      const never = p;
-      throw new Error(`shiftPrim: unknown prim ${JSON.stringify(never)}`);
-    }
-  }
-}
-function movePrim(p, dx, dy) {
-  if (dx) switch (p.t) {
-    case "glyph":
-    case "text":
-    case "rect":
-      p.x += dx;
-      break;
-    case "line":
-      p.x1 += dx;
-      p.x2 += dx;
-      break;
-    case "path":
-      p.d = p.d.replace(/(-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?),/g, (_m, n2) => `${Number(n2) + dx},`);
-      break;
-    default: {
-      const never = p;
-      throw new Error(`movePrim: unknown prim ${JSON.stringify(never)}`);
-    }
-  }
-  shiftPrim(p, dy);
-}
-function scalePrim(p, f, dx, dy) {
-  switch (p.t) {
-    case "glyph":
-    case "text":
-      p.x = p.x * f + dx;
-      p.y = p.y * f + dy;
-      if (p.size !== void 0) p.size *= f;
-      return;
-    case "rect":
-      p.x = p.x * f + dx;
-      p.y = p.y * f + dy;
-      p.w *= f;
-      p.h *= f;
-      return;
-    case "line":
-      p.x1 = p.x1 * f + dx;
-      p.y1 = p.y1 * f + dy;
-      p.x2 = p.x2 * f + dx;
-      p.y2 = p.y2 * f + dy;
-      p.w *= f;
-      return;
-    case "path": {
-      const N = "(-?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][-+]?\\d+)?)";
-      p.d = p.d.replace(new RegExp(`${N},${N}`, "g"), (_m, a, b) => `${Number(a) * f + dx},${Number(b) * f + dy}`);
-      return;
-    }
-    default: {
-      const never = p;
-      throw new Error(`scalePrim: unknown prim ${JSON.stringify(never)}`);
-    }
-  }
-}
-function primY(p) {
-  switch (p.t) {
-    case "glyph":
-    case "text":
-      return p.y;
-    case "rect":
-      return p.y + p.h / 2;
-    case "line":
-      return (p.y1 + p.y2) / 2;
-    case "path": {
-      const c = p.d.indexOf(","), r = c >= 0 ? numAt(p.d, c + 1) : null;
-      return r ? r[0] : 0;
-    }
-  }
-}
-
-// src/look/order.ts
-var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, pedal: 3.65, hairpin: 3.7, tail: 4, note: 5 };
-var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow", "pedal"];
-var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "pedal"];
-var LEFT_CLEAR = 4;
-var MAX_CLIMB = 6;
-
-// src/render/frame/hints.ts
-var at = (k, x, y) => ({ x0: k.x0 + x, x1: k.x1 + x, y0: k.y0 + y, y1: k.y1 + y });
-var hit = (a, b, pad) => a.x0 < b.x1 + pad && b.x0 < a.x1 + pad && a.y0 < b.y1 + pad && b.y0 < a.y1 + pad;
-function placeHints(printed, hints, pad = 0) {
-  const busy = [...printed], out = [];
-  for (const h of hints) {
-    if (!h.tries.length) {
-      out.push({ x: 0, y: 0, ok: false });
-      continue;
-    }
-    let pick2 = h.tries[h.tries.length - 1], ok = false;
-    const free = (t) => {
-      const k = at(h.part.ink, t.x, t.y);
-      return !busy.some((b) => hit(b, k, pad));
-    };
-    for (const t of h.tries) if (free(t)) {
-      pick2 = t;
-      ok = true;
-      break;
-    }
-    if (!ok && h.climb) for (let n2 = 1; n2 <= MAX_CLIMB && !ok; n2++) for (const t of h.tries) {
-      const u = { x: t.x, y: t.y - n2 * h.climb };
-      if (free(u)) {
-        pick2 = u;
-        ok = true;
-        break;
-      }
-    }
-    busy.push(at(h.part.ink, pick2.x, pick2.y));
-    out.push({ x: pick2.x, y: pick2.y, ok });
-  }
-  return out;
-}
-
-// src/score/view-in-c.ts
-var realFifthsOf = (t) => t.realFifths ?? t.fifths;
-function toC(p, fifths) {
-  if (fifths === 0) return p;
-  const iv = keyInterval(fifths, 0);
-  return transposeInterval(p, iv.steps, iv.semis);
-}
-function trackInC(tokens) {
-  let f = 0;
-  return tokens.map((t) => {
-    if (t.kind === "key") {
-      f = t.fifths;
-      return { ...t, fifths: 0, realFifths: t.fifths };
-    }
-    if (t.kind === "note" && t.pitch && f !== 0) return { ...t, pitch: toC(t.pitch, f), ...t.chord ? { chord: t.chord.map((c) => toC(c, f)) } : {} };
-    return t;
-  });
-}
-function songInC(song, skip) {
-  return { ...song, papers: song.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).map(([id, toks]) => [id, skip(id) ? toks : trackInC(toks)])) })) };
-}
-
-// src/score/song-view.ts
-var NOTATIONS = ["staff", "jianpu", "letters"];
-var CHORDS_MODES = ["stacked", "auto", "fold"];
-var TEXT_LANGS = ["ui", "zh", "en"];
-var isTextLang = (v) => TEXT_LANGS.includes(v);
-function textLangIn(look, ui) {
-  return look.textLang === "ui" ? ui : look.textLang;
-}
-var isNotation = (v) => NOTATIONS.includes(v);
-var IN_C_APPLIES = { staff: true, jianpu: false, letters: false };
-var isMiddleC = (v) => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 9;
-
-// src/look/paper.ts
-var STAFF_MM = 7;
-var STAFF_MM_COMPACT = 5;
-var staffMmFor = (d) => d === "compact" ? STAFF_MM_COMPACT : STAFF_MM;
-var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
-var marginsOf = (kind) => {
-  const m = SIZES[kind].m;
-  return { l: m, r: m, t: m, b: m };
-};
-function paperOf(kind, density = "cozy") {
-  const s2 = SIZES[kind];
-  return { kind, widthMm: s2.w, heightMm: s2.h, marginMm: marginsOf(kind), density, staffMm: staffMmFor(density) };
-}
-
-// src/look/index.ts
-var LOOK_KEYS = ["notation", "viewInC", "middleC", "chordTags", "expressions", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"];
-var DEFAULTS = { notation: "staff", viewInC: false, middleC: 4, chordTags: true, expressions: true, barNumbers: "line", lyricFit: "rhythm", paper: "A5", density: "cozy" };
-var UNWRITTEN_TRACK = { autoOttava: true, grand: false, chords: "auto" };
-var pick = (v, d) => v === "default" ? d : v;
-function lookOf(song) {
-  const chords = /* @__PURE__ */ new Map();
-  for (const p of song.parts) if (CHORDS_MODES.includes(p.chords)) chords.set(p.id, p.chords);
-  const n0 = pick(song.notation, DEFAULTS.notation), notation = isNotation(n0) ? n0 : "staff";
-  const viewInC = pick(song.viewInC, DEFAULTS.viewInC) === true, mc = pick(song.middleC, DEFAULTS.middleC);
-  const lf = pick(song.lyricFit, DEFAULTS.lyricFit), bn = pick(song.barNumbers, DEFAULTS.barNumbers);
-  const follows = Object.fromEntries(LOOK_KEYS.map((k) => [k, song[k] === "default"]));
-  return {
-    notation,
-    viewInC,
-    inCActive: viewInC && IN_C_APPLIES[notation],
-    chordTags: pick(song.chordTags, DEFAULTS.chordTags) !== false,
-    chordsOf: (part2) => chords.get(part2) ?? UNWRITTEN_TRACK.chords,
-    density: densityIn(song),
-    lyricFit: lf === "lyrics" ? "lyrics" : "rhythm",
-    barNumbers: bn !== "off",
-    middleC: isMiddleC(mc) ? mc : 4,
-    expressions: pick(song.expressions, DEFAULTS.expressions) !== false,
-    textLang: isTextLang(song.textLang) ? song.textLang : "ui",
-    paper: paperIn(song),
-    follows
-  };
-}
-var densityIn = (song) => {
-  const d = pick(song.density, DEFAULTS.density);
-  return d === "compact" ? "compact" : "cozy";
-};
-var ownMargins = (kind) => marginsOf(kind === "other" ? DEFAULTS.paper : kind);
-function paperIn(song) {
-  const c = song.paper === "default" ? { kind: DEFAULTS.paper } : song.paper, density = densityIn(song);
-  const base = c.kind === "other" ? { kind: "other", widthMm: c.widthMm, heightMm: c.heightMm, marginMm: ownMargins("other") } : paperOf(c.kind);
-  const marginMm = song.marginMm === "default" ? base.marginMm : song.marginMm;
-  const staffMm = song.staffMm === "default" ? staffMmFor(density) : song.staffMm;
-  return { kind: base.kind, widthMm: base.widthMm, heightMm: base.heightMm, marginMm, density, staffMm };
-}
-function trackLookOf(song) {
-  const byId = new Map(song.papers.map((p) => [p.id, p]));
-  return (paperId, partId) => {
-    const l = byId.get(paperId)?.looks?.[partId];
-    return { autoOttava: l?.autoOttava === false ? false : UNWRITTEN_TRACK.autoOttava, grand: l?.grand === true ? true : UNWRITTEN_TRACK.grand };
-  };
-}
-
-// src/score/grooves.gen.ts
-var GROOVE_STYLES = [
-  {
-    "id": "none",
-    "name": {
-      "zh": "\u65E0",
-      "en": "None",
-      "ja": "\u306A\u3057"
-    },
-    "aliases": [
-      "\u65E0\u98CE\u683C",
-      "Off"
-    ],
-    "meters": {},
-    "phase": null,
-    "fallback": "none",
-    "follow": {
-      "piano": 0,
-      "chromatic-percussion": 0,
-      "organ": 0,
-      "guitar": 0,
-      "bass": 0,
-      "strings": 0,
-      "ensemble": 0,
-      "brass": 0,
-      "reed": 0,
-      "pipe": 0,
-      "synth-lead": 0,
-      "synth-pad": 0,
-      "synth-effects": 0,
-      "ethnic": 0,
-      "percussive": 0,
-      "sound-effects": 0,
-      "percussion": 0,
-      "voice": 0
-    },
-    "swing": null
-  },
-  {
-    "id": "classical",
-    "name": {
-      "zh": "\u53E4\u5178",
-      "en": "Classical",
-      "ja": "\u30AF\u30E9\u30B7\u30C3\u30AF"
-    },
-    "aliases": [
-      "Classic",
-      "\u53E4\u5178\u6D3E"
-    ],
-    "meters": {
-      "4/4": {
-        "grid": 16,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          0,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          0,
-          -0.5,
-          -0.25,
-          -0.5
-        ]
-      },
-      "3/4": {
-        "grid": 12,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          0,
-          -0.5,
-          -0.25,
-          -0.5,
-          0,
-          -0.5,
-          -0.25,
-          -0.5
-        ]
-      },
-      "2/4": {
-        "grid": 8,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          0,
-          -0.5,
-          -0.25,
-          -0.5
-        ]
-      },
-      "2/2": {
-        "grid": 16,
-        "weights": [
-          1,
-          -0.5,
-          -0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.5,
-          -0.5,
-          0,
-          -0.5,
-          -0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.5,
-          -0.5
-        ]
-      },
-      "6/8": {
-        "grid": 12,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5
-        ]
-      },
-      "12/8": {
-        "grid": 24,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5
-        ]
-      }
-    },
-    "phase": null,
-    "fallback": "classical",
-    "follow": {
-      "piano": 0.5,
-      "chromatic-percussion": 0.6,
-      "organ": 0.2,
-      "guitar": 0.6,
-      "bass": 0.6,
-      "strings": 0.5,
-      "ensemble": 0.3,
-      "brass": 0.5,
-      "reed": 0.4,
-      "pipe": 0.4,
-      "synth-lead": 0.4,
-      "synth-pad": 0,
-      "synth-effects": 0,
-      "ethnic": 0.5,
-      "percussive": 1,
-      "sound-effects": 0,
-      "percussion": 1,
-      "voice": 0.3
-    },
-    "swing": null
-  },
-  {
-    "id": "pop",
-    "name": {
-      "zh": "\u6D41\u884C",
-      "en": "Pop",
-      "ja": "\u30DD\u30C3\u30D7\u30B9"
-    },
-    "aliases": [
-      "Rock",
-      "\u6447\u6EDA",
-      "\u30ED\u30C3\u30AF",
-      "R&B",
-      "Backbeat",
-      "\u53CD\u62CD"
-    ],
-    "meters": {
-      "4/4": {
-        "grid": 16,
-        "weights": [
-          0.5,
-          -0.25,
-          0,
-          -0.25,
-          1,
-          -0.25,
-          0,
-          -0.25,
-          0.5,
-          -0.25,
-          0,
-          -0.25,
-          1,
-          -0.25,
-          0,
-          -0.25
-        ]
-      },
-      "12/8": {
-        "grid": 24,
-        "weights": [
-          0.5,
-          -0.25,
-          0,
-          -0.25,
-          0,
-          -0.25,
-          1,
-          -0.25,
-          0,
-          -0.25,
-          0,
-          -0.25,
-          0.5,
-          -0.25,
-          0,
-          -0.25,
-          0,
-          -0.25,
-          1,
-          -0.25,
-          0,
-          -0.25,
-          0,
-          -0.25
-        ]
-      }
-    },
-    "phase": null,
-    "fallback": "classical",
-    "follow": {
-      "piano": 0.6,
-      "chromatic-percussion": 0.5,
-      "organ": 0.3,
-      "guitar": 0.8,
-      "bass": 1,
-      "strings": 0.2,
-      "ensemble": 0.1,
-      "brass": 0.6,
-      "reed": 0.3,
-      "pipe": 0.2,
-      "synth-lead": 0.3,
-      "synth-pad": 0,
-      "synth-effects": 0,
-      "ethnic": 0.5,
-      "percussive": 0.8,
-      "sound-effects": 0,
-      "percussion": 1,
-      "voice": 0.3
-    },
-    "swing": null
-  },
-  {
-    "id": "waltz",
-    "name": {
-      "zh": "\u534E\u5C14\u5179",
-      "en": "Waltz",
-      "ja": "\u30EF\u30EB\u30C4"
-    },
-    "aliases": [
-      "\u5706\u821E\u66F2",
-      "Valse",
-      "Walzer"
-    ],
-    "meters": {
-      "3/4": {
-        "grid": 12,
-        "weights": [
-          1,
-          -0.5,
-          -0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.5,
-          -0.5
-        ]
-      }
-    },
-    "phase": null,
-    "fallback": "classical",
-    "follow": {
-      "piano": 0.8,
-      "chromatic-percussion": 0.6,
-      "organ": 0.3,
-      "guitar": 0.8,
-      "bass": 1,
-      "strings": 0.5,
-      "ensemble": 0.3,
-      "brass": 0.5,
-      "reed": 0.3,
-      "pipe": 0.3,
-      "synth-lead": 0.3,
-      "synth-pad": 0,
-      "synth-effects": 0,
-      "ethnic": 0.5,
-      "percussive": 0.8,
-      "sound-effects": 0,
-      "percussion": 1,
-      "voice": 0.3
-    },
-    "swing": null
-  },
-  {
-    "id": "march",
-    "name": {
-      "zh": "\u8FDB\u884C\u66F2",
-      "en": "March",
-      "ja": "\u30DE\u30FC\u30C1"
-    },
-    "aliases": [
-      "\u884C\u8FDB\u66F2",
-      "Marcia",
-      "\u884C\u9032\u66F2"
-    ],
-    "meters": {
-      "2/4": {
-        "grid": 8,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.25,
-          -0.5
-        ]
-      },
-      "2/2": {
-        "grid": 16,
-        "weights": [
-          1,
-          -0.5,
-          -0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.5,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.5,
-          -0.5
-        ]
-      },
-      "4/4": {
-        "grid": 16,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.25,
-          -0.5
-        ]
-      },
-      "6/8": {
-        "grid": 12,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5
-        ]
-      }
-    },
-    "phase": null,
-    "fallback": "classical",
-    "follow": {
-      "piano": 0.6,
-      "chromatic-percussion": 0.6,
-      "organ": 0.3,
-      "guitar": 0.6,
-      "bass": 1,
-      "strings": 0.5,
-      "ensemble": 0.3,
-      "brass": 0.8,
-      "reed": 0.6,
-      "pipe": 0.6,
-      "synth-lead": 0.4,
-      "synth-pad": 0,
-      "synth-effects": 0,
-      "ethnic": 0.5,
-      "percussive": 1,
-      "sound-effects": 0,
-      "percussion": 1,
-      "voice": 0.4
-    },
-    "swing": null
-  },
-  {
-    "id": "swing",
-    "name": {
-      "zh": "Swing",
-      "en": "Swing",
-      "ja": "\u30B9\u30A6\u30A3\u30F3\u30B0"
-    },
-    "aliases": [
-      "\u6447\u6446",
-      "\u7235\u58EB",
-      "Jazz",
-      "\u30B8\u30E3\u30BA"
-    ],
-    "meters": {
-      "4/4": {
-        "grid": 16,
-        "weights": [
-          0.25,
-          -0.25,
-          0,
-          -0.25,
-          1,
-          -0.25,
-          0,
-          -0.25,
-          0.25,
-          -0.25,
-          0,
-          -0.25,
-          1,
-          -0.25,
-          0,
-          -0.25
-        ]
-      }
-    },
-    "phase": null,
-    "fallback": "classical",
-    "follow": {
-      "piano": 0.5,
-      "chromatic-percussion": 0.4,
-      "organ": 0.3,
-      "guitar": 0.6,
-      "bass": 0.4,
-      "strings": 0.2,
-      "ensemble": 0.1,
-      "brass": 0.5,
-      "reed": 0.5,
-      "pipe": 0.3,
-      "synth-lead": 0.3,
-      "synth-pad": 0,
-      "synth-effects": 0,
-      "ethnic": 0.4,
-      "percussive": 0.6,
-      "sound-effects": 0,
-      "percussion": 1,
-      "voice": 0.2
-    },
-    "swing": {
-      "unit": "8th",
-      "ratio": 0.667,
-      "range": [
-        0.5,
-        0.75
-      ]
-    }
-  },
-  {
-    "id": "four-on-the-floor",
-    "name": {
-      "zh": "\u56DB\u62CD\u5E95\u9F13",
-      "en": "Four on the floor",
-      "ja": "4\u3064\u6253\u3061"
-    },
-    "aliases": [
-      "\u7535\u5B50",
-      "\u8FEA\u65AF\u79D1",
-      "Disco",
-      "EDM",
-      "House",
-      "\u30C7\u30A3\u30B9\u30B3"
-    ],
-    "meters": {
-      "4/4": {
-        "grid": 16,
-        "weights": [
-          1,
-          0,
-          0.5,
-          0,
-          1,
-          0,
-          0.5,
-          0,
-          1,
-          0,
-          0.5,
-          0,
-          1,
-          0,
-          0.5,
-          0
-        ]
-      }
-    },
-    "phase": null,
-    "fallback": "classical",
-    "follow": {
-      "piano": 0.6,
-      "chromatic-percussion": 0.4,
-      "organ": 0.3,
-      "guitar": 0.6,
-      "bass": 0.8,
-      "strings": 0.2,
-      "ensemble": 0.1,
-      "brass": 0.5,
-      "reed": 0.3,
-      "pipe": 0.2,
-      "synth-lead": 0.5,
-      "synth-pad": 0,
-      "synth-effects": 0,
-      "ethnic": 0.4,
-      "percussive": 0.8,
-      "sound-effects": 0,
-      "percussion": 1,
-      "voice": 0.2
-    },
-    "swing": null
-  },
-  {
-    "id": "bossa-nova",
-    "name": {
-      "zh": "\u6CE2\u8428",
-      "en": "Bossa nova",
-      "ja": "\u30DC\u30B5\u30CE\u30F4\u30A1"
-    },
-    "aliases": [
-      "Bossa",
-      "\u5DF4\u8428\u8BFA\u74E6",
-      "\u30DC\u30B5\u30CE\u30D0",
-      "Samba-reggae"
-    ],
-    "meters": {
-      "2/4": {
-        "grid": 8,
-        "weights": [
-          1,
-          -0.25,
-          -0.25,
-          0.75,
-          0.5,
-          -0.25,
-          0.75,
-          0.25,
-          0.5,
-          -0.25,
-          0.75,
-          0.25,
-          0.5,
-          0.75,
-          -0.25,
-          0.25
-        ],
-        "bars": 2
-      },
-      "2/2": {
-        "grid": 16,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          0.25,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          0.25,
-          -0.5,
-          0.5,
-          -0.5,
-          0.75,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.25,
-          -0.5
-        ],
-        "bars": 2
-      },
-      "4/4": {
-        "grid": 16,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          0.25,
-          -0.5,
-          0.5,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          0.25,
-          -0.5,
-          0.5,
-          -0.5,
-          0.75,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.25,
-          -0.5
-        ],
-        "bars": 2
-      }
-    },
-    "phase": "3-2",
-    "fallback": "classical",
-    "follow": {
-      "piano": 0.6,
-      "chromatic-percussion": 0.4,
-      "organ": 0.3,
-      "guitar": 1,
-      "bass": 0.6,
-      "strings": 0.1,
-      "ensemble": 0.1,
-      "brass": 0.3,
-      "reed": 0.3,
-      "pipe": 0.3,
-      "synth-lead": 0.3,
-      "synth-pad": 0,
-      "synth-effects": 0,
-      "ethnic": 0.5,
-      "percussive": 1,
-      "sound-effects": 0,
-      "percussion": 1,
-      "voice": 0.1
-    },
-    "swing": null
-  },
-  {
-    "id": "latin",
-    "name": {
-      "zh": "\u62C9\u4E01\uFF08\u514B\u62C9\u7EF4\uFF09",
-      "en": "Latin (son clave)",
-      "ja": "\u30E9\u30C6\u30F3\uFF08\u30BD\u30F3\u30FB\u30AF\u30E9\u30FC\u30D9\uFF09"
-    },
-    "aliases": [
-      "\u62C9\u4E01",
-      "Latin",
-      "Son",
-      "Salsa",
-      "\u8428\u5C14\u8428",
-      "Mambo",
-      "\u66FC\u6CE2",
-      "\u30B5\u30EB\u30B5",
-      "\u30E9\u30C6\u30F3",
-      "Clave",
-      "\u514B\u62C9\u7EF4"
-    ],
-    "meters": {
-      "2/4": {
-        "grid": 8,
-        "weights": [
-          1,
-          -0.25,
-          -0.25,
-          0.75,
-          0,
-          -0.25,
-          0.75,
-          -0.25,
-          0.25,
-          -0.25,
-          0.75,
-          -0.25,
-          0.75,
-          -0.25,
-          -0.25,
-          -0.25
-        ],
-        "bars": 2
-      },
-      "2/2": {
-        "grid": 16,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          0,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5
-        ],
-        "bars": 2
-      },
-      "4/4": {
-        "grid": 16,
-        "weights": [
-          1,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          0,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          -0.25,
-          -0.5,
-          0.75,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5,
-          -0.25,
-          -0.5
-        ],
-        "bars": 2
-      }
-    },
-    "phase": "3-2",
-    "fallback": "classical",
-    "follow": {
-      "piano": 0.8,
-      "chromatic-percussion": 0.5,
-      "organ": 0.3,
-      "guitar": 0.6,
-      "bass": 0.8,
-      "strings": 0.3,
-      "ensemble": 0.1,
-      "brass": 0.6,
-      "reed": 0.4,
-      "pipe": 0.4,
-      "synth-lead": 0.3,
-      "synth-pad": 0,
-      "synth-effects": 0,
-      "ethnic": 0.6,
-      "percussive": 1,
-      "sound-effects": 0,
-      "percussion": 1,
-      "voice": 0.3
-    },
-    "swing": null
-  }
-];
-
-// src/score/groove.ts
-var grooveStyle = (id) => GROOVE_STYLES.find((s2) => s2.id === id) ?? null;
-var grooveDataIn = (song, style) => style === "none" ? null : song.grooves?.[style] ?? null;
-var grooveNameEn = (style) => {
-  const s2 = grooveStyle(style);
-  return style === "none" ? "none" : s2 ? s2.name.en : style;
-};
-var grooveLabel = (t, data = grooveStyle(t.style)) => `Style: ${grooveNameEn(t.style)}${t.shift && grooveHasPhase(data) ? " 2-3" : ""}${t.amount !== void 0 && t.amount !== 1 && t.style !== "none" ? ` \xD7${t.amount}` : ""}`;
-var grooveHasPhase = (s2) => !!s2 && Object.values(s2.meters).some((m) => (m.bars ?? 1) > 1);
-var BEAT_NO = [_t("\u4E00"), _t("\u4E8C"), _t("\u4E09"), _t("\u56DB"), _t("\u4E94"), _t("\u516D"), _t("\u4E03"), _t("\u516B"), _t("\u4E5D"), _t("\u5341"), _t("\u5341\u4E00"), _t("\u5341\u4E8C")];
-function meterPositions(tokens, bounds = [0], withTies = false) {
-  const out = /* @__PURE__ */ new Map(), starts = new Set(bounds);
-  let time = { ...DEFAULT_TIME }, len = time.beats * WHOLE / time.beatType, inBar = 0, measureNo = 0, first = [];
-  tokens.forEach((t, i) => {
-    if (starts.has(i)) {
-      inBar = 0;
-      measureNo = 0;
-      first = [];
-    }
-    if (t.kind === "bar") {
-      if (measureNo === 0 && inBar > 0 && inBar < len) for (const k of first) {
-        const e = out.get(k);
-        e.pos += len - inBar;
-        e.pickup = true;
-      }
-      inBar = 0;
-      measureNo++;
-      first = [];
-      return;
-    }
-    if (t.kind === "time") {
-      if (inBar > 0) {
-        inBar = 0;
-        measureNo++;
-      }
-      time = { beats: t.beats, beatType: t.beatType };
-      len = t.beats * WHOLE / t.beatType;
-      return;
-    }
-    if (!isTimed(t)) return;
-    while (inBar >= len && inBar > 0) {
-      inBar -= len;
-      measureNo++;
-    }
-    if (t.kind === "note" && (withTies || !t.tie)) {
-      out.set(i, { pos: inBar, ...time, bar: measureNo, ...t.tie ? { tie: true } : {} });
-      if (measureNo === 0) first.push(i);
-    }
-    inBar += t.dur;
-  });
-  return out;
-}
-
-// src/theory/western.ts
-var TPLS = [
-  { id: "maj", iv: [0, 4, 7], minor: false, rs: "", sym: "" },
-  { id: "min", iv: [0, 3, 7], minor: true, rs: "", sym: "m" },
-  { id: "dim", iv: [0, 3, 6], minor: true, rs: "\xB0", sym: "dim" },
-  { id: "aug", iv: [0, 4, 8], minor: false, rs: "+", sym: "aug" },
-  { id: "sus4", iv: [0, 5, 7], minor: false, rs: "sus4", sym: "sus4" },
-  { id: "sus2", iv: [0, 2, 7], minor: false, rs: "sus2", sym: "sus2" },
-  { id: "7", iv: [0, 4, 10], opt: [7], minor: false, rs: "7", sym: "7" },
-  { id: "m7", iv: [0, 3, 10], opt: [7], minor: true, rs: "7", sym: "m7" },
-  { id: "maj7", iv: [0, 4, 11], opt: [7], minor: false, rs: "maj7", sym: "maj7" },
-  { id: "6", iv: [0, 4, 9], opt: [7], minor: false, rs: "6", sym: "6" },
-  { id: "m6", iv: [0, 3, 9], opt: [7], minor: true, rs: "6", sym: "m6" },
-  { id: "m7b5", iv: [0, 3, 6, 10], minor: true, rs: "\xF87", sym: "m7\u266D5" },
-  { id: "dim7", iv: [0, 3, 6, 9], minor: true, rs: "\xB07", sym: "dim7" },
-  { id: "mMaj7", iv: [0, 3, 11], opt: [7], minor: true, rs: "(maj7)", sym: "m(maj7)" },
-  { id: "aug7", iv: [0, 4, 8, 10], minor: false, rs: "+7", sym: "aug7" },
-  { id: "7sus4", iv: [0, 5, 10], opt: [7], minor: false, rs: "7sus4", sym: "7sus4" },
-  { id: "add9", iv: [0, 4, 2], opt: [7], minor: false, rs: "add9", sym: "add9" },
-  { id: "madd9", iv: [0, 3, 2], opt: [7], minor: true, rs: "(add9)", sym: "m(add9)" },
-  { id: "69", iv: [0, 4, 9, 2], opt: [7], minor: false, rs: "6/9", sym: "6/9" },
-  { id: "9", iv: [0, 4, 10, 2], opt: [7], minor: false, rs: "9", sym: "9" },
-  { id: "m9", iv: [0, 3, 10, 2], opt: [7], minor: true, rs: "9", sym: "m9" },
-  { id: "maj9", iv: [0, 4, 11, 2], opt: [7], minor: false, rs: "maj9", sym: "maj9" },
-  { id: "7b9", iv: [0, 4, 10, 1], opt: [7], minor: false, rs: "7\u266D9", sym: "7\u266D9" },
-  { id: "7s9", iv: [0, 4, 10, 3], opt: [7], minor: false, rs: "7\u266F9", sym: "7\u266F9" },
-  { id: "11", iv: [0, 10, 5], opt: [7, 2], minor: false, rs: "11", sym: "11" },
-  { id: "m11", iv: [0, 3, 10, 5], opt: [7, 2], minor: true, rs: "11", sym: "m11" },
-  { id: "13", iv: [0, 4, 10, 9], opt: [7, 2], minor: false, rs: "13", sym: "13" },
-  { id: "m13", iv: [0, 3, 10, 9], opt: [7, 2], minor: true, rs: "13", sym: "m13" },
-  { id: "maj13", iv: [0, 4, 11, 9], opt: [7, 2], minor: false, rs: "maj13", sym: "maj13" },
-  // 缺三度的（排在最后、算省了一个音）：A E G = Am7 还是 A7 分不出来，大小按调里的写，候选里明说
-  { id: "7no3", iv: [0, 7, 10], no3: true, minor: false, rs: "7(no3)", sym: "7(no3)" },
-  { id: "maj7no3", iv: [0, 7, 11], no3: true, minor: false, rs: "maj7(no3)", sym: "maj7(no3)" }
-];
-var ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
-var ACC = (a) => a === 0 ? "" : a > 0 ? "\u266F".repeat(a) : "\u266D".repeat(-a);
-var pc = (p) => (midiOf(p) % 12 + 12) % 12;
-var modeOf = (n2) => n2.minor ? "la" : "do";
-var ID = "western";
-function degreeOf(p, fifths, mode = "do") {
-  const deg = ((stepIndex(p.step) - tonicStepIndex(fifths)) % 7 + 7) % 7, acc = p.alter - keyAlter(p.step, fifths);
-  if (mode === "do") return { deg: deg + 1, acc };
-  const d = (deg - 5 + 7) % 7 + 1;
-  return { deg: d, acc: d === 7 && acc === 1 ? 0 : acc };
-}
-var stepName = (p) => `${p.step}${ACC(p.alter)}`;
-function diatonicThird(root, fifths) {
-  const st = STEPS[(stepIndex(root.step) + 2) % 7], up = stepIndex(root.step) + 2 >= 7 ? 1 : 0;
-  return ((midiOf({ step: st, alter: keyAlter(st, fifths), octave: root.octave + up }) - midiOf({ ...root, alter: keyAlter(root.step, fifths) })) % 12 + 12) % 12;
-}
-function readChord(pitches, fifths, mode = "do") {
-  const ps = [...pitches].sort((a, b) => midiOf(a) - midiOf(b));
-  const set = new Set(ps.map(pc));
-  const bass = ps[0], bassPc = pc(bass);
-  if (set.size === 2) {
-    const [a, b] = [...set], rootPc = (a + 7) % 12 === b ? a : (b + 7) % 12 === a ? b : null;
-    if (rootPc === null) return thirdDyad(ps, fifths, mode);
-    const root = ps.find((p) => pc(p) === rootPc), r = degreeOf(root, fifths, mode), bd = degreeOf(bass, fifths, mode), slash = rootPc === bassPc ? "" : `/${ACC(bd.acc)}${bd.deg}`;
-    const g = { root, bass, tpl: "5", label: ACC(r.acc) + ROMAN[r.deg - 1] + "5" + slash, name: stepName(root) + "5" + (slash ? `/${stepName(bass)}` : ""), cost: (rootPc === bassPc ? 0 : 1) + (r.acc === 0 ? 0 : 0.25), omitted: 1, no3: true };
-    return { theory: ID, best: g, ties: [g], all: [g], ...mode === "la" ? { mode } : {} };
-  }
-  if (set.size < 3) return null;
-  const out = [];
-  for (const rootPc of set) {
-    const root = ps.find((p) => pc(p) === rootPc);
-    TPLS.forEach((t, ti) => {
-      const req = new Set(t.iv.map((i) => (rootPc + i) % 12)), opt = new Set((t.opt ?? []).map((i) => (rootPc + i) % 12));
-      for (const x of set) if (!req.has(x) && !opt.has(x)) return;
-      for (const x of req) if (!set.has(x)) return;
-      const omitted = [...opt].filter((x) => !set.has(x)).length + (t.no3 ? 1 : 0);
-      const r = degreeOf(root, fifths, mode), inKey = r.acc === 0;
-      const minor = t.no3 ? diatonicThird(root, fifths) === 3 : t.minor;
-      const cost = (rootPc === bassPc ? 0 : 1) + omitted * 1.2 + (inKey ? 0 : 0.25) + ti * 0.01;
-      const numeral = ACC(r.acc) + (minor ? ROMAN[r.deg - 1].toLowerCase() : ROMAN[r.deg - 1]) + t.rs;
-      const b = degreeOf(bass, fifths, mode), slash = rootPc === bassPc ? "" : `/${ACC(b.acc)}${b.deg}`;
-      out.push({ root, bass, tpl: t.id, label: numeral + slash, name: stepName(root) + (t.no3 && minor ? "m" : "") + t.sym + (slash ? `/${stepName(bass)}` : ""), cost, omitted, no3: !!t.no3 });
+      });
     });
+    const { ids, pros } = encodeTokens2(all, prosody, idMap);
+    return { tokens, ids, pros, sung: keptSung, wordOf: keptWord, nuclei };
   }
-  if (!out.length) return null;
-  out.sort((a, b) => a.cost - b.cost);
-  const best = out[0];
-  return { theory: ID, best, ties: out.filter((g) => g.cost - best.cost < 0.1), all: out, ...mode === "la" ? { mode } : {} };
+  return { phonemizeWords };
 }
-function thirdDyad(ps, fifths, mode) {
-  const [a, b] = [...new Set(ps.map(pc))], d = (b - a + 12) % 12;
-  const rootPc = d === 3 || d === 4 ? a : d === 8 || d === 9 ? b : null;
-  if (rootPc === null) return null;
-  const root = ps.find((p) => pc(p) === rootPc), st = STEPS[(stepIndex(root.step) + 4) % 7];
-  const r = readChord([...ps, { step: st, alter: keyAlter(st, fifths), octave: ps[ps.length - 1].octave + 1 }], fifths, mode);
-  const all = (r?.all ?? []).filter((g) => pc(g.root) === rootPc).map((g) => ({ ...g, omitted: g.omitted + 1, cost: g.cost + 1.2 }));
-  if (!all.length) return null;
-  return { theory: ID, best: all[0], ties: all.filter((g) => g.cost - all[0].cost < 0.1), all, ...mode === "la" ? { mode } : {} };
-}
-var chordLabel = (r) => r.ties.slice(0, 2).map((g) => g.label).join(" / ") + (r.stale ? "?" : "");
-function guessOf(root, tplId, bass, fifths, mode) {
-  if (tplId.startsWith(FREE)) {
-    const nm = stepName(root) + tplId.slice(FREE.length) + (pc(root) === pc(bass) ? "" : `/${stepName(bass)}`);
-    return { root, bass, tpl: tplId, label: nm, name: nm, cost: 0, omitted: 0, no3: false };
-  }
-  const r = degreeOf(root, fifths, mode), b = degreeOf(bass, fifths, mode), slash = pc(root) === pc(bass) ? "" : `/${ACC(b.acc)}${b.deg}`, nameSlash = slash ? `/${stepName(bass)}` : "";
-  if (tplId === "5") return { root, bass, tpl: "5", label: ACC(r.acc) + ROMAN[r.deg - 1] + "5" + slash, name: stepName(root) + "5" + nameSlash, cost: 0, omitted: 1, no3: true };
-  const t = TPLS.find((x) => x.id === tplId);
-  if (!t) return null;
-  const minor = t.no3 ? diatonicThird(root, fifths) === 3 : t.minor;
-  return { root, bass, tpl: t.id, label: ACC(r.acc) + (minor ? ROMAN[r.deg - 1].toLowerCase() : ROMAN[r.deg - 1]) + t.rs + slash, name: stepName(root) + (t.no3 && minor ? "m" : "") + t.sym + nameSlash, cost: 0, omitted: 0, no3: !!t.no3 };
-}
-var FREE = "?";
-var XML_KIND = {
-  maj: "major",
-  min: "minor",
-  dim: "diminished",
-  aug: "augmented",
-  sus4: "suspended-fourth",
-  sus2: "suspended-second",
-  "7": "dominant",
-  m7: "minor-seventh",
-  maj7: "major-seventh",
-  "6": "major-sixth",
-  m6: "minor-sixth",
-  m7b5: "half-diminished",
-  dim7: "diminished-seventh",
-  mMaj7: "major-minor",
-  aug7: "augmented-seventh",
-  "9": "dominant-ninth",
-  m9: "minor-ninth",
-  maj9: "major-ninth",
-  "11": "dominant-11th",
-  m11: "minor-11th",
-  "13": "dominant-13th",
-  m13: "minor-13th",
-  maj13: "major-13th",
-  "5": "power"
-};
-var KIND_BY_XML = Object.fromEntries(Object.entries(XML_KIND).map(([k, v]) => [v, k]));
-var XML_OTHER_TEXT = { "7sus4": "7sus4", add9: "add9", madd9: "m(add9)", "69": "6/9", "7b9": "7\u266D9", "7s9": "7\u266F9", "7no3": "7(no3)", maj7no3: "maj7(no3)" };
-var OTHER_TEXT_ALIAS = { "7b9": "7b9", "7#9": "7s9", "madd9": "madd9", "69": "69", "6add9": "69" };
-var KIND_BY_OTHER_TEXT = { ...OTHER_TEXT_ALIAS, ...Object.fromEntries(Object.entries(XML_OTHER_TEXT).map(([k, v]) => [v, k])) };
-var PIN_KIND_IDS = [...TPLS.map((t) => t.id), "5"];
-var samePin = (a, b) => pc(a.root) === pc(b.root) && a.tpl === b.tpl && pc(a.bass) === pc(b.bass);
-function pinRead(pin, at2, auto) {
-  const root = { ...pin.root, octave: 4 }, bass = { ...pin.bass ?? pin.root, octave: 3 }, mode = at2.minor ? "la" : "do";
-  const g = guessOf(root, pin.kind, bass, at2.fifths, mode);
-  if (!g) return null;
-  const others = (auto?.all ?? []).filter((x) => !samePin(x, g));
-  const stale = !!auto && others.length === auto.all.length;
-  return { theory: ID, best: g, ties: [g], all: [g, ...others], pinned: true, ...auto ? { auto } : {}, ...stale ? { stale: true } : {}, ...mode === "la" ? { mode } : {} };
-}
-var pinOf = (guess) => {
-  const g = guess;
-  return { root: { step: g.root.step, alter: g.root.alter }, kind: g.tpl, ...pc(g.bass) !== pc(g.root) ? { bass: { step: g.bass.step, alter: g.bass.alter } } : {} };
-};
-var STEPS_OF_IV = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6];
-var STEPS_OVERRIDE = { aug: { 8: 4 }, aug7: { 8: 4 }, dim7: { 9: 6 }, "7s9": { 3: 1 } };
-var NAT_PC = [0, 2, 4, 5, 7, 9, 11];
-var pcOfSpelled = (x) => ((NAT_PC[stepIndex(x.step)] + x.alter) % 12 + 12) % 12;
-function voicingOf(g, bassOctave) {
-  const t = g.tpl === "5" ? { iv: [0, 7], opt: [] } : TPLS.find((x) => x.id === g.tpl);
-  if (!t) return null;
-  const tones = [];
-  for (const iv of [...t.iv, ...t.opt ?? []]) {
-    const li = (stepIndex(g.root.step) + (STEPS_OVERRIDE[g.tpl]?.[iv] ?? STEPS_OF_IV[iv])) % 7, target = (pc(g.root) + iv) % 12;
-    const alter = ((target - NAT_PC[li]) % 12 + 18) % 12 - 6;
-    if (Math.abs(alter) > 2) return null;
-    tones.push({ step: STEPS[li], alter });
-  }
-  const bpc = pc(g.bass), b = tones.find((x) => pcOfSpelled(x) === bpc);
-  if (!b) return null;
-  const bass = { ...b, octave: bassOctave }, bm = midiOf(bass);
-  const above = tones.filter((x) => pcOfSpelled(x) !== bpc).map((x) => {
-    let p = { ...x, octave: bassOctave - 1 };
-    while (midiOf(p) <= bm) p = { ...p, octave: p.octave + 1 };
-    return p;
-  });
-  return [bass, ...above.sort((x, y) => midiOf(x) - midiOf(y))];
-}
-function foldChord(pitches, at2, pin) {
-  if (pitches.length < 2) return null;
-  const auto = readChord(pitches, at2.fifths, at2.minor ? "la" : "do");
-  if (!auto) return null;
-  const ps = [...pitches].sort((x, y) => midiOf(x) - midiOf(y)), lo = ps[0];
-  const restores = (g) => {
-    const v = voicingOf(g, lo.octave);
-    return !!v && v.length === ps.length && v.every((p, i) => p.step === ps[i].step && p.alter === ps[i].alter && p.octave === ps[i].octave);
-  };
-  const ok = auto.all.filter(restores);
-  if (!ok.length) return null;
-  const ambiguous = new Set(ok.map((g) => g.name)).size > 1;
-  if (pin) {
-    const rd = pinRead(pin, at2, auto);
-    if (!rd || !restores(rd.best)) return null;
-    return { name: rd.best.name, bass: lo, ambiguous, read: rd };
-  }
-  return { name: ok[0].name, bass: lo, ambiguous, read: auto };
-}
-var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
-function brokenInBar(bar, prev) {
-  const beatLen = beatTicks(bar.beats, bar.beatType), nb = Math.max(1, Math.round(bar.beats * WHOLE / bar.beatType / beatLen));
-  const beats = Array.from({ length: nb }, () => []);
-  for (const n2 of bar.notes) if (!n2.tie) beats[Math.min(nb - 1, Math.max(0, Math.floor(n2.pos / beatLen + 1e-9)))].push({
-    i: n2.index,
-    p: n2.tok.pitch,
-    stacked: !!n2.tok.chord?.length,
-    fifths: n2.fifths,
-    mode: modeOf(n2),
-    pin: n2.tok.harm ? guessOf({ ...n2.tok.harm.root, octave: 4 }, n2.tok.harm.kind, { ...n2.tok.harm.bass ?? n2.tok.harm.root, octave: 3 }, n2.fifths, modeOf(n2))?.label ?? null : null
-  });
-  const tags = [];
-  const groupOf2 = (ns) => {
-    const us = ns.filter((n2) => n2.p && !n2.stacked), ps = us.map((n2) => n2.p);
-    if (new Set(ps.map(pc)).size < 3) return null;
-    for (let k = 1; k < ps.length; k++) {
-      const d = Math.abs(midiOf(ps[k]) - midiOf(ps[k - 1]));
-      if (d === 1 || d === 2) return null;
-    }
-    const rd = readChord(ps, us[0].fifths, us[0].mode);
-    return rd && rd.best.omitted === 0 && BROKEN_OK.has(rd.best.tpl) ? rd : null;
-  };
-  const look = (b0, b1) => {
-    const ns = beats.slice(b0, b1).flat();
-    if (!ns.some((n2) => n2.p && !n2.stacked)) return;
-    const rd = groupOf2(ns);
-    if (rd) {
-      const label = chordLabel(rd);
-      if (label !== prev) tags.push({ index: ns.find((n2) => n2.p && !n2.stacked).i, read: rd });
-      prev = label;
-      for (const n2 of ns) if (n2.pin && !n2.stacked) prev = n2.pin;
-      return;
-    }
-    const len = b1 - b0;
-    if (len === 1) {
-      prev = "";
-      return;
-    }
-    if (len % 2 === 0 && len > 2) {
-      const mid = b0 + len / 2;
-      look(b0, mid);
-      look(mid, b1);
-      return;
-    }
-    for (let b = b0; b < b1; b++) look(b, b + 1);
-  };
-  look(0, nb);
-  return { tags, prev };
-}
-function readBar(bar, carry, opts) {
-  const tags = [];
-  for (const n2 of bar.notes) {
-    const t = n2.tok;
-    if (t.pitch && t.chord?.length) {
-      const rd = readChord([t.pitch, ...t.chord], n2.fifths, modeOf(n2));
-      if (rd) tags.push({ index: n2.index, read: rd });
-    }
-  }
-  let prev = carry?.prev ?? "";
-  if (opts.broken) {
-    const b = brokenInBar(bar, prev);
-    tags.push(...b.tags);
-    prev = b.prev;
-  }
-  return { tags: tags.sort((a, b) => a.index - b.index), carry: { prev } };
-}
-var western = {
-  id: ID,
-  readBar,
-  label: chordLabel,
-  pinRead,
-  pinOf,
-  fold: foldChord,
-  howTo: () => _t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002"),
-  explain: (guess) => {
-    const g = guess;
-    return [g.root.step !== g.bass.step || g.root.alter !== g.bass.alter ? _t("\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09") : "", g.no3 ? _t("\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199") : "", g.omitted - (g.no3 ? 1 : 0) > 0 ? _t("\u7701\u4E86 {n} \u4E2A\u97F3", { n: g.omitted - (g.no3 ? 1 : 0) }) : ""].filter(Boolean);
-  }
-};
-
-// src/score/merge.ts
-var HEAD_ARTS = ["ghost", "whisper"];
-var SWITCH = 5;
-function planHands(tracks, wantsGrand2, homes, force = false) {
-  const host = tracks[0] ?? [], time = host.find((t) => t.kind === "time");
-  const bar = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t) => Math.floor(t / bar + 1e-9);
-  const med = (xs) => {
-    const a = [...xs].sort((x, y) => x - y);
-    return a.length ? a[a.length >> 1] : NaN;
-  };
-  const per = tracks.map((toks) => {
-    const notes = [];
-    let t = 0;
-    for (let i = headLen(toks); i < toks.length; i++) {
-      const k = toks[i];
-      if (!isTimed(k)) continue;
-      if (k.kind === "note" && k.pitch) notes.push({ t, m: [k.pitch, ...k.chord ?? []].map(midiOf) });
-      t += k.dur;
-    }
-    return notes;
-  });
-  const mid = per.map((ns) => med(ns.flatMap((n2) => n2.m))), home = mid.map((x, i) => homes?.[i] ?? (Number.isNaN(x) || x >= 60 ? 0 : 1));
-  const present = mid.map((x, i) => Number.isNaN(x) ? -1 : i).filter((i) => i >= 0);
-  if (force && present.length >= 2 && new Set(present.map((i) => home[i])).size < 2) {
-    const order = [...present].sort((x, y) => mid[y] - mid[x]);
-    let cut = 1, g = -1;
-    for (let k = 0; k + 1 < order.length; k++) {
-      const d = mid[order[k]] - mid[order[k + 1]];
-      if (d > g) {
-        g = d;
-        cut = k + 1;
-      }
-    }
-    order.forEach((m, k) => {
-      home[m] = k < cut ? 0 : 1;
-    });
-  }
-  const grand = force || new Set(present.map((i) => home[i])).size > 1 && wantsGrand2(mergeTracks(tracks));
-  const staffCache = /* @__PURE__ */ new Map(), staffOf = (m, ms) => {
-    if (!grand) return 0;
-    const key = `${m}:${ms}`, hit2 = staffCache.get(key);
-    if (hit2 !== void 0) return hit2;
-    const mm = med(per[m].filter((n2) => meas(n2.t) === ms).flatMap((n2) => n2.m));
-    const st = Number.isNaN(mm) ? home[m] : home[m] === 1 && mm >= 60 + SWITCH ? 0 : home[m] === 0 && mm < 60 - SWITCH ? 1 : home[m];
-    staffCache.set(key, st);
-    return st;
-  };
-  const voiceCache = /* @__PURE__ */ new Map(), voiceOf = (m, ms) => {
-    const key = `${m}:${ms}`, hit2 = voiceCache.get(key);
-    if (hit2 !== void 0) return hit2;
-    const s2 = staffOf(m, ms), mates = present.filter((j) => staffOf(j, ms) === s2 && per[j].some((n2) => meas(n2.t) === ms)).sort((x, y) => mid[y] - mid[x]);
-    let cut = mates.length;
-    if (mates.length >= 2) {
-      let g = -1;
-      for (let i = 0; i + 1 < mates.length; i++) {
-        const d = mid[mates[i]] - mid[mates[i + 1]];
-        if (d > g) {
-          g = d;
-          cut = i + 1;
-        }
-      }
-    }
-    for (let i = 0; i < mates.length; i++) voiceCache.set(`${mates[i]}:${ms}`, i < cut ? 1 : 2);
-    return voiceCache.get(key) ?? 1;
-  };
-  return { grand, pick: (staff, voice) => (m, t) => staffOf(m, meas(t)) === staff && voiceOf(m, meas(t)) === voice };
-}
-function mergeTracks(tracks, opt = {}) {
-  const { keyOf, pick: pick2, hits } = opt, barsOnly = opt.marks === "bars";
-  const host = tracks[0] ?? [], head = host.slice(0, headLen(host));
-  const evs = [], marks = [];
-  let end = 0;
-  tracks.forEach((toks, m) => {
-    let t = 0;
-    for (let i = headLen(toks); i < toks.length; i++) {
-      const k = toks[i];
-      if (isTimed(k)) {
-        if (k.kind === "note" && k.pitch) {
-          const ps = [k.pitch, ...k.chord ?? []].map((p) => keyOf ? keyOf(m, p) : p);
-          if (!pick2 || pick2(m, t)) evs.push({ t0: t, t1: t + k.dur, ps, host: m === 0 && !barsOnly ? k : null, heads: (k.art ?? []).filter((a) => HEAD_ARTS.includes(a)) });
-        }
-        t += k.dur;
-      } else if (m === 0 && k.kind !== "clef" && k.kind !== "ottava" && (!barsOnly || k.kind === "bar" || k.kind === "key" || k.kind === "time")) marks.push({ t, tok: k });
-    }
-    end = Math.max(end, t);
-  });
-  const cuts = [.../* @__PURE__ */ new Set([0, end, ...evs.flatMap((e) => [e.t0, e.t1]), ...marks.map((x) => x.t)])].filter((x) => x <= end).sort((a, b) => a - b);
-  const out = [...head];
-  let id = -1e3, prevChord = false, prevOn = [];
-  for (let i = 0; i < cuts.length; i++) {
-    const a = cuts[i], b = cuts[i + 1];
-    for (const x of marks) if (x.t === a) out.push(x.tok);
-    if (b === void 0) break;
-    let on = evs.filter((e) => e.t0 <= a && e.t1 > a);
-    if (hits && on.length) {
-      const struck = on.filter((e) => e.t0 === a);
-      on = struck.length ? struck : prevChord && on.length === prevOn.length && on.every((e) => prevOn.includes(e)) ? on : [];
-    }
-    if (!on.length) {
-      const last = out[out.length - 1];
-      if (last && last.kind === "rest" && last.id <= -1e3) out[out.length - 1] = { ...last, dur: last.dur + (b - a) };
-      else out.push({ kind: "rest", id: id--, dur: b - a });
-      prevChord = false;
-      prevOn = [];
-      continue;
-    }
-    const freshK = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set();
-    for (const e of on) if (e.t0 === a) for (const p of e.ps) freshK.add(midiOf(p));
-    const all = on.flatMap((e) => e.ps).filter((p) => {
-      const k = midiOf(p);
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    }).sort((x, y) => midiOf(y) - midiOf(x));
-    const ps = all;
-    const fresh = ps.some((p) => freshK.has(midiOf(p))), h = on.find((e) => e.host && e.t0 === a)?.host ?? null;
-    const src = on.filter((e) => e.t0 === a).length ? on.filter((e) => e.t0 === a) : on, art2 = HEAD_ARTS.filter((x) => src.every((e) => e.heads.includes(x)));
-    out.push({ kind: "note", id: id--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b - a, lyric: h?.lyric ?? null, ...h?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art2.length ? { art: art2 } : {} });
-    prevChord = true;
-    prevOn = on;
-  }
-  return out;
-}
-
-// src/theory/families.ts
-function onsets(tokens) {
-  const out = /* @__PURE__ */ new Map();
-  let t = 0;
-  for (let i = headLen(tokens); i < tokens.length; i++) {
-    const k = tokens[i];
-    if (!isTimed(k)) continue;
-    if (k.kind === "note" && k.pitch && !k.tie && !out.has(t)) out.set(t, i);
-    t += k.dur;
-  }
-  return out;
-}
-function paperHarmony(theory, input) {
-  const out = /* @__PURE__ */ new Map(), pitched = input.parts.filter((p) => !p.perc), byId = new Map(pitched.map((p) => [p.id, p]));
-  const fams = input.families.map((f) => f.filter((id) => byId.has(id))).filter((f) => f.length >= 2), inFam = new Set(fams.flat());
-  const push = (owner, tag) => {
-    const l = out.get(owner);
-    if (l) l.push(tag);
-    else out.set(owner, [tag]);
-  };
-  for (const p of pitched) if (!inFam.has(p.id)) for (const t of harmonyTags(theory, { tokens: p.tokens, broken: p.broken })) push(p.id, { ...t, at: p.id });
-  for (const fam of fams) {
-    const members = fam.map((id) => byId.get(id)), bottom = fam[fam.length - 1];
-    const merged = mergeTracks(members.map((m) => [...m.tokens]));
-    const tags = harmonyTags(theory, { tokens: merged, broken: members[0].broken });
-    const tickAt = [], keyAt = [];
-    {
-      let t = 0, key = { fifths: DEFAULT_KEY, minor: false };
-      merged.forEach((k, i) => {
-        if (k.kind === "key") key = { fifths: k.fifths, minor: k.mode === "minor" };
-        tickAt[i] = t;
-        keyAt[i] = key;
-        if (isTimed(k)) t += k.dur;
-      });
-    }
-    const starts = members.map((m) => onsets(m.tokens));
-    for (const tag of tags) {
-      const t = tickAt[tag.index];
-      let owner = -1;
-      for (let m = members.length - 1; m >= 0; m--) if (starts[m].has(t)) {
-        owner = m;
-        break;
-      }
-      if (owner < 0) continue;
-      let read = tag.read;
-      for (let m = members.length - 1; m >= 0; m--) {
-        const i = starts[m].get(t);
-        if (i === void 0) continue;
-        const pin = members[m].tokens[i].harm;
-        if (!pin) continue;
-        const rd = theory.pinRead(pin, keyAt[tag.index], tag.read);
-        if (rd && tag.read.all.some((g) => g.name === rd.best.name)) {
-          read = rd;
-          break;
-        }
-      }
-      push(members[owner].id, { index: starts[owner].get(t), read, at: bottom });
-    }
-  }
-  for (const l of out.values()) l.sort((a, b) => a.index - b.index);
-  return out;
-}
-
-// src/theory/index.ts
-var THEORIES = { [western.id]: western };
-var DEFAULT_THEORY = western.id;
-var harmonyTheory = (id = DEFAULT_THEORY) => THEORIES[id] ?? THEORIES[DEFAULT_THEORY];
-function barsOf(tokens) {
-  const at2 = meterPositions(tokens, [0], true), bars = [];
-  let fifths = DEFAULT_KEY, minor = false;
-  tokens.forEach((t, i) => {
-    if (t.kind === "key") {
-      fifths = t.fifths;
-      minor = t.mode === "minor";
-      return;
-    }
-    const m = at2.get(i);
-    if (!m || t.kind !== "note") return;
-    let bar = bars[bars.length - 1];
-    if (!bar || bar.no !== m.bar) bars.push(bar = { no: m.bar, beats: m.beats, beatType: m.beatType, notes: [] });
-    bar.notes.push({ index: i, tok: t, pos: m.pos, fifths, ...minor ? { minor: true } : {}, ...m.tie ? { tie: true } : {} });
-  });
-  return bars;
-}
-function harmonyTags(theory, track) {
-  const out = [], opts = { broken: track.broken !== false }, bars = barsOf(track.tokens);
-  let carry;
-  for (const bar of bars) {
-    const r = theory.readBar(bar, carry, opts);
-    out.push(...r.tags);
-    carry = r.carry;
-  }
-  const pins = bars.flatMap((b) => b.notes).filter((n2) => n2.tok.harm);
-  if (!pins.length) return out;
-  const byIndex = new Map(out.map((t) => [t.index, t]));
-  for (const n2 of pins) {
-    const rd = theory.pinRead(n2.tok.harm, { fifths: n2.fifths, minor: !!n2.minor }, byIndex.get(n2.index)?.read);
-    if (rd) byIndex.set(n2.index, { index: n2.index, read: rd });
-  }
-  return [...byIndex.values()].sort((a, b) => a.index - b.index);
-}
-
-// src/look/frame.ts
-var SCROLL_TAIL = 6;
-var ABBR_REF = "Vln.Vc.";
-var NAME_MAX = 6.5;
-var ROW_STEP = 1;
-var MARGIN = 1.2;
-var BAR_W = 1.6;
-var TITLE_H = 5.4;
-var PAPER_H = 3.4;
-var PAPER_GAP = 1.6;
-var CTL_H = 3;
-var SYSTEM_LINE_W = 0.16 * 1.4;
-var LYRIC_EDGE = 0.25;
-
-// src/look/layout.ts
-var JP_COZY = 3.6 / (2.5 * 1.75);
-var JP_COMPACT = 3 / (2.5 * 1.25);
-var mockSpring = (q) => (5 + 6.8 * Math.log2(1 + 4 * q)) * 2.5 / 22;
-var jianpuSprings = (k) => [[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]].map(([t, w]) => [t, w * k]);
-var LAST_MERGE = { short: 0.3, squeeze: 0.35 };
-var JIANPU_PAPER = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } };
-var PAPER_PARAMS = {
-  // 五线谱（第六刀，user 看了对照后定的，纪要第 91 节）：一行最多拉宽约 1.3 倍、放不满就让右边空着；让位时整小节一起放宽（和简谱一致）。折行可以留孤行（user「我觉得可以留」「倾向紧凑」）
-  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE } },
-  // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
-  //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
-  //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，src/look/text.ts LYRIC_LOOK）
-  jianpu: JIANPU_PAPER,
-  letters: JIANPU_PAPER
-  // 字母谱（7-B）= 简谱的变体，同一种数字行，纸一级参数照简谱
-};
-var jianpuRow = (k, v) => ({ above: v.above * k, rowH: v.rowH * k, rowHNoLyric: v.rowHNoLyric * k, graveUpper: v.graveUpper * k, lyricBelow: v.lyricBelow * k, clear: v.clear * k, scale: k, barNoPad: v.barNoPad * k });
-var JIANPU_ROW_PARAMS = { cozy: jianpuRow(JP_COZY, { above: 2.05, rowH: 13.2, rowHNoLyric: 11.4, graveUpper: 11.4, lyricBelow: 2.05, clear: 0.8, barNoPad: 1.5 }), compact: jianpuRow(JP_COMPACT, { above: 1.85, rowH: 11.9, rowHNoLyric: 10.3, graveUpper: 10.3, lyricBelow: 1.85, clear: 0.8, barNoPad: 1.5 }) };
-var ROW_PARAMS = {
-  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4, scale: 1, barNoPad: 0 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4, scale: 1, barNoPad: 0 } },
-  // 数字行（行身 = 小节线那一段，jianpu/glyphs.ts JP_BODY）：没有五条线，比五线谱的行矮；数字行不分大谱表（graveUpper 用不上，照没歌词的填）
-  jianpu: JIANPU_ROW_PARAMS,
-  jianpuX: JIANPU_ROW_PARAMS
-  // 鼓的 X 行：和数字行同一个行身、同一套行距（第五刀 5-4）
-};
-
-// src/render/frame/furniture.ts
-var NO_LINE_START = /* @__PURE__ */ new Set([..."\u3001\u3002\uFF0C\uFF0E\u30FB\uFF1A\uFF1B\uFF1F\uFF01\uFF09\u300D\u300F\u3011\u3015\u3009\u300B\u30FC\uFF5E\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u308E\u30A1\u30A3\u30A5\u30A7\u30A9\u30C3\u30E3\u30E5\u30E7\u30EE\u30F5\u30F6,.;:!?)]}"]);
-function wrapTitle(s2, w, max) {
-  if (w(s2) <= max) return [s2];
-  const lines = [];
-  let cur = "";
-  const push = () => {
-    if (cur.trim()) lines.push(cur.trim());
-    cur = "";
-  };
-  for (const word of s2.match(/\S+\s*/g) ?? [s2]) {
-    if (w((cur + word).trimEnd()) <= max) {
-      cur += word;
-      continue;
-    }
-    if (cur.trim()) push();
-    if (w(word.trimEnd()) <= max) {
-      cur = word;
-      continue;
-    }
-    for (const ch of word) {
-      if (cur && w((cur + ch).trimEnd()) > max) {
-        if (NO_LINE_START.has(ch) && [...cur].length > 1) {
-          const cs = [...cur], last = cs.pop();
-          cur = cs.join("");
-          push();
-          cur = last;
-        } else push();
-      }
-      cur += ch;
-    }
-  }
-  push();
-  return lines.length ? lines : [s2];
-}
-
-// src/score/clef.ts
-var CLEF_SHIFT = { G: 0, G8vb: 7, G8va: -7, G15ma: -14, F: 12, F8vb: 19 };
-var isFClef = (c) => c === "F" || c === "F8vb";
-var baseClef = (c) => isFClef(c) ? "F" : "G";
-var ottavaShift = (s2) => -7 * s2;
-var CLEF_LABEL = { G: _t("\u9AD8\u97F3"), G8vb: _t("\u9AD8\u97F3 8vb"), G8va: _t("\u9AD8\u97F3 8va"), G15ma: _t("\u9AD8\u97F3 15ma"), F: _t("\u4F4E\u97F3"), F8vb: _t("\u4F4E\u97F3 8vb") };
-var CLEF_TITLE = {
-  G: _t("\u9AD8\u97F3\u8C31\u53F7"),
-  G8vb: _t("\u9AD8\u97F3\u8C31\u53F7\u4E0B\u9762\u6302 8\uFF1A\u8C31\u4E0A\u5199\u7684\u97F3\u5B9E\u9645\u4F4E\u4E00\u4E2A\u516B\u5EA6\u54CD\uFF08\u5409\u4ED6\u3001\u7537\u9AD8\u97F3\uFF09"),
-  G8va: _t("\u9AD8\u97F3\u8C31\u53F7\u4E0A\u9762\u6302 8\uFF1A\u5B9E\u9645\u9AD8\u4E00\u4E2A\u516B\u5EA6\uFF08\u77ED\u7B1B\uFF09"),
-  G15ma: _t("\u9AD8\u97F3\u8C31\u53F7\u4E0A\u9762\u6302 15\uFF1A\u5B9E\u9645\u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF08\u949F\u7434\u3001\u94C3\uFF09"),
-  F: _t("\u4F4E\u97F3\u8C31\u53F7"),
-  F8vb: _t("\u4F4E\u97F3\u8C31\u53F7\u4E0B\u9762\u6302 8\uFF1A\u5B9E\u9645\u4F4E\u4E00\u4E2A\u516B\u5EA6\uFF08\u4F4E\u97F3\u63D0\u7434\u3001\u8D1D\u65AF\uFF09")
-};
-var OTTAVA_LABEL = { 1: "8va", 2: "15ma", [-1]: "8vb", 0: _t("\u7ED3\u675F\u516B\u5EA6\u7EBF") };
-var BOTTOM = 30;
-var TOP = 38;
-var ledgerLines = (pos) => pos > TOP ? Math.floor((pos - TOP) / 2) : pos < BOTTOM ? Math.floor((BOTTOM - pos) / 2) : 0;
-var ledgerCost = (pos) => {
-  const l = ledgerLines(pos);
-  return l * (l + 1) / 2;
-};
-var BIAS = { G: 0, F: 0.1, G8vb: 1, G8va: 1, G15ma: 1.5, F8vb: 1.5 };
-function autoClef(positions, prev = null) {
-  if (!positions.length) return prev ?? "G";
-  return pickClef((c) => positions.reduce((a, x) => a + ledgerCost(x + CLEF_SHIFT[c]) + BIAS[c], 0), positions.length, prev);
-}
-function pickClef(cost, n2, prev) {
-  let best = "G", bc = Infinity;
-  for (const c of CLEFS) {
-    const v = cost(c);
-    if (v < bc - 1e-9) {
-      bc = v;
-      best = c;
-    }
-  }
-  if (prev && cost(prev) <= bc + Math.max(1, 0.1 * n2)) return prev;
-  return best;
-}
-var RUN_COST = 3;
-function startClef(tokens, partClef, prev, autoOtt = false) {
-  if (partClef) return partClef;
-  if (autoOtt) {
-    const cut = tokens.findIndex((t) => t.kind === "clef"), seg = cut < 0 ? tokens : tokens.slice(0, cut);
-    let n2 = 0;
-    for (const t of seg) if (t.kind === "note" && t.pitch) n2 += 1 + (t.chord?.length ?? 0);
-    if (!n2) return prev ?? "G";
-    return pickClef((c) => {
-      const ao = autoOttava(seg, displayStates(seg, c));
-      let v = ao.runs.length * RUN_COST;
-      seg.forEach((t, i) => {
-        if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...t.chord ?? []]) v += ledgerCost(diatonicIndex(p) + CLEF_SHIFT[c] + ottavaShift(ao.ott[i] ?? 0)) + BIAS[c];
-      });
-      return v;
-    }, n2, prev);
-  }
-  const pos = [];
-  let o = 0;
-  for (const t of tokens) {
-    if (t.kind === "clef") break;
-    if (t.kind === "ottava") {
-      o = t.shift;
-      continue;
-    }
-    if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...t.chord ?? []]) pos.push(diatonicIndex(p) + ottavaShift(o));
-  }
-  return autoClef(pos, prev);
-}
-var GRAND_BIAS = 0.5;
-function wantsGrand(tokens) {
-  const pos = [];
-  for (const t of tokens) if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...t.chord ?? []]) pos.push(diatonicIndex(p));
-  if (pos.length < 2) return false;
-  const c = startClef(tokens, void 0, null, true), ao = autoOttava(tokens, displayStates(tokens, c));
-  let single = ao.runs.length * RUN_COST;
-  tokens.forEach((t, i) => {
-    if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...t.chord ?? []]) single += ledgerCost(diatonicIndex(p) + CLEF_SHIFT[c] + ottavaShift(ao.ott[i] ?? 0));
-  });
-  const grand = pos.reduce((a, d) => a + ledgerCost(d >= MIDDLE_C ? d : d + CLEF_SHIFT.F), 0) + GRAND_BIAS * pos.length;
-  return grand < single;
-}
-var MIDDLE_C = 28;
-function displayStates(tokens, start) {
-  const clef = new Array(tokens.length), ott = new Array(tokens.length);
-  let c = start, o = 0;
-  tokens.forEach((t, i) => {
-    if (t.kind === "clef") c = t.clef;
-    else if (t.kind === "ottava") o = t.shift;
-    clef[i] = c;
-    ott[i] = o;
-  });
-  return { clef, ott };
-}
-function autoOttava(tokens, ds) {
-  const ott = ds.ott.slice(), auto = new Array(tokens.length).fill(false), runs = [];
-  const items = [];
-  tokens.forEach((t, i) => {
-    if (!isTimed(t)) return;
-    const manual = (ds.ott[i] ?? 0) !== 0;
-    if (t.kind !== "note" || !t.pitch) {
-      items.push({ i, note: false, hi: NaN, lo: NaN, dir: 0, manual });
-      return;
-    }
-    const pos = [t.pitch, ...t.chord ?? []].map((p) => diatonicIndex(p) + CLEF_SHIFT[ds.clef[i]]);
-    const hi = Math.max(...pos), lo = Math.min(...pos);
-    const up = hi > TOP && ledgerLines(hi) >= 3, down = lo < BOTTOM && ledgerLines(lo) >= 3;
-    items.push({ i, note: true, hi, lo, dir: up && !down ? 1 : down && !up ? -1 : 0, manual });
-  });
-  const notes = items.filter((x) => x.note).length, cands = items.filter((x) => x.dir && !x.manual).length;
-  if (cands < 2 || cands * 3 > notes) return { ott, auto, runs };
-  const okGap = (x, dir) => !x.manual && (!x.note || (dir === 1 ? !(x.lo - 7 < BOTTOM && ledgerLines(x.lo - 7) >= 3) : !(x.hi + 7 > TOP && ledgerLines(x.hi + 7) >= 3)));
-  for (let k = 0; k < items.length; ) {
-    const it = items[k];
-    if (!it.dir || it.manual) {
-      k++;
-      continue;
-    }
-    const dir = it.dir;
-    let e = k, n2 = 1;
-    for (; ; ) {
-      const a = items[e + 1], b = items[e + 2];
-      if (a && a.dir === dir && !a.manual) {
-        e += 1;
-        n2++;
-        continue;
-      }
-      if (a && b && b.dir === dir && !b.manual && okGap(a, dir)) {
-        e += 2;
-        n2++;
-        continue;
-      }
-      break;
-    }
-    if (n2 >= 2) {
-      const span = items.slice(k, e + 1).filter((x) => x.note);
-      const shift = dir === -1 ? -1 : span.some((x) => x.hi - 7 > TOP && ledgerLines(x.hi - 7) >= 3) ? 2 : 1;
-      const from = items[k].i, to = items[e].i;
-      for (let j = from; j <= to; j++) {
-        ott[j] = shift;
-        auto[j] = true;
-      }
-      runs.push({ from, to, shift });
-    }
-    k = e + 1;
-  }
-  return { ott, auto, runs };
-}
-var GRAND_MIN = 8;
-var GRAND_SIDE = 0.2;
-var GRAND_GAIN = 2.5;
-var GRAND_KEEP = 1.5;
-function autoGrand(tokens, single, autoOtt, prevGrand) {
-  if (tokens.some((t) => t.kind === "clef")) return false;
-  const pos = [];
-  let o = 0;
-  for (const t of tokens) {
-    if (t.kind === "ottava") o = t.shift;
-    else if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...t.chord ?? []]) pos.push(diatonicIndex(p) + ottavaShift(o));
-  }
-  const n2 = pos.length;
-  if (n2 < GRAND_MIN) return false;
-  const up = pos.filter((d) => d >= MIDDLE_C).length;
-  if (up < GRAND_SIDE * n2 || n2 - up < GRAND_SIDE * n2) return false;
-  const ao = autoOtt ? autoOttava(tokens, displayStates(tokens, single)) : null, ds = displayStates(tokens, single);
-  let one = (ao?.runs.length ?? 0) * RUN_COST;
-  tokens.forEach((t, i) => {
-    if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...t.chord ?? []]) one += ledgerCost(diatonicIndex(p) + CLEF_SHIFT[ds.clef[i] ?? single] + ottavaShift((ao ? ao.ott[i] : ds.ott[i]) ?? 0));
-  });
-  const stf = staffOfTokens(tokens, 2);
-  let two = 0;
-  tokens.forEach((t, i) => {
-    if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...t.chord ?? []]) two += ledgerCost(diatonicIndex(p) + (stf[i] === 2 ? CLEF_SHIFT.F : 0) + ottavaShift(ds.ott[i] ?? 0));
-  });
-  return (one - two) / n2 > (prevGrand ? GRAND_KEEP : GRAND_GAIN);
-}
-function resolveSongLooks(song, trackLook, noAutoGrand) {
-  const out = /* @__PURE__ */ new Map(), last = /* @__PURE__ */ new Map(), lastGrand = /* @__PURE__ */ new Map();
-  const shared = new Set(song.parts.flatMap((p) => p.host ? [p.id, p.host] : []));
-  for (const paper of song.papers) {
-    const m = /* @__PURE__ */ new Map();
-    out.set(paper.id, m);
-    for (const part2 of song.parts) {
-      const toks = paper.tracks[part2.id];
-      if (!toks) continue;
-      const look = trackLook(paper.id, part2.id), autoOtt = look.autoOttava;
-      const hc = headClefOf(toks), c = hc ?? startClef(toks, void 0, last.get(part2.id) ?? null, autoOtt), ds = displayStates(toks, c);
-      const grand = look.grand ? "explicit" : !shared.has(part2.id) && !noAutoGrand?.has(part2.id) && autoGrand(toks, c, autoOtt, lastGrand.get(part2.id) ?? false) ? "auto" : null;
-      const fi = toks.findIndex((t) => t.kind === "note"), first = hc ?? (fi >= 0 ? ds.clef[fi] ?? c : c);
-      m.set(part2.id, { staves: grand ? 2 : 1, clef: c, first, autoOtt, grand });
-      last.set(part2.id, ds.clef.length ? ds.clef[ds.clef.length - 1] : c);
-      lastGrand.set(part2.id, !!grand);
-    }
-  }
-  return out;
-}
-
-// src/render/signs.ts
-var G = (above, below, w, h) => ({ kind: "glyph", above, ...below ? { below } : {}, ...w !== void 0 ? { w } : {}, ...h !== void 0 ? { h } : {} });
-var D = (how) => ({ kind: "drawn", how });
-var T = (s2) => ({ kind: "text", s: s2 });
-var DYN_G = {
-  ppp: { kind: "glyph", above: "\uE52A", ink: [-0.4, 4.3, 1.1, 0.6] },
-  pp: { kind: "glyph", above: "\uE52B", ink: [-0.4, 3, 1.1, 0.6] },
-  p: { kind: "glyph", above: "\uE520", ink: [-0.4, 1.5, 1.1, 0.6] },
-  mp: { kind: "glyph", above: "\uE52C", ink: [-0.1, 3.3, 1.1, 0.6] },
-  mf: { kind: "glyph", above: "\uE52D", ink: [-0.1, 3.3, 1.7, 0.7] },
-  f: { kind: "glyph", above: "\uE522", ink: [-0.6, 1.5, 1.8, 0.6] },
-  ff: { kind: "glyph", above: "\uE52F", ink: [-0.6, 2.5, 1.8, 0.6] },
-  fff: { kind: "glyph", above: "\uE530", ink: [-0.6, 3.4, 1.8, 0.6] }
-};
-var DYN_NAME = (d, l) => ({ ppp: _tIn(l, "\u6781\u5F31"), pp: _tIn(l, "\u5F88\u5F31"), p: _tIn(l, "\u5F31##\u529B\u5EA6"), mp: _tIn(l, "\u4E2D\u5F31"), mf: _tIn(l, "\u4E2D\u5F3A"), f: _tIn(l, "\u5F3A##\u529B\u5EA6"), ff: _tIn(l, "\u5F88\u5F3A"), fff: _tIn(l, "\u6781\u5F3A") })[d];
-var art = (a, name, says, lane, staff, jianpu) => ({ id: `art:${a}`, name, says, lane, draw: { staff, jianpu, letters: jianpu } });
-var ART_SIGNS = {
-  "art:staccato": art("staccato", (l) => _tIn(l, "\u8DF3\u97F3"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u77ED\u4E00\u70B9\u3001\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A2", "\uE4A3", 0.28, 0.28), G("\uE4A8", "\uE4A9", 0.4, 0.9)),
-  // 简谱 = 窄小的楔形（点被八度占了；UX 稿第 5 节）
-  "art:accent": art("accent", (l) => _tIn(l, "\u91CD\u97F3"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u7684\u97F3\u5934\u91CD\u4E00\u70B9"), "strength", G("\uE4A0", "\uE4A1", 1.36, 0.99), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
-  "art:marcato": art("marcato", (l) => _tIn(l, "\u5F3A\u97F3"), (l) => _tIn(l, "\u6BD4\u91CD\u97F3\u66F4\u91CD\u7684\u97F3\u5934"), "strength", G("\uE4AC", "\uE4AD", 1, 1.08), G("\uE4AC", "\uE4AD", 1, 1.08)),
-  "art:stress": art("stress", (l) => _tIn(l, "\u6B21\u91CD\u97F3"), (l) => _tIn(l, "\u6BD4\u91CD\u97F3\u8F7B\u4E00\u6863\u7684\u91CD\uFF08\u56DB\u62CD\u5B50\u91CC\u7684\u7B2C\u4E09\u62CD\u90A3\u79CD\uFF09"), "strength", G("\uE4B6", "\uE4B7", 1, 1), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
-  // 简谱 = 细一号的 >（UX 稿第 5 节：画的时候缩小）
-  "art:unstress": art("unstress", (l) => _tIn(l, "\u5F31\u5316"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u8F7B\u4E00\u70B9"), "strength", G("\uE4B8", "\uE4B9", 1.6, 0.9), G("\uE4B8", "\uE4B9", 1.6, 0.9)),
-  "art:ghost": art("ghost", (l) => _tIn(l, "\u5E7D\u7075\u97F3"), (l) => _tIn(l, "\u51E0\u4E4E\u542C\u4E0D\u89C1\u7684\u97F3\uFF08\u53EA\u7559\u4E2A\u5F71\u5B50\uFF09"), "note", D("\u7B26\u5934\u52A0\u62EC\u53F7"), D("\u6570\u5B57\u753B\u5C0F\u4E00\u53F7")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:tenuto": art("tenuto", (l) => _tIn(l, "\u4FDD\u6301"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u5531 / \u594F\u6EE1\uFF0C\u4E0D\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A4", "\uE4A5", 1.35, 0.17), G("\uE4A4", "\uE4A5", 1.35, 0.17)),
-  "art:breath": art("breath", (l) => _tIn(l, "\u547C\u5438"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u540E\u9762\u6362\u6C14"), "note", G("\uE4CE"), D("\u97F3\u540E\u9762\u4E00\u4E2A V\uFF08\u51FA\u58F0\u7684\u6362\u6C14\u5199\u300CV \u5438\u300D\uFF09")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:sfz": art("sfz", (l) => _tIn(l, "\u7A81\u5F3A"), (l) => _tIn(l, "\u97F3\u5934\u7A81\u7136\u51B2\u4E00\u4E0B\u3001\u518D\u56DE\u5230\u5F53\u4E0B\u7684\u529B\u5EA6"), "noteDynamics", G("\uE539"), T("sfz")),
-  "art:fp": art("fp", (l) => _tIn(l, "\u5F3A\u540E\u5373\u5F31"), (l) => _tIn(l, "\u97F3\u5934\u6309\u5F3A\u3001\u9A6C\u4E0A\u843D\u5230\u5F31\uFF0C\u540E\u9762\u7684\u97F3\u90FD\u662F\u5F31"), "noteDynamics", G("\uE534"), T("fp")),
-  "art:whisper": art("whisper", (l) => _tIn(l, "\u6C14\u58F0"), (l) => _tIn(l, "\u4E0D\u5531\u97F3\u9AD8\u3001\u7528\u6C14\u58F0\u5FF5\uFF08\u97F3\u9AD8\u7167\u5199\u5728\u8C31\u4E0A\uFF09"), "note", D("\xD7 \u7B26\u5934"), D("\u6570\u5B57 + \xD7")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:swellUp": art("swellUp", (l) => _tIn(l, "\u97F3\u5185\u6E10\u5F3A"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5F31\u957F\u5230\u5199\u7684\u529B\u5EA6"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:swellDown": art("swellDown", (l) => _tIn(l, "\u97F3\u5185\u6E10\u5F31"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5199\u7684\u529B\u5EA6\u6536\u5F31"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 >"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 >")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:swellBoth": art("swellBoth", (l) => _tIn(l, "\u97F3\u5185\u9F13\u8D77"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u5148\u957F\u540E\u6536\uFF08messa di voce\uFF09"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <>"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <>")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:arpeggio": art("arpeggio", (l) => _tIn(l, "\u7436\u97F3"), (l) => _tIn(l, "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4E00\u4E2A\u4E2A\u62E8\u51FA\u6765"), "note", D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF"), D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF\uFF08\u591A\u58F0\u90E8 = \u7B2C\u4E94\u5200\uFF09")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:roll": art("roll", (l) => _tIn(l, "\u6EDA\u594F"), (l) => _tIn(l, "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09\uFF1B\u6BCF\u4E00\u4E0B\u90FD\u662F\u6574\u4E0B\u6572\uFF0C\u60F3\u8F7B\u4E00\u70B9\u5C31\u518D\u52A0\u5E7D\u7075\u97F3"), "note", D("\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF"), D("\u6570\u5B57\u4E0B\u9762\u4E09\u9053\u77ED\u659C\u7EBF"))
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-};
-var dynSign = (d) => ({ id: `dyn:${d}`, name: () => d, says: (l) => _tIn(l, "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7", { dynName: DYN_NAME(d, l), dyn: d }), lane: "dynamics", draw: { staff: DYN_G[d], jianpu: T(d), letters: T(d) } });
-var DYN_SIGNS = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
-var SIGNS = {
-  ...ART_SIGNS,
-  ...DYN_SIGNS,
-  "hairpin:cresc": { id: "hairpin:cresc", name: (l) => _tIn(l, "\u6E10\u5F3A"), says: (l) => _tIn(l, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 <\uFF08\u592A\u957F\u5199 cresc. - - -\uFF09"), jianpu: D("\u6954\u5F62 <"), letters: D("\u6954\u5F62 <") } },
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "hairpin:dim": { id: "hairpin:dim", name: (l) => _tIn(l, "\u6E10\u5F31"), says: (l) => _tIn(l, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 >\uFF08\u592A\u957F\u5199 dim. - - -\uFF09"), jianpu: D("\u6954\u5F62 >"), letters: D("\u6954\u5F62 >") } },
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  ramp: { id: "ramp", name: (l) => _tIn(l, "\u6E10\u5230"), says: (l) => _tIn(l, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62"), letters: D("\u865A\u7EBF\u6954\u5F62") } },
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  // 踏板（11-1）：这一位最下面那条谱下面最外一道；线 / 尖 / 钩 = 共用挂件 ornaments layPedals 画（五线谱的名字 = Bravura 字形，数字行 = 细斜体字，同力度）
-  "pedal:sustain": { id: "pedal:sustain", name: (l) => _tIn(l, "\u5EF6\u97F3\u8E0F\u677F"), says: (l) => _tIn(l, "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C"), lane: "pedal", draw: { staff: G("\uE650"), jianpu: T("Ped."), letters: T("Ped.") } },
-  "pedal:sostenuto": { id: "pedal:sostenuto", name: (l) => _tIn(l, "\u6301\u97F3\u8E0F\u677F"), says: (l) => _tIn(l, "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38"), lane: "pedal", draw: { staff: G("\uE659"), jianpu: T("Sost."), letters: T("Sost.") } },
-  "pedal:soft": { id: "pedal:soft", name: (l) => _tIn(l, "\u5F31\u97F3\u8E0F\u677F"), says: (l) => _tIn(l, "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3001\u97F3\u8272\u6697\u4E00\u70B9"), lane: "pedal", draw: { staff: T("una corda"), jianpu: T("una corda"), letters: T("una corda") } }
-  // 字 + 同延音的线和钩（统筹 11-12）
-};
-function dynDepiction(d, notation) {
-  const g = SIGNS[`dyn:${d}`].draw[notation];
-  if (g.kind === "text") return g;
-  if (g.kind === "glyph" && g.ink) return { kind: "glyph", glyph: g.above, ink: g.ink };
-  throw new Error(`signs: dyn ${d} has no drawable depiction for ${notation}`);
-}
-
-// src/render/expressions.ts
-var foldsArt = (a) => `art:${a}` in SIGNS;
-var FOLDED_TOKEN_KINDS = /* @__PURE__ */ new Set(["dyn", "hairpin", "pedal"]);
-function stripNote(t) {
-  const art2 = t.art?.filter((a) => !foldsArt(a));
-  const artChanged = !!t.art && art2.length !== t.art.length;
-  if (!artChanged && !t.slur && !t.inhale) return t;
-  const n2 = { ...t };
-  if (artChanged) {
-    if (art2.length) n2.art = art2;
-    else delete n2.art;
-  }
-  delete n2.slur;
-  delete n2.inhale;
-  return n2;
-}
-function foldExpressions(song) {
-  let changed = false;
-  const papers = song.papers.map((p) => {
-    let pc2 = false;
-    const tracks = {};
-    for (const [id, toks] of Object.entries(p.tracks)) {
-      let tc = false;
-      const out = toks.map((t) => {
-        if (t.kind !== "note") return t;
-        const n2 = stripNote(t);
-        if (n2 !== t) tc = true;
-        return n2;
-      });
-      tracks[id] = tc ? out : toks;
-      if (tc) pc2 = true;
-    }
-    if (pc2) changed = true;
-    return pc2 ? { ...p, tracks } : p;
-  });
-  return changed ? { ...song, papers } : song;
-}
-function foldedMarks(tokens) {
-  const out = [];
-  let inSlur = false;
-  for (const t of tokens) {
-    if (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "pedal") {
-      out.push({ tok: t.id, what: t.kind });
-      continue;
-    }
-    if (t.kind !== "note") continue;
-    for (const a of t.art ?? []) if (foldsArt(a)) out.push({ tok: t.id, what: `art:${a}` });
-    if (t.slur && !inSlur) out.push({ tok: t.id, what: "slur" });
-    inSlur = !!t.slur;
-  }
-  return out;
-}
-var foldedCount = (tracks) => tracks.reduce((n2, t) => n2 + (t ? foldedMarks(t).length : 0), 0);
-
-// src/render/frame/units.ts
-var MIN_PLAIN = TPQ / 8;
-var NOTATABLE = [];
-for (let b = WHOLE; b >= MIN_PLAIN; b /= 2) {
-  NOTATABLE.push({ ticks: b * 1.5, base: b, dotted: true }, { ticks: b, base: b, dotted: false });
-}
-NOTATABLE.sort((a, b) => b.ticks - a.ticks);
-function splitDur(dur) {
-  const out = [];
-  let left = dur;
-  while (left > 0) {
-    const n2 = NOTATABLE.find((v) => v.ticks <= left && (v.dotted ? v.base >= MIN_PLAIN * 2 : true));
-    if (!n2) {
-      out.push({ base: MIN_PLAIN, dotted: false, ticks: left });
-      break;
-    }
-    out.push(n2);
-    left -= n2.ticks;
-  }
-  return out;
-}
-var RATIOS = [[3, 2], [5, 4], [6, 4], [7, 4]];
-function notate(dur) {
-  if (dur % MIN_PLAIN === 0) return { ratio: null, chunks: splitDur(dur) };
-  for (const [n2, m] of RATIOS) {
-    const written = dur * n2 / m;
-    if (Number.isInteger(written) && written % MIN_PLAIN === 0) return { ratio: [n2, m], chunks: splitDur(written).map((c) => ({ ...c, ticks: c.ticks * m / n2 })) };
-  }
-  return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
-}
-function beatRest(piece, offInBeat, beat) {
-  const out = [];
-  let rem = piece;
-  if (offInBeat > 1e-6) {
-    const lead = Math.min(rem, beat - offInBeat);
-    out.push(...notate(lead).chunks);
-    rem -= lead;
-  }
-  while (rem >= beat - 1e-6) {
-    out.push({ base: TPQ, dotted: true, ticks: beat });
-    rem -= beat;
-  }
-  if (rem > 1e-6) out.push(...notate(rem).chunks);
-  return { ratio: null, chunks: out };
-}
-function unitsOf(tokens, o) {
-  const W2 = o.widths;
-  const H = headLen(tokens);
-  let fifths = DEFAULT_KEY, real = DEFAULT_KEY, minor = false, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
-  const headIdx = {};
-  for (let i = 0; i < H; i++) {
-    const t = tokens[i];
-    if (t.kind === "key") {
-      fifths = t.fifths;
-      real = realFifthsOf(t);
-      minor = t.mode === "minor";
-    } else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType };
-    else if (t.kind === "tempo") bpm = t.bpm;
-    if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") headIdx[t.kind] = i;
-  }
-  const head = { key: fifths, real, minor, time, bpm, idx: headIdx };
-  const units = [], measureLen = (b, bt) => b * WHOLE / bt;
-  let accState = /* @__PURE__ */ new Map(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0, pickup = false;
-  let beat = beatTicks(time.beats, time.beatType), len = measureLen(time.beats, time.beatType);
-  const pushHead = () => {
-    units.push({ kind: "head", index: -1, w: 0, x: 0, system: 0, tick, staff: 1 });
-  };
-  const pushBar = (index, auto) => {
-    const rb = index >= 0 ? tokens[index] : null, repeat = rb?.repeat;
-    const warn = inBar !== len && measureNo > 0 && !(repeat === "start" && inBar === 0);
-    if (warn) shortBars++;
-    const style = !repeat ? rb?.style : void 0;
-    units.push({ kind: "bar", index, w: W2.bar(repeat, style), x: 0, system: 0, tick, staff: 1, warn, auto, ...repeat ? { repeat, ...rb?.times ? { times: rb.times } : {} } : {}, ...style ? { style } : {} });
-    const empty = inBar === 0;
-    if (measureNo === 0 && inBar > 0 && inBar < len) pickup = true;
-    accState = /* @__PURE__ */ new Map();
-    inBar = 0;
-    if (!(repeat === "start" && empty)) measureNo++;
-  };
-  const manualBarAhead = (from) => {
-    for (let j = from; j < tokens.length; j++) {
-      const k = tokens[j].kind;
-      if (k === "bar") return true;
-      if (k === "note" || k === "rest" || k === "time") return false;
-    }
-    return false;
-  };
-  const flushFull = (at2) => {
-    if (o.autoBars && inBar >= len && inBar > 0 && !(at2 !== void 0 && manualBarAhead(at2))) pushBar(-1, true);
-  };
-  tokens.forEach((t, i) => {
-    if (i < H) return;
-    if (o.skip?.has(t.kind)) return;
-    if (t.kind === "bar") {
-      pushBar(i, false);
-      return;
-    }
-    if (t.kind === "key") {
-      flushFull(i);
-      const rf = realFifthsOf(t), inC = rf !== t.fifths || "realFifths" in t;
-      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: W2.key(t.fifths, fifths, inC, o.ts ?? 1), x: 0, system: 0, tick, staff: 1, real: rf, minor: t.mode === "minor" });
-      fifths = t.fifths;
-      accState = /* @__PURE__ */ new Map();
-      return;
-    }
-    if (t.kind === "time") {
-      if (o.autoBars && inBar > 0) pushBar(-1, true);
-      units.push({ kind: "time", index: i, beats: t.beats, beatType: t.beatType, w: W2.time(t.beats, t.beatType), x: 0, system: 0, tick, staff: 1 });
-      beat = beatTicks(t.beats, t.beatType);
-      len = measureLen(t.beats, t.beatType);
-      return;
-    }
-    if (t.kind === "tempo") {
-      flushFull(i);
-      units.push({ kind: "tempo", index: i, bpm: t.bpm, w: W2.tempo, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "dyn") {
-      flushFull(i);
-      units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "hairpin") {
-      flushFull(i);
-      units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "groove") {
-      flushFull(i);
-      units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "pedal") {
-      flushFull(i);
-      units.push({ kind: "pedal", index: i, which: t.which, act: t.act, w: 0, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "clef") {
-      if (i < H || tokens.slice(H, i).every((x) => x.kind === "clef")) return;
-      flushFull(i);
-      units.push({ kind: "clef", index: i, clef: t.clef, w: W2.clef, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "ottava") {
-      flushFull(i);
-      units.push({ kind: "ottava", index: i, w: 0, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "nav") {
-      const head2 = t.what === "ending" || t.what === "segno" || t.what === "coda";
-      if (head2) flushFull(i);
-      units.push({ kind: "nav", index: i, w: 0, x: 0, system: 0, tick, staff: 1, slot: head2 ? 0.5 : -0.5 });
-      return;
-    }
-    const isNote = t.kind === "note", nt = t;
-    const pitch = isNote ? effectivePitch(tokens, i) : null;
-    const pitches = isNote ? nt.pitch ? allPitches(nt) : [pitch] : [];
-    let left = t.dur, j = 0, lastChunk = null;
-    while (left > 1e-6) {
-      flushFull();
-      const piece = o.autoBars ? Math.min(left, len - inBar) : left;
-      const byBeat = !isNote && !!o.restBeats && Math.abs(beat - TPQ * 1.5) < 1e-6 && piece >= beat - 1e-6;
-      const { ratio, chunks } = byBeat ? beatRest(piece, inBar % beat, beat) : notate(piece);
-      const mrest = !isNote && inBar < 1e-6 && Math.abs(piece - len) < 1e-6;
-      let off = 0;
-      for (const c of chunks) {
-        const accs = pitches.map((pp) => {
-          if (j !== 0 || isNote && nt.tie) return null;
-          const key = `${pp.step}${pp.octave}`, cur = accState.has(key) ? accState.get(key) : keyAlter(pp.step, fifths);
-          if (pp.alter !== cur) {
-            accState.set(key, pp.alter);
-            return pp.alter;
-          }
-          return null;
-        });
-        const acc = accs[0] ?? null;
-        const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
-        const accW = W2.acc(accs.some((a) => a !== null));
-        let w = W2.chunk(accW, c.base, c.dotted);
-        const lw = (s2) => s2 ? lyricWidth(o.measure, s2, o.sp, o.ts ?? 1) : 0, hg = lyric && lyric !== MELISMA_MARK && !o.rhythm ? lyricHang(lyricShow(lyric)) : null;
-        const lyW = lyric && lyric !== MELISMA_MARK && !o.rhythm ? hg.core && (hg.lead || hg.trail) ? lw(hg.core) + 2 * Math.max(lw(hg.lead), lw(hg.trail)) : lw(lyricShow(lyric)) : void 0;
-        if (lyW !== void 0) w = Math.max(w, W2.lyric(accW, lyW, !!nt.hyph));
-        const u = {
-          kind: "chunk",
-          index: i,
-          j,
-          last: false,
-          m: measureNo,
-          base: c.base,
-          dotted: c.dotted,
-          note: isNote,
-          ratio,
-          ticks: c.ticks,
-          pitch,
-          ghost: isNote && nt.pitch === null,
-          tie: isNote && !!nt.tie && j === 0,
-          lyric,
-          hyph: !!(isNote && nt.hyph && j === 0),
-          inBar: inBar + off,
-          beat,
-          acc,
-          w,
-          accW,
-          x: 0,
-          system: 0,
-          tick: tick + off,
-          staff: 1,
-          pitches,
-          accs,
-          art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [],
-          breath: false,
-          ...isNote && nt.art?.includes("whisper") ? { whisper: true } : {},
-          ...lyW !== void 0 ? { lyW } : {},
-          ...mrest ? { mrest: off < 1e-6 ? "draw" : "skip" } : {},
-          ...o.padFrom !== void 0 && i >= o.padFrom ? { pad: true } : {}
-        };
-        units.push(u);
-        lastChunk = u;
-        off += c.ticks;
-        j++;
-      }
-      inBar += piece;
-      left -= piece;
-      tick += piece;
-    }
-    if (lastChunk) {
-      lastChunk.last = true;
-      if (isNote && nt.art?.includes("breath")) {
-        lastChunk.breath = true;
-        lastChunk.w += W2.breath;
-        if (nt.inhale) {
-          lastChunk.inhale = nt.inhale;
-          lastChunk.w += W2.inhale[nt.inhale];
-        }
-      }
-    }
-  });
-  flushFull();
-  if (o.tail) pushHead();
-  return { units, head, shortBars, pickup };
-}
-
-// src/render/smufl.ts
-var GLYPH = {
-  metNoteQuarterUp: "\uECA5",
-  // 速度记号里的四分音符（metronome mark）
-  gClef: "\uE050",
-  fClef: "\uE062",
-  // 低音谱号（2026-10-08）
-  gClef8vb: "\uE052",
-  gClef8va: "\uE053",
-  gClef15ma: "\uE054",
-  fClef8vb: "\uE064",
-  // 八度谱号（2026-10-10 v0.9.28：吉他 / 男高音 8vb、短笛 8va、钟琴 15ma、贝斯 8vb）
-  ottavaAlta: "\uE511",
-  ottavaBassa: "\uE512",
-  quindicesimaAlta: "\uE515",
-  // 八度线开头的字：8va / 8vb / 15ma
-  noteheadWhole: "\uE0A2",
-  noteheadHalf: "\uE0A3",
-  noteheadBlack: "\uE0A4",
-  noteheadXWhole: "\uE0A7",
-  noteheadXHalf: "\uE0A8",
-  noteheadXBlack: "\uE0A9",
-  // × 符头（2026-10-08：演奏者固定敲一个键的声部；user「披露就用x」）
-  augmentationDot: "\uE1E7",
-  flag8thUp: "\uE240",
-  flag8thDown: "\uE241",
-  flag16thUp: "\uE242",
-  flag16thDown: "\uE243",
-  flag32ndUp: "\uE244",
-  flag32ndDown: "\uE245",
-  accidentalFlat: "\uE260",
-  accidentalNatural: "\uE261",
-  accidentalSharp: "\uE262",
-  accidentalDoubleSharp: "\uE263",
-  accidentalDoubleFlat: "\uE264",
-  restWhole: "\uE4E3",
-  restHalf: "\uE4E4",
-  restQuarter: "\uE4E5",
-  rest8th: "\uE4E6",
-  rest16th: "\uE4E7",
-  rest32nd: "\uE4E8"
-};
-var timeSigDigits = (n2) => [...String(n2)].map((d) => String.fromCodePoint(57472 + Number(d))).join("");
-var PERC_CLEF = "\uE069";
-var PERC_HEAD = {
-  normal: { ch: ["\uE0A4", "\uE0A3", "\uE0A2"], w: [1.18, 1.18, 1.688] },
-  x: { ch: ["\uE0A9", "\uE0A8", "\uE0A7"], w: [1.16, 1.34, 1.51] },
-  "circle-x": { ch: ["\uE0B3", "\uE0B2", "\uE0B1"], w: [0.996, 1, 0.996] },
-  slash: { ch: ["\uE101", "\uE103", "\uE102"], w: [2.124, 3.12, 3.92] },
-  slashed1: { ch: ["\uE0CF", "\uE0D1", "\uE0D3"], w: [1.18, 1.168, 1.672] },
-  slashed2: { ch: ["\uE0D0", "\uE0D2", "\uE0D4"], w: [1.18, 1.172, 1.672] },
-  diamond: { ch: ["\uE0DB", "\uE0D9", "\uE0D8"], w: [0.98, 0.98, 1.664] },
-  "triangle-up": { ch: ["\uE0BE", "\uE0BC", "\uE0BB"], w: [1.172, 1.14, 1.276] },
-  "triangle-down": { ch: ["\uE0C7", "\uE0C5", "\uE0C4"], w: [1.168, 1.14, 1.276] },
-  plus: { ch: ["\uE0AF", "\uE0AE", "\uE0AD"], w: [0.996, 1.044, 1.14] },
-  la: { ch: ["\uE0B9", "\uE0B8", "\uE0B8"], w: [1.252, 1.252, 1.252] },
-  ti: { ch: ["\uE0CD", "\uE0CC", "\uE0CC"], w: [1.112, 1.112, 1.112] }
-};
-var PERC_SMUFL = {
-  noteheadXOrnate: { ch: ["\uE0AA", "\uE0AA", "\uE0AA"], w: [0.992, 0.992, 0.992] },
-  noteheadSlashX: { ch: ["\uE106", "\uE106", "\uE106"], w: [2.124, 2.124, 2.124] }
-};
-var W = {
-  noteheadBlack: 1.18,
-  noteheadHalf: 1.18,
-  noteheadWhole: 1.688,
-  noteheadXBlack: 1.16,
-  noteheadXHalf: 1.34,
-  noteheadXWhole: 1.51,
-  // 2026-10-08 在浏览器里用 measureText 量的 advance（400px Bravura；黑符头同法量得 1.18 = 上面那行，方法对得上）
-  gClef: 2.684,
-  fClef: 2.736,
-  sharp: 0.996,
-  flat: 0.904,
-  natural: 0.672,
-  doubleSharp: 1,
-  doubleFlat: 1.644,
-  dot: 0.4,
-  timeSigDigit: 1.8,
-  restWhole: 1.128,
-  restHalf: 1.128,
-  restQuarter: 1.08,
-  rest8th: 0.988,
-  rest16th: 1.28,
-  rest32nd: 1.452
-};
-var ENGRAVE = {
-  staffLine: 0.13,
-  stem: 0.12,
-  ledger: 0.16,
-  ledgerExt: 0.4,
-  beam: 0.5,
-  beamGap: 0.25,
-  thinBar: 0.16,
-  tieMid: 0.22
-};
-var STEM_UP_SE = [1.18, 0.168];
-var STEM_DOWN_NW = [0, -0.168];
-var FLAG_ANCHOR_UP = { 1: -0.04, 2: -0.088, 3: 0.376 };
-var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
-var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
-
-// src/render/staff/notation.ts
-var baseWidth = (base) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base / TPQ));
-
-// src/look/marks.ts
-var PIN_GAP = 0.7;
-var PIN_MIN = 1.4;
-var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
-var DASH = { len: 0.6, gap: 1 };
-var RAMP_DASH = { len: 1.2, gapK: 0.5, min: 2 };
-var PEDAL = { scale: 0.8, gap: 1, textGap: 0.3, hook: 1.1, notch: 0.45, hookIn: 0.3 };
-var CLEF_CUE = 0.72;
-var CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
-var KEY_LABEL_W = 3.5;
-var STAFF_UNIT = { repeat: 0.8, barStyle: 0.7, time: 1.2, tempo: 0.3, acc: 1.3, dot: 0.6, lyricHyph: 1.4, lyricPlain: 0.7, breath: 0.8, inhale: { soft: 1.2, big: 2.1 } };
-var KEY_SIG = { acc: 1.05, natural: 0.8, after: 1 };
-var LINE_START = { beforeClef: 0.6, afterClef: 1, afterKey: 0.8, afterTime: 1.2, noTime: 0.4 };
-
-// src/render/staff/units.ts
-var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };
-var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * KEY_SIG.natural : Math.abs(fifths) * KEY_SIG.acc) + KEY_SIG.after;
-var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
-var STAFF_WIDTHS = {
-  // 反复小节线：字形宽 1.47（:|: 2.43）+ 两边留一点（Bravura repeatLeft / repeatRight / repeatRightLeft）；段落线 / 终止线（v0.9.32）比一根小节线宽一点
-  bar: (repeat, style) => repeat ? (repeat === "both" ? 2.43 : 1.47) + STAFF_UNIT.repeat : style ? BAR_W + STAFF_UNIT.barStyle : BAR_W,
-  // 按 C 调看：这一处要写「1=X」，给字留宽（KEY_LABEL_W）
-  key: (fifths, prev, inCLabel, ts) => inCLabel ? Math.max(KEY_LABEL_W * (TEXT_STYLES["key-label"].ruler === "text" ? ts : 1), keyWidth(fifths, prev)) : keyWidth(fifths, prev),
-  time: (beats, beatType) => timeWidth(beats, beatType) + STAFF_UNIT.time,
-  tempo: STAFF_UNIT.tempo,
-  clef: CLEF_CUE_W,
-  acc: (any) => any ? STAFF_UNIT.acc : 0,
-  chunk: (accW, base, dotted) => accW + baseWidth(base) + (dotted ? STAFF_UNIT.dot : 0),
-  lyric: (accW, lyW, hyph) => accW + lyW + (hyph ? STAFF_UNIT.lyricHyph : STAFF_UNIT.lyricPlain),
-  breath: STAFF_UNIT.breath,
-  inhale: STAFF_UNIT.inhale
-  // 呼吸逗号画在这个音后面：留一点地方；出声的换气：逗号后面的字也留地方
-};
-
-// src/render/staff/rows.ts
-function staffRows(paper, visible, fold, lookAt) {
-  const absorbed = /* @__PURE__ */ new Map(), virt = /* @__PURE__ */ new Map(), lowOf = /* @__PURE__ */ new Map();
-  const voice2Of = /* @__PURE__ */ new Map(), shareWith = /* @__PURE__ */ new Map(), startFor = /* @__PURE__ */ new Map();
-  const drumNames = /* @__PURE__ */ new Map(), virtualOut = {};
-  for (const { host: fid, members: ms } of fold) {
-    const hp = ms[0], ten = ms.slice(1), drums = ms.every((m) => !!m.perc);
-    const kitKeyOf = (m) => {
-      const pk = ms[m].perc;
-      return pk.kind === "one" ? pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0) : null;
-    };
-    const keyOf = drums ? (m, p) => {
-      const k = kitKeyOf(m);
-      return k !== null ? spellMidi(k, 0) : p;
-    } : void 0;
-    const tracksM = ms.map((m) => paper.tracks[m.id]);
-    if (drums) {
-      const lineOfKey = (key) => percOf(128, 0, key)?.line ?? 4;
-      const rep = ms.map((_, m) => {
-        const k = kitKeyOf(m);
-        if (k !== null) return lineOfKey(k);
-        const ls = (tracksM[m] ?? []).flatMap((t) => t.kind === "note" ? allPitches(t) : []).map((p) => lineOfKey(midiOf(p))).sort((a, b) => a - b);
-        return ls.length ? ls[ls.length >> 1] : 4;
-      });
-      drumNames.set(hp.id, ms.map((_, m) => m).sort((a, b) => rep[a] - rep[b] || a - b).map((m) => ms[m]));
-    }
-    absorbed.set(hp.id, ten);
-    const staffOf = (sid, mo, all) => {
-      startFor.set(sid, startClef(mergeTracks(tracksM, all), void 0, null, true));
-      const v1 = mergeTracks(tracksM, mo(1)), v2 = mergeTracks(tracksM, mo(2));
-      virt.set(sid, v1);
-      virtualOut[`${paper.id}:${sid}`] = v1;
-      if (v2.some((t) => t.kind === "note")) {
-        const vid = `${sid}~v2`;
-        virt.set(vid, v2);
-        virtualOut[`${paper.id}:${vid}`] = v2;
-        voice2Of.set(sid, vid);
-        shareWith.set(vid, sid);
-        startFor.set(vid, startFor.get(sid));
-      }
-    };
-    if (drums) {
-      const whole = mergeTracks(tracksM, { keyOf, hits: true });
-      virt.set(hp.id, whole);
-      virtualOut[`${paper.id}:${hp.id}`] = whole;
-      startFor.set(hp.id, "G");
-    } else {
-      const homes = ms.map((m) => {
-        const l = lookAt(paper.id, m.id);
-        if (!l || l.staves === 2) return null;
-        return isFClef(l.first) ? 1 : 0;
-      });
-      const plan = planHands(tracksM, wantsGrand, homes, lookAt(paper.id, fid)?.grand === "explicit"), staffOpts = (S2, top) => (v) => ({ pick: plan.pick(S2, v), marks: top && v === 1 ? "all" : "bars" });
-      const both = (S2) => ({ pick: (m, t) => plan.pick(S2, 1)(m, t) || plan.pick(S2, 2)(m, t), marks: "bars" });
-      staffOf(hp.id, staffOpts(0, true), both(0));
-      if (plan.grand) {
-        const lid = `${hp.id}~lo`;
-        lowOf.set(hp.id, lid);
-        staffOf(lid, staffOpts(1, false), both(1));
-      }
-    }
-  }
-  const gone = new Set([...absorbed.values()].flat().map((p) => p.id));
-  const parts = visible.filter((p) => !gone.has(p.id)).flatMap((p) => {
-    if (!virt.has(p.id)) return [p];
-    const drums = [p, ...absorbed.get(p.id)].every((m) => !!m.perc), lid = lowOf.get(p.id);
-    const v = { ...p, staves: void 0, perc: drums ? { kind: "kit" } : void 0, mono: false, xHead: false, ignores: [], lyricMute: void 0 };
-    const fake = (id) => ({ id, name: "", empty: false, first: false, hidden: false, badges: [] }), v2 = (sid) => voice2Of.has(sid) ? [fake(voice2Of.get(sid))] : [];
-    return [v, ...v2(p.id), ...lid ? [fake(lid), ...v2(lid)] : []];
-  });
-  return { parts, absorbed, virt, lowOf, voice2Of, shareWith, startFor, drumNames, loIds: new Set(lowOf.values()), virtualOut };
-}
-function staffTracks(rows, c) {
-  const { paper, lookAt } = c;
-  const trackOf = (id) => rows.virt.get(id) ?? paper.tracks[id];
-  const clefStart = (partId) => {
-    const l = lookAt(paper.id, partId);
-    return l && l.staves === 1 ? l.clef : void 0;
-  };
-  let shortBars = 0;
-  const per = rows.parts.map((p, pi) => {
-    const real = trackOf(p.id), vrt = rows.virt.has(p.id), focused = !vrt && c.at.paper === paper.id && c.at.part === p.id, staves = p.staves === 2 || !vrt && lookAt(paper.id, p.id)?.staves === 2 ? 2 : 1;
-    const gap = c.paperLen - c.lens[pi];
-    const padT = (dur, id) => ({ kind: "rest", id, dur });
-    const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;
-    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS, ...c.look.expressions ? {} : { skip: FOLDED_TOKEN_KINDS }, ...c.restBeats ? { restBeats: true } : {} });
-    shortBars += u.shortBars;
-    if (staves === 2) {
-      const stf = staffOfTokens(tokens, 2);
-      let last = 1;
-      for (const x of u.units) {
-        if (x.kind === "chunk") {
-          x.staff = stf[x.index];
-          last = x.staff;
-        } else if (x.kind === "head") x.staff = last;
-      }
-    }
-    const start = staves === 2 ? "G" : vrt ? rows.startFor.get(p.id) ?? startClef(tokens, void 0, null, true) : clefStart(p.id) ?? "G";
-    const ds0 = displayStates(tokens, start), ao = staves === 2 || p.perc || rows.shareWith.has(p.id) || !vrt && lookAt(paper.id, p.id)?.autoOtt === false ? null : autoOttava(tokens, ds0);
-    const ds = ao ? { clef: ds0.clef, ott: ao.ott, auto: ao.auto, runs: ao.runs } : { ...ds0, auto: null, runs: [] };
-    const fFam = staves === 2 || isFClef(start) || tokens.some((t) => t.kind === "clef" && isFClef(t.clef));
-    return { p, tokens, realLen: real.length, realTicks: c.lens[pi], focused, staves, start, ds, fFam, vrt, ...u, pmode: !p.perc ? null : p.perc.kind === "kit" ? "five" : "one", v2: false, hasV2: rows.voice2Of.has(p.id) };
-  });
-  const rowHost = per.map((q) => {
-    const h = rows.shareWith.get(q.p.id);
-    return h ? per.findIndex((x) => x.p.id === h) : -1;
-  });
-  per.forEach((q, pi) => {
-    q.v2 = rowHost[pi] >= 0;
-  });
-  return { per, rowHost, shortBars };
-}
-
-// src/render/stems.ts
-var TOP_LINE = 38;
-var MID_LINE = 34;
-var yLocal = (d) => (TOP_LINE - d) * 0.5;
-var flagLevel = (base) => base >= TPQ ? 0 : Math.round(Math.log2(TPQ / base));
-var LOCAL = { u: 1, y: (d) => yLocal(d) };
-function layoutStems(seq, dir, f = LOCAL) {
+function groupWords(entries) {
   const groups = [];
-  let group = [], groupBeat = -1, groupSys = -1;
-  const endGroup = () => {
-    if (group.length) groups.push(group);
-    group = [];
-    groupBeat = -1;
-  };
-  for (const u of seq) {
-    if (!u || u.base >= WHOLE) {
-      endGroup();
-      continue;
-    }
-    if (u.base > TPQ / 2) {
-      endGroup();
-      groups.push([u]);
-      continue;
-    }
-    if (group.length && (u.beat !== groupBeat || u.system !== groupSys || u.staff !== group[0].staff)) endGroup();
-    group.push(u);
-    groupBeat = u.beat;
-    groupSys = u.system;
+  for (const e of entries) {
+    const g = groups[groups.length - 1];
+    if (g && g.open) g.items.push(e);
+    else groups.push({ items: [e], open: false });
+    groups[groups.length - 1].open = !!e.hyph;
   }
-  endGroup();
-  const U = (v) => v * f.u;
-  const notes = /* @__PURE__ */ new Map(), out = [];
-  for (const g of groups) {
-    const up = dir === "down" ? false : dir === "up" ? true : dir === "kit" ? g.some((s2) => !!s2.handUp) : g.reduce((a, s2) => a + (s2.dHi + s2.dLo) / 2, 0) / g.length < MID_LINE;
-    const sx = (s2) => up ? s2.x + U(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s2.x + U(STEM_DOWN_NW[0] + ENGRAVE.stem / 2);
-    const y = (s2) => f.y(s2.dHi, s2), yLow = (s2) => f.y(s2.dLo, s2);
-    const sy0 = (s2) => up ? yLow(s2) - U(STEM_UP_SE[1]) : y(s2) - U(STEM_DOWN_NW[1]);
-    const beams = [];
-    out.push({ keys: g.map((s2) => s2.key), beams });
-    if (g.length === 1) {
-      const s2 = g[0], mid = f.y(MID_LINE, s2);
-      let tip = up ? y(s2) - U(3.5) : yLow(s2) + U(3.5);
-      if (up && s2.dHi < 27) tip = Math.min(tip, mid);
-      if (!up && s2.dLo > 41) tip = Math.max(tip, mid);
-      const lv = flagLevel(s2.base);
-      notes.set(s2.key, { up, x: sx(s2), y0: sy0(s2), tip, top: up ? tip : y(s2), beamed: false, flag: lv > 0 ? { x: sx(s2) - U(ENGRAVE.stem / 2), y: up ? tip + U(FLAG_ANCHOR_UP[lv]) : tip + U(FLAG_ANCHOR_DOWN[lv]), level: lv } : null });
-      continue;
+  return groups;
+}
+function wordsOf(entries) {
+  return groupWords(entries).map((g) => g.items.map((e) => e.kana).join(""));
+}
+function alignEnglish(entries, nucleiPerWord) {
+  const groups = groupWords(entries), out = [];
+  let leadRest = 0;
+  groups.forEach((g, wi) => {
+    const n = nucleiPerWord[wi], items = g.items, last = items[items.length - 1], rest = last.rest || 0;
+    const mk = (kana, notes) => ({ kana, notes, ...items[0].hum ? { hum: true } : {} });
+    const made = [];
+    if (n <= 0) {
+      const len = items.reduce((s, e) => s + e.notes.reduce((a, [, l]) => a + l, 0) + (e.rest || 0), 0);
+      const prev = out[out.length - 1];
+      if (prev) prev.rest = (prev.rest || 0) + len;
+      else leadRest += len;
+      return;
     }
-    const xa = sx(g[0]), xb = sx(g[g.length - 1]);
-    const k = Math.max(-0.2, Math.min(0.2, (y(g[g.length - 1]) - y(g[0])) / (xb - xa) * 0.5));
-    const at2 = (xx, yy0) => yy0 + k * (xx - xa);
-    const yb0 = up ? Math.min(...g.map((s2) => y(s2) - U(3.5) - k * (sx(s2) - xa))) : Math.max(...g.map((s2) => yLow(s2) + U(3.5) - k * (sx(s2) - xa)));
-    for (const s2 of g) notes.set(s2.key, { up, x: sx(s2), y0: sy0(s2), tip: at2(sx(s2), yb0), top: up ? Math.min(at2(sx(s2), yb0) - U(ENGRAVE.beam), y(s2)) : y(s2), beamed: true, flag: null });
-    const step = U(ENGRAVE.beam + ENGRAVE.beamGap) * (up ? 1 : -1), th = U(ENGRAVE.beam) * (up ? 1 : -1), ghost = g.every((s2) => s2.ghost);
-    const beam = (xL, xR, lvl) => {
-      const of = step * lvl;
-      beams.push({ xL: xL - U(ENGRAVE.stem / 2), yL: at2(xL, yb0) + of, xR: xR + U(ENGRAVE.stem / 2), yR: at2(xR, yb0) + of, th, ghost });
+    if (n <= items.length) {
+      for (let k = 0; k < n - 1; k++) made.push(mk(items[k].kana, items[k].notes));
+      made.push(mk(items.slice(n - 1).map((e) => e.kana).join(""), items.slice(n - 1).flatMap((e) => e.notes)));
+    } else {
+      for (let k = 0; k < items.length - 1; k++) made.push(mk(items[k].kana, items[k].notes));
+      const need = n - (items.length - 1), notes = last.notes;
+      if (notes.length >= need) {
+        for (let k = 0; k < need - 1; k++) made.push(mk(last.kana, [notes[k]]));
+        made.push(mk(last.kana, notes.slice(need - 1)));
+      } else {
+        for (let k = 0; k < notes.length - 1; k++) made.push(mk(last.kana, [notes[k]]));
+        const [midi, len] = notes[notes.length - 1], parts = need - (notes.length - 1);
+        for (let k = 0; k < parts; k++) made.push(mk(last.kana, [[midi, len / parts]]));
+      }
+    }
+    if (rest) made[made.length - 1].rest = rest;
+    out.push(...made);
+  });
+  return { entries: out, leadRest };
+}
+
+// src/singer/sing-core.mjs
+var DEFAULT_OPT = {
+  leadIn: 0.5,
+  // s before the first sung vowel (the first consonant comes out of it)
+  tail: 0.6,
+  // s of silence after the last note
+  consonantCap: 0.5,
+  // a consonant may take at most this share of the previous note when no rest precedes it
+  vowelFrames: [8, 16],
+  // piper frames (11.6 ms) for vowel + its blank: 2 × the model's own length, clamped to this range
+  attack: 0.06,
+  // s of the vowel start copied 1:1 before stretching
+  release: 0.08,
+  // s of fade-out at the end of a note before a rest / at the end
+  holdDb: 6,
+  // the held stretch = clean frames (see breath) within this many dB of the vowel's loudest clean frame
+  vowelLag: 0.02,
+  // s: fallback only — the sung vowel starts where piper's vowel turns clean (periodic), within its first half
+  cleanMax: 0.4,
+  // a vowel whose own cleanest frames are noisier than this (whispered: なかよし's し, つく's つ) is replaced by a
+  // clean sample of the same vowel elsewhere in the song — envelope AND noise profile (take 5 borrowed only the noise
+  // profile: a whisper's envelope sung voiced = buzz) — sung vowels are never devoiced (user「常识唱歌的时候这种音会唱成什么」)
+  // knobs from the table (ai-docs/20261005-moonsinger-upheaval.md §8), take 4 — user 2026-10-05「突然气球漏气变成气音」「有些音突然很轻」:
+  breath: 0,
+  // 实声/气息: 0 = every vowel frame as clean (periodic) as that vowel's cleanest frames; 1 = piper's own breathiness
+  level: 0.8,
+  // 音量: pull each syllable's loudness this far toward the song's median (0 = speech's own loud/soft pattern)
+  levelMaxDb: 6,
+  // take 5 allowed 12 and boosted the consonants too: user「一堆麦克风的电噪声……有时候还有电锯声」
+  levelContinuous: false,
+  // 2026-10-14 (Claude Fable 5.1, F-16「そ」爆音): false = 每个字的增益从它元音起点起 30 ms 内从 0 爬到目标（辅音不动）——
+  //   相邻两个字一轻一重时，边界上先跳回 0 再爬，前后可达 ~10 dB 落在清辅音进元音那一下（user 听感：只有把 level 关到 0 才不破）；
+  //   true = 增益连续：从前一个字的目标值起、经过这个字的辅音、到元音起点后 30 ms 线性过渡到这个字的目标值（休止之后从 0 起）；辅音也跟着过渡。实验行，耳朵定
+  tailIntoNext: 0.04,
+  // s at most of the vowel's tail copied 1:1 into the next consonant
+  portamentoMs: 40,
+  // width of the pitch glide between two notes
+  // 哼的字（score 条目带 hum: true = 没写歌词、唱这首歌「哼的字」的音；MoonSinger 编辑器给）。2026-10-07 (Claude Opus 5.5)，
+  //   user「全歌唱的时候也是都听的像啊」：「んんん」全被注成舌根 N_uvular（嘴张着 ≈ 鼻化的 a）；「ららら」的弹舌只有 20–70 ms，夹在两个 a 中间。默认关 = 原样。
+  humNasal: null,
+  // 哼「ん」改用哪个 N（"N_m" = 双唇，闭嘴哼）；null = 照注音
+  humConsMin: 0,
+  // s：哼的字的辅音在歌的时钟上至少这么长（ら 的弹舌拉开）；0 = 照 piper
+  vibrato: { cents: 15, hz: 5.5, delay: 0.25, fadeIn: 0.2, minNote: 0.5 },
+  // only on notes ≥ minNote s
+  noiseScale: 0.667,
+  noiseW: 0.5,
+  // the read-aloud library's defaults
+  atlasXfade: 0.04,
+  // s: crossfade piper → atlas at the start of the held stretch; atlas → piper happens across the tail segment (not inside the hold)
+  atlasGainClamp: 12,
+  // dB: the level match atlas → piper's held level is clamped to ±this (take 1 had −17 dB on 着: a quiet speech vowel pulling a sung frame way down)
+  atlasExprLevel: 1,
+  // 0..1: how much of the expression set's own loudness difference (強 / 弱 / 深 / 明 vs the normal set at that pitch) is kept (take 1 = 0: 強 sounded like normal)
+  atlasTiltHz: 3e3,
+  // breath: bins above this are attenuated (an inhale has little energy up there)
+  breathDb: -28,
+  // breath loudness relative to the coming vowel's held level
+  lift: 0.06,
+  // s: ^ = silence before the syllable (stolen from the previous note), no inhale   (v3 had 0.09: user「吃了很多音长」)
+  gap: {
+    v: { share: 0.25, max: 0.16, db: 0 },
+    // v: an inhale: at most this share of the previous note / this long, at breathDb   (v3: 0.4 / 0.28)
+    O: { share: 0.35, max: 0.24, db: 4 }
+  },
+  // O: 大口: longer and this many dB louder   (v3: 0.5 / 0.42 / +6)
+  breathMinRest: 1,
+  // in eighths: only rests at least this long get an inhale (shorter = no time to breathe)
+  // 2026-10-10 (Claude Opus 5.5) — score entries may carry whisper: true (气声: the syllable is sung without pitch — f0 stays 0, so WORLD makes it
+  //   pure noise through piper's own envelope; user「x同意，做支持」) and inhale: true (the breath before this syllable is audible even with breath: false —
+  //   per written mark only; user「不应该每个逗号都大喘气」). Neither changes anything when absent (the default path is sample-identical).
+  whisperDb: -6
+  // 气声 is this much softer than the syllable's sung level (AI's starting value; the ear decides)
+  // (v0.9.16 tried two other ways to sing a borrowed vowel — crossfade at its edges / the whole donor syllable; the user kept the original, 2026-10-10
+  //  「ab，要不用原版？之前其实已经修好了」, and both were removed again in v0.9.18.)
+};
+var VOWEL = /* @__PURE__ */ new Set(["a", "i", "u", "e", "o", "N"]);
+var VOICED_FOR = { A: "a", I: "i", U: "u", E: "e", O: "o" };
+var isMark = (t) => "[]#?!".includes(t) || /^tone\d$/.test(t);
+function expandEntries(SRC, TRANSPOSE) {
+  return SRC.map((e) => ({ ...e, notes: e.notes.map(([m, l]) => [m + TRANSPOSE, l]) })).flatMap((e) => {
+    const n = e.moras || 1;
+    if (n === 1) return [e];
+    if (e.notes.length !== 1) throw new Error(`${e.kana}: moras > 1 needs one note`);
+    const [midi, len] = e.notes[0];
+    return Array.from({ length: n }, (_, i) => ({ kana: [...e.kana][i] ?? e.kana, notes: [[midi, len / n]], rest: i === n - 1 ? e.rest : 0, before: i === 0 ? e.before : void 0, whisper: e.whisper, inhale: i === 0 ? e.inhale : void 0 }));
+  });
+}
+function phonemesOf(LANG, TEXT, pn2, EN) {
+  const sungText = TEXT.replace(/[、。，．,.！？!?]/g, "");
+  const ph = LANG === "en" ? EN : LANG === "zh" ? pn2.phonemizeZh(sungText) : pn2.phonemize(sungText);
+  const tokens = LANG === "ja" ? ph.tokens.map((t) => VOICED_FOR[t] ?? t) : ph.tokens;
+  return { ph, tokens };
+}
+function sungSyllables(LANG, tokens, EN) {
+  const moras = [];
+  let gap = [];
+  const sung1 = LANG === "zh" ? (t, i) => /^tone\d$/.test(tokens[i + 1] ?? "") : LANG === "en" ? (t, i) => EN.sung[i] : (t) => VOWEL.has(t) || /^N/.test(t);
+  tokens.forEach((t, i) => {
+    if (sung1(t, i)) {
+      moras.push({ gap, vowel: i });
+      gap = [];
+    } else gap.push(i);
+  });
+  return { moras, trailing: gap };
+}
+var labelOf = (tokens, m) => [...m.gap.filter((i) => !isMark(tokens[i]) && tokens[i] !== "_").map((i) => tokens[i]), tokens[m.vowel]].join("");
+function readingCore({ score: SRC, text: TEXT, lang: LANG = "ja", piper: pn2 }) {
+  if (LANG === "en") return { labels: null, said: [] };
+  const SCORE = expandEntries(SRC, 0), { tokens } = phonemesOf(LANG, TEXT, pn2, null), { moras } = sungSyllables(LANG, tokens, null);
+  const said = moras.map((m) => labelOf(tokens, m) + (LANG === "zh" ? (tokens[m.vowel + 1] ?? "").replace(/^tone/, "") : ""));
+  if (said.length !== SCORE.length) return { labels: null, said };
+  const labels = [];
+  let k = 0;
+  for (const e of SRC) {
+    const n = e.moras || 1;
+    labels.push(said.slice(k, k + n).join("-"));
+    k += n;
+  }
+  return { labels, said };
+}
+async function singCore({
+  score: SCORE_IN,
+  text: TEXT,
+  tempo: TEMPO_QUARTER,
+  lang: LANG = "ja",
+  transpose: TRANSPOSE = 0,
+  phrasing: PHRASING = "score",
+  atlas: ATLAS = "off",
+  mix: MIX = 1,
+  breath: BREATH = false,
+  preset: PRESET = 0,
+  piper: pn2,
+  world: W,
+  loadAtlas = null,
+  opt = {},
+  log = () => {
+  },
+  only = null
+}) {
+  const OPT = { ...DEFAULT_OPT, ...opt };
+  if (ATLAS !== "off" && !loadAtlas) throw new Error(`atlas=${ATLAS} needs loadAtlas`);
+  let EN = null, leadRest = 0, SRC = SCORE_IN;
+  if (LANG === "en") {
+    EN = pn2.phonemizeEnWords(wordsOf(SCORE_IN));
+    ({ entries: SRC, leadRest } = alignEnglish(SCORE_IN, EN.nuclei));
+  }
+  const EIGHTH0 = 60 / TEMPO_QUARTER / 2;
+  if (only) SRC = SRC.map((e, k) => k === only.entry ? { ...e, notes: [[only.midi - TRANSPOSE, Math.max(0.25, only.secs / EIGHTH0)]], rest: 0 } : e);
+  const SCORE = expandEntries(SRC, TRANSPOSE);
+  const SR2 = pn2.SR, HOP2 = pn2.HOP, FR = SR2 / HOP2, EIGHTH = 60 / TEMPO_QUARTER / 2, FP = 5, FPS = FP / 1e3;
+  const { ph, tokens } = phonemesOf(LANG, TEXT, pn2, EN);
+  if (OPT.humNasal && LANG === "ja") {
+    let k = 0;
+    tokens.forEach((t2, i) => {
+      if (!(VOWEL.has(t2) || /^N/.test(t2))) return;
+      if (SCORE[k]?.hum && /^N/.test(t2)) tokens[i] = OPT.humNasal;
+      k++;
+    });
+  }
+  const { ids, pros } = LANG === "ja" ? pn2.encode(tokens, ph.prosody) : ph;
+  const RUN = { lang: LANG, preset: PRESET };
+  const owner = [];
+  let p = 2;
+  for (const t2 of tokens) {
+    owner.push(t2 === "_" ? [p] : [p, p + 1]);
+    p += t2 === "_" ? 1 : 2;
+  }
+  if (p !== ids.length - 1) throw new Error(`id layout: expected EOS at ${p}, have ${ids.length - 1}`);
+  const { moras, trailing } = sungSyllables(LANG, tokens, EN);
+  if (moras.length !== SCORE.length) throw new Error(`${moras.length} sung syllables in the text, ${SCORE.length} in the score
+ text: ${moras.map((m) => tokens.slice(m.gap.length ? m.gap[0] : m.vowel, m.vowel + 1).filter((t2) => !"[]#?!_".includes(t2)).join("")).join(" ")}`);
+  moras.forEach((m, k) => {
+    m.kana = SCORE[k].kana;
+    m.mark = SCORE[k].before ?? null;
+    if (m.mark && !"^vO".includes(m.mark)) throw new Error(`${m.kana}: before must be ^ v or O`);
+    m.label = labelOf(tokens, m);
+    const lastPause = m.gap.lastIndexOf(m.gap.findLast?.((i) => tokens[i] === "_") ?? -1);
+    m.pause = lastPause >= 0 ? m.gap[lastPause] : null;
+    m.cons = m.gap.slice(lastPause + 1);
+    m.before = lastPause >= 0 ? m.gap.slice(0, lastPause + 1) : [];
+  });
+  moras.forEach((m, k) => {
+    m.whisper = !!SCORE[k].whisper;
+    m.inhale = !!SCORE[k].inhale;
+  });
+  if (LANG === "en") moras.forEach((m, k) => {
+    const w = EN.wordOf[m.vowel], next = moras[k + 1];
+    if (!next) {
+      m.coda = trailing.filter((i) => !isMark(tokens[i]));
+      return;
+    }
+    if (!(SCORE[k].rest > 0)) return;
+    m.coda = next.cons.filter((i) => EN.wordOf[i] === w);
+    next.cons = next.cons.filter((i) => EN.wordOf[i] !== w);
+  });
+  if (PHRASING !== "score") {
+    if (PHRASING !== "punct" && PHRASING !== "none") throw new Error(`--phrasing=${PHRASING}: unknown (score|punct|none)`);
+    let ti = 0;
+    moras.forEach((m, k) => {
+      let punct = false;
+      for (const ch of [...SCORE[k].kana]) {
+        while (ti < TEXT.length && "\u3063\u3001\u3002\uFF0C".includes(TEXT[ti])) {
+          if (TEXT[ti] !== "\u3063") punct = true;
+          ti++;
+        }
+        if (TEXT[ti] === ch) ti++;
+      }
+      m.mark = PHRASING === "punct" && punct && k > 0 ? "v" : null;
+    });
+  }
+  const pred = (await pn2.run(ids, pros, { noiseScale: 0, noiseW: 0, ...RUN })).durations;
+  const frames = new Float32Array(ids.length).fill(1);
+  frames[0] = 10;
+  for (const m of moras) {
+    for (const i of m.cons) if (!isMark(tokens[i])) owner[i].forEach((j) => frames[j] = Math.max(1, Math.round(pred[j])));
+    for (const i of m.coda ?? []) if (!isMark(tokens[i])) owner[i].forEach((j) => frames[j] = Math.max(1, Math.round(pred[j])));
+    if (m.pause !== null) frames[owner[m.pause][0]] = 10;
+    const [a, b] = owner[m.vowel], tot = Math.min(OPT.vowelFrames[1], Math.max(OPT.vowelFrames[0], Math.round(2 * (pred[a] + pred[b]))));
+    frames[a] = Math.max(1, Math.round(tot * pred[a] / (pred[a] + pred[b])));
+    frames[b] = Math.max(1, tot - frames[a]);
+  }
+  frames[ids.length - 1] = 8;
+  const cum = [0];
+  for (const v of frames) cum.push(cum[cum.length - 1] + v);
+  const sec = (idIndex) => cum[idIndex] / FR;
+  let t0 = performance.now();
+  const said = await pn2.run(ids, pros, { noiseScale: OPT.noiseScale, noiseW: OPT.noiseW, override: Array.from(frames), ...RUN });
+  const piperMs = performance.now() - t0;
+  if (said.audio.length !== cum[cum.length - 1] * HOP2) throw new Error(`audio ${said.audio.length} samples, timeline ${cum[cum.length - 1] * HOP2}`);
+  const x = said.audio;
+  for (const m of moras) {
+    m.c0 = m.cons.length ? sec(owner[m.cons[0]][0]) : sec(owner[m.vowel][0]);
+    m.v0 = sec(owner[m.vowel][0]);
+    m.v1 = sec(owner[m.vowel][1] + 1);
+    if (m.coda?.length) m.codaC1 = sec(owner[m.coda[m.coda.length - 1]][1] + 1);
+  }
+  t0 = performance.now();
+  const an2 = W.analyze(x, SR2, { framePeriod: FP, f0Floor: 80, f0Ceil: 1e3 }), bins = an2.bins;
+  const energy = (f) => {
+    let e = 0;
+    for (let q2 = 0; q2 < bins; q2++) e += an2.sp[f * bins + q2];
+    return 10 * Math.log10(e + 1e-30);
+  };
+  const BAND = [Math.round(500 / SR2 * an2.fft), Math.round(4e3 / SR2 * an2.fft)];
+  const noisiness = (f) => {
+    let s = 0;
+    for (let q2 = BAND[0]; q2 < BAND[1]; q2++) s += an2.ap[f * bins + q2];
+    return s / (BAND[1] - BAND[0]);
+  };
+  for (const m of moras) {
+    const a0 = Math.ceil(m.v0 / FPS), mid = Math.floor((m.v0 + m.v1) / 2 / FPS);
+    let on2 = -1;
+    for (let f = a0; f <= mid; f++) if (noisiness(f) <= OPT.cleanMax) {
+      on2 = f;
+      break;
+    }
+    m.v0 = on2 >= 0 ? on2 * FPS : Math.min(m.v0 + OPT.vowelLag, (m.v0 + m.v1) / 2);
+  }
+  for (const m of moras) {
+    const f0i = Math.ceil(m.v0 / FPS), f1i = Math.max(f0i + 1, Math.floor(m.v1 / FPS)), fr = [];
+    for (let f = f0i; f < f1i; f++) fr.push(f);
+    const cleanest = Math.min(...fr.map(noisiness)), clean = (f) => noisiness(f) <= cleanest + 0.15;
+    let best = fr.filter(clean).reduce((p2, f) => energy(f) > energy(p2) ? f : p2, fr.find(clean));
+    let a = best, b = best;
+    const floor = energy(best) - OPT.holdDb;
+    while (a - 1 >= f0i && energy(a - 1) >= floor && clean(a - 1)) a--;
+    while (b + 1 < f1i && energy(b + 1) >= floor && clean(b + 1)) b++;
+    m.hold = { h0: a * FPS, h1: Math.max((b + 1) * FPS, a * FPS + FPS) };
+    const best3 = [...fr].sort((p2, q2) => noisiness(p2) - noisiness(q2)).slice(0, Math.max(1, Math.ceil(fr.length / 3)));
+    m.apClean = new Float64Array(bins);
+    const col = new Float64Array(best3.length);
+    for (let q2 = 0; q2 < bins; q2++) {
+      best3.forEach((f, i) => col[i] = an2.ap[f * bins + q2]);
+      col.sort();
+      m.apClean[q2] = col[col.length >> 1];
+    }
+    let e = 0;
+    for (let f = a; f <= b; f++) e += energy(f);
+    m.levelDb = e / (b - a + 1);
+    m.ownClean = best3.reduce((p2, f) => p2 + noisiness(f), 0) / best3.length;
+    m.cleanFrames = best3;
+  }
+  {
+    const tmpl = (ms2) => {
+      const fr = ms2.flatMap((m) => m.cleanFrames);
+      if (!fr.length) return null;
+      const out = new Float64Array(bins), col = new Float64Array(fr.length);
+      for (let q2 = 0; q2 < bins; q2++) {
+        fr.forEach((f, i) => col[i] = an2.ap[f * bins + q2]);
+        col.sort();
+        out[q2] = col[col.length >> 1];
+      }
+      return out;
     };
-    beam(xa, xb, 0);
-    const maxLv = Math.max(...g.map((s2) => flagLevel(s2.base)));
-    for (let lvl = 2; lvl <= maxLv; lvl++) {
-      let runStart = -1;
-      for (let n2 = 0; n2 <= g.length; n2++) {
-        const has = n2 < g.length && flagLevel(g[n2].base) >= lvl;
-        if (has && runStart < 0) runStart = n2;
-        if (!has && runStart >= 0) {
-          const L = runStart, R = n2 - 1;
-          if (L === R) {
-            const stub = U(1.1), toRight = L < g.length - 1;
-            beam(toRight ? sx(g[L]) : sx(g[L]) - stub, toRight ? sx(g[L]) + stub : sx(g[L]), lvl - 1);
-          } else beam(sx(g[L]), sx(g[R]), lvl - 1);
-          runStart = -1;
+    const tmplSp = (ms2) => {
+      const fr = ms2.flatMap((m) => m.cleanFrames);
+      if (!fr.length) return null;
+      const out = new Float64Array(bins), col = new Float64Array(fr.length);
+      for (let q2 = 0; q2 < bins; q2++) {
+        fr.forEach((f, i) => col[i] = Math.log(an2.sp[f * bins + q2] + 1e-16));
+        col.sort();
+        out[q2] = Math.exp(col[col.length >> 1]);
+      }
+      return out;
+    };
+    const good = moras.filter((m) => m.ownClean <= OPT.cleanMax), all = tmpl(good), allSp = tmplSp(good);
+    for (const m of moras) if (m.ownClean > OPT.cleanMax && !m.whisper) {
+      const same = good.filter((g) => tokens[g.vowel] === tokens[m.vowel]);
+      m.apClean = tmpl(same) ?? all ?? m.apClean;
+      m.spClean = tmplSp(same) ?? allSp ?? void 0;
+      m.borrowed = (tmpl(same) ?? all) !== null;
+    }
+    log(`whispered vowels sung from a clean sample of the same vowel: ${moras.filter((m) => m.borrowed).map((m) => m.kana).join(" ") || "none"}`);
+  }
+  {
+    const lv = moras.filter((m) => m.ownClean <= OPT.cleanMax).map((m) => m.levelDb).sort((p2, q2) => p2 - q2), med = lv[lv.length >> 1];
+    for (const m of moras) m.gainDb = (m.ownClean > OPT.cleanMax ? 0 : Math.max(-OPT.levelMaxDb, Math.min(OPT.levelMaxDb, OPT.level * (med - m.levelDb)))) + (m.whisper ? OPT.whisperDb : 0);
+  }
+  let t = OPT.leadIn + leadRest * EIGHTH;
+  const notes = [];
+  SCORE.forEach((s, k) => {
+    const m = moras[k];
+    m.noteStart = t;
+    for (const [midi, len] of s.notes) {
+      notes.push({ k, midi, t0: t, t1: t + len * EIGHTH });
+      t += len * EIGHTH;
+    }
+    m.noteEnd = t;
+    m.rest = (s.rest || 0) > 0;
+    t += (s.rest || 0) * EIGHTH;
+    m.end = m.noteEnd;
+  });
+  moras.forEach((m, k) => {
+    if (!m.mark || k === 0) return;
+    const prev = moras[k - 1];
+    if (prev.rest) return;
+    const noteLen = prev.noteEnd - prev.noteStart, cons = Math.min(m.v0 - m.c0, OPT.consonantCap * noteLen);
+    const want = m.mark === "^" ? OPT.lift : Math.min(OPT.gap[m.mark].max, OPT.gap[m.mark].share * noteLen);
+    prev.end = prev.noteEnd - Math.min(want + cons, 0.6 * noteLen);
+    prev.rest = true;
+    prev.stolen = true;
+  });
+  moras.forEach((m, k) => {
+    let len = m.v0 - m.c0;
+    if (SCORE[k].hum && OPT.humConsMin > 0 && m.cons.some((i) => !isMark(tokens[i]) && tokens[i] !== "_")) len = Math.max(len, OPT.humConsMin);
+    if (k > 0 && (!moras[k - 1].rest || moras[k - 1].stolen)) len = Math.min(len, OPT.consonantCap * (moras[k - 1].noteEnd - moras[k - 1].noteStart));
+    m.preStart = m.noteStart - len;
+  });
+  const segs = [];
+  const seg = (s0, s1, c0, c1, kind, k, hold = false) => {
+    if (s1 > s0 + 1e-9) segs.push({ s0, s1, c0, c1, kind, k, hold });
+  };
+  seg(0, moras[0].preStart, 0, moras[0].c0, "lead", -1);
+  moras.forEach((m, k) => {
+    seg(m.preStart, m.noteStart, m.c0, m.v0, "cons", k);
+    const sEnd0 = k + 1 < moras.length && !m.rest ? moras[k + 1].preStart : m.end;
+    const codaLen = m.codaC1 ? Math.min(m.codaC1 - m.v1, 0.45 * (sEnd0 - m.noteStart)) : 0, sEnd = sEnd0 - codaLen;
+    const L = sEnd - m.noteStart, last = k + 1 === moras.length, fade = (m.rest || last) && !codaLen ? OPT.release : 0;
+    m.fade = fade > 0 ? [sEnd - Math.min(fade, 0.4 * L), sEnd] : null;
+    const { h0, h1 } = m.hold, tailC = fade > 0 ? 0 : Math.min(OPT.tailIntoNext, m.v1 - h1);
+    const attC = h0 - m.v0;
+    if (L <= attC + tailC + 0.02) seg(m.noteStart, sEnd, m.v0, fade > 0 ? h1 : m.v1, "vowel", k);
+    else {
+      seg(m.noteStart, m.noteStart + attC, m.v0, h0, "vowel", k);
+      seg(m.noteStart + attC, sEnd - tailC, h0, h1, "vowel", k, true);
+      if (tailC > 0) seg(sEnd - tailC, sEnd, m.v1 - tailC, m.v1, "vowel", k, "tail");
+    }
+    if (codaLen > 0) {
+      seg(sEnd, sEnd0, m.v1, m.codaC1, "cons", k, "coda");
+      m.codaFade = [sEnd0 - Math.min(0.04, codaLen / 2), sEnd0];
+    }
+    if (m.rest && k + 1 < moras.length) seg(m.end, moras[k + 1].preStart, m.codaC1 ?? m.v1, moras[k + 1].c0, "rest", k);
+  });
+  const songEnd = moras[moras.length - 1].noteEnd;
+  const ATLAS_VOWEL = (tok) => {
+    if (LANG !== "zh") return /^N/.test(tok) ? "N" : VOWEL.has(tok) ? tok : null;
+    const c = tok[0];
+    return { a: "a", i: "i", u: "u", y: "i", e: "e", "\u0259": "e", "\u0264": "o", o: "o", "\u027B": "i", "\u0268": "i", "\u025A": "e" }[c] ?? null;
+  };
+  let atlas = null;
+  if (ATLAS !== "off") {
+    const exprId = { strong: "strong", soft: "soft", deep: "deep", bright: "bright" }[ATLAS];
+    if (ATLAS !== "normal" && !exprId) throw new Error(`--atlas=${ATLAS}: unknown (normal|strong|soft|deep|bright|off)`);
+    const normal = await Promise.all(["B3", "Ds4", "G4", "B4"].map((id) => loadAtlas(id)));
+    atlas = ATLAS === "normal" ? normal : [await loadAtlas(exprId)];
+    for (const a of [...normal, ...atlas]) {
+      const e = a.entries[0];
+      if (!e || e.bins !== bins || e.fft !== an2.fft || a.framePeriodMs !== FP) throw new Error(`atlas ${a.set}: bins/fft/frame period differ from this analysis`);
+    }
+    if (ATLAS !== "normal") {
+      const a = atlas[0], ref = [...normal].sort((p2, q2) => Math.abs(p2.midi - a.midi) - Math.abs(q2.midi - a.midi))[0];
+      a.exprOffset = {};
+      for (const v of ["a", "i", "u", "e", "o", "N"]) {
+        const mean = (set) => {
+          const es2 = set.entries.filter((e) => e.vowel === v);
+          return es2.length ? es2.reduce((s, e) => s + e.energyDb, 0) / es2.length : NaN;
+        };
+        const d = mean(a) - mean(ref);
+        a.exprOffset[v] = isFinite(d) ? d : 0;
+      }
+      log(`\u56FE\u8C31 ${ATLAS} vs ${ref.set}: loudness offset per vowel dB ${JSON.stringify(Object.fromEntries(Object.entries(a.exprOffset).map(([k, x2]) => [k, +x2.toFixed(1)])))}`);
+    }
+  }
+  function atlasFrame(m, midi, tau, k) {
+    const v = ATLAS_VOWEL(tokens[m.vowel]);
+    if (!v) return null;
+    let mixSets;
+    if (atlas.length === 1) mixSets = [{ a: atlas[0], w: 1 }];
+    else {
+      const sorted = [...atlas].sort((p2, q2) => p2.midi - q2.midi);
+      let lo2 = sorted[0], hi = sorted[sorted.length - 1];
+      for (let i = 0; i + 1 < sorted.length; i++) if (midi >= sorted[i].midi && midi <= sorted[i + 1].midi) {
+        lo2 = sorted[i];
+        hi = sorted[i + 1];
+      }
+      const w = midi <= lo2.midi ? 0 : midi >= hi.midi ? 1 : (midi - lo2.midi) / (hi.midi - lo2.midi);
+      mixSets = w === 0 ? [{ a: lo2, w: 1 }] : w === 1 ? [{ a: hi, w: 1 }] : [{ a: lo2, w: 1 - w }, { a: hi, w }];
+    }
+    const logsp = new Float64Array(bins), apo = new Float64Array(bins);
+    let used = 0;
+    for (const { a, w } of mixSets) {
+      const es2 = a.entries.filter((e2) => e2.vowel === v);
+      if (!es2.length) continue;
+      const e = es2[k % es2.length], L = e.frames, idx0 = Math.floor(tau / FPS);
+      let i = idx0 % Math.max(1, 2 * L - 2);
+      if (i >= L) i = 2 * L - 2 - i;
+      const gdb = Math.max(-OPT.atlasGainClamp, Math.min(OPT.atlasGainClamp, m.levelDb - e.energyDb)) + OPT.atlasExprLevel * (a.exprOffset?.[v] ?? 0);
+      const base = (e.frame0 + i) * bins * 2, gain = gdb / 10 * Math.LN10;
+      for (let q2 = 0; q2 < bins; q2++) {
+        logsp[q2] += w * (Math.log(a.data[base + q2] + 1e-16) + gain);
+        apo[q2] += w * a.data[base + bins + q2];
+      }
+      used += w;
+    }
+    if (used <= 0) return null;
+    if (used < 0.999) for (let q2 = 0; q2 < bins; q2++) {
+      logsp[q2] /= used;
+      apo[q2] /= used;
+    }
+    return { logsp, ap: apo };
+  }
+  function breathTemplate(m, midi, k) {
+    const fr = atlas ? atlasFrame(m, midi, 0, k) : null;
+    const logsp = new Float64Array(bins);
+    if (fr) logsp.set(fr.logsp);
+    else {
+      const src = m.spClean ?? null;
+      for (let q2 = 0; q2 < bins; q2++) logsp[q2] = Math.log((src ? src[q2] : an2.sp[Math.ceil(m.hold.h0 / FPS) * bins + q2]) + 1e-16);
+    }
+    const tilt = Math.round(OPT.atlasTiltHz / SR2 * an2.fft);
+    for (let q2 = 0; q2 < bins; q2++) if (q2 > tilt) logsp[q2] += Math.log(0.25) * Math.min(1, (q2 - tilt) / tilt);
+    let e = 0;
+    for (let q2 = 0; q2 < bins; q2++) e += Math.exp(logsp[q2]);
+    const db = 10 * Math.log10(e + 1e-30);
+    const want = m.levelDb + OPT.breathDb, g = (want - db) / 10 * Math.LN10;
+    for (let q2 = 0; q2 < bins; q2++) logsp[q2] += g;
+    return logsp;
+  }
+  const midiOf = (k) => notes.find((n) => n.k === k).midi;
+  const N2 = Math.ceil(songEnd / FPS) + 1;
+  const pitchSegs = [...notes, ...moras.map((m, k) => ({ t0: m.preStart, t1: m.noteStart, midi: notes.find((n) => n.k === k).midi }))];
+  const cents = new Float64Array(N2).fill(NaN);
+  for (let j = 0; j < N2; j++) {
+    const tt = j * FPS;
+    const s = pitchSegs.find((q2) => tt >= q2.t0 && tt < q2.t1);
+    if (s) cents[j] = s.midi * 100;
+  }
+  const half = Math.max(1, Math.round(OPT.portamentoMs / 2 / FP)), smooth = Float64Array.from(cents);
+  for (let j = 0; j < N2; j++) {
+    if (isNaN(cents[j])) continue;
+    let s = 0, c = 0;
+    for (let q2 = j - half; q2 <= j + half; q2++) if (q2 >= 0 && q2 < N2 && !isNaN(cents[q2])) {
+      s += cents[q2];
+      c++;
+    }
+    smooth[j] = s / c;
+  }
+  for (const n of notes) {
+    const V = OPT.vibrato;
+    if (n.t1 - n.t0 < V.minNote) continue;
+    for (let j = Math.ceil((n.t0 + V.delay) / FPS); j * FPS < n.t1 && j < N2; j++) {
+      const u = j * FPS - n.t0 - V.delay;
+      smooth[j] += V.cents * Math.min(1, u / V.fadeIn) * Math.sin(2 * Math.PI * V.hz * u);
+    }
+  }
+  const onlyK = only ? SRC.slice(0, only.entry).reduce((a, e) => a + (e.moras || 1), 0) : -1;
+  const onlyM = only ? moras[Math.min(onlyK, moras.length - 1)] : null;
+  const J0 = onlyM ? Math.max(0, Math.floor(onlyM.preStart / FPS)) : 0, J1 = onlyM ? Math.min(N2, Math.ceil(onlyM.end / FPS) + 1) : N2, NN = J1 - J0;
+  const sp = new Float64Array(NN * bins), ap = new Float64Array(NN * bins), f0 = new Float64Array(NN);
+  let repaired = 0, vowelFrames = 0, atlasFrames = 0, holdFrames = 0, breaths = /* @__PURE__ */ new Map();
+  const breathSp = /* @__PURE__ */ new Map();
+  for (let j = J0; j < J1; j++) {
+    const jj = j - J0;
+    const tt = j * FPS, s = segs.find((q2) => tt >= q2.s0 && tt < q2.s1) ?? (tt >= songEnd ? segs[segs.length - 1] : null);
+    if (!s) continue;
+    const c = s.c0 + (Math.min(tt, s.s1) - s.s0) / (s.s1 - s.s0) * (s.c1 - s.c0), fi = Math.min(an2.frames - 1, c / FPS);
+    const a = Math.floor(fi), b = Math.min(an2.frames - 1, a + 1), w = fi - a;
+    for (let q2 = 0; q2 < bins; q2++) {
+      sp[jj * bins + q2] = Math.exp((1 - w) * Math.log(an2.sp[a * bins + q2] + 1e-16) + w * Math.log(an2.sp[b * bins + q2] + 1e-16));
+      ap[jj * bins + q2] = (1 - w) * an2.ap[a * bins + q2] + w * an2.ap[b * bins + q2];
+    }
+    const srcVoiced = an2.f0[a] > 0 || an2.f0[b] > 0, sung = !isNaN(smooth[j]);
+    if (s.kind === "rest" || s.kind === "lead") {
+      for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] *= 1e-6;
+      const nk = s.kind === "lead" ? 0 : s.k + 1, mark = s.kind === "lead" ? moras[0]?.inhale ? moras[0].mark ?? "v" : "v" : moras[nk]?.mark ?? null;
+      const audible = BREATH || !!moras[nk]?.inhale;
+      const restLen = s.s1 - s.s0, stolen = s.kind === "rest" && !!moras[s.k].stolen, longEnough = s.kind === "lead" || restLen >= OPT.breathMinRest * EIGHTH - 1e-6;
+      const g = OPT.gap[mark === "O" ? "O" : "v"];
+      if (audible && nk < moras.length && mark !== "^" && (stolen || longEnough || moras[nk]?.inhale)) {
+        const bl = Math.min(g.max, 0.8 * restLen), b0 = s.s1 - bl, boost = 10 ** (g.db / 10);
+        if (tt >= b0) {
+          if (!breathSp.has(nk)) breathSp.set(nk, breathTemplate(moras[nk], midiOf(nk), nk));
+          const u = (tt - b0) / bl, env = u < 0.7 ? 0.5 - 0.5 * Math.cos(Math.PI * u / 0.7) : 0.5 + 0.5 * Math.cos(Math.PI * (u - 0.7) / 0.3);
+          const tpl = breathSp.get(nk);
+          for (let q2 = 0; q2 < bins; q2++) {
+            sp[jj * bins + q2] = Math.exp(tpl[q2]) * env * env * boost;
+            ap[jj * bins + q2] = 1;
+          }
+          f0[jj] = 0;
+          breaths.set(nk, mark === "O" ? "O" : "v");
         }
       }
     }
-  }
-  return { notes, groups: out };
-}
-
-// src/render/staff/glyphs.ts
-var TOP_LINE2 = 38;
-var MID_LINE2 = 34;
-var BOTTOM_LINE = 30;
-var glyphOf = (id) => {
-  const d = SIGNS[id].draw.staff;
-  if (d.kind !== "glyph") throw new Error(`signs: ${id} has no staff glyph`);
-  return { above: d.above, below: d.below ?? d.above, w: d.w ?? 0, h: d.h ?? 0 };
-};
-var ART_GLYPH = Object.fromEntries(["stress", "unstress", "accent", "marcato", "staccato", "tenuto"].map((a) => [a, glyphOf(`art:${a}`)]));
-var GLYPH_BREATH = glyphOf("art:breath").above;
-var DYN_GLYPH = Object.fromEntries(DYNS.map((d) => [d, glyphOf(`dyn:${d}`).above]));
-var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
-var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
-var GLYPH_TUPLET = (n2) => [...String(n2)].map((d) => String.fromCodePoint(59520 + Number(d))).join("");
-
-// src/render/staff/measure.ts
-var shAt = (q, staff, index) => {
-  return q.staves === 2 ? staff === 2 ? 12 : 0 : CLEF_SHIFT[(index >= 0 ? q.ds.clef[index] : void 0) ?? q.start] + ottavaShift(index >= 0 ? q.ds.ott[index] ?? 0 : 0);
-};
-var percAt = (q, p) => {
-  const pk = q.p.perc;
-  return !pk ? null : pk.kind === "kit" ? percOf(128, 0, midiOf(p)) : pk.info;
-};
-var posD = (q, p, staff, index) => {
-  const m = q.pmode;
-  if (m && q.p.perc) {
-    const pi = percAt(q, p);
-    return m === "one" ? MID_LINE2 - (pi && pi.staff === 1 ? pi.line : 0) : TOP_LINE2 - (pi ? pi.line : 4);
-  }
-  return diatonicIndex(p) + shAt(q, staff, index);
-};
-var stemInput = (q, xOf) => {
-  const pm = q.pmode, percHere = !!pm && !!q.p.perc, seq = [];
-  for (const u of q.units) {
-    if (u.kind === "bar" || u.kind === "key" || u.kind === "time") {
-      seq.push(null);
-      continue;
+    if (s.kind === "vowel" && sung && moras[s.k].whisper) vowelFrames++;
+    else if (s.kind === "vowel" && sung) {
+      vowelFrames++;
+      f0[jj] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
+      const m = moras[s.k];
+      let changed = false;
+      if (m.spClean) sp.set(m.spClean, jj * bins);
+      for (let q2 = 0; q2 < bins; q2++) {
+        const v = ap[jj * bins + q2], c2 = m.apClean[q2];
+        if (v > c2) {
+          ap[jj * bins + q2] = c2 + OPT.breath * (v - c2);
+          changed = true;
+        }
+      }
+      if (changed && !srcVoiced) repaired++;
+      if (atlas && s.hold) {
+        holdFrames++;
+        const holdSeg = s.hold === true ? s : segs.find((q2) => q2.kind === "vowel" && q2.k === s.k && q2.hold === true);
+        const tau = tt - (holdSeg ? holdSeg.s0 : s.s0), total = s.s1 - s.s0, xf = Math.max(1e-3, Math.min(OPT.atlasXfade, total / 3));
+        let wa;
+        if (s.hold === "tail") {
+          wa = holdSeg ? MIX * (1 - (tt - s.s0) / total) : 0;
+        } else {
+          const fadeOut = moras[s.k].fade ? Math.min(1, (total - (tt - s.s0)) / xf) : 1;
+          wa = MIX * Math.min(1, (tt - s.s0) / xf, fadeOut);
+        }
+        const fr = wa > 0 ? atlasFrame(m, midiOf(s.k), tau, s.k) : null;
+        if (fr) {
+          atlasFrames++;
+          for (let q2 = 0; q2 < bins; q2++) {
+            sp[jj * bins + q2] = Math.exp((1 - wa) * Math.log(sp[jj * bins + q2] + 1e-16) + wa * fr.logsp[q2]);
+            ap[jj * bins + q2] = (1 - wa) * ap[jj * bins + q2] + wa * fr.ap[q2];
+          }
+        }
+      }
     }
-    if (u.kind !== "chunk") continue;
-    if (!u.note || u.base >= WHOLE) {
-      seq.push(null);
-      continue;
+    const fm = s.kind === "vowel" ? moras[s.k].fade : s.kind === "cons" && s.hold === "coda" ? moras[s.k].codaFade : null;
+    if (fm && tt >= fm[0]) {
+      const g = Math.max(0.01, 1 - (tt - fm[0]) / (fm[1] - fm[0]));
+      for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] *= g * g;
     }
-    const ps = u.pitches.length ? u.pitches : [u.pitch], ds = ps.map((pp) => posD(q, pp, u.staff, u.index));
-    seq.push({
-      key: u,
-      x: xOf(u),
-      dHi: ds[0],
-      dLo: ds[ds.length - 1],
-      base: u.base,
-      beat: Math.floor(u.inBar / u.beat),
-      system: u.system,
-      staff: u.staff,
-      ghost: u.ghost,
-      ...percHere && pm !== "one" && ps.some((p) => percAt(q, p)?.stem !== "down") ? { handUp: true } : {}
-    });
+    if (OPT.levelContinuous && (s.kind === "vowel" || s.kind === "cons") && s.k >= 0) {
+      const m = moras[s.k], pm = s.k > 0 ? moras[s.k - 1] : null, g0 = pm && !(pm.rest && !pm.stolen) ? pm.gainDb : 0;
+      const w2 = Math.min(1, Math.max(0, (tt - m.preStart) / Math.max(0.03, m.noteStart + 0.03 - m.preStart))), gg = 10 ** ((g0 + w2 * (m.gainDb - g0)) / 10);
+      for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] *= gg;
+    } else if (s.kind === "vowel" && s.k >= 0) {
+      const m = moras[s.k], w2 = Math.min(1, Math.max(0, (tt - m.noteStart) / 0.03)), gg = 10 ** (w2 * m.gainDb / 10);
+      for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] *= gg;
+    }
+    if (s.kind === "cons" && sung && srcVoiced && noisiness(a) <= 0.5 && noisiness(b) <= 0.5 && !moras[s.k]?.whisper) f0[jj] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
   }
-  return { seq, dir: q.v2 ? "down" : q.hasV2 ? "up" : percHere ? pm === "one" ? "up" : "kit" : "auto" };
-};
-var restW = (base) => base >= WHOLE ? W.restWhole : base >= TPQ * 2 ? W.restHalf : base >= TPQ ? W.restQuarter : base >= TPQ / 2 ? W.rest8th : base >= TPQ / 4 ? W.rest16th : W.rest32nd;
-var COLUMN_KIND = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
-function measureTrack(q) {
-  const flagRight = /* @__PURE__ */ new Map();
-  {
-    const si = stemInput(q, () => 0.35);
-    for (const [c, st] of layoutStems(si.seq, si.dir).notes) if (st.flag) flagRight.set(c, st.flag.x + FLAG_W[st.up ? "up" : "down"][st.flag.level - 1]);
-  }
-  const inkL = /* @__PURE__ */ new Map();
-  const lane = (staff) => (staff - 1) * 2;
-  const spItems = (u) => {
-    const out = [], row = lane(u.staff);
-    if (!u.note) {
-      if (u.pad || q.v2 || u.mrest) return out;
-      out.push({ row, left: -0.35, right: 0.35 + (u.dotted ? 1.5 + 0.45 : restW(u.base)), dur: u.ticks });
-      return out;
-    }
-    const nhw = u.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack, perc = !!q.pmode && !!q.p.perc;
-    const ds = (u.pitches.length ? u.pitches : u.pitch ? [u.pitch] : []).map((pp) => posD(q, pp, u.staff, u.index));
-    const second = ds.some((d, k) => k > 0 && Math.abs(ds[k - 1] - d) === 1);
-    let right = 0.35 + nhw * (second ? 1.95 : 1), left = -0.35;
-    if (u.dotted) right = Math.max(right, 0.35 + nhw + 0.3 + 0.45);
-    const fr = flagRight.get(u);
-    if (fr !== void 0) right = Math.max(right, fr);
-    const nAcc = perc ? [] : u.accs.map((a, k) => a === null ? -1 : k).filter((k) => k >= 0);
-    if (nAcc.length) left = 1.1 + (nAcc.some((k, i) => i > 0 && Math.abs(ds[nAcc[i - 1]] - ds[k]) < 3) ? 1.1 : 0);
-    const ghost = u.art.includes("ghost");
-    if (ghost) {
-      left = nAcc.length ? left + 0.6 : Math.max(left, 0.15);
-      right += 0.45;
-    }
-    if (u.art.includes("arpeggio")) left = Math.max(left, (nAcc.length ? 1.3 : 0) + 0.83);
-    if (u.breath) right = Math.max(right, 0.35 + nhw + 0.55 + 0.85);
-    if (u.breath && u.inhale) right = Math.max(right, 0.35 + nhw + 1.35 + (u.inhale === "big" ? 2.3 : 1.15));
-    inkL.set(u, Math.max(0, left));
-    out.push({ row, left, right, dur: u.ticks });
-    if (u.lyW !== void 0 && !q.v2) out.push({ row: lane(q.staves) + 1, left: u.lyW / 2 - 0.94, right: 0.94 + u.lyW / 2 + 0.4 + (u.hyph ? 0.7 : 0) });
+  const y = W.synth({ f0, sp, ap, fft: an2.fft, fs: SR2, framePeriod: FP });
+  const worldMs = performance.now() - t0;
+  function finish(sig) {
+    const fade = Math.round(0.03 * SR2), n = sig.length, out = new Float32Array(n + Math.round(OPT.tail * SR2));
+    let m = 1e-9;
+    for (let i = 0; i < n; i++) m = Math.max(m, Math.abs(sig[i]));
+    for (let i = 0; i < n; i++) out[i] = sig[i] / m * 0.89 * (i > n - fade ? (n - i) / fade : 1);
     return out;
-  };
-  const entries = q.units.map((u) => ({ tick: u.tick, slot: u.kind === "nav" ? u.slot : SLOT[COLUMN_KIND[u.kind]], w: u.w, ...u.kind === "bar" ? { bar: true } : {}, ...u.kind === "chunk" ? { chunk: { items: spItems(u), span: u.ticks } } : {}, ref: u }));
-  return { entries, inkL };
-}
-var clefW = (q) => q.fFam ? W.fClef : W.gClef;
-var lineStartWidth = (q, key, first, base) => base + LINE_START.beforeClef + clefW(q) + LINE_START.afterClef + Math.abs(key) * KEY_SIG.acc + (key ? LINE_START.afterKey : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + LINE_START.afterTime : LINE_START.noTime);
-function noteheadW(q, c) {
-  const percHere = !!q.pmode && !!q.p.perc, k = c.base >= WHOLE ? 2 : c.base >= TPQ * 2 ? 1 : 0;
-  if (!!q.p.xHead && !percHere || !!c.whisper) return k === 2 ? W.noteheadXWhole : k === 1 ? W.noteheadXHalf : W.noteheadXBlack;
-  if (percHere && c.pitch) {
-    const pi = percAt(q, c.pitch), hd = (pi?.head === "custom" && pi.smufl ? PERC_SMUFL[pi.smufl] : void 0) ?? PERC_HEAD[pi?.head ?? "normal"] ?? PERC_HEAD.normal;
-    return hd.w[k];
   }
-  return k === 2 ? W.noteheadWhole : W.noteheadBlack;
+  return { sung: finish(y), y, x, SR: SR2, finish, internals: {
+    tokens,
+    moras,
+    notes,
+    segs,
+    an: an2,
+    sp,
+    ap,
+    f0,
+    N: N2,
+    bins,
+    FP,
+    FPS,
+    EIGHTH,
+    songEnd,
+    noisiness,
+    atlas,
+    breaths,
+    repaired,
+    vowelFrames,
+    atlasFrames,
+    holdFrames,
+    piperMs,
+    worldMs,
+    ATLAS_VOWEL,
+    midiOf,
+    OPT
+  } };
 }
-var lyricAnchors = (q) => q.units.filter((u) => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + NOTEHEAD_X + noteheadW(q, u) / 2, lyric: u.lyric, hyph: u.hyph }));
+
+// src/singer/world-wrap.mjs
+function wrapWorld(M) {
+  const put = (arr) => {
+    const p = M._malloc(arr.length * 8);
+    M.HEAPF64.set(arr, p / 8);
+    return p;
+  };
+  function analyze(x, fs2, { framePeriod = 5, f0Floor = 80, f0Ceil = 1e3 } = {}, hooks = null) {
+    const px = put(Float64Array.from(x));
+    try {
+      hooks?.stage?.("f0");
+      hooks?.check?.();
+      const a = M._w_f0(px, x.length, fs2, framePeriod, f0Floor, f0Ceil);
+      try {
+        hooks?.stage?.("sp");
+        hooks?.check?.();
+        M._w_sp(a, px, x.length, fs2, f0Floor);
+        hooks?.stage?.("ap");
+        hooks?.check?.();
+        M._w_ap(a, px, x.length, fs2);
+        const frames = M._w_frames(a), fft = M._w_fft(a), bins = fft / 2 + 1;
+        const view = (p, n) => M.HEAPF64.slice(p / 8, p / 8 + n);
+        return { frames, fft, bins, framePeriod, fs: fs2, f0: view(M._w_f0_ptr(a), frames), sp: view(M._w_sp_ptr(a), frames * bins), ap: view(M._w_ap_ptr(a), frames * bins) };
+      } finally {
+        M._w_free(a);
+      }
+    } finally {
+      M._free(px);
+    }
+  }
+  function synth({ f0, sp, ap, fft, fs: fs2, framePeriod }) {
+    const frames = f0.length, n = M._w_synth_len(frames, fs2, framePeriod);
+    const pf = put(f0), ps2 = put(sp), pa = put(ap), py = M._malloc(n * 8);
+    M._w_synth(pf, frames, ps2, pa, fft, fs2, framePeriod, py);
+    const y = M.HEAPF64.slice(py / 8, py / 8 + n);
+    [pf, ps2, pa, py].forEach((p) => M._free(p));
+    return y;
+  }
+  return { analyze, synth };
+}
+
+// src/singer/speech-cache.ts
+var f32 = new Float32Array(1);
+var u32 = new Uint32Array(f32.buffer);
+function toBf16(x) {
+  const out = new Uint16Array(x.length);
+  for (let i = 0; i < x.length; i++) {
+    f32[0] = x[i];
+    const b = u32[0];
+    out[i] = b + 32767 + (b >>> 16 & 1) >>> 16 & 65535;
+  }
+  return out;
+}
+function fromBf16(x) {
+  const out = new Float64Array(x.length);
+  for (let i = 0; i < x.length; i++) {
+    u32[0] = x[i] << 16;
+    out[i] = f32[0];
+  }
+  return out;
+}
+var SpeechCache = class {
+  map = /* @__PURE__ */ new Map();
+  // 插入顺序 = 最久没用的在前
+  bytes = 0;
+  /** 分析按它来自哪段 piper 输出记（同一个 Float32Array 对象 → 同一次念） */
+  audioKey = /* @__PURE__ */ new WeakMap();
+  /** 最近一次解好码的分析（按键试听连按同一句：不用每次把 bf16 解成 Float64 ≈ 1M 个数）。交出去的不拷贝——唱法核心不就地改这些数组（core 里 grep 过）。 */
+  hot = null;
+  hits = 0;
+  misses = 0;
+  diskHits = 0;
+  budget;
+  store = null;
+  model = "";
+  touched = /* @__PURE__ */ new Map();
+  // 盘上的 at 一分钟最多碰一次
+  diskKeys = /* @__PURE__ */ new Map();
+  // 内存键 → 盘键（算过一次就记着）
+  warned = false;
+  constructor(budget = 32e6) {
+    this.budget = budget;
+  }
+  // 不用参数属性：Node 的 strip-only TS 不认
+  get used() {
+    return this.bytes;
+  }
+  setBudget(b) {
+    this.budget = b;
+    this.trim();
+  }
+  touch(k, e) {
+    this.map.delete(k);
+    this.map.set(k, e);
+  }
+  put(k, e) {
+    const old = this.map.get(k);
+    if (old) {
+      this.bytes -= old.bytes;
+      this.map.delete(k);
+    }
+    this.map.set(k, e);
+    this.bytes += e.bytes;
+    this.trim();
+  }
+  trim() {
+    for (const [k, e] of this.map) {
+      if (this.bytes <= this.budget) break;
+      this.map.delete(k);
+      this.bytes -= e.bytes;
+    }
+  }
+  clear() {
+    this.map.clear();
+    this.bytes = 0;
+    this.hot = null;
+  }
+  /** 接上持久层；model = 模型配置标签（语音包 + 运行时包的 id）：换模型 = 另一组键。 */
+  attachStore(store2, model) {
+    this.store = store2;
+    this.model = model;
+    this.diskKeys.clear();
+  }
+  get disk() {
+    return this.store;
+  }
+  async diskKey(kind, memKey, sub = "") {
+    const id = `${kind}|${memKey}`;
+    let h = this.diskKeys.get(id);
+    if (!h) {
+      h = await sha256(memKey);
+      this.diskKeys.set(id, h);
+    }
+    return `${this.model}|${kind}|${h}${sub}`;
+  }
+  diskFail(e) {
+    if (this.warned) return;
+    this.warned = true;
+    console.warn("speech store: " + (e?.message ?? e));
+  }
+  touchDisk(diskKey) {
+    const t = Date.now();
+    if ((this.touched.get(diskKey) ?? 0) > t - 6e4) return;
+    this.touched.set(diskKey, t);
+    this.store?.touch(diskKey).catch((e) => this.diskFail(e));
+  }
+  /** run 回来那一刻：这一句念的分析（可能几份：不同 fs / 参数）从盘上预取进内存，让同步的 analyze 能命中。 */
+  async prefetchAnalyses(pKey) {
+    if (!this.store) return;
+    for (const k of this.map.keys()) if (k.startsWith(`a:${pKey}:`)) return;
+    try {
+      const prefix = await this.diskKey("a", pKey, "|");
+      for (const { key, e } of await this.store.scan(prefix)) {
+        if (e.kind !== "a" || this.map.has(e.k)) continue;
+        this.put(e.k, { bytes: e.bytes, an: { meta: e.meta, f0: e.f0, sp: e.sp, ap: e.ap } });
+        this.diskKeys.set(`a|${e.k}`, key.slice(prefix.length - 1 - 64, prefix.length - 1));
+        this.diskHits++;
+      }
+    } catch (e) {
+      this.diskFail(e);
+    }
+  }
+  wrapPiper(piper) {
+    const self2 = this, run = piper.run.bind(piper);
+    return { ...piper, run: async (ids, pros, o) => {
+      const k = "p:" + JSON.stringify([ids, pros, o]);
+      let had = self2.map.get(k);
+      if (!had?.run && self2.store) {
+        try {
+          const dk = await self2.diskKey("p", k), e = await self2.store.get(dk);
+          if (e?.kind === "p") {
+            had = { bytes: e.bytes, run: { audio: e.audio, durations: e.durations } };
+            self2.put(k, had);
+            self2.diskHits++;
+            self2.touchDisk(dk);
+          }
+        } catch (e) {
+          self2.diskFail(e);
+        }
+      }
+      if (had?.run) {
+        self2.hits++;
+        self2.touch(k, had);
+        const a = had.run.audio.slice();
+        self2.audioKey.set(a, k);
+        await self2.prefetchAnalyses(k);
+        return { audio: a, durations: had.run.durations?.slice() };
+      }
+      self2.misses++;
+      const r = await run(ids, pros, o);
+      const keep = { audio: r.audio.slice(), durations: r.durations?.slice() };
+      self2.put(k, { bytes: keep.audio.byteLength + (keep.durations?.byteLength ?? 0), run: keep });
+      self2.audioKey.set(r.audio, k);
+      if (self2.store) void self2.diskKey("p", k).then((dk) => self2.store.put(dk, { kind: "p", k, bytes: keep.audio.byteLength + (keep.durations?.byteLength ?? 0), audio: keep.audio, durations: keep.durations })).catch((e) => self2.diskFail(e));
+      await self2.prefetchAnalyses(k);
+      return r;
+    } };
+  }
+  wrapWorld(world) {
+    const self2 = this, analyze = world.analyze.bind(world);
+    return { ...world, analyze: (x, fs2, o, hooks = null) => {
+      const from = x instanceof Float32Array ? self2.audioKey.get(x) : void 0;
+      const k = from ? `a:${from}:${fs2}:${JSON.stringify(o ?? {})}` : null;
+      const had = k ? self2.map.get(k) : void 0;
+      if (had?.an) {
+        self2.hits++;
+        self2.touch(k, had);
+        hooks?.stage?.("cached");
+        hooks?.check?.();
+        if (self2.store && from) void self2.diskKey("a", from, `|${self2.diskKeys.get(`a|${k}`) ?? ""}`).then((dk) => {
+          if (self2.diskKeys.has(`a|${k}`)) self2.touchDisk(dk);
+        }).catch(() => void 0);
+        if (self2.hot?.key === k) return self2.hot.an;
+        const an3 = { ...had.an.meta, f0: had.an.f0.slice(), sp: fromBf16(had.an.sp), ap: fromBf16(had.an.ap) };
+        self2.hot = { key: k, an: an3 };
+        return an3;
+      }
+      self2.misses++;
+      const an2 = analyze(x, fs2, o, hooks), { f0, sp, ap, ...meta } = an2, spB = toBf16(sp), apB = toBf16(ap);
+      if (k) {
+        const bytes = f0.byteLength + spB.byteLength + apB.byteLength, f0c = f0.slice();
+        self2.put(k, { bytes, an: { meta, f0: f0c, sp: spB, ap: apB } });
+        if (self2.store && from) void Promise.all([self2.diskKey("a", from, "|"), sha256(k)]).then(([pre, h]) => {
+          self2.diskKeys.set(`a|${k}`, h);
+          return self2.store.put(pre + h, { kind: "a", k, bytes, meta: structuredClone(meta), f0: f0c, sp: spB, ap: apB });
+        }).catch((e) => self2.diskFail(e));
+      }
+      const outAn = { ...meta, f0, sp: fromBf16(spB), ap: fromBf16(apB) };
+      if (k) self2.hot = { key: k, an: outAn };
+      return outAn;
+    } };
+  }
+};
+async function sha256(text) {
+  const sub = globalThis.crypto?.subtle;
+  if (sub) {
+    const d = await sub.digest("SHA-256", new TextEncoder().encode(text));
+    return [...new Uint8Array(d)].map((b2) => b2.toString(16).padStart(2, "0")).join("");
+  }
+  let a = 2166136261, b = 16777619 ^ 1540483477;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    a = Math.imul(a ^ c, 16777619);
+    b = Math.imul(b ^ c, 16777619) ^ b >>> 13;
+  }
+  return ((a >>> 0).toString(16).padStart(8, "0") + (b >>> 0).toString(16).padStart(8, "0")).padEnd(64, "0");
+}
+
+// src/singer/speech-store.ts
+var STORE = "entries";
+var META = "meta";
+var DB_VERSION = 1;
+var req = (r) => new Promise((ok, fail) => {
+  r.onsuccess = () => ok(r.result);
+  r.onerror = () => fail(r.error ?? new Error("idb"));
+});
+var done = (tx) => new Promise((ok, fail) => {
+  tx.oncomplete = () => ok();
+  tx.onerror = () => fail(tx.error ?? new Error("idb tx"));
+  tx.onabort = () => fail(tx.error ?? new Error("idb abort"));
+});
+var strip = (r) => {
+  const { key: _k, at: _a, ...e } = r;
+  return e;
+};
+async function openSpeechStore(name, budget) {
+  const idb = globalThis.indexedDB;
+  if (!idb) return null;
+  let db;
+  try {
+    db = await new Promise((ok, fail) => {
+      const r = idb.open(name, DB_VERSION);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE, { keyPath: "key" }).createIndex("at", "at");
+        if (!d.objectStoreNames.contains(META)) d.createObjectStore(META, { keyPath: "key" });
+      };
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => fail(r.error ?? new Error("idb open"));
+      r.onblocked = () => fail(new Error("idb blocked"));
+    });
+  } catch {
+    return null;
+  }
+  let budgetNow = budget;
+  const total = async (tx) => (await req(tx.objectStore(META).get("total")))?.bytes ?? 0;
+  const setTotal = (tx, bytes) => tx.objectStore(META).put({ key: "total", bytes: Math.max(0, bytes) });
+  return {
+    async get(key) {
+      const tx = db.transaction(STORE, "readonly"), r = await req(tx.objectStore(STORE).get(key));
+      return r ? strip(r) : null;
+    },
+    async put(key, e) {
+      const tx = db.transaction([STORE, META], "readwrite"), s = tx.objectStore(STORE);
+      const old = await req(s.get(key));
+      let t = await total(tx) - (old?.bytes ?? 0) + e.bytes;
+      s.put({ key, at: Date.now(), ...e });
+      if (t > budgetNow) {
+        const cur = s.index("at").openCursor();
+        await new Promise((ok, fail) => {
+          cur.onerror = () => fail(cur.error ?? new Error("idb cursor"));
+          cur.onsuccess = () => {
+            const c = cur.result;
+            if (!c || t <= budgetNow) {
+              ok();
+              return;
+            }
+            const r = c.value;
+            if (r.key !== key) {
+              t -= r.bytes;
+              c.delete();
+            }
+            c.continue();
+          };
+        });
+      }
+      setTotal(tx, t);
+      await done(tx);
+    },
+    async scan(prefix) {
+      const tx = db.transaction(STORE, "readonly");
+      const rs2 = await req(tx.objectStore(STORE).getAll(IDBKeyRange.bound(prefix, prefix + "\uFFFF")));
+      return rs2.map((r) => ({ key: r.key, e: strip(r) }));
+    },
+    async touch(key) {
+      const tx = db.transaction(STORE, "readwrite"), s = tx.objectStore(STORE), r = await req(s.get(key));
+      if (r) {
+        r.at = Date.now();
+        s.put(r);
+      }
+      await done(tx);
+    },
+    async info() {
+      const tx = db.transaction([STORE, META], "readonly");
+      const [bytes, entries] = await Promise.all([total(tx), req(tx.objectStore(STORE).count())]);
+      return { bytes, entries, budget: budgetNow };
+    },
+    async clear() {
+      const tx = db.transaction([STORE, META], "readwrite");
+      tx.objectStore(STORE).clear();
+      setTotal(tx, 0);
+      await done(tx);
+    },
+    setBudget(b) {
+      budgetNow = b;
+    }
+  };
+}
+
+// node_modules/@internal/model-packs/dist/sha256.js
+var K = new Uint32Array([
+  1116352408,
+  1899447441,
+  3049323471,
+  3921009573,
+  961987163,
+  1508970993,
+  2453635748,
+  2870763221,
+  3624381080,
+  310598401,
+  607225278,
+  1426881987,
+  1925078388,
+  2162078206,
+  2614888103,
+  3248222580,
+  3835390401,
+  4022224774,
+  264347078,
+  604807628,
+  770255983,
+  1249150122,
+  1555081692,
+  1996064986,
+  2554220882,
+  2821834349,
+  2952996808,
+  3210313671,
+  3336571891,
+  3584528711,
+  113926993,
+  338241895,
+  666307205,
+  773529912,
+  1294757372,
+  1396182291,
+  1695183700,
+  1986661051,
+  2177026350,
+  2456956037,
+  2730485921,
+  2820302411,
+  3259730800,
+  3345764771,
+  3516065817,
+  3600352804,
+  4094571909,
+  275423344,
+  430227734,
+  506948616,
+  659060556,
+  883997877,
+  958139571,
+  1322822218,
+  1537002063,
+  1747873779,
+  1955562222,
+  2024104815,
+  2227730452,
+  2361852424,
+  2428436474,
+  2756734187,
+  3204031479,
+  3329325298
+]);
+var Sha256 = class {
+  h = new Uint32Array([1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225]);
+  buf = new Uint8Array(64);
+  bufLen = 0;
+  total = 0;
+  w = new Uint32Array(64);
+  done = false;
+  update(bytes) {
+    if (this.done)
+      throw new Error("Sha256: update after hex()");
+    let i = 0;
+    this.total += bytes.length;
+    if (this.bufLen) {
+      const take = Math.min(64 - this.bufLen, bytes.length);
+      this.buf.set(bytes.subarray(0, take), this.bufLen);
+      this.bufLen += take;
+      i = take;
+      if (this.bufLen === 64) {
+        this.block(this.buf, 0);
+        this.bufLen = 0;
+      }
+    }
+    for (; i + 64 <= bytes.length; i += 64)
+      this.block(bytes, i);
+    if (i < bytes.length) {
+      this.buf.set(bytes.subarray(i), 0);
+      this.bufLen = bytes.length - i;
+    }
+    return this;
+  }
+  block(p, o) {
+    const w = this.w, H = this.h;
+    for (let t = 0; t < 16; t++, o += 4)
+      w[t] = p[o] << 24 | p[o + 1] << 16 | p[o + 2] << 8 | p[o + 3];
+    for (let t = 16; t < 64; t++) {
+      const x = w[t - 15], y = w[t - 2];
+      const s0 = (x >>> 7 | x << 25) ^ (x >>> 18 | x << 14) ^ x >>> 3;
+      const s1 = (y >>> 17 | y << 15) ^ (y >>> 19 | y << 13) ^ y >>> 10;
+      w[t] = w[t - 16] + s0 + w[t - 7] + s1 | 0;
+    }
+    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+    for (let t = 0; t < 64; t++) {
+      const S1 = (e >>> 6 | e << 26) ^ (e >>> 11 | e << 21) ^ (e >>> 25 | e << 7);
+      const ch = e & f ^ ~e & g;
+      const t1 = h + S1 + ch + K[t] + w[t] | 0;
+      const S0 = (a >>> 2 | a << 30) ^ (a >>> 13 | a << 19) ^ (a >>> 22 | a << 10);
+      const maj = a & b ^ a & c ^ b & c;
+      const t2 = S0 + maj | 0;
+      h = g;
+      g = f;
+      f = e;
+      e = d + t1 | 0;
+      d = c;
+      c = b;
+      b = a;
+      a = t1 + t2 | 0;
+    }
+    H[0] += a;
+    H[1] += b;
+    H[2] += c;
+    H[3] += d;
+    H[4] += e;
+    H[5] += f;
+    H[6] += g;
+    H[7] += h;
+  }
+  hex() {
+    if (this.done)
+      throw new Error("Sha256: hex() twice");
+    const total = this.total;
+    const padLen = (this.bufLen < 56 ? 56 - this.bufLen : 120 - this.bufLen) + 8;
+    const pad = new Uint8Array(padLen);
+    pad[0] = 128;
+    const bits = total * 8, hi = Math.floor(bits / 4294967296), lo2 = bits >>> 0, n = padLen;
+    pad[n - 8] = hi >>> 24;
+    pad[n - 7] = hi >>> 16;
+    pad[n - 6] = hi >>> 8;
+    pad[n - 5] = hi;
+    pad[n - 4] = lo2 >>> 24;
+    pad[n - 3] = lo2 >>> 16;
+    pad[n - 2] = lo2 >>> 8;
+    pad[n - 1] = lo2;
+    this.total -= padLen;
+    this.update(pad);
+    this.done = true;
+    return Array.from(this.h, (x) => x.toString(16).padStart(8, "0")).join("");
+  }
+};
+
+// node_modules/@internal/model-packs/dist/pack-store.js
+var SLICE = 1 << 20;
+function createPackStore(deps) {
+  const cacheName = deps.cacheName ?? "pwa-models";
+  const keyOf = (slug, name) => `${location.origin}/__pwa-models__/${slug}/${name}`;
+  function manifestOf(slug) {
+    const p = deps.packs[slug];
+    if (!p)
+      throw new Error(`unknown pack: ${slug}`);
+    return p;
+  }
+  const openCache = () => caches.open(cacheName);
+  async function hashBlob(b) {
+    const sha = new Sha256();
+    for (let o = 0; o < b.size; o += SLICE)
+      sha.update(new Uint8Array(await b.slice(o, Math.min(o + SLICE, b.size)).arrayBuffer()));
+    return sha.hex();
+  }
+  const verifiedBlobs = /* @__PURE__ */ new Map();
+  const forget = (slug) => {
+    verifiedBlobs.delete(slug);
+  };
+  async function cachedChunkSizes(slug, m) {
+    const cache = await openCache();
+    const sizes = [];
+    for (const c of m.chunks) {
+      const r = await cache.match(keyOf(slug, c.name));
+      sizes.push(r ? Number(r.headers.get("content-length") ?? 0) : 0);
+    }
+    return sizes;
+  }
+  async function putChunk(slug, name, bytes) {
+    forget(slug);
+    const cache = await openCache();
+    const size = bytes instanceof Blob ? bytes.size : bytes.length;
+    await cache.put(keyOf(slug, name), new Response(bytes, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
+  }
+  async function markVerified(slug, packId) {
+    const cache = await openCache();
+    await cache.put(keyOf(slug, "verified.json"), new Response(JSON.stringify({ packId, at: (/* @__PURE__ */ new Date()).toISOString() }), { headers: { "content-type": "application/json" } }));
+  }
+  async function status(slug) {
+    const { packId, manifest: m } = manifestOf(slug);
+    const cache = await openCache();
+    const sizes = await cachedChunkSizes(slug, m);
+    const complete = sizes.every((n, i) => n === m.chunks[i].bytes);
+    const marker = await cache.match(keyOf(slug, "verified.json"));
+    const verified = marker ? (await marker.json()).packId === packId : false;
+    return { slug, ready: complete && verified, bytesCached: sizes.reduce((a, b) => a + b, 0), bytesTotal: m.totalBytes };
+  }
+  async function dropIfStale(slug) {
+    const { packId, manifest: m } = manifestOf(slug);
+    const cache = await openCache();
+    const marker = await cache.match(keyOf(slug, "verified.json"));
+    if (!marker || (await marker.json()).packId === packId)
+      return;
+    forget(slug);
+    for (const c of m.chunks)
+      await cache.delete(keyOf(slug, c.name));
+    await cache.delete(keyOf(slug, "verified.json"));
+  }
+  async function sealIfComplete(slug, fresh) {
+    const { packId, manifest: m } = manifestOf(slug);
+    const sizes = await cachedChunkSizes(slug, m);
+    if (!sizes.every((n, i) => n === m.chunks[i].bytes))
+      return;
+    const cache = await openCache();
+    for (const c of m.chunks) {
+      if (fresh.has(c.name))
+        continue;
+      const r = await cache.match(keyOf(slug, c.name));
+      const ok = !!r && await hashBlob(await r.blob()) === c.sha256;
+      if (!ok) {
+        await cache.delete(keyOf(slug, c.name));
+        return;
+      }
+    }
+    await markVerified(slug, packId);
+  }
+  async function download(slug, base, progress) {
+    const { packId, manifest: m } = manifestOf(slug);
+    await dropIfStale(slug);
+    const sizes = await cachedChunkSizes(slug, m);
+    let done2 = sizes.reduce((a, n, i) => a + (n === m.chunks[i].bytes ? n : 0), 0);
+    progress({ done: done2, total: m.totalBytes });
+    const root = base.replace(/\/+$/, "");
+    for (let i = 0; i < m.chunks.length; i++) {
+      const c = m.chunks[i];
+      if (sizes[i] === c.bytes)
+        continue;
+      const res = await fetch(`${root}/packs/${slug}/${c.name}`, { cache: "no-store" });
+      if (!res.ok || !res.body)
+        throw new Error(`fetch ${c.name}: HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const sha = new Sha256();
+      const buf = new Uint8Array(c.bytes);
+      let got = 0, lastReported = 0;
+      for (; ; ) {
+        const { value, done: end } = await reader.read();
+        if (end)
+          break;
+        if (got + value.length > c.bytes)
+          throw new Error(`${c.name}: larger than manifest says`);
+        sha.update(value);
+        buf.set(value, got);
+        got += value.length;
+        if (got - lastReported >= 1048576 || got === c.bytes) {
+          lastReported = got;
+          progress({ done: done2 + got, total: m.totalBytes });
+        }
+      }
+      if (got !== c.bytes)
+        throw new Error(`${c.name}: got ${got} bytes, expected ${c.bytes}`);
+      if (sha.hex() !== c.sha256)
+        throw new Error(`${c.name}: sha256 mismatch (source tampered or corrupted)`);
+      await putChunk(slug, c.name, buf);
+      done2 += got;
+    }
+    await markVerified(slug, packId);
+    return status(slug);
+  }
+  async function importFiles(slugs, files, progress) {
+    const packs = slugs.map((slug) => ({ slug, m: manifestOf(slug).manifest }));
+    for (const p of packs)
+      await dropIfStale(p.slug);
+    const fresh = new Map(packs.map((p) => [p.slug, /* @__PURE__ */ new Set()]));
+    const total = files.reduce((a, f) => a + f.size, 0);
+    let done2 = 0, matched = 0;
+    const bad = [];
+    for (const f of files) {
+      const whole = packs.find((p) => p.m.chunks.length > 1 && p.m.totalBytes === f.size);
+      if (whole) {
+        let offset = 0;
+        for (const c of whole.m.chunks) {
+          const piece = f.slice(offset, offset + c.bytes);
+          if (await hashBlob(piece) !== c.sha256)
+            throw new Error(`${f.name}: sha256 mismatch at ${c.name} (wrong or corrupted file)`);
+          await putChunk(whole.slug, c.name, piece);
+          fresh.get(whole.slug).add(c.name);
+          offset += c.bytes;
+          progress({ done: done2 + offset, total });
+        }
+        matched++;
+      } else {
+        const sameSize = packs.flatMap((p) => p.m.chunks.filter((c) => c.bytes === f.size).map((c) => ({ slug: p.slug, c })));
+        if (sameSize.length) {
+          const hex = await hashBlob(f);
+          const hits = sameSize.filter((x) => x.c.sha256 === hex);
+          if (!hits.length)
+            bad.push(f.name);
+          for (const h of hits) {
+            await putChunk(h.slug, h.c.name, f);
+            fresh.get(h.slug).add(h.c.name);
+          }
+          if (hits.length)
+            matched++;
+        }
+      }
+      done2 += f.size;
+      progress({ done: done2, total });
+    }
+    for (const p of packs)
+      await sealIfComplete(p.slug, fresh.get(p.slug));
+    if (bad.length)
+      throw new Error(`${bad[0]}: sha256 mismatch (wrong or corrupted file)`);
+    if (!matched)
+      throw new Error("no-matching-file");
+    return Promise.all(slugs.map(status));
+  }
+  async function downloadAll(slugs, base, progress) {
+    const total = slugs.reduce((a, s) => a + manifestOf(s).manifest.totalBytes, 0);
+    const have = (await Promise.all(slugs.map(status))).map((st) => st.bytesCached);
+    const report = () => progress({ done: have.reduce((a, b) => a + b, 0), total });
+    report();
+    for (let i = 0; i < slugs.length; i++)
+      await download(slugs[i], base, (p) => {
+        have[i] = p.done;
+        report();
+      });
+    return Promise.all(slugs.map(status));
+  }
+  async function deletePack(slug) {
+    forget(slug);
+    const { manifest: m } = manifestOf(slug);
+    const cache = await openCache();
+    for (const c of m.chunks)
+      await cache.delete(keyOf(slug, c.name));
+    await cache.delete(keyOf(slug, "verified.json"));
+  }
+  const noop = () => {
+  };
+  return {
+    status: (slugs) => Promise.all(slugs.map(status)),
+    download: (slugs, base, onProgress) => downloadAll(slugs, base, onProgress ?? noop),
+    importFiles: (slugs, files, onProgress) => importFiles(slugs, files, onProgress ?? noop),
+    async delete(slugs) {
+      for (const slug of slugs)
+        await deletePack(slug);
+    },
+    async chunks(slug) {
+      const memo = verifiedBlobs.get(slug);
+      if (memo)
+        return memo.slice();
+      if (!(await status(slug)).ready)
+        throw new Error("pack-missing");
+      const { manifest: m } = manifestOf(slug);
+      const cache = await openCache();
+      const out = [];
+      for (const c of m.chunks) {
+        const r = await cache.match(keyOf(slug, c.name));
+        if (!r)
+          throw new Error("pack-missing");
+        const b = await r.blob();
+        if (b.size !== c.bytes || await hashBlob(b) !== c.sha256) {
+          await cache.delete(keyOf(slug, c.name));
+          await cache.delete(keyOf(slug, "verified.json"));
+          throw new Error(`pack-corrupt: ${slug}/${c.name} failed sha256 on read (cache tampered or corrupted; dropped it, download or import again)`);
+        }
+        out.push(b);
+      }
+      verifiedBlobs.set(slug, out);
+      return out.slice();
+    }
+  };
+}
 
 // src/singer/packs.gen.ts
 var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
@@ -6419,3416 +4002,6830 @@ var PACKS = {
   "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
   "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
 };
-var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
-// src/format/performance.ts
-var TSUKUYOMI_CREDIT = {
-  attribution: [CREDIT.credit, ...CREDIT.attribution],
-  license: { name: _t("\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09"), url: CREDIT.termsUrl, text: CREDIT.terms }
+// src/config.ts
+var APP_NS = "moonsinger-5b1e7c0a92d34f6e";
+var APP_DB_PREFIX = `${APP_NS}.`;
+var CACHE_DBS = { thumbs: `${APP_NS}.thumbs`, facts: `${APP_NS}.facts`, speech: `${APP_NS}.speech`, renders: `${APP_NS}.renders` };
+var WAKE_CHECK_AFTER_MS = 10 * 6e4;
+
+// node_modules/@internal/read-aloud/backend/piper-plus/vendor/onnxruntime-web/ort.wasm.bundle.min.mjs
+var ort_wasm_bundle_min_exports = {};
+__export(ort_wasm_bundle_min_exports, {
+  InferenceSession: () => rs,
+  TRACE: () => Cr,
+  TRACE_EVENT_BEGIN: () => Pe,
+  TRACE_EVENT_END: () => Ue,
+  TRACE_FUNC_BEGIN: () => _e,
+  TRACE_FUNC_END: () => De,
+  Tensor: () => de,
+  default: () => iu,
+  env: () => Y,
+  registerBackend: () => Je
+});
+var qt = Object.defineProperty;
+var Qa = Object.getOwnPropertyDescriptor;
+var Ka = Object.getOwnPropertyNames;
+var es = Object.prototype.hasOwnProperty;
+var Jt = ((n) => typeof __require < "u" ? __require : typeof Proxy < "u" ? new Proxy(n, { get: (t, a) => (typeof __require < "u" ? __require : t)[a] }) : n)(function(n) {
+  if (typeof __require < "u") return __require.apply(this, arguments);
+  throw Error('Dynamic require of "' + n + '" is not supported');
+});
+var N = (n, t, a) => () => {
+  if (a) throw a[0];
+  try {
+    return n && (t = n(n = 0)), t;
+  } catch (u) {
+    throw a = [u], u;
+  }
 };
-var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
-
-// src/score/perform.ts
-var DEFAULT_DYN_KEY = DEFAULT_DYN;
-function hairpinEnd(tokens, i, bounds) {
-  const pe = paperEndOf(i, tokens.length, bounds);
-  for (let j = i + 1; j < pe; j++) {
-    const k = tokens[j].kind;
-    if (k === "dyn" || k === "hairpin") return { kind: k, at: j };
-  }
-  return { kind: "end", at: pe };
-}
-var paperEndOf = (i, n2, bounds) => {
-  for (const b of bounds ?? []) if (b > i) return b;
-  return n2;
+var ut = (n, t) => {
+  for (var a in t) qt(n, a, { get: t[a], enumerable: true });
 };
-function dynLevels(tokens, map, table, def, step, bounds) {
-  const out = /* @__PURE__ */ new Map(), tl = timeline(tokens, map), at2 = new Map(tl.map((x) => [x.index, x]));
-  const lo = Math.min(...Object.values(table)), hi = Math.max(...Object.values(table));
-  const onsetFrom = (j, stop = tokens.length) => {
-    for (let k = j; k < stop; k++) {
-      const x = at2.get(k);
-      if (x) return x;
-    }
-    return null;
-  };
-  const endBefore = (j) => {
-    for (let k = j - 1; k >= 0; k--) {
-      const x = at2.get(k);
-      if (x) return x.t1;
-    }
-    return 0;
-  };
-  let cur = def, curDyn = DEFAULT_DYN_KEY, ramp = null;
-  const lvl = (t) => ramp ? ramp.from + (ramp.to - ramp.from) * Math.max(0, Math.min(1, ramp.T1 > ramp.T0 ? (t - ramp.T0) / (ramp.T1 - ramp.T0) : 1)) : cur;
-  for (let i = 0; i < tokens.length; i++) {
-    if (ramp && i >= ramp.end) {
-      cur = ramp.to;
-      curDyn = ramp.toDyn;
-      ramp = null;
-    }
-    const t = tokens[i];
-    if (t.kind === "dyn") {
-      if (!ramp) {
-        cur = table[t.value];
-        curDyn = t.value;
-      }
-      const pe = paperEndOf(i, tokens.length, bounds), j = ramp ? -1 : rampTarget(tokens, i, pe), start = j >= 0 ? onsetFrom(i + 1, j) : null;
-      if (j >= 0 && start) {
-        const v = tokens[j].value;
-        ramp = { from: cur, to: table[v], toDyn: v, T0: start.t0, T1: onsetFrom(j, pe)?.t0 ?? endBefore(j), end: j };
-      }
-      continue;
-    }
-    if (t.kind === "hairpin") {
-      const e = hairpinEnd(tokens, i, bounds), start = onsetFrom(i + 1, e.at);
-      if (!start) continue;
-      const endDyn = e.kind === "dyn" ? tokens[e.at].value : null, endVal = endDyn ? table[endDyn] : null;
-      const stepDyn = step === "table" ? DYNS[Math.max(0, Math.min(DYNS.length - 1, DYNS.indexOf(curDyn) + (t.dir === "cresc" ? 1 : -1)))] : curDyn;
-      const oneStep = step === "table" ? table[stepDyn] : Math.max(lo, Math.min(hi, cur + (t.dir === "cresc" ? step : -step)));
-      const agrees = endVal !== null && (t.dir === "cresc" ? endVal > cur : endVal < cur);
-      const to = agrees ? endVal : oneStep, toDyn = agrees ? endDyn : stepDyn;
-      const T1 = e.kind === "end" ? endBefore(e.at) : onsetFrom(e.at, paperEndOf(i, tokens.length, bounds))?.t0 ?? endBefore(e.at);
-      ramp = { from: cur, to, toDyn, T0: start.t0, T1, end: e.at };
-      continue;
-    }
-    const x = at2.get(i);
-    if (!x) continue;
-    out.set(i, { at0: lvl(x.t0), at1: lvl(x.t1) });
-    if (t.kind === "note" && !ramp && artOf(t).includes("fp")) {
-      cur = table.p;
-      curDyn = "p";
-    }
-  }
-  return out;
-}
-function dynOverridden(tokens, bounds) {
-  const out = /* @__PURE__ */ new Set();
-  const T2 = { ppp: 0, pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6, fff: 7 };
-  const fpNotes = /* @__PURE__ */ new Set();
-  tokens.forEach((t, k) => {
-    if (t.kind === "note" && artOf(t).includes("fp")) fpNotes.add(k);
-  });
-  if (!fpNotes.size) return out;
-  const levels = (ts) => [...dynLevels(ts, void 0, T2, 0, 0.5, bounds)].filter(([k]) => !fpNotes.has(k)).map(([k, l]) => `${k}:${l.at0}:${l.at1}`).join("|");
-  let base = null;
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
-    if (t.kind !== "dyn") continue;
-    let j = i + 1;
-    while (j < tokens.length && !isTimed(tokens[j])) j++;
-    if (!fpNotes.has(j)) continue;
-    base ??= levels(tokens);
-    const alt = (v) => levels(tokens.map((x, k) => k === i ? { ...t, value: v } : x));
-    if (alt(t.value === "pp" ? "ff" : "pp") === base && alt(t.value === "mf" ? "p" : "mf") === base) out.add(i);
-  }
-  return out;
-}
-
-// src/render/ornaments/index.ts
-var rampDashes = (L, unit) => {
-  const n2 = Math.max(RAMP_DASH.min, Math.round(L / (unit * RAMP_DASH.len * (1 + RAMP_DASH.gapK)))), on = L / (n2 + (n2 - 1) * RAMP_DASH.gapK);
-  return { n: n2, on, per: on * (1 + RAMP_DASH.gapK) };
+var ts = (n, t, a, u) => {
+  if (t && typeof t == "object" || typeof t == "function") for (let o of Ka(t)) !es.call(n, o) && o !== a && qt(n, o, { get: () => t[o], enumerable: !(u = Qa(t, o)) || u.enumerable });
+  return n;
 };
-function tempoW(c, v) {
-  const k = c.RS("tempo-word");
-  return c.mw("tempo-word", tempoWord(v).it) + 0.7 * k + 1.3 * k + c.mw("tempo-num", `= ${v}`);
-}
-function tempoAt2(c, r, x0, v, cls, index, change, y) {
-  const { P, tx, TR, RS, mw, prims, marks } = c;
-  const fs = tx("tempo-word"), word = tempoWord(v).it, k = RS("tempo-word"), T2 = c.tokens[index] ? { tok: c.tokens[index].id } : {};
-  if (change) {
-    const ar = { t: "text", x: 0, y: 0, s: change === "up" ? "\u2191" : "\u2193", cls: "tempo-change ann", size: fs, anchor: "end" };
-    if (c.hint) {
-      const w = fs * 0.62, end = P(x0 + tempoW(c, v) + 0.3) + w;
-      c.hint(r, { part: { ink: { x0: -w, x1: 0, y0: -fs * 0.8, y1: fs * 0.1 }, prims: [ar] }, tries: [{ x: P(x0 - 0.3), y }, { x: end, y }, { x: P(x0 - 0.3), y: y - fs * 1.1 }, { x: end, y: y - fs * 1.1 }, { x: P(x0 - 0.3), y: y - fs * 2.2 }], climb: fs * 1.1 });
-    } else prims.push({ ...ar, x: P(x0 - 0.3), y });
-  }
-  const ww = mw("tempo-word", word), num = `= ${v}`, nw = mw("tempo-num", num);
-  prims.push({ ...T2, t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
-  const gx = x0 + ww + 0.7 * k;
-  prims.push({ ...T2, t: "glyph", x: P(gx), y: y - TR("tempo-word", 0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
-  prims.push({ ...T2, t: "text", x: P(gx + 1.3 * k), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
-  marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - TR("tempo-word", TEMPO_EM * 1.1), w: P(gx + 1.3 * k + nw + 0.6 * k - x0), h: TR("tempo-word", TEMPO_EM * 1.5) });
-}
-function layTempo(c, r, x0, v, cls, index, change) {
-  c.attach(r, "tempo", () => {
-    c.placeAbove(r, 0.5, (y) => tempoAt2(c, r, x0, v, cls, index, change, y));
-  });
-}
-function layGroove(c, u) {
-  const { P, tx, TR, mw, prims, dyns, tokens } = c;
-  const gt = tokens[u.index], gr = c.row(u.system), data = grooveDataIn(c.song, gt.style), label = grooveLabel(gt, data), known = gt.style === "none" || !!data;
-  const fs = tx("groove-mark"), gw = P(mw("groove-mark", label)), gx = P(u.x + 0.3);
-  c.attach(gr, "groove", () => c.placeAbove(gr, 0.5, (gy) => {
-    prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
-    dyns.push({ index: u.index, kind: "groove", system: gr, x: P(u.x), y: gy - TR("groove-mark", TEMPO_EM * 1.1), w: gw + TR("groove-mark", 0.6), h: TR("groove-mark", TEMPO_EM * 1.5) });
-  }));
-}
-function layNav(c, u, repeatBarX) {
-  const { P, tx, TR, mw, sp, prims, dyns, tokens, units, navMute } = c;
-  const t = tokens[u.index], cls = "nav-mark" + navMute(u.index), tok = t.id, row0 = c.row(u.system);
-  const fs = tx("nav-mark"), x = P(u.x + 0.4);
-  if (t.what === "ending") {
-    const ui = units.indexOf(u);
-    let end = null, closed = false, fallback = null, sawNote = false;
-    for (let k = ui + 1; k < units.length; k++) {
-      const v = units[k];
-      if (v.kind === "chunk") sawNote = true;
-      if (v.kind === "bar" && (v.repeat === "end" || v.repeat === "both")) {
-        end = v;
-        closed = true;
-        break;
+var Xt = (n) => ts(qt({}, "__esModule", { value: true }), n);
+var ft;
+var Be;
+var Je;
+var ns;
+var pr;
+var Zt = N(() => {
+  "use strict";
+  ft = /* @__PURE__ */ new Map(), Be = [], Je = (n, t, a) => {
+    if (t && typeof t.init == "function" && typeof t.createInferenceSessionHandler == "function") {
+      let u = ft.get(n);
+      if (u === void 0) ft.set(n, { backend: t, priority: a });
+      else {
+        if (u.priority > a) return;
+        if (u.priority === a && u.backend !== t) throw new Error(`cannot register backend "${n}" using priority ${a}`);
       }
-      if (v.kind === "nav" && tokens[v.index].what === "ending") {
-        end = v;
-        closed = true;
-        break;
-      }
-      if (v.kind === "bar" && v.repeat === "start") {
-        if (!fallback) fallback = v;
-        break;
-      }
-      if (v.kind === "bar" && sawNote && !fallback) fallback = v;
-    }
-    if (!end) end = fallback;
-    const h = TR("nav-mark", 1.6);
-    const endX = (v, sys) => v && v.system === sys ? v.kind === "bar" ? repeatBarX(v) : P(v.x) - P(0.3) : P(c.right);
-    const seg = (sys, xa, openL, xb, hookR, first) => {
-      const rr = c.row(sys);
-      c.attach(rr, "nav", () => c.placeAbove(rr, 0.6, (yy) => {
-        prims.push({ t: "path", d: `${openL ? `M${xa},${yy}` : `M${xa},${yy + h}L${xa},${yy}`}L${xb},${yy}${hookR ? `L${xb},${yy + h}` : ""}`, cls: "volta" + navMute(u.index) });
-        if (!first) return;
-        prims.push({ tok, t: "text", x: x + TR("nav-mark", 0.3), y: yy + TR("nav-mark", 1.25), s: endingLabel(t.nums), cls, size: fs, anchor: "start" });
-        dyns.push({ index: u.index, kind: "nav", system: row0, x: x - P(0.4), y: yy - TR("nav-mark", 0.4), w: TR("nav-mark", 3), h: h + TR("nav-mark", 0.8) });
-      }));
-    };
-    const endSys = end ? end.system : u.system;
-    seg(u.system, x - P(0.2), false, endX(endSys === u.system ? end : null, u.system), closed && endSys === u.system, true);
-    for (let s2 = u.system + 1; s2 <= endSys; s2++) {
-      const first = units.find((w) => w.system === s2);
-      seg(s2, P((first?.x ?? MARGIN) - 0.3), true, endX(s2 === endSys ? end : null, s2), closed && s2 === endSys, false);
-    }
-    return;
-  }
-  if (t.what === "segno" || t.what === "coda") {
-    const gs = 4 * sp * 0.7;
-    c.attach(row0, "nav", () => c.placeAbove(row0, 0.6, (y) => {
-      prims.push({ tok, t: "glyph", x, y, ch: t.what === "segno" ? "\uE047" : "\uE048", cls: cls.replace("nav-mark", "nav-sign"), size: gs });
-      dyns.push({ index: u.index, kind: "nav", system: row0, x: x - P(0.3), y: y - gs * 0.8, w: gs * (t.what === "segno" ? 0.6 : 1), h: gs * 0.95 });
-    }));
-    return;
-  }
-  const label = NAV_LABEL[t.what], tw = P(mw("nav-word", label)), atEnd = x - tw > P(MARGIN + 6);
-  c.attach(row0, "nav", () => c.placeAbove(row0, 0.6, (y) => {
-    prims.push({ tok, t: "text", x: atEnd ? x : x - P(0.2), y, s: label, cls: cls + " nav-word", size: fs, anchor: atEnd ? "end" : "start" });
-    dyns.push({ index: u.index, kind: "nav", system: row0, x: atEnd ? x - tw - P(0.3) : x - P(0.5), y: y - TR("nav-word", TEMPO_EM * 1.1), w: tw + TR("nav-word", 0.8), h: TR("nav-word", TEMPO_EM * 1.5) });
-  }));
-}
-function layDynamics(c) {
-  const { P, tx, prims, dyns, tokens, units, dynOff, o, notation } = c;
-  const right = c.right;
-  const dynOf = (v) => {
-    const d = dynDepiction(v, notation), g = c.glyphScale;
-    if (d.kind === "text") {
-      const k = g ?? 1, em = tx("jp-dyn") / P(1) * k, w = c.mw("jp-dyn", d.s) * k;
-      return { ink: [0, w, em * 0.72, em * 0.22], lean: em * 0.2, draw: (x, y, tok, cls) => prims.push({ t: "text", x, y, s: d.s, tok, cls: `${cls} jp-dyn`, size: tx("jp-dyn") * k, anchor: "start" }) };
-    }
-    if (g === void 0) return { ink: d.ink, lean: 0, draw: (x, y, tok, cls) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls }) };
-    return { ink: [d.ink[0] * g, d.ink[1] * g, d.ink[2] * g, d.ink[3] * g], lean: 0, draw: (x, y, tok, cls) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls, size: P(4 * g) }) };
-  };
-  const dynItems = [];
-  const tailDynX = /* @__PURE__ */ new Map(), lastC = units.reduce((m, u, k) => u.kind === "chunk" ? k : m, -1);
-  {
-    units.forEach((h, hi) => {
-      if (h.kind !== "hairpin") return;
-      const ei = units.findIndex((u, k) => k > hi && (u.kind === "dyn" || u.kind === "hairpin")), endU = ei >= 0 ? units[ei] : null;
-      if (!endU || endU.kind !== "dyn" || ei < lastC || endU.system !== h.system) return;
-      const prevU = units[hi - 1], before = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
-      const startX = Math.max(P(h.x + 0.3), before ? (tailDynX.get(before) ?? P(before.x + 0.3)) + P(dynOf(before.value).ink[1] + PIN_GAP) : 0);
-      const need = startX + P(PIN_MIN + PIN_GAP - dynOf(endU.value).ink[0]);
-      if (need > P(endU.x + 0.3)) tailDynX.set(endU, need);
-    });
-  }
-  const dynX = (u) => {
-    const x = tailDynX.get(u) ?? P(u.x + 0.3);
-    if (u.kind !== "dyn") return x;
-    const d = dynOf(u.value);
-    return Math.min(x, P(c.right - d.ink[1] - d.lean));
-  };
-  const dynItemOf = /* @__PURE__ */ new Map();
-  for (const u of units) {
-    if (u.kind !== "dyn") continue;
-    const dr = c.row(u.system), ui = units.indexOf(u), dd = dynOf(u.value), [il, ir, iu, id] = dd.ink;
-    const X = dynX(u), it = { row: dr, x0: X + P(il), keys: [`${dr}|d${ui}`], draw: (dy) => {
-      dd.draw(X, dy, tokens[u.index].id, "dyn" + (dynOff.has(u.index) ? " art-mute" : ""));
-      dyns.push({ index: u.index, kind: "dyn", system: dr, x: X + P(il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
-    } };
-    dynItems.push(it);
-    dynItemOf.set(u, it);
-  }
-  const LEVELS = DYNS;
-  const lastChunk = [...units].reverse().find((u) => u.kind === "chunk");
-  const dynKey = (u) => `${c.row(u.system)}|d${units.indexOf(u)}`;
-  const wedgeKey = (index, sy) => `${c.row(sy)}|w${index}:${sy}`;
-  const inkOf = (u) => dynOf(u.value).ink;
-  const wedgeItems = (index, dir, s0, startX, s1, endX, ramp, k0, k1, tail, late2) => {
-    const leftOf2 = (sy) => Math.max(Math.min(...units.filter((u) => u.kind === "chunk" && u.system === sy).map((ch) => c.noteX(ch)), P(right)) - P(1), c.left(sy));
-    const segs = [];
-    for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf2(sy), sy === s1 ? endX : P(right) - P(0.3)]);
-    const total = segs.reduce((n2, [, a, b]) => n2 + Math.max(0, b - a), 0) || 1, H = P(0.5), long = total > P(right - MARGIN);
-    const word = dir === "cresc" ? "cresc." : "dim.", ww = P(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
-    let said = false, acc = 0, tailDone = false;
-    const drawable = segs.map(([, a0, b], i) => !(b - a0 < P(0.3) || i > 0 && b - a0 < P(PIN_MIN)));
-    if (!drawable.some(Boolean) && segs.length) {
-      let bi = 0;
-      segs.forEach(([, a0, b], i) => {
-        if (b - a0 > segs[bi][2] - segs[bi][1]) bi = i;
-      });
-      segs[bi][2] = Math.max(segs[bi][2], segs[bi][1] + P(PIN_MIN));
-      drawable[bi] = true;
-    }
-    segs.forEach(([sy, a0, b], i) => {
-      if (!drawable[i]) return;
-      const row = c.row(sy), keys = [wedgeKey(index, sy)], last = i === segs.length - 1;
-      if (i === 0 && k0) keys.push(k0);
-      if (last && k1) keys.push(k1);
-      if (last) tailDone = true;
-      if (long) {
-        const writeWord = !said && b - a0 >= ww + P(1);
-        if (writeWord) said = true;
-        dynItems.push({ row, x0: a0, keys, ...late2 ? { late: late2 } : {}, draw: (base) => {
-          const midY = base - P(0.5);
-          let a = a0;
-          if (writeWord) {
-            prims.push({ t: "text", x: a, y: midY + P(0.5), s: word, tok: tokens[index].id, cls: ["dyn-word", ramp ? "ramp" : ""].filter(Boolean).join(" "), size: tx("dyn-word"), anchor: "start" });
-            a += ww + P(0.6);
-          }
-          for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY, x2: x + P(DASH.len), y2: midY, w: P(0.12), cls: "dyn-dash" });
-          dyns.push({ index, kind: "hairpin", system: row, x: a0, y: midY - P(1.4), w: b - a0, h: P(2.8) });
-          if (last && tail) tail(base);
-        } });
-        return;
-      }
-      const f0 = acc / total, f1 = (acc + b - a0) / total;
-      acc += b - a0;
-      const [h0, h1] = dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)];
-      dynItems.push({ row, x0: a0, keys, ...late2 ? { late: late2 } : {}, draw: (base) => {
-        const y = base - P(0.5), a = a0;
-        let d = `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`;
-        if (ramp) {
-          const hAt = (x) => h0 + (h1 - h0) * ((x - a) / (b - a)), { n: n2, on, per } = rampDashes(b - a, P(1));
-          d = "";
-          for (let k = 0; k < n2; k++) {
-            const x = a + k * per, x2 = k === n2 - 1 ? b : x + on;
-            d += `M${x},${y - hAt(x)}L${x2},${y - hAt(x2)}M${x},${y + hAt(x)}L${x2},${y + hAt(x2)}`;
-          }
-        }
-        prims.push({ tok: tokens[index].id, t: "path", d, cls: ["hairpin", ramp ? "ramp" : ""].filter(Boolean).join(" ") });
-        dyns.push({ index, kind: "hairpin", system: row, x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
-        if (last && tail) tail(base);
-      } });
-    });
-    if (!tailDone && tail) dynItems.push({ row: c.row(s1), x0: endX, keys: [wedgeKey(index, s1), ...k1 ? [k1] : []], ...late2 ? { late: late2 } : {}, draw: tail });
-  };
-  units.forEach((h, hi) => {
-    if (h.kind !== "hairpin" || !lastChunk) return;
-    const prevU = units[hi - 1];
-    const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
-    const startX = Math.max(P(h.x + 0.3), dynBefore ? dynX(dynBefore) + P(inkOf(dynBefore)[1] + PIN_GAP) : 0), s0 = h.system;
-    const endU = units.slice(hi + 1).find((u) => u.kind === "dyn" || u.kind === "hairpin");
-    let curDyn = "mf";
-    for (let j = h.index - 1; j >= 0; j--) {
-      const t = tokens[j];
-      if (t.kind === "dyn") {
-        curDyn = t.value;
-        break;
-      }
-    }
-    const ci = LEVELS.indexOf(curDyn), against = !!endU && endU.kind === "dyn" && (h.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci : LEVELS.indexOf(endU.value) >= ci);
-    const IMPLIED_W = 3;
-    const endX = endU ? (endU.kind === "dyn" ? dynX(endU) + P(inkOf(endU)[0]) : P(endU.x + 0.3)) - P(PIN_GAP + (against ? IMPLIED_W + 0.4 : 0)) : c.noteEnd(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;
-    if (s1 < s0) return;
-    let endXd = endX, labelAbove = false, sx = startX;
-    const MIN_PIN = P(PIN_MIN);
-    const outer = endU && endU.kind === "dyn" && units.indexOf(endU) > lastC && endU.system === s0 && endX - startX < MIN_PIN - P(0.01) ? startX + MIN_PIN <= P(right) ? "dyn" : "both" : "";
-    if (outer === "dyn") {
-      endXd = Math.max(startX + MIN_PIN, Math.min(P(right), dynX(endU) + P(inkOf(endU)[1])));
-      labelAbove = against;
-    } else if (outer === "both") sx = endX - MIN_PIN;
-    if (outer) dynItemOf.get(endU).late = true;
-    if (!outer && s1 === s0 && endXd - startX < MIN_PIN) {
-      const roomy = against ? endXd + P(IMPLIED_W + 0.4) : endXd;
-      if (against) labelAbove = true;
-      endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
-    }
-    const k1 = !endU || outer === "dyn" ? void 0 : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
-    const tail = !endU || against ? (base) => {
-      const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
-      const im = { t: "text", x: 0, y: 0, s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: tx("dyn-implied"), anchor: "start" }, ix = labelAbove ? endXd - P(1.2) : endXd + P(0.4), iy = base + P(labelAbove ? -1.9 : 0.1);
-      if (c.hint) {
-        const fs = tx("dyn-implied"), w = P(c.mw("dyn-implied", im.s)), rr = c.row(s1);
-        c.hint(rr, {
-          part: { ink: { x0: 0, x1: w, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [im] },
-          tries: [{ x: ix, y: iy }, { x: ix, y: iy - fs * 1.1 }, { x: ix + P(0.8), y: iy }, { x: ix, y: iy - fs * 2.2 }, { x: endXd - w - P(0.4), y: base - P(1.9) }],
-          climb: fs * 1.1,
-          // 点得到（7-N 补，user「这种渐强渐弱里面那个括号的小字，我们都让它可以手动设置成别的」）：指着这条发夹 = 开同一个菜单（「变到」）；框按字摆好的地方、稍放大，压在发夹的框上面也指同一条
-          onPlace: (x, y) => {
-            dyns.push({ index: h.index, kind: "hairpin", system: rr, x: x - P(0.3), y: y - fs * 0.9, w: w + P(0.6), h: fs * 1.3 });
-          }
-        });
-      } else {
-        prims.push({ ...im, x: ix, y: iy });
-        const fs = tx("dyn-implied");
-        dyns.push({ index: h.index, kind: "hairpin", system: c.row(s1), x: ix - P(0.3), y: iy - fs * 0.9, w: P(3.6), h: fs * 1.3 });
-      }
-    } : void 0;
-    wedgeItems(h.index, h.dir, s0, sx, s1, endXd, false, dynBefore && outer !== "both" ? dynKey(dynBefore) : void 0, k1, tail, outer === "both");
-  });
-  for (const u of units) {
-    if (u.kind !== "dyn" || !tokens[u.index].ramp) continue;
-    const src = rampSource(tokens, u.index);
-    if (typeof src !== "number") continue;
-    const pu = units.find((x) => x.kind === "dyn" && x.index === src);
-    if (!pu) continue;
-    const a = LEVELS.indexOf(pu.value), b = LEVELS.indexOf(u.value);
-    if (a === b) continue;
-    const sx = P(pu.x + 0.3 + inkOf(pu)[1] + PIN_GAP);
-    let ex = P(u.x + 0.3 + inkOf(u)[0] - PIN_GAP);
-    if (u.system === pu.system && ex - sx < P(1.4)) ex = sx + P(1.4);
-    if (u.system < pu.system) continue;
-    wedgeItems(u.index, b > a ? "cresc" : "dim", pu.system, sx, u.system, ex, true, dynKey(pu), dynKey(u));
-  }
-  if (!dynItems.length) return;
-  const parent = dynItems.map((_, i) => i), find = (i) => parent[i] === i ? i : parent[i] = find(parent[i]);
-  const byKey = /* @__PURE__ */ new Map();
-  dynItems.forEach((it, i) => {
-    for (const k of it.keys) {
-      const j = byKey.get(k);
-      if (j === void 0) byKey.set(k, i);
-      else parent[find(i)] = find(j);
-    }
-  });
-  const chains = /* @__PURE__ */ new Map();
-  dynItems.forEach((_, i) => {
-    const root = find(i), l = chains.get(root);
-    if (l) l.push(i);
-    else chains.set(root, [i]);
-  });
-  const minX = (ch) => Math.min(...ch.map((i) => dynItems[i].x0)), late = (ch) => ch.some((i) => dynItems[i].late) ? 1 : 0;
-  for (const ch of [...chains.values()].sort((a, b) => late(a) - late(b) || minX(a) - minX(b))) {
-    const row = dynItems[ch[0]].row;
-    c.attach(row, "dynamics", () => {
-      c.placeAbove(row, 0.4, (y) => {
-        for (const i of ch) dynItems[i].draw(y);
-      });
-    });
-  }
-}
-function layNoteDynamics(c, row, _ch, a) {
-  const { P, prims } = c, { cx, tok, cls, ign, swl, atk } = a;
-  c.attach(row, "noteDynamics", () => c.placeAbove(row, 0.5, (y) => {
-    let xa = a.x0;
-    for (const k of atk) {
-      const dp = SIGNS[`art:${k}`].draw[c.notation];
-      if (dp.kind === "text") {
-        const gk = c.glyphScale ?? 1, w2 = P(c.mw("jp-dyn", dp.s) * gk), gx2 = cx - w2 / 2;
-        prims.push({ tok, t: "text", x: gx2, y, s: dp.s, cls: ["dyn jp-dyn", ign.has(k) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: c.tx("jp-dyn") * gk, anchor: "start" });
-        xa = Math.max(xa, gx2 + w2 + P(0.3));
-        continue;
-      }
-      const gs = c.glyphScale, ch = k === "sfz" ? "\uE539" : "\uE534", w = P((GLYPH_BOX[ch]?.[1] ?? 2.6) * (gs ?? 1)), gx = cx - w / 2;
-      prims.push({ tok, t: "glyph", x: gx, y, ch, cls: ["dyn", ign.has(k) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), ...gs !== void 0 ? { size: P(4 * gs) } : {} });
-      xa = Math.max(xa, gx + w + P(0.3));
-    }
-    if (!swl) return;
-    const ym = y - P(0.5), xb = Math.max(xa + P(1.6), a.x0 + a.w - P(0.8)), H = P(0.35);
-    const cl = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") && !(a.roll && !ign.has("roll")) ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
-    const d = swl === "<" ? `M${xb},${ym - H}L${xa},${ym}L${xb},${ym + H}` : swl === ">" ? `M${xa},${ym - H}L${xb},${ym}L${xa},${ym + H}` : `M${xa},${ym}L${mx},${ym - H}L${xb},${ym}M${xa},${ym}L${mx},${ym + H}L${xb},${ym}`;
-    prims.push({ t: "path", d, cls: cl });
-  }));
-}
-var PEDAL_GLYPH = { sustain: "\uE650", sostenuto: "\uE659" };
-var PEDAL_UP_GLYPH = "\uE655";
-function layPedals(c) {
-  const { P, prims, dyns, tokens, units } = c;
-  const peds = units.filter((u) => u.kind === "pedal");
-  if (!peds.length) return;
-  const chunks = units.filter((u) => u.kind === "chunk"), lastC = chunks[chunks.length - 1];
-  const jp = c.notation !== "staff", gk = c.glyphScale ?? 1, K = PEDAL.scale;
-  const paperEnd = (fallbackSys) => {
-    if (!lastC) return { sys: fallbackSys, x: c.contentEnd(fallbackSys) - P(PEDAL.hookIn) };
-    return { sys: lastC.system, x: Math.max(c.noteEnd(lastC) + P(0.6), c.contentEnd(lastC.system) - P(PEDAL.hookIn)) };
-  };
-  const at2 = (u) => {
-    const k = units.indexOf(u), nx = units.slice(k + 1).find((v) => v.kind === "chunk");
-    if (nx) return { sys: nx.system, x: c.noteX(nx) };
-    return paperEnd(u.system);
-  };
-  const word = (kind, s2, x, y, tok, cls) => {
-    if (kind === "glyph") {
-      const b = GLYPH_BOX[s2], w = P((b?.[1] ?? 4) * K), h = P((b ? b[3] - b[2] : 2.2) * K);
-      prims.push({ tok, t: "glyph", x, y, ch: s2, cls, size: P(4 * K) });
-      return { w, h };
-    }
-    const role = jp ? "jp-dyn" : "dyn-word", k = jp ? gk : 1, fs = c.tx(role) * k;
-    prims.push({ tok, t: "text", x, y, s: s2, cls: `${cls} ${role}`, size: fs, anchor: "start" });
-    return { w: P(c.mw(role, s2) * k), h: fs * 0.75 };
-  };
-  const nameOf = (w) => w === "soft" ? { kind: "text", s: "una corda" } : jp ? { kind: "text", s: w === "sustain" ? "Ped." : "Sost." } : { kind: "glyph", s: PEDAL_GLYPH[w] };
-  const upOf = () => jp ? { kind: "text", s: "*" } : { kind: "glyph", s: PEDAL_UP_GLYPH };
-  const lanes = /* @__PURE__ */ new Map();
-  const nameH = (w) => {
-    const nm = nameOf(w);
-    return nm.kind === "glyph" ? P((GLYPH_BOX[nm.s] ? -GLYPH_BOX[nm.s][2] : 2.2) * K) : c.tx(jp ? "jp-dyn" : "dyn-word") * (jp ? gk : 1) * 0.75;
-  };
-  const wordSize = (kind, s2) => {
-    if (kind === "glyph") {
-      const b = GLYPH_BOX[s2];
-      return { w: P((b?.[1] ?? 4) * K), h: P((b ? b[3] - b[2] : 2.2) * K) };
-    }
-    const role = jp ? "jp-dyn" : "dyn-word", k = jp ? gk : 1;
-    return { w: P(c.mw(role, s2) * k), h: c.tx(role) * k * 0.75 };
-  };
-  for (const which of PEDAL_KINDS) {
-    const mine = peds.filter((u) => u.which === which);
-    if (!mine.length) continue;
-    const mute = c.ignores.includes(`pedal:${which}`) ? " art-mute" : "", cls = `pedal${mute}`, nm = nameOf(which), nmW = wordSize(nm.kind, nm.s).w;
-    const byRow = /* @__PURE__ */ new Map();
-    const rowOf = (sy) => {
-      const r = c.rowLow(sy);
-      let it = byRow.get(r);
-      if (!it) byRow.set(r, it = { main: [], taken: [], greys: [] });
-      return it;
-    };
-    const hit2 = (sy, index, x, y, w, h) => dyns.push({ index, kind: "pedal", system: c.rowLow(sy), x, y, w, h });
-    const lineSpan = (startIdx, s0, x0, s1, x1, notches2, hookIdx) => {
-      const N = P(PEDAL.notch);
-      for (let sy = s0; sy <= s1; sy++) {
-        const a = sy === s0 ? x0 : c.left(sy) + P(0.3), closes = sy === s1;
-        const ns = [];
-        let minX = a + N;
-        for (const n2 of notches2.filter((m) => m.sys === sy).sort((m, k) => m.x - k.x)) {
-          const x = Math.max(n2.x, minX);
-          ns.push({ x, index: n2.index });
-          minX = x + 2 * N + P(0.2);
-        }
-        const b = closes ? Math.max(x1, ns.length ? ns[ns.length - 1].x + N + P(0.2) : a) : c.rowEnd(sy);
-        const it = rowOf(sy);
-        if (closes) it.taken.push([b - P(0.6), b + P(0.6)]);
-        it.main.push((y) => {
-          const H = P(PEDAL.hook);
-          const pieces = [];
-          let from = a;
-          for (const n2 of ns) {
-            pieces.push(`M${from},${y}L${n2.x - N},${y}`);
-            from = n2.x + N;
-          }
-          pieces.push(`M${from},${y}L${b},${y}`);
-          prims.push({ tok: tokens[startIdx].id, t: "path", d: pieces.join(""), cls });
-          for (const n2 of ns) {
-            prims.push({ tok: tokens[n2.index].id, t: "path", d: `M${n2.x - N},${y}L${n2.x},${y - H}L${n2.x + N},${y}`, cls });
-            dyns.push({ index: n2.index, kind: "pedal", system: c.rowLow(sy), x: n2.x - N - P(0.3), y: y - H - P(0.4), w: 2 * N + P(0.6), h: H + P(0.8) });
-          }
-          if (closes) {
-            prims.push({ ...hookIdx !== void 0 ? { tok: tokens[hookIdx].id } : {}, t: "path", d: `M${b},${y}L${b},${y - H}`, cls });
-            if (hookIdx !== void 0) dyns.push({ index: hookIdx, kind: "pedal", system: c.rowLow(sy), x: b - P(0.6), y: y - H - P(0.4), w: P(1.2), h: H + P(0.8) });
-          }
-        });
-      }
-    };
-    const grey = (u, p, w) => {
-      const sz = wordSize(w.kind, w.s), id = tokens[u.index].id;
-      rowOf(p.sys).greys.push({ x0: p.x, x1: p.x + sz.w, draw: (y) => {
-        const m = word(w.kind, w.s, p.x, y, id, "pedal art-mute");
-        hit2(p.sys, u.index, p.x - P(0.3), y - m.h - P(0.3), m.w + P(0.6), m.h + P(0.7));
-      } });
-    };
-    let down = null, notches = [];
-    const finish = (endSys, endX, hookIdx) => {
-      const d = down;
-      down = null;
-      lineSpan(d.idx, d.sys, d.x + nmW + P(PEDAL.textGap), endSys, endX, notches, hookIdx);
-    };
-    for (const u of mine) {
-      const p = at2(u);
-      if (u.act === "down" || u.act === "change" && !down) {
-        if (down) {
-          grey(u, p, nm);
-          continue;
-        }
-        const it = rowOf(p.sys), id = tokens[u.index].id;
-        it.taken.push([p.x, p.x + nmW]);
-        it.main.push((y) => {
-          const m = word(nm.kind, nm.s, p.x, y, id, cls);
-          hit2(p.sys, u.index, p.x - P(0.3), y - m.h - P(0.3), m.w + P(0.6), m.h + P(0.7));
-        });
-        down = { sys: p.sys, x: p.x, idx: u.index };
-        notches = [];
-        continue;
-      }
-      if (u.act === "change") {
-        notches.push({ sys: p.sys, x: p.x, index: u.index });
-        continue;
-      }
-      if (!down) {
-        grey(u, p, upOf());
-        continue;
-      }
-      finish(p.sys, p.x - P(PEDAL.hookIn), u.index);
-    }
-    if (down) {
-      const end = paperEnd(down.sys);
-      finish(end.sys, end.x, void 0);
-    }
-    const top = Math.max(nameH(which), P(PEDAL.hook)) / P(1);
-    for (const [row, it] of byRow) c.attach(row, "pedal", () => {
-      const subs = [{ taken: [...it.taken], draws: [...it.main] }];
-      const pad = P(0.3), free = (tk, a, b) => tk.every(([x0, x1]) => b + pad <= x0 || a >= x1 + pad);
-      for (const g of [...it.greys].sort((m, k) => m.x0 - k.x0)) {
-        let k = 0;
-        while (k < subs.length && !free(subs[k].taken, g.x0, g.x1)) k++;
-        if (k === subs.length) subs.push({ taken: [], draws: [] });
-        subs[k].taken.push([g.x0, g.x1]);
-        subs[k].draws.push(g.draw);
-      }
-      let prev = lanes.get(row);
-      subs.forEach((sb, k) => {
-        if (!sb.draws.length) return;
-        const dy = c.placeBelow(row, k ? 0.4 : PEDAL.gap, (y) => {
-          for (const d of sb.draws) d(y);
-        }, prev === void 0 ? {} : { min: prev + top + (k ? 0.4 : PEDAL.gap) });
-        prev = dy;
-      });
-      if (prev !== void 0) lanes.set(row, prev);
-    });
-  }
-}
-
-// src/render/frame/carets.ts
-function caretStops(q, o) {
-  const { tokens, units, realLen } = q, { cx, shiftAt, rowOf, P, cols, slots, heads } = o;
-  const H = headLen(tokens);
-  const firstUnitOf = /* @__PURE__ */ new Map();
-  for (const u of units) if (u.kind !== "head" && u.index >= 0 && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
-  for (let c = H; c <= realLen; c++) {
-    const u = c < tokens.length ? firstUnitOf.get(c) : void 0;
-    const last = u ? null : [...units].reverse().find((v) => v.kind !== "head");
-    const sys = u ? u.system : last ? last.system : 0, x = u ? cx(u) : last ? P(last.x + last.w) : P(o.sysStart0);
-    for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(sys, k), x });
-  }
-  for (let c = H; c <= realLen; c++) {
-    const u0 = c < tokens.length ? firstUnitOf.get(c) : void 0;
-    let sys, x;
-    if (!u0) {
-      const last = [...units].reverse().find((v) => v.kind !== "head");
-      sys = last ? last.system : 0;
-      x = last ? P(last.x + last.w) : P(o.sysStart0);
-    } else if (u0.kind === "chunk") {
-      sys = u0.system;
-      x = cx(u0);
-    } else {
-      const T2 = u0.tick, ch = units.find((v) => v.kind === "chunk" && v.index >= c && Math.abs(v.tick - T2) < 1e-6);
-      if (ch) {
-        sys = ch.system;
-        x = cx(ch);
-      } else {
-        const same = units.filter((v) => v.kind !== "head" && v.index >= c && Math.abs(v.tick - T2) < 1e-6), lastT = same[same.length - 1] ?? u0;
-        sys = lastT.system;
-        x = P(lastT.x + lastT.w);
-      }
-    }
-    const sh = shiftAt(c);
-    for (let k = 0; k < q.staves; k++) heads.push({ caret: c, system: rowOf(sys, k), x, shift: sh[k] });
-  }
-  for (const u of units) if (u.kind === "chunk" && u.pad && (u.inBar ?? 0) < 1e-6 && u.tick - q.realTicks > 1e-6) {
-    const sh = shiftAt(realLen);
-    for (let k = 0; k < q.staves; k++) {
-      slots.push({ caret: realLen, system: rowOf(u.system, k), x: P(u.x), lead: u.tick - q.realTicks });
-      heads.push({ caret: realLen, system: rowOf(u.system, k), x: P(u.x), shift: sh[k], lead: u.tick - q.realTicks });
-    }
-  }
-  let lastSys = -1;
-  for (let c = H; c < Math.min(tokens.length, realLen + 1); c++) {
-    const u = firstUnitOf.get(c);
-    if (!u) continue;
-    const crossed = lastSys >= 0 && u.system > lastSys;
-    lastSys = u.system;
-    if (!crossed) continue;
-    const prevRow = cols.filter((cc) => cc.system === u.system - 1);
-    if (!prevRow.length) continue;
-    const x = P(Math.max(...prevRow.map((cc) => cc.x + cc.w)));
-    const sh = shiftAt(c);
-    for (let k = 0; k < q.staves; k++) {
-      slots.push({ caret: c, system: rowOf(u.system - 1, k), x, end: true });
-      heads.push({ caret: c, system: rowOf(u.system - 1, k), x, shift: sh[k], end: true });
-    }
-  }
-}
-
-// src/render/staff/geometry.ts
-var yAt = (staffTop, d, half) => staffTop + (TOP_LINE2 - d) * half;
-var anchors = (staffTop, half) => ({ top: yAt(staffTop, TOP_LINE2, half), mid: yAt(staffTop, MID_LINE2, half), bottom: yAt(staffTop, BOTTOM_LINE, half) });
-
-// src/render/staff/draw.ts
-function drawStaff(c, mine) {
-  const lyricParts = [];
-  const own = mine ? new Set(mine) : null, skip = (r) => own !== null && !own.has(r);
-  const { song, look, textLang, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, harmony, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
-  const yOf = (r, d) => yAt(staffTop(r), d, P(0.5));
-  const clefAtSys = (q, s2) => {
-    const u = q.units.find((x) => x.system === s2 && x.index >= 0);
-    if (u) return q.ds.clef[u.index] ?? q.start;
-    let c2 = q.start;
-    for (const x of q.units) if (x.system < s2 && x.index >= 0) c2 = q.ds.clef[x.index] ?? c2;
-    return c2;
-  };
-  const clefSrcAtSys = (q, s2) => srcAtSys(q, s2, "clef");
-  const srcAtSys = (q, s2, kind) => {
-    const u = q.units.find((x) => x.system === s2 && x.index >= 0), upto = u ? u.index : q.tokens.length - 1;
-    for (let i = upto; i >= 0; i--) if (q.tokens[i]?.kind === kind) return i;
-    return -1;
-  };
-  const tokAt = (q, i) => {
-    const id = i !== void 0 && i >= 0 ? q.tokens[i]?.id : void 0;
-    return id !== void 0 ? { tok: id } : {};
-  };
-  const staffHit = (r) => ({ y: yOf(r, TOP_LINE2) - P(1.2), h: yOf(r, BOTTOM_LINE) - yOf(r, TOP_LINE2) + P(2.4) });
-  const drawTime = (r, x0, beats, beatType, cls, T2 = {}) => {
-    const num = timeSigDigits(beats), den = timeSigDigits(beatType);
-    const wn = [...num].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw = Math.max(wn, wd);
-    put(r, { ...T2, t: "glyph", x: P(x0 + (cw - wn) / 2), y: yOf(r, 36), ch: num, cls });
-    put(r, { ...T2, t: "glyph", x: P(x0 + (cw - wd) / 2), y: yOf(r, 32), ch: den, cls });
-    return cw;
-  };
-  const keyLabel = (r, x0, f, hint, index, minor = false, T2 = {}, perc = false) => {
-    const y = staffTop(r) - P(0.8);
-    if (hint) {
-      keyHints.push({ ...T2, system: r, index, x: P(x0), y, size: tx("key-hint"), s: perc ? _tIn(o.locale, "\u65E0\u8C03") : keyText(f, minor) });
-      return;
-    }
-    put(r, { ...T2, t: "text", x: P(x0), y, s: keyText(f, minor), cls: "keysig key-label", size: tx("key-label"), anchor: "start" });
-    marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - TR("key-label", TEMPO_EM * 0.95), w: TR("key-label", KEY_LABEL_W), h: TR("key-label", TEMPO_EM * 1.2) });
-  };
-  const drawKeySig = (r, x0, f, cls, clef = "G", T2 = {}) => {
-    const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
-    for (let k = 0; k < Math.abs(f); k++) put(r, { ...T2, t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k] + off), ch, cls });
-  };
-  const rowContentEnd = (sy) => {
-    let e = -Infinity;
-    for (const col of cols) if (col.system === sy) e = Math.max(e, col.x + col.w);
-    return e > -Infinity ? Math.min(staffEnd[sy], e) : staffEnd[sy];
-  };
-  const ornCache = /* @__PURE__ */ new Map();
-  const ornOf = (q, r, noteEnd) => {
-    const hit2 = ornCache.get(r);
-    if (hit2 && !noteEnd) return hit2;
-    const oc = {
-      song,
-      paper,
-      o,
-      notation: "staff",
-      P,
-      tx,
-      TR,
-      RS,
-      mw,
-      sp,
-      prims,
-      dyns,
-      marks,
-      placeAbove,
-      placeBelow: (row, gap, d, o2) => placeBelow(row, gap, d, o2),
-      attach,
-      right,
-      left: (sy) => P(MARGIN + (sy === 0 ? ind0 : indN)),
-      tokens: q.tokens,
-      units: q.units,
-      row: (sy) => rowOf(sy, r, 0),
-      rowLow: (sy) => rowOf(sy, r, q.staves - 1),
-      ignores: q.p.ignores ?? [],
-      rowEnd: (sy) => P(staffEnd[sy]),
-      contentEnd: (sy) => P(rowContentEnd(sy)),
-      // 踏板挂在最下面那张谱表下面（11-1）
-      noteX: (ch) => P(ch.x + 0.35),
-      noteEnd: noteEnd ?? ((ch) => P(ch.x + 0.35)),
-      dynOff: dynOverridden(q.tokens),
-      navMute: (i) => navWhy(song, paper, q.p.id, q.tokens[i]) ? " art-mute" : ""
-    };
-    ornCache.set(r, oc);
-    return oc;
-  };
-  for (let s2 = 0; s2 < nSys; s2++) {
-    const ind = s2 === 0 ? ind0 : indN;
-    per.forEach((q, r) => {
-      if (rowHost[r] >= 0 || skip(r)) return;
-      const f = sysKeys[s2].get(q.p.id) ?? q.head.key;
-      for (let k = 0; k < q.staves; k++) {
-        const row = rowOf(s2, r, k), clef = q.staves === 2 ? k ? "F" : "G" : clefAtSys(q, s2), base = baseClef(clef);
-        if (rows[row]) rows[row].x1 = P(staffEnd[s2]);
-        const pm = pmode[r];
-        for (let L = 0; L < 5; L++) {
-          if (pm === "one" && L !== 2) continue;
-          const y = yOf(row, BOTTOM_LINE + 2 * L);
-          put(row, { t: "line", x1: P(MARGIN + ind), y1: y, x2: P(staffEnd[s2]), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" });
-        }
-        let hx = MARGIN + ind + 0.6;
-        if (pm) put(row, { t: "glyph", x: P(hx), y: yOf(row, MID_LINE2), ch: PERC_CLEF, cls: "clef perc-clef" });
-        else put(row, { ...tokAt(q, clefSrcAtSys(q, s2)), t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
-        if (!pm && !q.vrt) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s2), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });
-        hx += clefW(q) + 1;
-        const keyX0 = hx;
-        const fk = pm ? 0 : f;
-        drawKeySig(row, hx, fk, "keysig", base, tokAt(q, srcAtSys(q, s2, "key")));
-        hx += Math.abs(fk) * 1.05;
-        if (s2 === 0) {
-          if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });
-          const lab = k === 0 && q.head.idx.key !== void 0 ? look.inCActive ? q.head.real : pm ? f : fk === 0 || q.head.minor ? fk : null : null;
-          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !!pm || !look.inCActive, q.head.idx.key, q.head.minor, tokAt(q, q.head.idx.key), !!pm);
-          if (fk) hx += 0.8;
-          const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig", tokAt(q, q.head.idx.time));
-          if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
-          if (k === 0 && q.p.id === owner && q.head.idx.tempo !== void 0) {
-            const ti = q.head.idx.tempo;
-            layTempo(ornOf(q, r), row, MARGIN + ind + 0.6, q.head.bpm, "tempo", ti, prevBpm === null || prevBpm === q.head.bpm ? void 0 : q.head.bpm > prevBpm ? "up" : "down");
-          }
-        }
-      }
-    });
-  }
-  per.forEach((q, r) => {
-    if (skip(r)) return;
-    const tokens = q.tokens, focused = q.focused, v2 = rowHost[r] >= 0;
-    const units = q.units, tag = v2 ? { part: q.p.id } : {};
-    const dynOff = dynOverridden(tokens);
-    const clefOf = (staff, index = -1) => q.staves === 2 ? staff === 2 ? "F" : "G" : baseClef((index >= 0 ? q.ds.clef[index] : void 0) ?? q.start);
-    const dIdx = (p, staff, index = -1) => posD(q, p, staff, index);
-    const RW = (u) => rowOf(u.system, r, u.staff - 1);
-    const lyricRow = (s2) => rowOf(s2, r, q.staves - 1);
-    const navMute = (i) => navWhy(song, paper, q.p.id, tokens[i]) ? " art-mute" : "";
-    const nhX = (c2) => P(c2.x + NOTEHEAD_X);
-    const pm = pmode[r], percHere = !!pm && !!q.p.perc;
-    const xHead = !!q.p.xHead && !percHere;
-    const percHead = (c2, p) => {
-      const pi = percAt(q, p), hd = (pi?.head === "custom" && pi.smufl ? PERC_SMUFL[pi.smufl] : void 0) ?? PERC_HEAD[pi?.head ?? "normal"] ?? PERC_HEAD.normal, k = c2.base >= WHOLE ? 2 : c2.base >= TPQ * 2 ? 1 : 0;
-      return { ch: hd.ch[k], w: hd.w[k] };
-    };
-    const xOf = (c2) => xHead || !!c2.whisper;
-    const nhW = (c2) => P(noteheadW(q, c2));
-    const whisperMute = (q.p.ignores ?? []).includes("whisper");
-    const clsOf = (c2) => [c2.ghost ? "ghost" : "", c2.pad ? "pad-rest" : ""].filter(Boolean).join(" ") || void 0;
-    const tokOf = (c2) => c2.index >= 0 && !c2.pad ? tokens[c2.index]?.id : void 0;
-    const spots = [];
-    lyricParts.push({ r, lrow: lyricRow, spots });
-    const orn = ornOf(q, r, (ch) => nhX(ch) + nhW(ch));
-    const drawChunk = (c2) => {
-      const cls = clsOf(c2), row = RW(c2);
-      if (!c2.note) {
-        if (c2.pad || v2 || c2.mrest === "skip") return;
-        if (c2.mrest === "draw") {
-          const k = units.indexOf(c2);
-          let L = sysStarts[c2.system] ?? c2.x, R = staffEnd[c2.system] ?? right;
-          for (let i = k - 1; i >= 0; i--) {
-            const v = units[i];
-            if (v.system !== c2.system) break;
-            if (v.kind === "chunk" || v.w <= 1e-6) continue;
-            L = v.kind === "bar" ? v.x + (v.repeat ? v.w - 0.4 : 0.7) : v.x + v.w;
-            break;
-          }
-          for (let i = k + 1; i < units.length; i++) {
-            const v = units[i];
-            if (v.system !== c2.system) break;
-            if (v.kind === "bar") {
-              R = v.x + 0.7;
-              break;
-            }
-          }
-          const rx = P((L + R) / 2 - W.restWhole / 2), ry2 = pm !== "one" ? yOf(row, 36) : yOf(row, MID_LINE2);
-          put(row, { tok: tokOf(c2), t: "glyph", x: rx, y: ry2, ch: GLYPH.restWhole, cls: cls ? `rest ${cls}` : "rest" });
-          if (c2.j === 0 && c2.index >= 0) rests.push({ index: c2.index, system: row, x: rx, y: yOf(row, MID_LINE2), w: P(1.2) });
+      if (a >= 0) {
+        let o = Be.indexOf(n);
+        o !== -1 && Be.splice(o, 1);
+        for (let d = 0; d < Be.length; d++) if (ft.get(Be[d]).priority <= a) {
+          Be.splice(d, 0, n);
           return;
         }
-        const g = c2.base >= WHOLE ? GLYPH.restWhole : c2.base >= TPQ * 2 ? GLYPH.restHalf : c2.base >= TPQ ? GLYPH.restQuarter : c2.base >= TPQ / 2 ? GLYPH.rest8th : c2.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
-        const ry = c2.base >= WHOLE && pm !== "one" ? yOf(row, 36) : yOf(row, MID_LINE2);
-        put(row, { tok: tokOf(c2), t: "glyph", x: P(c2.x + 0.35), y: ry, ch: g, cls: cls ? `rest ${cls}` : "rest" });
-        if (c2.j === 0 && c2.index >= 0 && !c2.pad) rests.push({ index: c2.index, system: row, x: P(c2.x + 0.35), y: yOf(row, MID_LINE2), w: P(1.2) });
-        if (c2.dotted) put(row, { tok: tokOf(c2), t: "glyph", x: P(c2.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
-        return;
+        Be.push(n);
       }
-      const ds = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index));
-      const d = ds[0], y = yOf(row, d), x0 = nhX(c2);
-      c2.accs.forEach((a, k) => {
-        if (a === null || percHere) return;
-        const ag = a === 1 ? GLYPH.accidentalSharp : a === -1 ? GLYPH.accidentalFlat : a === 2 ? GLYPH.accidentalDoubleSharp : a === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
-        const near = c2.accs.slice(0, k).some((b, kk) => b !== null && Math.abs(ds[kk] - ds[k]) < 3);
-        put(row, { tok: tokOf(c2), t: "glyph", x: P(c2.x - 1.1) - (near ? P(1.1) : 0) - (c2.art.includes("ghost") ? P(0.6) : 0), y: yOf(row, ds[k]), ch: ag, cls });
-      });
-      const ledgers = /* @__PURE__ */ new Set();
-      for (const dd of ds) {
-        for (let L = 28; L >= dd; L -= 2) ledgers.add(L);
-        for (let L = 40; L <= dd; L += 2) ledgers.add(L);
-      }
-      for (const L of ledgers) put(row, { t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(row, L), x2: x0 + nhW(c2) + P(ENGRAVE.ledgerExt), y2: yOf(row, L), w: P(ENGRAVE.ledger), cls: "ledger" });
-      const ng = xOf(c2) ? c2.base >= WHOLE ? GLYPH.noteheadXWhole : c2.base >= TPQ * 2 ? GLYPH.noteheadXHalf : GLYPH.noteheadXBlack : c2.base >= WHOLE ? GLYPH.noteheadWhole : c2.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
-      let shifted = false;
-      ds.forEach((dd, k) => {
-        const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted;
-        shifted = second;
-        const mute = k > 0 && !!q.p.mono;
-        if (c2.j === 0 && k > 0) chordHeads.push({ ...tag, index: c2.index, system: row, x: second ? x0 + nhW(c2) * 0.95 : x0, y: yOf(row, dd), w: nhW(c2) });
-        const hch = percHere && !xOf(c2) ? percHead(c2, (c2.pitches.length ? c2.pitches : [c2.pitch])[k]).ch : ng;
-        put(row, { tok: tokOf(c2), t: "glyph", x: second ? x0 + nhW(c2) * 0.95 : x0, y: yOf(row, dd), ch: hch, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c2.whisper && whisperMute ? "art-mute" : ""].filter(Boolean).join(" ") });
-        if (c2.art.includes("ghost")) {
-          const hx = second ? x0 + nhW(c2) * 0.95 : x0, pc2 = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
-          put(row, { tok: tokOf(c2), t: "glyph", x: hx - P(0.6), y: yOf(row, dd), ch: "\uE0F5", cls: pc2 });
-          put(row, { tok: tokOf(c2), t: "glyph", x: hx + nhW(c2) + P(0.25), y: yOf(row, dd), ch: "\uE0F6", cls: pc2 });
-        }
-      });
-      if (c2.dotted) put(row, { tok: tokOf(c2), t: "glyph", x: x0 + nhW(c2) + P(0.3), y: yOf(row, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
-      if (c2.j === 0) notes.push({ ...tag, index: c2.index, system: row, x: x0, y, w: nhW(c2), d: diatonicIndex(c2.pitch) });
-      if (c2.j === 0 && !c2.tie) spots.push({ index: c2.index, sys: c2.system, row, cx0: x0 + nhW(c2) / 2, mx0: x0 - P(0.6), mx1: x0 + nhW(c2) + P(0.4), lyric: c2.lyric, tok: tokOf(c2), cls, mute: !!q.p.lyricMute?.has(tokens[c2.index]?.id ?? -1), hyph: !!tokens[c2.index].hyph });
-    };
-    for (const u of units) {
-      const row = RW(u);
-      if (u.kind === "dyn" || u.kind === "pedal") continue;
-      if (u.kind === "groove") {
-        layGroove(orn, u);
-        continue;
-      }
-      if (u.kind === "head") continue;
-      if (v2 && (u.kind === "bar" || u.kind === "key" || u.kind === "time")) continue;
-      if (u.kind === "bar" || u.kind === "key" || u.kind === "time") {
-        for (let k = 0; k < q.staves; k++) {
-          const rr = rowOf(u.system, r, k), clef = clefOf(k + 1, u.index), sh = clef === "F" ? 12 : 0;
-          if (u.kind === "bar") bars.push({ system: rr, x: P(u.x + 0.7) });
-          if (u.kind === "bar" && u.repeat) {
-            put(rr, { t: "glyph", x: P(u.x + 0.4), y: yOf(rr, BOTTOM_LINE), ch: u.repeat === "start" ? "\uE040" : u.repeat === "end" ? "\uE041" : "\uE042", cls: "repeat-bar" + navMute(u.index), tok: tokens[u.index].id });
-            if (u.times && u.times > 2 && k === 0) {
-              const times = u.times, bx = P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), cl = "nav-mark" + navMute(u.index);
-              attach(rr, "nav", () => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `\xD7${times}`, cls: cl, size: tx("nav-mark"), anchor: "end" })));
-            }
-          } else if (u.kind === "bar") {
-            const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : "bar", BT = tokAt(q, u.index);
-            const [bt, bb] = pmode[r] === "one" ? [MID_LINE2 + 2, MID_LINE2 - 2] : [TOP_LINE2, BOTTOM_LINE];
-            put(rr, { ...BT, t: "line", x1: bx, y1: yOf(rr, bt), x2: bx, y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
-            if (u.style === "double") put(rr, { ...BT, t: "line", x1: bx + P(0.45), y1: yOf(rr, bt), x2: bx + P(0.45), y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
-            if (u.style === "final") put(rr, { ...BT, t: "line", x1: bx + P(0.6), y1: yOf(rr, bt), x2: bx + P(0.6), y2: yOf(rr, bb), w: P(0.5), cls: bcls });
-            if (u.warn && k === 0) put(rr, { t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE2) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn ann" });
-          } else if (u.kind === "key") {
-            if (pmode[r]) {
-              if (k === 0) keyLabel(rr, u.x + 0.2, look.inCActive ? u.real : u.fifths, true, u.index, u.minor, tokAt(q, u.index), true);
-              marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
-              continue;
-            }
-            const cls = "keysig", KT = tokAt(q, u.index);
-            if (u.fifths === 0) {
-              const pos = u.prev > 0 ? SHARP_POS : FLAT_POS;
-              for (let j = 0; j < Math.abs(u.prev); j++) put(rr, { ...KT, t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
-            } else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef, KT);
-            if (k === 0) {
-              if (look.inCActive) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor, KT);
-              else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor, KT);
-              else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor, KT);
-            }
-            marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
-          } else {
-            const cls = "timesig";
-            drawTime(rr, u.x + 0.6, u.beats, u.beatType, cls, tokAt(q, u.index));
-            marks.push({ index: u.index, kind: "time", system: rr, x: P(u.x), ...staffHit(rr), w: P(u.w) });
-          }
-        }
-        continue;
-      }
-      if (u.kind === "tempo") {
-        if (q.p.id === owner) layTempo(orn, row, u.x + 0.3, u.bpm, "tempo", u.index);
-        continue;
-      }
-      if (u.kind === "hairpin") continue;
-      if (u.kind === "nav") {
-        layNav(orn, u, (v) => P(v.x + (v.kind === "bar" && v.repeat ? 0.4 + (v.repeat === "both" ? 1.2 : 1.47) : 0.7)));
-        continue;
-      }
-      if (u.kind === "ottava") continue;
-      if (u.kind === "clef") {
-        if (q.staves === 2) continue;
-        const first = !units.some((x) => x.system === u.system && x.index >= 0 && x.index < u.index && x.kind !== "ottava");
-        const base = baseClef(u.clef), cls = "clef cue";
-        if (!first) put(row, { ...tokAt(q, u.index), t: "glyph", x: P(u.x + 0.35), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[u.clef], cls, size: P(4 * CLEF_CUE) });
-        clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: u.index, system: row, x: P(u.x), ...staffHit(row), w: P(Math.max(u.w, 1.6)) });
-        continue;
-      }
-      drawChunk(u);
+      return;
     }
+    throw new TypeError("not a valid backend");
+  }, ns = async (n) => {
+    let t = ft.get(n);
+    if (!t) return "backend not found.";
+    if (t.initialized) return t.backend;
+    if (t.aborted) return t.error;
     {
-      const OFF = q.staves === 2 ? " off ann" : "";
-      const SIG = { 1: GLYPH.ottavaAlta, 2: GLYPH.quindicesimaAlta, [-1]: GLYPH.ottavaBassa };
-      const SIG_W = { 1: 3.54, 2: 5.26, [-1]: 3.36 };
-      for (let sy = 0; sy < nSys; sy++) {
-        const us = units.filter((x) => x.system === sy && x.kind === "chunk").sort((a, b) => a.x - b.x);
-        let k = 0;
-        while (k < us.length) {
-          const v = q.ds.ott[us[k].index] ?? 0;
-          if (!v) {
-            k++;
-            continue;
-          }
-          const isAuto = !!q.ds.auto?.[us[k].index];
-          let e = k;
-          while (e + 1 < us.length && (q.ds.ott[us[e + 1].index] ?? 0) === v && !!q.ds.auto?.[us[e + 1].index] === isAuto) e++;
-          const up = v > 0, row0 = rowOf(sy, r, up ? 0 : q.staves - 1);
-          {
-            const sk = k, se = e;
-            attach(row0, up ? "ottavaAbove" : "ottavaBelow", () => {
-              const pl = up ? placeAbove : placeBelow;
-              pl(row0, 0.6, (y) => {
-                const k2 = sk, e2 = se;
-                const prevIdx = us[k2].index - 1, cont = k2 === 0 && prevIdx >= 0 && (q.ds.ott[prevIdx] ?? 0) === v && units.some((x) => x.index >= 0 && x.index <= prevIdx && x.system < sy);
-                const nextU = us[e2 + 1], lastIdx = us[e2].index, endsHere = !!nextU || (q.ds.ott[lastIdx + 1] ?? 0) !== v || lastIdx + 1 >= q.tokens.length || !units.some((x) => x.system > sy && x.index > lastIdx);
-                const x0 = P(us[k2].x - 0.2), x1 = P(us[e2].x + us[e2].w - 0.3), sz = P(4 * 0.85), gw = P(SIG_W[v] * 0.85);
-                const src = units.find((x) => x.kind === "ottava" && x.index <= us[k2].index && (q.ds.ott[x.index] ?? 0) === v && x.system === sy) ?? null;
-                const startIdx = isAuto ? -1 : src ? src.index : (() => {
-                  for (let i = us[k2].index; i >= 0; i--) if (q.tokens[i]?.kind === "ottava") return i;
-                  return -1;
-                })();
-                const endIdx = isAuto ? -1 : (() => {
-                  for (let i = lastIdx + 1; i < q.tokens.length; i++) {
-                    const t = q.tokens[i];
-                    if (t.kind === "ottava") return i;
-                    if (t.kind === "note" || t.kind === "rest") return -1;
-                  }
-                  return -1;
-                })();
-                if (cont) prims.push({ ...tokAt(q, startIdx), t: "text", x: x0, y: y + P(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont" + OFF, size: tx("ottava"), anchor: "start" });
-                else prims.push({ ...tokAt(q, startIdx), t: "glyph", x: x0, y: y + P(up ? 0.4 : 0.4), ch: SIG[v], cls: (isAuto ? "ottava auto" : "ottava") + OFF, size: sz });
-                const lx = x0 + (cont ? P(4.2) : gw) + P(0.4), ly = y - P(up ? 0.55 : 0.55);
-                const dashEnd = endsHere ? x1 - P(0.4) : x1;
-                for (let x = lx; x + P(0.6) <= dashEnd; x += P(1)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" + OFF });
-                if (endsHere) prims.push({ ...tokAt(q, endIdx), t: "line", x1, y1: ly, x2: x1, y2: ly + P(up ? 1.1 : -1.1), w: P(0.1), cls: "ottava-line" + OFF });
-                const hitIdx = src ? src.index : (() => {
-                  for (let i = us[k2].index; i >= 0; i--) if (q.tokens[i]?.kind === "ottava") return i;
-                  return -1;
-                })();
-                const run2 = isAuto ? q.ds.runs.find((rr) => us[k2].index >= rr.from && us[k2].index <= rr.to) : void 0;
-                if (q.vrt) {
-                } else if (run2) clefs.push({ kind: "ottava", paper: paper.id, part: q.p.id, index: -1, run: run2, system: row0, x: x0, y: y - P(1.6), w: Math.max(gw, P(3)), h: P(2.2) });
-                else if (hitIdx >= 0) clefs.push({ kind: "ottava", paper: paper.id, part: q.p.id, index: hitIdx, system: row0, x: x0, y: y - P(1.6), w: Math.max(gw, P(3)), h: P(2.2) });
-              });
-            });
-          }
-          k = e + 1;
-        }
+      let a = !!t.initPromise;
+      try {
+        return a || (t.initPromise = t.backend.init(n)), await t.initPromise, t.initialized = true, t.backend;
+      } catch (u) {
+        return a || (t.error = `${u}`, t.aborted = true), t.error;
+      } finally {
+        delete t.initPromise;
       }
     }
-    const stemIn = stemInput(per[r], nhX);
-    const stems = layoutStems(stemIn.seq, stemIn.dir, { u: sp, y: (d, n2) => yOf(RW(n2.key), d) });
-    const upOf = /* @__PURE__ */ new Map();
-    const tipOf = /* @__PURE__ */ new Map();
-    const stemXOf = /* @__PURE__ */ new Map();
-    for (const g of stems.groups) {
-      for (const c2 of g.keys) {
-        const st = stems.notes.get(c2);
-        upOf.set(c2, st.up);
-        tipOf.set(c2, st.tip);
-        stemXOf.set(c2, st.x);
-        put(RW(c2), { tok: tokOf(c2), t: "line", x1: st.x, y1: st.y0, x2: st.x, y2: st.tip, w: P(ENGRAVE.stem), cls: clsOf(c2) });
-        if (st.flag) put(RW(c2), { tok: tokOf(c2), t: "glyph", x: st.flag.x, y: st.flag.y, ch: (st.up ? [GLYPH.flag8thUp, GLYPH.flag16thUp, GLYPH.flag32ndUp] : [GLYPH.flag8thDown, GLYPH.flag16thDown, GLYPH.flag32ndDown])[st.flag.level - 1], cls: clsOf(c2) });
-      }
-      for (const bm of g.beams) put(RW(g.keys[0]), { t: "path", d: `M${bm.xL},${bm.yL}L${bm.xR},${bm.yR}L${bm.xR},${bm.yR + bm.th}L${bm.xL},${bm.yL + bm.th}Z`, cls: ["beam", bm.ghost ? "ghost" : ""].filter(Boolean).join(" ") });
+  }, pr = async (n) => {
+    let t = n.executionProviders || [], a = t.map((m) => typeof m == "string" ? m : m.name), u = a.length === 0 ? Be : a, o, d = [], c = /* @__PURE__ */ new Set();
+    for (let m of u) {
+      let h = await ns(m);
+      typeof h == "string" ? d.push({ name: m, err: h }) : (o || (o = h), o === h && c.add(m));
     }
-    const rollMute = (q.p.ignores ?? []).includes("roll");
-    for (const c2 of units) {
-      if (c2.kind !== "chunk" || !c2.note || c2.index < 0) continue;
-      const t = tokens[c2.index];
-      if (t?.kind !== "note" || !(t.art ?? []).includes("roll")) continue;
-      const st = stems.notes.get(c2), sx = stemXOf.get(c2);
-      let cx2, cy;
-      if (st && sx !== void 0) {
-        cx2 = sx;
-        cy = st.y0 + (st.tip - st.y0) * 0.55;
-      } else {
-        const ds = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index));
-        cx2 = nhX(c2) + nhW(c2) / 2;
-        cy = yOf(RW(c2), Math.max(...ds)) - P(1.7);
-      }
-      const W2 = P(1.2), T2 = P(0.24), R = P(0.36), G2 = P(0.5), cls = ["roll", rollMute ? "art-mute" : "", clsOf(c2) ?? ""].filter(Boolean).join(" ");
-      for (const k of [-1, 0, 1]) {
-        const y = cy + k * G2;
-        put(RW(c2), { tok: tokOf(c2), t: "path", d: `M${cx2 - W2 / 2},${y + R / 2}L${cx2 + W2 / 2},${y - R / 2}L${cx2 + W2 / 2},${y - R / 2 + T2}L${cx2 - W2 / 2},${y + R / 2 + T2}Z`, cls });
-      }
+    if (!o) throw new Error(`no available backend found. ERR: ${d.map((m) => `[${m.name}] ${m.err}`).join(", ")}`);
+    for (let { name: m, err: h } of d) a.includes(m) && console.warn(`removing requested execution provider "${m}" from session options because it is not available: ${h}`);
+    let l = t.filter((m) => c.has(typeof m == "string" ? m : m.name));
+    return [o, new Proxy(n, { get: (m, h) => h === "executionProviders" ? l : Reflect.get(m, h) })];
+  };
+});
+var mr = N(() => {
+  "use strict";
+  Zt();
+});
+var hr;
+var wr = N(() => {
+  "use strict";
+  hr = "1.30.0";
+});
+var br;
+var q;
+var Qt = N(() => {
+  "use strict";
+  wr();
+  br = "warning", q = { wasm: {}, webgl: {}, webgpu: {}, versions: { common: hr }, set logLevel(n) {
+    if (n !== void 0) {
+      if (typeof n != "string" || ["verbose", "info", "warning", "error", "fatal"].indexOf(n) === -1) throw new Error(`Unsupported logging level: ${n}`);
+      br = n;
     }
-    const ign = new Set(q.p.ignores ?? []);
-    const artEdge = /* @__PURE__ */ new Map();
-    for (const c2 of units) {
-      if (c2.kind !== "chunk" || !c2.note || !c2.art.length && !c2.breath) continue;
-      const row = RW(c2), cls = clsOf(c2), cx2 = nhX(c2) + nhW(c2) / 2;
-      const dsC = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index)), dHi = dsC[0], dLo = dsC[dsC.length - 1];
-      const below = upOf.get(c2) ?? false, sgn = below ? -1 : 1;
-      const inStaff = (d2) => d2 >= BOTTOM_LINE && d2 <= TOP_LINE2;
-      let d = below ? dLo - 2 : dHi + 2;
-      const artCls = (a) => ["art", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ");
-      for (const a of ["staccato", "tenuto"].filter((x) => c2.art.includes(x))) {
-        if (inStaff(d) && d % 2 === 0) d += sgn;
-        const m = ART_GLYPH[a], g = below ? m.below : m.above;
-        const gy = yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2));
-        put(row, { tok: tokOf(c2), t: "glyph", x: cx2 - P(m.w / 2), y: gy, ch: g, cls: artCls(a) });
-        artEdge.set(c2, { below, y: below ? gy + P(m.h) : gy - P(m.h) });
-        d += sgn * 2;
+  }, get logLevel() {
+    return br;
+  } };
+  Object.defineProperty(q, "logLevel", { enumerable: true });
+});
+var Y;
+var yr = N(() => {
+  "use strict";
+  Qt();
+  Y = q;
+});
+var gr;
+var Er;
+var Tr = N(() => {
+  "use strict";
+  gr = (n, t) => {
+    let a = typeof document < "u" ? document.createElement("canvas") : new OffscreenCanvas(1, 1);
+    a.width = n.dims[3], a.height = n.dims[2];
+    let u = a.getContext("2d");
+    if (u != null) {
+      let o, d;
+      t?.tensorLayout !== void 0 && t.tensorLayout === "NHWC" ? (o = n.dims[2], d = n.dims[3]) : (o = n.dims[3], d = n.dims[2]);
+      let c = t?.format !== void 0 ? t.format : "RGB", l = t?.norm, m, h;
+      l === void 0 || l.mean === void 0 ? m = [255, 255, 255, 255] : typeof l.mean == "number" ? m = [l.mean, l.mean, l.mean, l.mean] : (m = [l.mean[0], l.mean[1], l.mean[2], 0], l.mean[3] !== void 0 && (m[3] = l.mean[3])), l === void 0 || l.bias === void 0 ? h = [0, 0, 0, 0] : typeof l.bias == "number" ? h = [l.bias, l.bias, l.bias, l.bias] : (h = [l.bias[0], l.bias[1], l.bias[2], 0], l.bias[3] !== void 0 && (h[3] = l.bias[3]));
+      let g = d * o, b = 0, y = g, T = g * 2, I = -1;
+      c === "RGBA" ? (b = 0, y = g, T = g * 2, I = g * 3) : c === "RGB" ? (b = 0, y = g, T = g * 2) : c === "RBG" && (b = 0, T = g, y = g * 2);
+      for (let D = 0; D < d; D++) for (let $ = 0; $ < o; $++) {
+        let v = (n.data[b++] - h[0]) * m[0], A = (n.data[y++] - h[1]) * m[1], F = (n.data[T++] - h[2]) * m[2], P = I === -1 ? 255 : (n.data[I++] - h[3]) * m[3];
+        u.fillStyle = "rgba(" + v + "," + A + "," + F + "," + P + ")", u.fillRect($, D, 1, 1);
       }
-      const strong = ["accent", "marcato", "stress", "unstress"].filter((x) => c2.art.includes(x));
-      if (strong.length) attach(row, "strength", () => {
-        for (const a of strong) {
-          const m = ART_GLYPH[a];
-          placeAbove(row, 0.4, (y) => prims.push({ tok: tokOf(c2), t: "glyph", x: cx2 - P(m.w / 2), y, ch: m.above, cls: artCls(a) }));
-        }
+      if ("toDataURL" in a) return a.toDataURL();
+      throw new Error("toDataURL is not supported");
+    } else throw new Error("Can not access image data");
+  }, Er = (n, t) => {
+    let a = typeof document < "u" ? document.createElement("canvas").getContext("2d") : new OffscreenCanvas(1, 1).getContext("2d"), u;
+    if (a != null) {
+      let o, d, c;
+      t?.tensorLayout !== void 0 && t.tensorLayout === "NHWC" ? (o = n.dims[2], d = n.dims[1], c = n.dims[3]) : (o = n.dims[3], d = n.dims[2], c = n.dims[1]);
+      let l = t !== void 0 && t.format !== void 0 ? t.format : "RGB", m = t?.norm, h, g;
+      m === void 0 || m.mean === void 0 ? h = [255, 255, 255, 255] : typeof m.mean == "number" ? h = [m.mean, m.mean, m.mean, m.mean] : (h = [m.mean[0], m.mean[1], m.mean[2], 255], m.mean[3] !== void 0 && (h[3] = m.mean[3])), m === void 0 || m.bias === void 0 ? g = [0, 0, 0, 0] : typeof m.bias == "number" ? g = [m.bias, m.bias, m.bias, m.bias] : (g = [m.bias[0], m.bias[1], m.bias[2], 0], m.bias[3] !== void 0 && (g[3] = m.bias[3]));
+      let b = d * o;
+      if (t !== void 0 && (t.format !== void 0 && c === 4 && t.format !== "RGBA" || c === 3 && t.format !== "RGB" && t.format !== "BGR")) throw new Error("Tensor format doesn't match input tensor dims");
+      let y = 4, T = 0, I = 1, D = 2, $ = 3, v = 0, A = b, F = b * 2, P = -1;
+      l === "RGBA" ? (v = 0, A = b, F = b * 2, P = b * 3) : l === "RGB" ? (v = 0, A = b, F = b * 2) : l === "RBG" && (v = 0, F = b, A = b * 2), u = a.createImageData(o, d);
+      for (let k = 0; k < d * o; T += y, I += y, D += y, $ += y, k++) u.data[T] = (n.data[v++] - g[0]) * h[0], u.data[I] = (n.data[A++] - g[1]) * h[1], u.data[D] = (n.data[F++] - g[2]) * h[2], u.data[$] = P === -1 ? 255 : (n.data[P++] - g[3]) * h[3];
+    } else throw new Error("Can not access image data");
+    return u;
+  };
+});
+var Kt;
+var Sr;
+var vr;
+var Ar;
+var Or;
+var Ir;
+var Br = N(() => {
+  "use strict";
+  ct();
+  Kt = (n, t) => {
+    if (n === void 0) throw new Error("Image buffer must be defined");
+    if (t.height === void 0 || t.width === void 0) throw new Error("Image height and width must be defined");
+    if (t.tensorLayout === "NHWC") throw new Error("NHWC Tensor layout is not supported yet");
+    let { height: a, width: u } = t, o = t.norm ?? { mean: 255, bias: 0 }, d, c;
+    typeof o.mean == "number" ? d = [o.mean, o.mean, o.mean, o.mean] : d = [o.mean[0], o.mean[1], o.mean[2], o.mean[3] ?? 255], typeof o.bias == "number" ? c = [o.bias, o.bias, o.bias, o.bias] : c = [o.bias[0], o.bias[1], o.bias[2], o.bias[3] ?? 0];
+    let l = t.format !== void 0 ? t.format : "RGBA", m = t.tensorFormat !== void 0 && t.tensorFormat !== void 0 ? t.tensorFormat : "RGB", h = a * u, g = m === "RGBA" ? new Float32Array(h * 4) : new Float32Array(h * 3), b = 4, y = 0, T = 1, I = 2, D = 3, $ = 0, v = h, A = h * 2, F = -1;
+    l === "RGB" && (b = 3, y = 0, T = 1, I = 2, D = -1), m === "RGBA" ? F = h * 3 : m === "RBG" ? ($ = 0, A = h, v = h * 2) : m === "BGR" && (A = 0, v = h, $ = h * 2);
+    for (let k = 0; k < h; k++, y += b, I += b, T += b, D += b) g[$++] = (n[y] + c[0]) / d[0], g[v++] = (n[T] + c[1]) / d[1], g[A++] = (n[I] + c[2]) / d[2], F !== -1 && D !== -1 && (g[F++] = (n[D] + c[3]) / d[3]);
+    return m === "RGBA" ? new Z("float32", g, [1, 4, a, u]) : new Z("float32", g, [1, 3, a, u]);
+  }, Sr = async (n, t) => {
+    let a = typeof HTMLImageElement < "u" && n instanceof HTMLImageElement, u = typeof ImageData < "u" && n instanceof ImageData, o = typeof ImageBitmap < "u" && n instanceof ImageBitmap, d = typeof n == "string", c, l = t ?? {}, m = () => {
+      if (typeof document < "u") return document.createElement("canvas");
+      if (typeof OffscreenCanvas < "u") return new OffscreenCanvas(1, 1);
+      throw new Error("Canvas is not supported");
+    }, h = (g) => typeof HTMLCanvasElement < "u" && g instanceof HTMLCanvasElement || g instanceof OffscreenCanvas ? g.getContext("2d") : null;
+    if (a) {
+      let g = m();
+      g.width = n.width, g.height = n.height;
+      let b = h(g);
+      if (b != null) {
+        let y = n.height, T = n.width;
+        if (t !== void 0 && t.resizedHeight !== void 0 && t.resizedWidth !== void 0 && (y = t.resizedHeight, T = t.resizedWidth), t !== void 0) {
+          if (l = t, t.tensorFormat !== void 0) throw new Error("Image input config format must be RGBA for HTMLImageElement");
+          l.tensorFormat = "RGBA", l.height = y, l.width = T;
+        } else l.tensorFormat = "RGBA", l.height = y, l.width = T;
+        b.drawImage(n, 0, 0), c = b.getImageData(0, 0, T, y).data;
+      } else throw new Error("Can not access image data");
+    } else if (u) {
+      let g, b;
+      if (t !== void 0 && t.resizedWidth !== void 0 && t.resizedHeight !== void 0 ? (g = t.resizedHeight, b = t.resizedWidth) : (g = n.height, b = n.width), t !== void 0 && (l = t), l.format = "RGBA", l.height = g, l.width = b, t !== void 0) {
+        let y = m();
+        y.width = b, y.height = g;
+        let T = h(y);
+        if (T != null) T.putImageData(n, 0, 0), c = T.getImageData(0, 0, b, g).data;
+        else throw new Error("Can not access image data");
+      } else c = n.data;
+    } else if (o) {
+      if (t === void 0) throw new Error("Please provide image config with format for Imagebitmap");
+      let g = m();
+      g.width = n.width, g.height = n.height;
+      let b = h(g);
+      if (b != null) {
+        let y = n.height, T = n.width;
+        return b.drawImage(n, 0, 0, T, y), c = b.getImageData(0, 0, T, y).data, l.height = y, l.width = T, Kt(c, l);
+      } else throw new Error("Can not access image data");
+    } else {
+      if (d) return new Promise((g, b) => {
+        let y = m(), T = h(y);
+        if (!n || !T) return b();
+        let I = new Image();
+        I.crossOrigin = "Anonymous", I.src = n, I.onload = () => {
+          y.width = I.width, y.height = I.height, T.drawImage(I, 0, 0, y.width, y.height);
+          let D = T.getImageData(0, 0, y.width, y.height);
+          l.height = y.height, l.width = y.width, g(Kt(D.data, l));
+        };
       });
-      const swl = c2.j === 0 ? swellOf(tokens[c2.index]) : void 0;
-      const atk = ["sfz", "fp"].filter((x) => c2.art.includes(x));
-      if (swl || atk.length) layNoteDynamics(orn, row, c2, { cx: cx2, x0: nhX(c2), w: P(c2.w), tok: tokOf(c2), cls, ign, swl, roll: c2.art.includes("roll"), atk });
-      if (c2.art.includes("arpeggio")) {
-        const yTop = yOf(row, dHi) - P(0.7), yBot = yOf(row, dLo) + P(0.7), x0 = nhX(c2) - P(c2.accW + 0.9), amp = P(0.28), step = P(0.5);
-        let dd = `M${x0},${yBot}`;
-        for (let y = yBot, k = 0; y > yTop; y -= step, k++) dd += `Q${x0 + (k % 2 ? -amp : amp) * 2},${y - step / 2} ${x0},${Math.max(yTop, y - step)}`;
-        put(row, { tok: tokOf(c2), t: "path", d: dd, cls: ["arpeggio", ign.has("arpeggio") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-      }
-      if (c2.breath) put(row, { tok: tokOf(c2), t: "glyph", x: nhX(c2) + nhW(c2) + P(0.55), y: yOf(row, TOP_LINE2 + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-      if (c2.breath && c2.inhale) put(row, { tok: tokOf(c2), t: "text", x: nhX(c2) + nhW(c2) + P(1.35), y: yOf(row, TOP_LINE2 + 1) + P(0.45), s: c2.inhale === "big" ? _tIn(textLang, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(textLang, "\u5438##\u8BB0\u53F7"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx("breath-label"), anchor: "start" });
+      throw new Error("Input data provided is not supported - aborted tensor creation");
     }
-    const tieArc = (row, d, x1, x2, ghost) => {
-      const len = Math.abs(x2 - x1), sgn = d < MID_LINE2 ? 1 : -1, y = yOf(row, d) + sgn * P(0.8), h = Math.min(len * 0.25, Math.max(P(0.5), Math.min(P(1.6), len * 0.12)));
-      put(row, { t: "path", d: `M${x1},${y}Q${(x1 + x2) / 2},${y + sgn * h} ${x2},${y}`, cls: ghost ? "tie ghost" : "tie" });
-    };
-    const tieBetween = (a, b) => {
-      if (a.staff !== b.staff || !a.pitch || !b.pitch) return;
-      const da = dIdx(a.pitch, a.staff, a.index), db = dIdx(b.pitch, b.staff, b.index);
-      if (a.system === b.system) {
-        tieArc(RW(b), db, nhX(a) + nhW(a) * 0.8, nhX(b) + nhW(b) * 0.2, b.ghost);
+    if (c !== void 0) return Kt(c, l);
+    throw new Error("Input data provided is not supported - aborted tensor creation");
+  }, vr = (n, t) => {
+    let { width: a, height: u, download: o, dispose: d } = t, c = [1, u, a, 4];
+    return new Z({ location: "texture", type: "float32", texture: n, dims: c, download: o, dispose: d });
+  }, Ar = (n, t) => {
+    let { dataType: a, dims: u, download: o, dispose: d } = t;
+    return new Z({ location: "gpu-buffer", type: a ?? "float32", gpuBuffer: n, dims: u, download: o, dispose: d });
+  }, Or = (n, t) => {
+    let { dataType: a, dims: u, download: o, dispose: d } = t;
+    return new Z({ location: "ml-tensor", type: a ?? "float32", mlTensor: n, dims: u, download: o, dispose: d });
+  }, Ir = (n, t, a) => new Z({ location: "cpu-pinned", type: n, data: t, dims: a ?? [t.length] });
+});
+var Le;
+var Xe;
+var Lr;
+var _r;
+var Dr = N(() => {
+  "use strict";
+  Le = /* @__PURE__ */ new Map([["float32", Float32Array], ["uint8", Uint8Array], ["int8", Int8Array], ["uint16", Uint16Array], ["int16", Int16Array], ["int32", Int32Array], ["bool", Uint8Array], ["float64", Float64Array], ["uint32", Uint32Array], ["int4", Uint8Array], ["uint4", Uint8Array]]), Xe = /* @__PURE__ */ new Map([[Float32Array, "float32"], [Uint8Array, "uint8"], [Int8Array, "int8"], [Uint16Array, "uint16"], [Int16Array, "int16"], [Int32Array, "int32"], [Float64Array, "float64"], [Uint32Array, "uint32"]]), Lr = false, _r = () => {
+    if (!Lr) {
+      Lr = true;
+      let n = typeof BigInt64Array < "u" && BigInt64Array.from, t = typeof BigUint64Array < "u" && BigUint64Array.from, a = globalThis.Float16Array, u = typeof a < "u" && a.from;
+      n && (Le.set("int64", BigInt64Array), Xe.set(BigInt64Array, "int64")), t && (Le.set("uint64", BigUint64Array), Xe.set(BigUint64Array, "uint64")), u ? (Le.set("float16", a), Xe.set(a, "float16")) : Le.set("float16", Uint16Array);
+    }
+  };
+});
+var Pr;
+var Ur;
+var xr = N(() => {
+  "use strict";
+  ct();
+  Pr = (n) => {
+    let t = 1;
+    for (let a = 0; a < n.length; a++) {
+      let u = n[a];
+      if (typeof u != "number" || !Number.isSafeInteger(u)) throw new TypeError(`dims[${a}] must be an integer, got: ${u}`);
+      if (u < 0) throw new RangeError(`dims[${a}] must be a non-negative integer, got: ${u}`);
+      t *= u;
+    }
+    return t;
+  }, Ur = (n, t) => {
+    switch (n.location) {
+      case "cpu":
+        return new Z(n.type, n.data, t);
+      case "cpu-pinned":
+        return new Z({ location: "cpu-pinned", data: n.data, type: n.type, dims: t });
+      case "texture":
+        return new Z({ location: "texture", texture: n.texture, type: n.type, dims: t });
+      case "gpu-buffer":
+        return new Z({ location: "gpu-buffer", gpuBuffer: n.gpuBuffer, type: n.type, dims: t });
+      case "ml-tensor":
+        return new Z({ location: "ml-tensor", mlTensor: n.mlTensor, type: n.type, dims: t });
+      default:
+        throw new Error(`tensorReshape: tensor location ${n.location} is not supported`);
+    }
+  };
+});
+var Z;
+var ct = N(() => {
+  "use strict";
+  Tr();
+  Br();
+  Dr();
+  xr();
+  Z = class {
+    constructor(t, a, u) {
+      _r();
+      let o, d;
+      if (typeof t == "object" && "location" in t) switch (this.dataLocation = t.location, o = t.type, d = t.dims, t.location) {
+        case "cpu-pinned": {
+          let l = Le.get(o);
+          if (!l) throw new TypeError(`unsupported type "${o}" to create tensor from pinned buffer`);
+          if (!(t.data instanceof l)) throw new TypeError(`buffer should be of type ${l.name}`);
+          this.cpuData = t.data;
+          break;
+        }
+        case "texture": {
+          if (o !== "float32") throw new TypeError(`unsupported type "${o}" to create tensor from texture`);
+          this.gpuTextureData = t.texture, this.downloader = t.download, this.disposer = t.dispose;
+          break;
+        }
+        case "gpu-buffer": {
+          if (o !== "float32" && o !== "float16" && o !== "int32" && o !== "int64" && o !== "uint32" && o !== "uint8" && o !== "bool" && o !== "uint4" && o !== "int4") throw new TypeError(`unsupported type "${o}" to create tensor from gpu buffer`);
+          this.gpuBufferData = t.gpuBuffer, this.downloader = t.download, this.disposer = t.dispose;
+          break;
+        }
+        case "ml-tensor": {
+          if (o !== "float32" && o !== "float16" && o !== "int32" && o !== "int64" && o !== "uint32" && o !== "uint64" && o !== "int8" && o !== "uint8" && o !== "bool" && o !== "uint4" && o !== "int4") throw new TypeError(`unsupported type "${o}" to create tensor from MLTensor`);
+          this.mlTensorData = t.mlTensor, this.downloader = t.download, this.disposer = t.dispose;
+          break;
+        }
+        default:
+          throw new Error(`Tensor constructor: unsupported location '${this.dataLocation}'`);
+      }
+      else {
+        let l, m;
+        if (typeof t == "string") if (o = t, m = u, t === "string") {
+          if (!Array.isArray(a)) throw new TypeError("A string tensor's data must be a string array.");
+          l = a;
+        } else {
+          let h = Le.get(t);
+          if (h === void 0) throw new TypeError(`Unsupported tensor type: ${t}.`);
+          if (Array.isArray(a)) {
+            if (t === "float16" && h === Uint16Array || t === "uint4" || t === "int4") throw new TypeError(`Creating a ${t} tensor from number array is not supported. Please use ${h.name} as data.`);
+            t === "uint64" || t === "int64" ? l = h.from(a, BigInt) : l = h.from(a);
+          } else if (a instanceof h) l = a;
+          else if (a instanceof Uint8ClampedArray) if (t === "uint8") l = Uint8Array.from(a);
+          else throw new TypeError("A Uint8ClampedArray tensor's data must be type of uint8");
+          else if (t === "float16" && a instanceof Uint16Array && h !== Uint16Array) l = new globalThis.Float16Array(a.buffer, a.byteOffset, a.length);
+          else throw new TypeError(`A ${o} tensor's data must be type of ${h}`);
+        }
+        else if (m = a, Array.isArray(t)) {
+          if (t.length === 0) throw new TypeError("Tensor type cannot be inferred from an empty array.");
+          let h = typeof t[0];
+          if (h === "string") o = "string", l = t;
+          else if (h === "boolean") o = "bool", l = Uint8Array.from(t);
+          else throw new TypeError(`Invalid element type of data array: ${h}.`);
+        } else if (t instanceof Uint8ClampedArray) o = "uint8", l = Uint8Array.from(t);
+        else {
+          let h = Xe.get(t.constructor);
+          if (h === void 0) throw new TypeError(`Unsupported type for tensor data: ${t.constructor}.`);
+          o = h, l = t;
+        }
+        if (m === void 0) m = [l.length];
+        else if (!Array.isArray(m)) throw new TypeError("A tensor's dims must be a number array");
+        d = m, this.cpuData = l, this.dataLocation = "cpu";
+      }
+      let c = Pr(d);
+      if (this.cpuData && c !== this.cpuData.length && !((o === "uint4" || o === "int4") && Math.ceil(c / 2) === this.cpuData.length)) throw new Error(`Tensor's size(${c}) does not match data length(${this.cpuData.length}).`);
+      this.type = o, this.dims = d, this.size = c;
+    }
+    static async fromImage(t, a) {
+      return Sr(t, a);
+    }
+    static fromTexture(t, a) {
+      return vr(t, a);
+    }
+    static fromGpuBuffer(t, a) {
+      return Ar(t, a);
+    }
+    static fromMLTensor(t, a) {
+      return Or(t, a);
+    }
+    static fromPinnedBuffer(t, a, u) {
+      return Ir(t, a, u);
+    }
+    toDataURL(t) {
+      return gr(this, t);
+    }
+    toImageData(t) {
+      return Er(this, t);
+    }
+    get data() {
+      if (this.ensureValid(), !this.cpuData) throw new Error("The data is not on CPU. Use `getData()` to download GPU data to CPU, or use `texture` or `gpuBuffer` property to access the GPU data directly.");
+      return this.cpuData;
+    }
+    get location() {
+      return this.dataLocation;
+    }
+    get texture() {
+      if (this.ensureValid(), !this.gpuTextureData) throw new Error("The data is not stored as a WebGL texture.");
+      return this.gpuTextureData;
+    }
+    get gpuBuffer() {
+      if (this.ensureValid(), !this.gpuBufferData) throw new Error("The data is not stored as a WebGPU buffer.");
+      return this.gpuBufferData;
+    }
+    get mlTensor() {
+      if (this.ensureValid(), !this.mlTensorData) throw new Error("The data is not stored as a WebNN MLTensor.");
+      return this.mlTensorData;
+    }
+    async getData(t) {
+      switch (this.ensureValid(), this.dataLocation) {
+        case "cpu":
+        case "cpu-pinned":
+          return this.data;
+        case "texture":
+        case "gpu-buffer":
+        case "ml-tensor": {
+          if (!this.downloader) throw new Error("The current tensor is not created with a specified data downloader.");
+          if (this.isDownloading) throw new Error("The current tensor is being downloaded.");
+          try {
+            this.isDownloading = true;
+            let a = await this.downloader();
+            return this.downloader = void 0, this.dataLocation = "cpu", this.cpuData = a, t && this.disposer && (this.disposer(), this.disposer = void 0), a;
+          } finally {
+            this.isDownloading = false;
+          }
+        }
+        default:
+          throw new Error(`cannot get data from location: ${this.dataLocation}`);
+      }
+    }
+    dispose() {
+      if (this.isDownloading) throw new Error("The current tensor is being downloaded.");
+      this.disposer && (this.disposer(), this.disposer = void 0), this.cpuData = void 0, this.gpuTextureData = void 0, this.gpuBufferData = void 0, this.mlTensorData = void 0, this.downloader = void 0, this.isDownloading = void 0, this.dataLocation = "none";
+    }
+    ensureValid() {
+      if (this.dataLocation === "none") throw new Error("The tensor is disposed.");
+    }
+    reshape(t) {
+      if (this.ensureValid(), this.downloader || this.disposer) throw new Error("Cannot reshape a tensor that owns GPU resource.");
+      return Ur(this, t);
+    }
+  };
+});
+var de;
+var en = N(() => {
+  "use strict";
+  ct();
+  de = Z;
+});
+var Cr;
+var Mr;
+var _e;
+var De;
+var Pe;
+var Ue;
+var tn = N(() => {
+  "use strict";
+  Qt();
+  Cr = (n, t) => {
+    (typeof q.trace > "u" ? !q.wasm.trace : !q.trace) || console.timeStamp(`${n}::ORT::${t}`);
+  }, Mr = (n, t) => {
+    let a = new Error().stack?.split(/\r\n|\r|\n/g) || [], u = false;
+    for (let o = 0; o < a.length; o++) {
+      if (u && !a[o].includes("TRACE_FUNC")) {
+        let d = `FUNC_${n}::${a[o].trim().split(" ")[1]}`;
+        t && (d += `::${t}`), Cr("CPU", d);
         return;
       }
-      tieArc(RW(a), da, nhX(a) + nhW(a) * 0.8, Math.max(nhX(a) + nhW(a) * 0.8 + P(2), P(right) - P(0.3)), b.ghost);
-      tieArc(RW(b), db, Math.max(P((sysStarts[b.system] ?? 0) - 1.6), nhX(b) - P(3)), nhX(b) + nhW(b) * 0.2, b.ghost);
-    };
-    const realChunks = units.filter((u) => u.kind === "chunk");
-    for (let n2 = 1; n2 < realChunks.length; n2++) {
-      const a = realChunks[n2 - 1], b = realChunks[n2];
-      if (!a.note || !b.note) continue;
-      if (b.j > 0 && a.index === b.index || b.tie && a.last) tieBetween(a, b);
+      a[o].includes("TRACE_FUNC") && (u = true);
     }
-    const headOf = /* @__PURE__ */ new Map();
-    for (const c2 of realChunks) if (c2.note && c2.j === 0 && !headOf.has(c2.index)) headOf.set(c2.index, c2);
-    const noteIdx = [...headOf.keys()].sort((x, y) => x - y), slurOf = (k) => !!tokens[noteIdx[k]].slur;
-    const ext = (c2, below) => {
-      const ds = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index));
-      return yOf(RW(c2), below ? Math.min(...ds) : Math.max(...ds));
-    };
-    const ART_CLR = 0.5;
-    const reach = (c2, below, head) => {
-      const sgn = below ? 1 : -1, h = ext(c2, below) + sgn * P(head), a = artEdge.get(c2);
-      return a && a.below === below ? below ? Math.max(h, a.y + P(ART_CLR)) : Math.min(h, a.y - P(ART_CLR)) : h;
-    };
-    for (let k = 0; k < noteIdx.length; k++) {
-      if (!slurOf(k) || k > 0 && slurOf(k - 1)) continue;
-      let e = k;
-      while (e < noteIdx.length - 1 && slurOf(e)) e++;
-      if (e === k) continue;
-      const run2 = noteIdx.slice(k, e + 1).map((x) => headOf.get(x)).filter((c2) => c2.pitch), below = upOf.get(run2[0]) ?? false, sgn = below ? 1 : -1;
-      const groups = [];
-      for (const c2 of run2) {
-        const g = groups[groups.length - 1];
-        if (g && g[0].system === c2.system) g.push(c2);
-        else groups.push([c2]);
-      }
-      groups.forEach((g, gi) => {
-        const f = g[0], l = g[g.length - 1], openL = gi > 0, openR = gi < groups.length - 1;
-        const xa = openL ? nhX(f) - P(2) : nhX(f) + nhW(f) / 2, xb = openR ? nhX(l) + nhW(l) + P(2) : nhX(l) + nhW(l) / 2;
-        if (xb - xa < P(1)) return;
-        const ya = reach(f, below, 1.2), yb = reach(l, below, 1.2);
-        const peak = g.map((c2) => ext(c2, below) + sgn * P(2.2));
-        let cy = below ? Math.max(ya, yb, ...peak) + P(0.6) : Math.min(ya, yb, ...peak) - P(0.6);
-        const k1 = xa + (xb - xa) * 0.2, k2 = xb - (xb - xa) * 0.2;
-        const bez = (t, p0, p1, p2, p3) => {
-          const u = 1 - t;
-          return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
-        };
-        for (const c2 of g.slice(1, -1)) {
-          const a = artEdge.get(c2);
-          if (!a || a.below !== below) continue;
-          const x = nhX(c2) + nhW(c2) / 2;
-          let lo = 0, hi = 1;
-          for (let it = 0; it < 30; it++) {
-            const m = (lo + hi) / 2;
-            if (bez(m, xa, k1, k2, xb) < x) lo = m;
-            else hi = m;
+  }, _e = (n) => {
+    (typeof q.trace > "u" ? !q.wasm.trace : !q.trace) || Mr("BEGIN", n);
+  }, De = (n) => {
+    (typeof q.trace > "u" ? !q.wasm.trace : !q.trace) || Mr("END", n);
+  }, Pe = (n) => {
+    (typeof q.trace > "u" ? !q.wasm.trace : !q.trace) || console.time(`ORT::${n}`);
+  }, Ue = (n) => {
+    (typeof q.trace > "u" ? !q.wasm.trace : !q.trace) || console.timeEnd(`ORT::${n}`);
+  };
+});
+var lt;
+var Rr = N(() => {
+  "use strict";
+  Zt();
+  en();
+  tn();
+  lt = class n {
+    constructor(t) {
+      this.handler = t;
+    }
+    async run(t, a, u) {
+      _e(), Pe("InferenceSession.run");
+      let o = {}, d = {};
+      if (typeof t != "object" || t === null || t instanceof de || Array.isArray(t)) throw new TypeError("'feeds' must be an object that use input names as keys and OnnxValue as corresponding values.");
+      let c = true;
+      if (typeof a == "object") {
+        if (a === null) throw new TypeError("Unexpected argument[1]: cannot be null.");
+        if (a instanceof de) throw new TypeError("'fetches' cannot be a Tensor");
+        if (Array.isArray(a)) {
+          if (a.length === 0) throw new TypeError("'fetches' cannot be an empty array.");
+          c = false;
+          for (let h of a) {
+            if (typeof h != "string") throw new TypeError("'fetches' must be a string array or an object.");
+            if (this.outputNames.indexOf(h) === -1) throw new RangeError(`'fetches' contains invalid output name: ${h}.`);
+            o[h] = null;
           }
-          const t = (lo + hi) / 2, B = 3 * t * (1 - t), A = (1 - t) ** 3 * ya + t ** 3 * yb, need = reach(c2, below, 0);
-          if (B > 1e-6) cy = below ? Math.max(cy, (need - A) / B) : Math.min(cy, (need - A) / B);
+          if (typeof u == "object" && u !== null) d = u;
+          else if (typeof u < "u") throw new TypeError("'options' must be an object.");
+        } else {
+          let h = false, g = Object.getOwnPropertyNames(a);
+          for (let b of this.outputNames) if (g.indexOf(b) !== -1) {
+            let y = a[b];
+            (y === null || y instanceof de) && (h = true, c = false, o[b] = y);
+          }
+          if (h) {
+            if (typeof u == "object" && u !== null) d = u;
+            else if (typeof u < "u") throw new TypeError("'options' must be an object.");
+          } else d = a;
         }
-        put(RW(f), { t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy} ${xb - (xb - xa) * 0.2},${cy} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
-      });
-    }
-    layDynamics(orn);
-    if (!v2) layPedals(orn);
-    if (harmony && !v2 && !q.vrt) {
-      const fs = tx("chord-tag");
-      const theory = harmonyTheory(), placed = new Map((harmony.get(q.p.id) ?? []).map((x) => [x.index, x]));
-      for (const c2 of units) {
-        if (c2.kind !== "chunk" || !c2.note || c2.j !== 0 || c2.index < 0 || c2.pad) continue;
-        const t = tokens[c2.index];
-        if (t?.kind !== "note" || !t.pitch) continue;
-        const pt = placed.get(c2.index);
-        if (!pt) continue;
-        const rd = pt.read, rAt = pt.at === q.p.id ? -1 : per.findIndex((x) => x.p.id === pt.at), atRow = rAt >= 0 && !skip(rAt) ? rowOf(c2.system, rAt, per[rAt].staves - 1) : null;
-        const ds = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index)), second = ds.some((dd, k) => k > 0 && Math.abs(ds[k - 1] - dd) === 1);
-        const headR = nhX(c2) + nhW(c2) * (second ? 1.95 : 1), sx = stemXOf.get(c2), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
-        const atStem = sx !== void 0 && !(low && headR > sx + P(0.1));
-        const label = theory.label(rd), tx2 = atStem ? sx - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
-        const row = atRow ?? RW(c2), cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;
-        attach(row, "chordTag", () => placeBelow(row, 0.3, (y) => {
-          prims.push({ t: "text", x: tx2, y, s: label, cls, size: fs, anchor: "start" });
-          chordTagsOut.push({ x: tx2 - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: c2.index, ...atRow !== null ? { part: q.p.id } : {} });
-        }));
+      } else if (typeof a < "u") throw new TypeError("Unexpected argument[1]: must be 'fetches' or 'options'.");
+      for (let h of this.inputNames) if (typeof t[h] > "u") throw new Error(`input '${h}' is missing in 'feeds'.`);
+      if (c) for (let h of this.outputNames) o[h] = null;
+      let l = await this.handler.run(t, o, d), m = {};
+      for (let h in l) if (Object.hasOwnProperty.call(l, h)) {
+        let g = l[h];
+        g instanceof de ? m[h] = g : m[h] = new de(g.type, g.data, g.dims);
       }
+      return Ue("InferenceSession.run"), De(), m;
     }
-    const bracket = (cs, openL, openR, num) => {
-      const row = RW(cs[0]), n2 = cs[0].ratio[0];
-      const xa = openL ? Math.min(nhX(cs[0]) - P(1.2), nhX(cs[0])) : nhX(cs[0]), last = cs[cs.length - 1], xb = openR ? nhX(last) + nhW(last) + P(1.2) : nhX(last) + nhW(last);
-      const top = Math.min(...cs.map((c2) => Math.min(c2.pitch ? yOf(row, dIdx(c2.pitch, c2.staff, c2.index)) : yOf(row, MID_LINE2), tipOf.get(c2) ?? Infinity)), yOf(row, TOP_LINE2)) - P(1.6);
-      const mid = (xa + xb) / 2, gap = num ? P(1) : 0;
-      const left = openL ? `M${xa},${top}` : `M${xa},${top + P(0.6)}L${xa},${top}`, right2 = openR ? `L${xb},${top}` : `L${xb},${top}L${xb},${top + P(0.6)}`;
-      put(row, { t: "path", d: num ? `${left}L${mid - gap},${top}M${mid + gap},${top}${right2}` : `${left}${right2}`, cls: "tuplet-bracket" });
-      if (num) put(row, { t: "glyph", x: mid - P(0.55), y: top + P(0.55), ch: GLYPH_TUPLET(n2), cls: "tuplet" });
-    };
-    let run = [], runRatio = null, acc = 0, minBase = Infinity, segStart = 0;
-    const flushSeg = (openR) => {
-      const cs = run.slice(segStart);
-      if (cs.length && cs[0].ratio) bracket(cs, segStart > 0, openR, segStart === 0);
-      segStart = run.length;
-    };
-    const closeRun = () => {
-      if (run.length) flushSeg(false);
-      run = [];
-      runRatio = null;
-      acc = 0;
-      minBase = Infinity;
-      segStart = 0;
-    };
-    for (const c2 of realChunks) {
-      const rr = c2.ratio ? c2.ratio.join(":") : null;
-      if (rr !== runRatio || run.length && c2.staff !== run[0].staff) closeRun();
-      else if (run.length && c2.system !== run[run.length - 1].system) flushSeg(true);
-      if (!rr) continue;
-      run.push(c2);
-      runRatio = rr;
-      acc += c2.ticks;
-      minBase = Math.min(minBase, c2.base);
-      if (acc >= c2.ratio[1] * minBase - 1e-6) closeRun();
+    async release() {
+      return this.handler.dispose();
     }
-    closeRun();
-    const H = headLen(tokens), realLen = q.realLen;
-    const inkL = measured[r].inkL, cx = (u) => {
-      const k = u.kind === "chunk" ? inkL.get(u) : void 0;
-      return P(u.x - (k ? k + 0.2 : 0));
-    };
-    const shiftAt = (c2) => {
-      const kk = Math.min(c2, realLen) - 1, si = kk >= H ? kk : -1;
-      return Array.from({ length: q.staves }, (_, k) => shAt(q, k + 1, si));
-    };
-    caretStops(q, { cx, shiftAt, rowOf: (sy, k) => rowOf(sy, r, k), P, sysStart0: sysStarts[0], cols, slots, heads });
+    static async create(t, a, u, o) {
+      _e(), Pe("InferenceSession.create");
+      let d, c = {};
+      if (typeof t == "string") {
+        if (d = t, typeof a == "object" && a !== null) c = a;
+        else if (typeof a < "u") throw new TypeError("'options' must be an object.");
+      } else if (t instanceof Uint8Array) {
+        if (d = t, typeof a == "object" && a !== null) c = a;
+        else if (typeof a < "u") throw new TypeError("'options' must be an object.");
+      } else if (t instanceof ArrayBuffer || typeof SharedArrayBuffer < "u" && t instanceof SharedArrayBuffer) {
+        let g = t, b = 0, y = t.byteLength;
+        if (typeof a == "object" && a !== null) c = a;
+        else if (typeof a == "number") {
+          if (b = a, !Number.isSafeInteger(b)) throw new RangeError("'byteOffset' must be an integer.");
+          if (b < 0 || b >= g.byteLength) throw new RangeError(`'byteOffset' is out of range [0, ${g.byteLength}).`);
+          if (y = t.byteLength - b, typeof u == "number") {
+            if (y = u, !Number.isSafeInteger(y)) throw new RangeError("'byteLength' must be an integer.");
+            if (y <= 0 || b + y > g.byteLength) throw new RangeError(`'byteLength' is out of range (0, ${g.byteLength - b}].`);
+            if (typeof o == "object" && o !== null) c = o;
+            else if (typeof o < "u") throw new TypeError("'options' must be an object.");
+          } else if (typeof u < "u") throw new TypeError("'byteLength' must be a number.");
+        } else if (typeof a < "u") throw new TypeError("'options' must be an object.");
+        d = new Uint8Array(g, b, y);
+      } else throw new TypeError("Unexpected argument[0]: must be 'path' or 'buffer'.");
+      let [l, m] = await pr(c), h = await l.createInferenceSessionHandler(d, m);
+      return Ue("InferenceSession.create"), De(), new n(h);
+    }
+    startProfiling() {
+      this.handler.startProfiling();
+    }
+    endProfiling() {
+      this.handler.endProfiling();
+    }
+    get inputNames() {
+      return this.handler.inputNames;
+    }
+    get outputNames() {
+      return this.handler.outputNames;
+    }
+    get inputMetadata() {
+      return this.handler.inputMetadata;
+    }
+    get outputMetadata() {
+      return this.handler.outputMetadata;
+    }
+  };
+});
+var rs;
+var Fr = N(() => {
+  "use strict";
+  Rr();
+  rs = lt;
+});
+var Nr = N(() => {
+  "use strict";
+});
+var kr = N(() => {
+  "use strict";
+});
+var Wr = N(() => {
+  "use strict";
+});
+var Gr = N(() => {
+  "use strict";
+});
+var nn = {};
+ut(nn, { InferenceSession: () => rs, TRACE: () => Cr, TRACE_EVENT_BEGIN: () => Pe, TRACE_EVENT_END: () => Ue, TRACE_FUNC_BEGIN: () => _e, TRACE_FUNC_END: () => De, Tensor: () => de, env: () => Y, registerBackend: () => Je });
+var Te = N(() => {
+  "use strict";
+  mr();
+  yr();
+  Fr();
+  en();
+  Nr();
+  kr();
+  tn();
+  Wr();
+  Gr();
+});
+var dt = N(() => {
+  "use strict";
+});
+var jr = {};
+ut(jr, { default: () => os });
+var zr;
+var Hr;
+var os;
+var Vr = N(() => {
+  "use strict";
+  rn();
+  xe();
+  pt();
+  zr = "ort-wasm-proxy-worker", Hr = globalThis.self?.name === zr;
+  Hr && (self.onmessage = (n) => {
+    let { type: t, in: a } = n.data;
+    try {
+      switch (t) {
+        case "init-wasm":
+          mt(a.wasm).then(() => {
+            ht(a).then(() => {
+              postMessage({ type: t });
+            }, (u) => {
+              postMessage({ type: t, err: u });
+            });
+          }, (u) => {
+            postMessage({ type: t, err: u });
+          });
+          break;
+        case "init-ep": {
+          let { epName: u, env: o } = a;
+          wt(o, u).then(() => {
+            postMessage({ type: t });
+          }, (d) => {
+            postMessage({ type: t, err: d });
+          });
+          break;
+        }
+        case "copy-from": {
+          let { buffer: u } = a, o = Ze(u);
+          postMessage({ type: t, out: o });
+          break;
+        }
+        case "create": {
+          let { model: u, options: o } = a;
+          bt(u, o).then((d) => {
+            postMessage({ type: t, out: d });
+          }, (d) => {
+            postMessage({ type: t, err: d });
+          });
+          break;
+        }
+        case "release":
+          yt(a), postMessage({ type: t });
+          break;
+        case "run": {
+          let { sessionId: u, inputIndices: o, inputs: d, outputIndices: c, options: l } = a;
+          gt(u, o, d, c, new Array(c.length).fill(null), l).then((m) => {
+            m.some((h) => h[3] !== "cpu") ? postMessage({ type: t, err: "Proxy does not support non-cpu tensor location." }) : postMessage({ type: t, out: m }, Tt([...d, ...m]));
+          }, (m) => {
+            postMessage({ type: t, err: m });
+          });
+          break;
+        }
+        case "end-profiling":
+          Et(a), postMessage({ type: t });
+          break;
+        default:
+      }
+    } catch (u) {
+      postMessage({ type: t, err: u });
+    }
   });
-  return { lyricParts };
-}
-
-// src/render/staff/index.ts
-function staffLooks(song, noAutoGrand) {
-  const looks = resolveSongLooks(song, trackLookOf(song), noAutoGrand);
-  return (paperId, partId) => looks.get(paperId)?.get(partId);
-}
-
-// src/render/jianpu/glyphs.ts
-var FS = 2.5;
-var DIGIT_EM = FS;
-var DIGIT_W = 0.62 * FS;
-var BASE_Y = 2.95;
-var DIGIT_TOP = 1.15;
-var DIGIT_MID = 2.05;
-var UL_Y0 = BASE_Y + 0.273 * FS;
-var UL_GAP = 0.18 * FS;
-var UL_W = 0.059 * FS;
-var DOT_R = 0.082 * FS;
-var DOT_GAP = DIGIT_TOP - (BASE_Y - 0.9 * FS) - 0.082 * FS;
-var DOT_STEP = 0.227 * FS;
-var LOW_DOT_UNDER = DOT_GAP + DOT_R;
-var ACC_EM = 0.59 * FS;
-var ACC_DX = 0.465 * FS;
-var ACC_Y = BASE_Y - 0.364 * FS;
-var ACC_W = 0.41 * FS;
-var DASH_L = 0.545 * FS;
-var DASH_W = 0.073 * FS;
-var DASH_Y = BASE_Y - 0.32 * FS;
-var DASH_PITCH = 0.756 * FS;
-var AUG_R = 0.091 * FS;
-var AUG_DX = 0.8 * 0.62 * FS - 0.31 * FS - 0.091 * FS;
-var AUG_Y = BASE_Y - 0.3 * FS;
-var COL_MIN = 0.756 * FS;
-var COL_MIN_SHORT = 0.492 * FS;
-var BAR_Y0 = BASE_Y - 1.82 * FS;
-var BAR_Y1 = BASE_Y + 1 * FS;
-var BAR_DX = 0.5;
-var BAR_THIN = 0.12;
-var BAR_THICK = 0.4;
-var BAR_GAP = 0.35;
-var BAR_W_J = 0.36 * FS;
-var JP_BODY = { top: BAR_Y0, bottom: BAR_Y1 };
-var MID_TEXT_EM = 1.4;
-var BREATH_W = 0.35 + 0.9;
-var CHORD_GAP = 0.25;
-var DIGIT_H = BASE_Y - DIGIT_TOP;
-function stackBases(dots) {
-  const up = (d) => d > 0 ? DOT_GAP + 2 * DOT_R + (d - 1) * DOT_STEP : 0, down = (d) => d < 0 ? DOT_GAP + 2 * DOT_R + (-d - 1) * DOT_STEP : 0;
-  const out = [];
-  dots.forEach((d, k) => {
-    out.push(k === 0 ? BASE_Y : out[k - 1] - DIGIT_H - up(dots[k - 1]) - down(d) - CHORD_GAP);
-  });
-  return out;
-}
-var X_EM = 0.8;
-var KIT_CHAR = { normal: "\u25CF", x: "\xD7", "circle-x": "\u2297", diamond: "\u25C7", "triangle-up": "\u25B3", "triangle-down": "\u25BD", ti: "\u25BD", la: "\u25A1", plus: "+", slash: "/", slashed1: "\u2298", slashed2: "\u2298" };
-var KIT_EM = 0.62;
-var CHORD_EM = 2;
-var CHORD_SX = 0.82;
-var CHORD_H = 1.45;
-var CHORD_CH_EM = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.7, m: 0.86, a: 0.55, j: 0.26, d: 0.58, i: 0.25, u: 0.57, g: 0.58, s: 0.48, "/": 0.36, "\u266D": 1, "\u266F": 1, "\xB0": 0.4, \u00F8: 0.6, "(": 0.32, ")": 0.32, "+": 0.6 };
-var chordNameW = (s2) => [...s2].reduce((w, ch) => w + (CHORD_CH_EM[ch] ?? (/[0-9]/.test(ch) ? 0.56 : 0.6)), 0) * CHORD_EM * CHORD_SX;
-var chordBassCx = (s2) => {
-  const cs = [...s2], i = cs.indexOf("/") + 1;
-  return chordNameW(cs.slice(0, i).join("")) + chordNameW(cs[i] ?? "") / 2;
-};
-var TEN_DY = 0.136 * FS;
-var MARK_GAP2 = 0.12 * FS;
-var MARCATO_EM = 1.38 * FS;
-var UNSTRESS_EM = 1.82 * FS;
-var MARK_GAP = 0.545 * FS;
-var STACC_W = 0.19 * FS;
-var STACC_H = 0.27 * FS;
-var STACC_STEP = 0.41 * FS;
-var CHEV_W = 0.455 * FS;
-var CHEV_H = 0.364 * FS;
-var CHEV_STROKE = 0.068 * FS;
-var CHEV_STROKE_THIN = 0.032 * FS;
-var CHEV_STEP = 0.545 * FS;
-var TEN_L = 0.455 * FS;
-var TEN_W = 0.064 * FS;
-var TEN_STEP = 0.364 * FS;
-var BREATH_EM = 0.5 * FS;
-var BREATH_Y = BASE_Y - 1.09 * FS;
-var HEAD_EM = 0.773 * FS;
-var GHOST_K = 0.62;
-var CARET_Y0 = BAR_Y0 - 0.15;
-var CARET_Y1 = BAR_Y1 + 0.15;
-var dotPath = (cx, cy, r) => {
-  const k = 0.5523 * r, f = (v) => (Math.round(v * 100) / 100).toString();
-  return `M${f(cx + r)},${f(cy)}C${f(cx + r)},${f(cy + k)} ${f(cx + k)},${f(cy + r)} ${f(cx)},${f(cy + r)}C${f(cx - k)},${f(cy + r)} ${f(cx - r)},${f(cy + k)} ${f(cx - r)},${f(cy)}C${f(cx - r)},${f(cy - k)} ${f(cx - k)},${f(cy - r)} ${f(cx)},${f(cy - r)}C${f(cx + k)},${f(cy - r)} ${f(cx + r)},${f(cy - k)} ${f(cx + r)},${f(cy)}Z`;
-};
-var ACC_GLYPH = {
-  flat: { ch: "\uE260", box: [0, 0.904, -1.756, 0.7], dom: 0.062 },
-  natural: { ch: "\uE261", box: [0, 0.672, -1.364, 1.34], dom: 0.105 },
-  sharp: { ch: "\uE262", box: [0, 0.996, -1.4, 1.392], dom: 0.09 }
-};
-var ACC_FAMILY_DOM = ACC_GLYPH.sharp.dom;
-var FAMILY_LIGHT = 0.8;
-var accStroke = (g, em, main) => {
-  const align = Math.max(0, ACC_FAMILY_DOM - g.dom), target = SMALL_STEM_K * STEM_REGULAR * main, fam = ACC_FAMILY_DOM * em;
-  return align + (fam < FAMILY_LIGHT * target ? (target - fam) / em : 0);
-};
-var ACC_GLYPH_EM = 0.78 * FS;
-var ACC_RISE = 0.2;
-var ACC_SEP = 0.08;
-var accGlyphs = (rel) => rel > 0 ? Array(rel).fill(ACC_GLYPH.sharp) : rel < 0 ? Array(-rel).fill(ACC_GLYPH.flat) : [ACC_GLYPH.natural];
-var accGlyphsOfText = (t) => [...t].map((c) => c === "\u266F" ? ACC_GLYPH.sharp : c === "\u266D" ? ACC_GLYPH.flat : ACC_GLYPH.natural);
-var accRunW = (gs, em) => gs.reduce((w, g, i) => w + (g.box[1] - g.box[0]) * em / 4 + (i ? ACC_SEP : 0), 0);
-var SUP_ACC_FIT = 0.88;
-var supAccEm = (gk = 1) => ACC_GLYPH_EM * (SCRIPT_K * DIGIT_EM * gk) * SUP_ACC_FIT / ACC_EM;
-var HEAD_CH_EM = { "0": 0.555, "1": 0.555, "2": 0.555, "3": 0.555, "4": 0.555, "5": 0.555, "6": 0.555, "7": 0.555, "8": 0.555, "9": 0.555, "=": 0.555, "/": 0.392, A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
-var headTextW = (s2, size) => [...s2].reduce((w, c) => w + (HEAD_CH_EM[c] ?? 0.6), 0) * size;
-var GLYPH_INK = {
-  "0": [0.05, -0.013, 0.506, 0.746, 0.555],
-  "1": [0.088, 0, 0.49, 0.733, 0.555],
-  "2": [0.04, 0, 0.505, 0.746, 0.555],
-  "3": [0.029, -0.013, 0.499, 0.746, 0.555],
-  "4": [0.02, 0, 0.524, 0.733, 0.555],
-  "5": [0.027, -0.013, 0.502, 0.733, 0.555],
-  "6": [0.056, -0.013, 0.512, 0.746, 0.555],
-  "7": [0.049, 0, 0.508, 0.733, 0.555],
-  "8": [0.046, -0.013, 0.509, 0.744, 0.555],
-  "9": [0.044, -0.013, 0.501, 0.746, 0.555],
-  A: [4e-3, 0, 0.604, 0.733, 0.608],
-  B: [0.101, 0, 0.612, 0.733, 0.657],
-  C: [0.058, -0.013, 0.602, 0.746, 0.638],
-  D: [0.101, 0, 0.629, 0.733, 0.688],
-  E: [0.101, 0, 0.534, 0.733, 0.589],
-  F: [0.101, 0, 0.523, 0.733, 0.552],
-  G: [0.058, -0.013, 0.615, 0.746, 0.689],
-  "-": [0.046, 0.245, 0.303, 0.315, 0.347],
-  "\xD7": [0.178, 0.054, 0.822, 0.698, 1],
-  V: [1e-3, 0, 0.575, 0.733, 0.575],
-  X: [0.017, 0, 0.557, 0.733, 0.573],
-  x: [0.015, 0, 0.483, 0.543, 0.498],
-  "\u25CF": [0.05, -0.07, 0.95, 0.83, 1],
-  "\u2297": [0.13, 0.01, 0.87, 0.75, 1],
-  "\u25C7": [0.012, -0.108, 0.988, 0.868, 1],
-  "\u25B3": [0.03, 0.012, 0.97, 0.826, 1],
-  "\u25BD": [0.03, -0.066, 0.97, 0.748, 1],
-  "\u25A1": [0.1, -0.02, 0.9, 0.78, 1],
-  "+": [0.038, 0.116, 0.518, 0.622, 0.555],
-  "/": [0.011, -0.179, 0.377, 0.794, 0.392],
-  "\u2298": [0.13, 0.01, 0.87, 0.75, 1]
-};
-function glyphInk(ch, x, y, size, anchor) {
-  const g = GLYPH_INK[ch] ?? [0.03, 0, 0.525, DIGIT_H / DIGIT_EM, DIGIT_W / DIGIT_EM], ox = anchor === "middle" ? x - g[4] * size / 2 : x;
-  return { x0: ox + g[0] * size, x1: ox + g[2] * size, y0: y - g[3] * size, y1: y - g[1] * size };
-}
-function textInkRun(s2, x, y, size) {
-  let cx = x, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for (const ch of s2) {
-    const k = glyphInk(ch, cx, y, size, "start");
-    x0 = Math.min(x0, k.x0);
-    x1 = Math.max(x1, k.x1);
-    y0 = Math.min(y0, k.y0);
-    y1 = Math.max(y1, k.y1);
-    cx += (GLYPH_INK[ch]?.[4] ?? DIGIT_W / DIGIT_EM) * size;
+  os = Hr ? null : (n) => new Worker(n ?? oe, { type: "module", name: zr });
+});
+var qr = {};
+ut(qr, { default: () => as });
+async function Yr(n = {}) {
+  var t = n, a = !!globalThis.window, u = !!globalThis.WorkerGlobalScope, o = u && self.name?.startsWith("em-pthread");
+  t.mountExternalData = (e, r) => {
+    e.startsWith("./") && (e = e.substring(2)), (t.Tb || (t.Tb = /* @__PURE__ */ new Map())).set(e, r);
+  }, t.unmountExternalData = () => {
+    delete t.Tb, delete t.mc, delete t.lc, delete t.nc;
+  }, globalThis.SharedArrayBuffer ?? new WebAssembly.Memory({ initial: 0, maximum: 0, shared: true }).buffer.constructor;
+  var d, c, l = (e, r) => {
+    throw r;
+  }, m = import.meta.url, h = "";
+  if (a || u) {
+    try {
+      h = new URL(".", m).href;
+    } catch {
+    }
+    u && (c = (e) => {
+      var r = new XMLHttpRequest();
+      return r.open("GET", e, false), r.responseType = "arraybuffer", r.send(null), new Uint8Array(r.response);
+    }), d = async (e) => {
+      if (k(e)) return new Promise((i, s) => {
+        var f = new XMLHttpRequest();
+        f.open("GET", e, true), f.responseType = "arraybuffer", f.onload = () => {
+          f.status == 200 || f.status == 0 && f.response ? i(f.response) : s(f.status);
+        }, f.onerror = s, f.send(null);
+      });
+      var r = await fetch(e, { credentials: "same-origin" });
+      if (r.ok) return r.arrayBuffer();
+      throw Error(r.status + " : " + r.url);
+    };
   }
-  return { x0, x1, y0, y1 };
-}
-var LETTER_EM = { A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
-var letterW = (step) => (LETTER_EM[step] ?? 0.66) * DIGIT_W / 0.555;
-var SCRIPT_K = 0.7;
-var SCRIPT_GAP = 0.03 * FS;
-var SUP_DY = -0.45 * FS;
-var SUB_DY = 0.18 * FS;
-var SUB_DROP = 0.2 * FS;
-var SUP_RISE = Math.max(0, -SUP_DY + SCRIPT_K * DIGIT_H - DIGIT_H);
-var letterParts = (p, middleC) => ({ letter: p.step, acc: p.alter > 0 ? "\u266F".repeat(p.alter) : p.alter < 0 ? "\u266D".repeat(-p.alter) : "", oct: String(p.octave - 4 + middleC) });
-var scriptW = (p, middleC) => {
-  const lp = letterParts(p, middleC);
-  return SCRIPT_GAP + Math.max(lp.acc ? accRunW(accGlyphsOfText(lp.acc), supAccEm()) : 0, lp.oct.length * SCRIPT_K * DIGIT_W);
-};
-var letterNoteW = (ps, middleC) => Math.max(...ps.map((p) => letterW(p.step) + scriptW(p, middleC)));
-
-// src/render/jianpu/chunk.ts
-var contDash = (u) => u.note && u.j > 0 && u.inBar > 1e-6 && u.base >= TPQ && !u.ratio && Math.abs(u.ticks / TPQ - Math.round(u.ticks / TPQ)) < 1e-6;
-function extraGlyphs(u) {
-  if (u.note) {
-    if (contDash(u)) return Math.max(0, Math.round(u.ticks / TPQ) - 1);
-    if (u.base >= TPQ * 2) return Math.round(u.base / TPQ) - 1 + (u.dotted ? Math.round(u.base / (TPQ * 2)) : 0);
+  var g, b, y, T, I, D, $ = console.log.bind(console), v = console.error.bind(console), A = $, F = v, P = false, k = (e) => e.startsWith("file://");
+  function w() {
+    ge.buffer != H.buffer && ee();
+  }
+  if (o) {
+    let e = function(r) {
+      try {
+        var i = r.data, s = i.Rb;
+        if (s === "load") {
+          let f = [];
+          self.onmessage = (p) => f.push(p), D = () => {
+            postMessage({ Rb: "loaded" });
+            for (let p of f) e(p);
+            self.onmessage = e;
+          };
+          for (let p of i.ac) t[p] && !t[p].proxy || (t[p] = (...E) => {
+            postMessage({ Rb: "callHandler", $b: p, args: E });
+          }, p == "print" && (A = t[p]), p == "printErr" && (F = t[p]));
+          ge = i.fc, ee(), b = i.hc, Ut(), it();
+        } else if (s === "run") {
+          (function(f) {
+            var p = (w(), W)[f + 52 >>> 2 >>> 0];
+            f = (w(), W)[f + 56 >>> 2 >>> 0], ir(p, p - f), _(p);
+          })(i.Qb), zt(i.Qb, 0, 0, 1, 0, 0), wn(), Ft(i.Qb), Q ||= true;
+          try {
+            Io(i.dc, i.Vb);
+          } catch (f) {
+            if (f != "unwind") throw f;
+          }
+        } else i.target !== "setimmediate" && (s === "checkMailbox" ? Q && rt() : s && (F(`worker: received unknown command ${s}`), F(i)));
+      } catch (f) {
+        throw nr(), f;
+      }
+    };
+    var As = e, Q = false;
+    self.onunhandledrejection = (r) => {
+      throw r.reason || r;
+    }, self.onmessage = e;
+  }
+  var H, ne, pe, B, W, re, me, O, K2, je = false;
+  function ee() {
+    var e = ge.buffer;
+    t.HEAP8 = H = new Int8Array(e), pe = new Int16Array(e), t.HEAPU8 = ne = new Uint8Array(e), new Uint16Array(e), t.HEAP32 = B = new Int32Array(e), t.HEAPU32 = W = new Uint32Array(e), re = new Float32Array(e), me = new Float64Array(e), O = new BigInt64Array(e), new BigUint64Array(e);
+  }
+  function he() {
+    je = true, o ? D() : Ee.Va();
+  }
+  function j(e) {
+    throw F(e = "Aborted(" + e + ")"), P = true, e = new WebAssembly.RuntimeError(e + ". Build with -sASSERTIONS for more info."), I?.(e), e;
+  }
+  function J() {
+    return { a: { T: ca, f: Bo, w: Lo, e: _o, k: Do, h: Po, L: Uo, b: xo, G: Co, ua: vn, j: Mo, M: In, La: Bn, qa: Ln, sa: _n, Ma: Dn, Ja: Pn, Ca: Un, Ia: xn, Z: Cn, ra: Mn, oa: Rn, Ka: Fn, pa: Nn, Ra: Ro, Fa: Fo, ma: ko, va: Wo, ja: Go, U: $o, Ea: Ft, Oa: zo, za: Ho, Aa: jo, Ba: Vo, xa: $n, ya: zn, ka: Hn, Ta: qo, Qa: Zo, W: Qo, V: Ko, Pa: Jo, F: ea, Na: ta, na, u: Yo, H: ra, S: at, la: aa, ba: oa, Ua: sa, Ga: Yn, Ha: qn, ta: ye, I: Jn, wa: Xn, Y: Zn, Da: Qn, X: Kn, $: Ya, N: $a, aa: Va, O: Ga, v: Da, d: ma, m: da, n: la, r: Aa, ca: Na, E: Fa, o: ba, P: ka, C: za, J: Ra, da: Ma, ea: Ca, z: Oa, fa: Ua, Q: xa, ga: Pa, y: La, D: Wa, c: pa, q: wa, i: ha, _: qa, l: ga, p: Ea, s: ya, t: Ta, x: Ia, R: _a, A: Ha, K: Ba, B: ja, ha: va, ia: Sa, g: ua, a: ge, Sa: V } };
+  }
+  async function Ut() {
+    function e(s, f) {
+      return Ee = s.exports, Ee = function() {
+        var p = Ee, E = (C) => () => C() >>> 0, S2 = (C) => (R) => C(R) >>> 0;
+        return (p = Object.assign({}, p)).ub = E(p.ub), p.wb = S2(p.wb), p.Kb = S2(p.Kb), p.Lb = E(p.Lb), p.Pb = S2(p.Pb), p;
+      }(), mn.push(Ee.xb), s = Ee, t._OrtInit = s.Wa, t._OrtGetLastError = s.Xa, t._OrtCreateSessionOptions = s.Ya, t._OrtAppendExecutionProvider = s.Za, t._OrtAddFreeDimensionOverride = s._a, t._OrtAddSessionConfigEntry = s.$a, t._OrtReleaseSessionOptions = s.ab, t._OrtCreateSession = s.bb, t._OrtReleaseSession = s.cb, t._OrtGetInputOutputCount = s.db, t._OrtGetInputOutputMetadata = s.eb, t._OrtFree = s.fb, t._OrtCreateTensor = s.gb, t._OrtGetTensorData = s.hb, t._OrtReleaseTensor = s.ib, t._OrtCreateRunOptions = s.jb, t._OrtAddRunConfigEntry = s.kb, t._OrtReleaseRunOptions = s.lb, t._OrtCreateBinding = s.mb, t._OrtBindInput = s.nb, t._OrtBindOutput = s.ob, t._OrtClearBoundOutputs = s.pb, t._OrtReleaseBinding = s.qb, t._OrtRunWithBinding = s.rb, t._OrtRun = s.sb, t._OrtEndProfiling = s.tb, st = s.ub, er = t._free = s.vb, tr = t._malloc = s.wb, zt = s.zb, nr = s.Ab, rr = s.Bb, or = s.Cb, Ht = s.Db, ar = s.Eb, sr = s.Fb, x = s.Gb, qe = s.Hb, ir = s.Ib, _ = s.Jb, jt = s.Kb, U = s.Lb, ur = s.Mb, Vt = s.Nb, fr = s.Ob, cr = s.Pb, lr = s.yb, b = f, Ee;
+    }
+    var r, i = J();
+    return t.instantiateWasm ? new Promise((s) => {
+      t.instantiateWasm(i, (f, p) => {
+        s(e(f, p));
+      });
+    }) : o ? e(new WebAssembly.Instance(b, J()), b) : (K2 ??= t.locateFile ? t.locateFile ? t.locateFile("ort-wasm-simd-threaded.wasm", h) : h + "ort-wasm-simd-threaded.wasm" : new URL("ort-wasm-simd-threaded.wasm", import.meta.url).href, r = await async function(s) {
+      var f = K2;
+      if (!g && !k(f)) try {
+        var p = fetch(f, { credentials: "same-origin" });
+        return await WebAssembly.instantiateStreaming(p, s);
+      } catch (E) {
+        F(`wasm streaming compile failed: ${E}`), F("falling back to ArrayBuffer instantiation");
+      }
+      return async function(E, S2) {
+        try {
+          var C = await async function(R) {
+            if (!g) try {
+              var X = await d(R);
+              return new Uint8Array(X);
+            } catch {
+            }
+            if (R == K2 && g) R = new Uint8Array(g);
+            else {
+              if (!c) throw "both async and sync fetching of the wasm failed";
+              R = c(R);
+            }
+            return R;
+          }(E);
+          return await WebAssembly.instantiate(C, S2);
+        } catch (R) {
+          F(`failed to asynchronously prepare wasm: ${R}`), j(R);
+        }
+      }(f, s);
+    }(i), e(r.instance, r.module));
+  }
+  class Se {
+    name = "ExitStatus";
+    constructor(r) {
+      this.message = `Program terminated with exit(${r})`, this.status = r;
+    }
+  }
+  var ve = (e) => {
+    e.terminate(), e.onmessage = () => {
+    };
+  }, Ve = [], Re = 0, te = null, ue = (e) => {
+    ce.length == 0 && (yn(), bn(ce[0]));
+    var r = ce.pop();
+    if (!r) return 6;
+    Fe.push(r), Ae[e.Qb] = r, r.Qb = e.Qb;
+    var i = { Rb: "run", dc: e.cc, Vb: e.Vb, Qb: e.Qb };
+    return r.postMessage(i, e.Zb), 0;
+  }, se = 0, L = (e, r, ...i) => {
+    var s, f = 16 * i.length, p = U(), E = jt(f), S2 = E >>> 3;
+    for (s of i) typeof s == "bigint" ? ((w(), O)[S2++ >>> 0] = 1n, (w(), O)[S2++ >>> 0] = s) : ((w(), O)[S2++ >>> 0] = 0n, (w(), me)[S2++ >>> 0] = s);
+    return e = rr(e, 0, f, E, r), _(p), e;
+  };
+  function V(e) {
+    if (o) return L(0, 1, e);
+    if (y = e, !(0 < se)) {
+      for (var r of Fe) ve(r);
+      for (r of ce) ve(r);
+      ce = [], Fe = [], Ae = {}, P = true;
+    }
+    l(0, new Se(e));
+  }
+  function fe(e) {
+    if (o) return L(1, 0, e);
+    ye(e);
+  }
+  var ye = (e) => {
+    if (y = e, o) throw fe(e), "unwind";
+    V(e);
+  }, ce = [], Fe = [], mn = [], Ae = {}, hn = (e) => {
+    var r = e.Qb;
+    delete Ae[r], ce.push(e), Fe.splice(Fe.indexOf(e), 1), e.Qb = 0, or(r);
+  };
+  function wn() {
+    mn.forEach((e) => e());
+  }
+  var bn = (e) => new Promise((r) => {
+    e.onmessage = (f) => {
+      var p = f.data;
+      if (f = p.Rb, p.Ub && p.Ub != st()) {
+        var E = Ae[p.Ub];
+        E ? E.postMessage(p, p.Zb) : F(`Internal error! Worker sent a message "${f}" to target pthread ${p.Ub}, but that thread no longer exists!`);
+      } else f === "checkMailbox" ? rt() : f === "spawnThread" ? ue(p) : f === "cleanupThread" ? Rt(() => {
+        hn(Ae[p.ec]);
+      }) : f === "loaded" ? (e.loaded = true, r(e)) : p.target === "setimmediate" ? e.postMessage(p) : f === "uncaughtException" ? e.onerror(p.error) : f === "callHandler" ? t[p.$b](...p.args) : f && F(`worker sent an unknown command ${f}`);
+    }, e.onerror = (f) => {
+      throw F(`worker sent an error! ${f.filename}:${f.lineno}: ${f.message}`), f;
+    };
+    var i, s = [];
+    for (i of []) t.propertyIsEnumerable(i) && s.push(i);
+    e.postMessage({ Rb: "load", ac: s, fc: ge, hc: b });
+  });
+  function yn() {
+    var e = new Worker((() => {
+      let r = URL;
+      return import.meta.url > "file:" && import.meta.url < "file;" ? new r("ort.wasm.bundle.min.mjs", import.meta.url) : new URL(import.meta.url);
+    })(), { type: "module", workerData: "em-pthread", name: "em-pthread" });
+    ce.push(e);
+  }
+  var ge, gn = [], M = (e) => {
+    var r = gn[e];
+    return r || (gn[e] = r = lr.get(e)), r;
+  }, Io = (e, r) => {
+    se = 0, e = M(e)(r), 0 < se ? y = e : Ht(e);
+  }, tt = [], nt = 0;
+  function Bo(e) {
+    var r = new xt(e >>>= 0);
+    return (w(), H)[r.Sb + 12 >>> 0] == 0 && (En(r, true), nt--), Tn(r, false), tt.push(r), cr(e);
+  }
+  var Ne = 0, Lo = () => {
+    x(0, 0);
+    var e = tt.pop();
+    ur(e.Wb), Ne = 0;
+  };
+  function En(e, r) {
+    r = r ? 1 : 0, (w(), H)[e.Sb + 12 >>> 0] = r;
+  }
+  function Tn(e, r) {
+    r = r ? 1 : 0, (w(), H)[e.Sb + 13 >>> 0] = r;
+  }
+  class xt {
+    constructor(r) {
+      this.Wb = r, this.Sb = r - 24;
+    }
+  }
+  var Ct = (e) => {
+    var r = Ne;
+    if (!r) return qe(0), 0;
+    var i = new xt(r);
+    (w(), W)[i.Sb + 16 >>> 2 >>> 0] = r;
+    var s = (w(), W)[i.Sb + 4 >>> 2 >>> 0];
+    if (!s) return qe(0), r;
+    for (var f of e) {
+      if (f === 0 || f === s) break;
+      if (fr(f, s, i.Sb + 16)) return qe(f), r;
+    }
+    return qe(s), r;
+  };
+  function _o() {
+    return Ct([]);
+  }
+  function Do(e) {
+    return Ct([e >>> 0]);
+  }
+  function Po(e, r, i, s) {
+    return Ct([e >>> 0, r >>> 0, i >>> 0, s >>> 0]);
+  }
+  var Uo = () => {
+    var e = tt.pop();
+    e || j("no exception to throw");
+    var r = e.Wb;
+    throw (w(), H)[e.Sb + 13 >>> 0] == 0 && (tt.push(e), Tn(e, true), En(e, false), nt++), Vt(r), Ne = r;
+  };
+  function xo(e, r, i) {
+    var s = new xt(e >>>= 0);
+    throw r >>>= 0, i >>>= 0, (w(), W)[s.Sb + 16 >>> 2 >>> 0] = 0, (w(), W)[s.Sb + 4 >>> 2 >>> 0] = r, (w(), W)[s.Sb + 8 >>> 2 >>> 0] = i, Vt(e), nt++, Ne = e;
+  }
+  var Co = () => nt;
+  function Sn(e, r, i, s) {
+    return o ? L(2, 1, e, r, i, s) : vn(e, r, i, s);
+  }
+  function vn(e, r, i, s) {
+    if (e >>>= 0, r >>>= 0, i >>>= 0, s >>>= 0, !globalThis.SharedArrayBuffer) return 6;
+    var f = [];
+    return o && f.length === 0 ? Sn(e, r, i, s) : (e = { cc: i, Qb: e, Vb: s, Zb: f }, o ? (e.Rb = "spawnThread", postMessage(e, f), 0) : ue(e));
+  }
+  function Mo(e) {
+    throw Ne ||= e >>> 0, Ne;
+  }
+  var An = globalThis.TextDecoder && new TextDecoder(), On = (e, r = 0, i, s) => {
+    var f = r >>>= 0;
+    if (i = f + i, s) s = i;
+    else {
+      for (; e[f] && !(f >= i); ) ++f;
+      s = f;
+    }
+    if (16 < s - r && e.buffer && An) return An.decode(e.buffer instanceof ArrayBuffer ? e.subarray(r, s) : e.slice(r, s));
+    for (f = ""; r < s; ) if (128 & (i = e[r++])) {
+      var p = 63 & e[r++];
+      if ((224 & i) == 192) f += String.fromCharCode((31 & i) << 6 | p);
+      else {
+        var E = 63 & e[r++];
+        65536 > (i = (240 & i) == 224 ? (15 & i) << 12 | p << 6 | E : (7 & i) << 18 | p << 12 | E << 6 | 63 & e[r++]) ? f += String.fromCharCode(i) : (i -= 65536, f += String.fromCharCode(55296 | i >> 10, 56320 | 1023 & i));
+      }
+    } else f += String.fromCharCode(i);
+    return f;
+  }, Mt = (e, r, i) => (e >>>= 0) ? On((w(), ne), e, r, i) : "";
+  function In(e, r, i) {
+    return o ? L(3, 1, e, r, i) : 0;
+  }
+  function Bn(e, r) {
+    if (o) return L(4, 1, e, r);
+  }
+  function Ln(e, r) {
+    if (o) return L(5, 1, e, r);
+  }
+  function _n(e, r, i) {
+    if (o) return L(6, 1, e, r, i);
+  }
+  function Dn(e, r, i) {
+    return o ? L(7, 1, e, r, i) : 0;
+  }
+  function Pn(e, r) {
+    if (o) return L(8, 1, e, r);
+  }
+  function Un(e, r, i) {
+    if (o) return L(9, 1, e, r, i);
+  }
+  function xn(e, r, i, s) {
+    if (o) return L(10, 1, e, r, i, s);
+  }
+  function Cn(e, r, i, s) {
+    if (o) return L(11, 1, e, r, i, s);
+  }
+  function Mn(e, r, i, s) {
+    if (o) return L(12, 1, e, r, i, s);
+  }
+  function Rn(e) {
+    if (o) return L(13, 1, e);
+  }
+  function Fn(e, r) {
+    if (o) return L(14, 1, e, r);
+  }
+  function Nn(e, r, i) {
+    if (o) return L(15, 1, e, r, i);
+  }
+  var Ro = () => j("");
+  function Fo(e) {
+    zt(e >>> 0, !u, 1, !a, 131072, false), wn();
+  }
+  var Rt = (e) => {
+    if (!P) try {
+      if (e(), !(0 < se)) try {
+        o ? st() && Ht(y) : ye(y);
+      } catch (r) {
+        r instanceof Se || r == "unwind" || l(0, r);
+      }
+    } catch (r) {
+      r instanceof Se || r == "unwind" || l(0, r);
+    }
+  }, No = !Atomics.waitAsync || globalThis.navigator?.userAgent && 91 > Number((navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./) || [])[2]);
+  function Ft(e) {
+    e >>>= 0, No || (Atomics.waitAsync((w(), B), e >>> 2, e).value.then(rt), e += 128, Atomics.store((w(), B), e >>> 2, 1));
+  }
+  var rt = () => Rt(() => {
+    var e = st();
+    e && (Ft(e), sr());
+  });
+  function ko(e, r) {
+    (e >>>= 0) == r >>> 0 ? setTimeout(rt) : o ? postMessage({ Ub: e, Rb: "checkMailbox" }) : (e = Ae[e]) && e.postMessage({ Rb: "checkMailbox" });
+  }
+  var Nt = [];
+  function Wo(e, r, i, s, f) {
+    for (r >>>= 0, f >>>= 0, Nt.length = 0, i = f >>> 3, s = f + s >>> 3; i < s; ) {
+      var p;
+      p = (w(), O)[i++ >>> 0] ? (w(), O)[i++ >>> 0] : (w(), me)[i++ >>> 0], Nt.push(p);
+    }
+    return (r ? dr[r] : fa[e])(...Nt);
+  }
+  var Go = () => {
+    se = 0;
+  };
+  function $o(e) {
+    e >>>= 0, o ? postMessage({ Rb: "cleanupThread", ec: e }) : hn(Ae[e]);
+  }
+  function zo(e) {
+  }
+  function Ho(e, r) {
+    e = -9007199254740992 > e || 9007199254740992 < e ? NaN : Number(e), r >>>= 0, e = new Date(1e3 * e), (w(), B)[r >>> 2 >>> 0] = e.getUTCSeconds(), (w(), B)[r + 4 >>> 2 >>> 0] = e.getUTCMinutes(), (w(), B)[r + 8 >>> 2 >>> 0] = e.getUTCHours(), (w(), B)[r + 12 >>> 2 >>> 0] = e.getUTCDate(), (w(), B)[r + 16 >>> 2 >>> 0] = e.getUTCMonth(), (w(), B)[r + 20 >>> 2 >>> 0] = e.getUTCFullYear() - 1900, (w(), B)[r + 24 >>> 2 >>> 0] = e.getUTCDay(), e = (e.getTime() - Date.UTC(e.getUTCFullYear(), 0, 1, 0, 0, 0, 0)) / 864e5 | 0, (w(), B)[r + 28 >>> 2 >>> 0] = e;
+  }
+  var kn = (e) => e % 4 == 0 && (e % 100 != 0 || e % 400 == 0), Wn = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335], Gn = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+  function jo(e, r) {
+    e = -9007199254740992 > e || 9007199254740992 < e ? NaN : Number(e), r >>>= 0, e = new Date(1e3 * e), (w(), B)[r >>> 2 >>> 0] = e.getSeconds(), (w(), B)[r + 4 >>> 2 >>> 0] = e.getMinutes(), (w(), B)[r + 8 >>> 2 >>> 0] = e.getHours(), (w(), B)[r + 12 >>> 2 >>> 0] = e.getDate(), (w(), B)[r + 16 >>> 2 >>> 0] = e.getMonth(), (w(), B)[r + 20 >>> 2 >>> 0] = e.getFullYear() - 1900, (w(), B)[r + 24 >>> 2 >>> 0] = e.getDay();
+    var i = (kn(e.getFullYear()) ? Wn : Gn)[e.getMonth()] + e.getDate() - 1 | 0;
+    (w(), B)[r + 28 >>> 2 >>> 0] = i, (w(), B)[r + 36 >>> 2 >>> 0] = -60 * e.getTimezoneOffset(), i = new Date(e.getFullYear(), 6, 1).getTimezoneOffset();
+    var s = new Date(e.getFullYear(), 0, 1).getTimezoneOffset();
+    e = 0 | (i != s && e.getTimezoneOffset() == Math.min(s, i)), (w(), B)[r + 32 >>> 2 >>> 0] = e;
+  }
+  function Vo(e) {
+    e >>>= 0;
+    var r = new Date((w(), B)[e + 20 >>> 2 >>> 0] + 1900, (w(), B)[e + 16 >>> 2 >>> 0], (w(), B)[e + 12 >>> 2 >>> 0], (w(), B)[e + 8 >>> 2 >>> 0], (w(), B)[e + 4 >>> 2 >>> 0], (w(), B)[e >>> 2 >>> 0], 0), i = (w(), B)[e + 32 >>> 2 >>> 0], s = r.getTimezoneOffset(), f = new Date(r.getFullYear(), 6, 1).getTimezoneOffset(), p = new Date(r.getFullYear(), 0, 1).getTimezoneOffset(), E = Math.min(p, f);
+    return 0 > i ? (w(), B)[e + 32 >>> 2 >>> 0] = +(f != p && E == s) : 0 < i != (E == s) && (f = Math.max(p, f), r.setTime(r.getTime() + 6e4 * ((0 < i ? E : f) - s))), (w(), B)[e + 24 >>> 2 >>> 0] = r.getDay(), i = (kn(r.getFullYear()) ? Wn : Gn)[r.getMonth()] + r.getDate() - 1 | 0, (w(), B)[e + 28 >>> 2 >>> 0] = i, (w(), B)[e >>> 2 >>> 0] = r.getSeconds(), (w(), B)[e + 4 >>> 2 >>> 0] = r.getMinutes(), (w(), B)[e + 8 >>> 2 >>> 0] = r.getHours(), (w(), B)[e + 12 >>> 2 >>> 0] = r.getDate(), (w(), B)[e + 16 >>> 2 >>> 0] = r.getMonth(), (w(), B)[e + 20 >>> 2 >>> 0] = r.getYear(), e = r.getTime(), BigInt(isNaN(e) ? -1 : e / 1e3);
+  }
+  function $n(e, r, i, s, f, p, E) {
+    return o ? L(16, 1, e, r, i, s, f, p, E) : -52;
+  }
+  function zn(e, r, i, s, f, p) {
+    if (o) return L(17, 1, e, r, i, s, f, p);
+  }
+  var Ye = {}, Yo = () => performance.timeOrigin + performance.now();
+  function Hn(e, r) {
+    if (o) return L(18, 1, e, r);
+    if (Ye[e] && (clearTimeout(Ye[e].id), delete Ye[e]), !r) return 0;
+    var i = setTimeout(() => {
+      delete Ye[e], Rt(() => ar(e, performance.timeOrigin + performance.now()));
+    }, r);
+    return Ye[e] = { id: i, oc: r }, 0;
+  }
+  var Oe = (e, r, i) => {
+    var s = (w(), ne);
+    if (r >>>= 0, 0 < i) {
+      var f = r;
+      i = r + i - 1;
+      for (var p = 0; p < e.length; ++p) {
+        var E = e.codePointAt(p);
+        if (127 >= E) {
+          if (r >= i) break;
+          s[r++ >>> 0] = E;
+        } else if (2047 >= E) {
+          if (r + 1 >= i) break;
+          s[r++ >>> 0] = 192 | E >> 6, s[r++ >>> 0] = 128 | 63 & E;
+        } else if (65535 >= E) {
+          if (r + 2 >= i) break;
+          s[r++ >>> 0] = 224 | E >> 12, s[r++ >>> 0] = 128 | E >> 6 & 63, s[r++ >>> 0] = 128 | 63 & E;
+        } else {
+          if (r + 3 >= i) break;
+          s[r++ >>> 0] = 240 | E >> 18, s[r++ >>> 0] = 128 | E >> 12 & 63, s[r++ >>> 0] = 128 | E >> 6 & 63, s[r++ >>> 0] = 128 | 63 & E, p++;
+        }
+      }
+      s[r >>> 0] = 0, e = r - f;
+    } else e = 0;
+    return e;
+  };
+  function qo(e, r, i, s) {
+    e >>>= 0, r >>>= 0, i >>>= 0, s >>>= 0;
+    var f = (/* @__PURE__ */ new Date()).getFullYear(), p = new Date(f, 0, 1).getTimezoneOffset();
+    f = new Date(f, 6, 1).getTimezoneOffset();
+    var E = Math.max(p, f);
+    (w(), W)[e >>> 2 >>> 0] = 60 * E, (w(), B)[r >>> 2 >>> 0] = +(p != f), e = (r = (S2) => {
+      var C = Math.abs(S2);
+      return `UTC${0 <= S2 ? "-" : "+"}${String(Math.floor(C / 60)).padStart(2, "0")}${String(C % 60).padStart(2, "0")}`;
+    })(p), r = r(f), f < p ? (Oe(e, i, 17), Oe(r, s, 17)) : (Oe(e, s, 17), Oe(r, i, 17));
+  }
+  var Jo = () => Date.now(), Xo = 1;
+  function Zo(e, r, i) {
+    if (i >>>= 0, !(0 <= e && 3 >= e)) return 28;
+    if (e === 0) e = Date.now();
+    else {
+      if (!Xo) return 52;
+      e = performance.timeOrigin + performance.now();
+    }
+    return e = Math.round(1e6 * e), (w(), O)[i >>> 3 >>> 0] = BigInt(e), 0;
+  }
+  var kt = [];
+  function Qo(e, r, i) {
+    e >>>= 0, r >>>= 0, i >>>= 0, kt.length = 0;
+    for (var s; s = (w(), ne)[r++ >>> 0]; ) {
+      var f = s != 105;
+      i += (f &= s != 112) && i % 8 ? 4 : 0, kt.push(s == 112 ? (w(), W)[i >>> 2 >>> 0] : s == 106 ? (w(), O)[i >>> 3 >>> 0] : s == 105 ? (w(), B)[i >>> 2 >>> 0] : (w(), me)[i >>> 3 >>> 0]), i += f ? 8 : 4;
+    }
+    return dr[e](...kt);
+  }
+  var Ko = () => {
+  };
+  function ea(e, r) {
+    return F(Mt(e >>> 0, r >>> 0));
+  }
+  var ta = () => {
+    throw se += 1, "unwind";
+  };
+  function na() {
+    return 4294901760;
+  }
+  var ra = () => navigator.hardwareConcurrency, Ie = {}, Wt = (e) => {
+    for (var r = 0, i = 0; i < e.length; ++i) {
+      var s = e.charCodeAt(i);
+      127 >= s ? r++ : 2047 >= s ? r += 2 : 55296 <= s && 57343 >= s ? (r += 4, ++i) : r += 3;
+    }
+    return r;
+  }, ot = (e) => {
+    var r;
+    return (r = /\bwasm-function\[\d+\]:(0x[0-9a-f]+)/.exec(e)) ? +r[1] : (r = /:(\d+):\d+(?:\)|$)/.exec(e)) ? 2147483648 | +r[1] : 0;
+  }, jn = (e) => {
+    for (var r of e) (e = ot(r)) && (Ie[e] = r);
+  };
+  function oa() {
+    var e = Error().stack.toString().split(`
+`);
+    return e[0] == "Error" && e.shift(), jn(e), Ie.Xb = ot(e[3]), Ie.bc = e, Ie.Xb;
+  }
+  function at(e) {
+    if (!(e = Ie[e >>> 0])) return 0;
+    var r;
+    if (r = /^\s+at .*\.wasm\.(.*) \(.*\)$/.exec(e)) e = r[1];
+    else if (r = /^\s+at (.*) \(.*\)$/.exec(e)) e = r[1];
+    else {
+      if (!(r = /^(.+?)@/.exec(e))) return 0;
+      e = r[1];
+    }
+    er(at.Yb ?? 0), r = Wt(e) + 1;
+    var i = tr(r);
+    return i && Oe(e, i, r), at.Yb = i, at.Yb;
+  }
+  function aa(e) {
+    e >>>= 0;
+    var r = (w(), ne).length;
+    if (e <= r || 4294901760 < e) return false;
+    for (var i = 1; 4 >= i; i *= 2) {
+      var s = r * (1 + 0.2 / i);
+      s = Math.min(s, e + 100663296);
+      e: {
+        s = (Math.min(4294901760, 65536 * Math.ceil(Math.max(e, s) / 65536)) - ge.buffer.byteLength + 65535) / 65536 | 0;
+        try {
+          ge.grow(s), ee();
+          var f = 1;
+          break e;
+        } catch {
+        }
+        f = void 0;
+      }
+      if (f) return true;
+    }
+    return false;
+  }
+  function sa(e, r, i) {
+    if (e >>>= 0, r >>>= 0, Ie.Xb == e) var s = Ie.bc;
+    else (s = Error().stack.toString().split(`
+`))[0] == "Error" && s.shift(), jn(s);
+    for (var f = 3; s[f] && ot(s[f]) != e; ) ++f;
+    for (e = 0; e < i && s[e + f]; ++e) (w(), B)[r + 4 * e >>> 2 >>> 0] = ot(s[e + f]);
+    return e;
+  }
+  var Gt, $t = {}, Vn = () => {
+    if (!Gt) {
+      var e, r = { USER: "web_user", LOGNAME: "web_user", PATH: "/", PWD: "/", HOME: "/home/web_user", LANG: (globalThis.navigator?.language ?? "C").replace("-", "_") + ".UTF-8", _: "./this.program" };
+      for (e in $t) $t[e] === void 0 ? delete r[e] : r[e] = $t[e];
+      var i = [];
+      for (e in r) i.push(`${e}=${r[e]}`);
+      Gt = i;
+    }
+    return Gt;
+  };
+  function Yn(e, r) {
+    if (o) return L(19, 1, e, r);
+    e >>>= 0, r >>>= 0;
+    var i, s = 0, f = 0;
+    for (i of Vn()) {
+      var p = r + s;
+      (w(), W)[e + f >>> 2 >>> 0] = p, s += Oe(i, p, 1 / 0) + 1, f += 4;
+    }
     return 0;
   }
-  if (u.base >= TPQ) return Math.max(0, Math.floor(u.ticks / TPQ + 1e-6) - 1);
-  return 0;
-}
-function hasAugDot(u) {
-  if (u.note) return u.dotted && u.base < TPQ * 2 && !contDash(u);
-  return u.base >= TPQ ? Math.floor(u.ticks / TPQ + 1e-6) * TPQ < u.ticks - 1e-6 : u.dotted;
-}
-var foldOf = (u, aux) => u.note && u.pitch && !contDash(u) ? aux?.folds?.get(u.index) : void 0;
-var lettersOf = (q, u, mode, aux) => q.letters !== void 0 && mode === "digits" && u.note && u.pitch && !u.ghost && !contDash(u) && !foldOf(u, aux) ? { w: letterNoteW(u.pitches.length ? u.pitches : [u.pitch], q.letters) } : null;
-var glyphWOf = (u, aux, q = {}) => {
-  const f = foldOf(u, aux);
-  if (f) return chordNameW(f.name);
-  const lt = lettersOf(q, u, "digits", aux);
-  return lt ? lt.w : DIGIT_W;
-};
-var accsOf = (u) => u.j !== 0 || !u.note ? [] : u.pitches.length > 1 ? u.accs : [u.acc];
-var hasArp = (u) => u.note && u.j === 0 && u.pitches.length > 1 && u.art.includes("arpeggio");
-var underlines = (u) => u.base < TPQ ? Math.max(1, Math.round(Math.log2(TPQ / u.base))) : 0;
-
-// src/render/frame/cell.ts
-var ORIGIN = { x0: 0, x1: 0, y0: 0, y1: 0 };
-var moved = (k, dx, dy) => ({ x0: k.x0 + dx, x1: k.x1 + dx, y0: k.y0 + dy, y1: k.y1 + dy });
-var union = (a, b) => a ? { x0: Math.min(a.x0, b.x0), x1: Math.max(a.x1, b.x1), y0: Math.min(a.y0, b.y0), y1: Math.max(a.y1, b.y1) } : { ...b };
-function cell() {
-  const placed = [];
-  let coreBox = null, all = null, attached = false;
-  const edges = { above: 0, below: 0, left: 0, right: 0 };
-  const put = (part2, dx, dy) => {
-    placed.push({ part: part2, dx, dy });
-    const k = moved(part2.ink, dx, dy);
-    all = union(all, k);
-    return k;
-  };
-  const crossOf = (lo, hi, kLo, kHi, o) => {
-    if (o.cross !== void 0) return o.cross;
-    const a = o.align ?? "center";
-    return a === "start" ? lo - kLo : a === "end" ? hi - kHi : (lo + hi) / 2 - (kLo + kHi) / 2;
-  };
-  return {
-    core(part2, at2 = { x: 0, y: 0 }) {
-      if (attached) throw new Error("cell: place every core before attaching");
-      const k = put(part2, at2.x, at2.y);
-      coreBox = union(coreBox, k);
-      edges.above = coreBox.y0;
-      edges.below = coreBox.y1;
-      edges.left = coreBox.x0;
-      edges.right = coreBox.x1;
-    },
-    attach(side, part2, o) {
-      attached = true;
-      const c = coreBox ?? ORIGIN, k = part2.ink;
-      let dx, dy;
-      if (side === "above" || side === "below") {
-        dx = crossOf(c.x0, c.x1, k.x0, k.x1, o);
-        dy = side === "above" ? (o.from ?? edges.above) - o.gap - k.y1 : (o.from ?? edges.below) + o.gap - k.y0;
-      } else {
-        dy = crossOf(c.y0, c.y1, k.y0, k.y1, o);
-        dx = side === "left" ? (o.from ?? edges.left) - o.gap - k.x1 : (o.from ?? edges.right) + o.gap - k.x0;
+  function qn(e, r) {
+    if (o) return L(20, 1, e, r);
+    e >>>= 0, r >>>= 0;
+    var i = Vn();
+    for (var s of ((w(), W)[e >>> 2 >>> 0] = i.length, e = 0, i)) e += Wt(s) + 1;
+    return (w(), W)[r >>> 2 >>> 0] = e, 0;
+  }
+  function Jn(e) {
+    return o ? L(21, 1, e) : 52;
+  }
+  function Xn(e, r, i, s, f) {
+    return o ? L(22, 1, e, r, i, s, f) : 52;
+  }
+  function Zn(e, r, i, s) {
+    return o ? L(23, 1, e, r, i, s) : 52;
+  }
+  function Qn(e, r, i, s) {
+    return o ? L(24, 1, e, r, i, s) : 70;
+  }
+  var ia = [null, [], []];
+  function Kn(e, r, i, s) {
+    if (o) return L(25, 1, e, r, i, s);
+    r >>>= 0, i >>>= 0, s >>>= 0;
+    for (var f = 0, p = 0; p < i; p++) {
+      var E = (w(), W)[r >>> 2 >>> 0], S2 = (w(), W)[r + 4 >>> 2 >>> 0];
+      r += 8;
+      for (var C = 0; C < S2; C++) {
+        var R = e, X = (w(), ne)[E + C >>> 0], le = ia[R];
+        X === 0 || X === 10 ? ((R === 1 ? A : F)(On(le)), le.length = 0) : le.push(X);
       }
-      const got = put(part2, dx, dy);
-      if (side === "above") edges.above = Math.min(edges.above, got.y0);
-      else if (side === "below") edges.below = Math.max(edges.below, got.y1);
-      else if (side === "left") edges.left = Math.min(edges.left, got.x0);
-      else edges.right = Math.max(edges.right, got.x1);
-      return got;
-    },
-    reserve(side, to) {
-      if (side === "above" || side === "left") edges[side] = Math.min(edges[side], to);
-      else edges[side] = Math.max(edges[side], to);
-    },
-    edge: (side) => edges[side],
-    box: () => ({ ...all ?? ORIGIN }),
-    prims(dx, dy) {
-      const out = [];
-      for (const pl of placed) for (const p of pl.part.prims) {
-        const q = { ...p };
-        movePrim(q, pl.dx + dx, pl.dy + dy);
-        out.push(q);
-      }
-      return out;
+      f += S2;
     }
-  };
-}
-
-// src/score/degree.ts
-function toDegree(p, fifths) {
-  const tonicD = 4 * 7 + tonicStepIndex(fifths), d = diatonicIndex(p) - tonicD;
-  return { degree: (d % 7 + 7) % 7 + 1, shift: Math.floor(d / 7), acc: p.alter - keyAlter(p.step, fifths) };
-}
-function fromDegree(degree, shift, acc, fifths) {
-  const n2 = tonicStepIndex(fifths) + degree - 1, s2 = n2 % 7, step = STEPS[s2];
-  return { step, alter: keyAlter(step, fifths) + acc, octave: 4 + Math.floor(n2 / 7) + shift };
-}
-function rangeBase(lo, hi, fifths) {
-  const a = toDegree(spellMidi(lo, fifths), fifths).shift, b = toDegree(spellMidi(hi, fifths), fifths).shift, m = (a + b) / 2;
-  return Number.isInteger(m) ? m : Math.abs(Math.floor(m)) <= Math.abs(Math.ceil(m)) ? Math.floor(m) : Math.ceil(m);
-}
-function fewestDotsBase(shifts) {
-  if (!shifts.length) return 0;
-  const s2 = [...shifts].sort((a, b) => a - b), lo = s2[s2.length - 1 >> 1], hi = s2[s2.length >> 1];
-  return lo <= 0 && hi >= 0 ? 0 : Math.abs(lo) <= Math.abs(hi) ? lo : hi;
-}
-
-// src/render/jianpu/place.ts
-var PLACE = {
-  /** 升降号 / 还原号：数字左边；和弦里每个贴它自己那个数字的墨（8-7，note-cell.ts 用 attach 的 from）。 */
-  acc: { side: "left", gap: 0.22 },
-  // 墨到墨（8-7 起贴数字的墨）：舒适档 0.22 × 行里的尺寸比例 0.823 ≈ 0.18 个线间距（统筹 2026-11-12 定；0.14 时只有 0.11，♮ 快碰到数字）
-  /** 琶音的竖波浪：升降号再左边。 */
-  arpeggio: { side: "left", gap: 0.2 },
-  /** 高八度点：最上面那个数字的顶上（和弦里中间那几个数字的点在叠的时候已经让开了：glyphs.ts stackBases）。 */
-  dotHigh: { side: "above", gap: DOT_GAP },
-  /** 跳音（实心窄楔形）：高八度点再上面；第一个离墨 MARK_GAP（样张）。 */
-  staccato: { side: "above", gap: MARK_GAP, next: STACC_STEP - STACC_H, group: "mark" },
-  /** 保持（短横）：同上；横本身有粗细，第一个按样张「横离上一条墨 TEN_DY」折算。 */
-  tenuto: { side: "above", gap: MARK_GAP + TEN_DY - TEN_W / 2, next: STACC_STEP - STACC_H, group: "mark" },
-  /** 气声 / 固定敲一个键的 ×：字形右上（高度按字形表）。 */
-  xmark: { side: "right", gap: 0.0775 },
-  /** 低八度点：最下面那个数字底下；有下划线 = 下划线底下（8-3 前下划线还不在盒子里：先 reserve 到下划线的底）。 */
-  dotLow: { side: "below", gap: DOT_GAP },
-  /** 滚奏三道短斜线：最下面。 */
-  roll: { side: "below", gap: 0.17 },
-  /** 附点：最后一个字形（数字 / 横线 / 0）右边，高度按字形表（样张：在基线上 0.3 字号）。 */
-  augDot: { side: "right", gap: AUG_DX },
-  /** 换气 V（+「吸 / 深吸」）：最右边。 */
-  breath: { side: "right", gap: 0.35 }
-};
-var gapOf = (id, n2) => {
-  const p = PLACE[id];
-  return n2 > 0 && p.next !== void 0 ? p.next : p.gap;
-};
-var groupOf = (id) => PLACE[id].group ?? id;
-
-// src/render/jianpu/note-cell.ts
-var T0 = (tok) => tok !== void 0 ? { tok } : {};
-var textInk = (x0, x1, top, base) => ({ x0, x1, y0: top, y1: base });
-var part = (ink, prims) => ({ ink, prims });
-var unionInk = (ks) => ({ x0: Math.min(...ks.map((k) => k.x0)), x1: Math.max(...ks.map((k) => k.x1)), y0: Math.min(...ks.map((k) => k.y0)), y1: Math.max(...ks.map((k) => k.y1)) });
-function coreBottom(u, q, mode, aux) {
-  if (!u.note || u.ghost || !u.pitch || contDash(u)) return BASE_Y;
-  if (mode === "x") return q.p.perc?.kind === "kit" ? BASE_Y - DIGIT_H * 0.12 : BASE_Y;
-  return lettersOf(q, u, mode, aux) ? BASE_Y + SUB_DY * (u.art.includes("ghost") ? GHOST_K : 1) : BASE_Y;
-}
-var UL_DROP = UL_Y0 - BASE_Y;
-function rowGlyphSpan(mode, kit, letters) {
-  const layer = (core2, bottom) => core2 + UL_DROP + UL_W / 2 - bottom;
-  if (mode === "x" && kit) {
-    const yb = BASE_Y - DIGIT_H * 0.12;
-    return { top: glyphInk(KIT_CHAR.normal, 0, yb, DIGIT_EM * KIT_EM, "middle").y0, bottom: yb, layer: layer(yb, yb) };
+    return (w(), W)[s >>> 2 >>> 0] = f, 0;
   }
-  if (mode === "x") return { top: glyphInk("X", 0, BASE_Y, DIGIT_EM * X_EM, "middle").y0, bottom: BASE_Y, layer: layer(BASE_Y, BASE_Y) };
-  if (letters) return { top: glyphInk("C", 0, BASE_Y, DIGIT_EM, "start").y0, bottom: BASE_Y, layer: layer(BASE_Y + SUB_DY, BASE_Y) };
-  return { top: DIGIT_TOP, bottom: BASE_Y, layer: layer(BASE_Y, BASE_Y) };
-}
-function accRun(gs, em, xr, top, cls, T2, main) {
-  const prims = [], w = accRunW(gs, em), h = Math.max(...gs.map((g) => (g.box[3] - g.box[2]) * em / 4));
-  let x = xr - w;
-  for (const g of gs) {
-    const gw = (g.box[1] - g.box[0]) * em / 4;
-    const sk = accStroke(g, em, main);
-    prims.push({ ...T2, t: "glyph", x: x - g.box[0] * em / 4, y: top - g.box[2] * em / 4, ch: g.ch, cls, size: em, ...sk > 0 ? { stroke: sk } : {} });
-    x += gw + ACC_SEP;
+  function ua(e) {
+    return e >>> 0;
   }
-  return { prims, ink: { x0: xr - w, x1: xr, y0: top, y1: top + h } };
-}
-function noteCell(a) {
-  const { u, q, mode, aux } = a, T2 = T0(a.tok), art2 = a.artCls ?? ((x, b = "art") => b || x);
-  const fd = mode === "digits" ? foldOf(u, aux) : void 0, nameW = fd ? chordNameW(fd.name) : 0, lt = lettersOf(q, u, mode, aux), glyphW = fd ? nameW : lt ? lt.w : DIGIT_W;
-  const x0 = 0.1, cx = x0 + glyphW / 2, n2 = extraGlyphs(u), contDash2 = contDash(u), small = u.art.includes("ghost"), gk = small ? GHOST_K : 1;
-  const letters = q.letters !== void 0 && mode === "digits", xHead = mode === "digits" && !!q.p.xHead, kit = q.p.perc?.kind === "kit";
-  const nUL = underlines(u);
-  const ulBot = nUL ? (a.ulY ?? coreBottom(u, q, mode, aux) + UL_DROP) + (nUL - 1) * UL_GAP + UL_W / 2 : 0;
-  const head = cell();
-  const digitPart = (x, y, s2, cls, k = gk) => part(glyphInk(s2, x, y, DIGIT_EM * k, "middle"), [{ ...T2, t: "text", x, y, s: s2, cls, size: DIGIT_EM * k, anchor: "middle" }]);
-  const dashPart = (x) => part({ x0: x - DASH_L / 2, x1: x + DASH_L / 2, y0: DASH_Y - DASH_W / 2, y1: DASH_Y + DASH_W / 2 }, [{ ...T2, t: "line", x1: x - DASH_L / 2, y1: DASH_Y, x2: x + DASH_L / 2, y2: DASH_Y, w: DASH_W, cls: "jp-dash" }]);
-  const step = a.step ?? DASH_PITCH;
-  const lFirst = lt ? Math.max(x0 + DIGIT_W / 2 + step, x0 + glyphW + DASH_L / 2 + 0.5) : 0;
-  const gx = (k) => k === 0 ? cx : lt ? lFirst + (k - 1) * step : x0 + glyphW - DIGIT_W / 2 + k * step;
-  const count = {};
-  let leftGap;
-  const stick = (id, p, o = {}, c = head) => {
-    const g = groupOf(id), k = count[g] ?? 0, gap = gapOf(id, k);
-    count[g] = k + 1;
-    if (PLACE[id].side === "left" && leftGap === void 0) leftGap = gap;
-    if (PLACE[id].side === "below" && nUL) head.reserve("below", ulBot);
-    return c.attach(PLACE[id].side, p, { gap, ...o });
-  };
-  let members = [], hiBase = BASE_Y, top;
-  if (u.note && (u.ghost || !u.pitch)) {
-    head.core(contDash2 ? dashPart(cx) : digitPart(cx, BASE_Y, "x", "jp-digit ghost", 1));
-  } else if (u.note && u.pitch) {
-    const ps = fd ? [fd.bass] : u.pitches.length > 1 ? u.pitches : [u.pitch], accs = fd ? [] : accsOf(u);
-    const dg = ps.map((pp) => toDegree(pp, letters ? 0 : a.fifths)), dotsOf = dg.map((d) => mode === "x" || letters ? 0 : d.shift - a.base);
-    const order = ps.map((_, i) => ps.length - 1 - i);
-    const bases = letters ? order.map((_, k) => BASE_Y - k * (DIGIT_H + SUB_DROP + SUP_RISE + CHORD_GAP)) : stackBases(order.map((i) => dotsOf[i]));
-    hiBase = bases[bases.length - 1];
-    const hiDots = dotsOf[0], lowDots = dotsOf[order[0]];
-    const mute = (i) => i > 0 && !!q.p.mono ? " chord-mute" : "";
-    if (contDash2) head.core(dashPart(cx));
-    else if (fd) {
-      head.core(part(textInk(x0, x0 + nameW, BASE_Y - CHORD_H, BASE_Y), [{ ...T2, t: "text", x: x0, y: BASE_Y, s: fd.name, cls: "jp-chord", size: CHORD_EM, sx: CHORD_SX, anchor: "start" }]));
-      const bd = dotsOf[0], bx = x0 + chordBassCx(fd.name);
-      const dots = (sign) => {
-        const ps2 = [];
-        for (let j = 0; j < Math.abs(bd); j++) ps2.push({ ...T2, t: "path", d: dotPath(bx, -sign * (DOT_R + j * DOT_STEP), DOT_R), cls: "jp-dot" });
-        return part({ x0: bx - DOT_R, x1: bx + DOT_R, y0: sign > 0 ? -(2 * DOT_R + (Math.abs(bd) - 1) * DOT_STEP) : 0, y1: sign > 0 ? 0 : 2 * DOT_R + (Math.abs(bd) - 1) * DOT_STEP }, ps2);
-      };
-      if (hasArp(u)) {
-        const yTop = BASE_Y - CHORD_H - 0.2, yBot = BASE_Y + 0.2;
-        stick("arpeggio", arpPart(yTop, yBot, T2, art2("arpeggio", "arpeggio jp-arp")), { cross: 0 });
-      }
-      if (bd > 0) stick("dotHigh", dots(1), { cross: 0 });
-      if (bd < 0) stick("dotLow", dots(-1), { cross: 0 });
-      members = [{ i: 0, yb: BASE_Y }];
-    } else if (mode === "x" && kit) {
-      const hits = ps.map((pp, i) => ({ i, pi: percOf(128, 0, midiOf(pp)) })).sort((p1, p2) => (p2.pi?.line ?? 4) - (p1.pi?.line ?? 4) || p2.i - p1.i);
-      hits.forEach(({ i, pi }, k) => {
-        const yb = bases[k] - DIGIT_H * 0.12, sz = DIGIT_EM * KIT_EM * gk, ch = KIT_CHAR[pi?.head ?? "normal"] ?? "\u25CF";
-        head.core(part(glyphInk(ch, cx, yb, sz, "middle"), [{ ...T2, t: "text", x: cx, y: yb, s: ch, cls: small ? "jp-digit jp-x jp-kit art-ghost" : "jp-digit jp-x jp-kit", size: sz, anchor: "middle" }]));
-        members.push({ i, yb: bases[k] });
-      });
-    } else if (mode === "x") {
-      order.forEach((i, k) => {
-        const k2 = small ? GHOST_K : X_EM, ch = small ? "x" : "X";
-        head.core(part(glyphInk(ch, cx, bases[k], DIGIT_EM * k2, "middle"), [{ ...T2, t: "text", x: cx, y: bases[k], s: ch, cls: small ? "jp-digit jp-x art-ghost" : "jp-digit jp-x", size: DIGIT_EM * k2, anchor: "middle" }]));
-        members.push({ i, yb: bases[k] });
-      });
-    } else {
-      const accs2 = [];
-      order.forEach((i, k) => {
-        const yb = bases[k], d = dg[i], dots = dotsOf[i], pp = ps[i], prims = [], inks = [];
-        if (lt) {
-          const lp = letterParts(pp, q.letters), xs = x0 + (letterW(pp.step) + SCRIPT_GAP) * gk, ss = DIGIT_EM * SCRIPT_K * gk, cls = (small ? "jp-digit jp-letter art-ghost" : "jp-digit jp-letter") + mute(i);
-          prims.push({ ...T2, t: "text", x: x0, y: yb, s: lp.letter, cls, size: DIGIT_EM * gk, anchor: "start" });
-          inks.push(glyphInk(lp.letter, x0, yb, DIGIT_EM * gk, "start"));
-          if (lp.acc) {
-            const gs = accGlyphsOfText(lp.acc), em = supAccEm(gk), r = accRun(gs, em, xs + accRunW(gs, em), yb + SUP_DY * gk - 0.75 * ss, "jp-acc jp-letter-sup" + mute(i), T2, DIGIT_EM * gk);
-            prims.push(...r.prims);
-            inks.push(r.ink);
-          }
-          prims.push({ ...T2, t: "text", x: xs, y: yb + SUB_DY * gk, s: lp.oct, cls: "jp-digit jp-letter-sub" + mute(i), size: ss, anchor: "start" });
-          inks.push(textInkRun(lp.oct, xs, yb + SUB_DY * gk, ss));
-        } else {
-          const dp = digitPart(cx, yb, String(d.degree), (small ? "jp-digit art-ghost" : "jp-digit") + mute(i));
-          prims.push(...dp.prims);
-          inks.push(dp.ink);
-          if (dots > 0 && k < order.length - 1) for (let j = 0; j < dots; j++) {
-            const yy = yb - DIGIT_H * gk - DOT_GAP - DOT_R - j * DOT_STEP;
-            prims.push({ ...T2, t: "path", d: dotPath(cx, yy, DOT_R), cls: "jp-dot" + mute(i) });
-            inks.push({ x0: cx - DOT_R, x1: cx + DOT_R, y0: yy - DOT_R, y1: yy + DOT_R });
-          }
-          if (dots < 0 && k > 0) for (let j = 0; j < -dots; j++) {
-            const yy = yb + LOW_DOT_UNDER + j * DOT_STEP;
-            prims.push({ ...T2, t: "path", d: dotPath(cx, yy, DOT_R), cls: "jp-dot" + mute(i) });
-            inks.push({ x0: cx - DOT_R, x1: cx + DOT_R, y0: yy - DOT_R, y1: yy + DOT_R });
-          }
-        }
-        head.core(part(unionInk(inks), prims));
-        if (!lt && accs[i] !== null && accs[i] !== void 0) {
-          const r = accRun(accGlyphs(d.acc), ACC_GLYPH_EM * gk, 0, yb - DIGIT_H * gk - ACC_RISE, "jp-acc" + mute(i), T2, DIGIT_EM * gk);
-          accs2.push({ part: part(r.ink, r.prims), from: inks[0].x0 });
-        }
-        members.push({ i, yb });
-      });
-      if (accs2.length) {
-        const g = groupOf("acc"), gap = gapOf("acc", count[g] ?? 0);
-        count[g] = (count[g] ?? 0) + 1;
-        leftGap ??= gap;
-        for (const a2 of accs2) head.attach("left", a2.part, { gap, cross: 0, from: a2.from });
-      }
-      if (hasArp(u)) stick("arpeggio", arpPart(hiBase - DIGIT_H - 0.2, bases[0] + 0.2, T2, art2("arpeggio", "arpeggio jp-arp")), { cross: 0 });
-      if (hiDots > 0) {
-        const ps2 = [];
-        for (let j = 0; j < hiDots; j++) ps2.push({ ...T2, t: "path", d: dotPath(cx, -(DOT_R + j * DOT_STEP), DOT_R), cls: "jp-dot" + mute(0) });
-        stick("dotHigh", part({ x0: cx - DOT_R, x1: cx + DOT_R, y0: -(2 * DOT_R + (hiDots - 1) * DOT_STEP), y1: 0 }, ps2), { cross: 0 });
-      }
-      if (lowDots < 0) {
-        const ps2 = [];
-        for (let j = 0; j < -lowDots; j++) ps2.push({ ...T2, t: "path", d: dotPath(cx, DOT_R + j * DOT_STEP, DOT_R), cls: "jp-dot" + mute(order[0]) });
-        stick("dotLow", part({ x0: cx - DOT_R, x1: cx + DOT_R, y0: 0, y1: 2 * DOT_R + (-lowDots - 1) * DOT_STEP }, ps2), { cross: 0 });
-      }
+  o || function() {
+    for (var e = t.numThreads - 1; e--; ) yn();
+    Ve.push(async () => {
+      var r = async function() {
+        if (!o) return Promise.all(ce.map(bn));
+      }();
+      Re++, await r, --Re == 0 && te && (r = te, te = null, r());
+    });
+  }(), o || (ge = new WebAssembly.Memory({ initial: 256, maximum: 65536, shared: true }), ee()), t.wasmBinary && (g = t.wasmBinary), t.stackSave = () => U(), t.stackRestore = (e) => _(e), t.stackAlloc = (e) => jt(e), t.setValue = function(e, r, i = "i8") {
+    switch (i.endsWith("*") && (i = "*"), i) {
+      case "i1":
+      case "i8":
+        (w(), H)[e >>> 0] = r;
+        break;
+      case "i16":
+        (w(), pe)[e >>> 1 >>> 0] = r;
+        break;
+      case "i32":
+        (w(), B)[e >>> 2 >>> 0] = r;
+        break;
+      case "i64":
+        (w(), O)[e >>> 3 >>> 0] = BigInt(r);
+        break;
+      case "float":
+        (w(), re)[e >>> 2 >>> 0] = r;
+        break;
+      case "double":
+        (w(), me)[e >>> 3 >>> 0] = r;
+        break;
+      case "*":
+        (w(), W)[e >>> 2 >>> 0] = r;
+        break;
+      default:
+        j(`invalid type for setValue: ${i}`);
     }
-    if (!contDash2) {
-      for (const m of ["staccato", "tenuto"].filter((x) => u.art.includes(x))) {
-        if (m === "staccato") {
-          const hw = STACC_W / 2;
-          stick("staccato", part({ x0: cx - hw, x1: cx + hw, y0: -STACC_H, y1: 0 }, [{ ...T2, t: "path", d: `M${cx - hw},${-STACC_H}L${cx + hw},${-STACC_H}L${cx},0Z`, cls: art2(m, "art jp-stacc staccato") }]), { cross: 0 });
-        } else stick("tenuto", part({ x0: cx - TEN_L / 2, x1: cx + TEN_L / 2, y0: -TEN_W / 2, y1: TEN_W / 2 }, [{ ...T2, t: "line", x1: cx - TEN_L / 2, y1: 0, x2: cx + TEN_L / 2, y2: 0, w: TEN_W, cls: art2(m, "art jp-ten tenuto") }]), { cross: 0 });
-      }
-      top = head.edge("above");
-      if (u.whisper || xHead) {
-        const y = hiBase - DIGIT_H + 0.5;
-        stick("xmark", part(glyphInk("\xD7", 0, y, ACC_EM, "start"), [{ ...T2, t: "text", x: 0, y, s: "\xD7", cls: u.whisper ? art2("whisper", "jp-acc whisper") : "jp-acc xhead", size: ACC_EM, anchor: "start" }]), { cross: 0 });
-      }
-      if (u.art.includes("roll")) {
-        const ps2 = [];
-        for (let k = 0; k < 3; k++) {
-          const yy = 0.18 + k * 0.28;
-          ps2.push({ ...T2, t: "line", x1: cx - 0.4, y1: yy + 0.18, x2: cx + 0.4, y2: yy - 0.18, w: 0.11, cls: art2("roll", "jp-roll") });
-        }
-        stick("roll", part({ x0: cx - 0.4, x1: cx + 0.4, y0: 0, y1: 0.18 + 2 * 0.28 + 0.18 }, ps2), { cross: 0 });
-      }
+  }, t.getValue = function(e, r = "i8") {
+    switch (r.endsWith("*") && (r = "*"), r) {
+      case "i1":
+      case "i8":
+        return (w(), H)[e >>> 0];
+      case "i16":
+        return (w(), pe)[e >>> 1 >>> 0];
+      case "i32":
+        return (w(), B)[e >>> 2 >>> 0];
+      case "i64":
+        return (w(), O)[e >>> 3 >>> 0];
+      case "float":
+        return (w(), re)[e >>> 2 >>> 0];
+      case "double":
+        return (w(), me)[e >>> 3 >>> 0];
+      case "*":
+        return (w(), W)[e >>> 2 >>> 0];
+      default:
+        j(`invalid type for getValue: ${r}`);
     }
-  } else {
-    head.core(digitPart(cx, BASE_Y, "0", "jp-digit", 1));
-  }
-  if (nUL) head.reserve("below", ulBot);
-  const bot = head.edge("below");
-  const whole = cell();
-  whole.core(part(head.box(), head.prims(0, 0)));
-  for (let k = 1; k <= n2; k++) whole.core(u.note ? dashPart(gx(k)) : digitPart(gx(k), BASE_Y, "0", "jp-digit", 1));
-  const wc = {};
-  const tail = (id, p, cross) => {
-    const g = groupOf(id), k = wc[g] ?? 0;
-    wc[g] = k + 1;
-    whole.attach(PLACE[id].side, p, { gap: gapOf(id, k), cross });
-  };
-  if (hasAugDot(u)) tail("augDot", part({ x0: 0, x1: 2 * AUG_R, y0: -AUG_R, y1: AUG_R }, [{ ...T2, t: "path", d: dotPath(AUG_R, 0, AUG_R), cls: "jp-dot" }]), AUG_Y);
-  if (u.note && u.breath) {
-    const vw = BREATH_W - 0.35, prims = [{ ...T2, t: "text", x: 0, y: 0, s: "V", cls: art2("breath", "jp-acc breath"), size: BREATH_EM, anchor: "start" }];
-    const lb = u.inhale ? a.aux?.labels?.inhale[u.inhale] : void 0;
-    if (lb) prims.push({ ...T2, t: "text", x: 1, y: 0, s: lb.text, cls: art2("inhale", "breath-label"), size: lb.size, anchor: "start" });
-    const cjk = !!lb && /[\u3000-\u9fff]/.test(lb.text), vk = glyphInk("V", 0, 0, BREATH_EM, "start");
-    const lab = lb ? { x1: 1 + lb.w, y0: -(cjk ? 0.83 : 0.75) * lb.size, y1: (cjk ? 0.08 : 0.22) * lb.size } : null;
-    const ink = { x0: vk.x0, x1: lab ? Math.max(vk.x1, lab.x1) : vk.x1, y0: Math.min(vk.y0, lab?.y0 ?? 0), y1: Math.max(vk.y1, lab?.y1 ?? 0) }, e = whole.edge("right");
-    const gap = a.limit === void 0 ? PLACE.breath.gap : Math.max(0.1, Math.min(PLACE.breath.gap, a.limit - 0.6 - (ink.x1 - ink.x0) - e));
-    whole.attach(PLACE.breath.side, part(ink, prims), { gap, cross: BREATH_Y });
-  }
-  return { cell: whole, x0, cx, glyphW, members, hiBase, bot, ...top !== void 0 ? { top } : {}, ...leftGap !== void 0 ? { leftGap } : {} };
-}
-function tailW(u) {
-  return hasAugDot(u) ? PLACE.augDot.gap + 2 * AUG_R + 0.1 : 0;
-}
-function arpPart(yTop, yBot, T2, cls) {
-  const amp = 0.28, st = 0.5;
-  let d = `M0,${yBot}`;
-  for (let y = yBot, k = 0; y > yTop; y -= st, k++) d += `Q${(k % 2 ? -amp : amp) * 2},${y - st / 2} 0,${Math.max(yTop, y - st)}`;
-  return part({ x0: -amp, x1: amp, y0: yTop, y1: yBot }, [{ ...T2, t: "path", d, cls }]);
-}
-
-// src/render/jianpu/keytext.ts
-function keyParts(fifths, minor, base, middleC) {
-  const m = /^([16]=)([A-G])([♭♯]?)$/.exec(keyText(fifths, minor));
-  const pre = m?.[1] ?? (minor ? "6=" : "1="), letter = m?.[2] ?? "?", acc = m?.[3] ?? "";
-  const oct = base === null ? "" : String(fromDegree(minor ? 6 : 1, base, 0, fifths).octave - 4 + middleC);
-  return { pre, acc, letter, oct };
-}
-function keyLayout(k, size) {
-  const f = size / DIGIT_EM, accEm = ACC_GLYPH_EM * f, gs = accGlyphsOfText(k.acc), gap = 0.05 * size;
-  const xAcc = headTextW(k.pre, size) + (k.acc ? gap : 0), xLetter = xAcc + (k.acc ? accRunW(gs, accEm) + gap : 0);
-  const xOct = xLetter + headTextW(k.letter, size) + (k.oct ? SCRIPT_GAP * f : 0);
-  return { xAcc, xLetter, xOct, w: xOct + (k.oct ? headTextW(k.oct, size * SCRIPT_K) : 0), accEm };
-}
-function keyPrims(k, x, y, size, cls, T2) {
-  const L = keyLayout(k, size), f = size / DIGIT_EM, prims = [];
-  prims.push({ ...T2, t: "text", x, y, s: k.pre, cls, size, anchor: "start" });
-  if (k.acc) {
-    const gs = accGlyphsOfText(k.acc);
-    let gx = x + L.xAcc;
-    const top = y - DIGIT_H * f - ACC_RISE * f;
-    for (const g of gs) {
-      const sk = accStroke(g, L.accEm, size);
-      prims.push({ ...T2, t: "glyph", x: gx - g.box[0] * L.accEm / 4, y: top - g.box[2] * L.accEm / 4, ch: g.ch, cls: "jp-acc jp-key-acc", size: L.accEm, ...sk > 0 ? { stroke: sk } : {} });
-      gx += (g.box[1] - g.box[0]) * L.accEm / 4 + 0.08 * f;
-    }
-  }
-  prims.push({ ...T2, t: "text", x: x + L.xLetter, y, s: k.letter, cls, size, anchor: "start" });
-  if (k.oct) prims.push({ ...T2, t: "text", x: x + L.xOct, y: y + SUB_DY * f, s: k.oct, cls: `${cls} jp-letter-sub jp-key-oct`, size: size * SCRIPT_K, anchor: "start" });
-  return { prims, w: L.w };
-}
-
-// src/render/jianpu/measure.ts
-var core = (u, nameW) => nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN;
-var COLUMN_KIND2 = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
-function unitW(u, printKey) {
-  switch (u.kind) {
-    case "bar":
-      return u.repeat ? BAR_W_J + 1 : u.style ? BAR_W_J + 0.5 : BAR_W_J;
-    case "key":
-      return printKey ? keyLayout(keyParts(u.fifths, u.minor, 0, 4), MID_TEXT_EM).w + 0.6 : 0;
-    // 字母谱 / 鼓不印调号：只给不印的提示，不占宽（8-5）   // 中途换调写的字「1=♭B₃」（7-Q）：宽从字形算（第八刀 8-4）；八度数字按一位算
-    case "time":
-      return headTextW(`${u.beats}/${u.beatType}`, MID_TEXT_EM) + 0.6;
-    case "clef":
-    case "ottava":
+  }, t.UTF8ToString = Mt, t.stringToUTF8 = Oe, t.lengthBytesUTF8 = Wt;
+  var st, er, tr, zt, nr, rr, or, Ht, ar, sr, x, qe, ir, _, jt, U, ur, Vt, fr, cr, lr, Ee, fa = [V, fe, Sn, In, Bn, Ln, _n, Dn, Pn, Un, xn, Cn, Mn, Rn, Fn, Nn, $n, zn, Hn, Yn, qn, Jn, Xn, Zn, Qn, Kn], dr = { 1042604: (e, r, i, s, f) => {
+    if (t === void 0 || !t.Tb) return 1;
+    if ((e = Mt(Number(e >>> 0))).startsWith("./") && (e = e.substring(2)), !(e = t.Tb.get(e))) return 2;
+    if (r = Number(r >>> 0), i = Number(i >>> 0), s = Number(s >>> 0), r + i > e.byteLength) return 3;
+    try {
+      let p = e.subarray(r, r + i);
+      switch (f) {
+        case 0:
+          (w(), ne).set(p, s >>> 0);
+          break;
+        case 1:
+          t.ic ? t.ic(s, p) : t.kc(s, p);
+          break;
+        default:
+          return 4;
+      }
       return 0;
-    // 五线谱才有的记号落在数字行上 = 不印的小灰标：不占宽、最后贴、只躲不推（8-5，统筹定）   // 小灰标「谱号」/「8va」写得下（字号 1 sp，两个汉字 / 四个字母）
-    default:
-      return 0;
+    } catch {
+      return 4;
+    }
+  }, 1043428: () => typeof wasmOffsetConverter < "u" };
+  function ca() {
+    return typeof wasmOffsetConverter < "u";
   }
-}
-function measureJianpu(q, k = 1, mode = "digits", aux) {
-  const inkL = /* @__PURE__ */ new Map();
-  let fifths = q.head.key;
-  const spItems = (u) => {
-    if (u.pad) return [];
-    const nc = noteCell({ u, q, mode, ...aux ? { aux } : {}, fifths, base: 0, step: null }), b = nc.cell.box(), gw = nc.glyphW;
-    const fd = mode === "digits" ? foldOf(u, aux) : void 0, lt = lettersOf(q, u, mode, aux);
-    const left = -Math.min(b.x0, nc.x0) * k, right = Math.max(0, (core(u, fd || lt && gw > DIGIT_W ? gw : 0) + 0.1 + Math.max(0, b.x1 - (nc.x0 + gw))) * k - SP_DEFAULTS.pad);
-    inkL.set(u, Math.max(0, left));
-    const out = [{ row: 0, left, right, dur: u.ticks, inkR: b.x1 * k, ...nc.leftGap !== void 0 ? { clear: LEFT_CLEAR * nc.leftGap * k } : {} }];
-    const cx = (0.1 + gw / 2) * k;
-    if (u.lyW !== void 0) out.push({ row: 1, left: u.lyW / 2 - cx, right: cx + u.lyW / 2 + 0.4 + (u.hyph ? 0.7 : 0) });
-    return out;
-  };
-  const entries = q.units.map((u) => {
-    if (u.kind === "key") fifths = u.fifths;
-    return { tick: u.tick, slot: u.kind === "nav" ? u.slot : SLOT[COLUMN_KIND2[u.kind]], w: u.kind === "chunk" ? u.w : unitW(u, mode === "digits" && q.letters === void 0) * k, ...u.kind === "bar" ? { bar: true } : {}, ...u.kind === "chunk" ? { chunk: { items: spItems(u), span: u.ticks } } : {}, ref: u };
+  function la(e, r, i, s) {
+    var f = U();
+    try {
+      return M(e)(r, i, s);
+    } catch (p) {
+      if (_(f), p !== p + 0) throw p;
+      x(1, 0);
+    }
+  }
+  function da(e, r, i) {
+    var s = U();
+    try {
+      return M(e)(r, i);
+    } catch (f) {
+      if (_(s), f !== f + 0) throw f;
+      x(1, 0);
+    }
+  }
+  function pa(e) {
+    var r = U();
+    try {
+      M(e)();
+    } catch (i) {
+      if (_(r), i !== i + 0) throw i;
+      x(1, 0);
+    }
+  }
+  function ma(e, r) {
+    var i = U();
+    try {
+      return M(e)(r);
+    } catch (s) {
+      if (_(i), s !== s + 0) throw s;
+      x(1, 0);
+    }
+  }
+  function ha(e, r, i) {
+    var s = U();
+    try {
+      M(e)(r, i);
+    } catch (f) {
+      if (_(s), f !== f + 0) throw f;
+      x(1, 0);
+    }
+  }
+  function wa(e, r) {
+    var i = U();
+    try {
+      M(e)(r);
+    } catch (s) {
+      if (_(i), s !== s + 0) throw s;
+      x(1, 0);
+    }
+  }
+  function ba(e, r, i, s, f, p, E) {
+    var S2 = U();
+    try {
+      return M(e)(r, i, s, f, p, E);
+    } catch (C) {
+      if (_(S2), C !== C + 0) throw C;
+      x(1, 0);
+    }
+  }
+  function ya(e, r, i, s, f, p) {
+    var E = U();
+    try {
+      M(e)(r, i, s, f, p);
+    } catch (S2) {
+      if (_(E), S2 !== S2 + 0) throw S2;
+      x(1, 0);
+    }
+  }
+  function ga(e, r, i, s) {
+    var f = U();
+    try {
+      M(e)(r, i, s);
+    } catch (p) {
+      if (_(f), p !== p + 0) throw p;
+      x(1, 0);
+    }
+  }
+  function Ea(e, r, i, s, f) {
+    var p = U();
+    try {
+      M(e)(r, i, s, f);
+    } catch (E) {
+      if (_(p), E !== E + 0) throw E;
+      x(1, 0);
+    }
+  }
+  function Ta(e, r, i, s, f, p, E) {
+    var S2 = U();
+    try {
+      M(e)(r, i, s, f, p, E);
+    } catch (C) {
+      if (_(S2), C !== C + 0) throw C;
+      x(1, 0);
+    }
+  }
+  function Sa(e, r, i, s, f, p, E) {
+    var S2 = U();
+    try {
+      M(e)(r, i, s, f, p, E);
+    } catch (C) {
+      if (_(S2), C !== C + 0) throw C;
+      x(1, 0);
+    }
+  }
+  function va(e, r, i, s, f, p, E, S2) {
+    var C = U();
+    try {
+      M(e)(r, i, s, f, p, E, S2);
+    } catch (R) {
+      if (_(C), R !== R + 0) throw R;
+      x(1, 0);
+    }
+  }
+  function Aa(e, r, i, s, f) {
+    var p = U();
+    try {
+      return M(e)(r, i, s, f);
+    } catch (E) {
+      if (_(p), E !== E + 0) throw E;
+      x(1, 0);
+    }
+  }
+  function Oa(e, r, i) {
+    var s = U();
+    try {
+      return M(e)(r, i);
+    } catch (f) {
+      if (_(s), f !== f + 0) throw f;
+      x(1, 0);
+    }
+  }
+  function Ia(e, r, i, s, f, p, E, S2) {
+    var C = U();
+    try {
+      M(e)(r, i, s, f, p, E, S2);
+    } catch (R) {
+      if (_(C), R !== R + 0) throw R;
+      x(1, 0);
+    }
+  }
+  function Ba(e, r, i, s, f, p, E, S2, C, R, X, le) {
+    var we = U();
+    try {
+      M(e)(r, i, s, f, p, E, S2, C, R, X, le);
+    } catch (be) {
+      if (_(we), be !== be + 0) throw be;
+      x(1, 0);
+    }
+  }
+  function La(e, r, i) {
+    var s = U();
+    try {
+      return M(e)(r, i);
+    } catch (f) {
+      if (_(s), f !== f + 0) throw f;
+      return x(1, 0), 0n;
+    }
+  }
+  function _a(e, r, i, s, f, p, E, S2, C) {
+    var R = U();
+    try {
+      M(e)(r, i, s, f, p, E, S2, C);
+    } catch (X) {
+      if (_(R), X !== X + 0) throw X;
+      x(1, 0);
+    }
+  }
+  function Da(e) {
+    var r = U();
+    try {
+      return M(e)();
+    } catch (i) {
+      if (_(r), i !== i + 0) throw i;
+      x(1, 0);
+    }
+  }
+  function Pa(e, r) {
+    var i = U();
+    try {
+      return M(e)(r);
+    } catch (s) {
+      if (_(i), s !== s + 0) throw s;
+      return x(1, 0), 0n;
+    }
+  }
+  function Ua(e, r, i, s) {
+    var f = U();
+    try {
+      return M(e)(r, i, s);
+    } catch (p) {
+      if (_(f), p !== p + 0) throw p;
+      x(1, 0);
+    }
+  }
+  function xa(e) {
+    var r = U();
+    try {
+      return M(e)();
+    } catch (i) {
+      if (_(r), i !== i + 0) throw i;
+      return x(1, 0), 0n;
+    }
+  }
+  function Ca(e, r, i, s) {
+    var f = U();
+    try {
+      return M(e)(r, i, s);
+    } catch (p) {
+      if (_(f), p !== p + 0) throw p;
+      x(1, 0);
+    }
+  }
+  function Ma(e, r, i, s, f) {
+    var p = U();
+    try {
+      return M(e)(r, i, s, f);
+    } catch (E) {
+      if (_(p), E !== E + 0) throw E;
+      x(1, 0);
+    }
+  }
+  function Ra(e, r, i, s, f, p) {
+    var E = U();
+    try {
+      return M(e)(r, i, s, f, p);
+    } catch (S2) {
+      if (_(E), S2 !== S2 + 0) throw S2;
+      x(1, 0);
+    }
+  }
+  function Fa(e, r, i, s, f, p) {
+    var E = U();
+    try {
+      return M(e)(r, i, s, f, p);
+    } catch (S2) {
+      if (_(E), S2 !== S2 + 0) throw S2;
+      x(1, 0);
+    }
+  }
+  function Na(e, r, i, s, f, p) {
+    var E = U();
+    try {
+      return M(e)(r, i, s, f, p);
+    } catch (S2) {
+      if (_(E), S2 !== S2 + 0) throw S2;
+      x(1, 0);
+    }
+  }
+  function ka(e, r, i, s, f, p, E, S2) {
+    var C = U();
+    try {
+      return M(e)(r, i, s, f, p, E, S2);
+    } catch (R) {
+      if (_(C), R !== R + 0) throw R;
+      x(1, 0);
+    }
+  }
+  function Wa(e, r, i, s, f) {
+    var p = U();
+    try {
+      return M(e)(r, i, s, f);
+    } catch (E) {
+      if (_(p), E !== E + 0) throw E;
+      return x(1, 0), 0n;
+    }
+  }
+  function Ga(e, r, i, s) {
+    var f = U();
+    try {
+      return M(e)(r, i, s);
+    } catch (p) {
+      if (_(f), p !== p + 0) throw p;
+      x(1, 0);
+    }
+  }
+  function $a(e, r, i, s) {
+    var f = U();
+    try {
+      return M(e)(r, i, s);
+    } catch (p) {
+      if (_(f), p !== p + 0) throw p;
+      x(1, 0);
+    }
+  }
+  function za(e, r, i, s, f, p, E, S2, C, R, X, le) {
+    var we = U();
+    try {
+      return M(e)(r, i, s, f, p, E, S2, C, R, X, le);
+    } catch (be) {
+      if (_(we), be !== be + 0) throw be;
+      x(1, 0);
+    }
+  }
+  function Ha(e, r, i, s, f, p, E, S2, C, R, X) {
+    var le = U();
+    try {
+      M(e)(r, i, s, f, p, E, S2, C, R, X);
+    } catch (we) {
+      if (_(le), we !== we + 0) throw we;
+      x(1, 0);
+    }
+  }
+  function ja(e, r, i, s, f, p, E, S2, C, R, X, le, we, be, Ja, Xa) {
+    var Za = U();
+    try {
+      M(e)(r, i, s, f, p, E, S2, C, R, X, le, we, be, Ja, Xa);
+    } catch (Yt) {
+      if (_(Za), Yt !== Yt + 0) throw Yt;
+      x(1, 0);
+    }
+  }
+  function Va(e, r, i) {
+    var s = U();
+    try {
+      return M(e)(r, i);
+    } catch (f) {
+      if (_(s), f !== f + 0) throw f;
+      x(1, 0);
+    }
+  }
+  function Ya(e, r, i) {
+    var s = U();
+    try {
+      return M(e)(r, i);
+    } catch (f) {
+      if (_(s), f !== f + 0) throw f;
+      x(1, 0);
+    }
+  }
+  function qa(e, r, i, s) {
+    var f = U();
+    try {
+      M(e)(r, i, s);
+    } catch (p) {
+      if (_(f), p !== p + 0) throw p;
+      x(1, 0);
+    }
+  }
+  function it() {
+    if (0 < Re) te = it;
+    else if (o) T?.(t), he();
+    else {
+      for (var e = Ve; 0 < e.length; ) e.shift()(t);
+      0 < Re ? te = it : (t.calledRun = true, P || (he(), T?.(t)));
+    }
+  }
+  return o || (Ee = await Ut(), it()), t.PTR_SIZE = 4, je ? t : new Promise((e, r) => {
+    T = e, I = r;
   });
-  return { entries, inkL };
 }
-var jianpuLineStart = (_q, _key, _first, base, k = 1) => base + 0.6 * k;
-var jianpuLyricAnchors = (q, k = 1, aux) => q.units.filter((u) => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + (0.1 + glyphWOf(u, aux, q) / 2) * k, lyric: u.lyric, hyph: u.hyph }));
-
-// src/render/frame/rowhead.ts
-function layoutHead(x0, items) {
-  const out = /* @__PURE__ */ new Map();
-  let x = x0;
-  for (const it of items) {
-    x += it.gap;
-    out.set(it.id, x);
-    x += it.w;
-  }
-  out.set("end", x);
-  return out;
-}
-
-// src/render/jianpu/draw.ts
-var jpGlyph = (a) => {
-  const d = SIGNS[`art:${a}`]?.draw.jianpu;
-  return d && d.kind === "glyph" ? { above: d.above, w: d.w ?? 1, h: d.h ?? 1 } : null;
-};
-var keyHead = (fifths, minor) => keyText(fifths, minor).replace(/=([A-G])([♭♯])$/, "=$2$1");
-function kitGroups(q, sys) {
-  const groups = /* @__PURE__ */ new Map();
-  for (const u of q.units) {
-    if (u.kind !== "chunk" || !u.note || u.pad || sys !== void 0 && u.system !== sys || !u.pitch) continue;
-    for (const pp of u.pitches.length ? u.pitches : [u.pitch]) {
-      const m = midiOf(pp), nm = q.p.kitNames?.[m];
-      if (!nm) continue;
-      const pi = percOf(128, 0, m), ch = KIT_CHAR[pi?.head ?? "normal"] ?? "\u25CF", g = groups.get(ch) ?? { line: pi?.line ?? 4, names: [], lines: [] };
-      g.line = Math.min(g.line, pi?.line ?? 4);
-      if (!g.names.includes(nm)) {
-        g.names.push(nm);
-        g.lines.push(pi?.line ?? 4);
+var as;
+var ss;
+var Jr = N(() => {
+  "use strict";
+  as = Yr, ss = globalThis.self?.name?.startsWith("em-pthread");
+  ss && Yr();
+});
+var Qr;
+var an;
+var is;
+var oe;
+var Kr;
+var on;
+var us;
+var fs;
+var eo;
+var cs;
+var Xr;
+var to;
+var Zr;
+var no;
+var pt = N(() => {
+  "use strict";
+  dt();
+  Qr = typeof location > "u" ? void 0 : location.origin, an = import.meta.url > "file:" && import.meta.url < "file;", is = () => {
+    if (true) {
+      if (an) {
+        let n = URL;
+        return new URL(new n("ort.wasm.bundle.min.mjs", import.meta.url).href, Qr).href;
       }
-      groups.set(ch, g);
+      return import.meta.url;
     }
-  }
-  return groups;
-}
-function kitLegendMin(q, mw) {
-  let w = 0;
-  for (const [ch, g] of kitGroups(q)) for (const nm of g.names) w = Math.max(w, mw("jp-legend", `${ch} ${nm}`));
-  return Math.min(NAME_MAX, w);
-}
-function drawJianpu(c, mine, mode = "digits") {
-  const lyricParts = [];
-  const { song, paper, o, P, tx, TR, put, notes, chordHeads, keyHints, chordTagsOut, placeBelow, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
-  const jk = c.scale ?? 1, Q = (v) => P(v * jk);
-  const Y = (row, v) => staffTop(row) + Q(v);
-  const layKitLegend = (q, r) => {
-    const first = q.units.find((u) => u.kind === "chunk" && u.note && !u.pad && !!u.pitch);
-    if (!first) return;
-    const groups = kitGroups(q, first.system);
-    if (!groups.size) return;
-    const width = ind0 - 1.4, lines = [];
-    for (const [ch, g] of [...groups].sort((a, b) => a[1].line - b[1].line)) {
-      const nms = g.names.map((nm, k) => ({ nm, ln: g.lines[k] })).sort((a, b) => a.ln - b.ln).map((x) => x.nm);
-      const fits = (t) => c.mw("jp-legend", t.trimEnd()) <= width;
-      const atomsOf = (t) => {
-        const out = [];
-        let carry = "";
-        for (const m of t.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) {
-          if (/^[（(「『]$/.test(m)) {
-            carry += m;
-            continue;
-          }
-          if (/^[）)」』，、。：；]$/.test(m) && out.length && !carry) {
-            out[out.length - 1] += m;
-            continue;
-          }
-          out.push(carry + m);
-          carry = "";
-        }
-        if (carry) out.push(carry);
-        return out;
-      };
-      const pushLong = (first2) => {
-        let cur2 = "";
-        for (const a of atomsOf(first2)) {
-          const next = cur2 + a;
-          if (!cur2.trim() || fits(next)) cur2 = next;
-          else {
-            lines.push(cur2.trimEnd());
-            cur2 = `\u3000${a.trimStart()}`;
-          }
-        }
-        if (cur2.trim()) lines.push(cur2.trimEnd());
-      };
-      let cur = `${ch} ${nms[0]}`;
-      for (const nm of nms.slice(1)) {
-        const next = `${cur} / ${nm}`;
-        if (fits(next)) cur = next;
-        else {
-          if (fits(cur + " /")) lines.push(cur + " /");
-          else pushLong(cur + " /");
-          cur = `\u3000${nm}`;
-        }
-      }
-      if (fits(cur)) lines.push(cur);
-      else pushLong(cur);
+  }, oe = is(), Kr = () => {
+    if (oe && !oe.startsWith("blob:")) return oe.substring(0, oe.lastIndexOf("/") + 1);
+  }, on = (n, t) => {
+    try {
+      let a = t ?? oe;
+      return (a ? new URL(n, a) : new URL(n)).origin === Qr;
+    } catch {
+      return false;
     }
-    const row = rowOf(first.system, r, 0), nameFs = tx("part-name"), fs = tx("jp-legend"), LH = fs * 1.3;
-    const mid = Q((JP_BODY.top + JP_BODY.bottom) / 2), y0 = mid + nameFs * 0.55 + nameFs * 0.35 + fs * 1.05 + (q.p.badges?.length ? TR("part-badge", 1.4) : 0);
-    placeBelow(row, 0, (y) => {
-      lines.forEach((ln, k) => c.prims.push({ t: "text", x: P(MARGIN), y: y + LH * k, s: ln, cls: "jp-legend", size: fs, anchor: "start" }));
-    }, { min: y0 / P(1), count: true });
-  };
-  for (const r of mine) {
-    const q = per[r], units = q.units, tokens = q.tokens, xHead = mode === "digits" && !!q.p.xHead, kit = q.p.perc?.kind === "kit";
-    for (let s2 = 0; s2 < nSys; s2++) {
-      const row = rowOf(s2, r, 0);
-      if (rows[row]) rows[row].x1 = P(staffEnd[s2]);
+  }, us = (n, t) => {
+    let a = t ?? oe;
+    try {
+      return (a ? new URL(n, a) : new URL(n)).href;
+    } catch {
+      return;
     }
-    const tokOf = (u) => u.index >= 0 && !u.pad ? tokens[u.index]?.id : void 0;
-    const spanTo = /* @__PURE__ */ new Map();
+  }, fs = (n, t) => `${t ?? "./"}${n}`, eo = async (n) => {
+    let a = await (await fetch(n, { credentials: "same-origin" })).blob();
+    return URL.createObjectURL(a);
+  }, cs = async (n) => (await import(
+    /*webpackIgnore:true*/
+    /*@vite-ignore*/
+    n
+  )).default, Xr = (Vr(), Xt(jr)).default, to = async () => {
+    if (!oe) throw new Error("Failed to load proxy worker: cannot determine the script source URL.");
+    if (on(oe)) return [void 0, Xr()];
+    let n = await eo(oe);
+    return [n, Xr(n)];
+  }, Zr = (Jr(), Xt(qr)).default, no = async (n, t, a, u) => {
+    let o = Zr && !(n || t);
+    if (o) if (oe) o = on(oe) || u && !a;
+    else if (u && !a) o = true;
+    else throw new Error("cannot determine the script source URL.");
+    if (o) return [void 0, Zr];
     {
-      let pend = [];
-      for (const v of units) {
-        if (v.kind !== "chunk" && v.kind !== "bar") continue;
-        for (const c0 of pend) spanTo.set(c0, c0.system === v.system ? v.x : staffEnd[c0.system]);
-        pend = v.kind === "chunk" ? [v] : [];
-      }
-      for (const c0 of pend) {
-        let end = -Infinity;
-        for (const col of c.cols) if (col.system === c0.system) end = Math.max(end, col.x + col.w);
-        spanTo.set(c0, Math.min(staffEnd[c0.system], end > c0.x ? end : staffEnd[c0.system]));
-      }
+      let d = "ort-wasm-simd-threaded.mjs", c = n ?? us(d, t), l = a && c && !on(c, t), m = l ? await eo(c) : c ?? fs(d, t);
+      return [l ? m : void 0, await cs(m)];
     }
-    const orn = {
-      song,
-      paper,
-      o,
-      notation: "jianpu",
-      P,
-      tx,
-      TR: c.TR,
-      RS: c.RS,
-      mw: c.mw,
-      sp: c.sp,
-      prims: c.prims,
-      dyns: c.dyns,
-      marks,
-      placeAbove,
-      placeBelow: (row, gap, d, o2) => placeBelow(row, gap, d, o2),
-      rowLow: (sy) => rowOf(sy, r, 0),
-      ignores: q.p.ignores ?? [],
-      rowEnd: (sy) => P(staffEnd[sy]),
-      contentEnd: (sy) => {
-        let e = -Infinity;
-        for (const col of cols) if (col.system === sy) e = Math.max(e, col.x + col.w);
-        return P(e > -Infinity ? Math.min(staffEnd[sy], e) : staffEnd[sy]);
-      },
-      attach: c.attach,
-      right: c.right,
-      left: (sy) => P(MARGIN + (sy === 0 ? ind0 : c.indN)) + Q(0.6),
-      tokens,
-      units,
-      row: (sy) => rowOf(sy, r, 0),
-      // left = jianpuLineStart（行首竖线往右 0.6）
-      glyphScale: jk,
-      noteX: (ch) => P(ch.x) + Q(0.1),
-      noteEnd: (ch) => P(ch.x) + Q(0.1 + DIGIT_W),
-      dynOff: dynOverridden(tokens),
-      navMute: (i) => navWhy(song, paper, q.p.id, tokens[i]) ? " art-mute" : "",
-      hint: c.hint
-    };
-    const letters = q.letters !== void 0 && mode === "digits", tonicOf = (f) => letters ? 0 : f;
-    let f0 = q.head.key;
-    const shifts = [];
-    for (const u of units) {
-      if (u.kind === "key") f0 = u.fifths;
-      else if (u.kind === "chunk" && u.note && u.pitch && !u.pad) shifts.push(toDegree(u.pitch, tonicOf(f0)).shift);
+  };
+});
+var sn;
+var un;
+var St;
+var ro;
+var ls;
+var ds;
+var ps;
+var mt;
+var z;
+var xe = N(() => {
+  "use strict";
+  pt();
+  un = false, St = false, ro = false, ls = () => {
+    if (typeof SharedArrayBuffer > "u") return false;
+    try {
+      return typeof MessageChannel < "u" && new MessageChannel().port1.postMessage(new SharedArrayBuffer(1)), WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 3, 2, 1, 0, 5, 4, 1, 3, 1, 1, 10, 11, 1, 9, 0, 65, 0, 254, 16, 2, 0, 26, 11]));
+    } catch {
+      return false;
     }
-    const fewest = fewestDotsBase(shifts), byRange = q.p.range ? rangeBase(q.p.range.lo, q.p.range.hi, tonicOf(q.head.key)) : null;
-    const base = byRange !== null && shifts.every((x) => Math.abs(x - byRange) <= 2) ? byRange : fewest;
-    for (let s2 = 0; s2 < nSys; s2++) {
-      const row = rowOf(s2, r, 0);
-      if (rows[row]) {
-        rows[row].octBase = base;
-        if (letters) rows[row].middleC = q.letters;
+  }, ds = () => {
+    try {
+      return WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 3, 2, 1, 0, 10, 30, 1, 28, 0, 65, 0, 253, 15, 253, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 253, 186, 1, 26, 11]));
+    } catch {
+      return false;
+    }
+  }, ps = () => {
+    try {
+      return WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 19, 1, 17, 0, 65, 1, 253, 15, 65, 2, 253, 15, 65, 3, 253, 15, 253, 147, 2, 11]));
+    } catch {
+      return false;
+    }
+  }, mt = async (n) => {
+    if (un) return Promise.resolve();
+    if (St) throw new Error("multiple calls to 'initializeWebAssembly()' detected.");
+    if (ro) throw new Error("previous call to 'initializeWebAssembly()' failed.");
+    St = true;
+    let t = n.initTimeout, a = n.numThreads;
+    if (n.simd !== false) {
+      if (n.simd === "relaxed") {
+        if (!ps()) throw new Error("Relaxed WebAssembly SIMD is not supported in the current environment.");
+      } else if (!ds()) throw new Error("WebAssembly SIMD is not supported in the current environment.");
+    }
+    let u = ls();
+    a > 1 && !u && (typeof self < "u" && !self.crossOriginIsolated && console.warn("env.wasm.numThreads is set to " + a + ", but this will not work unless you enable crossOriginIsolated mode. See https://web.dev/cross-origin-isolation-guide/ for more info."), console.warn("WebAssembly multi-threading is not supported in the current environment. Falling back to single-threading."), n.numThreads = a = 1);
+    let o = n.wasmPaths, d = typeof o == "string" ? o : void 0, c = o?.mjs, l = c?.href ?? c, m = o?.wasm, h = m?.href ?? m, g = n.wasmBinary, [b, y] = await no(l, d, a > 1, !!g || !!h), T = false, I = [];
+    if (t > 0 && I.push(new Promise((D) => {
+      setTimeout(() => {
+        T = true, D();
+      }, t);
+    })), I.push(new Promise((D, $) => {
+      let v = { numThreads: a };
+      if (g) v.wasmBinary = g, v.locateFile = (A) => A;
+      else if (h || d) v.locateFile = (A) => h ?? d + A;
+      else if (l && l.indexOf("blob:") !== 0) v.locateFile = (A) => new URL(A, l).href;
+      else if (b) {
+        let A = Kr();
+        A && (v.locateFile = (F) => A + F);
       }
+      y(v).then((A) => {
+        St = false, un = true, sn = A, D(), b && URL.revokeObjectURL(b);
+      }, (A) => {
+        St = false, ro = true, $(A);
+      });
+    })), await Promise.race(I), T) throw new Error(`WebAssembly backend initializing failed due to timeout: ${t}ms`);
+  }, z = () => {
+    if (un && sn) return sn;
+    throw new Error("WebAssembly is not initialized yet.");
+  };
+});
+var ae;
+var Qe;
+var G;
+var vt = N(() => {
+  "use strict";
+  xe();
+  ae = (n, t) => {
+    let a = z(), u = a.lengthBytesUTF8(n) + 1, o = a._malloc(u);
+    return a.stringToUTF8(n, o, u), t.push(o), o;
+  }, Qe = (n, t, a, u) => {
+    if (typeof n == "object" && n !== null) {
+      if (a.has(n)) throw new Error("Circular reference in options");
+      a.add(n);
     }
-    const row0 = rowOf(0, r, 0), hx = P(MARGIN + ind0) + Q(0.6), hs = Q(HEAD_EM), printKey = mode === "digits" && !letters;
-    const kp = keyParts(q.head.key, q.head.minor, printKey ? base : null, c.look.middleC), keyS = keyHead(q.head.key, q.head.minor), timeS = `${q.head.time.beats}/${q.head.time.beatType}`;
-    const tempoHere = q.p.id === c.owner && q.head.idx.tempo !== void 0;
-    c.attach(row0, "tempo", () => placeAbove(row0, 0.5 * jk, (y) => {
-      const kt = q.head.idx.key !== void 0 ? tokens[q.head.idx.key]?.id : void 0, tt = q.head.idx.time !== void 0 ? tokens[q.head.idx.time]?.id : void 0;
-      const kw = printKey ? keyLayout(kp, hs).w : 0, tw = headTextW(timeS, hs);
-      const chg = c.prevBpm === null || c.prevBpm === q.head.bpm ? void 0 : q.head.bpm > c.prevBpm ? "up" : "down";
-      const at2 = layoutHead(hx, [...printKey ? [{ id: "key", w: kw, gap: 0 }] : [], { id: "time", w: tw, gap: printKey ? Q(0.6) : 0 }, ...tempoHere ? [{ id: "tempo", w: 0, gap: Q(1.2) }] : []]);
-      if (printKey) for (const pr of keyPrims(kp, at2.get("key"), y, hs, "jp-head", kt !== void 0 ? { tok: kt } : {}).prims) put(row0, pr);
-      put(row0, { ...tt !== void 0 ? { tok: tt } : {}, t: "text", x: at2.get("time"), y, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
-      if (tempoHere) tempoAt2(orn, row0, at2.get("tempo") / P(1), q.head.bpm, "tempo", q.head.idx.tempo, chg, y);
-      if (!printKey) {
-        const ks = mode === "x" ? _tIn(o.locale, "\u65E0\u8C03") : keyS, ksz = tx("key-hint"), kwh = P(c.mw("key-hint", ks)), end = at2.get("end") + Q(0.6), up = y - hs * 1.15, kIdx = q.head.idx.key ?? 0;
-        const afterTempo = tempoHere ? at2.get("tempo") + P(tempoW(orn, q.head.bpm)) + Q(0.8) : end;
-        c.hint(row0, {
-          part: { ink: { x0: 0, x1: kwh, y0: -ksz * 0.8, y1: ksz * 0.2 }, prims: [] },
-          tries: [{ x: end, y }, { x: afterTempo, y }, { x: hx, y: up }, { x: at2.get("time"), y: up }, { x: afterTempo, y: up }, { x: hx, y: up - hs * 1.15 }],
-          climb: hs * 1.15,
-          onPlace: (x, yy) => {
-            keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: kIdx, x, y: yy, size: ksz, s: ks });
+    Object.entries(n).forEach(([o, d]) => {
+      let c = t ? t + o : o;
+      if (typeof d == "object") Qe(d, c + ".", a, u);
+      else if (typeof d == "string" || typeof d == "number") u(c, d.toString());
+      else if (typeof d == "boolean") u(c, d ? "1" : "0");
+      else throw new Error(`Can't handle extra config type: ${typeof d}`);
+    });
+  }, G = (n) => {
+    let t = z(), a = t.stackSave();
+    try {
+      let u = t.PTR_SIZE, o = t.stackAlloc(2 * u);
+      t._OrtGetLastError(o, o + u);
+      let d = Number(t.getValue(o, u === 4 ? "i32" : "i64")), c = t.getValue(o + u, "*"), l = c ? t.UTF8ToString(c) : "";
+      throw new Error(`${n} ERROR_CODE: ${d}, ERROR_MESSAGE: ${l}`);
+    } finally {
+      t.stackRestore(a);
+    }
+  };
+});
+var oo;
+var ao = N(() => {
+  "use strict";
+  xe();
+  vt();
+  oo = (n) => {
+    let t = z(), a = 0, u = [], o = n || {};
+    try {
+      if (n?.logSeverityLevel === void 0) o.logSeverityLevel = 2;
+      else if (typeof n.logSeverityLevel != "number" || !Number.isInteger(n.logSeverityLevel) || n.logSeverityLevel < 0 || n.logSeverityLevel > 4) throw new Error(`log severity level is not valid: ${n.logSeverityLevel}`);
+      if (n?.logVerbosityLevel === void 0) o.logVerbosityLevel = 0;
+      else if (typeof n.logVerbosityLevel != "number" || !Number.isInteger(n.logVerbosityLevel)) throw new Error(`log verbosity level is not valid: ${n.logVerbosityLevel}`);
+      n?.terminate === void 0 && (o.terminate = false);
+      let d = 0;
+      return n?.tag !== void 0 && (d = ae(n.tag, u)), a = t._OrtCreateRunOptions(o.logSeverityLevel, o.logVerbosityLevel, !!o.terminate, d), a === 0 && G("Can't create run options."), n?.extra !== void 0 && Qe(n.extra, "", /* @__PURE__ */ new WeakSet(), (c, l) => {
+        let m = ae(c, u), h = ae(l, u);
+        t._OrtAddRunConfigEntry(a, m, h) !== 0 && G(`Can't set a run config entry: ${c} - ${l}.`);
+      }), [a, u];
+    } catch (d) {
+      throw a !== 0 && t._OrtReleaseRunOptions(a), u.forEach((c) => t._free(c)), d;
+    }
+  };
+});
+var ms;
+var hs;
+var ws;
+var ke;
+var bs;
+var so;
+var io = N(() => {
+  "use strict";
+  xe();
+  vt();
+  ms = (n) => {
+    switch (n) {
+      case "disabled":
+        return 0;
+      case "basic":
+        return 1;
+      case "extended":
+        return 2;
+      case "layout":
+        return 3;
+      case "all":
+        return 99;
+      default:
+        throw new Error(`unsupported graph optimization level: ${n}`);
+    }
+  }, hs = (n) => {
+    switch (n) {
+      case "sequential":
+        return 0;
+      case "parallel":
+        return 1;
+      default:
+        throw new Error(`unsupported execution mode: ${n}`);
+    }
+  }, ws = (n) => {
+    n.extra || (n.extra = {}), n.extra.session || (n.extra.session = {});
+    let t = n.extra.session;
+    t.use_ort_model_bytes_directly || (t.use_ort_model_bytes_directly = "1"), n.executionProviders && n.executionProviders.some((a) => (typeof a == "string" ? a : a.name) === "webgpu") && (n.enableMemPattern = false);
+  }, ke = (n, t, a, u) => {
+    let o = ae(t, u), d = ae(a, u);
+    z()._OrtAddSessionConfigEntry(n, o, d) !== 0 && G(`Can't set a session config entry: ${t} - ${a}.`);
+  }, bs = async (n, t, a) => {
+    let u = t.executionProviders;
+    for (let o of u) {
+      let d = typeof o == "string" ? o : o.name, c = [];
+      switch (d) {
+        case "webnn":
+          if (d = "WEBNN", ke(n, "session.disable_quant_qdq", "1", a), ke(n, "session.disable_qdq_constant_folding", "1", a), typeof o != "string") {
+            let y = o?.deviceType;
+            y && ke(n, "deviceType", y, a);
           }
-        });
-      }
-      if (printKey && q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row0, x: at2.get("key") - Q(0.3), y: y - hs, w: kw + Q(0.6), h: hs * 1.4 });
-      for (let i = 0; i < tokens.length; i++) {
-        const t = tokens[i];
-        if (t.kind === "note" || t.kind === "rest") break;
-        if (t.kind !== "clef") continue;
-        const lw = Q(2.6), ly = y - hs, ci = i;
-        c.hint(row0, {
-          part: { ink: { x0: 0, x1: lw, y0: -Q(0.85), y1: Q(0.2) }, prims: [{ tok: t.id, t: "text", x: 0, y: 0, s: _tIn(o.locale, "\u8C31\u53F7"), cls: "jp-staffonly ann", size: Q(1), anchor: "start" }] },
-          tries: [{ x: hx, y: ly }, { x: hx, y: ly - Q(1.3) }, { x: at2.get("end") + Q(0.6), y }],
-          climb: Q(1.3),
-          onPlace: (x, yy) => {
-            c.clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: ci, system: row0, x, y: yy - Q(1.2), w: lw, h: Q(1.6) });
+          break;
+        case "webgpu":
+          if (d = "JS", typeof o != "string") {
+            let b = o;
+            if (b?.preferredLayout) {
+              if (b.preferredLayout !== "NCHW" && b.preferredLayout !== "NHWC") throw new Error(`preferredLayout must be either 'NCHW' or 'NHWC': ${b.preferredLayout}`);
+              ke(n, "preferredLayout", b.preferredLayout, a);
+            }
           }
-        });
+          break;
+        case "wasm":
+        case "cpu":
+          continue;
+        default:
+          throw new Error(`not supported execution provider: ${d}`);
+      }
+      let l = ae(d, a), m = c.length, h = 0, g = 0;
+      if (m > 0) {
+        h = z()._malloc(m * z().PTR_SIZE), a.push(h), g = z()._malloc(m * z().PTR_SIZE), a.push(g);
+        for (let b = 0; b < m; b++) z().setValue(h + b * z().PTR_SIZE, c[b][0], "*"), z().setValue(g + b * z().PTR_SIZE, c[b][1], "*");
+      }
+      await z()._OrtAppendExecutionProvider(n, l, h, g, m) !== 0 && G(`Can't append execution provider: ${d}.`);
+    }
+  }, so = async (n) => {
+    let t = z(), a = 0, u = [], o = n || {};
+    ws(o);
+    try {
+      let d = ms(o.graphOptimizationLevel ?? "all"), c = hs(o.executionMode ?? "sequential"), l = typeof o.logId == "string" ? ae(o.logId, u) : 0, m = o.logSeverityLevel ?? 2;
+      if (!Number.isInteger(m) || m < 0 || m > 4) throw new Error(`log severity level is not valid: ${m}`);
+      let h = o.logVerbosityLevel ?? 0;
+      if (!Number.isInteger(h) || h < 0 || h > 4) throw new Error(`log verbosity level is not valid: ${h}`);
+      let g = typeof o.optimizedModelFilePath == "string" ? ae(o.optimizedModelFilePath, u) : 0;
+      if (a = t._OrtCreateSessionOptions(d, !!o.enableCpuMemArena, !!o.enableMemPattern, c, !!o.enableProfiling, 0, l, m, h, g), a === 0 && G("Can't create session options."), o.executionProviders && await bs(a, o, u), o.enableGraphCapture !== void 0) {
+        if (typeof o.enableGraphCapture != "boolean") throw new Error(`enableGraphCapture must be a boolean value: ${o.enableGraphCapture}`);
+        ke(a, "enableGraphCapture", o.enableGraphCapture.toString(), u);
+      }
+      if (o.freeDimensionOverrides) for (let [b, y] of Object.entries(o.freeDimensionOverrides)) {
+        if (typeof b != "string") throw new Error(`free dimension override name must be a string: ${b}`);
+        if (typeof y != "number" || !Number.isInteger(y) || y < 0) throw new Error(`free dimension override value must be a non-negative integer: ${y}`);
+        let T = ae(b, u);
+        t._OrtAddFreeDimensionOverride(a, T, y) !== 0 && G(`Can't set a free dimension override: ${b} - ${y}.`);
+      }
+      return o.extra !== void 0 && Qe(o.extra, "", /* @__PURE__ */ new WeakSet(), (b, y) => {
+        ke(a, b, y, u);
+      }), [a, u];
+    } catch (d) {
+      throw a !== 0 && t._OrtReleaseSessionOptions(a) !== 0 && G("Can't release session options."), u.forEach((c) => t._free(c)), d;
+    }
+  };
+});
+var We;
+var At;
+var Ge;
+var uo;
+var fo;
+var Ot;
+var It;
+var co;
+var fn = N(() => {
+  "use strict";
+  We = (n) => {
+    switch (n) {
+      case "int8":
+        return 3;
+      case "uint8":
+        return 2;
+      case "bool":
+        return 9;
+      case "int16":
+        return 5;
+      case "uint16":
+        return 4;
+      case "int32":
+        return 6;
+      case "uint32":
+        return 12;
+      case "float16":
+        return 10;
+      case "float32":
+        return 1;
+      case "float64":
+        return 11;
+      case "string":
+        return 8;
+      case "int64":
+        return 7;
+      case "uint64":
+        return 13;
+      case "int4":
+        return 22;
+      case "uint4":
+        return 21;
+      default:
+        throw new Error(`unsupported data type: ${n}`);
+    }
+  }, At = (n) => {
+    switch (n) {
+      case 3:
+        return "int8";
+      case 2:
+        return "uint8";
+      case 9:
+        return "bool";
+      case 5:
+        return "int16";
+      case 4:
+        return "uint16";
+      case 6:
+        return "int32";
+      case 12:
+        return "uint32";
+      case 10:
+        return "float16";
+      case 1:
+        return "float32";
+      case 11:
+        return "float64";
+      case 8:
+        return "string";
+      case 7:
+        return "int64";
+      case 13:
+        return "uint64";
+      case 22:
+        return "int4";
+      case 21:
+        return "uint4";
+      default:
+        throw new Error(`unsupported data type: ${n}`);
+    }
+  }, Ge = (n, t) => {
+    let a = [-1, 4, 1, 1, 2, 2, 4, 8, -1, 1, 2, 8, 4, 8, -1, -1, -1, -1, -1, -1, -1, 0.5, 0.5][n], u = typeof t == "number" ? t : t.reduce((o, d) => o * d, 1);
+    return a > 0 ? Math.ceil(u * a) : void 0;
+  }, uo = (n) => {
+    switch (n) {
+      case "float16":
+        return typeof Float16Array < "u" ? Float16Array : Uint16Array;
+      case "float32":
+        return Float32Array;
+      case "uint8":
+        return Uint8Array;
+      case "int8":
+        return Int8Array;
+      case "uint16":
+        return Uint16Array;
+      case "int16":
+        return Int16Array;
+      case "int32":
+        return Int32Array;
+      case "bool":
+        return Uint8Array;
+      case "float64":
+        return Float64Array;
+      case "uint32":
+        return Uint32Array;
+      case "int64":
+        return BigInt64Array;
+      case "uint64":
+        return BigUint64Array;
+      default:
+        throw new Error(`unsupported type: ${n}`);
+    }
+  }, fo = (n) => {
+    switch (n) {
+      case "verbose":
+        return 0;
+      case "info":
+        return 1;
+      case "warning":
+        return 2;
+      case "error":
+        return 3;
+      case "fatal":
+        return 4;
+      default:
+        throw new Error(`unsupported logging level: ${n}`);
+    }
+  }, Ot = (n) => n === "float32" || n === "float16" || n === "int32" || n === "int64" || n === "uint32" || n === "uint8" || n === "bool" || n === "uint4" || n === "int4", It = (n) => n === "float32" || n === "float16" || n === "int32" || n === "int64" || n === "uint32" || n === "uint64" || n === "int8" || n === "uint8" || n === "bool" || n === "uint4" || n === "int4", co = (n) => {
+    switch (n) {
+      case "none":
+        return 0;
+      case "cpu":
+        return 1;
+      case "cpu-pinned":
+        return 2;
+      case "texture":
+        return 3;
+      case "gpu-buffer":
+        return 4;
+      case "ml-tensor":
+        return 5;
+      default:
+        throw new Error(`unsupported data location: ${n}`);
+    }
+  };
+});
+var Ke;
+var cn = N(() => {
+  "use strict";
+  dt();
+  Ke = async (n) => {
+    if (typeof n == "string") if (false) try {
+      let { readFile: t } = Jt("node:fs/promises");
+      return new Uint8Array(await t(n));
+    } catch (t) {
+      if (t.code === "ERR_FS_FILE_TOO_LARGE") {
+        let { createReadStream: a } = Jt("node:fs"), u = a(n), o = [];
+        for await (let d of u) o.push(d);
+        return new Uint8Array(Buffer.concat(o));
+      }
+      throw t;
+    }
+    else {
+      let t = await fetch(n);
+      if (!t.ok) throw new Error(`failed to load external data file: ${n}`);
+      let a = t.headers.get("Content-Length"), u = a ? parseInt(a, 10) : 0;
+      if (u < 1073741824) return new Uint8Array(await t.arrayBuffer());
+      {
+        if (!t.body) throw new Error(`failed to load external data file: ${n}, no response body.`);
+        let o = t.body.getReader(), d;
+        try {
+          d = new ArrayBuffer(u);
+        } catch (l) {
+          if (l instanceof RangeError) {
+            let m = Math.ceil(u / 65536);
+            d = new WebAssembly.Memory({ initial: m, maximum: m }).buffer;
+          } else throw l;
+        }
+        let c = 0;
+        for (; ; ) {
+          let { done: l, value: m } = await o.read();
+          if (l) break;
+          let h = m.byteLength;
+          new Uint8Array(d, c, h).set(m), c += h;
+        }
+        return new Uint8Array(d, 0, u);
+      }
+    }
+    else return n instanceof Blob ? new Uint8Array(await n.arrayBuffer()) : n instanceof Uint8Array ? n : new Uint8Array(n);
+  };
+});
+var ys;
+var ht;
+var wt;
+var $e;
+var gs;
+var lo;
+var Ze;
+var bt;
+var yt;
+var po;
+var gt;
+var Et;
+var Tt;
+var rn = N(() => {
+  "use strict";
+  Te();
+  ao();
+  io();
+  fn();
+  xe();
+  vt();
+  cn();
+  ys = (n, t) => {
+    z()._OrtInit(n, t) !== 0 && G("Can't initialize onnxruntime.");
+  }, ht = async (n) => {
+    ys(n.wasm.numThreads, fo(n.logLevel));
+  }, wt = async (n, t) => {
+    z().asyncInit?.();
+    let a = n.webgpu.adapter;
+    if (t === "webgpu") {
+      if (typeof navigator > "u" || !navigator.gpu) throw new Error("WebGPU is not supported in current environment");
+      if (a) {
+        if (typeof a.limits != "object" || typeof a.features != "object" || typeof a.requestDevice != "function") throw new Error("Invalid GPU adapter set in `env.webgpu.adapter`. It must be a GPUAdapter object.");
+      } else {
+        let u = n.webgpu.powerPreference;
+        if (u !== void 0 && u !== "low-power" && u !== "high-performance") throw new Error(`Invalid powerPreference setting: "${u}"`);
+        let o = n.webgpu.forceFallbackAdapter;
+        if (o !== void 0 && typeof o != "boolean") throw new Error(`Invalid forceFallbackAdapter setting: "${o}"`);
+        if (a = await navigator.gpu.requestAdapter({ powerPreference: u, forceFallbackAdapter: o }), !a) throw new Error('Failed to get GPU adapter. You may need to enable flag "--enable-unsafe-webgpu" if you are using Chrome.');
+      }
+    }
+    if (t === "webnn" && (typeof navigator > "u" || !navigator.ml)) throw new Error("WebNN is not supported in current environment");
+  }, $e = /* @__PURE__ */ new Map(), gs = (n) => {
+    let t = z(), a = t.stackSave();
+    try {
+      let u = t.PTR_SIZE, o = t.stackAlloc(2 * u);
+      t._OrtGetInputOutputCount(n, o, o + u) !== 0 && G("Can't get session input/output count.");
+      let c = u === 4 ? "i32" : "i64";
+      return [Number(t.getValue(o, c)), Number(t.getValue(o + u, c))];
+    } finally {
+      t.stackRestore(a);
+    }
+  }, lo = (n, t) => {
+    let a = z(), u = a.stackSave(), o = 0;
+    try {
+      let d = a.PTR_SIZE, c = a.stackAlloc(2 * d);
+      a._OrtGetInputOutputMetadata(n, t, c, c + d) !== 0 && G("Can't get session input/output metadata.");
+      let m = Number(a.getValue(c, "*"));
+      o = Number(a.getValue(c + d, "*"));
+      let h = a.HEAP32[o / 4];
+      if (h === 0) return [m, 0];
+      let g = a.HEAPU32[o / 4 + 1], b = [];
+      for (let y = 0; y < g; y++) {
+        let T = Number(a.getValue(o + 8 + y * d, "*"));
+        b.push(T !== 0 ? a.UTF8ToString(T) : Number(a.getValue(o + 8 + (y + g) * d, "*")));
+      }
+      return [m, h, b];
+    } finally {
+      a.stackRestore(u), o !== 0 && a._OrtFree(o);
+    }
+  }, Ze = (n) => {
+    let t = z(), a = t._malloc(n.byteLength);
+    if (a === 0) throw new Error(`Can't create a session. failed to allocate a buffer of size ${n.byteLength}.`);
+    return t.HEAPU8.set(n, a), [a, n.byteLength];
+  }, bt = async (n, t) => {
+    let a, u, o = z();
+    Array.isArray(n) ? [a, u] = n : n.buffer === o.HEAPU8.buffer ? [a, u] = [n.byteOffset, n.byteLength] : [a, u] = Ze(n);
+    let d = 0, c = 0, l = 0, m = [], h = [], g = [];
+    try {
+      if ([c, m] = await so(t), t?.externalData && o.mountExternalData) {
+        let P = [];
+        for (let k of t.externalData) {
+          let w = typeof k == "string" ? k : k.path, Q = typeof k == "string" ? k : k.data;
+          P.push(Ke(Q).then((H) => {
+            o.mountExternalData(w, H);
+          }));
+        }
+        await Promise.all(P);
+      }
+      for (let P of t?.executionProviders ?? []) if ((typeof P == "string" ? P : P.name) === "webnn") {
+        if (o.shouldTransferToMLTensor = false, typeof P != "string") {
+          let w = P, Q = w?.context, H = w?.gpuDevice, ne = w?.deviceType, pe = w?.powerPreference;
+          Q ? o.currentContext = Q : H ? o.currentContext = await o.webnnCreateMLContext(H) : o.currentContext = await o.webnnCreateMLContext({ deviceType: ne, powerPreference: pe });
+        } else o.currentContext = await o.webnnCreateMLContext();
         break;
       }
-      if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row0, x: at2.get("time") - Q(0.3), y: y - hs, w: tw + Q(0.6), h: hs * 1.4 });
-    }));
-    const spots = [];
-    lyricParts.push({ r, lrow: (s2) => rowOf(s2, r, 0), spots });
-    const ign = new Set(q.p.ignores ?? []);
-    const artCls = (a, base2 = "art") => [base2, ign.has(a) ? "art-mute" : ""].filter(Boolean).join(" ");
-    const arcAt = /* @__PURE__ */ new Map();
-    const ul = [];
-    const ulKey = (v) => `${v.system}|${v.tick - v.inBar}|${Math.floor((v.inBar + 1e-6) / v.beat)}`;
-    const ulTop = /* @__PURE__ */ new Map();
-    for (const v of units) if (v.kind === "chunk" && !v.pad && underlines(v)) {
-      const k = ulKey(v), y = coreBottom(v, q, mode, c.aux[r]) + UL_DROP;
-      ulTop.set(k, Math.max(ulTop.get(k) ?? -Infinity, y));
+      d = await o._OrtCreateSession(a, u, c), o.webgpuOnCreateSession?.(d), d === 0 && G("Can't create a session."), o.jsepOnCreateSession?.(), o.currentContext && (o.webnnRegisterMLContext(d, o.currentContext), o.currentContext = void 0, o.shouldTransferToMLTensor = true);
+      let [b, y] = gs(d), T = !!t?.enableGraphCapture, I = [], D = [], $ = [], v = [], A = [];
+      for (let P = 0; P < b; P++) {
+        let [k, w, Q] = lo(d, P);
+        k === 0 && G("Can't get an input name."), h.push(k);
+        let H = o.UTF8ToString(k);
+        I.push(H), $.push(w === 0 ? { name: H, isTensor: false } : { name: H, isTensor: true, type: At(w), shape: Q });
+      }
+      for (let P = 0; P < y; P++) {
+        let [k, w, Q] = lo(d, P + b);
+        k === 0 && G("Can't get an output name."), g.push(k);
+        let H = o.UTF8ToString(k);
+        D.push(H), v.push(w === 0 ? { name: H, isTensor: false } : { name: H, isTensor: true, type: At(w), shape: Q });
+      }
+      return $e.set(d, [d, h, g, null, T, false]), [d, I, D, $, v];
+    } catch (b) {
+      throw h.forEach((y) => o._OrtFree(y)), g.forEach((y) => o._OrtFree(y)), l !== 0 && o._OrtReleaseBinding(l) !== 0 && G("Can't release IO binding."), d !== 0 && o._OrtReleaseSession(d) !== 0 && G("Can't release session."), b;
+    } finally {
+      o._free(a), c !== 0 && o._OrtReleaseSessionOptions(c) !== 0 && G("Can't release session options."), m.forEach((b) => o._free(b)), o.unmountExternalData?.();
     }
-    const botOf = /* @__PURE__ */ new Map();
-    const span = rowGlyphSpan(mode, kit, letters), BAR_TOP = span.top - span.layer, BAR_BOT = span.bottom + span.layer;
-    let fifths = q.head.key;
-    for (const u of units) {
-      if (u.kind === "key") {
-        fifths = u.fifths;
-        const row2 = rowOf(u.system, r, 0), s2 = keyHead(u.fifths, u.minor), x = P(u.x) + Q(0.3), yb = Y(row2, BASE_Y - 0.3);
-        if (mode === "x" || letters) {
-          const ks = mode === "x" ? _tIn(o.locale, "\u65E0\u8C03") : s2, ksz = tx("key-hint"), kwh = P(c.mw("key-hint", ks)), ktok = tokens[u.index] ? { tok: tokens[u.index].id } : {}, ki = u.index;
-          c.hint(row2, {
-            part: { ink: { x0: 0, x1: kwh, y0: -ksz * 0.8, y1: ksz * 0.2 }, prims: [] },
-            tries: [-0.45, -1.65, -2.85, -4.05].map((dy) => ({ x, y: Y(row2, DIGIT_TOP + dy) })),
-            climb: Q(1.2),
-            onPlace: (hx2, hy) => {
-              keyHints.push({ ...ktok, system: row2, index: ki, x: hx2, y: hy, size: ksz, s: ks });
-            }
-          });
-        } else {
-          for (const pr of keyPrims(keyParts(u.fifths, u.minor, base, c.look.middleC), x, yb, Q(MID_TEXT_EM), "jp-head jp-mid", tokens[u.index] ? { tok: tokens[u.index].id } : {}).prims) put(row2, pr);
-          marks.push({ index: u.index, kind: "key", system: row2, x: x - Q(0.3), y: Y(row2, BASE_Y - 1.6), w: Q(keyLayout(keyParts(u.fifths, u.minor, 0, 4), MID_TEXT_EM).w + 0.6), h: Q(2.2) });
-        }
-        continue;
-      }
-      if (u.kind === "time") {
-        const row2 = rowOf(u.system, r, 0), s2 = `${u.beats}/${u.beatType}`, x = P(u.x) + Q(0.3);
-        put(row2, { tok: tokens[u.index]?.id, t: "text", x, y: Y(row2, BASE_Y - 0.3), s: s2, cls: "jp-head jp-mid", size: Q(MID_TEXT_EM), anchor: "start" });
-        marks.push({ index: u.index, kind: "time", system: row2, x: x - Q(0.3), y: Y(row2, BASE_Y - 1.6), w: Q(headTextW(s2, MID_TEXT_EM) + 0.6), h: Q(2.2) });
-        continue;
-      }
-      if (u.kind === "bar") {
-        const row2 = rowOf(u.system, r, 0), x = P(u.x) + Q(BAR_DX), tok2 = u.index >= 0 ? tokens[u.index]?.id : void 0;
-        const drawLines = (y0, y1) => {
-          const line = (lx, w) => put(row2, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "line", x1: lx, y1: y0, x2: lx, y2: y1, w: Q(w), cls: "bar jp-bar" });
-          if (u.style === "final" || u.repeat === "end") {
-            line(x - Q(BAR_GAP + BAR_THICK / 2), BAR_THIN);
-            line(x, BAR_THICK);
-          } else if (u.style === "double" || u.repeat) {
-            line(x - Q(BAR_GAP), BAR_THIN);
-            line(x, BAR_THIN);
-          } else line(x, BAR_THIN);
-        };
-        drawLines(Y(row2, BAR_TOP), Y(row2, BAR_BOT));
-        const rdot = (dx) => {
-          for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put(row2, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "path", d: dotPath(x + Q(dx), Y(row2, yy), Q(0.15)), cls: "jp-dot repeat-dot" });
-        };
-        if (u.repeat === "start" || u.repeat === "both") rdot(0.4);
-        if (u.repeat === "end" || u.repeat === "both") rdot(-(BAR_GAP + BAR_THICK + 0.4));
-        if (u.repeat && u.times && u.times > 2) {
-          const times = u.times, cl = "nav-mark" + orn.navMute(u.index);
-          c.attach(row2, "nav", () => placeAbove(row2, 0.6 * jk, (yy) => c.prims.push({ t: "text", x: x - Q(0.6), y: yy, s: `\xD7${times}`, cls: cl, size: tx("nav-mark"), anchor: "start" })));
-        }
-        bars.push({ system: row2, x });
-        continue;
-      }
-      if (u.kind === "clef" || u.kind === "ottava") {
-        const row2 = rowOf(u.system, r, 0), x = P(u.x) + Q(0.2), t = tokens[u.index];
-        const label = u.kind === "clef" ? _tIn(o.locale, "\u8C31\u53F7") : t.shift === 0 ? "loco" : t.shift === 2 ? "15ma" : t.shift > 0 ? "8va" : "8vb";
-        const ck = u.kind === "clef" ? "mid" : "ottava", ci = u.index;
-        c.hint(row2, {
-          part: { ink: { x0: 0, x1: Q(2.4), y0: -Q(0.85), y1: Q(0.2) }, prims: [{ tok: t.id, t: "text", x: 0, y: 0, s: label, cls: "jp-staffonly ann", size: Q(1), anchor: "start" }] },
-          tries: [0.45, -0.75, -1.95, -3.15].map((ly) => ({ x, y: Y(row2, ly) })),
-          climb: Q(1.2),
-          onPlace: (hx2, hy) => {
-            c.clefs.push({ kind: ck, paper: paper.id, part: q.p.id, index: ci, system: row2, x: hx2 - Q(0.2), y: hy - Q(0.95), w: Q(2.6), h: Q(1.3) });
-          }
-        });
-        continue;
-      }
-      if (u.kind === "groove") {
-        layGroove(orn, u);
-        continue;
-      }
-      if (u.kind === "nav") {
-        layNav(orn, u, (v) => P(v.x) + Q(BAR_DX));
-        continue;
-      }
-      if (u.kind === "tempo") {
-        if (q.p.id === c.owner) layTempo(orn, rowOf(u.system, r, 0), u.x + 0.3, u.bpm, "tempo", u.index);
-        continue;
-      }
-      if (u.kind !== "chunk" || u.pad) continue;
-      const row = rowOf(u.system, r, 0), tok = tokOf(u), T2 = tok !== void 0 ? { tok } : {};
-      const fd = mode === "digits" ? foldOf(u, c.aux[r]) : void 0, lt = lettersOf(q, u, mode, c.aux[r]), n2 = extraGlyphs(u), contDash2 = contDash(u);
-      const span2 = (spanTo.get(u) ?? u.x + u.w) - u.x;
-      const nc = noteCell({ u, q, mode, ...c.aux[r] ? { aux: c.aux[r] } : {}, fifths, base, ...underlines(u) ? { ulY: ulTop.get(ulKey(u)) } : {}, step: n2 ? Math.max(DASH_PITCH, (span2 / jk - tailW(u)) / (n2 + 1)) : null, limit: span2 / jk, ...tok !== void 0 ? { tok } : {}, artCls });
+  }, yt = (n) => {
+    let t = z(), a = $e.get(n);
+    if (!a) throw new Error(`cannot release session. invalid session id: ${n}`);
+    let [u, o, d, c, l] = a;
+    c && (l && t._OrtClearBoundOutputs(c.handle) !== 0 && G("Can't clear bound outputs."), t._OrtReleaseBinding(c.handle) !== 0 && G("Can't release IO binding.")), t.jsepOnReleaseSession?.(n), t.webnnOnReleaseSession?.(n), t.webgpuOnReleaseSession?.(n), o.forEach((m) => t._OrtFree(m)), d.forEach((m) => t._OrtFree(m)), t._OrtReleaseSession(u) !== 0 && G("Can't release session."), $e.delete(n);
+  }, po = async (n, t, a, u, o, d, c = false) => {
+    if (!n) {
+      t.push(0);
+      return;
+    }
+    let l = z(), m = l.PTR_SIZE, h = n[0], g = n[1], b = n[3], y = b, T, I;
+    if (h === "string" && (b === "gpu-buffer" || b === "ml-tensor")) throw new Error("String tensor is not supported on GPU.");
+    if (c && b !== "gpu-buffer") throw new Error(`External buffer must be provided for input/output index ${d} when enableGraphCapture is true.`);
+    if (b === "gpu-buffer") {
+      let v = n[2].gpuBuffer;
+      I = Ge(We(h), g);
       {
-        const ox = P(u.x), oy = staffTop(row), f = Q(1);
-        for (const p of nc.cell.prims(0, 0)) {
-          scalePrim(p, f, ox, oy);
-          put(row, p);
-        }
+        let A = l.jsepRegisterBuffer;
+        if (!A) throw new Error('Tensor location "gpu-buffer" is not supported without using WebGPU.');
+        T = A(u, d, v, I);
       }
-      const x0 = P(u.x) + Q(nc.x0), cx = P(u.x) + Q(nc.cx), glyphW = nc.glyphW;
-      botOf.set(u, nc.bot);
-      if (o.__cells) {
-        const nb = units.find((v) => v.system === u.system && v.x > u.x && v.kind === "bar");
-        o.__cells({ ...tok !== void 0 ? { tok } : {}, box: nc.cell.box(), prims: nc.cell.prims(0, 0), row, ox: P(u.x), unit: Q(1), wall: nb ? P(nb.x) + Q(BAR_DX) : P(staffEnd[u.system]) });
-      }
-      if (u.note && (u.ghost || !u.pitch)) {
-        if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W), d: NaN });
-        if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - Q(0.6), mx1: x0 + Q(DIGIT_W) + Q(0.4), lyric: u.lyric, tok, cls: "ghost", mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!tokens[u.index]?.hyph });
-      } else if (u.note && u.pitch) {
-        if (fd?.ambiguous && !contDash2) {
-          const nw = Q(chordNameW(fd.name)), tx0 = x0 + nw + Q(0.05), ty = Y(row, BASE_Y), a = Q(0.45), rd = fd.read, ui = u.index, first = u.j === 0;
-          c.hint(row, {
-            part: { ink: { x0: 0, x1: a, y0: -a, y1: 0 }, prims: [{ ...T2, t: "path", d: `M0,0L${a},0L${a},${-a}Z`, cls: "jp-chord-amb ann" }] },
-            tries: [{ x: tx0, y: ty }, { x: tx0, y: Y(row, BASE_Y - CHORD_H) + a }, { x: x0 + nw / 2 - a / 2, y: ty + a + Q(0.35) }],
-            onPlace: (hx2, hy) => {
-              if (first) chordTagsOut.push({ x: hx2 - Q(0.2), y: hy - a - Q(0.3), w: a + Q(0.5), h: a + Q(0.6), read: rd, system: row, index: ui });
-            }
-          });
+    } else if (b === "ml-tensor") {
+      let v = n[2].mlTensor;
+      I = Ge(We(h), g);
+      let A = l.webnnRegisterMLTensor;
+      if (!A) throw new Error('Tensor location "ml-tensor" is not supported without using WebNN.');
+      T = A(u, v, We(h), g);
+    } else {
+      let v = n[2];
+      if (Array.isArray(v)) {
+        I = m * v.length, T = l._malloc(I), a.push(T);
+        for (let A = 0; A < v.length; A++) {
+          if (typeof v[A] != "string") throw new TypeError(`tensor data at index ${A} is not a string`);
+          l.setValue(T + A * m, ae(v[A], a), "*");
         }
-        if (u.j === 0) {
-          for (const m of nc.members) if (m.i > 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, m.yb - DIGIT_H / 2), w: Q(DIGIT_W) });
-        }
-        if (!contDash2) {
-          arcAt.set(u, { row, cx, top: nc.top });
-          const local = u.art.includes("staccato") || u.art.includes("tenuto"), strong = ["accent", "marcato", "stress", "unstress"].filter((x) => u.art.includes(x));
-          const chev = (a, yb, st) => {
-            const xa = cx - Q(CHEV_W / 2), xb = cx + Q(CHEV_W / 2), ym = yb - Q(CHEV_H / 2), yt = yb - Q(CHEV_H), t = Q(st) * 0.54;
-            return { ...T2, t: "path", d: `M${xa},${yt - t}L${xb + t},${ym}L${xa},${yb + t}L${xa},${yb - t}L${xb - t * 2.5},${ym}L${xa},${yt + t}Z`, cls: artCls(a, `art jp-chev ${a}`) };
-          };
-          if (strong.length) c.attach(row, "strength", () => {
-            strong.forEach((a, i) => placeAbove(row, (i === 0 && !local ? MARK_GAP : MARK_GAP2) * jk, (y) => {
-              if (a === "accent" || a === "stress") c.prims.push(chev(a, y, a === "accent" ? CHEV_STROKE : CHEV_STROKE_THIN));
-              else {
-                const g = jpGlyph(a), em = a === "marcato" ? MARCATO_EM : UNSTRESS_EM;
-                c.prims.push({ ...T2, t: "glyph", x: cx - Q(g.w * em / 8), y, ch: g.above, cls: artCls(a), size: Q(em) });
-              }
-            }));
-          });
-          const swl = u.j === 0 ? swellOf(tokens[u.index]) : void 0, atk = ["sfz", "fp"].filter((x) => u.art.includes(x));
-          if (swl || atk.length) layNoteDynamics(orn, row, u, { cx, x0, w: P(u.w), tok, cls: void 0, ign, swl, roll: u.art.includes("roll"), atk });
-        }
-        if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, nc.hiBase - DIGIT_H / 2), w: Q(glyphW), d: NaN });
-        if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - Q(0.6), mx1: x0 + Q(glyphW) + Q(0.4), lyric: u.lyric, tok, cls: void 0, mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!tokens[u.index]?.hyph });
-      } else if (!u.note) {
-        if (u.j === 0 && u.index >= 0) rests.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W) });
-      }
-      const nUL = underlines(u);
-      if (nUL) {
-        const uh = fd || lt ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
-        ul.push({ row, x0: cx - Q(uh), x1: cx + Q(uh), level: nUL, group: ulKey(u), y0: ulTop.get(ulKey(u)), tok, ch: u });
+      } else {
+        let A = l.webnnIsGraphInput, F = l.webnnIsGraphOutput;
+        if (h !== "string" && A && F) {
+          let P = l.UTF8ToString(o);
+          if (A(u, P) || F(u, P)) {
+            let k = We(h);
+            I = Ge(k, g), y = "ml-tensor";
+            let w = l.webnnCreateTemporaryTensor, Q = l.webnnUploadTensor;
+            if (!w || !Q) throw new Error('Tensor location "ml-tensor" is not supported without using WebNN.');
+            let H = await w(u, k, g);
+            Q(H, new Uint8Array(v.buffer, v.byteOffset, v.byteLength)), T = H;
+          } else I = v.byteLength, T = l._malloc(I), a.push(T), l.HEAPU8.set(new Uint8Array(v.buffer, v.byteOffset, I), T);
+        } else I = v.byteLength, T = l._malloc(I), a.push(T), l.HEAPU8.set(new Uint8Array(v.buffer, v.byteOffset, I), T);
       }
     }
-    const tups = [];
-    {
-      let run = [], acc = 0, minBase = Infinity;
-      const flush = () => {
-        if (run.length && run[0].ratio) tups.push({ run, num: String(run[0].ratio[0]) });
-        run = [];
-        acc = 0;
-        minBase = Infinity;
-      };
-      for (const v of units) {
-        if (v.kind !== "chunk" || v.pad) continue;
-        const rr = v.ratio ? v.ratio.join(":") : null;
-        if (!rr || run.length && run[0].ratio.join(":") !== rr) {
-          flush();
-          if (!rr) continue;
-        }
-        run.push(v);
-        acc += v.ticks;
-        minBase = Math.min(minBase, v.base);
-        if (acc >= v.ratio[1] * minBase - 1e-6) flush();
-      }
-      flush();
+    let D = l.stackSave(), $ = l.stackAlloc(4 * g.length);
+    try {
+      g.forEach((A, F) => l.setValue($ + F * m, A, m === 4 ? "i32" : "i64"));
+      let v = l._OrtCreateTensor(We(h), T, I, $, g.length, co(y));
+      v === 0 && G(`Can't create tensor for input/output. session=${u}, index=${d}.`), t.push(v);
+    } finally {
+      l.stackRestore(D);
     }
-    const NUM_EM = 1.1, numCap = DIGIT_H * (NUM_EM / DIGIT_EM), GAP_HALF = 0.45, HOOK = 0.35, TUP_GAP = 0.25, DASH_ON = 0.45, DASH_OFF = 0.3;
-    const ulOf = new Map(ul.map((e) => [e.ch, e]));
-    const tupDraw = [];
-    for (const { run, num } of tups) {
-      const first = run[0], last = run[run.length - 1], row = rowOf(first.system, r, 0), x1 = P(first.x) + Q(0.1), x2 = last.system === first.system ? P(last.x) + Q(0.1 + glyphWOf(last, c.aux[r], q)) : P(c.right), mid = (x1 + x2) / 2;
-      const Ls = Math.min(...run.map((v) => ulOf.get(v)?.level ?? 0)), g0 = ulOf.get(first)?.group, onLine = Ls >= 1 && last.system === first.system && run.every((v) => ulOf.get(v)?.group === g0);
-      const low = Math.max(...run.map((v) => botOf.get(v) ?? BASE_Y));
-      if (onLine) tupDraw.push(() => put(row, { t: "text", x: mid, y: Y(row, low + TUP_GAP + numCap), s: num, cls: "tuplet jp-tuplet", size: Q(NUM_EM), anchor: "middle" }));
-      else {
-        const yl = low + TUP_GAP + numCap / 2;
-        tupDraw.push(() => {
-          put(row, { t: "text", x: mid, y: Y(row, yl + numCap / 2), s: num, cls: "tuplet jp-tuplet", size: Q(NUM_EM), anchor: "middle" });
-          const y = Y(row, yl), yh = Y(row, yl - HOOK), on = Q(DASH_ON), off = Q(DASH_OFF);
-          const dashes = (a, b) => {
-            const len = b - a;
-            if (len <= 1e-6) return "";
-            const n2 = Math.max(1, Math.round((len + off) / (on + off))), unit = (len + off) / n2, dl = unit - off * (unit / (on + off));
-            let d = "";
-            for (let k = 0; k < n2; k++) {
-              const x = a + k * unit;
-              d += `M${x},${y}L${Math.min(b, x + dl)},${y}`;
-            }
-            return d;
-          };
-          put(row, { t: "path", d: `M${x1},${yh}L${x1},${y}M${x2},${y}L${x2},${yh}`, cls: "tuplet-bracket" });
-          put(row, { t: "path", d: dashes(x1, mid - Q(GAP_HALF)) + dashes(mid + Q(GAP_HALF), x2), cls: "tuplet-bracket tuplet-dash" });
-        });
-      }
-    }
-    const maxL = Math.max(0, ...ul.map((e) => e.level));
-    for (let L = 1; L <= maxL; L++) {
-      let i = 0;
-      while (i < ul.length) {
-        if (ul[i].level < L) {
-          i++;
+  }, gt = async (n, t, a, u, o, d) => {
+    let c = z(), l = c.PTR_SIZE, m = $e.get(n);
+    if (!m) throw new Error(`cannot run inference. invalid session id: ${n}`);
+    let h = m[0], g = m[1], b = m[2], y = m[3], T = m[4], I = m[5], D = t.length, $ = u.length, v = 0, A = [], F = [], P = [], k = [], w = [], Q = c.stackSave(), H = c.stackAlloc(D * l), ne = c.stackAlloc(D * l), pe = c.stackAlloc($ * l), B = c.stackAlloc($ * l);
+    try {
+      [v, A] = oo(d), Pe("wasm prepareInputOutputTensor");
+      for (let O = 0; O < D; O++) await po(a[O], F, k, n, g[t[O]], t[O], T);
+      for (let O = 0; O < $; O++) await po(o[O], P, k, n, b[u[O]], D + u[O], T);
+      Ue("wasm prepareInputOutputTensor");
+      for (let O = 0; O < D; O++) c.setValue(H + O * l, F[O], "*"), c.setValue(ne + O * l, g[t[O]], "*");
+      for (let O = 0; O < $; O++) c.setValue(pe + O * l, P[O], "*"), c.setValue(B + O * l, b[u[O]], "*");
+      c.jsepOnRunStart?.(h), c.webnnOnRunStart?.(h);
+      let W;
+      W = await c._OrtRun(h, ne, H, D, B, $, pe, v), W !== 0 && G("failed to call OrtRun().");
+      let re = [], me = [];
+      Pe("wasm ProcessOutputTensor");
+      for (let O = 0; O < $; O++) {
+        let K2 = Number(c.getValue(pe + O * l, "*"));
+        if (K2 === P[O] || w.includes(P[O])) {
+          re.push(o[O]), K2 !== P[O] && c._OrtReleaseTensor(K2) !== 0 && G("Can't release tensor.");
           continue;
         }
-        let j = i;
-        while (j + 1 < ul.length && ul[j + 1].level >= L && ul[j + 1].group === ul[i].group) j++;
-        const a = ul[i], b = ul[j], y = Y(a.row, a.y0 + (L - 1) * UL_GAP);
-        put(a.row, { ...i === j && a.tok !== void 0 ? { tok: a.tok } : {}, t: "line", x1: a.x0, y1: y, x2: b.x1, y2: y, w: Q(UL_W), cls: "jp-ul" });
-        i = j + 1;
+        let je = c.stackSave(), ee = c.stackAlloc(4 * l), he = false, j, J = 0;
+        try {
+          c._OrtGetTensorData(K2, ee, ee + l, ee + 2 * l, ee + 3 * l) !== 0 && G(`Can't access output tensor data on index ${O}.`);
+          let Se = l === 4 ? "i32" : "i64", ve = Number(c.getValue(ee, Se));
+          J = c.getValue(ee + l, "*");
+          let Ve = c.getValue(ee + l * 2, "*"), Re = Number(c.getValue(ee + l * 3, Se)), te = [];
+          for (let L = 0; L < Re; L++) te.push(Number(c.getValue(Ve + L * l, Se)));
+          c._OrtFree(Ve) !== 0 && G("Can't free memory for tensor dims.");
+          let ue = te.reduce((L, V) => L * V, 1);
+          j = At(ve);
+          let se = y?.outputPreferredLocations[u[O]];
+          if (j === "string") {
+            if (se === "gpu-buffer" || se === "ml-tensor") throw new Error("String tensor is not supported on GPU.");
+            let L = [];
+            for (let V = 0; V < ue; V++) {
+              let fe = c.getValue(J + V * l, "*"), ye = c.getValue(J + (V + 1) * l, "*"), ce = V === ue - 1 ? void 0 : ye - fe;
+              L.push(c.UTF8ToString(fe, ce));
+            }
+            re.push([j, te, L, "cpu"]);
+          } else if (se === "gpu-buffer" && ue > 0) {
+            let L = c.jsepGetBuffer;
+            if (!L) throw new Error('preferredLocation "gpu-buffer" is not supported without using WebGPU.');
+            let V = L(J), fe = Ge(ve, ue);
+            if (fe === void 0 || !Ot(j)) throw new Error(`Unsupported data type: ${j}`);
+            he = true, re.push([j, te, { gpuBuffer: V, download: c.jsepCreateDownloader(V, fe, j), dispose: () => {
+              c._OrtReleaseTensor(K2) !== 0 && G("Can't release tensor.");
+            } }, "gpu-buffer"]);
+          } else if (se === "ml-tensor" && ue > 0) {
+            let L = c.webnnEnsureTensor, V = c.webnnIsGraphInputOutputTypeSupported;
+            if (!L || !V) throw new Error('preferredLocation "ml-tensor" is not supported without using WebNN.');
+            if (Ge(ve, ue) === void 0 || !It(j)) throw new Error(`Unsupported data type: ${j}`);
+            if (!V(n, j, false)) throw new Error(`preferredLocation "ml-tensor" for ${j} output is not supported by current WebNN Context.`);
+            let ye = await L(n, J, ve, te, false);
+            he = true, re.push([j, te, { mlTensor: ye, download: c.webnnCreateMLTensorDownloader(J, j), dispose: () => {
+              c.webnnReleaseTensorId(J), c._OrtReleaseTensor(K2);
+            } }, "ml-tensor"]);
+          } else if (se === "ml-tensor-cpu-output" && ue > 0) {
+            let L = c.webnnCreateMLTensorDownloader(J, j)(), V = re.length;
+            he = true, me.push((async () => {
+              let fe = [V, await L];
+              return c.webnnReleaseTensorId(J), c._OrtReleaseTensor(K2), fe;
+            })()), re.push([j, te, [], "cpu"]);
+          } else {
+            let L = uo(j), V = new L(ue);
+            new Uint8Array(V.buffer, V.byteOffset, V.byteLength).set(c.HEAPU8.subarray(J, J + V.byteLength)), re.push([j, te, V, "cpu"]);
+          }
+        } finally {
+          c.stackRestore(je), j === "string" && J && c._free(J), he || c._OrtReleaseTensor(K2);
+        }
       }
+      y && !T && (c._OrtClearBoundOutputs(y.handle) !== 0 && G("Can't clear bound outputs."), $e.set(n, [h, g, b, y, T, false]));
+      for (let [O, K2] of await Promise.all(me)) re[O][2] = K2;
+      return Ue("wasm ProcessOutputTensor"), re;
+    } finally {
+      c.webnnOnRunEnd?.(h), c.stackRestore(Q), F.forEach((W) => c._OrtReleaseTensor(W)), P.forEach((W) => c._OrtReleaseTensor(W)), k.forEach((W) => c._free(W)), v !== 0 && c._OrtReleaseRunOptions(v), A.forEach((W) => c._free(W));
     }
-    const arc = (a, b, cls, lift) => {
-      const seg = (row, x1, x2, top) => {
-        const y = Y(row, top - lift), len = Math.abs(x2 - x1), h = Math.min(len * 0.25, Math.max(Q(0.4), Math.min(Q(1.2), len * 0.12)));
-        put(row, { t: "path", d: `M${x1},${y}Q${(x1 + x2) / 2},${y - h} ${x2},${y}`, cls });
-      };
-      if (a.row === b.row) seg(a.row, a.cx + Q(0.3), b.cx - Q(0.3), Math.min(a.top, b.top));
-      else {
-        seg(a.row, a.cx + Q(0.3), P(c.right) - Q(0.2), a.top);
-        seg(b.row, Math.max(b.cx - Q(2.4), orn.left(rows[b.row].sys)), b.cx - Q(0.3), b.top);
-      }
-    };
-    const chunks = units.filter((v) => v.kind === "chunk" && v.note && !v.pad && arcAt.has(v));
-    for (let i = 1; i < chunks.length; i++) {
-      const b = chunks[i], a = chunks[i - 1];
-      if (b.j > 0 && b.index === a.index || b.j === 0 && b.tie) arc(arcAt.get(a), arcAt.get(b), "tie jp-tie", 0.2);
+  }, Et = (n) => {
+    let t = z(), a = $e.get(n);
+    if (!a) throw new Error("invalid session id");
+    let u = a[0], o = t._OrtEndProfiling(u);
+    o === 0 && G("Can't get an profile file name."), t._OrtFree(o);
+  }, Tt = (n) => {
+    let t = [];
+    for (let a of n) {
+      let u = a[2];
+      !Array.isArray(u) && "buffer" in u && t.push(u.buffer);
     }
-    for (let i = 0; i < chunks.length; i++) {
-      const a = chunks[i];
-      if (a.j !== 0 || !tokens[a.index]?.slur) continue;
-      let j = i;
-      while (j + 1 < chunks.length && (tokens[chunks[j].index]?.slur || chunks[j + 1].index === chunks[j].index)) j++;
-      if (j > i) arc(arcAt.get(a), arcAt.get(chunks[j]), artCls("slur", "slur jp-slur"), 0.75);
-      i = j;
-    }
-    for (const f of tupDraw) f();
-    if (mode === "digits" && c.harmony) {
-      const theory = harmonyTheory(), placed = new Map((c.harmony.get(q.p.id) ?? []).map((x) => [x.index, x])), fs = tx("chord-tag"), mineSet = new Set(mine);
-      for (const u of units) {
-        if (u.kind !== "chunk" || !u.note || u.j !== 0 || u.index < 0 || u.pad) continue;
-        const pt = placed.get(u.index);
-        if (!pt) continue;
-        const rd = pt.read, rAt = pt.at === q.p.id ? -1 : per.findIndex((x) => x.p.id === pt.at), atOwn = rAt >= 0 && mineSet.has(rAt);
-        const row = rowOf(u.system, atOwn ? rAt : r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = theory.label(rd), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
-        const cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;
-        c.attach(row, "chordTag", () => placeBelow(row, 0.3 * jk, (y) => {
-          c.prims.push({ t: "text", x: lx, y, s: label, cls, size: fs, anchor: "start" });
-          chordTagsOut.push({ x: lx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: u.index, ...atOwn ? { part: q.p.id } : {} });
-        }, { min: (BAR_Y1 + 0.3) * jk + fs / P(1) * 0.8 }));
-      }
-    }
-    layDynamics(orn);
-    layPedals(orn);
-    if (kit && mode === "x" && q.p.kitNames) layKitLegend(q, r);
-    const inkL = measured[r].inkL;
-    caretStops(q, { cx: (u) => {
-      const k = u.kind === "chunk" ? inkL.get(u) : void 0;
-      return P(u.x) - (k ? P(k) + Q(0.2) : 0);
-    }, shiftAt: () => Array.from({ length: q.staves }, () => 0), rowOf: (sy, k) => rowOf(sy, r, k), P, sysStart0: sysStarts[0], cols, slots, heads });
-  }
-  return { lyricParts };
-}
-
-// src/render/jianpu/geometry.ts
-var jianpuAnchors = (origin, half) => ({ top: origin + JP_BODY.top * 2 * half, mid: origin + (JP_BODY.top + JP_BODY.bottom) / 2 * 2 * half, bottom: origin + JP_BODY.bottom * 2 * half });
-
-// src/render/notations.ts
-var DRAWERS = {
-  staff: { kind: "staff", measure: measureTrack, lineStart: lineStartWidth, lyricAnchors, draw: (c, mine) => drawStaff(c, mine), lanes: STAFF_LANES, anchors },
-  // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
-  jianpu: { kind: "jianpu", measure: (q, k, aux) => measureJianpu(q, k, "digits", aux), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
-  // 鼓的 X 行：和数字行同一套量和画（节奏的写法一样），音画成 X、不写升降号 / 八度点 / 琶音（jianpu/draw.ts 的 x 那一路）
-  jianpuX: { kind: "jianpuX", measure: (q, k, aux) => measureJianpu(q, k, "x", aux), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine, "x"), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true, nameMin: (q, mw) => kitLegendMin(q, mw) }
-};
-var jianpuCan = (q) => !q.vrt && !q.v2 && !q.hasV2;
-var unpitched = (q) => !!(q.pmode || q.p.perc);
-var jianpuRowOf = (q) => !jianpuCan(q) ? "staff" : unpitched(q) ? "jianpuX" : "jianpu";
-var NOTATIONS2 = {
-  staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
-  // 简谱：合租不叠成一行（每位自己一行；一家左边一条竖线 = families "line"），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
-  //   有叠音的声部 = 数字竖着叠（数字行）；鼓 = X 行；固定敲一个键的 = 数字 + ×；简谱的歌里没有五线谱的行（第五刀 5-4 ⑨ 过渡退场）。
-  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: (rows, c) => staffTracks(rows, { ...c, restBeats: true }) }, rowKindOf: jianpuRowOf, families: "line" },
-  // 字母谱（7-B，user「字母版本的变体的，别人还在等着要用呢」「这个就是用tracker的格式写」）：简谱的变体——同一种数字行，建轨时给每条轨标上「写字母」（带着中央 C 叫 C 几；字母 + 右上升降号 + 右下八度数字，user「下标放数字上标放升降号」），量和画只换「数字」那一栏
-  letters: { id: "letters", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: (rows, c) => {
-    const t = staffTracks(rows, { ...c, restBeats: true });
-    return { ...t, per: t.per.map((q) => ({ ...q, letters: c.look.middleC })) };
-  } }, rowKindOf: jianpuRowOf, families: "line" }
-};
-
-// src/render/frame/lanes.ts
-var INK_UP_TO = "nav";
-
-// src/render/frame/arrange.ts
-function mergeColumns(tracks) {
-  const map = /* @__PURE__ */ new Map();
-  tracks.forEach((tr2, t) => {
-    const seen = /* @__PURE__ */ new Map();
-    for (const e of tr2.entries) {
-      const base = `${e.tick}:${e.slot}`, n2 = seen.get(base) ?? 0;
-      seen.set(base, n2 + 1);
-      const key = `${base}:${n2}`;
-      let c = map.get(key);
-      if (!c) {
-        c = { tick: e.tick, slot: e.slot, n: n2, w: 0, bar: false, chunk: false, members: [] };
-        map.set(key, c);
-      }
-      c.members.push({ track: t, entry: e });
-      c.w = Math.max(c.w, e.w);
-      if (e.bar) c.bar = true;
-      if (e.chunk) c.chunk = true;
-    }
-  });
-  return [...map.values()].sort((a, b) => a.tick - b.tick || a.slot - b.slot || a.n - b.n);
-}
-function arrangeColumns(cols, tracks, o) {
-  const spCols = cols.map((c) => c.chunk ? { tick: c.tick, items: c.members.flatMap(({ track, entry }) => entry.chunk ? entry.chunk.items.map((it) => ({ ...it, row: tracks[track].laneBase + it.row })) : []) } : { tick: c.tick, fixed: c.w, items: [] });
-  const spans = cols.flatMap((c) => c.members.flatMap(({ entry }) => entry.chunk ? [[entry.tick, entry.tick + entry.chunk.span]] : []));
-  const breakableAt = (tick) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
-  const gaps = idealGaps(spCols, o.paperLen, o.spacing), rodIx = indexRods(rodsOf(spCols, o.spacing), spCols.length), even = !!o.evenBars;
-  const brk = o.width, n2 = cols.length, lineFrom = [], sysStarts = [];
-  let lastChunkCol = -1;
-  cols.forEach((c, k) => {
-    if (c.chunk) lastChunkCol = k;
-  });
-  const effTo = (from, to) => {
-    let t = to;
-    while (t - 1 > from && t - 1 > lastChunkCol && !cols[t - 1].bar && cols[t - 1].w === 0) t--;
     return t;
   };
-  const tail = (to) => cols[to - 1].bar ? 0 : o.endPad;
-  const lineW = (from, to, s2) => {
-    const t = effTo(from, to);
-    return placeLine(spCols, gaps, rodIx, from, t, s2, even).end + tail(t);
+});
+var Me;
+var ie;
+var et;
+var Lt;
+var _t2;
+var Bt;
+var ln;
+var dn;
+var ze;
+var He;
+var Ts;
+var mo;
+var ho;
+var wo;
+var bo;
+var yo;
+var go;
+var Eo;
+var pn = N(() => {
+  "use strict";
+  Te();
+  rn();
+  xe();
+  pt();
+  Me = () => !!Y.wasm.proxy && typeof document < "u", et = false, Lt = false, _t2 = false, dn = /* @__PURE__ */ new Map(), ze = (n, t) => {
+    let a = dn.get(n);
+    a ? a.push(t) : dn.set(n, [t]);
+  }, He = () => {
+    if (et || !Lt || _t2 || !ie) throw new Error("worker not ready");
+  }, Ts = (n) => {
+    switch (n.data.type) {
+      case "init-wasm":
+        et = false, n.data.err ? (_t2 = true, ln[1](n.data.err)) : (Lt = true, ln[0]()), Bt && (URL.revokeObjectURL(Bt), Bt = void 0);
+        break;
+      case "init-ep":
+      case "copy-from":
+      case "create":
+      case "release":
+      case "run":
+      case "end-profiling": {
+        let t = dn.get(n.data.type);
+        n.data.err ? t.shift()[1](n.data.err) : t.shift()[0](n.data.out);
+        break;
+      }
+      default:
+    }
+  }, mo = async () => {
+    if (!Lt) {
+      if (et) throw new Error("multiple calls to 'initWasm()' detected.");
+      if (_t2) throw new Error("previous call to 'initWasm()' failed.");
+      if (et = true, Me()) return new Promise((n, t) => {
+        ie?.terminate(), to().then(([a, u]) => {
+          try {
+            ie = u, ie.onerror = (d) => t(d), ie.onmessage = Ts, ln = [n, t];
+            let o = { type: "init-wasm", in: Y };
+            !o.in.wasm.wasmPaths && (a || an) && (o.in.wasm.wasmPaths = { wasm: new URL("ort-wasm-simd-threaded.wasm", import.meta.url).href }), ie.postMessage(o), Bt = a;
+          } catch (o) {
+            t(o);
+          }
+        }, t);
+      });
+      try {
+        await mt(Y.wasm), await ht(Y), Lt = true;
+      } catch (n) {
+        throw _t2 = true, n;
+      } finally {
+        et = false;
+      }
+    }
+  }, ho = async (n) => {
+    if (Me()) return He(), new Promise((t, a) => {
+      ze("init-ep", [t, a]);
+      let u = { type: "init-ep", in: { epName: n, env: Y } };
+      ie.postMessage(u);
+    });
+    await wt(Y, n);
+  }, wo = async (n) => Me() ? (He(), new Promise((t, a) => {
+    ze("copy-from", [t, a]);
+    let u = { type: "copy-from", in: { buffer: n } };
+    ie.postMessage(u, [n.buffer]);
+  })) : Ze(n), bo = async (n, t) => {
+    if (Me()) {
+      if (t?.preferredOutputLocation) throw new Error('session option "preferredOutputLocation" is not supported for proxy.');
+      return He(), new Promise((a, u) => {
+        ze("create", [a, u]);
+        let o = { type: "create", in: { model: n, options: { ...t } } }, d = [];
+        n instanceof Uint8Array && d.push(n.buffer), ie.postMessage(o, d);
+      });
+    } else return bt(n, t);
+  }, yo = async (n) => {
+    if (Me()) return He(), new Promise((t, a) => {
+      ze("release", [t, a]);
+      let u = { type: "release", in: n };
+      ie.postMessage(u);
+    });
+    yt(n);
+  }, go = async (n, t, a, u, o, d) => {
+    if (Me()) {
+      if (a.some((c) => c[3] !== "cpu")) throw new Error("input tensor on GPU is not supported for proxy.");
+      if (o.some((c) => c)) throw new Error("pre-allocated output tensor is not supported for proxy.");
+      return He(), new Promise((c, l) => {
+        ze("run", [c, l]);
+        let m = a, h = { type: "run", in: { sessionId: n, inputIndices: t, inputs: m, outputIndices: u, options: d } };
+        ie.postMessage(h, Tt(m));
+      });
+    } else return gt(n, t, a, u, o, d);
+  }, Eo = async (n) => {
+    if (Me()) return He(), new Promise((t, a) => {
+      ze("end-profiling", [t, a]);
+      let u = { type: "end-profiling", in: n };
+      ie.postMessage(u);
+    });
+    Et(n);
   };
-  const segs = [];
-  for (let k = 0; k < n2; k++) if (k === n2 - 1 || cols[k].bar && breakableAt(cols[k].tick)) segs.push(k + 1);
-  if (brk !== Infinity) {
-    const fine = [];
-    let from = 0;
-    for (const end of segs) {
-      let a = from;
-      while (a < end && lineW(a, end, -o.squeeze) > brk - o.lineStart(a, a === 0)) {
-        let k = a;
-        while (k + 1 < end && lineW(a, k + 2, -o.squeeze) <= brk - o.lineStart(a, a === 0)) k++;
-        fine.push(k + 1);
-        a = k + 1;
+});
+var To;
+var Ss;
+var Dt;
+var So = N(() => {
+  "use strict";
+  Te();
+  pn();
+  fn();
+  dt();
+  cn();
+  To = (n, t) => {
+    switch (n.location) {
+      case "cpu":
+        return [n.type, n.dims, n.data, "cpu"];
+      case "gpu-buffer":
+        return [n.type, n.dims, { gpuBuffer: n.gpuBuffer }, "gpu-buffer"];
+      case "ml-tensor":
+        return [n.type, n.dims, { mlTensor: n.mlTensor }, "ml-tensor"];
+      default:
+        throw new Error(`invalid data location: ${n.location} for ${t()}`);
+    }
+  }, Ss = (n) => {
+    switch (n[3]) {
+      case "cpu":
+        return new de(n[0], n[2], n[1]);
+      case "gpu-buffer": {
+        let t = n[0];
+        if (!Ot(t)) throw new Error(`not supported data type: ${t} for deserializing GPU tensor`);
+        let { gpuBuffer: a, download: u, dispose: o } = n[2];
+        return de.fromGpuBuffer(a, { dataType: t, dims: n[1], download: u, dispose: o });
       }
-      if (a < end) fine.push(end);
-      from = end;
-    }
-    segs.splice(0, segs.length, ...fine);
-  }
-  const segStart = (i) => i === 0 ? 0 : segs[i - 1];
-  if (brk === Infinity || segs.length <= 1) lineFrom.push(0);
-  else {
-    const S2 = segs.length, best = new Array(S2 + 1).fill(Infinity), prev = new Array(S2 + 1).fill(-1);
-    best[0] = 0;
-    for (let i = 0; i < S2; i++) {
-      if (best[i] === Infinity) continue;
-      const from = segStart(i), avail = brk - o.lineStart(from, i === 0);
-      for (let j = i + 1; j <= S2; j++) {
-        const to = segs[j - 1], tight = lineW(from, to, -o.squeeze);
-        if (tight > avail + 1e-6 && j > i + 1) break;
-        const nat = lineW(from, to, 0), last = j === S2;
-        const cost = nat > avail ? 400 * ((nat - avail) / avail) ** 2 : last ? 0 : 100 * ((avail - nat) / avail) ** 2;
-        if (best[i] + cost + 2 < best[j]) {
-          best[j] = best[i] + cost + 2;
-          prev[j] = i;
-        }
+      case "ml-tensor": {
+        let t = n[0];
+        if (!It(t)) throw new Error(`not supported data type: ${t} for deserializing MLTensor tensor`);
+        let { mlTensor: a, download: u, dispose: o } = n[2];
+        return de.fromMLTensor(a, { dataType: t, dims: n[1], download: u, dispose: o });
       }
+      default:
+        throw new Error(`invalid data location: ${n[3]}`);
     }
-    const starts = [];
-    for (let j = S2; j > 0; j = prev[j]) starts.push(segStart(prev[j]));
-    lineFrom.push(...starts.reverse());
-  }
-  let mergedLast = false;
-  if (brk !== Infinity && o.lastMerge && lineFrom.length >= 2) {
-    const k = lineFrom.length - 1, from = lineFrom[k - 1], last = lineFrom[k], M = o.lastMerge;
-    const effN = effTo(last, n2), oneBar = segs.filter((e) => e > last && e <= effN).length <= 1, short = oneBar || lineW(last, n2, 0) < M.short * (brk - o.lineStart(last, false));
-    if (short && lineW(from, n2, -M.squeeze) <= brk - o.lineStart(from, from === 0) + 1e-6) {
-      lineFrom.pop();
-      mergedLast = true;
+  }, Dt = class {
+    async fetchModelAndCopyToWasmMemory(t) {
+      return wo(await Ke(t));
     }
-  }
-  for (const k of lineFrom) sysStarts.push(o.lineStart(k, k === 0));
-  const nSys = lineFrom.length, xs = new Array(n2).fill(0), ws = new Array(n2).fill(0), system = new Array(n2).fill(0);
-  let prevStretch = 0;
-  for (let s2 = 0; s2 < nSys; s2++) {
-    const from = lineFrom[s2], to = s2 + 1 < nSys ? lineFrom[s2 + 1] : n2;
-    if (from >= to) continue;
-    const te = effTo(from, to);
-    const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, te, 0, even);
-    const reach = nat.end > avail + 1e-6 ? avail : Math.min(avail, nat.end * o.maxStretch);
-    const sq = mergedLast && s2 === nSys - 1 ? o.lastMerge.squeeze : o.squeeze;
-    let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, te, reach, { squeeze: sq, justify: true, even }) : nat;
-    if (s2 === nSys - 1 && s2 > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
-      const g = placeLine(spCols, gaps, rodIx, from, te, prevStretch, even);
-      f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, te, avail, { squeeze: o.squeeze, justify: true, even });
+    async loadModel(t, a) {
+      _e();
+      let u;
+      typeof t == "string" ? u = await this.fetchModelAndCopyToWasmMemory(t) : u = t, [this.sessionId, this.inputNames, this.outputNames, this.inputMetadata, this.outputMetadata] = await bo(u, a), De();
     }
-    prevStretch = f.stretch ?? 0;
-    if (te < to) f = placeLine(spCols, gaps, rodIx, from, to, f.stretch ?? 0, even);
-    for (let k = from; k < to; k++) {
-      const x0 = sysStarts[s2] + f.xs[k - from], x1 = sysStarts[s2] + (k + 1 < to ? f.xs[k + 1 - from] : f.end);
-      xs[k] = x0;
-      system[k] = s2;
-      ws[k] = Math.max(0, x1 - x0);
+    async dispose() {
+      return yo(this.sessionId);
     }
-  }
-  return { lineFrom, sysStarts, xs, ws, system, ...mergedLast ? { mergedLast: true } : {} };
+    async run(t, a, u) {
+      _e();
+      let o = [], d = [];
+      Object.entries(t).forEach((y) => {
+        let T = y[0], I = y[1], D = this.inputNames.indexOf(T);
+        if (D === -1) throw new Error(`invalid input '${T}'`);
+        o.push(I), d.push(D);
+      });
+      let c = [], l = [];
+      Object.entries(a).forEach((y) => {
+        let T = y[0], I = y[1], D = this.outputNames.indexOf(T);
+        if (D === -1) throw new Error(`invalid output '${T}'`);
+        c.push(I), l.push(D);
+      });
+      let m = o.map((y, T) => To(y, () => `input "${this.inputNames[d[T]]}"`)), h = c.map((y, T) => y ? To(y, () => `output "${this.outputNames[l[T]]}"`) : null), g = await go(this.sessionId, d, m, l, h, u), b = {};
+      for (let y = 0; y < g.length; y++) b[this.outputNames[l[y]]] = c[y] ?? Ss(g[y]);
+      return De(), b;
+    }
+    startProfiling() {
+    }
+    endProfiling() {
+      Eo(this.sessionId);
+    }
+  };
+});
+var Ao = {};
+ut(Ao, { OnnxruntimeWebAssemblyBackend: () => Pt, initializeFlags: () => vo, wasmBackend: () => vs });
+var vo;
+var Pt;
+var vs;
+var Oo = N(() => {
+  "use strict";
+  Te();
+  pn();
+  So();
+  vo = () => {
+    (typeof Y.wasm.initTimeout != "number" || Y.wasm.initTimeout < 0) && (Y.wasm.initTimeout = 0);
+    let n = Y.wasm.simd;
+    if (typeof n != "boolean" && n !== void 0 && n !== "fixed" && n !== "relaxed" && (console.warn(`Property "env.wasm.simd" is set to unknown value "${n}". Reset it to \`false\` and ignore SIMD feature checking.`), Y.wasm.simd = false), typeof Y.wasm.proxy != "boolean" && (Y.wasm.proxy = false), typeof Y.wasm.trace != "boolean" && (Y.wasm.trace = false), typeof Y.wasm.numThreads != "number" || !Number.isInteger(Y.wasm.numThreads) || Y.wasm.numThreads <= 0) if (typeof self < "u" && !self.crossOriginIsolated) Y.wasm.numThreads = 1;
+    else {
+      let t = typeof navigator > "u" ? Jt("node:os").cpus().length : navigator.hardwareConcurrency;
+      Y.wasm.numThreads = Math.min(4, Math.ceil((t || 1) / 2));
+    }
+  }, Pt = class {
+    async init(t) {
+      vo(), await mo(), await ho(t);
+    }
+    async createInferenceSessionHandler(t, a) {
+      let u = new Dt();
+      return await u.loadModel(t, a), u;
+    }
+  }, vs = new Pt();
+});
+Te();
+Te();
+Te();
+var $r = "1.30.0";
+var iu = nn;
+{
+  let n = (Oo(), Xt(Ao)).wasmBackend;
+  Je("cpu", n, 10), Je("wasm", n, 10);
 }
+Object.defineProperty(Y.versions, "web", { value: $r, enumerable: true });
 
-// src/render/engrave.ts
-function engrave(song, o) {
-  if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
-  const songLook = lookOf(song), textLang = textLangIn(songLook, o.locale);
-  const BUILD = NOTATIONS2[songLook.notation].build;
-  const lookAt = BUILD.looks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
-  if (songLook.inCActive) {
-    const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id));
-    song = songInC(song, (id) => perc.has(id));
+// node_modules/@internal/read-aloud/backend/piper-plus/vendor/ojt/ojt.mjs
+async function Module(moduleArg = {}) {
+  var Module2 = moduleArg;
+  var ENVIRONMENT_IS_WEB = !!globalThis.window;
+  var ENVIRONMENT_IS_WORKER = !!globalThis.WorkerGlobalScope;
+  var ENVIRONMENT_IS_NODE = globalThis.process?.versions?.node && globalThis.process?.type != "renderer";
+  var thisProgram = "./this.program";
+  var _scriptName = import.meta.url;
+  var scriptDirectory = "";
+  function locateFile(path) {
+    if (Module2["locateFile"]) {
+      return Module2["locateFile"](path, scriptDirectory);
+    }
+    return scriptDirectory + path;
   }
-  const foldedPapers = songLook.expressions ? null : new Map(song.papers.map((p) => [p.id, p]));
-  if (!songLook.expressions) song = foldExpressions(song);
-  const sp = o.sp, P = (v) => v * sp, ts = o.textScale ?? 1, T2 = (v) => v * sp * ts;
-  const density = songLook.density;
-  const PPAR = PAPER_PARAMS[songLook.notation][density];
-  const PG = o.page ?? null, PAGE_GAP = 3, MX = o.page ?? o.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };
-  const pageTopY = (k) => P(k * ((PG?.h ?? 0) + PAGE_GAP));
-  const contentTop = (k) => pageTopY(k) + P(PG?.t ?? 0), contentBottom = (k) => pageTopY(k) + P((PG?.h ?? 0) - (PG?.b ?? 0));
-  let pageNo = 0;
-  const TOP2 = P(MX.t);
-  const SYS_GAP = PPAR.sysGap;
-  const prims = [];
-  if (o.__noAnn) {
-    const push = prims.push.bind(prims);
-    prims.push = (...ps) => push(...ps.filter((p) => !/(^|\s)ann(\s|$)/.test(p.cls ?? "")));
-  }
-  const autoBars = o.autoBars !== false;
-  const baseRight = o.width / sp - MARGIN;
-  let right = baseRight, sheetRight = baseRight;
-  const NK = PPAR.nameScale ?? 1;
-  const PART_EM = TEXT_STYLES["part-name"].em * NK, tx = (role) => textPx(role, sp, ts) * (role === "part-name" ? NK : 1);
-  const RS = (role) => TEXT_STYLES[role].ruler === "text" ? ts : 1, TR = (role, v) => v * sp * RS(role);
-  const mw = (role, str) => o.measure.width(role, str, sp, ts);
-  const nameW = (s2) => mw("part-name", s2) * NK;
-  const NMAX = NAME_MAX * ts;
-  const nameLines = (name, staves) => {
-    if (nameW(name) <= NMAX) return [name];
-    const toks = name.match(/[A-Za-z0-9'’.\-()&]+\s*|\s+|./gu) ?? [name], lines2 = [];
-    let cur = "";
-    for (const t of toks) {
-      if (!cur.trim() || nameW((cur + t).trimEnd()) <= NMAX) cur += t;
-      else {
-        lines2.push(cur.trimEnd());
-        cur = t.trimStart();
-      }
+  var readAsync, readBinary;
+  if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
+    try {
+      scriptDirectory = new URL(".", _scriptName).href;
+    } catch {
     }
-    if (cur.trim()) lines2.push(cur.trimEnd());
-    const out = lines2.flatMap((l) => {
-      if (nameW(l) <= NMAX) return [l];
-      const latin = /^[A-Za-z0-9'’.\-()&]+$/.test(l), hy = latin ? "-" : "";
-      const ps = [];
-      let c = "";
-      for (const ch of [...l]) {
-        if (c && nameW(c + ch + hy) > NMAX) {
-          ps.push(c);
-          c = ch;
-        } else c += ch;
-      }
-      if (c) ps.push(c);
-      if (latin && ps.length > 1) {
-        const last = ps.length - 1, need = 3 - [...ps[last]].length, prev = [...ps[last - 1]];
-        if (need > 0 && prev.length > need + 2) {
-          ps[last] = prev.slice(-need).join("") + ps[last];
-          ps[last - 1] = prev.slice(0, -need).join("");
-        }
-        for (let k = 0; k < last; k++) ps[k] += hy;
-      }
-      return ps;
-    });
-    const max = staves === 2 ? 5 : 3;
-    if (out.length > max) {
-      out.length = max;
-      let last = out[max - 1];
-      while (last && nameW(`${last}\u2026`) > NMAX) last = [...last].slice(0, -1).join("");
-      out[max - 1] = `${last}\u2026`;
-    }
-    return out;
-  };
-  const titleSize = tx("song-title"), titleBase = TOP2 + T2(TITLE_H * 0.62);
-  const titleLines = song.title ? wrapTitle(song.title, (t) => P(mw("song-title", t)) * 1.08, o.width - P(2 * (MARGIN + CTL_H + 1))) : [];
-  const titleLH = titleSize * 1.2, titleExtra = Math.max(0, titleLines.length - 1) * titleLH;
-  titleLines.forEach((t, k) => prims.push({ t: "text", x: o.width / 2, y: titleBase + k * titleLH, s: t, cls: "song-title", size: titleSize, anchor: "middle" }));
-  const title = { x: P(MARGIN), y: TOP2 + T2(0.3), w: o.width - P(2 * MARGIN), h: T2(TITLE_H) + titleExtra, baseline: titleBase, size: titleSize };
-  const lines = song.credits ? song.credits.split("\n") : [];
-  let credits = null;
-  const cs = tx("credits"), rx = o.width - P(MARGIN), y0 = TOP2 + T2(TITLE_H + 1) + titleExtra, y0Credits = y0;
-  if (lines.length) {
-    lines.forEach((s2, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s: s2, cls: "credits", size: cs, anchor: "end" }));
-    const w = Math.max(...lines.map((s2) => P(mw("credits", s2)))) + T2(0.6);
-    credits = { x: rx - w, y: y0 - cs * 1.1, w: w + T2(0.3), h: cs * 1.35 * lines.length + cs * 0.4 };
-  }
-  let arrangement = null, arrLast = 0;
-  if (!o.onlyPaper) {
-    const as = tx("arr"), wOf = (role, t) => P(mw(role, t)), row = Math.max(lines.length, 1), base = y0 + row * cs * 1.35;
-    const arr = parseArrangement(song.arrangement, song.papers, o.locale), txt = song.arrangement?.trim() ?? "";
-    const label = _tIn(textLang, "\u7F16\u6392\u3000"), lw = wOf("arr-label", label), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
-    if (txt) prims.push({ t: "text", x: P(MARGIN), y: base, s: label, cls: "arr-label", size: as, anchor: "start" });
-    arrLast = base;
-    if (txt) {
-      prims.push({ t: "text", x: x0, y: base, s: txt, cls: "arr", size: as, anchor: "start" });
-      if (arr.issues.length) {
-        const why = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? _tIn(o.locale, " \u7B49 {n} \u5904", { n: arr.issues.length }) : ""}`, tw = wOf("arr", txt) + T2(0.8), fits = tw + wOf("arr-issue", why) <= avail;
-        prims.push({ t: "text", x: fits ? x0 + tw : x0, y: fits ? base : base + cs * 1.35, s: why, cls: "arr-issue ann", size: tx("arr-issue"), anchor: "start" });
-        if (!fits) arrLast = base + cs * 1.35;
-      }
-    }
-    arrangement = { x: x0 - T2(0.3), y: base - as * 1.15, w: avail + T2(0.3), h: as * 1.6, baseline: base, size: as };
-  }
-  let yCur = Math.max(TOP2 + T2(TITLE_H + 0.5) + titleExtra, credits && lines.length ? credits.y + credits.h + T2(0.3) : 0, arrangement ? arrLast + T2(0.8) : 0);
-  const ensure = (h) => {
-    if (PG && yCur + h > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) {
-      pageNo++;
-      yCur = contentTop(pageNo);
-    }
-  };
-  const bars = [];
-  const chordHeads = [];
-  const chordTagsOut = [];
-  const sharedRows = [], virtualOut = {}, measures = [], families = [];
-  const rows = [], notes = [], slots = [], heads = [], lyrics = [], marks = [], dyns = [], rests = [], clefs = [];
-  const partsHit = [], papersHit = [], names = [], keyHints = [];
-  const foldHintWanted = !!foldedPapers && [...foldedPapers.values()].some((pp) => o.parts.some((v) => !v.hidden && foldedCount([pp.tracks[v.id]]) > 0));
-  const statusHints = [];
-  const hidPaperCount = o.onlyPaper ? 0 : song.papers.filter((p) => p.hidden).length;
-  let statusDone = false;
-  let tallGroups = 0;
-  let statusAt = null;
-  const STATUS_SEP = " \xB7 ";
-  const placeStatus = (system, list, triesFor, busy, lastResort) => {
-    const fs = tx("key-hint"), ws = list.map((it) => P(mw("key-hint", it.s))), sepW = P(mw("key-hint", STATUS_SEP)), W2 = ws.reduce((a, b) => a + b, 0) + sepW * (list.length - 1);
-    const hint = (w) => ({ part: { ink: { x0: 0, x1: w, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [] }, tries: triesFor(w), climb: fs * 1.1 });
-    const [all] = placeHints(busy, [hint(W2)], P(0.3));
-    if (all.ok || list.length === 1) {
-      let dx = 0;
-      const items = list.map((it, k) => {
-        const r = { ...it, dx, w: ws[k] };
-        dx += ws[k] + sepW;
-        return r;
-      });
-      statusHints.push({ system, x: all.x, y: all.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 }, room: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 } });
-      return;
-    }
-    const placed = placeHints(busy, list.map((_, k) => hint(ws[k])), P(0.3)), taken = placed.map((pl, k) => ({ x0: pl.x, x1: pl.x + ws[k], y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }));
-    placed.forEach((pl, k) => {
-      if (pl.ok || !lastResort) return;
-      const t = lastResort(ws[k]);
-      if (!t) return;
-      const box = { x0: t.x, x1: t.x + ws[k], y0: t.y - fs * 0.8, y1: t.y + fs * 0.2 }, pad = P(0.3), clash = (b) => box.x0 < b.x1 + pad && b.x0 < box.x1 + pad && box.y0 < b.y1 + pad && b.y0 < box.y1 + pad;
-      if (busy.some(clash) || taken.some((b, j) => j !== k && clash(b))) return;
-      pl.x = t.x;
-      pl.y = t.y;
-      pl.ok = true;
-      taken[k] = box;
-    });
-    placed.forEach((pl, k) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list[k], dx: 0, w: ws[k] }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }, room: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
-  };
-  let shortBars = 0;
-  const rowTop = /* @__PURE__ */ new Map();
-  const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map();
-  const staffTop = (r) => rowTop.get(r) + P(rowAbove.get(r) ?? 0);
-  const anc = (r) => DRAWERS[rows[r].kind].anchors(staffTop(r), P(0.5) * rowPar(r).scale);
-  const body = (r) => DRAWERS[rows[r].kind].anchors(0, 0.5 * rowPar(r).scale);
-  const rowPar = (r) => ROW_PARAMS[rows[r].kind][density];
-  const lyricY = (r) => anc(r).bottom + P(lyricOff.get(r) ?? rowPar(r).lyricBelow);
-  const showPaperLine = song.papers.length > 1 || song.papers.some((p) => p.name);
-  let drawn = 0;
-  const underOf = (paper) => {
-    const h = o.chrome?.underPaper;
-    if (!h || PG || paper.hidden && !o.onlyPaper) return void 0;
-    let low = yCur;
-    rows.forEach((r, k) => {
-      if (r.paper === paper.id) low = Math.max(low, lyricY(k) + T2(1.2));
-    });
-    const box = { x: P(MARGIN), y: low + T2(1), w: P(right) - P(MARGIN), h: T2(h) };
-    yCur = box.y + box.h + T2(0.4);
-    return box;
-  };
-  song.papers.forEach((paper, paperK) => {
-    const before = drawn;
-    drawPaper(paper, paperK);
-    if (drawn > before) {
-      const u = underOf(paper);
-      if (u) papersHit[papersHit.length - 1].under = u;
-    }
-  });
-  let tailBottom = 0, tail = null;
-  const lastPaper = song.papers.at(-1);
-  if (o.chrome?.tail && lastPaper && !(o.onlyPaper && !PG)) {
-    const h = T2(o.chrome.tail), paperId = o.onlyPaper ?? lastPaper.id;
-    if (PG) {
-      tail = { paper: paperId, x: P(MARGIN), y: pageTopY(pageNo) + P(PG.h) + P(1.2), w: P(baseRight - MARGIN), h };
-      tailBottom = tail.y + h + P(1);
-    } else {
-      tail = { paper: lastPaper.id, x: P(MARGIN), y: yCur + P(0.6), w: P(baseRight - MARGIN), h };
-      yCur = tail.y + h + P(0.4);
-    }
-  }
-  function foldedHit(paperId, visible) {
-    const p0 = foldedPapers?.get(paperId);
-    if (!p0) return {};
-    const n2 = foldedCount(visible.map((v) => p0.tracks[v.id]));
-    return n2 ? { folded: n2 } : {};
-  }
-  function drawPaper(paper, paperK) {
-    right = baseRight;
-    if (o.onlyPaper && paper.id !== o.onlyPaper) return;
-    if (paper.hidden && !o.onlyPaper) {
-      papersHit.push({ id: paper.id, title: { x: 0, y: yCur, w: 0, h: 0, baseline: yCur, size: 0, shown: false }, top: yCur, bottom: yCur, hidden: true, hiddenParts: [] });
-      return;
-    }
-    if (drawn++ > 0) yCur += P(PAPER_GAP);
-    const owner = tempoOwner(song, paper), prevPaper = song.papers.slice(0, paperK).reverse().find((x) => !x.hidden), prevBpm = prevPaper ? sheetEndBpm(song, prevPaper) : null;
-    const paperTop = yCur;
-    const pSize = tx("paper-name");
-    const pTitle = { x: P(MARGIN), y: yCur, w: o.width - P(2 * MARGIN) - T2(o.chrome?.navRoom && song.papers.length > 1 ? o.chrome.navRoom : 4), h: T2(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };
-    const drawPaperTitle = (firstBlock) => {
-      if (!showPaperLine) return;
-      ensure(T2(PAPER_H) + firstBlock);
-      const pBase = yCur + T2(PAPER_H * 0.68);
-      pTitle.y = yCur;
-      pTitle.baseline = pBase;
-      if (paper.name) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });
-      yCur += T2(PAPER_H);
-    };
-    const present = o.parts.filter((p) => paper.tracks[p.id]), visible = present.filter((p) => !p.hidden), hiddenParts = present.filter((p) => p.hidden);
-    const hostOf = (id) => song.parts.find((x) => x.id === id)?.host;
-    const editingHere = !o.foldAll && o.at.paper === paper.id ? o.at.part : null;
-    const famOf = (id) => hostOf(id) ?? (song.parts.some((x) => x.host === id) ? id : null);
-    const famIds = [...new Set(visible.map((p) => famOf(p.id)).filter((x) => !!x))];
-    const famHere = (fid) => visible.filter((p) => famOf(p.id) === fid);
-    const fold = famIds.filter((fid) => famHere(fid).length >= 2 && !(editingHere !== null && famOf(editingHere) === fid)).map((fid) => ({ host: fid, members: famHere(fid) }));
-    const rowsS = BUILD.rows(paper, visible, fold, lookAt);
-    Object.assign(virtualOut, rowsS.virtualOut);
-    const { absorbed, lowOf, drumNames, loIds, parts } = rowsS;
-    const famShown = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p) => p.id) }));
-    const famLine = NOTATIONS2[songLook.notation].families === "line", openFams = famLine ? [] : famShown, lineFams = famLine ? famShown : [];
-    const trackOf = (id) => rowsS.virt.get(id) ?? paper.tracks[id];
-    if (!parts.length) {
-      drawPaperTitle(T2(hiddenParts.length ? 0 : 3.2));
-      let emptyBox;
-      if (!hiddenParts.length) {
-        emptyBox = { x: P(MARGIN), y: yCur, w: P(right - MARGIN), h: T2(3.2) };
-        yCur += T2(3.2);
-      }
-      papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...emptyBox ? { empty: emptyBox } : {}, ...foldedHit(paper.id, visible) });
-      return;
-    }
-    const lenOf = (t) => t.reduce((n3, x) => n3 + (isTimed(x) ? x.dur : 0), 0);
-    const lens = parts.map((p) => lenOf(trackOf(p.id) ?? [])), paperLen = Math.max(0, ...lens);
-    const built = BUILD.tracks(rowsS, { song, look: songLook, paper, lookAt, at: o.at, tailOpen: !!o.tailOpen, autoBars, measure: o.measure, sp, ts, lens, paperLen });
-    const per0 = built.per, rowHost = built.rowHost;
-    shortBars += built.shortBars;
-    const kinds = per0.map((q) => NOTATIONS2[songLook.notation].rowKindOf(q));
-    per0.forEach((q, i) => {
-      if (DRAWERS[kinds[i]].oneRow) q.staves = 1;
-    });
-    const pmode = per0.map((q) => q.pmode);
-    const hasV2 = per0.map((q) => q.hasV2);
-    const kScale = (k) => ROW_PARAMS[k][density].scale;
-    const foldsOf = (q, i) => {
-      const th = harmonyTheory();
-      if (q.vrt || rowHost[i] >= 0 || q.p.perc || songLook.chordsOf(q.p.id) !== "fold" || !th.fold) return null;
-      const folds = /* @__PURE__ */ new Map();
-      let at3 = { fifths: DEFAULT_KEY, minor: false };
-      q.tokens.forEach((t, k) => {
-        if (t.kind === "key") at3 = { fifths: t.fifths, minor: t.mode === "minor" };
-        else if (t.kind === "note" && t.pitch && t.chord?.length) {
-          const f = th.fold([t.pitch, ...t.chord], at3, t.harm);
-          if (f) folds.set(k, f);
-        }
-      });
-      return folds.size ? folds : null;
-    };
-    const labelOf = (text, k) => ({ text, size: tx("breath-label") / P(k), w: mw("breath-label", text) / k });
-    const aux = per0.map((q, i) => {
-      const folds = foldsOf(q, i), k = kScale(kinds[i]);
-      const labels = kinds[i] === "staff" ? null : { inhale: { soft: labelOf(_tIn(textLang, "\u5438##\u8BB0\u53F7"), k), big: labelOf(_tIn(textLang, "\u6DF1\u5438##\u8BB0\u53F7"), k) } };
-      return { ...folds ? { folds } : {}, ...labels ? { labels } : {} };
-    });
-    const measured = per0.map((q, i) => DRAWERS[kinds[i]].measure(q, kScale(kinds[i]), aux[i]));
-    const atracks = per0.map((_q, pi) => ({ entries: measured[pi].entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));
-    const merged = mergeColumns(atracks), n2 = merged.length;
-    const FAM_W = openFams.length ? (o.chrome?.famGap ?? 0) * ts : 0;
-    const ind0 = Math.max(...per0.map((q, i) => DRAWERS[kinds[i]].nameMin?.(q, mw) ?? 0), ...parts.map((p) => Math.max(...nameLines(p.name, p.staves === 2 || song.papers.some((pp) => lookAt(pp.id, p.id)?.staves === 2) ? 2 : 1).map(nameW)))) + 1.4 * ts + FAM_W;
-    const indN = parts.some((p) => p.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 * ts + FAM_W : 0;
-    const keyAtCol = [];
     {
-      const now = new Map(per0.map((q) => [q.p.id, q.head.key]));
-      for (let k = 0; k <= n2; k++) {
-        keyAtCol.push(new Map(now));
-        if (k < n2) {
-          for (const { track, entry } of merged[k].members) if (entry.ref.kind === "key") now.set(per0[track].p.id, entry.ref.fifths);
-        }
-      }
-    }
-    const headAt = (k, first) => {
-      const keys = keyAtCol[k], base = (first ? ind0 : indN) + MARGIN;
-      return Math.max(...per0.map((q, i) => DRAWERS[kinds[i]].lineStart(q, keys.get(q.p.id), first, base, kScale(kinds[i]))));
-    };
-    const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
-    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, ...PPAR.evenBars ? { evenBars: true } : {}, endPad: BAR_W, lineStart: headAt, ...PPAR.lastMerge ? { lastMerge: PPAR.lastMerge } : {} });
-    const { lineFrom, sysStarts } = ar, nSys = lineFrom.length, sysKeys = lineFrom.map((k) => new Map(keyAtCol[k]));
-    const cols = merged.map((c, k) => ({ tick: c.tick, slot: c.slot, n: c.n, x: ar.xs[k], w: ar.ws[k], system: ar.system[k], bar: c.bar, units: c.members.map((m) => m.entry.ref) }));
-    const at2 = /* @__PURE__ */ new Map();
-    for (const c of cols) for (const u of c.units) at2.set(u, { x: c.x, system: c.system, w: u.kind === "chunk" ? c.w : u.w });
-    const copyOf = /* @__PURE__ */ new Map();
-    const per = per0.map((q) => ({ ...q, units: q.units.map((u) => {
-      const v = { ...u, ...at2.get(u) };
-      copyOf.set(u, v);
-      return v;
-    }) }));
-    const inkLs = measured.map((m) => new Map([...m.inkL].map(([u, v]) => [copyOf.get(u), v])));
-    const placedCols = cols;
-    if (o.scroll) {
-      right = Math.max(baseRight, ...cols.map((c) => c.x + c.w)) + SCROLL_TAIL;
-      sheetRight = Math.max(sheetRight, right);
-    }
-    const rowBase = rows.length, nR = parts.length;
-    const effStaves = (i) => rowHost[i] >= 0 ? 0 : per[i].staves;
-    const rowStart = per.map((_, i) => per.slice(0, i).reduce((a, _q, j) => a + effStaves(j), 0)), nRowsSys = per.reduce((a, _q, j) => a + effStaves(j), 0);
-    const rowOf = (s2, r, k = 0) => rowBase + s2 * nRowsSys + rowStart[rowHost[r] >= 0 ? rowHost[r] : r] + k;
-    const lyricsOf = per.map((q) => q.tokens.some((t) => t.kind === "note" && t.lyric));
-    const lyrPlan = /* @__PURE__ */ new Map();
-    const look = lyricLook(ts);
-    const LS = PPAR.lyricScale ?? 1, lsp = sp * LS;
-    const lyrUnit = (str) => lyricWidth(o.measure, str, sp, ts) * LS;
-    const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
-    const hangOff = (lyr) => {
-      const h = lyricHang(lyricShow(lyr));
-      return h.core && (h.lead || h.trail) ? (lyrUnit(h.trail) - lyrUnit(h.lead)) / 2 : 0;
-    };
-    const lyrGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };
-    const lyrEdge = (s2) => ({ left: MARGIN + (s2 === 0 ? ind0 : indN) + LYRIC_EDGE, right: right - LYRIC_EDGE });
-    const outOf = (items, b) => items.some((it) => it.cx - it.w / 2 < b.left - 1e-9 || it.cx + it.w / 2 > b.right + 1e-9);
-    per.forEach((q, r) => {
-      if (!lyricsOf[r]) return;
-      const bySys = /* @__PURE__ */ new Map();
-      for (const u of DRAWERS[kinds[r]].lyricAnchors(q, kScale(kinds[r]), aux[r])) {
-        const arr = bySys.get(u.system) ?? [];
-        bySys.set(u.system, arr);
-        const core2 = lyricHang(lyricShow(u.lyric)).core || lyricShow(u.lyric);
-        arr.push({ index: u.index, cx: u.cx + hangOff(u.lyric), w: lyrUnit(lyricShow(u.lyric)), hy: u.hyph, block: isBlockScript(core2) && [...core2].length <= 1 });
-      }
-      for (const items of bySys.values()) items.sort((a, b) => a.cx - b.cx);
-      const plan = (items, fits) => fits.forEach((f, k) => lyrPlan.set(`${r}:${items[k].index}`, { ...f, hw: items[k].w * f.sx / 2 }));
-      if (songLook.lyricFit !== "rhythm") {
-        for (const [s2, items] of bySys) {
-          const b = lyrEdge(s2);
-          if (outOf(items, b)) plan(items, fitLyrics(items, 1, LYRIC_MIN_SX, lyrGaps, b));
-        }
-        return;
-      }
-      const blockSx = Math.min(1, ...[...bySys].map(([s2, items]) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps, lyrEdge(s2))));
-      for (const [s2, items] of bySys) plan(items, fitLyrics(items, blockSx, LYRIC_MIN_SX, lyrGaps, lyrEdge(s2)));
-    });
-    const put = (row, p) => {
-      const n0 = prims.length;
-      prims.push(p);
-      if (prims.length > n0) primRow[n0] = row;
-    };
-    const hitRowOf = /* @__PURE__ */ new WeakMap(), hitRow = (hit2, row) => {
-      hitRowOf.set(hit2, row);
-    };
-    const skies = [];
-    for (let s2 = 0; s2 < nSys; s2++) for (let r = 0; r < nR; r++) for (let k = 0; k < effStaves(r); k++) {
-      const row = rowOf(s2, r, k);
-      rowTop.set(row, 0);
-      rowAbove.set(row, 0);
-      rows[row] = { top: 0, staffTop: 0, bottom: 0, paper: paper.id, part: parts[r].id, sys: s2, staff: k + 1, inkTop: 0, inkBottom: 0, kind: kinds[r], ...kScale(kinds[r]) !== 1 ? { scale: kScale(kinds[r]) } : {} };
-      skies[row - rowBase] = new Skyline(right + MARGIN + 8);
-      if (per[r].vrt) sharedRows.push(row);
-    }
-    const sky = (row) => skies[row - rowBase];
-    const loc = (row, y) => (y - staffTop(row)) / sp;
-    const textW = (str, size) => o.measure.widthPx(str, size, sp, ts);
-    const isAnn = (p) => /(^|\s)ann(\s|$)/.test(p.cls ?? "");
-    const primRow = [];
-    const hitLists = () => [notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut];
-    const hints = [];
-    const hint = (row, h) => {
-      hints.push({ row, part: h.part, tries: h.tries.map((t) => ({ ...t })), ...h.climb ? { climb: h.climb } : {}, ...h.onPlace ? { onPlace: h.onPlace } : {} });
-    };
-    const mark = () => ({ p: prims.length, h: hitLists().map((l) => l.length), k: hints.length });
-    const shiftSince = (m, dy) => {
-      if (!dy) return;
-      for (let i = m.p; i < prims.length; i++) shiftPrim(prims[i], dy);
-      hitLists().forEach((l, j) => {
-        for (let i = m.h[j]; i < l.length; i++) l[i].y += dy;
-      });
-      for (let i = m.k; i < hints.length; i++) for (const t of hints[i].tries) t.y += dy;
-    };
-    const inkSince = (m, row, f) => {
-      const t = staffTop(row);
-      for (let i = m.p; i < prims.length; i++) {
-        const p = prims[i];
-        if (isAnn(p)) continue;
-        primInk(p, sp, textW, (x0, x1, y02, y1) => f(x0 / sp, x1 / sp, (y02 - t) / sp, (y1 - t) / sp));
-      }
-    };
-    const pieces = [];
-    const collect = (m, row) => {
-      pieces.length = 0;
-      inkSince(m, row, (x0, x1, y02, y1) => {
-        pieces.push(x0, x1, y02, y1);
-      });
-    };
-    const commit = (sk, dy, count) => {
-      for (let i = 0; i < pieces.length; i += 4) sk.ink(pieces[i], pieces[i + 1], pieces[i + 2] + dy, pieces[i + 3] + dy, count);
-    };
-    const tagSince = (m, row) => {
-      for (let i = m.p; i < prims.length; i++) if (primRow[i] === void 0) primRow[i] = row;
-    };
-    const placeAbove = (row, gap, draw, padR = 0) => {
-      const m = mark();
-      draw(staffTop(row));
-      tagSince(m, row);
-      collect(m, row);
-      let need = Infinity;
-      const sk = sky(row);
-      for (let i = 0; i < pieces.length; i += 4) {
-        const t = sk.top(pieces[i], pieces[i + 1] + padR);
-        if (t < Infinity) need = Math.min(need, t - gap - pieces[i + 3]);
-      }
-      const dy = need === Infinity ? body(row).top - rowPar(row).clear : need;
-      shiftSince(m, P(dy));
-      commit(sk, dy, true);
-      return dy;
-    };
-    const placeBelow = (row, gap, draw, o2 = {}) => {
-      const m = mark();
-      draw(staffTop(row));
-      tagSince(m, row);
-      collect(m, row);
-      let need = -Infinity;
-      const sk = sky(row);
-      for (let i = 0; i < pieces.length; i += 4) {
-        const b = sk.bottom(pieces[i], pieces[i + 1]);
-        if (b > -Infinity) need = Math.max(need, b + gap - pieces[i + 2]);
-      }
-      let dy = Math.max(need === -Infinity ? 0 : need, o2.min ?? -Infinity);
-      if (o2.step && o2.min !== void 0 && dy > o2.min + 1e-9) dy = o2.min + Math.ceil((dy - o2.min) / o2.step - 1e-9) * o2.step;
-      shiftSince(m, P(dy));
-      commit(sk, dy, o2.count !== false);
-      return dy;
-    };
-    const attached = /* @__PURE__ */ new Map();
-    const attach = (row, lane, run) => {
-      if (!(row >= rowBase && row - rowBase < skies.length && skies[row - rowBase])) throw new Error(`engrave: attach on row ${row} outside this paper`);
-      let m = attached.get(row);
-      if (!m) attached.set(row, m = /* @__PURE__ */ new Map());
-      const l = m.get(lane);
-      if (l) l.push(run);
-      else m.set(lane, [run]);
-    };
-    const p0 = mark();
-    const staffEnd = Array.from({ length: nSys }, (_, s2) => {
-      const row = placedCols.filter((c) => c.system === s2);
-      if (!row.length) return right;
-      const last = row.reduce((a, c) => c.x > a.x || c.x === a.x && (c.slot > a.slot || c.slot === a.slot && c.n > a.n) ? c : a);
-      return last.bar ? Math.min(right, last.x + 0.7) : right;
-    });
-    const pageRuns = (_s, a, b) => {
-      const out = [];
-      for (let row = a; row <= b; row++) {
-        const last = out.at(-1);
-        if (last && rowPage.get(row) === rowPage.get(last[1])) last[1] = row;
-        else out.push([row, row]);
-      }
-      return out;
-    };
-    const drawSystemsChrome = () => {
-      for (let s2 = 0; s2 < nSys; s2++) {
-        const ind = s2 === 0 ? ind0 : indN;
-        per.forEach((q, r) => {
-          if (rowHost[r] >= 0) return;
-          const ten = absorbed.get(q.p.id) ?? [];
-          const pr = lowOf.has(q.p.id) ? per.findIndex((x) => x.p.id === lowOf.get(q.p.id)) : r, rEnd = (sy) => rowOf(sy, pr, per[pr].staves - 1);
-          if (loIds.has(q.p.id)) return;
-          if (s2 === 0) {
-            const r0 = rowOf(s2, r, 0), r1 = rEnd(s2), lines2 = nameLines(q.p.name, pr !== r ? 2 : q.staves), LH = PART_EM * 1.15 * ts;
-            const tl = ten.map((t) => nameLines(t.name, 1)[0] ?? ""), nAll = lines2.length + tl.length;
-            const ny = (anc(r0).mid + anc(r1).mid) / 2 + T2(0.55 * PART_EM) - P(LH * (nAll - 1) / 2);
-            const nameBlock = (wid) => names.push({ paper: paper.id, part: q.p.id, x0: P(MARGIN - 0.95), x1: P(MARGIN) + P(wid), top: ny - T2(PART_EM * 0.95) });
-            const ncls = q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name";
-            const dn = drumNames.get(q.p.id);
-            if (dn) {
-              const at3 = (k) => ny + P(LH * k), hk = Math.max(0, dn.findIndex((m) => m.id === q.p.id));
-              dn.forEach((m, k) => {
-                prims.push({ t: "text", x: P(MARGIN), y: at3(k), s: nameLines(m.name, 1)[0] ?? "", cls: m.id === q.p.id ? ncls : "part-name tenant", size: tx("part-name"), anchor: "start" });
-                partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: at3(k) - T2(PART_EM * 0.95), w: P(ind0 + 0.2), h: P(LH) });
-              });
-              nameBlock(Math.max(...dn.map((m) => nameW(nameLines(m.name, 1)[0] ?? ""))));
-              if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: at3(dn.length - 1) + P(LH), s: q.p.badges.join(" "), cls: "part-badge ann", size: tx("part-badge"), anchor: "start" });
-              if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: at3(hk) - T2(PART_EM * 0.62), w: T2(0.6), h: T2(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
-            } else {
-              lines2.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: tx("part-name"), anchor: "start" }));
-              tl.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines2.length + k)), s: ln, cls: "part-name tenant", size: tx("part-name"), anchor: "start" }));
-              if (ten.length) {
-                const lineTop = (i) => ny + P(LH * i) - T2(PART_EM * 0.95);
-                ten.forEach((t, k) => partsHit.push({ paper: paper.id, part: t.id, x: P(MARGIN - 0.4), y: lineTop(lines2.length + k), w: P(ind0 + 0.2), h: P(LH) }));
-              }
-              nameBlock(Math.max(...[...lines2, ...tl].map(nameW)));
-              {
-                if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + T2(1.4), s: q.p.badges.join(" "), cls: "part-badge ann", size: tx("part-badge"), anchor: "start" });
-              }
-              {
-                const y02 = anc(r0).top - P(1.2), yEnd = ten.length ? ny + P(LH * lines2.length) - T2(PART_EM * 0.95) : anc(r1).bottom + P(1.2);
-                partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y02, w: P(ind0 + 0.2), h: yEnd - y02 });
-              }
-              if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - T2(PART_EM * 0.62), w: T2(0.6), h: T2(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
-            }
-          } else if (q.p.abbr) {
-            const r0 = rowOf(s2, r, 0), r1 = rEnd(s2), LH = PART_EM * 1.15 * ts;
-            const order = drumNames.get(q.p.id) ?? [q.p, ...ten], hk = Math.max(0, order.findIndex((m) => m.id === q.p.id));
-            const ny = (anc(r0).mid + anc(r1).mid) / 2 + T2(0.55 * PART_EM) - P(LH * (order.length - 1) / 2);
-            order.forEach((m, k) => {
-              if (m.id === q.p.id) {
-                prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: q.p.abbr, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: tx("part-name"), anchor: "start" });
-                return;
-              }
-              prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: m.abbr ?? "", cls: "part-name abbr tenant", size: tx("part-name"), anchor: "start" });
-              partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: ny + P(LH * k) - T2(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) });
-            });
-            if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny + P(LH * hk) - T2(PART_EM * 0.62), w: T2(0.6), h: T2(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
-            partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: anc(r0).top - P(1.2), w: P(indN + 0.2), h: anc(r1).bottom - anc(r0).top + P(2.4) });
-          }
-          if (q.p.colorIdx !== void 0) {
-            const r0 = rowOf(s2, r, 0), r1 = rEnd(s2);
-            prims.push({ t: "rect", x: P(MARGIN + ind - 0.8), y: anc(r0).top, w: P(0.3), h: anc(r1).bottom - anc(r0).top, cls: `cat-bar ann cat-${q.p.colorIdx}` });
-          }
-          if (q.staves === 2 || pr !== r) {
-            const bx = P(MARGIN + ind - 0.7), y02 = anc(rowOf(s2, r, 0)).top, y1 = anc(rEnd(s2)).bottom;
-            prims.push({ t: "path", d: `M${bx + P(0.5)},${y02}Q${bx - P(0.3)},${y02 + P(0.6)} ${bx},${(y02 + y1) / 2}Q${bx - P(0.3)},${y1 - P(0.6)} ${bx + P(0.5)},${y1}`, cls: "brace" });
-          }
-        });
-        if (ind > 0 && o.chrome?.famGap) for (const fam of openFams) {
-          const rs = fam.ids.map((id) => per.findIndex((q) => q.p.id === id)).filter((i) => i >= 0);
-          if (rs.length < 2) continue;
-          const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 1.55), y02 = anc(rowOf(s2, r0, 0)).top - P(0.6), y1 = anc(rowOf(s2, r1, per[r1].staves - 1)).bottom + P(0.6);
-          families.push({ paper: paper.id, host: fam.host, x: x - P(0.6), y: y02, w: P(1.3), h: y1 - y02 });
-        }
-        for (const fam of lineFams) {
-          const rs = fam.ids.map((id) => per.findIndex((q) => q.p.id === id)).filter((i) => i >= 0);
-          if (rs.length < 2) continue;
-          const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 0.35);
-          for (const [a, b] of pageRuns(s2, rowOf(s2, r0, 0), rowOf(s2, r1, per[r1].staves - 1))) prims.push({ t: "line", x1: x, y1: anc(a).top, x2: x, y2: anc(b).bottom, w: P(0.25), cls: "family-line" });
-        }
-        if (nRowsSys > 1) for (const [a, b] of pageRuns(s2, rowOf(s2, 0, 0), rowOf(s2, nR - 1, per[nR - 1].staves - 1))) prims.push({ t: "line", x1: P(MARGIN + ind), y1: anc(a).top, x2: P(MARGIN + ind), y2: anc(b).bottom, w: P(SYSTEM_LINE_W), cls: "bar" });
-      }
-    };
-    {
-      const q0 = per.find((q) => rowHost[per.indexOf(q)] < 0) ?? per[0];
-      let t = 0, cur = null;
-      for (const u of q0.units) {
-        if (u.kind !== "chunk") continue;
-        const m = u.m ?? 0;
-        if (!cur || cur.m !== m) {
-          cur = { paper: paper.id, t0: t, t1: t, row: rowOf(u.system, per.indexOf(q0), 0), x: P(u.x) };
-          cur.m = m;
-          measures.push(cur);
-        }
-        t += u.ticks;
-        cur.t1 = t;
-      }
-      for (const x of measures) delete x.m;
-    }
-    const harmony = songLook.chordTags ? paperHarmony(harmonyTheory(), {
-      parts: per.filter((q, i) => !q.vrt && rowHost[i] < 0).map((q) => ({ id: q.p.id, tokens: q.tokens, broken: songLook.chordsOf(q.p.id) !== "stacked", perc: !!q.p.perc })),
-      // 打击乐的行在预处理里拦（7-O）
-      families: famIds.map((fid) => famHere(fid).map((p) => p.id))
-    }) : null;
-    const drawCtx = { song, look: songLook, textLang, harmony, aux, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, hint, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
-    if (songLook.barNumbers && per[0]) for (let s2 = 0; s2 < nSys; s2++) {
-      const ind = s2 === 0 ? ind0 : indN, q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s2)) ?? per[0];
-      const c0 = q0.units.find((u) => u.kind === "chunk" && u.system === s2);
-      const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null, row0 = rowOf(s2, 0, 0);
-      if (num !== null && !(s2 === 0 && num <= 1)) attach(row0, "barNumber", () => {
-        if (nRowsSys > 1) sky(row0).ink(MARGIN + ind - SYSTEM_LINE_W / 2, MARGIN + ind + SYSTEM_LINE_W / 2, body(row0).top, body(row0).bottom, false);
-        placeAbove(row0, 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" }), rowPar(row0).barNoPad);
-      });
-    }
-    const kIdx = (k) => per.map((_q, i) => i).filter((i) => kinds[i] === k);
-    const ctxFor = (idx, who) => {
-      const own = /* @__PURE__ */ new Set();
-      for (const r of idx) for (let s2 = 0; s2 < nSys; s2++) for (let k = 0; k < effStaves(r) || rowHost[r] >= 0 && k < 1; k++) own.add(rowOf(s2, r, k));
-      const chk = (row) => {
-        if (!own.has(row)) throw new Error(`engrave: the ${who} drawer drew on row ${row}, which is not one of its rows`);
-      };
-      return {
-        ...drawCtx,
-        scale: kScale(who),
-        put: (row, p) => {
-          chk(row);
-          put(row, p);
-        },
-        hitRow: (h, row) => {
-          chk(row);
-          hitRow(h, row);
-        },
-        attach: (row, lane, run) => {
-          chk(row);
-          attach(row, lane, run);
-        },
-        placeAbove: (row, gap, d) => {
-          chk(row);
-          return placeAbove(row, gap, d);
-        },
-        placeBelow: (row, gap, d, o2) => {
-          chk(row);
-          return placeBelow(row, gap, d, o2);
-        }
-      };
-    };
-    const sIdx = kIdx("staff");
-    const staffOut = DRAWERS.staff.draw(ctxFor(sIdx, "staff"), sIdx);
-    const otherParts = Object.keys(DRAWERS).filter((k) => k !== "staff").flatMap((k) => {
-      const idx = kIdx(k);
-      return idx.length ? DRAWERS[k].draw(ctxFor(idx, k), idx).lyricParts : [];
-    });
-    const layLyrics = ({ r, lrow, spots }) => {
-      const run = (c, partLyrics) => {
-        const fit = lyrPlan.get(`${r}:${c.index}`), ly0 = lyricY(lrow(c.sys)), cx0 = c.cx0;
-        const ly = ly0, cx = cx0 + (c.lyric && c.lyric !== MELISMA_MARK ? P(hangOff(c.lyric)) : 0) + (fit ? P(fit.dx) : 0);
-        {
-          const lh = { index: c.index, system: c.row, x: cx, y: ly, ...fit?.tight ? { tight: true } : {} };
-          partLyrics.push(lh);
-          hitRow(lh, lrow(c.sys));
-        }
-        if (c.lyric === MELISMA_MARK) put(lrow(c.sys), { t: "line", x1: c.mx0, y1: ly0, x2: c.mx1, y2: ly0, w: P(0.12), cls: "melisma" });
-        else if (c.lyric) put(lrow(c.sys), { tok: c.tok, t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...look.k !== 1 || ts !== 1 || LS !== 1 ? { size: lyricSizePx(lsp, ts) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", c.mute ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", c.cls ?? ""].filter(Boolean).join(" ") });
-      };
-      const bySys = /* @__PURE__ */ new Map();
-      for (const c of spots) {
-        const l = bySys.get(c.sys);
-        if (l) l.push(c);
-        else bySys.set(c.sys, [c]);
-      }
-      if (!lyricsOf[r]) {
-        for (const [sy, cs2] of bySys) attach(lrow(sy), "lyrics", () => {
-          const part2 = [];
-          for (const c of cs2) run(c, part2);
-          lyrics.push(...part2);
-        });
-        return;
-      }
-      for (let sy = 0; sy < nSys; sy++) {
-        const row = lrow(sy), cs2 = bySys.get(sy), base = rowPar(row).lyricBelow;
-        attach(row, "lyrics", () => {
-          lyricOff.set(row, base);
-          if (!cs2) return;
-          const partLyrics = [];
-          const dy = placeBelow(row, 0.5, () => {
-            const from = partLyrics.length;
-            for (const c of cs2) run(c, partLyrics);
-            const mine = partLyrics.slice(from), byIdx = new Map(cs2.map((c) => [c.index, c]));
-            const syls = mine.map((L) => {
-              const pl = lyrPlan.get(`${r}:${L.index}`), c = byIdx.get(L.index), lyr = c.lyric ?? "";
-              return { x: L.x, hy: c.hyph, hw: pl ? P(pl.hw) : void 0, sx: pl?.sx, ...pl ? {} : { nw: P(lyrUnit(lyricShow(lyr))) / 2 }, cjk: isBlockScript(lyricShow(lyr)), row: L.system };
-            });
-            hyphens(syls, P(lyrHyphen), P(1.6)).forEach((h, n3) => {
-              if (h) prims.push({ t: "text", x: h.x, y: mine[n3].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts !== 1 || LS !== 1 ? { size: lyricSizePx(lsp, ts) } : {}, sx: look.sx * h.hf * HYPHEN_SX });
-            });
-            lyrics.push(...partLyrics.slice(from));
-          }, { min: 0, count: false, step: ROW_STEP });
-          lyricOff.set(row, base + dy);
-        });
-      }
-    };
-    for (const lp of [...staffOut.lyricParts, ...otherParts]) layLyrics(lp);
-    for (let i = p0.p; i < prims.length; i++) {
-      const p = prims[i];
-      if (isAnn(p)) continue;
-      const row = primRow[i];
-      if (row === void 0) throw new Error(`engrave: prim ${i} has no row (draw with put(row, \u2026) or inside placeAbove / placeBelow)`);
-      if (row < rowBase || row - rowBase >= skies.length || !skies[row - rowBase]) continue;
-      const t = staffTop(row);
-      primInk(p, sp, textW, (x0, x1, y02, y1) => sky(row).ink(x0 / sp, x1 / sp, (y02 - t) / sp, (y1 - t) / sp));
-    }
-    const upToNav = [];
-    for (let row = rowBase; row - rowBase < skies.length; row++) {
-      if (!skies[row - rowBase]) continue;
-      const m = attached.get(row), lanes = DRAWERS[rows[row].kind].lanes;
-      for (const lane of lanes) {
-        for (const f of m?.get(lane) ?? []) f();
-        if (lane === INK_UP_TO) upToNav[row - rowBase] = sky(row).hUp;
-      }
-      if (m) {
-        for (const lane of m.keys()) if (!lanes.includes(lane)) throw new Error(`engrave: row ${row} (${rows[row].kind}) has no lane "${lane}"`);
-      }
-    }
-    const pEnd = mark();
-    const PAD = 0.8, fin = (v, d) => Number.isFinite(v) ? v : d;
-    const stepUp = (min, need) => need <= min + 1e-9 ? min : min + Math.ceil((need - min) / ROW_STEP - 1e-9) * ROW_STEP;
-    const geo = (s2, r, k) => {
-      const q = per[r], row = rowOf(s2, r, k), R = rowPar(row), b = body(row), bodyH = b.bottom - b.top, sk = sky(row), hUp = fin(sk.hUp, b.top), hDn = fin(sk.hDn, b.bottom);
-      const minBelow = q.staves === 2 && k === 0 ? R.graveUpper - R.above - bodyH : (lyricsOf[r] ? R.rowH : R.rowHNoLyric) - R.above - bodyH;
-      const lyr = lyricsOf[r] && k === q.staves - 1 ? lyricOff.get(row) : void 0, row2 = 0, lyricTail = R.rowH - R.above - bodyH - R.lyricBelow;
-      let need = hDn - b.bottom + PAD;
-      if (lyr !== void 0) need = Math.max(need, lyr + lyricTail + row2);
-      const below = stepUp(minBelow, need), above = stepUp(R.above, b.top - hUp + PAD);
-      return { above, below, h: above + bodyH + below, origin: above - b.top, inkTop: Math.min(b.top, fin(upToNav[row - rowBase] ?? Infinity, b.top)), inkBottom: Math.max(b.bottom, hDn, lyr !== void 0 ? b.bottom + lyr + 0.5 + row2 : b.bottom) };
-    };
-    const G2 = Array.from({ length: nSys }, (_, s2) => per.map((_q, r) => Array.from({ length: effStaves(r) }, (_2, k) => geo(s2, r, k))));
-    const sysH = (s2) => P(G2[s2].reduce((n3, gs) => n3 + gs.reduce((m, g) => m + g.h, 0), 0) + SYS_GAP);
-    const avail = PG ? contentBottom(0) - contentTop(0) : Infinity;
-    const blocks = [];
-    for (let r = 0; r < nR; r++) {
-      if (!effStaves(r)) continue;
-      const ks = Array.from({ length: effStaves(r) }, (_, k) => [r, k]);
-      const last = blocks.at(-1);
-      if (last && loIds.has(per[r].p.id)) last.rows.push(...ks);
-      else blocks.push({ r, rows: ks });
-    }
-    const blockH = (s2, b) => P(b.rows.reduce((n3, [r, k]) => n3 + G2[s2][r][k].h, 0));
-    const tall = (s2) => PG !== null && sysH(s2) > avail + 0.5;
-    drawPaperTitle(nSys ? tall(0) ? blockH(0, blocks[0]) : sysH(0) : P(ROW_PARAMS[NOTATIONS2[songLook.notation].home][density].rowH));
-    let note;
-    if (paper.hidden) {
-      const nx = P(MARGIN) + (paper.name ? P(mw("paper-name", paper.name)) : 0) + T2(1);
-      note = { x: nx, y: pTitle.y, w: Math.max(T2(4), pTitle.x + pTitle.w - nx), h: T2(PAPER_H) };
-    }
-    const delta = /* @__PURE__ */ new Map();
-    const rowPage = /* @__PURE__ */ new Map();
-    const placeRow = (s2, r, k) => {
-      const top = yCur, row = rowOf(s2, r, k), g = G2[s2][r][k], st = top + P(g.origin);
-      delta.set(row, st);
-      rowTop.set(row, top);
-      rowAbove.set(row, g.origin);
-      rowPage.set(row, pageNo);
-      Object.assign(rows[row], { top, staffTop: st, bottom: top + P(g.h), inkTop: st + P(g.inkTop), inkBottom: st + P(g.inkBottom) });
-      yCur += P(g.h);
-    };
-    for (let s2 = 0; s2 < nSys; s2++) {
-      if (!tall(s2)) {
-        ensure(sysH(s2));
-        for (let r = 0; r < nR; r++) for (let k = 0; k < effStaves(r); k++) placeRow(s2, r, k);
-      } else {
-        tallGroups++;
-        for (const b of blocks) {
-          ensure(blockH(s2, b));
-          for (const [r, k] of b.rows) placeRow(s2, r, k);
-          while (yCur > contentBottom(pageNo) + 0.5) {
-            pageNo++;
-            if (yCur < contentTop(pageNo)) yCur = contentTop(pageNo);
-          }
-        }
-      }
-      yCur += P(SYS_GAP);
-    }
-    for (let i = p0.p; i < pEnd.p; i++) shiftPrim(prims[i], delta.get(primRow[i]) ?? 0);
-    hitLists().forEach((l, j) => {
-      for (let i = p0.h[j]; i < pEnd.h[j]; i++) {
-        const h = l[i];
-        h.y += delta.get(hitRowOf.get(h) ?? h.system) ?? 0;
-      }
-    });
-    drawSystemsChrome();
-    if (hints.length) {
-      for (const h of hints) {
-        const d = delta.get(h.row) ?? 0;
-        for (const t of h.tries) t.y += d;
-      }
-      const ys = hints.flatMap((h) => h.tries.map((t) => t.y)), lo = Math.min(...ys) - P(12), hi = Math.max(...ys) + P(12), printed = [];
-      for (let i = p0.p; i < prims.length; i++) {
-        const p = prims[i];
-        if (isAnn(p)) continue;
-        const y = primY(p);
-        if (y < lo || y > hi) continue;
-        primInk(p, sp, textW, (x0, x1, y02, y1) => printed.push({ x0, x1, y0: y02, y1 }));
-      }
-      const at3 = placeHints(printed, hints, P(0.15));
-      hints.forEach((h, k) => {
-        const { x, y } = at3[k];
-        for (const pr of h.part.prims) {
-          const q = { ...pr };
-          movePrim(q, x, y);
-          prims.push(q);
-        }
-        h.onPlace?.(x, y);
-      });
-    }
-    if (!statusDone) {
-      const r0 = rows.findIndex((r) => r.paper === paper.id);
-      if (r0 >= 0) {
-        statusDone = true;
-        const pFrom = p0.p, pTo = prims.length, rightNow = right, hidHere = song.papers.length === 1 && !pTitle.shown && hiddenParts.length ? hiddenParts.length : 0, paperId = paper.id;
-        statusAt = (more) => {
-          const statusList = [
-            ...hidPaperCount ? [{ kind: "hiddenPapers", s: _tIn(o.locale, "\u9690\u85CF\u4E86 {n} \u6BB5", { n: hidPaperCount }) }] : [],
-            ...hidHere ? [{ kind: "hiddenParts", s: _tIn(o.locale, "\u9690\u85CF\u4E86 {n} \u4E2A\u58F0\u90E8", { n: hidHere }), paper: paperId }] : [],
-            // 只有一张纸、曲段名那一条没画：原来挂在「⋯」右边的那颗（画了曲段名那一条的照旧在那一条里）
-            ...foldHintWanted ? [{ kind: "expr", s: _tIn(o.locale, "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A") }] : [],
-            ...more
-          ];
-          if (!statusList.length) return;
-          const sys = rows[r0], fs = tx("key-hint");
-          let base = sys.top + fs;
-          for (let i = pFrom; i < pTo; i++) {
-            const p = prims[i];
-            if (p.t === "text" && /(^|\s)(tempo-word|jp-head)(\s|$)/.test(p.cls ?? "") && p.y >= sys.top - P(2) && p.y <= sys.staffTop + P(0.5)) base = Math.max(base === sys.top + fs ? -Infinity : base, p.y);
-          }
-          const triesFor = (w) => [{ x: P(rightNow) - w, y: base }, { x: P(rightNow) - w, y: base - fs * 1.3 }, { x: P(MARGIN), y: sys.top - fs * 0.2 }];
-          const lastResort = (w) => {
-            const y = title.y - P(0.3) - 1 - fs * 0.2;
-            return P(MARGIN) + w <= P(rightNow) && y - fs * 0.8 >= 0 ? { x: P(MARGIN), y } : null;
-          };
-          const ys = triesFor(0).map((t) => t.y), lo = Math.min(...ys) - P(12), hi = Math.max(...ys) + P(12), busy = [];
-          for (let i = 0; i < pTo; i++) {
-            const p = prims[i], y = primY(p);
-            if (y < lo || y > hi) continue;
-            primInk(p, sp, textW, (x0, x1, y02, y1) => busy.push({ x0, x1, y0: y02, y1 }));
-          }
-          for (const k of keyHints) if (k.system === r0) busy.push({ x0: k.x, x1: k.x + P(mw("key-hint", k.s)), y0: k.y - k.size * 0.8, y1: k.y + k.size * 0.2 });
-          busy.push({ x0: title.x, x1: title.x + title.w, y0: title.y, y1: title.y + title.h });
-          if (credits) busy.push({ x0: credits.x, x1: credits.x + credits.w, y0: credits.y, y1: credits.y + credits.h });
-          else busy.push({ x0: o.width - P(MARGIN + 6), x1: o.width - P(MARGIN), y0: y0Credits - cs * 1.1, y1: y0Credits + cs * 0.3 });
-          if (pTitle.shown) busy.push({ x0: P(MARGIN), x1: o.width - P(MARGIN), y0: pTitle.y, y1: pTitle.y + pTitle.h });
-          placeStatus(r0, statusList, triesFor, busy, lastResort);
+      if (ENVIRONMENT_IS_WORKER) {
+        readBinary = (url) => {
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", url, false);
+          xhr.responseType = "arraybuffer";
+          xhr.send(null);
+          return new Uint8Array(xhr.response);
         };
       }
+      readAsync = async (url) => {
+        var response = await fetch(url, { credentials: "same-origin" });
+        if (response.ok) {
+          return response.arrayBuffer();
+        }
+        throw new Error(response.status + " : " + response.url);
+      };
     }
-    papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...note ? { note } : {}, ...foldedHit(paper.id, visible) });
+  } else {
   }
-  statusAt?.(tallGroups ? [{ kind: "tallGroup", s: _tIn(o.locale, "\u6709\u4E00\u7EC4\u6BD4\u4E00\u9875\u9AD8\uFF0C\u63A5\u5230\u4E86\u4E0B\u4E00\u9875") }] : []);
-  if (!statusDone && hidPaperCount) {
-    const fs = tx("key-hint"), busy = [{ x0: title.x, x1: title.x + title.w, y0: title.y, y1: title.y + title.h }];
-    if (credits) busy.push({ x0: credits.x, x1: credits.x + credits.w, y0: credits.y, y1: credits.y + credits.h });
-    if (arrangement) busy.push({ x0: arrangement.x, x1: arrangement.x + arrangement.w, y0: arrangement.y, y1: arrangement.y + arrangement.h });
-    placeStatus(-1, [{ kind: "hiddenPapers", s: _tIn(o.locale, "\u9690\u85CF\u4E86 {n} \u6BB5", { n: hidPaperCount }) }], () => [{ x: P(MARGIN), y: Math.max(title.y + title.h, arrangement ? arrangement.y + arrangement.h : 0) + fs }], busy);
+  var out = console.log.bind(console);
+  var err = console.error.bind(console);
+  var wasmBinary;
+  var ABORT = false;
+  class EmscriptenEH {
   }
-  if (statusHints.length) {
-    const clickables = [
-      ...marks,
-      ...dyns,
-      ...clefs,
-      ...chordTagsOut,
-      title,
-      ...credits ? [credits] : [],
-      ...arrangement ? [arrangement] : [],
-      ...papersHit.filter((pp) => pp.title.shown).map((pp) => ({ x: 0, y: pp.title.y, w: o.width, h: pp.title.h })),
-      ...keyHints.map((k) => ({ x: k.x, y: k.y - k.size * 0.8, w: P(mw("key-hint", k.s)), h: k.size })),
-      ...notes.map((nt) => ({ x: nt.x, y: nt.y - P(1), w: nt.w, h: P(2) }))
-    ];
-    const H = P(CTL_H);
-    for (const ln of statusHints) {
-      const x0 = ln.x, x1 = ln.x + (ln.items.at(-1).dx + ln.items.at(-1).w), t0 = ln.hit.y0, t1 = ln.hit.y1, extra = Math.max(0, H - (t1 - t0));
-      let upMax = Infinity, downMax = Infinity;
-      for (const b of [...clickables, ...statusHints.filter((o2) => o2 !== ln).map((o2) => ({ x: o2.x, y: o2.hit.y0, w: o2.items.at(-1).dx + o2.items.at(-1).w, h: o2.hit.y1 - o2.hit.y0 }))]) {
-        if (b.x + b.w <= x0 || b.x >= x1) continue;
-        if (b.y + b.h <= t0) upMax = Math.min(upMax, t0 - (b.y + b.h));
-        else if (b.y >= t1) downMax = Math.min(downMax, b.y - t1);
+  class EmscriptenSjLj extends EmscriptenEH {
+  }
+  var runtimeInitialized = false;
+  function getMemoryBuffer() {
+    return wasmMemory.buffer;
+  }
+  function updateMemoryViews() {
+    if (HEAP8?.buffer?.resizable) return;
+    var b = getMemoryBuffer();
+    HEAP8 = new Int8Array(b);
+    HEAP16 = new Int16Array(b);
+    Module2["HEAPU8"] = HEAPU8 = new Uint8Array(b);
+    HEAP32 = new Int32Array(b);
+    HEAPU32 = new Uint32Array(b);
+    HEAP64 = new BigInt64Array(b);
+  }
+  function preRun() {
+  }
+  function initRuntime() {
+    runtimeInitialized = true;
+    if (!Module2["noFSInit"] && !FS.initialized) FS.init();
+    TTY.init();
+    wasmExports["__wasm_call_ctors"]();
+    FS.ignorePermissions = false;
+  }
+  function postRun() {
+  }
+  function abort(what) {
+    what = `Aborted(${what})`;
+    err(what);
+    ABORT = true;
+    what += ". Build with -sASSERTIONS for more info.";
+    var e = new WebAssembly.RuntimeError(what);
+    throw e;
+  }
+  var wasmBinaryFile;
+  function findWasmBinary() {
+    if (Module2["locateFile"]) {
+      return locateFile("ojt.wasm");
+    }
+    return new URL("ojt.wasm", import.meta.url).href;
+  }
+  function getBinarySync(file) {
+    if (file == wasmBinaryFile && wasmBinary) {
+      return new Uint8Array(wasmBinary);
+    }
+    if (readBinary) {
+      return readBinary(file);
+    }
+    throw "both async and sync fetching of the wasm failed";
+  }
+  async function getWasmBinary(binaryFile) {
+    if (!wasmBinary) {
+      try {
+        var response = await readAsync(binaryFile);
+        return new Uint8Array(response);
+      } catch {
       }
-      let up = Math.min(upMax, extra / 2);
-      const down = Math.min(downMax, extra - up);
-      up = Math.min(upMax, extra - down);
-      ln.hit = { y0: t0 - up, y1: t1 + down };
-      ln.room = { y0: t0 - (upMax === Infinity ? 2 * H : upMax / 2), y1: t1 + (downMax === Infinity ? 2 * H : downMax / 2) };
+    }
+    return getBinarySync(binaryFile);
+  }
+  async function instantiateArrayBuffer(binaryFile, imports) {
+    try {
+      var binary = await getWasmBinary(binaryFile);
+      var instance = await WebAssembly.instantiate(binary, imports);
+      return instance;
+    } catch (reason) {
+      err(`failed to asynchronously prepare wasm: ${reason}`);
+      abort(reason);
     }
   }
-  const pages = [];
-  if (PG) {
-    const frames = [];
-    for (let k = 0; k <= pageNo; k++) {
-      const top = pageTopY(k);
-      frames.push({ t: "rect", x: -P(PG.l), y: top, w: o.width + P(PG.l + PG.r), h: P(PG.h), cls: "page ann" });
-      prims.push({ t: "text", x: o.width / 2, y: top + P(PG.h - PG.b / 2), s: String(k + 1), cls: "page-no", size: tx("page-no"), anchor: "middle" });
-      pages.push({ top, h: P(PG.h) });
+  async function instantiateAsync(binary, binaryFile, imports) {
+    if (!binary) {
+      try {
+        var response = fetch(binaryFile, { credentials: "same-origin" });
+        var instantiationResult = await WebAssembly.instantiateStreaming(response, imports);
+        return instantiationResult;
+      } catch (reason) {
+        err(`wasm streaming compile failed: ${reason}`);
+        err("falling back to ArrayBuffer instantiation");
+      }
     }
-    prims.unshift(...frames);
+    return instantiateArrayBuffer(binaryFile, imports);
   }
-  const height = PG ? Math.max(pageTopY(pageNo) + P(PG.h), tailBottom) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, tp: sp * ts, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, statusHints, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)) };
-}
-
-// src/render/svg.ts
-var esc = (s2) => s2.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-var n = (v) => (Math.round(v * 100) / 100).toString();
-function primSvg(p, fs, lfs, rx) {
-  const c = (p.cls ? ` class="${p.cls}"` : "") + (p.tok !== void 0 ? ` data-tok="${p.tok}"` : "");
-  switch (p.t) {
-    case "line":
-      return `<line${c} x1="${n(p.x1)}" y1="${n(p.y1)}" x2="${n(p.x2)}" y2="${n(p.y2)}" stroke-width="${n(p.w)}"/>`;
-    case "glyph":
-      return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-family="Bravura" font-size="${p.size ? n(p.size) : fs}"${p.stroke ? ` stroke-width="${n(p.stroke * (p.size ?? Number(fs)))}" stroke-linejoin="round"` : ""}>${p.ch}</text>`;
-    // 描边补粗（7-P）：描边的颜色 = 填充色（styles.css）
-    case "text":
-      return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-size="${p.size ? n(p.size) : lfs}" text-anchor="${p.anchor ?? "middle"}"${p.sx && p.sx !== 1 ? ` transform="matrix(${n(p.sx)} 0 0 1 ${n(p.x * (1 - p.sx))} 0)"` : ""}>${esc(p.s)}</text>`;
-    // sx = 以 x 为中心横向压窄（紧凑档的歌词）
-    case "path":
-      return `<path${c} d="${p.d}"/>`;
-    case "rect":
-      return `<rect${c} x="${n(p.x)}" y="${n(p.y)}" width="${n(p.w)}" height="${n(p.h)}" rx="${rx}"/>`;
+  function getWasmImports() {
+    var imports = { env: wasmImports, wasi_snapshot_preview1: wasmImports };
+    return imports;
   }
-}
-function yOfPrim(p) {
-  switch (p.t) {
-    case "line":
-      return (p.y1 + p.y2) / 2;
-    case "glyph":
-    case "text":
-      return p.y;
-    case "rect":
-      return p.y + p.h / 2;
-    case "path": {
-      const m = /^\s*M\s*-?[\d.]+[\s,]+(-?[\d.]+)/.exec(p.d);
-      return m ? Number(m[1]) : null;
+  async function createWasm() {
+    function receiveInstance(instance) {
+      wasmExports = instance.exports;
+      assignWasmExports(wasmExports);
+      updateMemoryViews();
+      return wasmExports;
+    }
+    function receiveInstantiationResult(result2) {
+      return receiveInstance(result2["instance"]);
+    }
+    var info = getWasmImports();
+    wasmBinaryFile ??= findWasmBinary();
+    var result = await instantiateAsync(wasmBinary, wasmBinaryFile, info);
+    var exports = receiveInstantiationResult(result);
+    return exports;
+  }
+  class ExitStatus {
+    name = "ExitStatus";
+    constructor(status) {
+      this.message = `Program terminated with exit(${status})`;
+      this.status = status;
     }
   }
-}
-function toSvgParts(l) {
-  const L = l.pageX?.left ?? 0, R = l.pageX?.right ?? 0, W2 = l.width + L + R;
-  const open = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W2)}" height="${n(l.height)}" viewBox="${n(-L)} 0 ${n(W2)} ${n(l.height)}">`;
-  const fs = n(4 * l.sp), lfs = n(LYRIC_EM * l.sp), rx = n(l.sp * 0.6);
-  const boxes = l.systems.map((s2) => [s2.top, s2.bottom]);
-  const buckets = Array.from({ length: boxes.length + 1 }, () => []);
-  for (const p of l.prims) {
-    const y = p.t === "rect" && /(^|\s)page(\s|$)/.test(p.cls ?? "") ? null : yOfPrim(p);
-    let k = 0;
-    if (y !== null) {
-      for (let i = 0; i < boxes.length; i++) if (y >= boxes[i][0] && y < boxes[i][1]) {
-        k = i + 1;
+  var HEAP8;
+  var stackRestore = (val) => __emscripten_stack_restore(val);
+  var stackSave = () => _emscripten_stack_get_current();
+  var HEAPU32;
+  class ExceptionInfo {
+    constructor(excPtr) {
+      this.excPtr = excPtr;
+      this.ptr = excPtr - 24;
+    }
+    set_type(type) {
+      HEAPU32[this.ptr + 4 >> 2] = type;
+    }
+    get_type() {
+      return HEAPU32[this.ptr + 4 >> 2];
+    }
+    set_destructor(destructor) {
+      HEAPU32[this.ptr + 8 >> 2] = destructor;
+    }
+    get_destructor() {
+      return HEAPU32[this.ptr + 8 >> 2];
+    }
+    set_caught(caught) {
+      caught = caught ? 1 : 0;
+      HEAP8[this.ptr + 12] = caught;
+    }
+    get_caught() {
+      return HEAP8[this.ptr + 12] != 0;
+    }
+    set_rethrown(rethrown) {
+      rethrown = rethrown ? 1 : 0;
+      HEAP8[this.ptr + 13] = rethrown;
+    }
+    get_rethrown() {
+      return HEAP8[this.ptr + 13] != 0;
+    }
+    init(type, destructor) {
+      this.set_adjusted_ptr(0);
+      this.set_type(type);
+      this.set_destructor(destructor);
+    }
+    set_adjusted_ptr(adjustedPtr) {
+      HEAPU32[this.ptr + 16 >> 2] = adjustedPtr;
+    }
+    get_adjusted_ptr() {
+      return HEAPU32[this.ptr + 16 >> 2];
+    }
+  }
+  var uncaughtExceptionCount = 0;
+  var __Unwind_RaiseException = (ex) => {
+    abort();
+  };
+  var ___cxa_throw = (ptr, type, destructor) => {
+    var info = new ExceptionInfo(ptr);
+    info.init(type, destructor);
+    uncaughtExceptionCount++;
+    __Unwind_RaiseException(ptr);
+  };
+  var HEAP32;
+  var syscallGetVarargI = () => {
+    var ret = HEAP32[+SYSCALLS.varargs >> 2];
+    SYSCALLS.varargs += 4;
+    return ret;
+  };
+  var syscallGetVarargP = syscallGetVarargI;
+  var PATH = { isAbs: (path) => path.charAt(0) === "/", splitPath: (filename) => {
+    var splitPathRe = /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+    return splitPathRe.exec(filename).slice(1);
+  }, normalizeArray: (parts, allowAboveRoot) => {
+    var up = 0;
+    for (var i = parts.length - 1; i >= 0; i--) {
+      var last = parts[i];
+      if (last === ".") {
+        parts.splice(i, 1);
+      } else if (last === "..") {
+        parts.splice(i, 1);
+        up++;
+      } else if (up) {
+        parts.splice(i, 1);
+        up--;
+      }
+    }
+    if (allowAboveRoot) {
+      for (; up; up--) {
+        parts.unshift("..");
+      }
+    }
+    return parts;
+  }, normalize: (path) => {
+    var isAbsolute = PATH.isAbs(path), trailingSlash = path.slice(-1) === "/";
+    path = PATH.normalizeArray(path.split("/").filter((p) => !!p), !isAbsolute).join("/");
+    if (!path && !isAbsolute) {
+      path = ".";
+    }
+    if (path && trailingSlash) {
+      path += "/";
+    }
+    return (isAbsolute ? "/" : "") + path;
+  }, dirname: (path) => {
+    var result = PATH.splitPath(path), root = result[0], dir = result[1];
+    if (!root && !dir) {
+      return ".";
+    }
+    if (dir) {
+      dir = dir.slice(0, -1);
+    }
+    return root + dir;
+  }, basename: (path) => path && path.match(/([^\/]+|\/)\/*$/)[1], join: (...paths) => PATH.normalize(paths.join("/")), join2: (l, r) => PATH.normalize(l + "/" + r) };
+  var initRandomFill = () => (view) => (crypto.getRandomValues(view), 0);
+  var randomFill = (view) => (randomFill = initRandomFill())(view);
+  var PATH_FS = { resolve: (...args) => {
+    var resolvedPath = "", resolvedAbsolute = false;
+    for (var i = args.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+      var path = i >= 0 ? args[i] : FS.cwd();
+      if (typeof path != "string") {
+        throw new TypeError("Arguments to path.resolve must be strings");
+      } else if (!path) {
+        return "";
+      }
+      resolvedPath = path + "/" + resolvedPath;
+      resolvedAbsolute = PATH.isAbs(path);
+    }
+    resolvedPath = PATH.normalizeArray(resolvedPath.split("/").filter((p) => !!p), !resolvedAbsolute).join("/");
+    return (resolvedAbsolute ? "/" : "") + resolvedPath || ".";
+  }, relative: (from, to2) => {
+    from = PATH_FS.resolve(from).slice(1);
+    to2 = PATH_FS.resolve(to2).slice(1);
+    function trim(arr) {
+      var start = 0;
+      for (; start < arr.length; start++) {
+        if (arr[start] !== "") break;
+      }
+      var end = arr.length - 1;
+      for (; end >= 0; end--) {
+        if (arr[end] !== "") break;
+      }
+      if (start > end) return [];
+      return arr.slice(start, end - start + 1);
+    }
+    var fromParts = trim(from.split("/"));
+    var toParts = trim(to2.split("/"));
+    var length = Math.min(fromParts.length, toParts.length);
+    var samePartsLength = length;
+    for (var i = 0; i < length; i++) {
+      if (fromParts[i] !== toParts[i]) {
+        samePartsLength = i;
         break;
       }
     }
-    buckets[k].push(primSvg(p, fs, lfs, rx));
-  }
-  return { open, groups: buckets.map((b, k) => `<g data-sys="${k - 1}">${b.join("")}</g>`), close: "</svg>" };
-}
-
-// src/render/layout-worker.ts
-function runLayoutJob(job, raw, now = () => performance.now()) {
-  const t0 = now();
-  const data = engrave(job.song, { ...job.opts, measure: createTextMeasure(raw) });
-  const parts = toSvgParts(data);
-  return { seq: job.seq, parts, data, ms: now() - t0 };
-}
-if (typeof document === "undefined" && typeof self !== "undefined" && typeof self.postMessage === "function" && typeof OffscreenCanvas !== "undefined") {
-  const ws = self;
-  const raw = canvasMeasure(new OffscreenCanvas(1, 1).getContext("2d"));
-  ws.onmessage = (e) => {
-    const job = e.data;
+    var outputParts = [];
+    for (var i = samePartsLength; i < fromParts.length; i++) {
+      outputParts.push("..");
+    }
+    outputParts = outputParts.concat(toParts.slice(samePartsLength));
+    return outputParts.join("/");
+  } };
+  var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
+  var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
+    var maxIdx = idx + maxBytesToRead;
+    if (ignoreNul) return maxIdx;
+    while (heapOrArray[idx] && !(idx >= maxIdx)) ++idx;
+    return idx;
+  };
+  var UTF8ArrayToString = (heapOrArray, idx = 0, maxBytesToRead, ignoreNul) => {
+    var endPtr = findStringEnd(heapOrArray, idx, maxBytesToRead, ignoreNul);
+    if (endPtr - idx > 16 && heapOrArray.buffer && UTF8Decoder) {
+      return UTF8Decoder.decode(heapOrArray.subarray(idx, endPtr));
+    }
+    var str = "";
+    while (idx < endPtr) {
+      var u0 = heapOrArray[idx++];
+      if (!(u0 & 128)) {
+        str += String.fromCharCode(u0);
+        continue;
+      }
+      var u1 = heapOrArray[idx++] & 63;
+      if ((u0 & 224) == 192) {
+        str += String.fromCharCode((u0 & 31) << 6 | u1);
+        continue;
+      }
+      var u2 = heapOrArray[idx++] & 63;
+      if ((u0 & 240) == 224) {
+        u0 = (u0 & 15) << 12 | u1 << 6 | u2;
+      } else {
+        u0 = (u0 & 7) << 18 | u1 << 12 | u2 << 6 | heapOrArray[idx++] & 63;
+      }
+      if (u0 < 65536) {
+        str += String.fromCharCode(u0);
+      } else {
+        var ch = u0 - 65536;
+        str += String.fromCharCode(55296 | ch >> 10, 56320 | ch & 1023);
+      }
+    }
+    return str;
+  };
+  var FS_stdin_getChar_buffer = [];
+  var lengthBytesUTF8 = (str) => {
+    var len = 0;
+    for (var i = 0; i < str.length; ++i) {
+      var c = str.charCodeAt(i);
+      if (c <= 127) {
+        len++;
+      } else if (c <= 2047) {
+        len += 2;
+      } else if (c >= 55296 && c <= 57343) {
+        len += 4;
+        ++i;
+      } else {
+        len += 3;
+      }
+    }
+    return len;
+  };
+  var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
+    if (!(maxBytesToWrite > 0)) return 0;
+    var startIdx = outIdx;
+    var endIdx = outIdx + maxBytesToWrite - 1;
+    for (var i = 0; i < str.length; ++i) {
+      var u = str.codePointAt(i);
+      if (u <= 127) {
+        if (outIdx >= endIdx) break;
+        heap[outIdx++] = u;
+      } else if (u <= 2047) {
+        if (outIdx + 1 >= endIdx) break;
+        heap[outIdx++] = 192 | u >> 6;
+        heap[outIdx++] = 128 | u & 63;
+      } else if (u <= 65535) {
+        if (outIdx + 2 >= endIdx) break;
+        heap[outIdx++] = 224 | u >> 12;
+        heap[outIdx++] = 128 | u >> 6 & 63;
+        heap[outIdx++] = 128 | u & 63;
+      } else {
+        if (outIdx + 3 >= endIdx) break;
+        heap[outIdx++] = 240 | u >> 18;
+        heap[outIdx++] = 128 | u >> 12 & 63;
+        heap[outIdx++] = 128 | u >> 6 & 63;
+        heap[outIdx++] = 128 | u & 63;
+        i++;
+      }
+    }
+    heap[outIdx] = 0;
+    return outIdx - startIdx;
+  };
+  var intArrayFromString = (stringy, dontAddNull, length) => {
+    var len = length > 0 ? length : lengthBytesUTF8(stringy) + 1;
+    var u8array = new Array(len);
+    var numBytesWritten = stringToUTF8Array(stringy, u8array, 0, u8array.length);
+    if (dontAddNull) u8array.length = numBytesWritten;
+    return u8array;
+  };
+  var FS_stdin_getChar = () => {
+    if (!FS_stdin_getChar_buffer.length) {
+      var result = null;
+      if (globalThis.window?.prompt) {
+        result = window.prompt("Input: ");
+        if (result !== null) {
+          result += "\n";
+        }
+      } else {
+      }
+      if (!result) {
+        return null;
+      }
+      FS_stdin_getChar_buffer = intArrayFromString(result, true);
+    }
+    return FS_stdin_getChar_buffer.shift();
+  };
+  var TTY = { ttys: [], init() {
+  }, shutdown() {
+  }, register(dev, ops) {
+    TTY.ttys[dev] = { input: [], output: [], ops };
+    FS.registerDevice(dev, TTY.stream_ops);
+  }, stream_ops: { open(stream) {
+    var tty = TTY.ttys[stream.node.rdev];
+    if (!tty) {
+      throw new FS.ErrnoError(43);
+    }
+    stream.tty = tty;
+    stream.seekable = false;
+  }, close(stream) {
+    stream.tty.ops.fsync(stream.tty);
+  }, fsync(stream) {
+    stream.tty.ops.fsync(stream.tty);
+  }, read(stream, buffer, offset, length, pos) {
+    if (!stream.tty || !stream.tty.ops.get_char) {
+      throw new FS.ErrnoError(60);
+    }
+    var bytesRead = 0;
+    for (var i = 0; i < length; i++) {
+      var result;
+      try {
+        result = stream.tty.ops.get_char(stream.tty);
+      } catch (e) {
+        throw new FS.ErrnoError(29);
+      }
+      if (result === void 0 && !bytesRead) {
+        throw new FS.ErrnoError(6);
+      }
+      if (result === null || result === void 0) break;
+      bytesRead++;
+      buffer[offset + i] = result;
+      if (result === 10) break;
+    }
+    if (bytesRead) {
+      stream.node.atime = Date.now();
+    }
+    return bytesRead;
+  }, write(stream, buffer, offset, length, pos) {
+    if (!stream.tty || !stream.tty.ops.put_char) {
+      throw new FS.ErrnoError(60);
+    }
     try {
-      ws.postMessage(runLayoutJob(job, raw));
-    } catch (err) {
-      ws.postMessage({ seq: job.seq, error: String(err?.stack ?? err) });
+      for (var i = 0; i < length; i++) {
+        stream.tty.ops.put_char(stream.tty, buffer[offset + i]);
+      }
+    } catch (e) {
+      throw new FS.ErrnoError(29);
+    }
+    if (length) {
+      stream.node.mtime = stream.node.ctime = Date.now();
+    }
+    return i;
+  } }, default_tty_ops: { get_char(tty) {
+    return FS_stdin_getChar();
+  }, put_char(tty, val) {
+    if (val === null || val === 10) {
+      out(UTF8ArrayToString(tty.output));
+      tty.output = [];
+    } else {
+      if (val != 0) tty.output.push(val);
+    }
+  }, fsync(tty) {
+    if (tty.output?.length > 0) {
+      out(UTF8ArrayToString(tty.output));
+      tty.output = [];
+    }
+  }, ioctl_tcgets(tty) {
+    return { c_iflag: 25856, c_oflag: 5, c_cflag: 191, c_lflag: 35387, c_cc: [3, 28, 127, 21, 4, 0, 1, 0, 17, 19, 26, 0, 18, 15, 23, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] };
+  }, ioctl_tcsets(tty, optional_actions, data) {
+    return 0;
+  }, ioctl_tiocgwinsz(tty) {
+    return [24, 80];
+  } }, default_tty1_ops: { put_char(tty, val) {
+    if (val === null || val === 10) {
+      err(UTF8ArrayToString(tty.output));
+      tty.output = [];
+    } else {
+      if (val != 0) tty.output.push(val);
+    }
+  }, fsync(tty) {
+    if (tty.output?.length > 0) {
+      err(UTF8ArrayToString(tty.output));
+      tty.output = [];
+    }
+  } } };
+  var HEAPU8;
+  var zeroMemory = (ptr, size) => HEAPU8.fill(0, ptr, ptr + size);
+  var alignMemory = (size, alignment) => Math.ceil(size / alignment) * alignment;
+  var mmapAlloc = (size) => {
+    size = alignMemory(size, 65536);
+    var ptr = _emscripten_builtin_memalign(65536, size);
+    if (ptr) zeroMemory(ptr, size);
+    return ptr;
+  };
+  var MEMFS = { ops_table: null, mount(mount) {
+    return MEMFS.createNode(null, "/", 16895, 0);
+  }, createNode(parent, name, mode, dev) {
+    if (FS.isBlkdev(mode) || FS.isFIFO(mode)) {
+      throw new FS.ErrnoError(63);
+    }
+    MEMFS.ops_table ||= { dir: { node: { getattr: MEMFS.node_ops.getattr, setattr: MEMFS.node_ops.setattr, lookup: MEMFS.node_ops.lookup, mknod: MEMFS.node_ops.mknod, rename: MEMFS.node_ops.rename, unlink: MEMFS.node_ops.unlink, rmdir: MEMFS.node_ops.rmdir, readdir: MEMFS.node_ops.readdir, symlink: MEMFS.node_ops.symlink }, stream: { llseek: MEMFS.stream_ops.llseek } }, file: { node: { getattr: MEMFS.node_ops.getattr, setattr: MEMFS.node_ops.setattr }, stream: { llseek: MEMFS.stream_ops.llseek, read: MEMFS.stream_ops.read, write: MEMFS.stream_ops.write, mmap: MEMFS.stream_ops.mmap, msync: MEMFS.stream_ops.msync } }, link: { node: { getattr: MEMFS.node_ops.getattr, setattr: MEMFS.node_ops.setattr, readlink: MEMFS.node_ops.readlink }, stream: {} }, chrdev: { node: { getattr: MEMFS.node_ops.getattr, setattr: MEMFS.node_ops.setattr }, stream: FS.chrdev_stream_ops } };
+    var node = FS.createNode(parent, name, mode, dev);
+    if (FS.isDir(node.mode)) {
+      node.node_ops = MEMFS.ops_table.dir.node;
+      node.stream_ops = MEMFS.ops_table.dir.stream;
+      node.contents = {};
+    } else if (FS.isFile(node.mode)) {
+      node.node_ops = MEMFS.ops_table.file.node;
+      node.stream_ops = MEMFS.ops_table.file.stream;
+      node.usedBytes = 0;
+      node.contents = MEMFS.emptyFileContents ??= new Uint8Array(0);
+    } else if (FS.isLink(node.mode)) {
+      node.node_ops = MEMFS.ops_table.link.node;
+      node.stream_ops = MEMFS.ops_table.link.stream;
+    } else if (FS.isChrdev(node.mode)) {
+      node.node_ops = MEMFS.ops_table.chrdev.node;
+      node.stream_ops = MEMFS.ops_table.chrdev.stream;
+    }
+    node.atime = node.mtime = node.ctime = Date.now();
+    if (parent) {
+      parent.contents[name] = node;
+      parent.atime = parent.mtime = parent.ctime = node.atime;
+    }
+    return node;
+  }, getFileDataAsTypedArray(node) {
+    return node.contents.subarray(0, node.usedBytes);
+  }, expandFileStorage(node, newCapacity) {
+    var prevCapacity = node.contents.length;
+    if (prevCapacity >= newCapacity) return;
+    var CAPACITY_DOUBLING_MAX = 1024 * 1024;
+    newCapacity = Math.max(newCapacity, prevCapacity * (prevCapacity < CAPACITY_DOUBLING_MAX ? 2 : 1.125) >>> 0);
+    if (prevCapacity) newCapacity = Math.max(newCapacity, 256);
+    var oldContents = MEMFS.getFileDataAsTypedArray(node);
+    node.contents = new Uint8Array(newCapacity);
+    node.contents.set(oldContents);
+  }, resizeFileStorage(node, newSize) {
+    if (node.usedBytes == newSize) return;
+    var oldContents = node.contents;
+    node.contents = new Uint8Array(newSize);
+    node.contents.set(oldContents.subarray(0, Math.min(newSize, node.usedBytes)));
+    node.usedBytes = newSize;
+  }, node_ops: { getattr(node) {
+    var attr = {};
+    attr.dev = FS.isChrdev(node.mode) ? node.id : 1;
+    attr.ino = node.id;
+    attr.mode = node.mode;
+    attr.nlink = 1;
+    attr.uid = 0;
+    attr.gid = 0;
+    attr.rdev = node.rdev;
+    if (FS.isDir(node.mode)) {
+      attr.size = 4096;
+    } else if (FS.isFile(node.mode)) {
+      attr.size = node.usedBytes;
+    } else if (FS.isLink(node.mode)) {
+      attr.size = node.link.length;
+    } else {
+      attr.size = 0;
+    }
+    attr.atime = new Date(node.atime);
+    attr.mtime = new Date(node.mtime);
+    attr.ctime = new Date(node.ctime);
+    attr.blksize = 4096;
+    attr.blocks = Math.ceil(attr.size / attr.blksize);
+    return attr;
+  }, setattr(node, attr) {
+    for (const key of ["mode", "atime", "mtime", "ctime"]) {
+      if (attr[key] != null) {
+        node[key] = attr[key];
+      }
+    }
+    if (attr.size !== void 0) {
+      MEMFS.resizeFileStorage(node, attr.size);
+    }
+  }, lookup(parent, name) {
+    if (!MEMFS.doesNotExistError) {
+      MEMFS.doesNotExistError = new FS.ErrnoError(44);
+      MEMFS.doesNotExistError.stack = "<generic error, no stack>";
+    }
+    throw MEMFS.doesNotExistError;
+  }, mknod(parent, name, mode, dev) {
+    return MEMFS.createNode(parent, name, mode, dev);
+  }, rename(old_node, new_dir, new_name) {
+    var new_node;
+    try {
+      new_node = FS.lookupNode(new_dir, new_name);
+    } catch (e) {
+    }
+    if (new_node) {
+      if (FS.isDir(old_node.mode)) {
+        for (var i in new_node.contents) {
+          throw new FS.ErrnoError(55);
+        }
+      }
+      FS.hashRemoveNode(new_node);
+    }
+    delete old_node.parent.contents[old_node.name];
+    new_dir.contents[new_name] = old_node;
+    old_node.name = new_name;
+    new_dir.ctime = new_dir.mtime = old_node.parent.ctime = old_node.parent.mtime = Date.now();
+  }, unlink(parent, name) {
+    delete parent.contents[name];
+    parent.ctime = parent.mtime = Date.now();
+  }, rmdir(parent, name) {
+    var node = FS.lookupNode(parent, name);
+    for (var i in node.contents) {
+      throw new FS.ErrnoError(55);
+    }
+    delete parent.contents[name];
+    parent.ctime = parent.mtime = Date.now();
+  }, readdir(node) {
+    return [".", "..", ...Object.keys(node.contents)];
+  }, symlink(parent, newname, oldpath) {
+    var node = MEMFS.createNode(parent, newname, 511 | 40960, 0);
+    node.link = oldpath;
+    return node;
+  }, readlink(node) {
+    if (!FS.isLink(node.mode)) {
+      throw new FS.ErrnoError(28);
+    }
+    return node.link;
+  } }, stream_ops: { read(stream, buffer, offset, length, position) {
+    var contents = stream.node.contents;
+    if (position >= stream.node.usedBytes) return 0;
+    var size = Math.min(stream.node.usedBytes - position, length);
+    buffer.set(contents.subarray(position, position + size), offset);
+    return size;
+  }, write(stream, buffer, offset, length, position, canOwn) {
+    if (buffer.buffer === HEAP8.buffer) {
+      canOwn = false;
+    }
+    if (!length) return 0;
+    var node = stream.node;
+    node.mtime = node.ctime = Date.now();
+    if (canOwn) {
+      node.contents = buffer.subarray(offset, offset + length);
+      node.usedBytes = length;
+    } else if (!node.usedBytes && !position) {
+      node.contents = buffer.slice(offset, offset + length);
+      node.usedBytes = length;
+    } else {
+      MEMFS.expandFileStorage(node, position + length);
+      node.contents.set(buffer.subarray(offset, offset + length), position);
+      node.usedBytes = Math.max(node.usedBytes, position + length);
+    }
+    return length;
+  }, llseek(stream, offset, whence) {
+    var position = offset;
+    if (whence === 1) {
+      position += stream.position;
+    } else if (whence === 2) {
+      if (FS.isFile(stream.node.mode)) {
+        position += stream.node.usedBytes;
+      }
+    }
+    if (position < 0) {
+      throw new FS.ErrnoError(28);
+    }
+    return position;
+  }, mmap(stream, length, position, prot, flags) {
+    if (!FS.isFile(stream.node.mode)) {
+      throw new FS.ErrnoError(43);
+    }
+    var ptr;
+    var allocated;
+    var contents = stream.node.contents;
+    if (!(flags & 2) && contents.buffer === HEAP8.buffer) {
+      allocated = false;
+      ptr = contents.byteOffset;
+    } else {
+      allocated = true;
+      ptr = mmapAlloc(length);
+      if (!ptr) {
+        throw new FS.ErrnoError(48);
+      }
+      if (contents) {
+        if (position > 0 || position + length < contents.length) {
+          if (contents.subarray) {
+            contents = contents.subarray(position, position + length);
+          } else {
+            contents = Array.prototype.slice.call(contents, position, position + length);
+          }
+        }
+        HEAP8.set(contents, ptr);
+      }
+    }
+    return { ptr, allocated };
+  }, msync(stream, buffer, offset, length, mmapFlags) {
+    MEMFS.stream_ops.write(stream, buffer, 0, length, offset, false);
+    return 0;
+  } } };
+  var FS_modeStringToFlags = (str) => {
+    if (typeof str != "string") return str;
+    var flagModes = { r: 0, "r+": 2, w: 512 | 64 | 1, "w+": 512 | 64 | 2, a: 1024 | 64 | 1, "a+": 1024 | 64 | 2 };
+    var flags = flagModes[str];
+    if (typeof flags == "undefined") {
+      throw new Error(`Unknown file open mode: ${str}`);
+    }
+    return flags;
+  };
+  var FS_fileDataToTypedArray = (data) => {
+    if (typeof data == "string") {
+      data = intArrayFromString(data, true);
+    }
+    if (!data.subarray) {
+      data = new Uint8Array(data);
+    }
+    return data;
+  };
+  var FS_getMode = (canRead, canWrite) => {
+    var mode = 0;
+    if (canRead) mode |= 292 | 73;
+    if (canWrite) mode |= 146;
+    return mode;
+  };
+  var asyncLoad = async (url) => {
+    var arrayBuffer = await readAsync(url);
+    return new Uint8Array(arrayBuffer);
+  };
+  var FS_createDataFile = (...args) => FS.createDataFile(...args);
+  var getUniqueRunDependency = (id) => id;
+  var dependenciesPromise = null;
+  var resolveRunDependencies = async () => dependenciesPromise;
+  var runDependencies = 0;
+  var dependenciesPromiseResolve = null;
+  var removeRunDependency = (id) => {
+    runDependencies--;
+    if (!runDependencies) {
+      dependenciesPromiseResolve();
     }
   };
+  var addRunDependency = (id) => {
+    if (!runDependencies) {
+      dependenciesPromise = new Promise((resolve) => dependenciesPromiseResolve = resolve);
+    }
+    runDependencies++;
+  };
+  var preloadPlugins = [];
+  var FS_handledByPreloadPlugin = async (byteArray, fullname) => {
+    if (typeof Browser != "undefined") Browser.init();
+    for (var plugin of preloadPlugins) {
+      if (plugin["canHandle"](fullname)) {
+        return plugin["handle"](byteArray, fullname);
+      }
+    }
+    return byteArray;
+  };
+  var FS_preloadFile = async (parent, name, url, canRead, canWrite, dontCreateFile, canOwn, preFinish) => {
+    var fullname = name ? PATH_FS.resolve(PATH.join2(parent, name)) : parent;
+    var dep = getUniqueRunDependency(`cp ${fullname}`);
+    addRunDependency(dep);
+    try {
+      var byteArray = url;
+      if (typeof url == "string") {
+        byteArray = await asyncLoad(url);
+      }
+      byteArray = await FS_handledByPreloadPlugin(byteArray, fullname);
+      preFinish?.();
+      if (!dontCreateFile) {
+        FS_createDataFile(parent, name, byteArray, canRead, canWrite, canOwn);
+      }
+    } finally {
+      removeRunDependency(dep);
+    }
+  };
+  var FS_createPreloadedFile = (parent, name, url, canRead, canWrite, onload, onerror, dontCreateFile, canOwn, preFinish) => {
+    FS_preloadFile(parent, name, url, canRead, canWrite, dontCreateFile, canOwn, preFinish).then(onload).catch(onerror);
+  };
+  var FS = { root: null, mounts: [], devices: {}, streams: [], nextInode: 1, nameTable: null, currentPath: "/", initialized: false, ignorePermissions: true, filesystems: null, syncFSRequests: 0, ErrnoError: class {
+    name = "ErrnoError";
+    constructor(errno) {
+      this.errno = errno;
+    }
+  }, FSStream: class {
+    shared = {};
+    get object() {
+      return this.node;
+    }
+    set object(val) {
+      this.node = val;
+    }
+    get isRead() {
+      return (this.flags & 2097155) !== 1;
+    }
+    get isWrite() {
+      return (this.flags & 2097155) !== 0;
+    }
+    get isAppend() {
+      return this.flags & 1024;
+    }
+    get flags() {
+      return this.shared.flags;
+    }
+    set flags(val) {
+      this.shared.flags = val;
+    }
+    get position() {
+      return this.shared.position;
+    }
+    set position(val) {
+      this.shared.position = val;
+    }
+  }, FSNode: class {
+    node_ops = {};
+    stream_ops = {};
+    readMode = 292 | 73;
+    writeMode = 146;
+    mounted = null;
+    constructor(parent, name, mode, rdev) {
+      if (!parent) {
+        parent = this;
+      }
+      this.parent = parent;
+      this.mount = parent.mount;
+      this.id = FS.nextInode++;
+      this.name = name;
+      this.mode = mode;
+      this.rdev = rdev;
+      this.atime = this.mtime = this.ctime = Date.now();
+    }
+    get read() {
+      return (this.mode & this.readMode) === this.readMode;
+    }
+    set read(val) {
+      val ? this.mode |= this.readMode : this.mode &= ~this.readMode;
+    }
+    get write() {
+      return (this.mode & this.writeMode) === this.writeMode;
+    }
+    set write(val) {
+      val ? this.mode |= this.writeMode : this.mode &= ~this.writeMode;
+    }
+    get isFolder() {
+      return FS.isDir(this.mode);
+    }
+    get isDevice() {
+      return FS.isChrdev(this.mode);
+    }
+    addListener(cb, exclusive = false) {
+      var entry = { cb, exclusive };
+      var listeners = this.listeners ??= /* @__PURE__ */ new Set();
+      listeners.add(entry);
+      return { listeners, entry };
+    }
+    notifyListeners(flags) {
+      if (!this.listeners) return;
+      var excl;
+      for (var entry of this.listeners) {
+        if (entry.exclusive) (excl ||= []).push(entry);
+        else entry.cb(flags);
+      }
+      if (excl) {
+        var i = (this.exclTurn || 0) % excl.length;
+        this.exclTurn = i + 1;
+        excl[i].cb(flags);
+      }
+    }
+  }, lookupPath(path, opts = {}) {
+    if (!path) {
+      throw new FS.ErrnoError(44);
+    }
+    opts.follow_mount ??= true;
+    if (!PATH.isAbs(path)) {
+      path = FS.cwd() + "/" + path;
+    }
+    linkloop: for (var nlinks = 0; nlinks < 40; nlinks++) {
+      var parts = path.split("/").filter((p) => !!p);
+      var current = FS.root;
+      var current_path = "/";
+      for (var i = 0; i < parts.length; i++) {
+        var islast = i === parts.length - 1;
+        if (islast && opts.parent) {
+          break;
+        }
+        if (parts[i] === ".") {
+          continue;
+        }
+        if (parts[i] === "..") {
+          current_path = PATH.dirname(current_path);
+          if (FS.isRoot(current)) {
+            path = current_path + "/" + parts.slice(i + 1).join("/");
+            nlinks--;
+            continue linkloop;
+          } else {
+            current = current.parent;
+          }
+          continue;
+        }
+        current_path = PATH.join2(current_path, parts[i]);
+        try {
+          current = FS.lookupNode(current, parts[i]);
+        } catch (e) {
+          if (e?.errno === 44 && islast && opts.noent_okay) {
+            return { path: current_path };
+          }
+          throw e;
+        }
+        if (FS.isMountpoint(current) && (!islast || opts.follow_mount)) {
+          current = current.mounted.root;
+        }
+        if (FS.isLink(current.mode) && (!islast || opts.follow)) {
+          if (!current.node_ops.readlink) {
+            throw new FS.ErrnoError(52);
+          }
+          var link = current.node_ops.readlink(current);
+          if (!PATH.isAbs(link)) {
+            link = PATH.dirname(current_path) + "/" + link;
+          }
+          path = link + "/" + parts.slice(i + 1).join("/");
+          continue linkloop;
+        }
+      }
+      return { path: current_path, node: current };
+    }
+    throw new FS.ErrnoError(32);
+  }, getPath(node) {
+    var path;
+    while (true) {
+      if (FS.isRoot(node)) {
+        var mount = node.mount.mountpoint;
+        if (!path) return mount;
+        return mount[mount.length - 1] !== "/" ? `${mount}/${path}` : mount + path;
+      }
+      path = path ? `${node.name}/${path}` : node.name;
+      node = node.parent;
+    }
+  }, hashName(parentid, name) {
+    var hash = 0;
+    for (var i = 0; i < name.length; i++) {
+      hash = (hash << 5) - hash + name.charCodeAt(i) | 0;
+    }
+    return (parentid + hash >>> 0) % FS.nameTable.length;
+  }, hashAddNode(node) {
+    var hash = FS.hashName(node.parent.id, node.name);
+    node.name_next = FS.nameTable[hash];
+    FS.nameTable[hash] = node;
+  }, hashRemoveNode(node) {
+    var hash = FS.hashName(node.parent.id, node.name);
+    if (FS.nameTable[hash] === node) {
+      FS.nameTable[hash] = node.name_next;
+    } else {
+      var current = FS.nameTable[hash];
+      while (current) {
+        if (current.name_next === node) {
+          current.name_next = node.name_next;
+          break;
+        }
+        current = current.name_next;
+      }
+    }
+  }, lookupNode(parent, name) {
+    var errCode = FS.mayLookup(parent);
+    if (errCode) {
+      throw new FS.ErrnoError(errCode);
+    }
+    var hash = FS.hashName(parent.id, name);
+    for (var node = FS.nameTable[hash]; node; node = node.name_next) {
+      var nodeName = node.name;
+      if (node.parent.id === parent.id && nodeName === name) {
+        return node;
+      }
+    }
+    return FS.lookup(parent, name);
+  }, createNode(parent, name, mode, rdev) {
+    var node = new FS.FSNode(parent, name, mode, rdev);
+    FS.hashAddNode(node);
+    return node;
+  }, destroyNode(node) {
+    FS.hashRemoveNode(node);
+  }, isRoot(node) {
+    return node === node.parent;
+  }, isMountpoint(node) {
+    return !!node.mounted;
+  }, isFile(mode) {
+    return (mode & 61440) === 32768;
+  }, isDir(mode) {
+    return (mode & 61440) === 16384;
+  }, isLink(mode) {
+    return (mode & 61440) === 40960;
+  }, isChrdev(mode) {
+    return (mode & 61440) === 8192;
+  }, isBlkdev(mode) {
+    return (mode & 61440) === 24576;
+  }, isFIFO(mode) {
+    return (mode & 61440) === 4096;
+  }, isSocket(mode) {
+    return (mode & 49152) === 49152;
+  }, flagsToPermissionString(flag) {
+    var perms = ["r", "w", "rw"][flag & 3];
+    if (flag & 512) {
+      perms += "w";
+    }
+    return perms;
+  }, nodePermissions(node, perms) {
+    if (FS.ignorePermissions) {
+      return 0;
+    }
+    if (perms.includes("r") && !(node.mode & 292)) {
+      return 2;
+    }
+    if (perms.includes("w") && !(node.mode & 146)) {
+      return 2;
+    }
+    if (perms.includes("x") && !(node.mode & 73)) {
+      return 2;
+    }
+    return 0;
+  }, mayLookup(dir) {
+    if (!FS.isDir(dir.mode)) return 54;
+    var errCode = FS.nodePermissions(dir, "x");
+    if (errCode) return errCode;
+    if (!dir.node_ops.lookup) return 2;
+    return 0;
+  }, mayCreate(dir, name) {
+    if (!FS.isDir(dir.mode)) {
+      return 54;
+    }
+    try {
+      var node = FS.lookupNode(dir, name);
+      return 20;
+    } catch (e) {
+    }
+    return FS.nodePermissions(dir, "wx");
+  }, mayDelete(dir, name, isdir) {
+    var node;
+    try {
+      node = FS.lookupNode(dir, name);
+    } catch (e) {
+      return e.errno;
+    }
+    var errCode = FS.nodePermissions(dir, "wx");
+    if (errCode) {
+      return errCode;
+    }
+    if (isdir) {
+      if (!FS.isDir(node.mode)) {
+        return 54;
+      }
+      if (FS.isRoot(node) || FS.getPath(node) === FS.cwd()) {
+        return 10;
+      }
+    } else if (FS.isDir(node.mode)) {
+      return 31;
+    }
+    return 0;
+  }, mayOpen(node, flags) {
+    if (!node) {
+      return 44;
+    }
+    if (FS.isLink(node.mode)) {
+      return 32;
+    }
+    var mode = FS.flagsToPermissionString(flags);
+    if (FS.isDir(node.mode)) {
+      if (mode !== "r" || flags & (512 | 64)) {
+        return 31;
+      }
+    }
+    return FS.nodePermissions(node, mode);
+  }, checkOpExists(op, err2) {
+    if (!op) {
+      throw new FS.ErrnoError(err2);
+    }
+    return op;
+  }, MAX_OPEN_FDS: 4096, nextfd() {
+    for (var fd = 0; fd <= FS.MAX_OPEN_FDS; fd++) {
+      if (!FS.streams[fd]) {
+        return fd;
+      }
+    }
+    throw new FS.ErrnoError(33);
+  }, getStreamChecked(fd) {
+    var stream = FS.getStream(fd);
+    if (!stream) {
+      throw new FS.ErrnoError(8);
+    }
+    return stream;
+  }, getStream: (fd) => FS.streams[fd], createStream(stream, fd = -1) {
+    stream = Object.assign(new FS.FSStream(), stream);
+    if (fd == -1) {
+      fd = FS.nextfd();
+    }
+    stream.fd = fd;
+    FS.streams[fd] = stream;
+    return stream;
+  }, closeStream(fd) {
+    FS.streams[fd] = null;
+  }, dupStream(origStream, fd = -1) {
+    var stream = FS.createStream(origStream, fd);
+    stream.stream_ops?.dup?.(stream);
+    return stream;
+  }, doSetAttr(stream, node, attr) {
+    var setattr = stream?.stream_ops.setattr;
+    var arg = setattr ? stream : node;
+    setattr ??= node.node_ops.setattr;
+    FS.checkOpExists(setattr, 63);
+    try {
+      setattr(arg, attr);
+    } catch (e) {
+      if (e instanceof RangeError) {
+        throw new FS.ErrnoError(22);
+      }
+      throw e;
+    }
+  }, chrdev_stream_ops: { open(stream) {
+    var device = FS.getDevice(stream.node.rdev);
+    stream.stream_ops = device.stream_ops;
+    stream.stream_ops.open?.(stream);
+  }, llseek() {
+    throw new FS.ErrnoError(70);
+  } }, major: (dev) => dev >> 8, minor: (dev) => dev & 255, makedev: (ma, mi) => ma << 8 | mi, registerDevice(dev, ops) {
+    FS.devices[dev] = { stream_ops: ops };
+  }, getDevice: (dev) => FS.devices[dev], getMounts(mount) {
+    var mounts = [];
+    var check = [mount];
+    while (check.length) {
+      var m = check.pop();
+      mounts.push(m);
+      check.push(...m.mounts);
+    }
+    return mounts;
+  }, syncfs(populate, callback) {
+    if (typeof populate == "function") {
+      callback = populate;
+      populate = false;
+    }
+    FS.syncFSRequests++;
+    if (FS.syncFSRequests > 1) {
+      err(`warning: ${FS.syncFSRequests} FS.syncfs operations in flight at once, probably just doing extra work`);
+    }
+    var mounts = FS.getMounts(FS.root.mount);
+    var completed = 0;
+    function doCallback(errCode) {
+      FS.syncFSRequests--;
+      return callback(errCode);
+    }
+    function done2(errCode) {
+      if (errCode) {
+        if (!done2.errored) {
+          done2.errored = true;
+          return doCallback(errCode);
+        }
+        return;
+      }
+      if (++completed >= mounts.length) {
+        doCallback(null);
+      }
+    }
+    for (var mount of mounts) {
+      if (mount.type.syncfs) {
+        mount.type.syncfs(mount, populate, done2);
+      } else {
+        done2(null);
+      }
+    }
+  }, mount(type, opts, mountpoint) {
+    var root = mountpoint === "/";
+    var pseudo = !mountpoint;
+    var node;
+    if (root && FS.root) {
+      throw new FS.ErrnoError(10);
+    } else if (!root && !pseudo) {
+      var lookup2 = FS.lookupPath(mountpoint, { follow_mount: false });
+      mountpoint = lookup2.path;
+      node = lookup2.node;
+      if (FS.isMountpoint(node)) {
+        throw new FS.ErrnoError(10);
+      }
+      if (!FS.isDir(node.mode)) {
+        throw new FS.ErrnoError(54);
+      }
+    }
+    var mount = { type, opts, mountpoint, mounts: [] };
+    var mountRoot = type.mount(mount);
+    mountRoot.mount = mount;
+    mount.root = mountRoot;
+    if (root) {
+      FS.root = mountRoot;
+    } else if (node) {
+      node.mounted = mount;
+      if (node.mount) {
+        node.mount.mounts.push(mount);
+      }
+    }
+    return mountRoot;
+  }, unmount(mountpoint) {
+    var lookup2 = FS.lookupPath(mountpoint, { follow_mount: false });
+    if (!FS.isMountpoint(lookup2.node)) {
+      throw new FS.ErrnoError(28);
+    }
+    var node = lookup2.node;
+    var mount = node.mounted;
+    var mounts = FS.getMounts(mount);
+    for (var [hash, current] of Object.entries(FS.nameTable)) {
+      while (current) {
+        var next = current.name_next;
+        if (mounts.includes(current.mount)) {
+          FS.destroyNode(current);
+        }
+        current = next;
+      }
+    }
+    node.mounted = null;
+    var idx = node.mount.mounts.indexOf(mount);
+    node.mount.mounts.splice(idx, 1);
+  }, lookup(parent, name) {
+    return parent.node_ops.lookup(parent, name);
+  }, mknod(path, mode, dev) {
+    var lookup2 = FS.lookupPath(path, { parent: true });
+    var parent = lookup2.node;
+    var name = PATH.basename(path);
+    if (!name) {
+      throw new FS.ErrnoError(28);
+    }
+    if (name === "." || name === "..") {
+      throw new FS.ErrnoError(20);
+    }
+    var errCode = FS.mayCreate(parent, name);
+    if (errCode) {
+      throw new FS.ErrnoError(errCode);
+    }
+    if (!parent.node_ops.mknod) {
+      throw new FS.ErrnoError(63);
+    }
+    return parent.node_ops.mknod(parent, name, mode, dev);
+  }, statfs(path) {
+    return FS.statfsNode(FS.lookupPath(path, { follow: true }).node);
+  }, statfsStream(stream) {
+    return FS.statfsNode(stream.node);
+  }, statfsNode(node) {
+    var rtn = { bsize: 4096, frsize: 4096, blocks: 1e6, bfree: 5e5, bavail: 5e5, files: FS.nextInode, ffree: FS.nextInode - 1, fsid: 42, flags: 2, namelen: 255 };
+    if (node.node_ops.statfs) {
+      Object.assign(rtn, node.node_ops.statfs(node.mount.opts.root));
+    }
+    return rtn;
+  }, create(path, mode = 438) {
+    mode &= 4095;
+    mode |= 32768;
+    return FS.mknod(path, mode, 0);
+  }, mkdir(path, mode = 511) {
+    mode &= 511 | 512;
+    mode |= 16384;
+    return FS.mknod(path, mode, 0);
+  }, mkdirTree(path, mode) {
+    var dirs = path.split("/");
+    var d = "";
+    for (var dir of dirs) {
+      if (!dir) continue;
+      if (d || PATH.isAbs(path)) d += "/";
+      d += dir;
+      try {
+        FS.mkdir(d, mode);
+      } catch (e) {
+        if (e.errno != 20) throw e;
+      }
+    }
+  }, mkdev(path, mode, dev) {
+    if (typeof dev == "undefined") {
+      dev = mode;
+      mode = 438;
+    }
+    mode |= 8192;
+    return FS.mknod(path, mode, dev);
+  }, symlink(oldpath, newpath) {
+    if (!PATH_FS.resolve(oldpath)) {
+      throw new FS.ErrnoError(44);
+    }
+    var lookup2 = FS.lookupPath(newpath, { parent: true });
+    var parent = lookup2.node;
+    if (!parent) {
+      throw new FS.ErrnoError(44);
+    }
+    var newname = PATH.basename(newpath);
+    var errCode = FS.mayCreate(parent, newname);
+    if (errCode) {
+      throw new FS.ErrnoError(errCode);
+    }
+    if (!parent.node_ops.symlink) {
+      throw new FS.ErrnoError(63);
+    }
+    return parent.node_ops.symlink(parent, newname, oldpath);
+  }, link(oldpath, newpath, flags) {
+    var lookup2 = FS.lookupPath(newpath, { parent: true });
+    var parent = lookup2.node;
+    if (!parent) {
+      throw new FS.ErrnoError(44);
+    }
+    var newname = PATH.basename(newpath);
+    var errCode = FS.mayCreate(parent, newname);
+    if (errCode) {
+      throw new FS.ErrnoError(errCode);
+    }
+    if (!parent.node_ops.link) {
+      throw new FS.ErrnoError(34);
+    }
+    return parent.node_ops.link(parent, newname, oldpath, flags);
+  }, rename(old_path, new_path) {
+    var old_dirname = PATH.dirname(old_path);
+    var new_dirname = PATH.dirname(new_path);
+    var old_name = PATH.basename(old_path);
+    var new_name = PATH.basename(new_path);
+    var lookup2, old_dir, new_dir;
+    lookup2 = FS.lookupPath(old_path, { parent: true });
+    old_dir = lookup2.node;
+    lookup2 = FS.lookupPath(new_path, { parent: true });
+    new_dir = lookup2.node;
+    if (!old_dir || !new_dir) throw new FS.ErrnoError(44);
+    if (old_dir.mount !== new_dir.mount) {
+      throw new FS.ErrnoError(75);
+    }
+    var old_node = FS.lookupNode(old_dir, old_name);
+    var relative = PATH_FS.relative(old_path, new_dirname);
+    if (relative.charAt(0) !== ".") {
+      throw new FS.ErrnoError(28);
+    }
+    relative = PATH_FS.relative(new_path, old_dirname);
+    if (relative.charAt(0) !== ".") {
+      throw new FS.ErrnoError(55);
+    }
+    var new_node;
+    try {
+      new_node = FS.lookupNode(new_dir, new_name);
+    } catch (e) {
+    }
+    if (old_node === new_node) {
+      return;
+    }
+    var isdir = FS.isDir(old_node.mode);
+    var errCode = FS.mayDelete(old_dir, old_name, isdir);
+    if (errCode) {
+      throw new FS.ErrnoError(errCode);
+    }
+    errCode = new_node ? FS.mayDelete(new_dir, new_name, isdir) : FS.mayCreate(new_dir, new_name);
+    if (errCode) {
+      throw new FS.ErrnoError(errCode);
+    }
+    if (!old_dir.node_ops.rename) {
+      throw new FS.ErrnoError(63);
+    }
+    if (FS.isMountpoint(old_node) || new_node && FS.isMountpoint(new_node)) {
+      throw new FS.ErrnoError(10);
+    }
+    if (new_dir !== old_dir) {
+      errCode = FS.nodePermissions(old_dir, "w");
+      if (errCode) {
+        throw new FS.ErrnoError(errCode);
+      }
+    }
+    FS.hashRemoveNode(old_node);
+    try {
+      old_dir.node_ops.rename(old_node, new_dir, new_name);
+      old_node.parent = new_dir;
+    } catch (e) {
+      throw e;
+    } finally {
+      FS.hashAddNode(old_node);
+    }
+  }, rmdir(path) {
+    var lookup2 = FS.lookupPath(path, { parent: true });
+    var parent = lookup2.node;
+    var name = PATH.basename(path);
+    var node = FS.lookupNode(parent, name);
+    var errCode = FS.mayDelete(parent, name, true);
+    if (errCode) {
+      throw new FS.ErrnoError(errCode);
+    }
+    if (!parent.node_ops.rmdir) {
+      throw new FS.ErrnoError(63);
+    }
+    if (FS.isMountpoint(node)) {
+      throw new FS.ErrnoError(10);
+    }
+    parent.node_ops.rmdir(parent, name);
+    FS.destroyNode(node);
+  }, readdir(path) {
+    var lookup2 = FS.lookupPath(path, { follow: true });
+    var node = lookup2.node;
+    var readdir = FS.checkOpExists(node.node_ops.readdir, 54);
+    return readdir(node);
+  }, unlink(path) {
+    var lookup2 = FS.lookupPath(path, { parent: true });
+    var parent = lookup2.node;
+    if (!parent) {
+      throw new FS.ErrnoError(44);
+    }
+    var name = PATH.basename(path);
+    var node = FS.lookupNode(parent, name);
+    var errCode = FS.mayDelete(parent, name, false);
+    if (errCode) {
+      throw new FS.ErrnoError(errCode);
+    }
+    if (!parent.node_ops.unlink) {
+      throw new FS.ErrnoError(63);
+    }
+    if (FS.isMountpoint(node)) {
+      throw new FS.ErrnoError(10);
+    }
+    parent.node_ops.unlink(parent, name);
+    FS.destroyNode(node);
+  }, readlink(path) {
+    var lookup2 = FS.lookupPath(path);
+    var link = lookup2.node;
+    if (!link) {
+      throw new FS.ErrnoError(44);
+    }
+    if (!link.node_ops.readlink) {
+      throw new FS.ErrnoError(28);
+    }
+    return link.node_ops.readlink(link);
+  }, stat(path, dontFollow) {
+    var lookup2 = FS.lookupPath(path, { follow: !dontFollow });
+    var node = lookup2.node;
+    var getattr = FS.checkOpExists(node.node_ops.getattr, 63);
+    return getattr(node);
+  }, fstat(fd) {
+    var stream = FS.getStreamChecked(fd);
+    var node = stream.node;
+    var getattr = stream.stream_ops.getattr;
+    var arg = getattr ? stream : node;
+    getattr ??= node.node_ops.getattr;
+    FS.checkOpExists(getattr, 63);
+    return getattr(arg);
+  }, lstat(path) {
+    return FS.stat(path, true);
+  }, doChmod(stream, node, mode, dontFollow) {
+    FS.doSetAttr(stream, node, { mode: mode & 4095 | node.mode & ~4095, ctime: Date.now(), dontFollow });
+  }, chmod(path, mode, dontFollow) {
+    var node;
+    if (typeof path == "string") {
+      var lookup2 = FS.lookupPath(path, { follow: !dontFollow });
+      node = lookup2.node;
+    } else {
+      node = path;
+    }
+    FS.doChmod(null, node, mode, dontFollow);
+  }, lchmod(path, mode) {
+    FS.chmod(path, mode, true);
+  }, fchmod(fd, mode) {
+    var stream = FS.getStreamChecked(fd);
+    FS.doChmod(stream, stream.node, mode, false);
+  }, doChown(stream, node, dontFollow) {
+    FS.doSetAttr(stream, node, { timestamp: Date.now(), dontFollow });
+  }, chown(path, uid, gid, dontFollow) {
+    var node;
+    if (typeof path == "string") {
+      var lookup2 = FS.lookupPath(path, { follow: !dontFollow });
+      node = lookup2.node;
+    } else {
+      node = path;
+    }
+    FS.doChown(null, node, dontFollow);
+  }, lchown(path, uid, gid) {
+    FS.chown(path, uid, gid, true);
+  }, fchown(fd, uid, gid) {
+    var stream = FS.getStreamChecked(fd);
+    FS.doChown(stream, stream.node, false);
+  }, doTruncate(stream, node, len) {
+    if (FS.isDir(node.mode)) {
+      throw new FS.ErrnoError(31);
+    }
+    if (!FS.isFile(node.mode)) {
+      throw new FS.ErrnoError(28);
+    }
+    var errCode = FS.nodePermissions(node, "w");
+    if (errCode) {
+      throw new FS.ErrnoError(errCode);
+    }
+    FS.doSetAttr(stream, node, { size: len, timestamp: Date.now() });
+  }, truncate(path, len) {
+    if (len < 0) {
+      throw new FS.ErrnoError(28);
+    }
+    var node;
+    if (typeof path == "string") {
+      var lookup2 = FS.lookupPath(path, { follow: true });
+      node = lookup2.node;
+    } else {
+      node = path;
+    }
+    FS.doTruncate(null, node, len);
+  }, ftruncate(fd, len) {
+    var stream = FS.getStreamChecked(fd);
+    if (len < 0 || (stream.flags & 2097155) === 0) {
+      throw new FS.ErrnoError(28);
+    }
+    FS.doTruncate(stream, stream.node, len);
+  }, utime(path, atime, mtime, dontFollow) {
+    var lookup2 = FS.lookupPath(path, { follow: !dontFollow });
+    FS.doSetAttr(null, lookup2.node, { atime, mtime, dontFollow });
+  }, open(path, flags, mode = 438) {
+    if (path === "") {
+      throw new FS.ErrnoError(44);
+    }
+    flags = FS_modeStringToFlags(flags);
+    if (flags & 64) {
+      mode = mode & 4095 | 32768;
+    } else {
+      mode = 0;
+    }
+    var node;
+    var isDirPath;
+    if (typeof path == "object") {
+      node = path;
+    } else {
+      isDirPath = path.endsWith("/");
+      var lookup2 = FS.lookupPath(path, { follow: !(flags & 131072), noent_okay: true });
+      node = lookup2.node;
+      path = lookup2.path;
+    }
+    var created = false;
+    if (flags & 64) {
+      if (node) {
+        if (flags & 128) {
+          throw new FS.ErrnoError(20);
+        }
+      } else if (isDirPath) {
+        throw new FS.ErrnoError(31);
+      } else {
+        node = FS.mknod(path, mode | 511, 0);
+        created = true;
+      }
+    }
+    if (!node) {
+      throw new FS.ErrnoError(44);
+    }
+    if (FS.isChrdev(node.mode)) {
+      flags &= ~512;
+    }
+    if (flags & 65536 && !FS.isDir(node.mode)) {
+      throw new FS.ErrnoError(54);
+    }
+    if (!created) {
+      var errCode = FS.mayOpen(node, flags);
+      if (errCode) {
+        throw new FS.ErrnoError(errCode);
+      }
+    }
+    if (flags & 512 && !created) {
+      FS.truncate(node, 0);
+    }
+    flags &= ~(128 | 512 | 131072);
+    var stream = FS.createStream({ node, path: FS.getPath(node), flags, seekable: true, position: 0, stream_ops: node.stream_ops, ungotten: [], error: false });
+    if (stream.stream_ops.open) {
+      stream.stream_ops.open(stream);
+    }
+    if (created) {
+      FS.chmod(node, mode & 511);
+    }
+    return stream;
+  }, close(stream) {
+    if (FS.isClosed(stream)) {
+      throw new FS.ErrnoError(8);
+    }
+    if (stream.getdents) stream.getdents = null;
+    stream.node?.notifyListeners(32);
+    try {
+      if (stream.stream_ops.close) {
+        stream.stream_ops.close(stream);
+      }
+    } catch (e) {
+      throw e;
+    } finally {
+      FS.closeStream(stream.fd);
+    }
+    stream.fd = null;
+  }, isClosed(stream) {
+    return stream.fd === null;
+  }, llseek(stream, offset, whence) {
+    if (FS.isClosed(stream)) {
+      throw new FS.ErrnoError(8);
+    }
+    if (!stream.seekable || !stream.stream_ops.llseek) {
+      throw new FS.ErrnoError(70);
+    }
+    if (whence != 0 && whence != 1 && whence != 2) {
+      throw new FS.ErrnoError(28);
+    }
+    stream.position = stream.stream_ops.llseek(stream, offset, whence);
+    stream.ungotten = [];
+    return stream.position;
+  }, read(stream, buffer, offset, length, position) {
+    if (length < 0 || position < 0) {
+      throw new FS.ErrnoError(28);
+    }
+    if (FS.isClosed(stream)) {
+      throw new FS.ErrnoError(8);
+    }
+    if ((stream.flags & 2097155) === 1) {
+      throw new FS.ErrnoError(8);
+    }
+    if (FS.isDir(stream.node.mode)) {
+      throw new FS.ErrnoError(31);
+    }
+    if (!stream.stream_ops.read) {
+      throw new FS.ErrnoError(28);
+    }
+    var seeking = typeof position != "undefined";
+    if (!seeking) {
+      position = stream.position;
+    } else if (!stream.seekable) {
+      throw new FS.ErrnoError(70);
+    }
+    var bytesRead = stream.stream_ops.read(stream, buffer, offset, length, position);
+    if (!seeking) stream.position += bytesRead;
+    return bytesRead;
+  }, write(stream, buffer, offset, length, position, canOwn) {
+    if (length < 0 || position < 0) {
+      throw new FS.ErrnoError(28);
+    }
+    if (FS.isClosed(stream)) {
+      throw new FS.ErrnoError(8);
+    }
+    if ((stream.flags & 2097155) === 0) {
+      throw new FS.ErrnoError(8);
+    }
+    if (FS.isDir(stream.node.mode)) {
+      throw new FS.ErrnoError(31);
+    }
+    if (!stream.stream_ops.write) {
+      throw new FS.ErrnoError(28);
+    }
+    if (stream.seekable && stream.flags & 1024) {
+      FS.llseek(stream, 0, 2);
+    }
+    var seeking = typeof position != "undefined";
+    if (!seeking) {
+      position = stream.position;
+    } else if (!stream.seekable) {
+      throw new FS.ErrnoError(70);
+    }
+    var bytesWritten = stream.stream_ops.write(stream, buffer, offset, length, position, canOwn);
+    if (!seeking) stream.position += bytesWritten;
+    return bytesWritten;
+  }, mmap(stream, length, position, prot, flags) {
+    if (prot & 2 && !(flags & 2) && (stream.flags & 2097155) !== 2) {
+      throw new FS.ErrnoError(2);
+    }
+    if ((stream.flags & 2097155) === 1) {
+      throw new FS.ErrnoError(2);
+    }
+    if (!stream.stream_ops.mmap) {
+      throw new FS.ErrnoError(43);
+    }
+    if (!length) {
+      throw new FS.ErrnoError(28);
+    }
+    return stream.stream_ops.mmap(stream, length, position, prot, flags);
+  }, msync(stream, buffer, offset, length, mmapFlags) {
+    if (!stream.stream_ops.msync) {
+      return 0;
+    }
+    return stream.stream_ops.msync(stream, buffer, offset, length, mmapFlags);
+  }, ioctl(stream, cmd, arg) {
+    if (!stream.stream_ops.ioctl) {
+      throw new FS.ErrnoError(59);
+    }
+    return stream.stream_ops.ioctl(stream, cmd, arg);
+  }, readFile(path, opts = {}) {
+    opts.flags = opts.flags ?? 0;
+    opts.encoding = opts.encoding ?? "binary";
+    if (opts.encoding !== "utf8" && opts.encoding !== "binary") {
+      abort(`Invalid encoding type "${opts.encoding}"`);
+    }
+    var stream = FS.open(path, opts.flags);
+    var stat = FS.stat(path);
+    var length = stat.size;
+    var buf = new Uint8Array(length);
+    FS.read(stream, buf, 0, length, 0);
+    if (opts.encoding === "utf8") {
+      buf = UTF8ArrayToString(buf);
+    }
+    FS.close(stream);
+    return buf;
+  }, writeFile(path, data, opts = {}) {
+    opts.flags = opts.flags ?? 577;
+    var stream = FS.open(path, opts.flags, opts.mode);
+    data = FS_fileDataToTypedArray(data);
+    FS.write(stream, data, 0, data.byteLength, void 0, opts.canOwn);
+    FS.close(stream);
+  }, cwd: () => FS.currentPath, chdir(path) {
+    var lookup2 = FS.lookupPath(path, { follow: true });
+    if (lookup2.node === null) {
+      throw new FS.ErrnoError(44);
+    }
+    if (!FS.isDir(lookup2.node.mode)) {
+      throw new FS.ErrnoError(54);
+    }
+    var errCode = FS.nodePermissions(lookup2.node, "x");
+    if (errCode) {
+      throw new FS.ErrnoError(errCode);
+    }
+    FS.currentPath = lookup2.path;
+  }, createDefaultDirectories() {
+    FS.mkdir("/tmp");
+    FS.mkdir("/home");
+    FS.mkdir("/home/web_user");
+  }, createDefaultDevices() {
+    FS.mkdir("/dev");
+    FS.registerDevice(FS.makedev(1, 3), { read: () => 0, write: (stream, buffer, offset, length, pos) => length, llseek: () => 0 });
+    FS.mkdev("/dev/null", FS.makedev(1, 3));
+    TTY.register(FS.makedev(5, 0), TTY.default_tty_ops);
+    TTY.register(FS.makedev(6, 0), TTY.default_tty1_ops);
+    FS.mkdev("/dev/tty", FS.makedev(5, 0));
+    FS.mkdev("/dev/tty1", FS.makedev(6, 0));
+    var randomBuffer = new Uint8Array(1024), randomLeft = 0;
+    var randomByte = () => {
+      if (!randomLeft) {
+        randomFill(randomBuffer);
+        randomLeft = randomBuffer.byteLength;
+      }
+      return randomBuffer[--randomLeft];
+    };
+    FS.createDevice("/dev", "random", randomByte);
+    FS.createDevice("/dev", "urandom", randomByte);
+    FS.mkdir("/dev/shm");
+    FS.mkdir("/dev/shm/tmp");
+  }, createSpecialDirectories() {
+    FS.mkdir("/proc");
+    var proc_self = FS.mkdir("/proc/self");
+    FS.mkdir("/proc/self/fd");
+    FS.mount({ mount() {
+      var node = FS.createNode(proc_self, "fd", 16895, 73);
+      node.stream_ops = { llseek: MEMFS.stream_ops.llseek };
+      node.node_ops = { lookup(parent, name) {
+        var fd = +name;
+        var stream = FS.getStreamChecked(fd);
+        var ret = { parent: null, mount: { mountpoint: "fake" }, node_ops: { readlink: () => stream.path }, id: fd + 1 };
+        ret.parent = ret;
+        return ret;
+      }, readdir() {
+        return Array.from(FS.streams.entries()).filter(([k, v]) => v).map(([k, v]) => k.toString());
+      } };
+      return node;
+    } }, {}, "/proc/self/fd");
+  }, createStandardStreams(input, output, error) {
+    if (input) {
+      FS.createDevice("/dev", "stdin", input);
+    } else {
+      FS.symlink("/dev/tty", "/dev/stdin");
+    }
+    if (output) {
+      FS.createDevice("/dev", "stdout", null, output);
+    } else {
+      FS.symlink("/dev/tty", "/dev/stdout");
+    }
+    if (error) {
+      FS.createDevice("/dev", "stderr", null, error);
+    } else {
+      FS.symlink("/dev/tty1", "/dev/stderr");
+    }
+    var stdin = FS.open("/dev/stdin", 0);
+    var stdout = FS.open("/dev/stdout", 1);
+    var stderr = FS.open("/dev/stderr", 1);
+  }, staticInit() {
+    FS.nameTable = new Array(4096);
+    FS.mount(MEMFS, {}, "/");
+    FS.createDefaultDirectories();
+    FS.createDefaultDevices();
+    FS.createSpecialDirectories();
+    FS.filesystems = { MEMFS };
+  }, init(input, output, error) {
+    FS.initialized = true;
+    FS.createStandardStreams(input, output, error);
+  }, quit() {
+    FS.initialized = false;
+    for (var stream of FS.streams) {
+      if (stream) {
+        FS.close(stream);
+      }
+    }
+  }, findObject(path, dontResolveLastLink) {
+    var ret = FS.analyzePath(path, dontResolveLastLink);
+    if (!ret.exists) {
+      return null;
+    }
+    return ret.object;
+  }, analyzePath(path, dontResolveLastLink) {
+    try {
+      var lookup2 = FS.lookupPath(path, { follow: !dontResolveLastLink });
+      path = lookup2.path;
+    } catch (e) {
+    }
+    var ret = { isRoot: false, exists: false, error: 0, name: null, path: null, object: null, parentExists: false, parentPath: null, parentObject: null };
+    try {
+      var lookup2 = FS.lookupPath(path, { parent: true });
+      ret.parentExists = true;
+      ret.parentPath = lookup2.path;
+      ret.parentObject = lookup2.node;
+      ret.name = PATH.basename(path);
+      lookup2 = FS.lookupPath(path, { follow: !dontResolveLastLink });
+      ret.exists = true;
+      ret.path = lookup2.path;
+      ret.object = lookup2.node;
+      ret.name = lookup2.node.name;
+      ret.isRoot = lookup2.path === "/";
+    } catch (e) {
+      ret.error = e.errno;
+    }
+    return ret;
+  }, createPath(parent, path, canRead, canWrite) {
+    parent = typeof parent == "string" ? parent : FS.getPath(parent);
+    var parts = path.split("/").reverse();
+    while (parts.length) {
+      var part = parts.pop();
+      if (!part) continue;
+      var current = PATH.join2(parent, part);
+      try {
+        FS.mkdir(current);
+      } catch (e) {
+        if (e.errno != 20) throw e;
+      }
+      parent = current;
+    }
+    return current;
+  }, createFile(parent, name, properties, canRead, canWrite) {
+    var path = PATH.join2(typeof parent == "string" ? parent : FS.getPath(parent), name);
+    var mode = FS_getMode(canRead, canWrite);
+    return FS.create(path, mode);
+  }, createDataFile(parent, name, data, canRead, canWrite, canOwn) {
+    var path = name;
+    if (parent) {
+      parent = typeof parent == "string" ? parent : FS.getPath(parent);
+      path = name ? PATH.join2(parent, name) : parent;
+    }
+    var mode = FS_getMode(canRead, canWrite);
+    var node = FS.create(path, mode);
+    if (data) {
+      data = FS_fileDataToTypedArray(data);
+      FS.chmod(node, mode | 146);
+      var stream = FS.open(node, 577);
+      FS.write(stream, data, 0, data.length, 0, canOwn);
+      FS.close(stream);
+      FS.chmod(node, mode);
+    }
+  }, createDevice(parent, name, input, output) {
+    var path = PATH.join2(typeof parent == "string" ? parent : FS.getPath(parent), name);
+    var mode = FS_getMode(!!input, !!output);
+    FS.createDevice.major ??= 64;
+    var dev = FS.makedev(FS.createDevice.major++, 0);
+    FS.registerDevice(dev, { open(stream) {
+      stream.seekable = false;
+    }, close(stream) {
+      if (output?.buffer?.length) {
+        output(10);
+      }
+    }, read(stream, buffer, offset, length, pos) {
+      var bytesRead = 0;
+      for (var i = 0; i < length; i++) {
+        var result;
+        try {
+          result = input();
+        } catch (e) {
+          throw new FS.ErrnoError(29);
+        }
+        if (result === void 0 && !bytesRead) {
+          throw new FS.ErrnoError(6);
+        }
+        if (result === null || result === void 0) break;
+        bytesRead++;
+        buffer[offset + i] = result;
+      }
+      if (bytesRead) {
+        stream.node.atime = Date.now();
+      }
+      return bytesRead;
+    }, write(stream, buffer, offset, length, pos) {
+      for (var i = 0; i < length; i++) {
+        try {
+          output(buffer[offset + i]);
+        } catch (e) {
+          throw new FS.ErrnoError(29);
+        }
+      }
+      if (length) {
+        stream.node.mtime = stream.node.ctime = Date.now();
+      }
+      return i;
+    } });
+    return FS.mkdev(path, mode, dev);
+  }, forceLoadFile(obj) {
+    if (obj.isDevice || obj.isFolder || obj.link || obj.contents) return true;
+    if (globalThis.XMLHttpRequest) {
+      abort("Lazy loading should have been performed (contents set) in createLazyFile, but it was not. Lazy loading only works in web workers. Use --embed-file or --preload-file in emcc on the main thread.");
+    } else {
+      try {
+        obj.contents = readBinary(obj.url);
+      } catch (e) {
+        throw new FS.ErrnoError(29);
+      }
+    }
+  }, createLazyFile(parent, name, url, canRead, canWrite) {
+    class LazyUint8Array {
+      lengthKnown = false;
+      chunks = [];
+      get(idx) {
+        if (idx > this.length - 1 || idx < 0) {
+          return void 0;
+        }
+        var chunkOffset = idx % this.chunkSize;
+        var chunkNum = idx / this.chunkSize | 0;
+        return this.getter(chunkNum)[chunkOffset];
+      }
+      setDataGetter(getter) {
+        this.getter = getter;
+      }
+      cacheLength() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("HEAD", url, false);
+        xhr.send(null);
+        if (!(xhr.status >= 200 && xhr.status < 300 || xhr.status === 304)) abort(`Couldn't load ${url}. Status: ${xhr.status}`);
+        var datalength = Number(xhr.getResponseHeader("Content-length"));
+        var header;
+        var hasByteServing = (header = xhr.getResponseHeader("Accept-Ranges")) && header === "bytes";
+        var usesGzip = (header = xhr.getResponseHeader("Content-Encoding")) && header === "gzip";
+        var chunkSize = 1024 * 1024;
+        if (!hasByteServing) chunkSize = datalength;
+        var doXHR = (from, to2) => {
+          if (from > to2) abort(`invalid range (${from}, ${to2}) or no bytes requested!`);
+          if (to2 > datalength - 1) abort(`only ${datalength} bytes available! programmer error!`);
+          var xhr2 = new XMLHttpRequest();
+          xhr2.open("GET", url, false);
+          if (datalength !== chunkSize) xhr2.setRequestHeader("Range", `bytes=${from}-${to2}`);
+          xhr2.responseType = "arraybuffer";
+          if (xhr2.overrideMimeType) {
+            xhr2.overrideMimeType("text/plain; charset=x-user-defined");
+          }
+          xhr2.send(null);
+          if (!(xhr2.status >= 200 && xhr2.status < 300 || xhr2.status === 304)) abort(`Couldn't load ${url}. Status: ${xhr2.status}`);
+          if (xhr2.response !== void 0) {
+            return new Uint8Array(xhr2.response || []);
+          }
+          return intArrayFromString(xhr2.responseText ?? "", true);
+        };
+        var lazyArray2 = this;
+        lazyArray2.setDataGetter((chunkNum) => {
+          var start = chunkNum * chunkSize;
+          var end = (chunkNum + 1) * chunkSize - 1;
+          end = Math.min(end, datalength - 1);
+          if (typeof lazyArray2.chunks[chunkNum] == "undefined") {
+            lazyArray2.chunks[chunkNum] = doXHR(start, end);
+          }
+          if (typeof lazyArray2.chunks[chunkNum] == "undefined") abort("doXHR failed!");
+          return lazyArray2.chunks[chunkNum];
+        });
+        if (usesGzip || !datalength) {
+          chunkSize = datalength = 1;
+          datalength = this.getter(0).length;
+          chunkSize = datalength;
+          out("LazyFiles on gzip forces download of the whole file when length is accessed");
+        }
+        this._length = datalength;
+        this._chunkSize = chunkSize;
+        this.lengthKnown = true;
+      }
+      get length() {
+        if (!this.lengthKnown) {
+          this.cacheLength();
+        }
+        return this._length;
+      }
+      get chunkSize() {
+        if (!this.lengthKnown) {
+          this.cacheLength();
+        }
+        return this._chunkSize;
+      }
+    }
+    if (globalThis.XMLHttpRequest) {
+      if (!ENVIRONMENT_IS_WORKER) abort("Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc");
+      var lazyArray = new LazyUint8Array();
+      var properties = { isDevice: false, contents: lazyArray };
+    } else {
+      var properties = { isDevice: false, url };
+    }
+    var node = FS.createFile(parent, name, properties, canRead, canWrite);
+    if (properties.contents) {
+      node.contents = properties.contents;
+    } else if (properties.url) {
+      node.contents = null;
+      node.url = properties.url;
+    }
+    Object.defineProperties(node, { usedBytes: { get: function() {
+      return this.contents.length;
+    } } });
+    var stream_ops = {};
+    for (const [key, fn2] of Object.entries(node.stream_ops)) {
+      stream_ops[key] = (...args) => {
+        FS.forceLoadFile(node);
+        return fn2(...args);
+      };
+    }
+    function writeChunks(stream, buffer, offset, length, position) {
+      var contents = stream.node.contents;
+      if (position >= contents.length) return 0;
+      var size = Math.min(contents.length - position, length);
+      if (contents.slice) {
+        for (var i = 0; i < size; i++) {
+          buffer[offset + i] = contents[position + i];
+        }
+      } else {
+        for (var i = 0; i < size; i++) {
+          buffer[offset + i] = contents.get(position + i);
+        }
+      }
+      return size;
+    }
+    stream_ops.read = (stream, buffer, offset, length, position) => {
+      FS.forceLoadFile(node);
+      return writeChunks(stream, buffer, offset, length, position);
+    };
+    stream_ops.mmap = (stream, length, position, prot, flags) => {
+      FS.forceLoadFile(node);
+      var ptr = mmapAlloc(length);
+      if (!ptr) {
+        throw new FS.ErrnoError(48);
+      }
+      writeChunks(stream, HEAP8, ptr, length, position);
+      return { ptr, allocated: true };
+    };
+    node.stream_ops = stream_ops;
+    return node;
+  } };
+  var UTF8ToString = (ptr, maxBytesToRead, ignoreNul) => ptr ? UTF8ArrayToString(HEAPU8, ptr, maxBytesToRead, ignoreNul) : "";
+  var HEAP64;
+  var SYSCALLS = { currentUmask: 18, calculateAt(dirfd, path, allowEmpty) {
+    if (PATH.isAbs(path)) {
+      return path;
+    }
+    var dir;
+    if (dirfd === -100) {
+      dir = FS.cwd();
+    } else {
+      var dirstream = SYSCALLS.getStreamFromFD(dirfd);
+      dir = dirstream.path;
+    }
+    if (path.length == 0) {
+      if (!allowEmpty) {
+        throw new FS.ErrnoError(44);
+      }
+      return dir;
+    }
+    return dir + "/" + path;
+  }, writeStat(buf, stat) {
+    HEAPU32[buf >> 2] = stat.dev;
+    HEAPU32[buf + 4 >> 2] = stat.mode;
+    HEAPU32[buf + 8 >> 2] = stat.nlink;
+    HEAPU32[buf + 12 >> 2] = stat.uid;
+    HEAPU32[buf + 16 >> 2] = stat.gid;
+    HEAPU32[buf + 20 >> 2] = stat.rdev;
+    HEAP64[buf + 24 >> 3] = BigInt(stat.size);
+    HEAP32[buf + 32 >> 2] = 4096;
+    HEAP32[buf + 36 >> 2] = stat.blocks;
+    var atime = stat.atime.getTime();
+    var mtime = stat.mtime.getTime();
+    var ctime = stat.ctime.getTime();
+    HEAP64[buf + 40 >> 3] = BigInt(Math.floor(atime / 1e3));
+    HEAPU32[buf + 48 >> 2] = atime % 1e3 * 1e3 * 1e3;
+    HEAP64[buf + 56 >> 3] = BigInt(Math.floor(mtime / 1e3));
+    HEAPU32[buf + 64 >> 2] = mtime % 1e3 * 1e3 * 1e3;
+    HEAP64[buf + 72 >> 3] = BigInt(Math.floor(ctime / 1e3));
+    HEAPU32[buf + 80 >> 2] = ctime % 1e3 * 1e3 * 1e3;
+    HEAP64[buf + 88 >> 3] = BigInt(stat.ino);
+    return 0;
+  }, writeStatFs(buf, stats) {
+    HEAPU32[buf + 4 >> 2] = stats.bsize;
+    HEAPU32[buf + 60 >> 2] = stats.bsize;
+    HEAP64[buf + 8 >> 3] = BigInt(stats.blocks);
+    HEAP64[buf + 16 >> 3] = BigInt(stats.bfree);
+    HEAP64[buf + 24 >> 3] = BigInt(stats.bavail);
+    HEAP64[buf + 32 >> 3] = BigInt(stats.files);
+    HEAP64[buf + 40 >> 3] = BigInt(stats.ffree);
+    HEAPU32[buf + 48 >> 2] = stats.fsid;
+    HEAPU32[buf + 64 >> 2] = stats.flags;
+    HEAPU32[buf + 56 >> 2] = stats.namelen;
+  }, doMsync(addr, stream, len, flags, offset) {
+    if (!FS.isFile(stream.node.mode)) {
+      throw new FS.ErrnoError(43);
+    }
+    if (flags & 2) {
+      return 0;
+    }
+    var buffer = HEAPU8.subarray(addr, addr + len);
+    FS.msync(stream, buffer, offset, len, flags);
+  }, getStreamFromFD(fd) {
+    var stream = FS.getStreamChecked(fd);
+    return stream;
+  }, varargs: void 0, getStr(ptr) {
+    var ret = UTF8ToString(ptr);
+    return ret;
+  } };
+  var HEAP16;
+  function ___syscall_fcntl64(fd, cmd, varargs) {
+    SYSCALLS.varargs = varargs;
+    try {
+      var stream = SYSCALLS.getStreamFromFD(fd);
+      switch (cmd) {
+        case 0: {
+          var arg = syscallGetVarargI();
+          if (arg < 0) {
+            return -28;
+          }
+          while (FS.streams[arg]) {
+            arg++;
+          }
+          var newStream;
+          newStream = FS.dupStream(stream, arg);
+          return newStream.fd;
+        }
+        case 1:
+        case 2:
+          return 0;
+        case 3:
+          return stream.flags;
+        case 4: {
+          var arg = syscallGetVarargI();
+          var mask = 289792;
+          stream.flags = stream.flags & ~mask | arg & mask;
+          return 0;
+        }
+        case 12: {
+          var arg = syscallGetVarargP();
+          var offset = 0;
+          HEAP16[arg + offset >> 1] = 2;
+          return 0;
+        }
+        case 13:
+        case 14:
+          return 0;
+      }
+      return -28;
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return -e.errno;
+    }
+  }
+  function ___syscall_fstat64(fd, buf) {
+    try {
+      return SYSCALLS.writeStat(buf, FS.fstat(fd));
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return -e.errno;
+    }
+  }
+  function ___syscall_ioctl(fd, op, varargs) {
+    SYSCALLS.varargs = varargs;
+    try {
+      var stream = SYSCALLS.getStreamFromFD(fd);
+      switch (op) {
+        case 21509: {
+          if (!stream.tty) return -59;
+          return 0;
+        }
+        case 21505: {
+          if (!stream.tty) return -59;
+          if (stream.tty.ops.ioctl_tcgets) {
+            var termios = stream.tty.ops.ioctl_tcgets(stream);
+            var argp = syscallGetVarargP();
+            HEAP32[argp >> 2] = termios.c_iflag || 0;
+            HEAP32[argp + 4 >> 2] = termios.c_oflag || 0;
+            HEAP32[argp + 8 >> 2] = termios.c_cflag || 0;
+            HEAP32[argp + 12 >> 2] = termios.c_lflag || 0;
+            for (var i = 0; i < 32; i++) {
+              HEAP8[argp + i + 17] = termios.c_cc[i] || 0;
+            }
+            return 0;
+          }
+          return 0;
+        }
+        case 21510:
+        case 21511:
+        case 21512: {
+          if (!stream.tty) return -59;
+          return 0;
+        }
+        case 21506:
+        case 21507:
+        case 21508: {
+          if (!stream.tty) return -59;
+          if (stream.tty.ops.ioctl_tcsets) {
+            var argp = syscallGetVarargP();
+            var c_iflag = HEAP32[argp >> 2];
+            var c_oflag = HEAP32[argp + 4 >> 2];
+            var c_cflag = HEAP32[argp + 8 >> 2];
+            var c_lflag = HEAP32[argp + 12 >> 2];
+            var c_cc = [];
+            for (var i = 0; i < 32; i++) {
+              c_cc.push(HEAP8[argp + i + 17]);
+            }
+            return stream.tty.ops.ioctl_tcsets(stream.tty, op, { c_iflag, c_oflag, c_cflag, c_lflag, c_cc });
+          }
+          return 0;
+        }
+        case 21519: {
+          if (!stream.tty) return -59;
+          var argp = syscallGetVarargP();
+          HEAP32[argp >> 2] = 0;
+          return 0;
+        }
+        case 21520: {
+          if (!stream.tty) return -59;
+          return -28;
+        }
+        case 21537:
+        case 21531: {
+          var argp = syscallGetVarargP();
+          return FS.ioctl(stream, op, argp);
+        }
+        case 21523: {
+          if (!stream.tty) return -59;
+          if (stream.tty.ops.ioctl_tiocgwinsz) {
+            var winsize = stream.tty.ops.ioctl_tiocgwinsz(stream.tty);
+            var argp = syscallGetVarargP();
+            HEAP16[argp >> 1] = winsize[0];
+            HEAP16[argp + 2 >> 1] = winsize[1];
+          }
+          return 0;
+        }
+        case 21524: {
+          if (!stream.tty) return -59;
+          return 0;
+        }
+        case 21515: {
+          if (!stream.tty) return -59;
+          return 0;
+        }
+        default:
+          return -28;
+      }
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return -e.errno;
+    }
+  }
+  function ___syscall_lstat64(path, buf) {
+    try {
+      path = SYSCALLS.getStr(path);
+      return SYSCALLS.writeStat(buf, FS.lstat(path));
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return -e.errno;
+    }
+  }
+  function ___syscall_newfstatat(dirfd, path, buf, flags) {
+    try {
+      path = SYSCALLS.getStr(path);
+      var nofollow = flags & 256;
+      var allowEmpty = flags & 4096;
+      flags = flags & ~6400;
+      path = SYSCALLS.calculateAt(dirfd, path, allowEmpty);
+      return SYSCALLS.writeStat(buf, nofollow ? FS.lstat(path) : FS.stat(path));
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return -e.errno;
+    }
+  }
+  function ___syscall_openat(dirfd, path, flags, varargs) {
+    SYSCALLS.varargs = varargs;
+    try {
+      path = SYSCALLS.getStr(path);
+      path = SYSCALLS.calculateAt(dirfd, path);
+      var mode = varargs ? syscallGetVarargI() : 0;
+      if (flags & 64) {
+        mode &= ~SYSCALLS.currentUmask;
+      }
+      return FS.open(path, flags, mode).fd;
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return -e.errno;
+    }
+  }
+  function ___syscall_stat64(path, buf) {
+    try {
+      path = SYSCALLS.getStr(path);
+      return SYSCALLS.writeStat(buf, FS.stat(path));
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return -e.errno;
+    }
+  }
+  var __abort_js = () => abort("");
+  var INT53_MAX = 9007199254740992;
+  var INT53_MIN = -9007199254740992;
+  var bigintToI53Checked = (num) => num < INT53_MIN || num > INT53_MAX ? NaN : Number(num);
+  function __mmap_js(len, prot, flags, fd, offset, allocated, addr) {
+    offset = bigintToI53Checked(offset);
+    try {
+      var stream = SYSCALLS.getStreamFromFD(fd);
+      var res = FS.mmap(stream, len, offset, prot, flags);
+      var ptr = res.ptr;
+      HEAP32[allocated >> 2] = res.allocated;
+      HEAPU32[addr >> 2] = ptr;
+      return 0;
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return -e.errno;
+    }
+  }
+  function __munmap_js(addr, len, prot, flags, fd, offset) {
+    offset = bigintToI53Checked(offset);
+    try {
+      var stream = SYSCALLS.getStreamFromFD(fd);
+      if (prot & 2) {
+        SYSCALLS.doMsync(addr, stream, len, flags, offset);
+      }
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return -e.errno;
+    }
+  }
+  var stringToUTF8 = (str, outPtr, maxBytesToWrite) => stringToUTF8Array(str, HEAPU8, outPtr, maxBytesToWrite);
+  var __tzset_js = (timezone, daylight, std_name, dst_name) => {
+    var currentYear = (/* @__PURE__ */ new Date()).getFullYear();
+    var winter = new Date(currentYear, 0, 1);
+    var summer = new Date(currentYear, 6, 1);
+    var winterOffset = winter.getTimezoneOffset();
+    var summerOffset = summer.getTimezoneOffset();
+    var stdTimezoneOffset = Math.max(winterOffset, summerOffset);
+    HEAPU32[timezone >> 2] = stdTimezoneOffset * 60;
+    HEAP32[daylight >> 2] = Number(winterOffset != summerOffset);
+    var extractZone = (timezoneOffset) => {
+      var sign = timezoneOffset >= 0 ? "-" : "+";
+      var absOffset = Math.abs(timezoneOffset);
+      var hours = String(Math.floor(absOffset / 60)).padStart(2, "0");
+      var minutes = String(absOffset % 60).padStart(2, "0");
+      return `UTC${sign}${hours}${minutes}`;
+    };
+    var winterName = extractZone(winterOffset);
+    var summerName = extractZone(summerOffset);
+    if (summerOffset < winterOffset) {
+      stringToUTF8(winterName, std_name, 17);
+      stringToUTF8(summerName, dst_name, 17);
+    } else {
+      stringToUTF8(winterName, dst_name, 17);
+      stringToUTF8(summerName, std_name, 17);
+    }
+  };
+  var getHeapMax = () => 1073741824;
+  var growMemory = (size) => {
+    var oldHeapSize = wasmMemory.buffer.byteLength;
+    var pages = (size - oldHeapSize + 65535) / 65536 | 0;
+    try {
+      wasmMemory.grow(pages);
+      updateMemoryViews();
+      return 1;
+    } catch (e) {
+    }
+  };
+  var _emscripten_resize_heap = (requestedSize) => {
+    var oldSize = HEAPU8.length;
+    requestedSize >>>= 0;
+    var maxHeapSize = getHeapMax();
+    if (requestedSize > maxHeapSize) {
+      return false;
+    }
+    for (var cutDown = 1; cutDown <= 4; cutDown *= 2) {
+      var overGrownHeapSize = oldSize * (1 + 0.2 / cutDown);
+      overGrownHeapSize = Math.min(overGrownHeapSize, requestedSize + 100663296);
+      var newSize = Math.min(maxHeapSize, alignMemory(Math.max(requestedSize, overGrownHeapSize), 65536));
+      var replacement = growMemory(newSize);
+      if (replacement) {
+        return true;
+      }
+    }
+    return false;
+  };
+  var ENV = {};
+  var getExecutableName = () => thisProgram;
+  var getEnvStrings = () => {
+    if (!getEnvStrings.strings) {
+      var lang2 = (globalThis.navigator?.language ?? "C").replace("-", "_") + ".UTF-8";
+      var env = { USER: "web_user", LOGNAME: "web_user", PATH: "/", PWD: "/", HOME: "/home/web_user", LANG: lang2, _: getExecutableName() };
+      for (var x in ENV) {
+        if (ENV[x] === void 0) delete env[x];
+        else env[x] = ENV[x];
+      }
+      var strings = [];
+      for (var x in env) {
+        strings.push(`${x}=${env[x]}`);
+      }
+      getEnvStrings.strings = strings;
+    }
+    return getEnvStrings.strings;
+  };
+  var _environ_get = (__environ, environ_buf) => {
+    var bufSize = 0;
+    var envp = 0;
+    for (var string of getEnvStrings()) {
+      var ptr = environ_buf + bufSize;
+      HEAPU32[__environ + envp >> 2] = ptr;
+      bufSize += stringToUTF8(string, ptr, Infinity) + 1;
+      envp += 4;
+    }
+    return 0;
+  };
+  var _environ_sizes_get = (penviron_count, penviron_buf_size) => {
+    var strings = getEnvStrings();
+    HEAPU32[penviron_count >> 2] = strings.length;
+    var bufSize = 0;
+    for (var string of strings) {
+      bufSize += lengthBytesUTF8(string) + 1;
+    }
+    HEAPU32[penviron_buf_size >> 2] = bufSize;
+    return 0;
+  };
+  function _fd_close(fd) {
+    try {
+      var stream = SYSCALLS.getStreamFromFD(fd);
+      FS.close(stream);
+      return 0;
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return e.errno;
+    }
+  }
+  var doReadv = (stream, iov, iovcnt, offset) => {
+    var ret = 0;
+    for (var i = 0; i < iovcnt; i++) {
+      var ptr = HEAPU32[iov >> 2];
+      var len = HEAPU32[iov + 4 >> 2];
+      iov += 8;
+      try {
+        var curr = FS.read(stream, HEAP8, ptr, len, offset);
+      } catch (e) {
+        if (ret > 0 && e instanceof FS.ErrnoError && (e.errno == 6 || e.errno == 6)) {
+          break;
+        }
+        throw e;
+      }
+      if (curr < 0) return -1;
+      ret += curr;
+      if (curr < len) break;
+      if (typeof offset != "undefined") {
+        offset += curr;
+      }
+    }
+    return ret;
+  };
+  function _fd_read(fd, iov, iovcnt, pnum) {
+    try {
+      var stream = SYSCALLS.getStreamFromFD(fd);
+      var num = doReadv(stream, iov, iovcnt);
+      HEAPU32[pnum >> 2] = num;
+      return 0;
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return e.errno;
+    }
+  }
+  function _fd_seek(fd, offset, whence, newOffset) {
+    offset = bigintToI53Checked(offset);
+    try {
+      if (isNaN(offset)) return 22;
+      var stream = SYSCALLS.getStreamFromFD(fd);
+      FS.llseek(stream, offset, whence);
+      HEAP64[newOffset >> 3] = BigInt(stream.position);
+      if (stream.getdents && !offset && whence === 0) stream.getdents = null;
+      return 0;
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return e.errno;
+    }
+  }
+  var doWritev = (stream, iov, iovcnt, offset) => {
+    if (iovcnt == 1) {
+      return FS.write(stream, HEAP8, HEAPU32[iov >> 2], HEAPU32[iov + 4 >> 2], offset);
+    }
+    var total = 0;
+    for (var i = 0, p = iov; i < iovcnt; i++, p += 8) {
+      total += HEAPU32[p + 4 >> 2];
+    }
+    var view = new Uint8Array(total);
+    var voff = 0;
+    for (var i = 0; i < iovcnt; i++, iov += 8) {
+      var ptr = HEAPU32[iov >> 2];
+      var len = HEAPU32[iov + 4 >> 2];
+      view.set(HEAPU8.subarray(ptr, ptr + len), voff);
+      voff += len;
+    }
+    return FS.write(stream, view, 0, total, offset);
+  };
+  function _fd_write(fd, iov, iovcnt, pnum) {
+    try {
+      var stream = SYSCALLS.getStreamFromFD(fd);
+      var num = doWritev(stream, iov, iovcnt);
+      HEAPU32[pnum >> 2] = num;
+      return 0;
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return e.errno;
+    }
+  }
+  var getCFunc = (ident) => {
+    var func = Module2["_" + ident];
+    return func;
+  };
+  var writeArrayToMemory = (array, buffer) => {
+    HEAP8.set(array, buffer);
+  };
+  var stackAlloc = (sz) => __emscripten_stack_alloc(sz);
+  var stringToUTF8OnStack = (str) => {
+    var size = lengthBytesUTF8(str) + 1;
+    var ret = stackAlloc(size);
+    stringToUTF8(str, ret, size);
+    return ret;
+  };
+  var ccall = (ident, returnType, argTypes, args, opts) => {
+    var toC = { string: (str) => {
+      var ret2 = 0;
+      if (str !== null && str !== void 0 && str !== 0) {
+        ret2 = stringToUTF8OnStack(str);
+      }
+      return ret2;
+    }, array: (arr) => {
+      var ret2 = stackAlloc(arr.length);
+      writeArrayToMemory(arr, ret2);
+      return ret2;
+    } };
+    function convertReturnValue(ret2) {
+      if (returnType === "string") {
+        return UTF8ToString(ret2);
+      }
+      if (returnType === "boolean") return Boolean(ret2);
+      return ret2;
+    }
+    var func = getCFunc(ident);
+    var cArgs = [];
+    var stack = 0;
+    if (args) {
+      for (var i = 0; i < args.length; i++) {
+        var converter = toC[argTypes[i]];
+        if (converter) {
+          if (!stack) stack = stackSave();
+          cArgs[i] = converter(args[i]);
+        } else {
+          cArgs[i] = args[i];
+        }
+      }
+    }
+    var ret = func(...cArgs);
+    function onDone(ret2) {
+      if (stack) stackRestore(stack);
+      return convertReturnValue(ret2);
+    }
+    ret = onDone(ret);
+    return ret;
+  };
+  var cwrap = (ident, returnType, argTypes, opts) => {
+    var numericArgs = !argTypes || argTypes.every((type) => type === "number" || type === "boolean");
+    var numericRet = returnType !== "string";
+    if (numericRet && numericArgs && !opts) {
+      return getCFunc(ident);
+    }
+    return (...args) => ccall(ident, returnType, argTypes, args, opts);
+  };
+  var FS_createPath = (...args) => FS.createPath(...args);
+  var FS_unlink = (...args) => FS.unlink(...args);
+  var FS_createLazyFile = (...args) => FS.createLazyFile(...args);
+  var FS_createDevice = (...args) => FS.createDevice(...args);
+  FS.createPreloadedFile = FS_createPreloadedFile;
+  FS.preloadFile = FS_preloadFile;
+  FS.staticInit();
+  {
+    if (Module2["print"]) out = Module2["print"];
+    if (Module2["printErr"]) err = Module2["printErr"];
+    if (Module2["wasmBinary"]) wasmBinary = Module2["wasmBinary"];
+  }
+  Module2["addRunDependency"] = addRunDependency;
+  Module2["removeRunDependency"] = removeRunDependency;
+  Module2["ccall"] = ccall;
+  Module2["cwrap"] = cwrap;
+  Module2["UTF8ToString"] = UTF8ToString;
+  Module2["stringToUTF8"] = stringToUTF8;
+  Module2["lengthBytesUTF8"] = lengthBytesUTF8;
+  Module2["FS_preloadFile"] = FS_preloadFile;
+  Module2["FS_unlink"] = FS_unlink;
+  Module2["FS_createPath"] = FS_createPath;
+  Module2["FS_createDevice"] = FS_createDevice;
+  Module2["FS"] = FS;
+  Module2["FS_createDataFile"] = FS_createDataFile;
+  Module2["FS_createLazyFile"] = FS_createLazyFile;
+  var _ojt_init, _ojt_stage1, _malloc, _free, _ojt_stage2, _ojt_labels, _emscripten_builtin_memalign, _setThrew, __emscripten_stack_restore, __emscripten_stack_alloc, _emscripten_stack_get_current, memory, __indirect_function_table, wasmMemory;
+  function assignWasmExports(wasmExports2) {
+    _ojt_init = Module2["_ojt_init"] = wasmExports2["ojt_init"];
+    _ojt_stage1 = Module2["_ojt_stage1"] = wasmExports2["ojt_stage1"];
+    _malloc = Module2["_malloc"] = wasmExports2["malloc"];
+    _free = Module2["_free"] = wasmExports2["free"];
+    _ojt_stage2 = Module2["_ojt_stage2"] = wasmExports2["ojt_stage2"];
+    _ojt_labels = Module2["_ojt_labels"] = wasmExports2["ojt_labels"];
+    _emscripten_builtin_memalign = wasmExports2["emscripten_builtin_memalign"];
+    _setThrew = wasmExports2["setThrew"];
+    __emscripten_stack_restore = wasmExports2["_emscripten_stack_restore"];
+    __emscripten_stack_alloc = wasmExports2["_emscripten_stack_alloc"];
+    _emscripten_stack_get_current = wasmExports2["emscripten_stack_get_current"];
+    memory = wasmMemory = wasmExports2["memory"];
+    __indirect_function_table = wasmExports2["__indirect_function_table"];
+  }
+  var wasmImports = { __cxa_throw: ___cxa_throw, __syscall_fcntl64: ___syscall_fcntl64, __syscall_fstat64: ___syscall_fstat64, __syscall_ioctl: ___syscall_ioctl, __syscall_lstat64: ___syscall_lstat64, __syscall_newfstatat: ___syscall_newfstatat, __syscall_openat: ___syscall_openat, __syscall_stat64: ___syscall_stat64, _abort_js: __abort_js, _mmap_js: __mmap_js, _munmap_js: __munmap_js, _tzset_js: __tzset_js, emscripten_resize_heap: _emscripten_resize_heap, environ_get: _environ_get, environ_sizes_get: _environ_sizes_get, fd_close: _fd_close, fd_read: _fd_read, fd_seek: _fd_seek, fd_write: _fd_write };
+  async function run() {
+    preRun();
+    if (runDependencies) {
+      await resolveRunDependencies();
+    }
+    if (ABORT) return;
+    initRuntime();
+    postRun();
+  }
+  var wasmExports;
+  wasmExports = await createWasm();
+  await run();
+  ;
+  return Module2;
 }
-export {
-  runLayoutJob
+var ojt_default = Module;
+
+// node_modules/@internal/read-aloud/backend/piper-plus/ja-frontend.js
+var FIELDS = ["string", "pos", "pos_group1", "pos_group2", "pos_group3", "ctype", "cform", "orig", "read", "pron", "acc", "mora_size", "chain_rule", "chain_flag"];
+var INT_FIELDS = /* @__PURE__ */ new Set(["acc", "mora_size", "chain_flag"]);
+var cps = (s) => Array.from(s);
+var isKanji = (c) => {
+  const o = c.codePointAt(0);
+  return o >= 19968 && o <= 40959;
 };
-//# sourceMappingURL=layout-worker-2b4775fa7c7c.mjs.map
+function parseNjd(tsv) {
+  const out = [];
+  for (const line of tsv.split("\n")) {
+    if (!line) continue;
+    const f = line.split("	"), o = {};
+    FIELDS.forEach((k, i) => {
+      o[k] = INT_FIELDS.has(k) ? parseInt(f[i], 10) : f[i] ?? "";
+    });
+    out.push(o);
+  }
+  return out;
+}
+var dumpNjd = (features) => features.map((o) => FIELDS.map((k) => String(o[k]).replace(/[\t\n\0]/g, "")).join("	")).join("\n") + (features.length ? "\n" : "");
+function applyOriginalRuleBeforeChaining(F) {
+  for (let i = 0; i < F.length - 1; i++) {
+    const njd = F[i], next = F[i + 1];
+    if (njd.pos === "\u540D\u8A5E" && next.string === "\u4E0D\u8DB3" && next.pron === "\u30D5\u30BD\u30AF") {
+      next.read = "\u30D6\u30BD\u30AF";
+      next.pron = "\u30D6\u30BD\u30AF";
+    }
+    let isFractionDenominator = false;
+    if (i + 2 < F.length && next.string === "\u306E") isFractionDenominator = F[i + 2].pos_group1 === "\u6570";
+    if (isFractionDenominator && njd.string.endsWith("\u5206")) {
+      if (njd.pron.endsWith("\u30D5\u30F3") || njd.pron.endsWith("\u30D7\u30F3")) {
+        njd.read = cps(njd.read).slice(0, -2).join("") + "\u30D6\u30F3";
+        njd.pron = cps(njd.pron).slice(0, -2).join("") + "\u30D6\u30F3";
+      } else if (njd.pron.endsWith("\u30D6")) {
+        njd.read += "\u30F3";
+        njd.pron += "\u30F3";
+      }
+    }
+    if (i > 0 && i + 2 < F.length && njd.string === "\u5206" && F[i - 1].pos_group1 === "\u6570" && next.string === "\u306E" && F[i + 2].pos_group1 === "\u6570") {
+      njd.read = "\u30D6\u30F3";
+      njd.pron = "\u30D6\u30F3";
+    }
+    if (njd.string === "\u3007" && next.string === "\u3007") for (const p of [njd, next]) {
+      p.pos_group1 = "\u4E00\u822C";
+      p.read = "\u30DE\u30EB";
+      p.pron = "\u30DE\u30EB";
+      p.acc = 1;
+      p.mora_size = 2;
+    }
+    if (next.string === "\u7403" && next.pos === "\u540D\u8A5E" && next.pos_group1 === "\u63A5\u5C3E" && next.pron === "\u30AD\u30E5\u30FC" && cps(njd.string).some((c) => c >= "\u4E00" && c <= "\u9FFF") && cps(njd.string).some((c) => c >= "\u3041" && c <= "\u3096")) {
+      next.read = "\u30C0\u30DE";
+      next.pron = "\u30C0\u30DE";
+      next.acc = 1;
+      next.mora_size = 2;
+      next.chain_rule = "C4";
+    }
+    if ((["\u30B5\u5909\u63A5\u7D9A", "\u683C\u52A9\u8A5E", "\u63A5\u7D9A\u52A9\u8A5E"].includes(njd.pos_group1) || njd.pos === "\u540D\u8A5E" && njd.pos_group1 === "\u4E00\u822C" || njd.pos === "\u526F\u8A5E") && next.ctype === "\u30B5\u5909\u30FB\u30B9\u30EB") next.chain_flag = 1;
+    if (["\u304A", "\u5FA1", "\u3054"].includes(njd.string) && njd.chain_rule === "P1") {
+      if (next.acc === 0 || next.acc === next.mora_size) {
+        next.chain_rule = "C4";
+        next.acc = 0;
+      } else next.chain_rule = "C1";
+    }
+    if (njd.pos === "\u52D5\u8A5E" && next.pos === "\u52D5\u8A5E") next.chain_rule = next.acc !== 0 ? "C1" : "C4";
+    if (["\u9023\u7528\u5F62", "\u9023\u7528\u30BF\u63A5\u7D9A", "\u9023\u7528\u30B4\u30B6\u30A4\u63A5\u7D9A", "\u9023\u7528\u30C6\u63A5\u7D9A"].includes(njd.cform) && njd.acc === njd.mora_size && njd.mora_size > 1) njd.acc -= 1;
+    if (["\u308C\u308B", "\u3089\u308C\u308B", "\u305B\u308B", "\u3055\u305B\u308B", "\u3061\u3083\u3046"].includes(njd.orig) && next.string === "\u305F") next.chain_rule = "F2@1";
+    if (njd.pos === "\u5F62\u5BB9\u8A5E" && ["\u306A\u308B", "\u3059\u308B"].includes(next.orig)) next.chain_flag = 1;
+  }
+  return F;
+}
+function modifyFillerAccent(F) {
+  let after = false;
+  for (const f of F) {
+    if (f.pos === "\u30D5\u30A3\u30E9\u30FC") {
+      if (f.acc > f.mora_size) f.acc = 0;
+      after = true;
+    } else if (after) {
+      if (f.pos === "\u540D\u8A5E") f.chain_flag = 0;
+      after = false;
+    }
+  }
+  return F;
+}
+function naniPredict(model, next) {
+  if (!next) return 0;
+  const x = [];
+  for (const oh of model.onehot) {
+    const v = next[model.x_cols[oh.col]];
+    for (const c of oh.cats) x.push(c === v ? 1 : 0);
+  }
+  const score = [0, 0];
+  for (const tree of model.trees) {
+    let n = 0;
+    for (; ; ) {
+      const [mode, feat, val, tn2, fn2] = tree.nodes[n];
+      if (mode === "LEAF") {
+        const w = tree.leaves[n];
+        if (w) {
+          score[0] += w[0];
+          score[1] += w[1];
+        }
+        break;
+      }
+      n = x[feat] <= val ? tn2 : fn2;
+    }
+  }
+  return score[1] > score[0] ? 1 : 0;
+}
+function predictNaniReading(F, model) {
+  F.forEach((cur, i) => {
+    if (cur.orig !== "\u4F55") return;
+    const next = i + 1 < F.length ? F[i + 1] : null;
+    const high = next !== null && (["\u3092", "\u304C", "\u306B", "\u3082", "\u3088\u308A"].includes(next.orig) || next.orig === "\u3059\u308B" || next.string === "\u3067" && next.pos === "\u52A9\u52D5\u8A5E" && next.ctype === "\u7279\u6B8A\u30FB\u30C0");
+    const keepNan = next !== null && next.orig === "\u3067" && next.pos === "\u52A9\u8A5E" && next.pos_group1 === "\u683C\u52A9\u8A5E";
+    let isNan;
+    if (high) isNan = 0;
+    else if (keepNan) isNan = 1;
+    else if (model) isNan = naniPredict(model, next);
+    else return;
+    cur.pron = cur.read = isNan === 1 ? "\u30CA\u30F3" : "\u30CA\u30CB";
+  });
+  return F;
+}
+var MULTI_READ_KANJI = new Set("\u98A8\u89B3\u65B9\u51FA\u6642\u4E0A\u4E0B\u541B\u624B\u5ACC\u8868\u5BFE\u8272\u4EBA\u524D\u5F8C\u89D2\u91D1\u982D\u7B46\u6C34\u9593\u68DA\u5E8A\u5165\u6765\u5857\u6012\u5305\u88AB\u958B\u5F3E\u637B\u6F5C\u652F\u62B1\u884C\u964D\u7A2E\u8A33\u7CDE\u7A7A\u6027\u4F53\u7B49\u751F\u6B62\u582A\u6369\u5BB6\u7E01\u52B4\u4E2D\u9AD8\u4F4E\u6C17\u8981\u9000\u9762\u8272\u4E3B\u8853\u76F4\u7247\u7DD2\u5C0F\u5927\u5024".split(""));
+function emulateKanjiYomiPass(F) {
+  const hits = F.filter((f) => MULTI_READ_KANJI.has(f.orig)), surfaceHits = F.filter((f) => MULTI_READ_KANJI.has(f.string));
+  if (!hits.length || surfaceHits.length !== hits.length) return F;
+  for (const f of hits) if (f.pos_group1 !== "\u63A5\u5C3E" && f.pos !== "\u63A5\u982D\u8A5E") {
+    const y = f.orig === "\u65B9" && f.read === "\u30DB\u30A6" ? "\u30DB\u30AA" : f.read;
+    f.pron = y;
+    f.read = y;
+  }
+  return F;
+}
+var DAN = {};
+for (const [d, s] of [["a", "\u30A2\u30AB\u30B5\u30BF\u30CA\u30CF\u30DE\u30E4\u30E9\u30EF\u30AC\u30B6\u30C0\u30D0\u30D1\u30A1"], ["i", "\u30A4\u30AD\u30B7\u30C1\u30CB\u30D2\u30DF\u30EA\u30AE\u30B8\u30C2\u30D3\u30D4\u30A3"], ["u", "\u30A6\u30AF\u30B9\u30C4\u30CC\u30D5\u30E0\u30E6\u30EB\u30B0\u30BA\u30C5\u30D6\u30D7\u30F4\u30A5"], ["e", "\u30A8\u30B1\u30BB\u30C6\u30CD\u30D8\u30E1\u30EC\u30B2\u30BC\u30C7\u30D9\u30DA\u30A7"], ["o", "\u30AA\u30B3\u30BD\u30C8\u30CE\u30DB\u30E2\u30E8\u30ED\u30F2\u30B4\u30BE\u30C9\u30DC\u30DD\u30A9"]]) for (const c of s) DAN[c] = d;
+function suppressUnnaturalAuxiliaryULongVowel(F) {
+  for (let i = 0; i < F.length - 1; i++) {
+    const cur = F[i], next = F[i + 1];
+    if (next.pron !== "\u30FC" || next.read !== "\u30A6") continue;
+    const p = cps(cur.pron.replace(/’+$/u, ""));
+    if (!p.length) continue;
+    if (["a", "i", "e"].includes(DAN[p[p.length - 1]])) next.pron = "\u30A6";
+  }
+  return F;
+}
+var YOUON = new Set("\u30E3\u30E5\u30E7\u30A1\u30A3\u30A5\u30A7\u30A9");
+function retreatAccNuc(F) {
+  if (!F.length) return F;
+  let acc = 0, head = F[0];
+  for (const njd of F) {
+    if (njd.chain_flag === 0 || njd.chain_flag === -1) {
+      head = njd;
+      acc = njd.acc;
+    }
+    let pron = cps(njd.pron).filter((c) => !YOUON.has(c));
+    if (pron.length === 0) pron = cps(njd.pron);
+    if (acc > 0) {
+      if (acc <= njd.mora_size) {
+        const nuc = acc - 1 < pron.length ? pron[acc - 1] : pron[0];
+        if (["\u30FC", "\u30C3", "\u30F3"].includes(nuc)) head.acc += -1;
+        acc = -1;
+      } else acc = acc - njd.mora_size;
+    }
+  }
+  return F;
+}
+function modifyAccAfterChaining(F) {
+  if (!F.length) return F;
+  let acc = 0, isAfterNuc = false, phaseLen = 0, head = F[0];
+  for (const njd of F) {
+    if (njd.chain_flag === 0 || njd.chain_flag === -1) {
+      isAfterNuc = false;
+      head = njd;
+      acc = njd.acc;
+      phaseLen = 0;
+    }
+    if (acc === 0) continue;
+    else if (isAfterNuc) {
+      if (njd.ctype === "\u7279\u6B8A\u30FB\u30DE\u30B9") head.acc = njd.cform !== "\u672A\u7136\u5F62" ? phaseLen + 1 : phaseLen + 2;
+      else if (njd.ctype === "\u7279\u6B8A\u30FB\u30CA\u30A4") head.acc = phaseLen;
+      else if (["\u308C\u308B", "\u3089\u308C\u308B", "\u3059\u304E\u308B", "\u305B\u308B", "\u3055\u305B\u308B"].includes(njd.orig)) head.acc = phaseLen + njd.acc;
+      else {
+        isAfterNuc = false;
+        acc = 0;
+      }
+      phaseLen += njd.mora_size;
+    } else {
+      phaseLen += njd.mora_size;
+      if (acc <= njd.mora_size) isAfterNuc = true;
+      else acc = acc - njd.mora_size;
+    }
+  }
+  return F;
+}
+var SEION = {};
+{
+  const d = "\u304C\u304E\u3050\u3052\u3054\u3056\u3058\u305A\u305C\u305E\u3060\u3062\u3065\u3067\u3069\u3070\u3073\u3076\u3079\u307C\u30AC\u30AE\u30B0\u30B2\u30B4\u30B6\u30B8\u30BA\u30BC\u30BE\u30C0\u30C2\u30C5\u30C7\u30C9\u30D0\u30D3\u30D6\u30D9\u30DC\u30F4", s = "\u304B\u304D\u304F\u3051\u3053\u3055\u3057\u3059\u305B\u305D\u305F\u3061\u3064\u3066\u3068\u306F\u3072\u3075\u3078\u307B\u30AB\u30AD\u30AF\u30B1\u30B3\u30B5\u30B7\u30B9\u30BB\u30BD\u30BF\u30C1\u30C4\u30C6\u30C8\u30CF\u30D2\u30D5\u30D8\u30DB\u30A6";
+  cps(d).forEach((c, i) => {
+    SEION[c] = cps(s)[i];
+  });
+}
+function splitKanaMora(text) {
+  const ch = cps(text), out = [];
+  for (let i = 0; i < ch.length; ) {
+    if (i + 1 < ch.length && YOUON.has(ch[i + 1])) {
+      out.push(ch[i] + ch[i + 1]);
+      i += 2;
+    } else {
+      out.push(ch[i]);
+      i++;
+    }
+  }
+  return out;
+}
+function detectOdoriUnit(read) {
+  const m = splitKanaMora(cps(read).map((c) => SEION[c] ?? c).join("")), n = m.length;
+  if (n < 2) return null;
+  for (let p = 1; p <= Math.floor(n / 2); p++) if (m.slice(n - p * 2, n - p).join("|") === m.slice(n - p).join("|")) return p;
+  return null;
+}
+var DAKU = {};
+{
+  const a = "\u30AB\u30AD\u30AF\u30B1\u30B3\u30B5\u30B7\u30B9\u30BB\u30BD\u30BF\u30C1\u30C4\u30C6\u30C8\u30CF\u30D2\u30D5\u30D8\u30DB\u304B\u304D\u304F\u3051\u3053\u3055\u3057\u3059\u305B\u305D\u305F\u3061\u3064\u3066\u3068\u306F\u3072\u3075\u3078\u307B", b = "\u30AC\u30AE\u30B0\u30B2\u30B4\u30B6\u30B8\u30BA\u30BC\u30BE\u30C0\u30C2\u30C5\u30C7\u30C9\u30D0\u30D3\u30D6\u30D9\u30DC\u304C\u304E\u3050\u3052\u3054\u3056\u3058\u305A\u305C\u305E\u3060\u3062\u3065\u3067\u3069\u3070\u3073\u3076\u3079\u307C";
+  cps(a).forEach((c, i) => {
+    DAKU[c] = cps(b)[i];
+  });
+  for (const [x, y] of [["\u30AD", "\u30AE"], ["\u30B7", "\u30B8"], ["\u30C1", "\u30C2"], ["\u30D2", "\u30D3"], ["\u304D", "\u304E"], ["\u3057", "\u3058"], ["\u3061", "\u3062"], ["\u3072", "\u3073"]]) for (const s of x < "\u30A1" ? "\u3083\u3085\u3087" : "\u30E3\u30E5\u30E7") DAKU[x + s] = y + s;
+}
+var DAKU_REV = Object.fromEntries(Object.entries(DAKU).map(([k, v]) => [v, k]));
+var asNoun = (f) => {
+  f.pos = "\u540D\u8A5E";
+  f.pos_group1 = "\u4E00\u822C";
+  f.pos_group2 = "*";
+  f.pos_group3 = "*";
+  f.ctype = "*";
+  f.cform = "*";
+};
+function processOdoriFeatures(F, cFrontend) {
+  const isDancing = (orig) => orig.length > 0 && cps(orig).every((c) => c === "\u3005");
+  const isOdoriji = (orig) => cps(orig).every((c) => "\u309D\u309E\u30FD\u30FE".includes(c));
+  const countOdori = (orig) => cps(orig).filter((c) => c === "\u3005").length;
+  const isKanjiToken = (t) => t.pos !== "\u8A18\u53F7" && cps(t.orig).some(isKanji);
+  const isSingleKanjiToken = (t) => isKanjiToken(t) && cps(t.orig).length === 1 && isKanji(cps(t.orig)[0]);
+  const needsReanalysis = (od, prev, next) => {
+    if (countOdori(od.orig) !== 1 || !isKanjiToken(prev)) return [false, "", null];
+    const po2 = cps(prev.orig);
+    if (po2.length > 1 && isKanji(po2[po2.length - 1])) return [true, po2[po2.length - 1], next && isSingleKanjiToken(next) ? next.orig : null];
+    return [false, "", null];
+  };
+  const processOdoriji = (od, prev) => {
+    const readChars = splitKanaMora(prev.read);
+    let src = prev.pron.replace(/’/g, "");
+    if (src === "") src = prev.read;
+    const pronChars = splitKanaMora(src), moraPerChar = prev.mora_size / readChars.length;
+    const pRead = readChars[readChars.length - 1], pPron = pronChars[pronChars.length - 1];
+    let forced = false;
+    for (const c of cps(od.orig)) {
+      if (c === "\u309E" || c === "\u30FE") {
+        forced = true;
+        break;
+      }
+      if (c === "\u309D" || c === "\u30FD") break;
+    }
+    const single = !cps(pRead).some((c) => YOUON.has(c));
+    if (forced) {
+      od.read = DAKU[pRead] || pRead;
+      od.pron = DAKU[pPron] || pPron;
+    } else if (single) {
+      od.read = DAKU_REV[pRead] || pRead;
+      od.pron = DAKU_REV[pPron] || pPron;
+    } else {
+      od.read = pRead;
+      od.pron = pPron;
+    }
+    od.mora_size = Math.trunc(moraPerChar);
+    if (od.pos === "\u8A18\u53F7") asNoun(od);
+    return od;
+  };
+  let i = 0;
+  while (i < F.length) {
+    if (isDancing(F[i].orig)) {
+      if (i > 0 && cFrontend) {
+        const [need, target, nextKanji] = needsReanalysis(F[i], F[i - 1], i + 1 < F.length ? F[i + 1] : null);
+        if (need) {
+          if (nextKanji !== null) {
+            const an3 = cFrontend(target + nextKanji);
+            if (an3.length > 0) an3[0].chain_flag = 1;
+            F.splice(i, 2, ...an3);
+            i += an3.length;
+            continue;
+          }
+          const an2 = cFrontend(target);
+          F[i] = an2[0];
+          F[i].chain_flag = 1;
+          asNoun(F[i]);
+          i += 1;
+          continue;
+        }
+      }
+      const start = i;
+      let end = i, total = 0;
+      while (end < F.length && isDancing(F[end].orig)) {
+        total += countOdori(F[end].orig);
+        end++;
+      }
+      if (i > 0 && F[i - 1].orig.endsWith("\u3005")) {
+        const prev = F[i - 1], period = detectOdoriUnit(prev.read);
+        if (period !== null) {
+          const rm = splitKanaMora(prev.read), pm = splitKanaMora(prev.pron);
+          if (rm.length >= period && rm.length > 0) {
+            const cur = F[i], n = countOdori(cur.orig), unitMora = Math.floor(prev.mora_size / rm.length) * period;
+            cur.read = rm.slice(rm.length - period).join("").repeat(n);
+            cur.pron = pm.slice(pm.length - period).join("").repeat(n);
+            cur.mora_size = unitMora * n;
+            cur.acc = prev.acc;
+            cur.chain_flag = 1;
+            if (cur.pos === "\u8A18\u53F7") asNoun(cur);
+            i += 1;
+            continue;
+          }
+        }
+      }
+      const normal = [];
+      let j = start - 1, collected = 0;
+      const needed = Math.min(total, 8);
+      while (j >= 0) {
+        const t = F[j];
+        if (["\u8A18\u53F7", "\u30D5\u30A3\u30E9\u30FC", "\u611F\u52D5\u8A5E"].includes(t.pos)) break;
+        if (isKanjiToken(t)) {
+          normal.push(t);
+          collected += cps(t.orig).length;
+          if (collected >= needed) break;
+        } else break;
+        j--;
+      }
+      normal.reverse();
+      if (!normal.length) {
+        i = end;
+        continue;
+      }
+      const singleKanji = normal.length === 1 && cps(normal[0].orig).length === 1;
+      const baseRead = singleKanji ? normal[0].read : normal.map((x) => x.read).join(""), basePron = singleKanji ? normal[0].pron : normal.map((x) => x.pron).join("");
+      const baseMora = singleKanji ? normal[0].mora_size : normal.reduce((a, x) => a + x.mora_size, 0), baseAcc = normal[0].acc;
+      for (let k = start; k < end; k++) {
+        const n = countOdori(F[k].orig);
+        if (singleKanji) {
+          F[k].read = baseRead.repeat(n);
+          F[k].pron = basePron.repeat(n);
+          F[k].mora_size = baseMora * n;
+        } else {
+          F[k].read = baseRead;
+          F[k].pron = basePron;
+          F[k].mora_size = baseMora;
+        }
+        F[k].acc = baseAcc;
+        F[k].chain_flag = 1;
+        if (F[k].pos === "\u8A18\u53F7") asNoun(F[k]);
+      }
+      i = end;
+    } else if (isOdoriji(F[i].orig)) {
+      if (i > 0 && F[i - 1].pos !== "\u8A18\u53F7") {
+        let p = i - 1;
+        while (p >= 0) {
+          if (F[p].pos !== "\u8A18\u53F7" && F[p].mora_size > 0) break;
+          p--;
+        }
+        if (p >= 0) F[i] = processOdoriji(F[i], F[p]);
+      }
+      i += 1;
+    } else i += 1;
+  }
+  return F;
+}
+function questionType(text) {
+  const s = text.trim(), e = (...xs) => xs.some((x) => s.endsWith(x));
+  if (e("?!", "\uFF01\uFF1F", "\uFF1F\uFF01")) return "?!";
+  if (e("?.", "\u3002\uFF1F", "\uFF1F\u3002")) return "?.";
+  if (e("?~", "\uFF5E\uFF1F", "\uFF1F\uFF5E")) return "?~";
+  if (e("?", "\uFF1F")) return "?";
+  return "$";
+}
+var SKIP = /* @__PURE__ */ new Set(["_", "#", "[", "]", "^", "$", "?", "?!", "?.", "?~"]);
+function applyNRules(tokens) {
+  const r = tokens.slice();
+  let next = null;
+  for (let i = r.length - 1; i >= 0; i--) {
+    const t = r[i];
+    if (!SKIP.has(t) && t !== "N") next = t;
+    else if (t === "N") {
+      if (next === null) r[i] = "N_uvular";
+      else if (["m", "my", "b", "by", "p", "py"].includes(next)) r[i] = "N_m";
+      else if (["n", "ny", "t", "ty", "d", "dy", "ts", "ch"].includes(next)) r[i] = "N_n";
+      else if (["k", "ky", "kw", "g", "gy", "gw"].includes(next)) r[i] = "N_ng";
+      else r[i] = "N_uvular";
+      next = r[i];
+    }
+  }
+  return r;
+}
+var RE_PH = /-([^+]+)\+/;
+var RE_PROS = /\/A:([\d-]+)\+([0-9]+)\+([0-9]+)\//;
+function labelsToTokens(labels, text) {
+  const tokens = [], prosody = [], q2 = questionType(text);
+  labels.forEach((label, idx) => {
+    const m = RE_PH.exec(label);
+    if (!m) return;
+    const ph = m[1];
+    if (ph === "sil") {
+      if (idx !== 0 && idx === labels.length - 1 && q2 !== "$") {
+        tokens.push(q2);
+        prosody.push(null);
+      }
+      return;
+    }
+    if (ph === "pau") {
+      tokens.push("_");
+      prosody.push(null);
+      return;
+    }
+    tokens.push(ph);
+    const p = RE_PROS.exec(label);
+    if (!p) {
+      prosody.push(null);
+      return;
+    }
+    const a1 = parseInt(p[1], 10), a2 = parseInt(p[2], 10), a3 = parseInt(p[3], 10);
+    prosody.push([a1, a2, a3]);
+    let a2next = -1;
+    if (idx < labels.length - 1) {
+      const n = RE_PROS.exec(labels[idx + 1]);
+      a2next = n ? parseInt(n[2], 10) : -1;
+    }
+    if (a1 === 0 && a2next === a2 + 1) {
+      tokens.push("]");
+      prosody.push(null);
+    }
+    if (a2 === a3 && a2next === 1) {
+      tokens.push("#");
+      prosody.push(null);
+    }
+    if (a2 === 1 && a2next === 2) {
+      tokens.push("[");
+      prosody.push(null);
+    }
+  });
+  return { tokens: applyNRules(tokens), prosody };
+}
+function mountDictionaryBytes(Module2, dict, dicDir = "/dic") {
+  Module2.FS.mkdir(dicDir);
+  for (const [name, bytes] of [["char.bin", dict.char], ["matrix.bin", dict.matrix], ["unk.dic", dict.unk]]) Module2.FS.writeFile(`${dicDir}/${name}`, bytes);
+  const len = dict.sys.length, ptr = Module2._malloc(len);
+  if (!ptr) throw new Error("out of memory while loading the Japanese dictionary");
+  Module2.HEAPU8.set(dict.sys, ptr);
+  Module2.FS.writeFile(`${dicDir}/sys.dic`, new Uint8Array(0));
+  const node = Module2.FS.lookupPath(`${dicDir}/sys.dic`).node;
+  node.contents = Module2.HEAPU8.subarray(ptr, ptr + len);
+  node.usedBytes = len;
+  Module2.__ojtHeapAtMount = Module2.HEAPU8.buffer;
+}
+function createJaFrontend(Module2, dicDir = "/dic", { naniModel = null, emulateSudachiPass = true } = {}) {
+  const call = (name, text) => {
+    const n = Module2.lengthBytesUTF8(text) + 1, p = Module2._malloc(n);
+    Module2.stringToUTF8(text, p, n);
+    try {
+      const r = Module2[name](p);
+      if (!r) throw new Error(name + " failed (text too long or MeCab error)");
+      return Module2.UTF8ToString(r);
+    } finally {
+      Module2._free(p);
+    }
+  };
+  {
+    const n = Module2.lengthBytesUTF8(dicDir) + 1, p = Module2._malloc(n);
+    Module2.stringToUTF8(dicDir, p, n);
+    const ok = Module2._ojt_init(p);
+    Module2._free(p);
+    if (ok !== 1) throw new Error("MeCab dictionary load failed: " + dicDir);
+  }
+  if (Module2.__ojtHeapAtMount && Module2.__ojtHeapAtMount !== Module2.HEAPU8.buffer) throw new Error("WASM heap grew while MeCab was loading the zero-copy dictionary; rebuild ojt.wasm with a larger INITIAL_MEMORY");
+  {
+    const node = Module2.FS.lookupPath(`${dicDir}/sys.dic`).node;
+    node.contents = new Uint8Array(0);
+    node.usedBytes = 0;
+  }
+  function cFrontend(text) {
+    const s1 = call("_ojt_stage1", text.replace(/[\t\n\r\0]/g, " "));
+    if (!s1) return [];
+    return parseNjd(call("_ojt_stage2", dumpNjd(applyOriginalRuleBeforeChaining(parseNjd(s1)))));
+  }
+  function runFrontend(text, { vanilla = false } = {}) {
+    let F = cFrontend(text);
+    if (!vanilla) {
+      F = modifyFillerAccent(F);
+      F = predictNaniReading(F, naniModel);
+      if (emulateSudachiPass) F = emulateKanjiYomiPass(F);
+      F = suppressUnnaturalAuxiliaryULongVowel(F);
+      F = retreatAccNuc(F);
+      F = modifyAccAfterChaining(F);
+      F = processOdoriFeatures(F, cFrontend);
+    }
+    return F;
+  }
+  function extractFullcontext(text, opts) {
+    const F = runFrontend(text, opts);
+    return F.length ? call("_ojt_labels", dumpNjd(F)).split("\n").filter(Boolean) : [];
+  }
+  function phonemize(text, opts) {
+    const clean = Array.from(text).filter((ch) => ch >= " " || "\n	\r".includes(ch)).join("");
+    if (!clean) return { tokens: [], prosody: [] };
+    return labelsToTokens(extractFullcontext(clean, opts), clean);
+  }
+  return { cFrontend, runFrontend, extractFullcontext, phonemize };
+}
+
+// node_modules/@internal/read-aloud/backend/piper-plus/pua-map.js
+var TOKEN2CHAR = { "a:": "\uE000", "i:": "\uE001", "u:": "\uE002", "e:": "\uE003", "o:": "\uE004", "cl": "\uE005", "ky": "\uE006", "kw": "\uE007", "gy": "\uE008", "gw": "\uE009", "ty": "\uE00A", "dy": "\uE00B", "py": "\uE00C", "by": "\uE00D", "ch": "\uE00E", "ts": "\uE00F", "sh": "\uE010", "zy": "\uE011", "hy": "\uE012", "ny": "\uE013", "my": "\uE014", "ry": "\uE015", "?!": "\uE016", "?.": "\uE017", "?~": "\uE018", "N_m": "\uE019", "N_n": "\uE01A", "N_ng": "\uE01B", "N_uvular": "\uE01C", "rr": "\uE01D", "y_vowel": "\uE01E", "p\u02B0": "\uE020", "t\u02B0": "\uE021", "k\u02B0": "\uE022", "t\u0255": "\uE023", "t\u0255\u02B0": "\uE024", "t\u0282": "\uE025", "t\u0282\u02B0": "\uE026", "ts\u02B0": "\uE027", "a\u026A": "\uE028", "e\u026A": "\uE029", "a\u028A": "\uE02A", "o\u028A": "\uE02B", "an": "\uE02C", "\u0259n": "\uE02D", "a\u014B": "\uE02E", "\u0259\u014B": "\uE02F", "u\u014B": "\uE030", "ia": "\uE031", "i\u025B": "\uE032", "iou": "\uE033", "ia\u028A": "\uE034", "i\u025Bn": "\uE035", "in": "\uE036", "ia\u014B": "\uE037", "i\u014B": "\uE038", "iu\u014B": "\uE039", "ua": "\uE03A", "uo": "\uE03B", "ua\u026A": "\uE03C", "ue\u026A": "\uE03D", "uan": "\uE03E", "u\u0259n": "\uE03F", "ua\u014B": "\uE040", "u\u0259\u014B": "\uE041", "y\u025B": "\uE042", "y\u025Bn": "\uE043", "yn": "\uE044", "\u027B\u0329": "\uE045", "tone1": "\uE046", "tone2": "\uE047", "tone3": "\uE048", "tone4": "\uE049", "tone5": "\uE04A", "p\u0348": "\uE04B", "t\u0348": "\uE04C", "k\u0348": "\uE04D", "s\u0348": "\uE04E", "t\u0348\u0255": "\uE04F", "k\u031A": "\uE050", "t\u031A": "\uE051", "p\u031A": "\uE052", "t\u0283": "\uE054", "d\u0292": "\uE055", "\u025B\u0303": "\uE056", "\u0251\u0303": "\uE057", "\u0254\u0303": "\uE058", "i\u02D0": "\uE059", "y\u02D0": "\uE05A", "e\u02D0": "\uE05B", "\u025B\u02D0": "\uE05C", "\xF8\u02D0": "\uE05D", "\u0251\u02D0": "\uE05E", "o\u02D0": "\uE05F", "u\u02D0": "\uE060", "\u0289\u02D0": "\uE061", "\u0254\u026A": "\uE062", "\u0153\u0303": "\uE063", "\u0250\u0303": "\uE064" };
+
+// node_modules/@internal/read-aloud/backend/piper-plus/encode.js
+function encodeTokens(tokens, prosody, phonemeIdMap, { quirk = true, pauseAt = null } = {}) {
+  const pad = phonemeIdMap["_"][0], ids = [phonemeIdMap["^"][0], pad], pros = [[0, 0, 0], [0, 0, 0]];
+  let k = 0;
+  tokens.forEach((tok, i) => {
+    const mapped = TOKEN2CHAR[tok] ?? tok;
+    for (const ch of mapped) {
+      const m = phonemeIdMap[ch];
+      if (!m) {
+        if (pauseAt && pauseAt.has(ch) && ids.length > 2 && i < tokens.length - 1) {
+          ids.push(pad);
+          pros.push([0, 0, 0]);
+        }
+        continue;
+      }
+      for (const id of m) {
+        ids.push(id);
+        pros.push((quirk ? prosody[k] : prosody[i]) || [0, 0, 0]);
+        k++;
+        if (id !== pad) {
+          ids.push(pad);
+          pros.push([0, 0, 0]);
+        }
+      }
+    }
+  });
+  ids.push(phonemeIdMap["$"][0]);
+  pros.push([0, 0, 0]);
+  return { ids, pros };
+}
+
+// node_modules/@internal/read-aloud/backend/piper-plus/zh-loanwords.js
+var zh_loanwords_default = { "acronyms": { "GPS": ["ji4", "pi4", "ai1", "si4"], "USB": ["you1", "ai1", "si4", "bi4"], "CPU": ["si4", "pi4", "you1"], "GPU": ["ji4", "pi4", "you1"], "AI": ["ei1", "ai4"], "API": ["ei1", "pi4", "ai4"], "URL": ["you1", "a4", "er2", "ai1", "er2"], "SDK": ["ai1", "si4", "di4", "kei4"], "HTML": ["ai1", "chi4", "ti4", "ai1", "mu5", "ai1", "er2"], "CSS": ["si4", "ai1", "si4", "ai1", "si4"], "JS": ["jie4", "ai1", "si4"], "CSV": ["si4", "ai1", "si4", "wei1"], "PDF": ["pi4", "di4", "ai1", "fu2"], "XML": ["ai4", "ke4", "si1", "ai1", "mu5", "ai1", "er2"], "SQL": ["ai1", "si4", "kiu1", "ai1", "er2"], "UI": ["you1", "ai4"], "UX": ["you1", "ai4", "ke4", "si1"], "DNS": ["di4", "en1", "ai1", "si4"], "IP": ["ai4", "pi4"], "TCP": ["ti4", "si4", "pi4"], "UDP": ["you1", "di4", "pi4"], "SSH": ["ai1", "si4", "ai1", "si4", "ai1", "chi4"], "SSL": ["ai1", "si4", "ai1", "si4", "ai1", "er2"], "TLS": ["ti4", "ai1", "er2", "ai1", "si4"], "VPN": ["wei1", "pi4", "en1"], "NPC": ["en1", "pi4", "si4"], "RPG": ["a4", "er2", "pi4", "ji4"], "FPS": ["ai1", "fu2", "pi4", "ai1", "si4"], "CEO": ["si4", "yi1", "ou1"], "CFO": ["si4", "ai1", "fu2", "ou1"], "CTO": ["si4", "ti4", "ou1"], "COO": ["si4", "ou1", "ou1"], "PR": ["pi4", "a4", "er2"], "HR": ["ai1", "chi4", "a4", "er2"], "KPI": ["kei4", "pi4", "ai4"], "ROI": ["a4", "er2", "ou1", "ai4"], "OKR": ["ou1", "kei4", "a4", "er2"], "CRM": ["si4", "a4", "er2", "ai1", "mu5"], "ERP": ["yi1", "a4", "er2", "pi4"], "IOT": ["ai4", "ou1", "ti4"], "AR": ["ei1", "a4", "er2"], "VR": ["wei1", "a4", "er2"], "MR": ["ai1", "mu5", "a4", "er2"], "ML": ["ai1", "mu5", "ai1", "er2"], "DL": ["di4", "ai1", "er2"], "NLP": ["en1", "ai1", "er2", "pi4"], "LED": ["ai1", "er2", "yi1", "di4"], "LCD": ["ai1", "er2", "si4", "di4"], "OLED": ["ou1", "ai1", "er2", "yi1", "di4"], "PHP": ["pi4", "ai1", "chi4", "pi4"], "PNG": ["pi4", "en1", "ji4"], "JPG": ["jie4", "pi4", "ji4"], "MP3": ["ai1", "mu5", "pi4", "san1"], "MP4": ["ai1", "mu5", "pi4", "si4"], "FBI": ["ai1", "fu2", "bi4", "ai4"], "CIA": ["si4", "ai4", "ei1"], "NBA": ["en1", "bi4", "ei1"], "UN": ["you1", "en1"], "EU": ["yi1", "you1"], "UK": ["you1", "kei4"], "US": ["you1", "ai1", "si4"], "USA": ["you1", "ai1", "si4", "ei1"], "ATM": ["ei1", "ti4", "ai1", "mu5"], "PIN": ["pi4", "ai4", "en1"], "FAQ": ["ai1", "fu2", "ei1", "kiu1"], "WTO": ["shuang1", "bi3", "you1", "ti4", "ou1"] }, "loanwords": { "Python": ["pai4", "sen1"], "iPhone": ["ai4", "feng1"], "iPad": ["ai4", "pa4"], "ChatGPT": ["chai4", "ti2", "ji4", "pi4", "ti4"], "Java": ["jia3", "wa3"], "Google": ["gu3", "ge1"], "Facebook": ["fei4", "si1", "bu4", "ke4"], "Microsoft": ["wei2", "ruan3"], "Twitter": ["tui1", "te4"], "YouTube": ["you1", "tu4", "bei4"], "WhatsApp": ["hua2", "ci2", "a1", "pu1"], "WeChat": ["wei1", "xin4"], "TikTok": ["ti4", "ke4", "ti4", "ke4"], "Linux": ["li4", "nei4", "ke4", "si1"], "Docker": ["dao4", "ke4"], "Kubernetes": ["ku4", "bo2", "nei4", "ti4", "si1"], "GitHub": ["ji2", "te4", "ha2", "bu4"], "Slack": ["si1", "la1", "ke4"], "Zoom": ["zu4", "mu3"], "Spotify": ["si1", "bo1", "ti4", "fei1"], "Netflix": ["nai4", "fei1"], "Amazon": ["ya4", "ma3", "xun4"], "Tesla": ["te4", "si1", "la1"], "Bitcoin": ["bi3", "te4", "bi4"], "Ethereum": ["yi3", "tai4", "fang1"], "Discord": ["di2", "si1", "ke1", "de2"], "Reddit": ["rui4", "di2", "te4"], "Steam": ["si1", "ti4", "mu3"], "Minecraft": ["mai4", "ke4", "la1", "fu1", "te4"], "Excel": ["yi1", "ke4", "sai1", "er3"], "Word": ["wo4", "de2"], "PowerPoint": ["pao4", "wei4", "pin3", "te4"], "Skype": ["si1", "kai1", "pu3"], "LinkedIn": ["ling3", "ying1"], "Android": ["an1", "zhuo2"], "iOS": ["ai4", "ou1", "ai1", "si4"], "macOS": ["ma3", "ke4", "ou1", "ai1", "si4"], "Windows": ["wen2", "duo1", "si1"], "Apple": ["a1", "pou1"], "Office": ["ao4", "fei1", "si1"] }, "letter_fallback": { "A": ["ei1"], "B": ["bi4"], "C": ["si4"], "D": ["di4"], "E": ["yi1"], "F": ["ai1", "fu2"], "G": ["ji4"], "H": ["ai1", "chi4"], "I": ["ai4"], "J": ["jie4"], "K": ["kei4"], "L": ["ai1", "er2"], "M": ["ai1", "mu5"], "N": ["en1"], "O": ["ou1"], "P": ["pi4"], "Q": ["kiu1"], "R": ["a4", "er2"], "S": ["ai1", "si4"], "T": ["ti4"], "U": ["you1"], "V": ["wei1"], "W": ["shuang1", "bi3", "you1"], "X": ["ai4", "ke4", "si1"], "Y": ["wai4"], "Z": ["zi4"] } };
+
+// node_modules/@internal/read-aloud/backend/piper-plus/zh-g2p.js
+var INITIAL_TO_IPA = {
+  b: "p",
+  p: "p\u02B0",
+  m: "m",
+  f: "f",
+  d: "t",
+  t: "t\u02B0",
+  n: "n",
+  l: "l",
+  g: "k",
+  k: "k\u02B0",
+  h: "x",
+  j: "t\u0255",
+  q: "t\u0255\u02B0",
+  x: "\u0255",
+  zh: "t\u0282",
+  ch: "t\u0282\u02B0",
+  sh: "\u0282",
+  r: "\u027B",
+  z: "ts",
+  c: "ts\u02B0",
+  s: "s"
+};
+var FINAL_TO_IPA = {
+  a: "a",
+  o: "o",
+  e: "\u0264",
+  i: "i",
+  u: "u",
+  "\xFC": "y_vowel",
+  v: "y_vowel",
+  ai: "a\u026A",
+  ei: "e\u026A",
+  ao: "a\u028A",
+  ou: "o\u028A",
+  an: "an",
+  en: "\u0259n",
+  ang: "a\u014B",
+  eng: "\u0259\u014B",
+  ong: "u\u014B",
+  er: "\u025A",
+  ia: "ia",
+  ie: "i\u025B",
+  iao: "ia\u028A",
+  iu: "iou",
+  iou: "iou",
+  ian: "i\u025Bn",
+  in: "in",
+  iang: "ia\u014B",
+  ing: "i\u014B",
+  iong: "iu\u014B",
+  ua: "ua",
+  uo: "uo",
+  uai: "ua\u026A",
+  ui: "ue\u026A",
+  uei: "ue\u026A",
+  uan: "uan",
+  un: "u\u0259n",
+  uen: "u\u0259n",
+  uang: "ua\u014B",
+  ueng: "u\u0259\u014B",
+  "\xFCe": "y\u025B",
+  ve: "y\u025B",
+  "\xFCan": "y\u025Bn",
+  van: "y\u025Bn",
+  "\xFCn": "yn",
+  vn: "yn",
+  "-i_retroflex": "\u027B\u0329",
+  "-i_alveolar": "\u0268"
+};
+var INITIALS_ORDER = ["zh", "ch", "sh", "b", "p", "m", "f", "d", "t", "n", "l", "g", "k", "h", "j", "q", "x", "r", "z", "c", "s"];
+var RETROFLEX = /* @__PURE__ */ new Set(["zh", "ch", "sh", "r"]);
+var ALVEOLAR = /* @__PURE__ */ new Set(["z", "c", "s"]);
+var ZH_PUNCT_MAP = { "\u3002": ".", "\uFF0C": ",", "\uFF01": "!", "\uFF1F": "?", "\u3001": ",", "\uFF1B": ";", "\uFF1A": ":", "\u2026": ".", "\u2014": ",", "\u201C": '"', "\u201D": '"', "\u2018": "'", "\u2019": "'" };
+var ZH_PUNCT = /* @__PURE__ */ new Set([",", ".", ";", ":", "!", "?", "\u3002", "\uFF0C", "\uFF01", "\uFF1F", "\u3001", "\uFF1B", "\uFF1A", "\u201C", "\u201D", "\u2018", "\u2019", "\u2026", "\u2014"]);
+var WS = /* @__PURE__ */ new Set([9, 10, 11, 12, 13, 32, 133, 160, 5760, 8192, 8193, 8194, 8195, 8196, 8197, 8198, 8199, 8200, 8201, 8202, 8232, 8233, 8239, 8287, 12288]);
+var isWs = (ch) => WS.has(ch.codePointAt(0));
+var RE_ALPHA = /\p{Alphabetic}/u;
+var isCjk = (ch) => {
+  const c = ch.codePointAt(0);
+  return c >= 19968 && c <= 40959 || c >= 13312 && c <= 19903;
+};
+function normalizePinyin(py) {
+  const s = py.replace(/v/g, "\xFC");
+  if (s.startsWith("yu")) return "\xFC" + s.slice(2);
+  if (s.startsWith("y")) {
+    const rest = s.slice(1);
+    return rest.startsWith("i") ? rest : "i" + rest;
+  }
+  if (s.startsWith("w")) {
+    const rest = s.slice(1);
+    return rest.startsWith("u") ? rest : "u" + rest;
+  }
+  return s;
+}
+function splitPinyin(pinyin) {
+  for (const init of INITIALS_ORDER) {
+    if (!pinyin.startsWith(init)) continue;
+    let fin = pinyin.slice(init.length);
+    if (fin === "i") {
+      if (RETROFLEX.has(init)) return [init, "-i_retroflex"];
+      if (ALVEOLAR.has(init)) return [init, "-i_alveolar"];
+    }
+    if ((init === "j" || init === "q" || init === "x") && fin.startsWith("u")) fin = "\xFC" + fin.slice(1);
+    return [init, fin];
+  }
+  return ["", pinyin];
+}
+function pinyinToIpa(syllable, tone) {
+  const [initial, fin] = splitPinyin(syllable), tokens = [];
+  if (initial && INITIAL_TO_IPA[initial]) tokens.push(INITIAL_TO_IPA[initial]);
+  if (fin) {
+    if (Object.hasOwn(FINAL_TO_IPA, fin)) tokens.push(FINAL_TO_IPA[fin]);
+    else for (const ch of fin) if (ch >= "a" && ch <= "z") tokens.push(Object.hasOwn(FINAL_TO_IPA, ch) ? FINAL_TO_IPA[ch] : ch);
+  }
+  if (tone >= 1 && tone <= 5) tokens.push("tone" + tone);
+  return tokens;
+}
+function extractTone(syl) {
+  const c = syl.charCodeAt(syl.length - 1);
+  return c >= 49 && c <= 53 ? [syl.slice(0, -1), c - 48] : [syl, 5];
+}
+function applyToneSandhi(st) {
+  for (let i = 0; i + 1 < st.length; i++) {
+    const t = st[i][1], next = st[i + 1][1];
+    if (t === 3 && next === 3) {
+      st[i][1] = 2;
+      continue;
+    }
+    if (st[i][0] === "i" && t === 1) {
+      if (next === 4) st[i][1] = 2;
+      else if (next >= 1 && next <= 3) st[i][1] = 4;
+      continue;
+    }
+    if (st[i][0] === "bu" && t === 4 && next === 4) st[i][1] = 2;
+  }
+}
+var DIGIT_PINYIN = ["ling2", "yi1", "er4", "san1", "si4", "wu3", "liu4", "qi1", "ba1", "jiu3"];
+function latinToPinyin(token) {
+  if (Object.hasOwn(zh_loanwords_default.loanwords, token)) return zh_loanwords_default.loanwords[token];
+  const up = token.toUpperCase();
+  if (Object.hasOwn(zh_loanwords_default.acronyms, up)) return zh_loanwords_default.acronyms[up];
+  const out = [];
+  for (const ch of up) {
+    if (Object.hasOwn(zh_loanwords_default.letter_fallback, ch)) out.push(...zh_loanwords_default.letter_fallback[ch]);
+    else if (ch >= "0" && ch <= "9") out.push(DIGIT_PINYIN[+ch]);
+  }
+  return out;
+}
+function createChineseG2p({ single, phrases }) {
+  const singleDict = /* @__PURE__ */ new Map(), phraseDict = /* @__PURE__ */ new Map();
+  for (const [k, v] of Object.entries(single)) {
+    const cp = Number(k);
+    if (!Number.isInteger(cp)) continue;
+    const py = Array.isArray(v) ? v[0] : v;
+    if (py) singleDict.set(String.fromCodePoint(cp), py);
+  }
+  for (const [k, v] of Object.entries(phrases)) {
+    const list = typeof v === "string" ? v.split(/\s+/).filter(Boolean) : v.map((x) => Array.isArray(x) ? x[0] : x);
+    if (list.length) phraseDict.set(k, list);
+  }
+  function textToPinyin(chars) {
+    const out = [], n = chars.length;
+    for (let i = 0; i < n; ) {
+      const cp = chars[i];
+      if (!isCjk(cp)) {
+        out.push({ chinese: false, normalized: "", tone: 0 });
+        i++;
+        continue;
+      }
+      let hit = null, hitLen = 0;
+      for (let len = Math.min(n - i, 8); len >= 2; len--) {
+        const p = phraseDict.get(chars.slice(i, i + len).join(""));
+        if (p) {
+          hit = p;
+          hitLen = len;
+          break;
+        }
+      }
+      if (hit) {
+        for (let j = 0; j < hitLen; j++) {
+          const [base, tone] = j < hit.length ? extractTone(hit[j]) : ["", 5];
+          out.push({ chinese: true, normalized: normalizePinyin(base), tone });
+        }
+        i += hitLen;
+        continue;
+      }
+      const raw = singleDict.get(cp);
+      if (raw !== void 0) {
+        const [base, tone] = extractTone(raw.split(",")[0]);
+        out.push({ chinese: true, normalized: normalizePinyin(base), tone });
+      } else out.push({ chinese: false, normalized: "", tone: 0 });
+      i++;
+    }
+    return out;
+  }
+  function phonemize(text) {
+    const chars = Array.from(text), n = chars.length;
+    const wordInfo = new Array(n).fill(null);
+    for (let i = 0; i < n; ) {
+      if (!isCjk(chars[i])) {
+        i++;
+        continue;
+      }
+      let j = i;
+      while (j < n && isCjk(chars[j])) j++;
+      for (let k = i; k < j; k++) wordInfo[k] = [k - i + 1, j - i];
+      i = j;
+    }
+    const cp = textToPinyin(chars);
+    for (let i = 0; i < n; ) {
+      if (!cp[i].chinese) {
+        i++;
+        continue;
+      }
+      let j = i;
+      while (j < n && cp[j].chinese) j++;
+      if (j - i >= 2) {
+        const st = cp.slice(i, j).map((c) => [c.normalized, c.tone]);
+        applyToneSandhi(st);
+        st.forEach(([, tone], k) => {
+          cp[i + k].tone = tone;
+        });
+      }
+      i = j;
+    }
+    const tokens = [], prosody = [];
+    for (let idx = 0; idx < n; idx++) {
+      const ch = chars[idx], c = cp[idx];
+      if (/[A-Za-z0-9]/.test(ch) && !c.chinese) {
+        let j = idx;
+        while (j < n && /[A-Za-z0-9]/.test(chars[j])) j++;
+        const tok = chars.slice(idx, j).join("");
+        if (/[A-Za-z]/.test(tok)) {
+          const syl = latinToPinyin(tok);
+          syl.forEach((py, k) => {
+            const [base, tone2] = extractTone(py);
+            for (const t of pinyinToIpa(normalizePinyin(base), tone2)) {
+              tokens.push(t);
+              prosody.push([tone2, k + 1, syl.length]);
+            }
+          });
+          idx = j - 1;
+          continue;
+        }
+      }
+      if (!c.chinese) {
+        if (Object.hasOwn(ZH_PUNCT_MAP, ch)) {
+          tokens.push(ZH_PUNCT_MAP[ch]);
+          prosody.push(null);
+        } else if (ZH_PUNCT.has(ch)) {
+          tokens.push(ch);
+          prosody.push(null);
+        } else if (isWs(ch)) {
+          tokens.push(" ");
+          prosody.push([0, 0, 0]);
+        } else if (ch >= "0" && ch <= "9" || RE_ALPHA.test(ch)) {
+          tokens.push(ch);
+          prosody.push([0, 0, 1]);
+        }
+        continue;
+      }
+      let normalized = c.normalized;
+      const tone = c.tone;
+      const erhua = normalized.length > 1 && normalized !== "er" && normalized.endsWith("r");
+      if (erhua) normalized = normalized.slice(0, -1);
+      const ipa = pinyinToIpa(normalized, tone);
+      if (erhua && ipa.length) {
+        if (ipa[ipa.length - 1].startsWith("tone")) ipa.splice(ipa.length - 1, 0, "\u025A");
+        else ipa.push("\u025A");
+      }
+      const [pos, len] = wordInfo[idx] || [1, 1];
+      for (const t of ipa) {
+        tokens.push(t);
+        prosody.push([tone, pos, len]);
+      }
+    }
+    return { tokens, prosody };
+  }
+  function encodeRustLayout(text, phonemeIdMap) {
+    const { tokens, prosody } = phonemize(text);
+    const pad = phonemeIdMap["_"][0], ids = [phonemeIdMap["^"][0], pad], pros = [[0, 0, 0], [0, 0, 0]];
+    let eos = "$";
+    tokens.forEach((tok, i) => {
+      const mapped = TOKEN2CHAR[tok] ?? tok;
+      if (mapped === "^" || mapped === "$" || mapped === "?" || mapped === TOKEN2CHAR["?!"] || mapped === TOKEN2CHAR["?."] || mapped === TOKEN2CHAR["?~"]) {
+        if (mapped !== "^") eos = mapped;
+        return;
+      }
+      for (const ch of mapped) {
+        const m = phonemeIdMap[ch];
+        if (m) for (const id of m) {
+          ids.push(id);
+          pros.push(prosody[i] || [0, 0, 0]);
+        }
+      }
+      ids.push(pad);
+      pros.push([0, 0, 0]);
+    });
+    ids.push((phonemeIdMap[eos] || phonemeIdMap["$"])[0]);
+    pros.push([0, 0, 0]);
+    return { ids, pros };
+  }
+  function encode(text, phonemeIdMap, layout = "wasm") {
+    if (layout === "python") {
+      const t = phonemize(text);
+      return encodeTokens(t.tokens, t.prosody, phonemeIdMap);
+    }
+    const r = encodeRustLayout(text, phonemeIdMap);
+    return toReferenceLayout(r.ids, r.pros);
+  }
+  return { phonemize, encodeRustLayout, encode };
+}
+function toReferenceLayout(ids, pros) {
+  const oi = [], op = [], unfiltered = [], keptAt = [];
+  for (let i = 0; i < ids.length; ) {
+    if (ids[i] !== 0) {
+      if (i > 0 && i < ids.length - 1) {
+        keptAt.push(oi.length);
+        unfiltered.push(pros[i]);
+      }
+      oi.push(ids[i]);
+      op.push(pros[i]);
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j < ids.length && ids[j] === 0) j++;
+    oi.push(0);
+    op.push([0, 0, 0]);
+    for (let k = 1; k < j - i; k++) unfiltered.push([0, 0, 0]);
+    i = j;
+  }
+  keptAt.forEach((pos, k) => {
+    op[pos] = unfiltered[k];
+  });
+  return { ids: oi, pros: op };
+}
+
+// node_modules/@internal/read-aloud/backend/piper-plus/en-g2p.js
+var ARPA2IPA = {
+  AA: "\u0251",
+  AE: "\xE6",
+  AH: "\u028C",
+  AO: "\u0254\u02D0",
+  AW: "a\u028A",
+  AY: "a\u026A",
+  B: "b",
+  CH: "t\u0283",
+  D: "d",
+  DH: "\xF0",
+  EH: "\u025B",
+  ER: "\u025A",
+  EY: "e\u026A",
+  F: "f",
+  G: "\u0261",
+  HH: "h",
+  IH: "\u026A",
+  IY: "i\u02D0",
+  JH: "d\u0292",
+  K: "k",
+  L: "l",
+  M: "m",
+  N: "n",
+  NG: "\u014B",
+  OW: "o\u028A",
+  OY: "\u0254\u026A",
+  P: "p",
+  R: "\u0279",
+  S: "s",
+  SH: "\u0283",
+  T: "t",
+  TH: "\u03B8",
+  UH: "\u028A",
+  UW: "u\u02D0",
+  V: "v",
+  W: "w",
+  Y: "j",
+  Z: "z",
+  ZH: "\u0292"
+};
+var FUNCTION_WORDS = new Set("a an the i me my mine myself you your yours yourself he him his himself she her hers herself it its itself we us our ours ourselves they them their theirs themselves am is are was were be been being have has had having do does did will would shall should can could may might must at by for from in of on to with about after before between into through under and but or nor so yet if that than when while as because since not no".split(" "));
+var PUNCT = /* @__PURE__ */ new Set([",", ".", ";", ":", "!", "?"]);
+var VERB_CUES = new Set("to i you we they he she it who will would shall should can could may might must not don't didn't doesn't won't wouldn't can't couldn't let's please".split(" "));
+var PAST_CUES = new Set("have has had having was were been be is are am got get 've 'd".split(" "));
+var OVERRIDES = { live: "L IH1 V", lives: "L IH1 V Z", lead: "L IY1 D", leads: "L IY1 D Z", wind: "W IH1 N D", winds: "W IH1 N D Z", tear: "T IH1 R", tears: "T IH1 R Z" };
+var DIGRAPH_RULES = [
+  ["igh", ["AY1"]],
+  ["th", ["TH"]],
+  ["sh", ["SH"]],
+  ["ch", ["CH"]],
+  ["ph", ["F"]],
+  ["wh", ["W"]],
+  ["ck", ["K"]],
+  ["ng", ["NG"]],
+  ["qu", ["K", "W"]],
+  ["oo", ["UW1"]],
+  ["ee", ["IY1"]],
+  ["ea", ["IY1"]],
+  ["ai", ["EY1"]],
+  ["ay", ["EY1"]],
+  ["oi", ["OY1"]],
+  ["oy", ["OY1"]],
+  ["ou", ["AW1"]],
+  ["ow", ["OW1"]],
+  ["aw", ["AO1"]],
+  ["au", ["AO1"]]
+];
+var LETTER_RULES = {
+  a: ["AE1"],
+  b: ["B"],
+  c: ["K"],
+  d: ["D"],
+  e: ["EH1"],
+  f: ["F"],
+  g: ["G"],
+  h: ["HH"],
+  i: ["IH1"],
+  j: ["JH"],
+  k: ["K"],
+  l: ["L"],
+  m: ["M"],
+  n: ["N"],
+  o: ["AA1"],
+  p: ["P"],
+  q: ["K"],
+  r: ["R"],
+  s: ["S"],
+  t: ["T"],
+  u: ["AH1"],
+  v: ["V"],
+  w: ["W"],
+  x: ["K", "S"],
+  y: ["Y"],
+  z: ["Z"]
+};
+var ONES = "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split(" ");
+var TENS = "  twenty thirty forty fifty sixty seventy eighty ninety".split(" ");
+function cardinal(n) {
+  if (n < 20) return ONES[n];
+  if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? " " + ONES[n % 10] : "");
+  if (n < 1e3) return ONES[Math.floor(n / 100)] + " hundred" + (n % 100 ? " " + cardinal(n % 100) : "");
+  for (const [v, w] of [[1e9, "billion"], [1e6, "million"], [1e3, "thousand"]]) if (n >= v) return cardinal(Math.floor(n / v)) + " " + w + (n % v ? " " + cardinal(n % v) : "");
+  return String(n);
+}
+var ORD = { one: "first", two: "second", three: "third", five: "fifth", eight: "eighth", nine: "ninth", twelve: "twelfth" };
+function ordinal(n) {
+  const w = cardinal(n).split(" "), l = w.pop();
+  w.push(ORD[l] || (l.endsWith("y") ? l.slice(0, -1) + "ieth" : l + "th"));
+  return w.join(" ");
+}
+function expandNumbers(text) {
+  return text.replace(/(\d),(?=\d{3})/g, "$1").replace(/\b(\d+)(st|nd|rd|th)\b/g, (_, d) => ordinal(+d)).replace(/\b(\d+)\.(\d+)\b/g, (_, a, b) => cardinal(+a) + " point " + Array.from(b, (c) => ONES[+c]).join(" ")).replace(/\b\d+\b/g, (d) => {
+    const n = +d;
+    if (n > 1e3 && n < 3e3 && d.length === 4) {
+      if (n === 2e3) return "two thousand";
+      if (n > 2e3 && n < 2010) return "two thousand " + ONES[n % 100];
+      if (n % 100 === 0) return cardinal(n / 100) + " hundred";
+      if (n % 100 < 10) return cardinal(Math.floor(n / 100)) + " oh " + ONES[n % 100];
+      return cardinal(Math.floor(n / 100)) + " " + cardinal(n % 100);
+    }
+    return n < 1e12 ? cardinal(n) : Array.from(d, (c) => ONES[+c]).join(" ");
+  });
+}
+function morphFallback(word, cmu) {
+  const n = word.length, tryBase = (b, suf) => cmu[b] ? cmu[b] + " " + suf : null, dbl = (b) => b.length >= 2 && b[b.length - 1] === b[b.length - 2];
+  let r;
+  if (n > 4 && word.endsWith("ing")) {
+    const b = word.slice(0, -3);
+    if ((r = tryBase(b, "IH0 NG")) || dbl(b) && (r = tryBase(b.slice(0, -1), "IH0 NG")) || (r = tryBase(b + "e", "IH0 NG"))) return r;
+  }
+  if (n > 3 && word.endsWith("ed")) {
+    const b = word.slice(0, -2);
+    if ((r = tryBase(b, "D")) || dbl(b) && (r = tryBase(b.slice(0, -1), "D")) || (r = tryBase(word.slice(0, -1), "D"))) return r;
+  }
+  if (n > 2 && word.endsWith("s")) {
+    if (n > 4 && word.endsWith("ies") && (r = tryBase(word.slice(0, -3) + "y", "Z"))) return r;
+    if (n > 3 && word.endsWith("es") && (r = tryBase(word.slice(0, -2), "IH0 Z"))) return r;
+    if (r = tryBase(word.slice(0, -1), "Z")) return r;
+  }
+  if (n > 3 && word.endsWith("er")) {
+    const b = word.slice(0, -2);
+    if ((r = tryBase(b, "ER0")) || dbl(b) && (r = tryBase(b.slice(0, -1), "ER0"))) return r;
+  }
+  if (n > 3 && word.endsWith("ly")) {
+    if ((r = tryBase(word.slice(0, -2), "L IY0")) || n > 4 && word[n - 3] === "i" && (r = tryBase(word.slice(0, -3) + "y", "L IY0"))) return r;
+  }
+  if (n > 4 && word.endsWith("est") && (r = tryBase(word.slice(0, -3), "AH0 S T"))) return r;
+  return null;
+}
+function letterRules(word) {
+  const out = [];
+  for (let i = 0; i < word.length; ) {
+    const hit = DIGRAPH_RULES.find(([p]) => word.startsWith(p, i));
+    if (hit) {
+      out.push(...hit[1]);
+      i += hit[0].length;
+    } else {
+      const a = LETTER_RULES[word[i]];
+      if (a) out.push(...a);
+      i++;
+    }
+  }
+  return out;
+}
+var SIBILANT = /* @__PURE__ */ new Set(["S", "Z", "SH", "ZH", "CH", "JH"]);
+var VOICELESS = /* @__PURE__ */ new Set(["P", "T", "K", "F", "TH"]);
+function createEnglishG2p({ cmudict, homographs = null }) {
+  const cmu = cmudict;
+  function wordToArpabet(word, prev, next) {
+    if (OVERRIDES[word]) return OVERRIDES[word].split(" ");
+    if (homographs && homographs[word]) {
+      const [p1, p2, pos] = homographs[word], verbish = VERB_CUES.has(prev || "");
+      const pick = pos === "V" ? verbish ? p1 : p2 : pos === "VBD" ? PAST_CUES.has(prev || "") ? p2 : p1 : pos === "VBN" ? next === "to" ? p2 : p1 : verbish ? p2 : p1;
+      return pick.trim().split(" ");
+    }
+    if (cmu[word]) return cmu[word].split(" ");
+    const m = /^(.+)'(s|ll|d|ve|re)$/.exec(word);
+    if (m && cmu[m[1]]) {
+      const base = cmu[m[1]].split(" "), last = base[base.length - 1].replace(/\d/, "");
+      const suf = m[2] === "s" ? SIBILANT.has(last) ? ["IH0", "Z"] : VOICELESS.has(last) ? ["S"] : ["Z"] : { ll: ["AH0", "L"], d: ["D"], ve: ["V"], re: ["ER0"] }[m[2]];
+      return [...base, ...suf];
+    }
+    const bare = word.replace(/'/g, "");
+    if (bare !== word && cmu[bare]) return cmu[bare].split(" ");
+    const mf = morphFallback(bare, cmu);
+    return mf ? mf.split(" ") : letterRules(bare);
+  }
+  function wordToIpa(arpa) {
+    const out = [];
+    for (let i = 0; i < arpa.length; i++) {
+      const m = /^([A-Z]+)(\d)?$/.exec(arpa[i]);
+      if (!m) continue;
+      const base = m[1], stress = m[2] === void 0 ? -1 : +m[2];
+      if (base === "AA" && arpa[i + 1] === "R") {
+        out.push(["\u0251\u02D0\u0279", stress]);
+        i++;
+        continue;
+      }
+      if (base === "ER" && stress === 1) {
+        out.push(["\u025C\u02D0", stress]);
+        continue;
+      }
+      if (base === "AH" && stress === 0) {
+        out.push(["\u0259", stress]);
+        continue;
+      }
+      if (ARPA2IPA[base]) out.push([ARPA2IPA[base], stress]);
+    }
+    return out;
+  }
+  function phonemize(text) {
+    let t = expandNumbers(String(text)).normalize("NFD").replace(/\p{Mn}/gu, "").toLowerCase().replace(/[‘’]/g, "'").replace(/[-‐-―]/g, " ");
+    t = t.replace(/[^ a-z'.,?!;:]/g, " ").replace(/i\.e\./g, "that is").replace(/e\.g\./g, "for example");
+    const raw = t.match(/[a-z']+|[.,?!;:]/g) || [];
+    const tokens = [], prosody = [];
+    let needSpace = false, prev = "";
+    for (let ri = 0; ri < raw.length; ri++) {
+      let w = raw[ri];
+      if (PUNCT.has(w)) {
+        if (w !== ";" && w !== ":") {
+          tokens.push(w);
+          prosody.push([0, 0, 1]);
+        }
+        needSpace = true;
+        continue;
+      }
+      w = w.replace(/^'+|'+$/g, "");
+      if (!w) continue;
+      if (needSpace) {
+        tokens.push(" ");
+        prosody.push([0, 0, 0]);
+      }
+      let ipas = wordToIpa(wordToArpabet(w, prev, raw[ri + 1]));
+      if (FUNCTION_WORDS.has(w)) ipas = ipas.map(([ipa, s]) => [ipa, s >= 1 ? 0 : s]);
+      const count = ipas.reduce((a, [ipa]) => a + Array.from(ipa).length, 0);
+      for (const [ipa, s] of ipas) {
+        const a2 = s === 1 ? 2 : s === 2 ? 1 : 0;
+        if (s === 1) {
+          tokens.push("\u02C8");
+          prosody.push([0, a2, count]);
+        } else if (s === 2) {
+          tokens.push("\u02CC");
+          prosody.push([0, a2, count]);
+        }
+        for (const ch of ipa) {
+          tokens.push(ch);
+          prosody.push([0, a2, count]);
+        }
+      }
+      needSpace = true;
+      prev = w;
+    }
+    return { tokens, prosody };
+  }
+  return { phonemize, wordToArpabet };
+}
+
+// src/sources/removed.ts
+var removedWhy = (lib) => lib === "voice" ? _t("\u5C0F\u6708\u76F8\u88AB\u4F60\u5220\u4E86") : _t("\u4E50\u5668\u97F3\u8272\u5E93\u88AB\u4F60\u5220\u4E86");
+var packPlan = (ready, removed) => ready ? "use" : removed ? "removed" : "download";
+
+// src/singer/worker.ts
+var wasmMems = /* @__PURE__ */ new Set();
+var captureMem = (imports, instance) => {
+  for (const ns2 of Object.values(imports ?? {})) if (ns2 && typeof ns2 === "object") {
+    for (const v of Object.values(ns2)) if (v instanceof WebAssembly.Memory) wasmMems.add(v);
+  }
+  const ex = instance?.exports;
+  if (ex) {
+    for (const v of Object.values(ex)) if (v instanceof WebAssembly.Memory) wasmMems.add(v);
+  }
+};
+{
+  const WA = WebAssembly;
+  const inst = WA.instantiate, stream = WA.instantiateStreaming;
+  WA.instantiate = async function(src, imports) {
+    const r = await inst.call(WebAssembly, src, imports);
+    captureMem(imports, r.instance ?? r);
+    return r;
+  };
+  if (stream) WA.instantiateStreaming = async function(src, imports) {
+    const r = await stream.call(WebAssembly, src, imports);
+    captureMem(imports, r.instance);
+    return r;
+  };
+}
+var heapNow = () => {
+  let n = 0;
+  for (const m of wasmMems) n += m.buffer.byteLength;
+  return n;
+};
+var baseHeap;
+var memNow = () => ({ wasm: heapNow(), cache: speech.used, base: baseHeap });
+var worldBase = () => new URL("../vendor/world/", import.meta.url);
+var hostFiles = false;
+var needSeq = 0;
+var needs = /* @__PURE__ */ new Map();
+function hostGet(path, sha2562) {
+  return new Promise((ok, fail) => {
+    const nid = ++needSeq;
+    needs.set(nid, { ok, fail });
+    self.postMessage({ type: "need", nid, path, ...sha2562 ? { sha256: sha2562 } : {} });
+  });
+}
+var hostPacks = /* @__PURE__ */ new Map();
+var bases = ["https://fangzhangmnm.github.io/pwa-models"];
+var blocked = false;
+var store = createPackStore({ packs: PACKS });
+async function ensurePacks(slugs, what, say) {
+  if (hostFiles) {
+    for (const slug of slugs) {
+      if (hostPacks.has(slug)) continue;
+      say(_t("\u4ECE\u6587\u4EF6\u5939\u8BFB{what}", { what }));
+      const blobs = [];
+      for (const c of PACKS[slug].manifest.chunks) blobs.push(new Blob([await hostGet(`pwa-models/packs/${slug}/${c.name}`, c.sha256)]));
+      hostPacks.set(slug, blobs);
+    }
+    return;
+  }
+  const plan = packPlan((await store.status(slugs)).every((s) => s.ready), blocked);
+  if (plan === "use") return;
+  if (plan === "removed") throw new Error(removedWhy("voice"));
+  let last = null;
+  for (const base of bases) {
+    try {
+      await store.download(slugs, base, (p) => say(_t("\u4E0B\u8F7D{what}\uFF08{e6} MB\uFF0C\u53EA\u4E0B\u8FD9\u4E00\u6B21\uFF09{total}%", { what, e6: (p.total / 1e6).toFixed(0), total: Math.floor(p.done / p.total * 100) })));
+      return;
+    } catch (e) {
+      last = e;
+    }
+  }
+  throw new Error(_t("{what}\u4E0B\u8F7D\u4E0D\u4E0B\u6765\uFF08\u8BD5\u8FC7 {p}\uFF09\uFF1A{Error}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u6A21\u578B\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165", { what, p: bases.join("\u3001"), Error: last?.message ?? last }));
+}
+async function chunksOf(slug) {
+  if (hostFiles) {
+    const b = hostPacks.get(slug);
+    if (!b) throw new Error("pack-missing");
+    return b;
+  }
+  try {
+    return await store.chunks(slug);
+  } catch (e) {
+    if (/^pack-corrupt/.test(e?.message ?? "")) throw new Error(_t("\u7F13\u5B58\u91CC\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u548C\u6E05\u5355\u5BF9\u4E0D\u4E0A\uFF08\u88AB\u6539\u8FC7\u6216\u574F\u4E86\uFF09\uFF0C\u574F\u7684\u90A3\u4E00\u7247\u5DF2\u7ECF\u4E22\u6389\uFF1A\u518D\u5531\u4E00\u6B21\u4F1A\u91CD\u65B0\u4E0B\u8F7D\uFF08{Error}\uFF09", { Error: e.message }));
+    throw e;
+  }
+}
+async function packFile(slug, path) {
+  const files = PACKS[slug].manifest.files;
+  const f = files.find((x) => x.path === path);
+  if (!f) throw new Error(_t("{slug}: \u5305\u91CC\u6CA1\u6709 {path}", { slug, path }));
+  const piece = new Blob(await chunksOf(slug)).slice(f.offset, f.offset + f.bytes);
+  if (!path.endsWith(".gz")) return new Uint8Array(await piece.arrayBuffer());
+  return new Uint8Array(await new Response(piece.stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+}
+var packJson = async (slug, path) => JSON.parse(new TextDecoder().decode(await packFile(slug, path)));
+var SR = 22050;
+var HOP = 256;
+var engine = null;
+var speech = new SpeechCache(32e6);
+var SPEECH_DB = CACHE_DBS.speech;
+var SPEECH_FORMAT = 1;
+var diskBudget = 512e6;
+var storeP = null;
+var speechStore = () => storeP ??= (diskBudget <= 0 ? Promise.resolve(null) : openSpeechStore(SPEECH_DB, diskBudget)).then((st) => {
+  st?.setBudget(diskBudget);
+  return st;
+}).catch(() => null);
+var hex16 = async (bytes) => {
+  try {
+    return [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return new Sha256().update(bytes).hex().slice(0, 16);
+  }
+};
+var bootMs = {};
+async function loadEngine(say) {
+  const V = SINGER.voice, JA = SINGER.lang.ja;
+  let tk = performance.now();
+  const lap = (name) => {
+    const t = performance.now();
+    bootMs[name] = Math.round(t - tk);
+    tk = t;
+  };
+  await ensurePacks([V, SINGER.runtime, JA], _t("\u5C0F\u6708\u76F8"), say);
+  lap("packs");
+  const store2 = await speechStore();
+  say(_t("\u52A0\u8F7D piper \u5F15\u64CE"));
+  const ort = ort_wasm_bundle_min_exports;
+  ort.env.wasm.numThreads = 1;
+  ort.env.wasm.proxy = false;
+  ort.env.wasm.wasmBinary = await packFile(SINGER.runtime, "ort-wasm-simd-threaded.wasm.gz");
+  lap("ortWasm");
+  say(_t("\u52A0\u8F7D\u5C0F\u6708\u76F8\u7684\u6A21\u578B"));
+  const sess = await ort.InferenceSession.create(await packFile(V, "model.onnx"), { executionProviders: ["wasm"], graphOptimizationLevel: "disabled" });
+  ort.env.wasm.wasmBinary = void 0;
+  lap("session");
+  say(_t("\u52A0\u8F7D\u65E5\u8BED\u524D\u7AEF"));
+  const Module2 = await ojt_default({ wasmBinary: await packFile(JA, "ja/ojt.wasm.gz"), print: () => {
+  }, printErr: () => {
+  }, ...hostFiles ? { locateFile: (p) => p } : {} });
+  mountDictionaryBytes(Module2, { sys: await packFile(JA, "ja/sys.dic.gz"), matrix: await packFile(JA, "ja/matrix.bin.gz"), char: await packFile(JA, "ja/char.bin.gz"), unk: await packFile(JA, "ja/unk.dic.gz") });
+  const ja = createJaFrontend(Module2, "/dic", { naniModel: await packJson(JA, "ja/nani-model.json.gz") });
+  lap("jaFrontend");
+  const config = await packJson(V, "config.json");
+  let zh = null;
+  const ensureZh = async (say2) => {
+    if (zh) return;
+    const ZH = SINGER.lang.zh;
+    await ensurePacks([ZH], _t("\u4E2D\u6587\u524D\u7AEF"), say2);
+    zh = createChineseG2p({ single: await packJson(ZH, "zh/pinyin_single.tone3.json.gz"), phrases: await packJson(ZH, "zh/pinyin_phrases.tone3.json.gz") });
+  };
+  let en2 = null;
+  const ensureEn = async (say2) => {
+    if (en2) return;
+    const EN = SINGER.lang.en;
+    await ensurePacks([EN], _t("\u82F1\u6587\u8BCD\u5178"), say2);
+    en2 = makeEnglishFront({ g2p: createEnglishG2p({ cmudict: await packJson(EN, "en/cmudict_data.json.gz"), homographs: await packJson(EN, "en/homographs.json.gz") }), encodeTokens, idMap: config.phoneme_id_map });
+  };
+  async function run(ids, pros, { noiseScale = 0.667, lengthScale = 1.5, noiseW = 0.5, override = null, lang: lang2 = "ja", preset = 0 } = {}) {
+    const n = ids.length, big = (v) => BigInt(v), lid = config.language_id_map?.[lang2] ?? 0;
+    const feeds = {
+      input: new ort.Tensor("int64", BigInt64Array.from(ids, big), [1, n]),
+      input_lengths: new ort.Tensor("int64", BigInt64Array.from([big(n)]), [1]),
+      scales: new ort.Tensor("float32", Float32Array.from([noiseScale, lengthScale, noiseW]), [3]),
+      lid: new ort.Tensor("int64", BigInt64Array.from([big(lid)]), [1]),
+      prosody_features: new ort.Tensor("int64", BigInt64Array.from(pros.flat(), big), [1, n, 3]),
+      speaker_embedding: new ort.Tensor("float32", new Float32Array(256), [1, 256]),
+      speaker_embedding_mask: new ort.Tensor("int64", BigInt64Array.from([0n]), [1, 1])
+    };
+    if (sess.inputNames.includes("preset")) feeds.preset = new ort.Tensor("int64", BigInt64Array.from([big(preset)]), [1]);
+    if (sess.inputNames.includes("dur_override")) feeds.dur_override = new ort.Tensor("float32", override ? Float32Array.from(override) : new Float32Array(n), [1, n]);
+    const r = await sess.run(feeds);
+    return { audio: new Float32Array(r.output.data), durations: Float32Array.from(r.durations.data) };
+  }
+  const piper = speech.wrapPiper({
+    SR,
+    HOP,
+    run,
+    phonemize: (text) => {
+      const r = ja.phonemize(text);
+      return { tokens: r.tokens, prosody: r.prosody, ...encodeTokens(r.tokens, r.prosody, config.phoneme_id_map) };
+    },
+    phonemizeZh: (text) => {
+      const t = zh.phonemize(text), e = zh.encode(text, config.phoneme_id_map);
+      return { tokens: t.tokens, prosody: t.prosody, ids: e.ids, pros: e.pros };
+    },
+    encode: (tokens, prosody) => encodeTokens(tokens, prosody, config.phoneme_id_map),
+    phonemizeEnWords: (words) => en2.phonemizeWords(words)
+  });
+  say(_t("\u52A0\u8F7D WORLD"));
+  let createWorld, worldBytes;
+  if (hostFiles) {
+    const js = await hostGet("vendor/world/world.mjs"), url = URL.createObjectURL(new Blob([js], { type: "text/javascript" }));
+    try {
+      ({ default: createWorld } = await import(
+        /* @vite-ignore */
+        url
+      ));
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+    worldBytes = await hostGet("vendor/world/world.wasm");
+  } else {
+    ({ default: createWorld } = await import(
+      /* @vite-ignore */
+      new URL("world.mjs", worldBase()).href
+    ));
+    const wasm = await fetch(new URL("world.wasm", worldBase()));
+    if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
+    worldBytes = new Uint8Array(await wasm.arrayBuffer());
+  }
+  if (store2) speech.attachStore(store2, `${PACKS[V].packId.slice(0, 16)}:${PACKS[SINGER.runtime].packId.slice(0, 16)}:w${await hex16(worldBytes)}:v${SPEECH_FORMAT}`);
+  const world = speech.wrapWorld(wrapWorld(await createWorld(hostFiles ? { locateFile: (p) => p, instantiateWasm: (imports, done2) => {
+    void WebAssembly.instantiate(worldBytes, imports).then((r) => done2(r.instance));
+    return {};
+  } } : { wasmBinary: worldBytes })));
+  lap("world");
+  baseHeap = heapNow();
+  return { piper, world, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
+}
+var cancelled = /* @__PURE__ */ new Set();
+self.onmessage = async (ev) => {
+  const q2 = ev.data;
+  if (q2.type === "init") {
+    hostFiles = q2.hostFiles;
+    return;
+  }
+  if (q2.type === "file") {
+    const n = needs.get(q2.nid);
+    needs.delete(q2.nid);
+    if (!n) return;
+    if (q2.bytes) n.ok(new Uint8Array(q2.bytes));
+    else n.fail(new Error(q2.error ?? _t("\u4E3B\u7EBF\u7A0B\u6CA1\u8BFB\u5230\u8FD9\u4E2A\u6587\u4EF6")));
+    return;
+  }
+  const post = (m, transfer = []) => self.postMessage(m, transfer);
+  if (q2.type === "cancel") {
+    cancelled.add(q2.id);
+    return;
+  }
+  if (q2.type === "cache") {
+    try {
+      if (q2.diskBytes !== void 0) {
+        diskBudget = q2.diskBytes;
+        (await storeP)?.setBudget(diskBudget);
+      }
+      const st = await speechStore();
+      if (q2.op === "clear") {
+        await st?.clear();
+        speech.clear();
+      }
+      post({ type: "cache", id: q2.id, disk: st ? await st.info() : null });
+    } catch (err) {
+      post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
+    }
+    return;
+  }
+  if (q2.type === "read") {
+    try {
+      const e = engine ? await engine.catch(() => null) : null;
+      if (!e || q2.lang === "en" || q2.lang === "zh" && !e.zhReady()) {
+        post({ type: "read", id: q2.id, ready: false, labels: null, said: [] });
+        return;
+      }
+      post({ type: "read", id: q2.id, ready: true, ...readingCore({ score: q2.score, text: q2.text, lang: q2.lang, piper: e.piper }) });
+    } catch (err) {
+      post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
+    }
+    return;
+  }
+  if (q2.type === "warm") {
+    const say2 = (stage) => post({ type: "progress", id: q2.id, stage });
+    try {
+      if (q2.models?.length) bases = q2.models;
+      blocked = !!q2.blocked;
+      if (q2.diskBytes !== void 0) diskBudget = q2.diskBytes;
+      if (!engine) engine = loadEngine(say2).catch((e) => {
+        engine = null;
+        throw e;
+      });
+      await engine;
+      post({ type: "done", id: q2.id, samples: new Float32Array(0), sr: SR, mem: memNow(), ms: { load: 0, sing: 0, ...Object.keys(bootMs).length ? { boot: bootMs } : {} } });
+      bootMs = {};
+    } catch (err) {
+      post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
+    }
+    return;
+  }
+  if (q2.type !== "sing") return;
+  const say = (stage) => post({ type: "progress", id: q2.id, stage });
+  const check = () => {
+    if (cancelled.has(q2.id)) {
+      cancelled.delete(q2.id);
+      throw new Error("cancelled");
+    }
+  };
+  try {
+    const t0 = performance.now();
+    if (q2.models?.length) bases = q2.models;
+    blocked = !!q2.blocked;
+    if (q2.cacheBytes !== void 0) speech.setBudget(q2.cacheBytes);
+    if (q2.diskBytes !== void 0) {
+      diskBudget = q2.diskBytes;
+      (await storeP)?.setBudget(diskBudget);
+    }
+    if (!engine) engine = loadEngine(say).catch((e2) => {
+      engine = null;
+      throw e2;
+    });
+    const e = await engine;
+    if (q2.lang === "zh") await e.ensureZh(say);
+    if (q2.lang === "en") await e.ensureEn(say);
+    const t1 = performance.now();
+    say(_t("\u5C0F\u6708\u76F8\u5728\u5531"));
+    const breath = q2.breath ?? false;
+    const preset = e.presetDefault[q2.lang] ?? 0;
+    let runs = 0;
+    const piper = { ...e.piper, run: async (ids, pros, o) => {
+      check();
+      say(runs++ === 0 ? _t("\u5FF5\uFF081/2\uFF09") : _t("\u5FF5\uFF082/2\uFF09"));
+      const r2 = await e.piper.run(ids, pros, o);
+      check();
+      return r2;
+    } };
+    const names = { f0: _t("\u5206\u6790\uFF081/3 \u97F3\u9AD8\uFF09"), sp: _t("\u5206\u6790\uFF082/3 \u8C31\u5305\u7EDC\uFF09"), ap: _t("\u5206\u6790\uFF083/3 \u6C14\u58F0\uFF09"), cached: _t("\u5206\u6790\uFF08\u7F13\u5B58\uFF09") };
+    const world = { ...e.world, analyze: (x, fs2, o) => e.world.analyze(x, fs2, o, { stage: (n) => say(names[n] ?? n), check }), synth: (a) => {
+      check();
+      say(_t("\u5408\u6210"));
+      return e.world.synth(a);
+    } };
+    check();
+    const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas: "off", breath, preset, piper, world, loadAtlas: null, opt: q2.opt ?? {}, only: q2.only ?? null });
+    check();
+    const samples = q2.raw || q2.only ? Float32Array.from(r.y) : r.sung;
+    post({ type: "done", id: q2.id, samples, sr: r.SR, mem: memNow(), ms: { load: t1 - t0, sing: performance.now() - t1, ...Object.keys(bootMs).length ? { boot: bootMs } : {} } }, [samples.buffer]);
+    bootMs = {};
+  } catch (err) {
+    cancelled.delete(q2.id);
+    engine = engine && await engine.catch(() => null) ? engine : null;
+    post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
+  }
+};
+/*! Bundled license information:
+
+@internal/read-aloud/backend/piper-plus/vendor/onnxruntime-web/ort.wasm.bundle.min.mjs:
+  (*!
+   * ONNX Runtime Web v1.30.0
+   * Copyright (c) Microsoft Corporation. All rights reserved.
+   * Licensed under the MIT License.
+   *)
+*/
+//# sourceMappingURL=singer-worker-357f583a7854.mjs.map

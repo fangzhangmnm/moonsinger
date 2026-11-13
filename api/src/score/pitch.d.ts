@@ -45,6 +45,12 @@ export declare function keyInterval(f0: number, f1: number): {
 };
 /** 挪八度（Alt+↑↓）。 */
 export declare function octaveBy(p: Pitch, d: number): Pitch;
+/** 给人看的八度数字：中央 C 叫 C 几（middleC；4 = 国际通用，「C3」「C5」两种叫法也有人用；第 18 条起设备上能记成习惯）。
+ *  文件、MusicXML、出声里的八度永远是标准的，不经过这里。 */
+export declare const shownOctave: (octave: number, middleC: number) => number;
+/** 给人看的音名（C♯4 / B♭3，八度照中央 C 叫 C 几）：界面上「字母 + 八度数字」都走这一个出口——键上的字、音域旋钮、字母谱、简谱谱头的八度（统筹 b149a4d9 第 2 点）。 */
+export declare const noteName: (p: Pitch, middleC: number) => string;
+/** 记录 / 诊断用的音名（标准八度、ASCII 升降）；给人看的走 noteName。 */
 export declare function pitchName(p: Pitch): string;
 export declare const samePitch: (a: Pitch | null, b: Pitch | null) => boolean;
 /** 调名（「1=」后面那个字母）：五度数 → 名字（-7 … 7）。pad、谱面、记号编辑框共用。 */

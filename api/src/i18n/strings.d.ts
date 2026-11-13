@@ -865,6 +865,30 @@ export declare const S: {
     readonly 这是什么: {
         readonly en: "What's this";
     };
+    readonly "\u6CA1\u9009\uFF08\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1A{x}\uFF09": {
+        readonly en: "Not chosen (software default: {x})";
+    };
+    readonly "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u6B4C\u91CC\u8FD9\u4E00\u9879\u662F\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D\u65F6\u7167\u5B83\uFF1B\u6B4C\u91CC\u5355\u72EC\u9009\u8FC7\u7684\u7167\u6B4C\u7684\u3002\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": {
+        readonly en: "A habit on this device: used when a song leaves this item at “Follow the software”; a song that picked its own keeps it. Not saved in songs, not synced.";
+    };
+    readonly 习惯看的谱: {
+        readonly en: "Notation I usually read";
+    };
+    readonly 移调辅助: {
+        readonly en: "Transposition aid";
+    };
+    readonly "\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09": {
+        readonly en: "Off (as written)";
+    };
+    readonly "\u6309 C \u8C03\u770B": {
+        readonly en: "Read in C";
+    };
+    readonly "\u8C03\u53F7\u591A\u7684\u65F6\u5019\u628A\u8C31\u6362\u5230 C \u8C03\u6765\u753B\uFF0C\u53EA\u6539\u663E\u793A\u3001\u58F0\u97F3\u4E0D\u53D8\uFF1B\u770B\u4E94\u7EBF\u8C31\u65F6\u8D77\u4F5C\u7528\u3002": {
+        readonly en: "When there are many sharps or flats, redraws the score in C; only the display changes, the sound stays the same. Applies to the staff.";
+    };
+    readonly "\u4E2D\u592E C \u53EB": {
+        readonly en: "Middle C is";
+    };
     readonly 设置: {
         readonly en: "Settings";
     };
@@ -1315,33 +1339,6 @@ export declare const S: {
     readonly 谱种: {
         readonly en: "Notation";
     };
-    readonly 五线谱: {
-        readonly en: "Staff";
-    };
-    readonly 简谱: {
-        readonly en: "Numbered (jianpu)";
-    };
-    readonly 字母谱: {
-        readonly en: "Letter names";
-    };
-    readonly 按音高画在五条线上: {
-        readonly en: "Pitches drawn on the five lines";
-    };
-    readonly "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09": {
-        readonly en: "Digits 1–7 (movable do)";
-    };
-    readonly "\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C4\uFF09": {
-        readonly en: "Actual note names C D E F G A B, sharp/flat at the top right, octave at the bottom right (middle C = C4)";
-    };
-    readonly 移调辅助: {
-        readonly en: "Transposition aid";
-    };
-    readonly "\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09": {
-        readonly en: "Off (as written)";
-    };
-    readonly "\u6309 C \u8C03\u770B": {
-        readonly en: "Read in C";
-    };
     readonly "\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u79FB\u8C03\u8F85\u52A9\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002": {
         readonly en: "Numbered notation is already movable-do (1 = the key's tonic), so the transposition aid doesn't apply; your choice is kept and works again on staff.";
     };
@@ -1353,15 +1350,6 @@ export declare const S: {
     };
     readonly "\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8": {
         readonly en: "Draw the score in C with “1=original key” above every key signature; big key labels show degrees; the keys stay where they are";
-    };
-    readonly "\u4E2D\u592E C \u53EB": {
-        readonly en: "Middle C is";
-    };
-    readonly "C{n}\uFF08\u56FD\u9645\u901A\u7528\uFF09": {
-        readonly en: "C{n} (international)";
-    };
-    readonly "\u5B57\u6BCD\u8C31\u53F3\u4E0B\u89D2\u7684\u516B\u5EA6\u6570\u5B57\u4ECE\u54EA\u513F\u6570\u3002": {
-        readonly en: "Where the octave numbers at the bottom right of letter names count from.";
     };
     readonly 和弦辅助: {
         readonly en: "Chord aid";
@@ -1500,6 +1488,15 @@ export declare const S: {
     };
     readonly "{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6": {
         readonly en: "{what}: follow the software";
+    };
+    readonly 简谱: {
+        readonly en: "Numbered (jianpu)";
+    };
+    readonly 字母谱: {
+        readonly en: "Letter names";
+    };
+    readonly 五线谱: {
+        readonly en: "Staff";
     };
     readonly "\u4E2D\u592E C \u53EB C{n}": {
         readonly en: "Middle C = C{n}";
@@ -3123,6 +3120,27 @@ export declare const S: {
     };
     readonly "{name}\uFF08\u624B\u52A8\uFF09": {
         readonly en: "{name} (manual)";
+    };
+    readonly "\u73A9 tracker \u7684\u53EF\u4EE5\u5148\u7528\u8FD9\u4E2A\uFF0C\u4E0D\u5B8C\u5168\u4E00\u6837": {
+        readonly en: "If you use a tracker, you can start with this; it is not quite the same";
+    };
+    readonly 啦: {
+        readonly en: "la";
+    };
+    readonly "\u9009\u4E86\u7684\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF1A\u65B0\u6B4C\u548C\u6CA1\u5355\u72EC\u9009\u8FC7\u7684\u6B4C\u7167\u5B83\u663E\u793A\uFF0C\u6BCF\u9996\u6B4C\u968F\u65F6\u80FD\u5355\u72EC\u6362\uFF1B\u4EE5\u540E\u5728\u300C\u8BBE\u7F6E \u203A \u754C\u9762\u300D\u91CC\u6539\u3002\u90FD\u53EF\u4EE5\u4E0D\u9009\u3002": {
+        readonly en: "What you pick is kept on this device: new songs, and songs that have not picked their own, are shown this way; each song can still change it any time. Change it later in “Settings › UI”. You can leave any of these unpicked.";
+    };
+    readonly "\u4F60\u4E60\u60EF\u770B\u54EA\u79CD\u8C31\uFF1F": {
+        readonly en: "Which notation do you usually read?";
+    };
+    readonly "\u94A2\u7434\u5377\u5E18\u3001\u5F55\u97F3\u8FD8\u6CA1\u505A\uFF0C\u505A\u597D\u4E86\u4F1A\u52A0\u5728\u8FD9\u91CC": {
+        readonly en: "Piano roll and recording are not ready yet; they will be added here when they are";
+    };
+    readonly "\u8981\u4E0D\u8981\u79FB\u8C03\u8F85\u52A9\uFF1F": {
+        readonly en: "Use the transpose aid?";
+    };
+    readonly 看谱的习惯: {
+        readonly en: "How you read music";
     };
     readonly "\u3093 / \u55EF": {
         readonly en: "ん (hum)";
@@ -5562,6 +5580,21 @@ export declare const S: {
     };
     readonly "{mm} \u6BEB\u7C73": {
         readonly en: "{mm} mm";
+    };
+    readonly 按音高画在五条线上: {
+        readonly en: "Pitches drawn on the five lines";
+    };
+    readonly "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09": {
+        readonly en: "Digits 1–7 (movable do)";
+    };
+    readonly "\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C{n}\uFF09": {
+        readonly en: "The actual note names C D E F G A B, with sharps and flats at the upper right and the octave at the lower right (middle C = C{n})";
+    };
+    readonly "C{n}\uFF08\u56FD\u9645\u901A\u7528\uFF09": {
+        readonly en: "C{n} (international)";
+    };
+    readonly "\u516B\u5EA6\u7684\u6570\u5B57\u4ECE\u54EA\u513F\u6570\uFF1A\u5B57\u6BCD\u8C31\u3001\u7B80\u8C31\u8C31\u5934\u3001\u952E\u4E0A\u7684\u5B57\u3001\u97F3\u57DF\u65CB\u94AE\u90FD\u7167\u5B83\u5199\u3002\u53EA\u6539\u53EB\u6CD5\uFF0C\u6587\u4EF6\u91CC\u3001\u58F0\u97F3\u91CC\u7684\u516B\u5EA6\u4E0D\u53D8\u3002": {
+        readonly en: "Where the octave numbers count from: letter notation, the numbered-notation header, the key labels and the range knob all follow it. Only the naming changes; octaves in the file and in the sound stay the same.";
     };
     readonly 不用: {
         readonly en: "Off";

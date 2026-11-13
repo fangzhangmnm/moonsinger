@@ -6,8 +6,6 @@ import type { PadMusic } from "../keyboard/pad.ts";
 export declare const KEY_CIRCLE: number[];
 /** 不带点的那一组 = 她说话的家（HOME = D4）所在的那个「1 到 7」：1=C 时 C4–B4 不带点。 */
 export declare function homeTonic(fifths: number): number;
-/** 音名的人话写法：C♯4 / B♭3。 */
-export declare const pretty: (p: Pitch) => string;
 /** pad 上有调号以外的音：手动拨的调 / 调式有音不在谱上这里的调号里（1=C 多利亚 / 小调 / 羽调式在 C 大调里 = 没有：同一个 1=、换个主音；1=G 在 C 大调里 = F♯ 不在；布鲁斯带 ♭3 ♭7 = 有）。 */
 export declare function outsideKey(sc: Scale, f: number, keySig: number): boolean;
 /** 宿主这边多知道的几样（写谱 / 出声要音高；旋钮第 i 档是哪个调）；键盘拿到的只是 PadMusic 那部分。 */
@@ -18,4 +16,5 @@ export interface PadMusicHost extends PadMusic {
     fifthsAt(i: number): number;
     scaleIdAt(i: number): string;
 }
-export declare function createPadMusic(get: () => EditorState): PadMusicHost;
+/** middleC = 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字、音域旋钮照它写。 */
+export declare function createPadMusic(get: () => EditorState, middleC: () => number): PadMusicHost;

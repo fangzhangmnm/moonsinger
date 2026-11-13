@@ -10,14 +10,18 @@ const pw = process.env.PLAYWRIGHT_INDEX ?? path.join(family, "20260524 WeebPaint
 const mod = await import(pathToFileURL(pw).href);
 // 测试看中文界面（v0.15.0 起界面跟系统语言；无头浏览器默认 en-US）。要测英文 = newContext({ locale: "en-US" }) 明写。edited by Claude Opus 5.5 2026-11-04
 const ZH = { locale: "zh-CN" };
+// 第一次打开问一次的那张卡（施工单第 18 条，这台设备的习惯）：现有的 E2E 都当成「这台设备问过了」——每一页载入前没有记号就写上（还原出厂清掉之后重新载入也一样）。
+//   专门测卡的那份 = newContext({ firstOpen: true })：不写。edited by Claude Opus 5.5 2026-11-13
+const ASKED = () => { try { const k = "moonsinger-5b1e7c0a92d34f6e:habits-asked"; if (localStorage.getItem(k) === null) localStorage.setItem(k, "1"); } catch { /* 没有 localStorage = 卡本来也不出 */ } };
+const asked = async (ctx, firstOpen) => { if (!firstOpen) await ctx.addInitScript(ASKED); return ctx; };
 const wrapBrowser = (b) => new Proxy(b, { get(t, k) {
-  if (k === "newContext") return (o = {}) => t.newContext({ ...ZH, ...o });
-  if (k === "newPage") return (o = {}) => t.newPage({ ...ZH, ...o });
+  if (k === "newContext") return async ({ firstOpen, ...o } = {}) => asked(await t.newContext({ ...ZH, ...o }), firstOpen);
+  if (k === "newPage") return async ({ firstOpen, ...o } = {}) => { const p = await t.newPage({ ...ZH, ...o }); await asked(p.context(), firstOpen); return p; };
   const v = t[k]; return typeof v === "function" ? v.bind(t) : v;
 } });
 const wrapType = (ty) => new Proxy(ty, { get(t, k) {
   if (k === "launch") return async (...a) => wrapBrowser(await t.launch(...a));
-  if (k === "launchPersistentContext") return (dir, o = {}) => t.launchPersistentContext(dir, { ...ZH, ...o });
+  if (k === "launchPersistentContext") return async (dir, { firstOpen, ...o } = {}) => asked(await t.launchPersistentContext(dir, { ...ZH, ...o }), firstOpen);
   const v = t[k]; return typeof v === "function" ? v.bind(t) : v;
 } });
 export const chromium = wrapType(mod.chromium), firefox = wrapType(mod.firefox), webkit = wrapType(mod.webkit);

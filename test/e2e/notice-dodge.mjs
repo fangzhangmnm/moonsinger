@@ -39,6 +39,15 @@ for (const [w, h, label] of [[1100, 900, "宽屏"], [700, 520, "矮窗口"], [36
   const st = await p.$eval("#noticeStack", (e) => ({ dodged: !!e.dataset.dodged, top: Math.round(e.getBoundingClientRect().top) }));
   check(!st.dodged && st.top < 200, "模态面板开着：照旧挪到顶上（不归这里管）", JSON.stringify(st));
   await p.context().close(); }
+// 面板外壳（.wbe-panel：「这首歌」面板…）同一条（v0.17.28：原来只认 .offer，「打开了 x.mxl」压在「这首歌」面板中间那一行上）
+{ const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage();
+  await p.goto(BASE); await p.waitForTimeout(800);
+  for (let i = 0; i < 3; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(30); }
+  await p.click("#score .score-overlay .ov-song-chip"); await p.waitForSelector(".wbe-panel");
+  await p.evaluate((t) => window.__moonsinger.notice(t), LONG); await p.waitForTimeout(300);
+  const st = await p.$eval("#noticeStack", (e) => ({ dodged: !!e.dataset.dodged, top: Math.round(e.getBoundingClientRect().top) }));
+  check(!st.dodged && st.top < 200, "面板外壳（这首歌）开着：提示条也挪到顶上", JSON.stringify(st));
+  await p.context().close(); }
 await b.close();
 console.log(`\nnotice-dodge: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

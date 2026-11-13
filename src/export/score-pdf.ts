@@ -13,7 +13,7 @@ import { textStyleOf, LYRIC_EM, createTextMeasure, type RawMeasure, type TextMea
 import { engrave, type Prim, type PartView, type EngraveOpts } from "../render/engrave.ts";
 import { lang } from "../i18n/index.ts";
 import type { Song } from "../score/song.ts";
-import { lookOf } from "../look/index.ts";   // 用哪一张纸只问这一处（第 17 条）
+import { lookOf, type LookContext } from "../look/index.ts";   // 用哪一张纸只问这一处（第 17 条）
 import { spMm, lineSp, pageGeoOf, textScaleOf } from "../look/paper.ts";
 import { writePdf, type PdfOp, type PdfPage, type Seg, type MusicOutlines, type PdfStats, type Rgb } from "./pdf.ts";
 import type { TtfFont } from "./ttf.ts";
@@ -57,19 +57,21 @@ export interface ScorePdfArgs { song: Song; parts: PartView[]; font: TtfFont; mu
   measure?: RawMeasure;
   /** 自动小节线（和编辑器的开关一致）。 */
   autoBars?: boolean;
+  /** 这台设备的习惯（第 18 条）：和屏幕同一份，印出来和分页预览一样。不给 = 都没选。 */
+  look?: LookContext;
   /** 只印这一张纸（= 分页预览的「本段」；2026-10-09 user「只印一段或一个声部 这个也到时候需要做，和wxhw差不多」）。不给 = 整首。 */
   onlyPaper?: string;
   // 看谱方式（按 C 调看 / 和弦级数）跟着印（v0.16.13，user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：谱面分家第三刀起是歌里的设置，排版自己从歌里读，这里不用另传。
   }
 /** 印的排版参数 = 分页预览去掉控件的那一套（光标、选区、占位提示、曲段控件都不要）。分页预览 = 这一套 + 控件开关（test/pdf-wysiwyg.test.ts 核：控件开关不改版面）。 */
-export function printOpts(song: Song, sp: number, parts: PartView[], measure: TextMeasure, autoBars: boolean, onlyPaper?: string): EngraveOpts {
-  const paper = lookOf(song).paper, ts = textScaleOf(paper);
-  return { width: lineSp(paper) * sp, sp, locale: lang(), ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measure, autoBars, page: pageGeoOf(paper), ...(onlyPaper ? { onlyPaper } : {}) };   // 看谱方式 = 歌里的那一套（预览 = PDF）；不给 chrome = 不给编辑器留地方
+export function printOpts(song: Song, sp: number, parts: PartView[], measure: TextMeasure, autoBars: boolean, onlyPaper?: string, look?: LookContext): EngraveOpts {
+  const paper = lookOf(song, look).paper, ts = textScaleOf(paper);
+  return { width: lineSp(paper) * sp, sp, locale: lang(), ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measure, autoBars, page: pageGeoOf(paper), ...(onlyPaper ? { onlyPaper } : {}), ...(look?.habits && Object.keys(look.habits).length ? { look } : {}) };   // 看谱方式 = 歌里的那一套（预览 = PDF）；不给 chrome = 不给编辑器留地方
 }
 /** 排版 + 翻成 PDF。返回字节、页数、缺字（这款字体里没有的字 / 轮廓里没有的音乐字形——调用方如实说）。 */
 export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; stats: PdfStats } {
-  const paper = lookOf(a.song).paper, sp = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp * textScaleOf(paper);   // 没写字号的字按这个画
-  const L = engrave(a.song, printOpts(a.song, sp, a.parts, createTextMeasure(a.measure ?? ((s, px) => textEm(a.font, s) * px)), a.autoBars ?? true, a.onlyPaper));
+  const paper = lookOf(a.song, a.look).paper, sp = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp * textScaleOf(paper);   // 没写字号的字按这个画
+  const L = engrave(a.song, printOpts(a.song, sp, a.parts, createTextMeasure(a.measure ?? ((s, px) => textEm(a.font, s) * px)), a.autoBars ?? true, a.onlyPaper, a.look));
   const W = paper.widthMm * PT_PER_MM, H = paper.heightMm * PT_PER_MM, dx = L.pageX.left;
   const pages: PdfPage[] = L.pages.map(() => ({ w: W, h: H, ops: [] }));
   const pageOf = (y: number) => { for (let k = 0; k < L.pages.length; k++) if (y >= L.pages[k]!.top && y < L.pages[k]!.top + L.pages[k]!.h) return k; return -1; };

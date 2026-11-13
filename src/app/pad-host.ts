@@ -30,6 +30,8 @@ import type { InputGate } from "./input-gate.ts";
 /** main.ts 给的那一组访问器：谱的状态与写、出声、页 / 模式、鬼音符、锁、披露、符号格要看的、菜单。 */
 export interface PadGlue {
   state(): EditorState;
+  /** 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字照它写。 */
+  middleC(): number;
   /** gesture = 撤销并步的名字（同一个名字、挨得近的几下并成一步撤销；单声乐器「后按的算数」用）。 */
   update(next: EditorState, gesture?: string): void;
   /** 写一个音并回刚写的下标（-1 = 没写成）。 */
@@ -159,7 +161,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     chordRoots.delete(id);
   }
 
-  const music = createPadMusic(st);   // pad 的音乐知识（src/app/pad-music.ts）：第 k 级是什么音、「1=」的档；键盘只认 k
+  const music = createPadMusic(st, () => g.middleC());   // pad 的音乐知识（src/app/pad-music.ts）：第 k 级是什么音、「1=」的档；键盘只认 k
   /** 「弹」= 音键只响不写：顶栏开关，或找人视图 / 乐器页开着（试听台上那位）。读 finderShown() 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建。 */
   const padImpro = (): boolean => g.gate.why() !== null;   // 2026-11-09 起问总闸（以前 = 「弹」∨ 乐器目录 ∨ 乐器页，各处自己拼）
   /** 写之前问一声：能叠音的声部同时多按都收（80 ms 内 = 叠在一起）；单声乐器几乎同时按下的第二根手指 = false（不写、不响、不亮）。 */

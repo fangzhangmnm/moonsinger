@@ -1,4 +1,5 @@
 import { type EditorState } from "../score/song.ts";
+import { type LookContext } from "../look/index.ts";
 /** 「6/8」→ 拍号；不像拍号 = null。 */
 export declare function parseTime(s: string): {
     beats: number;
@@ -6,6 +7,8 @@ export declare function parseTime(s: string): {
 } | null;
 export interface HeaderPanelGlue {
     state(): EditorState;
+    /** 这台设备的习惯（第 18 条；lookOf 的「当时的情况」，和谱面同一份）。 */
+    lookCtx(): LookContext;
     update(st: EditorState): void;
     /** 改「这首歌怎么看」（这条轨的和弦选项）：宿主走 setSongLook（修改锁的看法，锁着也能切；谱面分家第三刀）。label = 撤销提示里的话。 */
     updateLook(st: EditorState, label: string): void;

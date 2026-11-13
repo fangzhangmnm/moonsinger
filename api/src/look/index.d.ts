@@ -1,9 +1,12 @@
 import { type Song, type PaperSeg, type Choice, type ClefChoice } from "../score/song.ts";
 import { type Paper, type ReadPaper, type PaperKind, type PaperChoice, type Margins } from "../score/paper.ts";
-import { type SongView } from "../score/song-view.ts";
+import { type SongView, type NotationId } from "../score/song-view.ts";
+import { type LookContext, type LookDefaults } from "./habits.ts";
 /** 能跟着软件的那几项（歌级；score.json 顶层同名的键）。arrangement 改声音（第 16 条），textLang 的 "ui" 本身就是跟界面，都不在这里。 */
 export declare const LOOK_KEYS: readonly ["notation", "viewInC", "middleC", "chordTags", "expressions", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"];
 export type LookKey = typeof LOOK_KEYS[number];
+/** "default" 现在等于什么（只在这里；改了 = 所有跟着软件的歌跟着变）。纸的边距和谱高没有自己的一个数：边距 = 这张纸自己的，谱高 = 这一档的。 */
+export { BASE_DEFAULTS, HABIT_KEYS, defaultsFor, type HabitKey, type Habits, type LookContext, type LookDefaults } from "./habits.ts";
 /** 一整份「现在怎么画」：SongView 的每一项（排版、PDF、键上的大字、鬼音符都读它）+ 纸（每个字段都有值）+ 每一项是选的还是跟着软件。 */
 export interface Look extends SongView {
     /** 这张纸到底多大、边距、舒适 / 紧凑、谱高（每个字段都填好了，没有可选的）。屏幕、PDF、存 MusicXML 的 <defaults> 都用这一份。 */
@@ -12,9 +15,11 @@ export interface Look extends SongView {
     readonly follows: {
         readonly [K in LookKey]: boolean;
     };
+    /** 这一次「跟着软件」用的那张表（设备上没选习惯 = BASE_DEFAULTS；第 18 条）。 */
+    readonly base: LookDefaults;
 }
 /** 歌 → 这首歌现在怎么画（纯函数；不读设备、不读界面语言、不读时钟）。认不出来的值（比这一版新的文件带来的）按最基本的那一档画：谱种 = 五线谱、歌词 = 按节奏、小节号 = 印、中央 C = C4、谱上的字 = 跟着界面。 */
-export declare function lookOf(song: Song): Look;
+export declare function lookOf(song: Song, ctx?: LookContext): Look;
 /** 页面设置「音符密度」那一格（第 17 条 17-2：原来 main.ts 自己拿 STAFF_MM 比）：这首歌选了一个谱高、又不是这一档本来的 = 那个毫米数（下拉里写「自定义（N 毫米）」）；否则 null。 */
 export declare const customStaffMm: (look: Look) => number | null;
 /** 页面设置「版面」页「边距」那一行（第 17 条 17-2 顺手，统筹 2026-11-13）：边距按值带着（别家的谱、老文件）才有这一行；跟着软件 = null（不显示）。
@@ -38,7 +43,15 @@ export declare function allDefault(song: Song): Song;
 /** 这首歌里选过的有几项（歌库核对 / 页面设置「全部跟着软件」亮不亮）。 */
 export declare const chosenCount: (song: Song) => number;
 /** 页面设置第一格「跟着软件（现在是：X）」的 X。 */
-export declare function defaultText(key: LookKey): string;
+/** 谱种的名字（页面设置的下拉、设置「习惯看的谱」那一行、第一次打开的卡都从这里拿；加一种谱 = Record 逼着这里多一个名字，几处自动多一格）。 */
+export declare const notationName: (id: NotationId) => string;
+/** 每种谱一句说明（页面设置的问号、第一次打开的卡）；字母谱那句的中央 C 跟着叫法。 */
+export declare const NOTATION_NOTE: Record<NotationId, (middleC: number) => string>;
+/** 「中央 C 叫」的选项上写什么（页面设置、设置「界面」页、第一次打开的卡同一份）。 */
+export declare const middleCLabel: (n: number) => string;
+/** 「中央 C 叫」是什么（一句；三处同一份）。 */
+export declare const MIDDLE_C_NOTE: () => string;
+export declare function defaultText(key: LookKey, ctx?: LookContext): string;
 /** 纸张那一格的字（选的是「其他」时写大小）。 */
 export declare const paperChoiceText: (c: PaperChoice) => string;
 /** 读文件的门口（17-1）：score.json 里没有纸张那几项（老文件、别家的谱）时，从 MusicXML <defaults> 认出来的纸认一次——

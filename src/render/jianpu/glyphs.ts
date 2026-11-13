@@ -7,6 +7,7 @@
 //   换算成字号的几倍——只照搬数，不引用、不抄那份脚本。样张里没有的（和弦、鼓、和弦名、合租）照 UX 稿和裁定，比例跟着字号走。
 /** 字号 → 这里的单位（FS 换算用）。 */
 import { STEM_REGULAR, SMALL_STEM_K } from "../text/index.ts";
+import { shownOctave } from "../../score/pitch.ts";
 const FS = 2.5;
 
 /** 数字的字号（sp）和占多宽（样张 0.62 FS）。 */
@@ -155,7 +156,7 @@ export const SUB_DROP = 0.2 * FS;
 export const SUP_RISE = Math.max(0, -SUP_DY + SCRIPT_K * DIGIT_H - DIGIT_H);
 /** 一个音的字母和两个角标：acc = 右上角（没有升降 = 空）、oct = 右下角的八度数字（写的八度 − 4 + 中央 C 叫 C 几）。 */
 export const letterParts = (p: { step: string; alter: number; octave: number }, middleC: number): { letter: string; acc: string; oct: string } =>
-  ({ letter: p.step, acc: p.alter > 0 ? "♯".repeat(p.alter) : p.alter < 0 ? "♭".repeat(-p.alter) : "", oct: String(p.octave - 4 + middleC) });
+  ({ letter: p.step, acc: p.alter > 0 ? "♯".repeat(p.alter) : p.alter < 0 ? "♭".repeat(-p.alter) : "", oct: String(shownOctave(p.octave, middleC)) });   // 八度数字走给人看的那一个出口（score/pitch.ts）
 /** 角标那一栏多宽（升降号和数字取宽的；升降号照简谱升降号的宽 ACC_W 按字号折算）。 */
 export const scriptW = (p: { step: string; alter: number; octave: number }, middleC: number): number => {
   const lp = letterParts(p, middleC); return SCRIPT_GAP + Math.max(lp.acc ? accRunW(accGlyphsOfText(lp.acc), supAccEm()) : 0, lp.oct.length * SCRIPT_K * DIGIT_W);   // 升降号按 Bravura 字形的宽（7-P）
