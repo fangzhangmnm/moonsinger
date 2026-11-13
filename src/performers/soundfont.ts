@@ -39,7 +39,7 @@ export const soundfont = registerPerformer({
   sound: "notes", poly: true, lyrics: "none", hintRange: null,
   // lightMarks 那一路；琶音只有能叠音的认（v0.9.45）；气声 / 出声的换气乐器本来就不认
   honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio", "roll"],
-  pedals: ["sustain"],   // 踏板 11-1：只声明出声真接了的（延音）；持音、弱音的出声是 11-2，接了再加（test/pedal.test.ts「表说认 = 出声真变了」守着）
+  pedals: ["sustain", "sostenuto", "soft"],   // 踏板：延音（11-1）、持音 / 弱音（11-2）的出声都接了（test/pedal.test.ts「表说认 = 出声真变了」守着）
   connected: false, dynamics: "velocity", grooveCategory: "gm", removable: true,
   defaultCalibrationDb: calFor,
   /** 「现在的默认」（16-6）：模板那一位 + 音乐目录按值抄的那几样（GS 货架上的：缝、能不能音内渐强、音效的原速键 / 固定原速；自己的 .sf2 = 0 / 能 / 不固定），

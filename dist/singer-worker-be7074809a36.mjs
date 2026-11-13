@@ -672,6 +672,11 @@ var S = {
   "\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09": { en: "Press (keep notes ringing)" },
   "\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09": { en: "Lift (stop the notes)" },
   "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09": { en: "Change pedal (stop, then keep again)" },
+  "\u8E29\u4E0B\uFF08\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09": { en: "Press (keep the keys held at this moment)" },
+  "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\uFF09": { en: "Change pedal (stop, then keep the keys held at this moment)" },
+  "\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09": { en: "Press (play a little softer)" },
+  "\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09": { en: "Lift (back to the written loudness)" },
+  "\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09": { en: "Change pedal (means nothing for the soft pedal: stays pressed)" },
   "\u5EF6\u97F3\u8E0F\u677F": { en: "Sustain pedal" },
   "\u6301\u97F3\u8E0F\u677F": { en: "Sostenuto pedal" },
   "\u5F31\u97F3\u8E0F\u677F": { en: "Soft pedal" },
@@ -1128,6 +1133,10 @@ var S = {
   "\u6574\u4E2A\u97F3\u6572\u6EE1\uFF0C\u6BCF\u79D2 {hz} \u4E0B\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\uFF08\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230 / \u97F3\u5185\u8D77\u4F0F / \u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u91CC\uFF09\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B": { en: "Fills the whole note, {hz} hits per second; each hit uses the dynamic at the moment it lands (crescendos, ramps, in-note swells and fp are all in each hit's velocity); accents and the like only on the first hit" },
   "\u7436\u97F3": { en: "Arpeggio" },
   "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u63D0\u65E9 {ms}\uFF0C\u6700\u4E0A\u9762\u90A3\u4E2A\u97F3\u51C6\u65F6\u843D\u62CD\uFF08\u6700\u591A\u644A\u5230\u8FD9\u4E2A\u97F3\u4E00\u534A\u957F\uFF09": { en: "Chord notes start {ms} earlier from low to high; the top note lands on the beat (spread over at most half the note)" },
+  "\u5199\u7684\u7ED3\u5C3E\u843D\u5728\u8E29\u7740\u7684\u4E00\u6BB5\u91CC = \u7559\u5230\u4E0B\u4E00\u6B21\u6362\u8E0F\u677F / \u62AC\u8D77\uFF1B\u540C\u4E00\u4E2A\u97F3\u518D\u5F39 = \u65E7\u7684\u5148\u677E": { en: "A note whose written end falls while the pedal is down keeps sounding until the next change or lift; the same key played again releases the old note first" },
+  "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u97F3\u7559\u5230\u62AC\u8D77\uFF1B\u4E4B\u540E\u5F39\u7684\u7167\u5E38": { en: "The keys held at the moment it is pressed keep sounding until it is lifted; notes played after that are as written" },
+  "\u8E29\u7740\u671F\u95F4\u8D77\u7684\u97F3\u529B\u5EA6 {softVel}\uFF0C\u65F6\u503C\u4E0D\u52A8": { en: "Notes started while it is down: velocity {softVel}, lengths unchanged" },
+  "\u8E29\u7740\u671F\u95F4\u8D77\u7684\u97F3\u53D8\u8F7B": { en: "Notes started while it is down get softer" },
   "\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09": { en: "How marks are performed (this performer's own settings, saved in the song with them)" },
   "\u73B0\u5728\u7684\u9ED8\u8BA4\uFF1A{v}": { en: "Current default: {v}" },
   "\u4EBA\u58F0\uFF08\u8FDE\u7740\u5531\uFF09": { en: "Voice (legato)" },
@@ -10839,4 +10848,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-59308a3615c3.mjs.map
+//# sourceMappingURL=singer-worker-be7074809a36.mjs.map

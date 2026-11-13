@@ -50,7 +50,8 @@ export declare const TEMPLATE: {
         dynamicsVel: Record<Dynamic, number>;
         /** 力度记号 → dB（按音量走的乐手，16-4）：= 9-4 那条公式（深度 800）在上面那张力度表上算出来、取两位小数；从此是数据。 */
         dynamicsDb: Record<Dynamic, number>;
-        /** 记号怎么解读的数，按力度路（每一路只有这一路的出声代码读的键；守卫 test/art-keys-by-path.test.ts）。 */
+        /** 记号怎么解读的数，按力度路（每一路只有这一路的出声代码读的键；守卫 test/art-keys-by-path.test.ts）。
+         *  softVel（弱音踏板，11-2）= −16：施工起的（Claude Opus 5.5，2026-11-13），= 渐强渐弱走一档的那个数（wedgeStepVel 16）取负，没另起一个数；轻多少归 user 的耳朵。 */
         articulation: {
             gain: {
                 rollHz: 14;
@@ -81,6 +82,7 @@ export declare const TEMPLATE: {
                 stressVel: number;
                 unstressVel: number;
                 ghostVel: number;
+                softVel: number;
                 staccatoGate: number;
                 gapSec: number;
                 gapShare: number;
@@ -145,6 +147,7 @@ export declare const ART_TEMPLATE: {
         stressVel: number;
         unstressVel: number;
         ghostVel: number;
+        softVel: number;
         staccatoGate: number;
         gapSec: number;
         gapShare: number;

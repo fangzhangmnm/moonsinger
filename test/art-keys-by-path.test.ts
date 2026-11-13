@@ -16,10 +16,10 @@ import { TEMPLATE } from "../src/format/template.ts";
 let nid = 61000;
 const n = (step: string, oct: number, dur: number, art?: string[], extra: Record<string, unknown> = {}): Token => ({ kind: "note", id: nid++, pitch: { step, alter: 0, octave: oct }, dur, lyric: "ら", ...(art ? { art } : {}), ...extra }) as Token;
 const st0 = initState(), pid = st0.song.parts[0]!.id, p1 = st0.song.papers[0]!, role = st0.song.parts[0]!.role;
-/** 一条把记号都用上的谱：每种音头 / 起伏 / 断连、和弦上的琶音、滚奏、没终点的渐强。 */
+/** 一条把记号都用上的谱：每种音头 / 起伏 / 断连、和弦上的琶音、滚奏、没终点的渐强、弱音踏板（11-2：softVel）。 */
 const body: Token[] = [
   { kind: "dyn", id: nid++, value: "mf" } as Token, n("C", 4, TPQ, ["staccato"]), n("D", 4, TPQ, ["accent"]), n("E", 4, TPQ, ["marcato"]), n("F", 4, TPQ, ["sfz"]), n("G", 4, TPQ, ["fp"]),
-  n("A", 4, TPQ, ["tenuto"]), n("B", 4, TPQ, ["breath"]), n("C", 5, TPQ, [], { slur: true }), n("D", 5, TPQ), n("E", 5, 2 * TPQ, ["swellUp"]), n("F", 5, 2 * TPQ, ["swellDown"]),
+  n("A", 4, TPQ, ["tenuto"]), n("B", 4, TPQ, ["breath"]), n("C", 5, TPQ, [], { slur: true }), { kind: "pedal", id: nid++, which: "soft", act: "down" } as Token, n("D", 5, TPQ), { kind: "pedal", id: nid++, which: "soft", act: "up" } as Token, n("E", 5, 2 * TPQ, ["swellUp"]), n("F", 5, 2 * TPQ, ["swellDown"]),
   n("G", 4, TPQ, ["stress"]), n("A", 4, TPQ, ["unstress"]), n("B", 4, TPQ, ["ghost"]), n("G", 4, TPQ, ["arpeggio"], { chord: [{ step: "E", alter: 0, octave: 4 }, { step: "C", alter: 0, octave: 4 }] }),
   n("C", 4, 2 * TPQ, ["roll"]), n("D", 4, TPQ), n("E", 4, TPQ), { kind: "hairpin", id: nid++, dir: "cresc" } as Token, n("F", 4, TPQ), n("G", 4, TPQ), { kind: "rest", id: nid++, dur: TPQ } as Token,
 ];

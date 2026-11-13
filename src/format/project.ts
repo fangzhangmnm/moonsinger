@@ -184,7 +184,7 @@ const CAND_KEYS = new Set(["id", "name", "castAs", "asCast", "instrument", "gm",
 const ART_BOTH = ["staccatoGate", "gapSec", "gapShare", "breathSec", "breathShare", "fpSec", "swellDb", "canSwell", "arpeggioSec", "rollHz"];
 export const ART_KEYS_BY = {
   gain: new Set([...ART_BOTH, "accentDb", "marcatoDb", "accentSec", "sfzDb", "sfzSec", "stressDb", "unstressDb", "ghostDb"]),
-  velocity: new Set([...ART_BOTH, "accentVel", "marcatoVel", "wedgeStepVel", "sfzVel", "stressVel", "unstressVel", "ghostVel"]),
+  velocity: new Set([...ART_BOTH, "accentVel", "marcatoVel", "wedgeStepVel", "sfzVel", "stressVel", "unstressVel", "ghostVel", "softVel"]),
 } as const;
 /** 力度那张表按路分（16-4，统筹 2026-11-12 夜）：按音量走的 = dynamicsDb；按力度敲的 = dynamicsVel + articulation.wedgeStepVel。另一路的（老文件里 SoundFont 身上的 dynamicsDb / wedgeStepDb、
  *  小月相身上的 dynamicsVel / wedgeStepVel）在这一版格式里没有定义 = 存的时候不写。 */
@@ -774,7 +774,7 @@ export function activePerfSpec(extras: Extras, role: string): PerfSpec | null {
     sfzDb: a.sfzDb, sfzSec: Math.max(0.01, a.sfzSec), stressDb: a.stressDb, unstressDb: a.unstressDb, ghostDb: a.ghostDb };
   const dv = (c.dynamicsVel ?? {}) as Record<Dynamic, number>;
   return { path, ...common, dynamicsVel: Object.fromEntries(DYN_KEYS.map((d) => [d, clamp(dv[d], 1, 127)])) as Record<Dynamic, number>, accentVel: a.accentVel, marcatoVel: a.marcatoVel,
-    wedgeStepVel: a.wedgeStepVel, sfzVel: a.sfzVel, stressVel: a.stressVel, unstressVel: a.unstressVel, ghostVel: a.ghostVel };
+    wedgeStepVel: a.wedgeStepVel, sfzVel: a.sfzVel, stressVel: a.stressVel, unstressVel: a.unstressVel, ghostVel: a.ghostVel, softVel: a.softVel };
 }
 const DYN_KEYS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const;
 /** 送进录音房之前的那一处查（统筹 2026-11-12 夜第 5 条；core/render.ts performerInfoOf 叫它）：这位的数缺了哪些 / 不是数的有哪些（空 = 没毛病）。缺 = 明着报错，不在音频线程里抛。 */

@@ -42,6 +42,7 @@ const ROWS: readonly Row[] = [
   { id: "m:breath", label: () => _t("呼吸"), keys: [art("breathSec"), art("breathShare")], when: (p) => p.sound === "notes" && honors("breath")(p) },
   { id: "m:gap", label: () => _t("音和音之间（最多）"), keys: [art("gapShare")], when: (p) => p.sound === "notes" },
   { id: "m:arpeggio", label: () => _t("琶音"), keys: [art("arpeggioSec")], when: honors("arpeggio") },
+  { id: "m:soft", label: () => _t("弱音踏板"), keys: [art("softVel")], when: (p) => p.dynamics === "velocity" && !!p.pedals?.includes("soft") },   // 踏板 11-2：只有按力度敲、认弱音的有这个键
 ];
 
 export interface DefaultDiff {

@@ -53,10 +53,11 @@ export const TEMPLATE = {
     dynamicsVel: { ppp: 16, pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112, fff: 126 } as Record<Dynamic, number>,
     /** 力度记号 → dB（按音量走的乐手，16-4）：= 9-4 那条公式（深度 800）在上面那张力度表上算出来、取两位小数；从此是数据。 */
     dynamicsDb: { ppp: -29.99, pp: -19.51, p: -13.79, mp: -9.92, mf: -6.69, f: -4.05, ff: -1.82, fff: -0.11 } as Record<Dynamic, number>,
-    /** 记号怎么解读的数，按力度路（每一路只有这一路的出声代码读的键；守卫 test/art-keys-by-path.test.ts）。 */
+    /** 记号怎么解读的数，按力度路（每一路只有这一路的出声代码读的键；守卫 test/art-keys-by-path.test.ts）。
+     *  softVel（弱音踏板，11-2）= −16：施工起的（Claude Opus 5.5，2026-11-13），= 渐强渐弱走一档的那个数（wedgeStepVel 16）取负，没另起一个数；轻多少归 user 的耳朵。 */
     articulation: {
       gain: { ...ART_BOTH, rollHz: ROLL_HZ.pitched, accentDb: 4, marcatoDb: 7, accentSec: 0.12, sfzDb: 9, sfzSec: 0.2, stressDb: 2, unstressDb: -3, ghostDb: -9 },
-      velocity: { ...ART_BOTH, rollHz: ROLL_HZ.pitched, accentVel: 16, marcatoVel: 28, wedgeStepVel: 16, sfzVel: 32, stressVel: 8, unstressVel: -10, ghostVel: -28 },
+      velocity: { ...ART_BOTH, rollHz: ROLL_HZ.pitched, accentVel: 16, marcatoVel: 28, wedgeStepVel: 16, sfzVel: 32, stressVel: 8, unstressVel: -10, ghostVel: -28, softVel: -16 },
     },
     rollHz: ROLL_HZ,
     /** 乐手「响度」（calibrationDb，dB）：0 = 这个库 / 引擎的满音量。库和库要对齐时由那个库的插件报一个非零的数（registry.ts defaultCalibrationDb）。 */

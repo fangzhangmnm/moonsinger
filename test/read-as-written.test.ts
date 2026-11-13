@@ -119,3 +119,28 @@ describe("老文件（lounge 3，上一版代码写的冻结样本）进门：�
   });
 });
 
+// 踏板 11-2（lounge minor 5，2026-11-13 Claude Opus 5.5（MoonSinger小弟））：新键 articulation.softVel（弱音踏板踩着期间起的音加多少 MIDI 力度）。
+//   冻结样本 = 上一版（lounge 4）的代码写的那份（`test/fixtures/format/minor/lounge-4/`）：按力度敲的乐手身上没有这个键
+describe("老文件（lounge 4，上一版代码写的冻结样本）进门：按力度敲的乐手补 softVel = 模板的值，不说话、不算改过；按音量走的不补；存的时候写", () => {
+  const bytes = new Uint8Array((fs as unknown as { readFileSync(u: URL): Uint8Array }).readFileSync(new URL("fixtures/format/minor/lounge-4/sample.mxl", import.meta.url)));
+  type C = { instrument: Record<string, any>; articulation: Record<string, any> };
+  const all = (o: ReturnType<typeof openBytes>) => o.song.parts.flatMap((p) => (o.extras.lounge[p.role] as { candidates: C[] }).candidates);
+  it("SoundFont 的每一位补 softVel = 模板（−16）；小月相 / 元音版不补；没有提示；不算改过", () => {
+    const o = openBytes("lounge-4.mxl", bytes), cs = all(o), sf = cs.filter((c) => c.instrument.engine === "soundfont"), other = cs.filter((c) => c.instrument.engine !== "soundfont");
+    assert(sf.length > 0 && other.length > 0, `样本里两种都有（${sf.length} / ${other.length}）`);
+    eq(sf.map((c) => c.articulation.softVel).join(), sf.map(() => TEMPLATE.lounge.articulation.velocity.softVel).join(), "按力度敲的补成模板的值");
+    assert(other.every((c) => !("softVel" in c.articulation)), "按音量走的不认踏板 = 这个键没有定义、不补");
+    eq(o.notices.join(" / "), "", "补数不说话");
+    const D = createDocument({ st: initState(o.song), extras: o.extras }, { now: () => 0, onState() {}, onExtras() {}, onRefused() {}, onRestored() {} });
+    eq(D.dirty(), false);
+  });
+  it("存一次 = softVel 写进文件、休息室是这一版（minor 5）；再读再存逐字节相同", () => {
+    const o = openBytes("lounge-4.mxl", bytes), save = (x: typeof o) => saveMxl({ song: x.song, extras: x.extras, app: "t", date: "2026-11-13T00:00:00.000Z", view: x.view, references: x.references });
+    const b1 = save(o), z1 = unzipSync(b1);
+    const sfRole = o.song.parts.map((p) => p.role).find((r) => (o.extras.lounge[r] as { candidates: C[] }).candidates.some((c) => c.instrument.engine === "soundfont"))!;
+    const j = JSON.parse(strFromU8(z1[`.moonsinger/lounge/${sfRole}.json`]!));
+    eq(j.minor, 5); assert(j.candidates.filter((c: C) => c.instrument.engine === "soundfont").every((c: C) => c.articulation.softVel === -16), "写进去了");
+    const z2 = unzipSync(save(openBytes("again.mxl", b1)));
+    for (const k of Object.keys(z1)) if (k !== ".moonsinger/manifest.json") assert(z1[k]!.length === z2[k]!.length && z1[k]!.every((v, i) => v === z2[k]![i]), `${k} 再存逐字节相同`);
+  });
+});

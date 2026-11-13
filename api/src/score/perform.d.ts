@@ -40,7 +40,8 @@ export interface VelSpec extends PerfCommon {
     sfzVel: number;
     stressVel: number;
     unstressVel: number;
-    ghostVel: number;
+    ghostVel: number; /** 弱音踏板踩着期间起的音加多少力度（MIDI 格，负 = 轻；踏板 11-2）。 */
+    softVel: number;
 }
 export type PerfSpec = GainSpec | VelSpec;
 /** 音量曲线的一段：t0–t1（秒，谱的时钟）这段多少 dB；-Infinity = 静音。 */

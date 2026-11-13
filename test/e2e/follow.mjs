@@ -34,7 +34,10 @@ await p.waitForTimeout(1500);
 await p.mouse.move(400, 300); await p.mouse.wheel(0, 3000); await p.waitForTimeout(300);
 await p.click("#playBtn", { button: "right" }); await p.waitForTimeout(100);
 check(!!(await p.$('.ctx-menu [data-v="reveal"]')), "放着的时候 |▶ 的菜单里有「跳到正在放的地方」");
-await p.click('.ctx-menu [data-v="reveal"]'); await p.waitForTimeout(900);
+await p.click('.ctx-menu [data-v="reveal"]');
+// 等条件、不按固定时间（2026-11-13，统筹限时查 follow：原来固定等 900 ms 就量，平滑滚回去 + 播放头还在往前走，整套并行跑完紧跟着补跑、负载最重时偶发红；
+//   闲着单跑连 10 遍全绿）。等「正在放的音整个在谱的可见区里」，最多 3 秒：真不滚回去照样红
+await p.waitForFunction(() => { const h = document.querySelector(".play-hl"), sc = document.querySelector("#score")?.getBoundingClientRect(); if (!h || !sc) return false; const r = h.getBoundingClientRect(); return r.top - sc.top >= 0 && r.bottom - sc.top <= sc.height; }, null, { timeout: 3000 }).catch(() => {});
 { const g = await p.evaluate(() => { const h = document.querySelector(".play-hl"), sc = document.querySelector("#score").getBoundingClientRect(); if (!h) return null; const r = h.getBoundingClientRect(); return { top: r.top - sc.top, bottom: r.bottom - sc.top, vh: sc.height }; });
   check(!!g && g.top >= 0 && g.bottom <= g.vh, "点了 = 正在放的音回到屏幕里", JSON.stringify(g)); }
 if (await p.evaluate(() => window.__moonsinger.engine.playing)) await p.click("#playBtn");

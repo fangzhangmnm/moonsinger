@@ -2918,7 +2918,14 @@ function openRepeatMenu(): void {
 }
 // ── 踏板（11-1，设计稿 ai-docs/20261112-pedals-and-ring-design.md 第 6 节；user 11-12「那么几种踏板也做一下，钢琴也需要」）──
 //   菜单里的字带上效果、不让人去想踏板的机械（user「我觉得有些乐器反而是你踩下去才是让它停吧」——存的、说的都是「留不留住音」）。
-const PEDAL_ACT_LABEL: Record<PedalTok["act"], string> = { down: _t("踩下（留住音）"), up: _t("抬起（止音）"), change: _t("换踏板（先止音、接着留）") };
+/** 每种踏板的动作说成它的效果（设计第 6 节：说效果，不说踏板往哪边踩）。持音 / 弱音的字（11-2）是施工起的，统筹审。 */
+const PEDAL_ACT_LABEL: Record<PedalKind, Record<PedalTok["act"], string>> = {
+  sustain: { down: _t("踩下（留住音）"), up: _t("抬起（止音）"), change: _t("换踏板（先止音、接着留）") },
+  sostenuto: { down: _t("踩下（留住这一刻按着的音）"), up: _t("抬起（止音）"), change: _t("换踏板（先止音、再留住这一刻按着的）") },
+  soft: { down: _t("踩下（弹得轻一点）"), up: _t("抬起（回到原来的轻重）"), change: _t("换踏板（对弱音没有意思：照旧踩着）") },
+};
+/** 菜单里给写的动作：只有延音有「换踏板」；持音 / 弱音的换踏板只会从别家谱读进来（照读、照画；点它的小菜单里亮着、能改能删，不给新写）。 */
+const PEDAL_ACTS: Record<PedalKind, readonly PedalTok["act"][]> = { sustain: ["down", "up", "change"], sostenuto: ["down", "up"], soft: ["down", "up"] };
 const PEDAL_NAME: Record<PedalKind, string> = { sustain: _t("延音踏板"), sostenuto: _t("持音踏板"), soft: _t("弱音踏板") };
 /** 台上这位不认这种踏板 → 一句话；没人上场 = 不说（同演奏法）。 */
 function pedalIgnoredWhy(which: PedalKind): string | null {
@@ -2932,24 +2939,27 @@ function disclosePedal(which: PedalKind, idle: "already" | "notDown" | undefined
   if (idle === "already") info(_t("这里本来就踩着：这个踩下不起作用（画灰）"));
   else if (idle === "notDown") info(_t("这里本来没踩着：这个抬起不起作用（画灰）"));
 }
-/** 符号层「踏板」：字跟着光标前那个音那儿现在踩没踩（没踩 = 踩下；踩着 = 抬起 / 换踏板）；那个音上已经有的亮着、再点 = 去掉；有选区 = 把这一段踩住。
- *  11-1 只有延音一行（持音 / 弱音的出声是 11-2，到时候各加一行）。 */
+/** 符号层「踏板」：三种踏板各一行（设计第 6 节；11-2 加了持音、弱音两行）。每一行的字跟着光标前那个音那儿这一种现在踩没踩（没踩 = 踩下；踩着 = 抬起 / 换踏板）；
+ *  那个音上已经有的亮着、再点 = 去掉；有选区 = 把这一段踩住。台上这位不认的那一种：照写、画灰，那一行下面说一句。 */
 function openPedalMenu(): void {
-  const r = padEl.getBoundingClientRect(), which: PedalKind = "sustain", here = pedalHere(D.st, which);
-  if (!here) { info(_t("踏板记号挂在音上：这张纸上光标附近还没有音")); return; }
+  const r = padEl.getBoundingClientRect(), KINDS: PedalKind[] = ["sustain", "sostenuto", "soft"];
+  if (!pedalHere(D.st, "sustain")) { info(_t("踏板记号挂在音上：这张纸上光标附近还没有音")); return; }
   const item = (v: string, label: string, on = false, title = "") => `<button class="btn ctx-item${on ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</button>`;
-  const why = pedalIgnoredWhy(which);
-  const acts: PedalTok["act"][] = here.down ? ["up", "change"] : ["down"];
-  if (here.mark && !acts.includes(here.mark.act)) acts.unshift(here.mark.act);   // 那个音上已经挂着的（哪怕不起作用）也列出来、亮着，点了 = 去掉
-  const body = D.st.sel
-    ? item("span", _t("把这一段踩住（选区开头踩下、结尾抬起）"))
-    : acts.map((a) => item(`act:${a}`, PEDAL_ACT_LABEL[a], here.mark?.act === a, here.mark?.act === a ? _t("这个音上已经有了：再点 = 去掉") : "")).join("");
+  const rows = KINDS.map((which) => {
+    const here = pedalHere(D.st, which)!, why = pedalIgnoredWhy(which);
+    const acts: PedalTok["act"][] = here.down ? PEDAL_ACTS[which].filter((a) => a !== "down") : ["down"];
+    if (here.mark && !acts.includes(here.mark.act)) acts.unshift(here.mark.act);   // 那个音上已经挂着的（哪怕不起作用）也列出来、亮着，点了 = 去掉
+    const body = D.st.sel
+      ? item(`${which}:span`, _t("把这一段踩住（选区开头踩下、结尾抬起）"))
+      : acts.map((a) => item(`${which}:act:${a}`, PEDAL_ACT_LABEL[which][a], here.mark?.act === a, here.mark?.act === a ? _t("这个音上已经有了：再点 = 去掉") : "")).join("");
+    return `<div class="ctx-hint ctx-what">${esc(PEDAL_NAME[which])}：${esc(SIGNS[`pedal:${which}`].says(lang()))}</div>` + (why ? `<div class="ctx-hint">${esc(why)}</div>` : "") + body;
+  });
   ctxMenu("pedal-menu",
-    `<div class="ctx-hint ctx-what">${esc(PEDAL_NAME[which])}：${esc(SIGNS[`pedal:${which}`].says(lang()))}${D.st.sel ? "" : esc(_t("（从光标前那个音起）"))}</div>` +
-    (why ? `<div class="ctx-hint">${esc(why)}</div>` : "") + body,
+    (D.st.sel ? "" : `<div class="ctx-hint">${esc(_t("（从光标前那个音起）"))}</div>`) + rows.join(`<div class="ctx-sep"></div>`),
     { x: r.left + r.width / 2, y: r.top - 4 },
     (v) => {
-      const res = insertPedal(D.st, which, v === "span" ? "down" : (v.slice(4) as PedalTok["act"]));
+      const [which, kind, act] = v.split(":") as [PedalKind, string, PedalTok["act"] | undefined];
+      const res = insertPedal(D.st, which, kind === "span" ? "down" : act!);
       if (res.did === "none") return;
       update(res.st);
       if (res.did !== "removed") disclosePedal(which, res.idle);
@@ -2963,7 +2973,7 @@ function openPedalMarkMenu(i: number, at: { x: number; y: number }): void {
   ctxMenu("pedal-menu",
     `<div class="ctx-hint ctx-what">${esc(PEDAL_NAME[t.which])}：${esc(SIGNS[`pedal:${t.which}`].says(lang()))}</div>` +
     (idle ? `<div class="ctx-hint">${esc(idle)}</div>` : "") + (why ? `<div class="ctx-hint">${esc(why)}</div>` : "") +
-    (["down", "up", "change"] as const).map((a) => `<button class="btn ctx-item${t.act === a ? " is-on" : ""}" data-v="act:${a}">${esc(PEDAL_ACT_LABEL[a])}</button>`).join("") +
+    [...PEDAL_ACTS[t.which], ...(PEDAL_ACTS[t.which].includes(t.act) ? [] : [t.act])].map((a) => `<button class="btn ctx-item${t.act === a ? " is-on" : ""}" data-v="act:${a}">${esc(PEDAL_ACT_LABEL[t.which][a])}</button>`).join("") +
     `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("删掉这个踏板记号")}</button>`, at,
     (v) => {
       if (v === "del") { update(editMarkAt(D.st, i, null)); return; }

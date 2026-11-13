@@ -3,7 +3,7 @@
 //   谱是 tick + 速度表 + 反复 + 编排，这里一次解成秒，seek / 循环 / 排程就是算术，三个引擎共一个钟）。派生物，改谱重算，不进文件。
 // 月读的块：只在够长的休止处切，**不在纸界切**（user「曲段的边界算句子吧…也许还是同意可以跨曲段句子。cache应该不伤，听你的试试」；
 //   弱起 / 连音线跨段的一句拦腰切 = 中间多一道接缝）；粒度仍是歌手的属性（句 / 曲段 / 一整首）。块的内容键里没有位置 → 歌词移位再复原照样命中。
-import { sustainSpans, holdBySustain } from "../score/pedal.ts";
+import { pedalSpans, holdByPedals, softAt, softened } from "../score/pedal.ts";
 import { _t } from "../i18n/index.ts";
 import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type Hum, type NoteTok, flattenPart, timeline, effectivePitch, allPitches, paperTicks, tempoOwner } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
@@ -216,10 +216,18 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const vels = sp.path === "velocity" ? noteVelocities(tokens, map, sp, info.velocity, bounds, groove) : null;   // 按音量曲线的：每个音一样的力度（力度记号在曲线上）
     // 滚奏的密度（v0.16.64）：这位身上写的那个数（16-4 F 起只写数：新上场 / 门口按是不是鼓从模板抄）。这位不认滚奏（honors 里没有）= 照一个长音放
     const rollHz = info.plugin.honors.includes("roll") ? () => sp.rollHz : undefined;
-    const rollVel = rollHz && sp.path === "velocity" ? rollHitVelocity(tokens, map, sp, info.velocity, bounds, groove, curve) : undefined;   // 滚奏的每一下按当时的力度水平（7-N；按音量曲线的照旧）
-    const notes0 = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(sp), ...(rollHz ? { rollHz } : {}) }, (i) => vels?.get(i) ?? info.velocity, rollVel);
-    // 踏板（11-1）：键按多久 = 谱上的延音踏板 → 照写的时值（score/pedal.ts）。这位不认踏板 = 照写的（记号画灰、明说）
-    const notes = info.plugin.pedals?.includes("sustain") ? holdBySustain(notes0, sustainSpans(tokens, map, bounds)) : notes0;
+    const rollVel0 = rollHz && sp.path === "velocity" ? rollHitVelocity(tokens, map, sp, info.velocity, bounds, groove, curve) : undefined;   // 滚奏的每一下按当时的力度水平（7-N；按音量曲线的照旧）
+    // 踏板（11-1 延音、11-2 持音 / 弱音；score/pedal.ts）：这位认哪几种 = 插件报的 pedals；不认 = 照写的（记号画灰、明说）
+    const pk = info.plugin.pedals ?? [];
+    // 弱音（规矩五）：踩着期间起的音力度加这位身上的 softVel——按这个音写的起点算（琶音提早的下面几个音也算在这个和弦里），滚奏按每一下自己那一刻
+    const soft = pk.includes("soft") && sp.path === "velocity" ? softAt(pedalSpans(tokens, map, bounds, "soft")) : null, softVel = sp.path === "velocity" ? sp.softVel : 0;
+    const t0Of = soft ? new Map(tl.map((x) => [x.index, x.t0])) : null;
+    const velOf = (i: number) => { const v = vels?.get(i) ?? info.velocity; return soft && soft(t0Of!.get(i) ?? 0) ? softened(v, softVel) : v; };
+    const rollVel: RollVel | undefined = rollVel0 && soft ? (h) => { const v = rollVel0(h); return soft(h.t) ? softened(v, softVel) : v; } : rollVel0;
+    const notes0 = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(sp), ...(rollHz ? { rollHz } : {}) }, velOf, rollVel);
+    // 键按多久 = 谱上的延音 / 持音踏板 → 照写的时值
+    const sus = pk.includes("sustain") ? pedalSpans(tokens, map, bounds, "sustain") : [], sost = pk.includes("sostenuto") ? pedalSpans(tokens, map, bounds, "sostenuto") : [];
+    const notes = holdByPedals(notes0, sus, sost);
     // 快引擎：音符表 → 这位的轨，怎么拼归插件（元音版 / SoundFont 的键 / 着力点都在它自己那里；ADR-0004）
     const built = info.plugin.track?.({ id: part.id, notes, gain, ...(info.chain?.length ? { chain: info.chain } : {}), hum: info.hum, info });
     if (!built) { unplayable.push({ part: part.id, why: _t("「{label}」不会按音符表出声", { label: info.plugin.label }) }); continue; }

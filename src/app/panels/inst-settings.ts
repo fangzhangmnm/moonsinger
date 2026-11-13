@@ -87,16 +87,22 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       [_t("滚奏"), "roll", _t("整个音敲满，每秒 {hz} 下；每一下按敲下去那一刻的力度（渐强渐弱 / 渐到 / 音内起伏 / 强后即弱都在每一下里），重音这一组只算第一下", { hz: sp.rollHz })],
       // 琶音（16-6：会改声音、原来页面上没有这一行）
       [_t("琶音"), "arpeggio", _t("和弦从低到高依次提早 {ms}，最上面那个音准时落拍（最多摊到这个音一半长）", { ms: ms(sp.arpeggioSec) })],
+      // 踏板（11-2；设计第 7 节「记号怎么演」加三行）：认不认 = 插件报的 pedals（不在 honors 里，见 marksTableHtml）
+      [_t("延音踏板"), "pedal:sustain", _t("写的结尾落在踩着的一段里 = 留到下一次换踏板 / 抬起；同一个音再弹 = 旧的先松")],
+      [_t("持音踏板"), "pedal:sostenuto", _t("踩下那一刻按着的音留到抬起；之后弹的照常")],
+      [_t("弱音踏板"), "pedal:soft", sp.path === "velocity" ? _t("踩着期间起的音力度 {softVel}，时值不动", { softVel: sp.softVel }) : _t("踩着期间起的音变轻")],
     ];
     return rows;
   }
   /** 表里每一行对应「和现在的默认比」的哪一行（performers/defaults.ts 的 id；不比的行 = 没有）：按记号；没有记号的两行按名字。 */
   const MARK_ROW: Record<string, string> = { ghost: "m:ghost", unstress: "m:unstress", stress: "m:stress", accent: "m:accent", marcato: "m:marcato", sfz: "m:sfz", fp: "m:fp",
-    swellGrow: "m:swellGrow", staccato: "m:staccato", breath: "m:breath", arpeggio: "m:arpeggio" };
+    swellGrow: "m:swellGrow", staccato: "m:staccato", breath: "m:breath", arpeggio: "m:arpeggio", "pedal:soft": "m:soft" };
   const rowIdOf = (k: string, m: string): string => MARK_ROW[m] ?? (k === _t("渐强渐弱没写终点") ? "m:wedge" : k === _t("音和音之间") ? "m:gap" : "");
   function marksTableHtml(role: string, eng: string, dx: Extras | null, diff: ReadonlyMap<string, DefaultDiff>): string {
     const rows = marksRows(h.extras(), role, eng), sp = activePerfSpec(h.extras(), role); if (!rows || !sp) return "";
-    const drows = dx ? marksRows(dx, role, eng) : null, ign = ignoredArts(performerOf(eng), sp.gapSec);
+    const drows = dx ? marksRows(dx, role, eng) : null, ign0 = ignoredArts(performerOf(eng), sp.gapSec), pedals = performerOf(eng)?.pedals ?? [];
+    // 不认：记号看 honors（ignoredArts）；踏板三行看插件报的 pedals（11-2）
+    const ign = { includes: (m: string) => (m.startsWith("pedal:") ? !(pedals as readonly string[]).includes(m.slice(6)) : (ign0 as readonly string[]).includes(m)) };
     return `<details class="ip-marks"${marksOpen ? " open" : ""}><summary>${_t("记号怎么演（这位自己的配置，跟着演奏者存进歌）")}</summary><table>${rows.map(([k, m, v], i) => {
       const id = rowIdOf(k, m), d = id ? diff.get(id) : undefined, dv = d ? drows?.[i]?.[2] : undefined, cls = [ign.includes(m as Mark) ? "ign" : "", d ? "is-diff" : ""].filter(Boolean).join(" ");
       return `<tr${cls ? ` class="${cls}"` : ""}${id ? ` data-row="${id}"` : ""}><th>${k}</th><td>${esc(v)}${m && ign.includes(m as Mark) ? `<span class="ign-tag">${_t("不认")}</span>` : ""}` +

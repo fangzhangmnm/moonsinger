@@ -32,7 +32,7 @@ const two = (a: Token[], b: Token[]): { song: Song; parts: PartDef[] } => {
 };
 const notesOf = (s: { song: Song; parts: PartDef[] }, engine: PerformerInfo["engine"]) => {
   const t = buildTimeline({ song: s.song, order: s.song.papers.map((p) => p.id), parts: s.parts, info: () => info(engine), singOpt: { leadIn: LEAD_IN } });
-  return (t.tracks[0] as { notes: { t0: number; t1: number; key?: number; w1?: number }[] }).notes;
+  return (t.tracks[0] as { notes: { t0: number; t1: number; key?: number; w1?: number; vel?: number }[] }).notes;
 };
 const near = (a: number, b: number) => Math.abs(a - b) < 1e-6;
 
@@ -60,9 +60,27 @@ describe("踏板 · 键按多久（规矩一、二、三、七）", () => {
     const pp = two([ped("down"), n("C")], [n("D"), ped("down")]).song.papers.map((p) => p.tracks[Object.keys(p.tracks)[0]!]!), sp = sustainSpans(pp.flat(), undefined, [0, pp[0]!.length]);
     eq(sp.length, 2, "纸尾踩下 = 一段零长的（纸尾抬）");
   });
-  it("不起作用的（已经踩着又踩、没踩就抬）不改状态；持音 / 弱音这一刀不管", () => {
+  it("不起作用的（已经踩着又踩、没踩就抬）不改状态；持音只管自己那一种（不碰延音的状态）", () => {
     const ns = notesOf(two([ped("up"), ped("down"), n("C"), ped("down"), n("D"), ped("up"), n("E"), ped("down", "sostenuto"), n("F")], []), "soundfont");
     assert(near(ns[0]!.t1, 2 * Q), "C 留到真正的抬起（2 拍）"); assert(near(ns[3]!.t1, 4 * Q), "持音这一刀不起作用");
+  });
+  // 11-2（2026-11-13）：持音（规矩四）、弱音（规矩五）
+  it("持音：踩下那一刻按着的音留到抬起（那一刻落下的也算）；之后弹的照写的；和延音叠着 = 先留到持音抬起、再看延音", () => {
+    const ns = notesOf(two([n("C", 2 * TPQ), ped("down", "sostenuto"), n("D"), n("E"), ped("up", "sostenuto"), n("F")], []), "soundfont");
+    // C 0–2 拍；持音踩在 D（第 2 拍）上：抓住 D（那一刻落下），C 那一刻已经写完（结尾 = 那一刻）不算；E 之后弹的照写；抬起挂在 F 上 = 第 4 拍
+    assert(near(ns[0]!.t1, 2 * Q), "C 照写的（踩下那一刻已经松了）");
+    assert(near(ns[1]!.t1, 4 * Q), `D 留到持音抬起（第 4 拍），实得 ${ns[1]!.t1 / Q} 拍`);
+    assert(near(ns[2]!.t1, 4 * Q), "E 照写的（3–4 拍，本来就到 4）");
+    const both = notesOf(two([ped("down", "sostenuto"), n("C"), ped("down"), n("D"), ped("up", "sostenuto"), n("E"), ped("up"), n("F")], []), "soundfont");
+    assert(near(both[0]!.t1, 3 * Q), `C 被持音留到第 2 拍抬起、落在延音踩着的一段里 = 到延音抬起（第 3 拍），实得 ${both[0]!.t1 / Q} 拍`);
+  });
+  it("弱音：踩着期间起的音力度加这位的 softVel（−16）、时值不动；抬起那一刻起的不算；按音量走的（元音版）不认 = 照写的", () => {
+    const ns = notesOf(two([n("C"), ped("down", "soft"), n("D"), n("E"), ped("up", "soft"), n("F")], []), "soundfont");
+    const plain = notesOf(two([n("C"), n("D"), n("E"), n("F")], []), "soundfont");
+    eq(ns.map((x) => Math.round(x.vel! * 127)).join(","), plain.map((x, i) => Math.round(x.vel! * 127) + (i === 1 || i === 2 ? -16 : 0)).join(","), "D、E 轻 16 格；C、F 照旧");
+    eq(ns.map((x) => (x.t1 / Q).toFixed(3)).join(","), plain.map((x) => (x.t1 / Q).toFixed(3)).join(","), "时值一个不动");
+    const vs = notesOf(two([ped("down", "soft"), n("C"), ped("up", "soft"), n("D")], []), "vowel-sampler"), vp = notesOf(two([n("C"), n("D")], []), "vowel-sampler");
+    eq(JSON.stringify(vs), JSON.stringify(vp), "元音版不认踏板 = 照写的");
   });
   it("反复跳回去：补上跳到的那一刻的踏板状态（第一遍结尾踩着的不带进第二遍）", () => {
     const bar = (repeat: "start" | "end"): Token => ({ kind: "bar", id: nid++, repeat }) as Token;
@@ -80,7 +98,10 @@ describe("踏板 · 键按多久（规矩一、二、三、七）", () => {
       const claims = !!pl.pedals?.includes(which);
       if (pl.sound !== "notes") { assert(!claims, `${pl.name} 不走音符表，不能声明认 ${which}`); continue; }
       const ns = notesOf(two([ped("down", which), n("C"), n("D"), ped("up", which), n("E")], []), pl.name as PerformerInfo["engine"]);
-      const played = !near(ns[0]!.t1, Q);
+      const plain = notesOf(two([n("C"), n("D"), n("E")], []), pl.name as PerformerInfo["engine"]);
+      // 延音 / 持音改的是键按多久（C 的结尾）；弱音改的是力度（C 的 vel），时值不动（11-2）
+      const played = which === "soft" ? ns[0]!.vel !== plain[0]!.vel : !near(ns[0]!.t1, Q);
+      if (which === "soft" && claims) assert(near(ns[0]!.t1, Q), `${pl.name} × soft：时值不动`);
       eq(played, claims, `${pl.name} × ${which}：声明${claims ? "认" : "不认"}，出声${played ? "变了" : "没变"}`);
     }
   });

@@ -196,6 +196,7 @@
             "sfzDb": "number",
             "sfzSec": "number",
             "sfzVel": "number",
+            "softVel": "number",
             "staccatoGate": "number",
             "stressDb": "number",
             "stressVel": "number",

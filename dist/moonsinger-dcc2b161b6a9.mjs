@@ -4245,6 +4245,11 @@ var S = {
   "\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09": { en: "Press (keep notes ringing)" },
   "\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09": { en: "Lift (stop the notes)" },
   "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09": { en: "Change pedal (stop, then keep again)" },
+  "\u8E29\u4E0B\uFF08\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09": { en: "Press (keep the keys held at this moment)" },
+  "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\uFF09": { en: "Change pedal (stop, then keep the keys held at this moment)" },
+  "\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09": { en: "Press (play a little softer)" },
+  "\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09": { en: "Lift (back to the written loudness)" },
+  "\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09": { en: "Change pedal (means nothing for the soft pedal: stays pressed)" },
   "\u5EF6\u97F3\u8E0F\u677F": { en: "Sustain pedal" },
   "\u6301\u97F3\u8E0F\u677F": { en: "Sostenuto pedal" },
   "\u5F31\u97F3\u8E0F\u677F": { en: "Soft pedal" },
@@ -4701,6 +4706,10 @@ var S = {
   "\u6574\u4E2A\u97F3\u6572\u6EE1\uFF0C\u6BCF\u79D2 {hz} \u4E0B\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\uFF08\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230 / \u97F3\u5185\u8D77\u4F0F / \u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u91CC\uFF09\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B": { en: "Fills the whole note, {hz} hits per second; each hit uses the dynamic at the moment it lands (crescendos, ramps, in-note swells and fp are all in each hit's velocity); accents and the like only on the first hit" },
   "\u7436\u97F3": { en: "Arpeggio" },
   "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u63D0\u65E9 {ms}\uFF0C\u6700\u4E0A\u9762\u90A3\u4E2A\u97F3\u51C6\u65F6\u843D\u62CD\uFF08\u6700\u591A\u644A\u5230\u8FD9\u4E2A\u97F3\u4E00\u534A\u957F\uFF09": { en: "Chord notes start {ms} earlier from low to high; the top note lands on the beat (spread over at most half the note)" },
+  "\u5199\u7684\u7ED3\u5C3E\u843D\u5728\u8E29\u7740\u7684\u4E00\u6BB5\u91CC = \u7559\u5230\u4E0B\u4E00\u6B21\u6362\u8E0F\u677F / \u62AC\u8D77\uFF1B\u540C\u4E00\u4E2A\u97F3\u518D\u5F39 = \u65E7\u7684\u5148\u677E": { en: "A note whose written end falls while the pedal is down keeps sounding until the next change or lift; the same key played again releases the old note first" },
+  "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u97F3\u7559\u5230\u62AC\u8D77\uFF1B\u4E4B\u540E\u5F39\u7684\u7167\u5E38": { en: "The keys held at the moment it is pressed keep sounding until it is lifted; notes played after that are as written" },
+  "\u8E29\u7740\u671F\u95F4\u8D77\u7684\u97F3\u529B\u5EA6 {softVel}\uFF0C\u65F6\u503C\u4E0D\u52A8": { en: "Notes started while it is down: velocity {softVel}, lengths unchanged" },
+  "\u8E29\u7740\u671F\u95F4\u8D77\u7684\u97F3\u53D8\u8F7B": { en: "Notes started while it is down get softer" },
   "\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09": { en: "How marks are performed (this performer's own settings, saved in the song with them)" },
   "\u73B0\u5728\u7684\u9ED8\u8BA4\uFF1A{v}": { en: "Current default: {v}" },
   "\u4EBA\u58F0\uFF08\u8FDE\u7740\u5531\uFF09": { en: "Voice (legato)" },
@@ -6370,7 +6379,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.39-2026-11-13";
+var APP_VERSION = "v0.17.40-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -35383,15 +35392,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-59308a3615c3.mjs");
+      return pick3(() => "singer-worker-be7074809a36.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-a5720cf965b1.mjs");
+      return pick3(() => "layout-worker-bfcf786ae698.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-8c4f33893911.mjs");
+      return pick3(() => "encode-worker-739b4ab94de9.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -36348,10 +36357,11 @@ var TEMPLATE = {
     dynamicsVel: { ppp: 16, pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112, fff: 126 },
     /** 力度记号 → dB（按音量走的乐手，16-4）：= 9-4 那条公式（深度 800）在上面那张力度表上算出来、取两位小数；从此是数据。 */
     dynamicsDb: { ppp: -29.99, pp: -19.51, p: -13.79, mp: -9.92, mf: -6.69, f: -4.05, ff: -1.82, fff: -0.11 },
-    /** 记号怎么解读的数，按力度路（每一路只有这一路的出声代码读的键；守卫 test/art-keys-by-path.test.ts）。 */
+    /** 记号怎么解读的数，按力度路（每一路只有这一路的出声代码读的键；守卫 test/art-keys-by-path.test.ts）。
+     *  softVel（弱音踏板，11-2）= −16：施工起的（Claude Opus 5.5，2026-11-13），= 渐强渐弱走一档的那个数（wedgeStepVel 16）取负，没另起一个数；轻多少归 user 的耳朵。 */
     articulation: {
       gain: { ...ART_BOTH, rollHz: ROLL_HZ.pitched, accentDb: 4, marcatoDb: 7, accentSec: 0.12, sfzDb: 9, sfzSec: 0.2, stressDb: 2, unstressDb: -3, ghostDb: -9 },
-      velocity: { ...ART_BOTH, rollHz: ROLL_HZ.pitched, accentVel: 16, marcatoVel: 28, wedgeStepVel: 16, sfzVel: 32, stressVel: 8, unstressVel: -10, ghostVel: -28 }
+      velocity: { ...ART_BOTH, rollHz: ROLL_HZ.pitched, accentVel: 16, marcatoVel: 28, wedgeStepVel: 16, sfzVel: 32, stressVel: 8, unstressVel: -10, ghostVel: -28, softVel: -16 }
     },
     rollHz: ROLL_HZ,
     /** 乐手「响度」（calibrationDb，dB）：0 = 这个库 / 引擎的满音量。库和库要对齐时由那个库的插件报一个非零的数（registry.ts defaultCalibrationDb）。 */
@@ -37449,7 +37459,7 @@ function abbrOf(r10, named, label, l10) {
 init_fflate_esm();
 
 // src/score/pedal.ts
-function sustainSpans(tokens, tempoMap, bounds = [0]) {
+function pedalSpans(tokens, tempoMap, bounds = [0], which = "sustain") {
   const tl2 = timeline(tokens, tempoMap), spans2 = [];
   const starts = [.../* @__PURE__ */ new Set([0, ...bounds])].sort((a10, b3) => a10 - b3);
   for (let k2 = 0; k2 < starts.length; k2++) {
@@ -37461,7 +37471,7 @@ function sustainSpans(tokens, tempoMap, bounds = [0]) {
     let cur = null;
     for (let i10 = a10; i10 < b3; i10++) {
       const t10 = tokens[i10];
-      if (t10.kind !== "pedal" || t10.which !== "sustain") continue;
+      if (t10.kind !== "pedal" || t10.which !== which) continue;
       const s10 = at3(i10);
       if (t10.act === "down") {
         if (!cur) cur = { down: s10, up: end, changes: [] };
@@ -37479,13 +37489,18 @@ function sustainSpans(tokens, tempoMap, bounds = [0]) {
   }
   return spans2;
 }
-function holdBySustain(notes, spans2) {
-  if (!spans2.length) return notes.slice();
+function holdByPedals(notes, sustain, sostenuto) {
+  if (!sustain.length && !sostenuto.length) return notes.slice();
+  const catches = sostenuto.flatMap((s10) => {
+    const pts = [s10.down, ...s10.changes, s10.up];
+    return pts.slice(0, -1).map((d3, k2) => ({ down: d3, up: pts[k2 + 1] }));
+  });
   const out = notes.map((n10) => {
-    const sp2 = spans2.find((s10) => s10.down < n10.t1 - 1e-9 && n10.t1 < s10.up - 1e-9);
-    if (!sp2) return n10;
-    const rel = Math.min(sp2.up, ...sp2.changes.filter((c10) => c10 >= n10.t1 - 1e-9));
-    return rel > n10.t1 + 1e-9 ? { ...n10, t1: rel, w1: n10.t1 } : n10;
+    let e10 = n10.t1;
+    for (const c10 of catches) if (n10.t0 <= c10.down + 1e-9 && n10.t1 > c10.down + 1e-9 && c10.up > e10) e10 = c10.up;
+    const sp2 = sustain.find((s10) => s10.down < e10 - 1e-9 && e10 < s10.up - 1e-9);
+    if (sp2) e10 = Math.min(sp2.up, ...sp2.changes.filter((c10) => c10 >= e10 - 1e-9));
+    return e10 > n10.t1 + 1e-9 ? { ...n10, t1: e10, w1: n10.t1 } : n10;
   });
   const byMidi = /* @__PURE__ */ new Map();
   out.forEach((n10, i10) => {
@@ -37504,6 +37519,12 @@ function holdBySustain(notes, spans2) {
     if (cut < n10.t1) out[i10] = cut > n10.w1 + 1e-9 ? { ...n10, t1: cut } : (({ w1: _w, ...rest }) => ({ ...rest, t1: n10.w1 }))(n10);
   }
   return out;
+}
+function softAt(spans2) {
+  return (t10) => spans2.some((s10) => t10 >= s10.down - 1e-9 && t10 < s10.up - 1e-9);
+}
+function softened(vel, softVel) {
+  return Math.max(1, Math.min(127, Math.round(vel * 127 + softVel))) / 127;
 }
 
 // src/score/lang.ts
@@ -37675,9 +37696,21 @@ function buildTimeline(inp) {
     }
     const vels = sp2.path === "velocity" ? noteVelocities(tokens, map, sp2, info2.velocity, bounds, groove) : null;
     const rollHz = info2.plugin.honors.includes("roll") ? () => sp2.rollHz : void 0;
-    const rollVel = rollHz && sp2.path === "velocity" ? rollHitVelocity(tokens, map, sp2, info2.velocity, bounds, groove, curve) : void 0;
-    const notes0 = lightNotes(tokens, map, info2.plugin.poly, { ...lightMarks(sp2), ...rollHz ? { rollHz } : {} }, (i10) => vels?.get(i10) ?? info2.velocity, rollVel);
-    const notes = info2.plugin.pedals?.includes("sustain") ? holdBySustain(notes0, sustainSpans(tokens, map, bounds)) : notes0;
+    const rollVel0 = rollHz && sp2.path === "velocity" ? rollHitVelocity(tokens, map, sp2, info2.velocity, bounds, groove, curve) : void 0;
+    const pk = info2.plugin.pedals ?? [];
+    const soft = pk.includes("soft") && sp2.path === "velocity" ? softAt(pedalSpans(tokens, map, bounds, "soft")) : null, softVel = sp2.path === "velocity" ? sp2.softVel : 0;
+    const t0Of = soft ? new Map(tl2.map((x2) => [x2.index, x2.t0])) : null;
+    const velOf = (i10) => {
+      const v = vels?.get(i10) ?? info2.velocity;
+      return soft && soft(t0Of.get(i10) ?? 0) ? softened(v, softVel) : v;
+    };
+    const rollVel = rollVel0 && soft ? (h2) => {
+      const v = rollVel0(h2);
+      return soft(h2.t) ? softened(v, softVel) : v;
+    } : rollVel0;
+    const notes0 = lightNotes(tokens, map, info2.plugin.poly, { ...lightMarks(sp2), ...rollHz ? { rollHz } : {} }, velOf, rollVel);
+    const sus = pk.includes("sustain") ? pedalSpans(tokens, map, bounds, "sustain") : [], sost = pk.includes("sostenuto") ? pedalSpans(tokens, map, bounds, "sostenuto") : [];
+    const notes = holdByPedals(notes0, sus, sost);
     const built = info2.plugin.track?.({ id: part2.id, notes, gain, ...info2.chain?.length ? { chain: info2.chain } : {}, hum: info2.hum, info: info2 });
     if (!built) {
       unplayable.push({ part: part2.id, why: _t("\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0", { label: info2.plugin.label }) });
@@ -39286,7 +39319,7 @@ function readMusicXml(xml, hints) {
 
 // src/format/contract.ts
 var FORMAT = { manifest: 2, score: 2, lounge: 3, studio: 2 };
-var FORMAT_MINOR = { manifest: 1, score: 14, lounge: 4, studio: 3 };
+var FORMAT_MINOR = { manifest: 1, score: 14, lounge: 5, studio: 3 };
 var FORMAT_PATCH = { manifest: 1, score: 0, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
@@ -39602,7 +39635,7 @@ var CAND_KEYS = /* @__PURE__ */ new Set(["id", "name", "castAs", "asCast", "inst
 var ART_BOTH2 = ["staccatoGate", "gapSec", "gapShare", "breathSec", "breathShare", "fpSec", "swellDb", "canSwell", "arpeggioSec", "rollHz"];
 var ART_KEYS_BY = {
   gain: /* @__PURE__ */ new Set([...ART_BOTH2, "accentDb", "marcatoDb", "accentSec", "sfzDb", "sfzSec", "stressDb", "unstressDb", "ghostDb"]),
-  velocity: /* @__PURE__ */ new Set([...ART_BOTH2, "accentVel", "marcatoVel", "wedgeStepVel", "sfzVel", "stressVel", "unstressVel", "ghostVel"])
+  velocity: /* @__PURE__ */ new Set([...ART_BOTH2, "accentVel", "marcatoVel", "wedgeStepVel", "sfzVel", "stressVel", "unstressVel", "ghostVel", "softVel"])
 };
 var CAND_KEYS_BY = { gain: /* @__PURE__ */ new Set([...CAND_KEYS, "dynamicsDb"]), velocity: /* @__PURE__ */ new Set([...CAND_KEYS, "dynamicsVel"]) };
 var STUDIO_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "tracks", "master"]);
@@ -40278,7 +40311,8 @@ function activePerfSpec(extras, role) {
     sfzVel: a10.sfzVel,
     stressVel: a10.stressVel,
     unstressVel: a10.unstressVel,
-    ghostVel: a10.ghostVel
+    ghostVel: a10.ghostVel,
+    softVel: a10.softVel
   };
 }
 var DYN_KEYS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
@@ -42909,8 +42943,8 @@ var soundfont = registerPerformer({
   hintRange: null,
   // lightMarks 那一路；琶音只有能叠音的认（v0.9.45）；气声 / 出声的换气乐器本来就不认
   honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio", "roll"],
-  pedals: ["sustain"],
-  // 踏板 11-1：只声明出声真接了的（延音）；持音、弱音的出声是 11-2，接了再加（test/pedal.test.ts「表说认 = 出声真变了」守着）
+  pedals: ["sustain", "sostenuto", "soft"],
+  // 踏板：延音（11-1）、持音 / 弱音（11-2）的出声都接了（test/pedal.test.ts「表说认 = 出声真变了」守着）
   connected: false,
   dynamics: "velocity",
   grooveCategory: "gm",
@@ -44989,7 +45023,9 @@ var ROWS = [
   { id: "m:staccato", label: () => _t("\u8DF3\u97F3"), keys: [art2("staccatoGate")], when: (p2) => p2.sound === "notes" && honors("staccato")(p2) },
   { id: "m:breath", label: () => _t("\u547C\u5438"), keys: [art2("breathSec"), art2("breathShare")], when: (p2) => p2.sound === "notes" && honors("breath")(p2) },
   { id: "m:gap", label: () => _t("\u97F3\u548C\u97F3\u4E4B\u95F4\uFF08\u6700\u591A\uFF09"), keys: [art2("gapShare")], when: (p2) => p2.sound === "notes" },
-  { id: "m:arpeggio", label: () => _t("\u7436\u97F3"), keys: [art2("arpeggioSec")], when: honors("arpeggio") }
+  { id: "m:arpeggio", label: () => _t("\u7436\u97F3"), keys: [art2("arpeggioSec")], when: honors("arpeggio") },
+  { id: "m:soft", label: () => _t("\u5F31\u97F3\u8E0F\u677F"), keys: [art2("softVel")], when: (p2) => p2.dynamics === "velocity" && !!p2.pedals?.includes("soft") }
+  // 踏板 11-2：只有按力度敲、认弱音的有这个键
 ];
 function rowsFor(p2, cur) {
   const all = [...ROWS, ...p2.defaultRows ?? []];
@@ -45076,7 +45112,11 @@ function createInstSettings(el2, h2) {
       [_t("\u97F3\u548C\u97F3\u4E4B\u95F4"), "", sung ? _t("\u8FDE\u7740\u5531") : _t("{gapSec}\uFF08\u6700\u591A {gapShare}\uFF09", { gapSec: ms(sp2.gapSec), gapShare: pct2(sp2.gapShare) })],
       [_t("\u6EDA\u594F"), "roll", _t("\u6574\u4E2A\u97F3\u6572\u6EE1\uFF0C\u6BCF\u79D2 {hz} \u4E0B\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\uFF08\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230 / \u97F3\u5185\u8D77\u4F0F / \u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u91CC\uFF09\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B", { hz: sp2.rollHz })],
       // 琶音（16-6：会改声音、原来页面上没有这一行）
-      [_t("\u7436\u97F3"), "arpeggio", _t("\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u63D0\u65E9 {ms}\uFF0C\u6700\u4E0A\u9762\u90A3\u4E2A\u97F3\u51C6\u65F6\u843D\u62CD\uFF08\u6700\u591A\u644A\u5230\u8FD9\u4E2A\u97F3\u4E00\u534A\u957F\uFF09", { ms: ms(sp2.arpeggioSec) })]
+      [_t("\u7436\u97F3"), "arpeggio", _t("\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u63D0\u65E9 {ms}\uFF0C\u6700\u4E0A\u9762\u90A3\u4E2A\u97F3\u51C6\u65F6\u843D\u62CD\uFF08\u6700\u591A\u644A\u5230\u8FD9\u4E2A\u97F3\u4E00\u534A\u957F\uFF09", { ms: ms(sp2.arpeggioSec) })],
+      // 踏板（11-2；设计第 7 节「记号怎么演」加三行）：认不认 = 插件报的 pedals（不在 honors 里，见 marksTableHtml）
+      [_t("\u5EF6\u97F3\u8E0F\u677F"), "pedal:sustain", _t("\u5199\u7684\u7ED3\u5C3E\u843D\u5728\u8E29\u7740\u7684\u4E00\u6BB5\u91CC = \u7559\u5230\u4E0B\u4E00\u6B21\u6362\u8E0F\u677F / \u62AC\u8D77\uFF1B\u540C\u4E00\u4E2A\u97F3\u518D\u5F39 = \u65E7\u7684\u5148\u677E")],
+      [_t("\u6301\u97F3\u8E0F\u677F"), "pedal:sostenuto", _t("\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u97F3\u7559\u5230\u62AC\u8D77\uFF1B\u4E4B\u540E\u5F39\u7684\u7167\u5E38")],
+      [_t("\u5F31\u97F3\u8E0F\u677F"), "pedal:soft", sp2.path === "velocity" ? _t("\u8E29\u7740\u671F\u95F4\u8D77\u7684\u97F3\u529B\u5EA6 {softVel}\uFF0C\u65F6\u503C\u4E0D\u52A8", { softVel: sp2.softVel }) : _t("\u8E29\u7740\u671F\u95F4\u8D77\u7684\u97F3\u53D8\u8F7B")]
     ];
     return rows;
   }
@@ -45091,13 +45131,15 @@ function createInstSettings(el2, h2) {
     swellGrow: "m:swellGrow",
     staccato: "m:staccato",
     breath: "m:breath",
-    arpeggio: "m:arpeggio"
+    arpeggio: "m:arpeggio",
+    "pedal:soft": "m:soft"
   };
   const rowIdOf = (k2, m2) => MARK_ROW[m2] ?? (k2 === _t("\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9") ? "m:wedge" : k2 === _t("\u97F3\u548C\u97F3\u4E4B\u95F4") ? "m:gap" : "");
   function marksTableHtml(role, eng, dx, diff) {
     const rows = marksRows(h2.extras(), role, eng), sp2 = activePerfSpec(h2.extras(), role);
     if (!rows || !sp2) return "";
-    const drows = dx ? marksRows(dx, role, eng) : null, ign = ignoredArts(performerOf(eng), sp2.gapSec);
+    const drows = dx ? marksRows(dx, role, eng) : null, ign0 = ignoredArts(performerOf(eng), sp2.gapSec), pedals = performerOf(eng)?.pedals ?? [];
+    const ign = { includes: (m2) => m2.startsWith("pedal:") ? !pedals.includes(m2.slice(6)) : ign0.includes(m2) };
     return `<details class="ip-marks"${marksOpen ? " open" : ""}><summary>${_t("\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09")}</summary><table>${rows.map(([k2, m2, v], i10) => {
       const id2 = rowIdOf(k2, m2), d3 = id2 ? diff.get(id2) : void 0, dv = d3 ? drows?.[i10]?.[2] : void 0, cls = [ign.includes(m2) ? "ign" : "", d3 ? "is-diff" : ""].filter(Boolean).join(" ");
       return `<tr${cls ? ` class="${cls}"` : ""}${id2 ? ` data-row="${id2}"` : ""}><th>${k2}</th><td>${esc8(v)}${m2 && ign.includes(m2) ? `<span class="ign-tag">${_t("\u4E0D\u8BA4")}</span>` : ""}` + (d3 ? `${d3.resettable ? defBtn(id2) : ""}${dv !== void 0 ? `<div class="ip-def">${esc8(_t("\u73B0\u5728\u7684\u9ED8\u8BA4\uFF1A{v}", { v: dv }))}</div>` : ""}` : "") + `</td></tr>`;
@@ -46618,7 +46660,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "70ff86ac1c28c3e7" : "dev";
+var CORE_HASH = true ? "a31dd2f6a57feb9b" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -64816,7 +64858,12 @@ function openRepeatMenu() {
     }
   );
 }
-var PEDAL_ACT_LABEL = { down: _t("\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09"), up: _t("\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09") };
+var PEDAL_ACT_LABEL = {
+  sustain: { down: _t("\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09"), up: _t("\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09") },
+  sostenuto: { down: _t("\u8E29\u4E0B\uFF08\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09"), up: _t("\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\uFF09") },
+  soft: { down: _t("\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09"), up: _t("\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09") }
+};
+var PEDAL_ACTS = { sustain: ["down", "up", "change"], sostenuto: ["down", "up"], soft: ["down", "up"] };
 var PEDAL_NAME = { sustain: _t("\u5EF6\u97F3\u8E0F\u677F"), sostenuto: _t("\u6301\u97F3\u8E0F\u677F"), soft: _t("\u5F31\u97F3\u8E0F\u677F") };
 function pedalIgnoredWhy(which) {
   const role = curPart().role, pl = performerOf(activeInstrument(D3.extras, role)?.engine);
@@ -64832,22 +64879,26 @@ function disclosePedal(which, idle) {
   else if (idle === "notDown") info(_t("\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740\uFF1A\u8FD9\u4E2A\u62AC\u8D77\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09"));
 }
 function openPedalMenu() {
-  const r10 = padEl.getBoundingClientRect(), which = "sustain", here = pedalHere(D3.st, which);
-  if (!here) {
+  const r10 = padEl.getBoundingClientRect(), KINDS2 = ["sustain", "sostenuto", "soft"];
+  if (!pedalHere(D3.st, "sustain")) {
     info(_t("\u8E0F\u677F\u8BB0\u53F7\u6302\u5728\u97F3\u4E0A\uFF1A\u8FD9\u5F20\u7EB8\u4E0A\u5149\u6807\u9644\u8FD1\u8FD8\u6CA1\u6709\u97F3"));
     return;
   }
   const item = (v, label, on2 = false, title = "") => `<button class="btn ctx-item${on2 ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc13(title)}"` : ""}>${esc13(label)}</button>`;
-  const why2 = pedalIgnoredWhy(which);
-  const acts = here.down ? ["up", "change"] : ["down"];
-  if (here.mark && !acts.includes(here.mark.act)) acts.unshift(here.mark.act);
-  const body2 = D3.st.sel ? item("span", _t("\u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\uFF08\u9009\u533A\u5F00\u5934\u8E29\u4E0B\u3001\u7ED3\u5C3E\u62AC\u8D77\uFF09")) : acts.map((a10) => item(`act:${a10}`, PEDAL_ACT_LABEL[a10], here.mark?.act === a10, here.mark?.act === a10 ? _t("\u8FD9\u4E2A\u97F3\u4E0A\u5DF2\u7ECF\u6709\u4E86\uFF1A\u518D\u70B9 = \u53BB\u6389") : "")).join("");
+  const rows = KINDS2.map((which) => {
+    const here = pedalHere(D3.st, which), why2 = pedalIgnoredWhy(which);
+    const acts = here.down ? PEDAL_ACTS[which].filter((a10) => a10 !== "down") : ["down"];
+    if (here.mark && !acts.includes(here.mark.act)) acts.unshift(here.mark.act);
+    const body2 = D3.st.sel ? item(`${which}:span`, _t("\u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\uFF08\u9009\u533A\u5F00\u5934\u8E29\u4E0B\u3001\u7ED3\u5C3E\u62AC\u8D77\uFF09")) : acts.map((a10) => item(`${which}:act:${a10}`, PEDAL_ACT_LABEL[which][a10], here.mark?.act === a10, here.mark?.act === a10 ? _t("\u8FD9\u4E2A\u97F3\u4E0A\u5DF2\u7ECF\u6709\u4E86\uFF1A\u518D\u70B9 = \u53BB\u6389") : "")).join("");
+    return `<div class="ctx-hint ctx-what">${esc13(PEDAL_NAME[which])}\uFF1A${esc13(SIGNS[`pedal:${which}`].says(lang()))}</div>` + (why2 ? `<div class="ctx-hint">${esc13(why2)}</div>` : "") + body2;
+  });
   ctxMenu(
     "pedal-menu",
-    `<div class="ctx-hint ctx-what">${esc13(PEDAL_NAME[which])}\uFF1A${esc13(SIGNS[`pedal:${which}`].says(lang()))}${D3.st.sel ? "" : esc13(_t("\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09"))}</div>` + (why2 ? `<div class="ctx-hint">${esc13(why2)}</div>` : "") + body2,
+    (D3.st.sel ? "" : `<div class="ctx-hint">${esc13(_t("\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09"))}</div>`) + rows.join(`<div class="ctx-sep"></div>`),
     { x: r10.left + r10.width / 2, y: r10.top - 4 },
     (v) => {
-      const res = insertPedal(D3.st, which, v === "span" ? "down" : v.slice(4));
+      const [which, kind, act] = v.split(":");
+      const res = insertPedal(D3.st, which, kind === "span" ? "down" : act);
       if (res.did === "none") return;
       update(res.st);
       if (res.did !== "removed") disclosePedal(which, res.idle);
@@ -64861,7 +64912,7 @@ function openPedalMarkMenu(i10, at3) {
   const idle = t10.act === "down" && before ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740") : t10.act === "up" && !before ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740") : t10.act === "change" && !before ? _t("\u8FD9\u91CC\u4E4B\u524D\u6CA1\u8E29\u7740\uFF0C\u6362\u8E0F\u677F = \u8E29\u4E0B") : "";
   ctxMenu(
     "pedal-menu",
-    `<div class="ctx-hint ctx-what">${esc13(PEDAL_NAME[t10.which])}\uFF1A${esc13(SIGNS[`pedal:${t10.which}`].says(lang()))}</div>` + (idle ? `<div class="ctx-hint">${esc13(idle)}</div>` : "") + (why2 ? `<div class="ctx-hint">${esc13(why2)}</div>` : "") + ["down", "up", "change"].map((a10) => `<button class="btn ctx-item${t10.act === a10 ? " is-on" : ""}" data-v="act:${a10}">${esc13(PEDAL_ACT_LABEL[a10])}</button>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u4E2A\u8E0F\u677F\u8BB0\u53F7")}</button>`,
+    `<div class="ctx-hint ctx-what">${esc13(PEDAL_NAME[t10.which])}\uFF1A${esc13(SIGNS[`pedal:${t10.which}`].says(lang()))}</div>` + (idle ? `<div class="ctx-hint">${esc13(idle)}</div>` : "") + (why2 ? `<div class="ctx-hint">${esc13(why2)}</div>` : "") + [...PEDAL_ACTS[t10.which], ...PEDAL_ACTS[t10.which].includes(t10.act) ? [] : [t10.act]].map((a10) => `<button class="btn ctx-item${t10.act === a10 ? " is-on" : ""}" data-v="act:${a10}">${esc13(PEDAL_ACT_LABEL[t10.which][a10])}</button>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u4E2A\u8E0F\u677F\u8BB0\u53F7")}</button>`,
     at3,
     (v) => {
       if (v === "del") {
@@ -67564,4 +67615,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0529c445c6b6.mjs.map
+//# sourceMappingURL=moonsinger-dcc2b161b6a9.mjs.map
