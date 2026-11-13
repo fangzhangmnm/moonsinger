@@ -1,8 +1,7 @@
 import type { Credit, Spec, Dynamic } from "./contract.ts";
-/** 演奏法：跳音 / 保持各吃掉时值的多少（0–1）、重音加多少 dB。 */
+/** 演奏法：跳音吃掉时值的多少（0–1）、重音加多少 dB。（tenutoGate 退役：哪条路的出声代码都不读——保持 = 这个音不留缝；统筹 2026-11-12 夜按「读不读」分路时查出来的。） */
 export declare const ARTICULATION: {
     readonly staccatoGate: 0.5;
-    readonly tenutoGate: 1;
     readonly accentDb: 4;
 };
 /** 记号怎么解读的其余的数（2026-10-08 Claude Opus 5.5；user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」「先看看记号承重能走多远」）：

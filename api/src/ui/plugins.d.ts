@@ -12,6 +12,9 @@ export declare function fullParams(kind: string): ParamDef[];
 export declare function defaults(kind: string): Params;
 /** 一格的参数（缺的补参数表的默认；第 16 条起「原声」没写也是参数表的默认，和录音房同一个意思——原来按 1 − 湿 算）。 */
 export declare const paramsOf: (fx: FxV2) => Params;
+/** 全量面板里关掉「自动低切」/ 把「跟速度」拨到 0 的那一刻：把关之前面板上正显示的那个算出来的数（resolved = 和录音房同一份换算的这一格）写进 hpHz / timeMs，
+ *  和关开关同一步（统筹 2026-11-12 夜「v0.17.14 收」补的一件）。别的改动原样。一键面板不走这里（它的公式里关 = 0）。 */
+export declare function keepShownOnOff(fx: FxV2, next: Params, resolved: FxV2): Params;
 /** 这一格是不是「全湿」（原声 0、湿 100%：当发送的返回轨用；出到它 = 原声没了）。 */
 export declare const fullyWet: (fx: FxV2) => boolean;
 export interface SimpleControl {

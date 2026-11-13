@@ -8,8 +8,8 @@ import type { Credit, Spec, Dynamic } from "./contract.ts";
 
 // 力度怎么变响（第 16 条 16-4，统筹 2026-11-12 夜）：每位乐手按值带着自己的表，程序里没有公式、没有深度。
 //   按力度敲的乐器 = 力度表 DYNAMICS_VEL（力度记号 → MIDI 力度；响多少跟着音色库自己写的深度，引擎读）；按音量走的小月相 / 元音版 = dB 表 DYNAMICS_DB（力度记号 → dB）。
-/** 演奏法：跳音 / 保持各吃掉时值的多少（0–1）、重音加多少 dB。 */
-export const ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1.0, accentDb: 4 } as const;
+/** 演奏法：跳音吃掉时值的多少（0–1）、重音加多少 dB。（tenutoGate 退役：哪条路的出声代码都不读——保持 = 这个音不留缝；统筹 2026-11-12 夜按「读不读」分路时查出来的。） */
+export const ARTICULATION = { staccatoGate: 0.5, accentDb: 4 } as const;
 /** 记号怎么解读的其余的数（2026-10-08 Claude Opus 5.5；user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」「先看看记号承重能走多远」）：
  *  新建演奏者时 by value 抄进 articulation；旧演奏者没写的键 = 这里的值（= 这一版之前写死在代码里的数，旧歌逐样本不变）。好不好听归 user 耳朵。 */
 /** 滚奏每秒几下能调到的范围（v0.16.64；乐器页 ±2 一档）。 */

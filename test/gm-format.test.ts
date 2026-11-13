@@ -45,7 +45,7 @@ describe("GM 候选进歌", () => {
     // 乐器按引擎分（休息室 v2）：by value 的力度表 / 演奏法 / 默认数都在；月读的哼的字只在月读的乐器里
     const inst = c.instrument as { engine: string; bank: number; program: number; source: { embedded: string | null; subsetSha256: string } };
     eq(inst.engine, "soundfont"); eq(inst.bank, 0); eq(inst.program, 80); eq(inst.source.subsetSha256, sha256);
-    assert(typeof (c.dynamicsVel as Record<string, number>).mf === "number" && !("dynamicsDb" in c) && typeof (c.articulation as { accentDb: number }).accentDb === "number" && typeof (c.defaults as Record<string, number>).velocity === "number", "by value 的默认数没抄进来");
+    assert(typeof (c.dynamicsVel as Record<string, number>).mf === "number" && !("dynamicsDb" in c) && typeof (c.articulation as { accentVel: number }).accentVel === "number" && !("accentDb" in (c.articulation as object)) && typeof (c.defaults as Record<string, number>).velocity === "number", "by value 的默认数没抄进来（演奏法只有力度那一路的键）");
     assert(!("hum" in c), "SoundFont 候选不该有哼的字");
     eq(JSON.stringify(candidates(extras, "r1").map((x) => x.engine)), JSON.stringify(["tsukuyomi", "vowel-sampler", "soundfont"]));
   });

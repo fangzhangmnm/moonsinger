@@ -93,6 +93,14 @@ await tab("comp"); await tab("eq");
 check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline [data-v="fxmode"][data-mode="full"].is-on`)), "这张卡片记住自己是全量（换页回来还是）");
 check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-p="midDb"]`)), "卡片里点「全量」= 这张卡片摊开全部参数");
 check(/自动：\d+ Hz/.test(await p.textContent(`.strip[data-id="${partId}"] .fx-inline`)), "全量里低切那一行写出自动算出来的 Hz");
+// 全量里关掉自动低切（统筹 2026-11-12 夜「v0.17.14 收」补的一件）：hpHz = 关之前面板上显示的那个数；和关开关同一步撤销
+{ const shown = Number(/自动：(\d+) Hz/.exec(await p.textContent(`.strip[data-id="${partId}"] .fx-inline`))?.[1]);
+  await p.click(`.strip[data-id="${partId}"] .fx-inline [data-v="fxbool"][data-p="hpAuto"], .strip[data-id="${partId}"] .fx-inline [data-p="hpAuto"] [data-v="fxbool"]`); await p.waitForTimeout(150);
+  const off = (await chain(partId))[0].params;
+  check(!off.hpAuto && off.hpHz === shown && shown > 0, "全量里关掉自动低切 = 低切停在关之前显示的那个数", JSON.stringify({ shown, off }));
+  await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
+  const back = (await chain(partId))[0].params;
+  check(back.hpAuto === 1 && back.hpHz !== shown, "撤销一步 = 开关和那个数一起回去", JSON.stringify(back)); }
 await p.click(`.strip[data-id="${partId}"] .fx-inline [data-v="fxmode"][data-mode="simple"]`); await p.waitForTimeout(120);
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 await tab("comp");

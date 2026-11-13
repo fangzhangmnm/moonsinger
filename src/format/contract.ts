@@ -110,6 +110,8 @@ export type FormatFile = keyof typeof FORMAT;
  *    意思和老的一样：这个力度记号下她的声音乘多少 dB），程序里没有公式和深度；她们不写 dynamicsVel / articulation.wedgeStepVel。按力度敲的（SoundFont）照旧 dynamicsVel / wedgeStepVel，
  *    身上老的 dynamicsDb / wedgeStepDb 不再有定义、不写。音符上的 lang 删（xml:lang 按唱的规矩写、读的时候不看）；SoundFont 的 instrument.note 不固定也明写 null。
  *    旧读者（lounge 2）读到：dynamicsDb 是它认识、但运行时不读的键 = 照它自己的公式放（模板那八个数就是那条公式算的，新建的歌听起来一样；带老表的那几位不一样），提示一次。
+ *  **力度路是契约**（统筹 2026-11-12 夜「v0.17.13 收」）：每位乐手身上写哪些键，看它的引擎插件报的 dynamics（音量 gain / 力度 velocity）——所以一个引擎名走哪条路永远不变，
+ *    想换路 = 换一个新的引擎名。现在：tsukuyomi = gain、vowel-sampler = gain、soundfont = velocity（守卫钉住）。演奏法的键按路分见 CandidateV2.articulation。
  *  旧读者（小版本更小）照小版本的规矩：能开能改能存、提示一次。 */
 export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 11, lounge: 3, studio: 2 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
@@ -273,7 +275,10 @@ export interface CandidateV2 {
   /** 力度记号 → MIDI 力度（1–127；by value）。按力度敲的乐手（SoundFont）带；没带的那一档 = 模板 performance.ts DYNAMICS_VEL。
    *  响多少跟着音色库给这件乐器写的深度（引擎自己读，SF2 规范）。accentVel / marcatoVel 加在力度上。按音量走的乐手身上不写（16-4）。 */
   dynamicsVel?: Record<Dynamic, number>;
-  articulation: { staccatoGate: number; tenutoGate: number; accentDb: number; gapSec?: number; marcatoDb?: number; accentVel?: number; marcatoVel?: number;
+  /** 记号怎么解读的数（by value）。哪些键有定义看这位的力度走哪条路（project.ts ART_KEYS_BY；统筹 2026-11-12 夜）：两路都读的两边都有；accentDb / marcatoDb / accentSec /
+   *  sfzDb / sfzSec / stressDb / unstressDb / ghostDb 只有按音量走的有，accentVel / marcatoVel / wedgeStepVel / sfzVel / stressVel / unstressVel / ghostVel 只有按力度敲的有。
+   *  tenutoGate 没有定义（哪条路都不读）。 */
+  articulation: { staccatoGate?: number; accentDb?: number; gapSec?: number; marcatoDb?: number; accentVel?: number; marcatoVel?: number;
     accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; /* wedgeStepVel：只有按力度敲的写；wedgeStepDb 不再有定义（16-4） */ wedgeStepVel?: number;
     sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number; swellDb?: number;
     /** 能不能在一个音里面变强（2026-10-08 加，可选）：false = 按下去就自然衰减（钢琴 / 吉他 / 打击）——音内渐强 / 鼓起画灰、明说；音内渐弱照做。没写 = 能。
@@ -284,7 +289,9 @@ export interface CandidateV2 {
   /** 2026-10-08 加（可选）：月读——谱上的记号变成唱法核心哪个字前记号（^ / v / O）、放在这个字还是下一个字前面；没写 = performance.ts SING_MARKS。 */
   sing?: Record<string, { mark: "^" | "v" | "O"; at: "this" | "next" } | null>;   // 跳音 / 保持吃掉多长（0–1）；重音加多少 dB；
   //   gapSec（2026-10-08 加，可选，不升版本；Claude Opus 5.5）= 连断的底色：不写记号的音之间留多大缝（秒）；连线 / 保持 = 不留；没写 = 0
-  chain: FxV2[];                       // 跟着演奏者走的效果（琴箱 / 音箱 / 琶音器；留位，现在空）
+  /** 跟着演奏者走的效果（琴箱 / 音箱 / 琶音器；留位）。现状（统筹 2026-11-12 夜）：没有编辑入口，歌库里 0 首不空；这条链上 EQ 的自动低切 / 延迟的跟速度放的时候不换算
+   *  （直接用写着的 hpHz / timeMs），存的时候也不写算出来的数——和混音台各轨的那两个开关不一样，有了编辑入口时再理。 */
+  chain: FxV2[];
   credit: Credit;                      // 署名 / 许可证快照 by value（署名义务跟音源走）
   spec: Spec;                          // §10.6 vault：这个乐器怎么出声——标准格式只写名字版本；我们写的指向源码出处 + README 章节
   engines?: Record<string, unknown>;   // v1 的「引擎参数按引擎名分组」；别的工具 / 旧版写的，原样写回

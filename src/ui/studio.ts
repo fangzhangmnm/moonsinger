@@ -14,7 +14,7 @@ import { eqResponseDb } from "../engine/fx.ts";
 import { busLinkStates, type LinkState } from "../engine/studio.ts";
 import { SPEC_BANDS, bandHz, bandsDb, smoothBands, areaPath, xOfHz } from "./spectrum.ts";
 const SPEC_TICKS = [100, 1000, 10000];
-import { DEFAULT_EQ_ID, PLUGIN_KINDS, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, projectToSimple, viewOfFx, type Params } from "./plugins.ts";
+import { keepShownOnOff, DEFAULT_EQ_ID, PLUGIN_KINDS, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, projectToSimple, viewOfFx, type Params } from "./plugins.ts";
 import { paramRow, slider, wireParamRows } from "../keyboard/param-row.ts";
 import { stereoShape } from "./scopes.ts";
 import { sideDocked } from "../app/workspace.ts";
@@ -343,7 +343,7 @@ export class Studio {
       const fx: FxV2 = { id: `${c.kind}${n}`, kind: c.kind, params: structuredClone(c.params) };
       this.host.setChain(strip, [...ch, fx], _t("{strip} 粘成新的一格：{kind}", { strip: this.trackName(strip), kind: pluginName(c.kind) })); this.addFor = null; this.open = { track: strip, fx: fx.id }; this.render(); }
     else if (v === "fxproject" && tg) { this.patch(tg, (fx) => ({ ...fx, params: projectToSimple(fx.kind, this.onBus(tg.track), paramsOf(fx), !!fx.key) }), _t("改成最接近的一键")); this.render(); }
-    else if (v === "fxbool" && tg) { const id = t.closest<HTMLElement>("[data-p]")!.dataset.p!; this.patch(tg, (fx) => ({ ...fx, params: { ...paramsOf(fx), [id]: paramsOf(fx)[id] ? 0 : 1 } }), id); this.render(); }
+    else if (v === "fxbool" && tg) { const id = t.closest<HTMLElement>("[data-p]")!.dataset.p!; this.patch(tg, (fx) => ({ ...fx, params: this.keepShown(tg, fx, { ...paramsOf(fx), [id]: paramsOf(fx)[id] ? 0 : 1 }) }), id); this.render(); }
   }
   private onInput(e: Event): void {
     const t = e.target as HTMLInputElement, tg = this.targetOf(t);
@@ -424,11 +424,14 @@ export class Studio {
     this.patch(tg, (fx) => ({ ...fx, params: view.write({ ...base, [id]: v }, paramsOf(fx)) }), ctl?.label ?? id, live);
     if (live && input) { const w = input.closest("[data-fxwrap]"); const out = w?.querySelector<HTMLElement>(`output[data-c="${id}"]`); if (out && ctl?.fmt) out.textContent = ctl.fmt(v); w?.querySelector(".fx-note")?.remove(); }
   }
+  /** 全量面板里关掉「自动低切」/ 把「跟速度」拨到 0 的那一刻（统筹 2026-11-12 夜「v0.17.14 收」补的一件）：把关之前面板上正显示的那个算出来的数写进 hpHz / timeMs，
+   *  和关开关同一步撤销——不然这次打开里刚开的、没存过的那一格，关掉后会落回内存里一个没在用的旧数（存过再开的则停在存的时候写的数上：同一个动作两种结果）。一键面板不走这里。 */
+  private keepShown(tg: Target, fx: FxV2, next: Record<string, number>): Record<string, number> { return keepShownOnOff(fx, next, this.host.resolve(tg.track, fx)); }
   private fullSet(tg: Target, t: HTMLInputElement): void {
     const s = this.slotOf(tg); if (!s) return;
     const id = t.dataset.p!, d = fullParams(s.fx.kind).find((x) => x.id === id); if (!d) return;
     const sl = paramView(s.fx.kind, d), v = sl.toV(Number(t.value));
-    this.patch(tg, (fx) => ({ ...fx, params: { ...paramsOf(fx), [id]: v } }), d.label, true);
+    this.patch(tg, (fx) => ({ ...fx, params: this.keepShown(tg, fx, { ...paramsOf(fx), [id]: v }) }), d.label, true);
     const out = t.parentElement?.querySelector("output"); if (out) out.textContent = sl.fmt(v);
   }
 

@@ -3422,3 +3422,10 @@ user 发了这一页现在的两张截图（没带话）。对着实物补下面
   - **歌库数**（19 首拷贝）：开着的 51 格（自动低切 43、跟速度 8），存前文件里写着的全是没在用的数（低切 0、延迟 375），存后换成放的时候真在用的（低切 69–300 Hz、延迟 450 / 500 / 643 ms）；19 首放的时候录音房收到的数存前存后**全都一样**（按参数表补齐后的有效参数比）= 老歌听起来不变。
   - 守卫 `test/chain-numbers.test.ts`（6：登记只有一处、歌手轨写算出来的数、混音轨 / 总轨、没写的开关明写 0、读回来录音房收到的一样且再存逐字节相同、和 resolveChain 同一份）。单元 1735 全过；E2E 改到的区 119 过（i18n-en 并行红、单跑绿）。
   - 没测到：iPad 真机。
+- 2026-11-12 夜 · 力度路钉进契约 + 重音那一组按路分 + 16-5 补的一件 · v0.17.15（照统筹「v0.17.13 收」「v0.17.14 收」）：
+  - **力度路是契约**：`registry.ts` 的 `dynamics` 注释、契约里各写一句（引擎名走哪条路永远不变，想换路 = 换新的引擎名）；守卫把 tsukuyomi / vowel-sampler = 音量、soundfont = 力度钉住。
+  - **演奏法按「这条路出声的代码读不读」分**（`project.ts ART_KEYS_BY`）：两路都读 = staccatoGate gapSec gapShare breathSec breathShare fpSec swellDb canSwell arpeggioSec rollHz；只有音量那一路 = accentDb marcatoDb accentSec sfzDb sfzSec stressDb unstressDb ghostDb；只有力度那一路 = accentVel marcatoVel wedgeStepVel sfzVel stressVel unstressVel ghostVel；哪条路都不读 = tenutoGate（退役，`ARTICULATION` 里也拿掉）。模板和补缺都只按这一路的表；另一路的不补不写。乐器页「记号怎么演」本来就按路写，没有要拿掉的行。
+  - **守卫** `test/art-keys-by-path.test.ts`（照 honors 的做法、拿真的时间线跑）：每条路上跑真插件 + 一位「什么记号都认、能叠音」的乐手（只按力度路分、不按认不认分），表里每个键改一下值出声真变、不在表里的改了不变；力度表那一张同样核；存档每位只写这一路的键。
+  - **16-5 补的一件**：全量面板里关掉自动低切 / 把跟速度拨到 0 的那一刻，把关之前面板上显示的数写进 hpHz / timeMs，和关开关同一步撤销（`plugins.ts keepShownOnOff`；一键面板不走这里）。守卫：单元一条（低切、延迟、还开着不动、本来关着不动），E2E `mixer-fx` 两条（关掉 = 停在显示的数、撤销一步一起回去）。契约里写了乐手自己的链那两个开关不换算的现状。
+  - **歌库核对**（19 首拷贝，对照 = v0.17.14 的代码）：token 串 0 首不同；读 → 存 → 再读、再存逐字节 0 处不稳；新写的键 无；不再写的键 = 小月相 / 元音版身上的 accentVel / marcatoVel / sfzVel / stressVel / unstressVel / ghostVel 各 67 位 / 19 首（两种各一份），SoundFont 身上的 accentDb / accentSec / marcatoDb / sfzDb / sfzSec / stressDb / unstressDb / ghostDb 各 100 位 / 17 首，tenutoGate 三种都不写（67 + 67 + 100 位）。出声和上一版最大差：音量那一路 0 dB、力度那一路 0 个力度、混音台有效参数 0 首不同。
+  - 单元 1741 全过；形状快照重冻（只少了 tenutoGate）。E2E 改到的区 118 过（follow / loop / audio-revive / routing / mixer-fx / layout-count 并行红、单跑全绿）。

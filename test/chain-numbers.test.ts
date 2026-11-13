@@ -7,7 +7,7 @@ import { saveMxl, openBytes, templateExtras, withTrack, withMaster, newBusId, ty
 import { HOST_PARAMS, autoLowCutHz, lowestMidiOf, songBpm, writeResolved, resolveChain } from "../src/engine/chain.ts";
 import { mixParamsOf } from "../src/core/render.ts";
 import { FX_KINDS } from "../src/engine/fx.ts";
-import { fullParams } from "../src/ui/plugins.ts";
+import { fullParams, keepShownOnOff, paramsOf } from "../src/ui/plugins.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL, e: "utf8"): string };
 
@@ -29,6 +29,16 @@ function setup(): { s: Song; x: Extras; bus: string } {
 }
 const studioOf = (b: Uint8Array) => JSON.parse(strFromU8(unzipSync(b)[".moonsinger/studio.json"]!));
 const save = (s: Song, x: Extras) => saveMxl({ song: s, extras: x, app: "t", date: "2026-11-12T00:00:00.000Z" });
+
+describe("全量面板里关掉开关：把关之前显示的数写进去（统筹 2026-11-12 夜「v0.17.14 收」补）", () => {
+  it("自动低切开着 → 关：hpHz = 关之前那一格换算出来的数；跟速度 0.5 拍 → 0：timeMs = 关之前算出来的毫秒；别的改动原样", () => {
+    const ctx = { lowestMidi: 52, bpm: 120 }, e = eqFx(1, 0) as never, d = dlFx(0.5, 375) as never, res = (fx: never) => resolveChain([fx], ctx)[0]!;
+    eq(keepShownOnOff(e, { ...paramsOf(e), hpAuto: 0 }, res(e)).hpHz, autoLowCutHz(52), "低切：关之前显示的 Hz");
+    eq(keepShownOnOff(d, { ...paramsOf(d), syncBeats: 0 }, res(d)).timeMs, 250, "延迟：关之前算出来的 250 ms");
+    eq(keepShownOnOff(d, { ...paramsOf(d), syncBeats: 1 }, res(d)).timeMs, 375, "还开着（0.5 → 1）= 不动");
+    eq(keepShownOnOff(eqFx(0, 90) as never, { ...paramsOf(eqFx(0, 90) as never), midDb: -3 }, res(eqFx(0, 90) as never)).hpHz, 90, "本来就关着 = 不动");
+  });
+});
 
 describe("自动低切 / 跟速度：存的时候写算出来的数（16-5）", () => {
   it("两个开关登记在一处（HOST_PARAMS）：默认关；混音台全量面板也读这一份", () => {

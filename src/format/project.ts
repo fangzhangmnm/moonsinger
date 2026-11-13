@@ -63,14 +63,15 @@ export const withThumbnail = (extras: Extras, png: Uint8Array | null): Extras =>
  *  显示名 2026-10-13 起叫「小月相」/「小月相（元音）」（W-28，家规「共享叫法」）；旧歌里按值存着的「月读」原样留着——打开时迁移还是显示时换，等 user 定。 */
 export const CANDIDATE_ID = { full: "c1", light: "c2" } as const;
 export type Engine = InstrumentV2["engine"];
-/** 新建乐手的模板里共有的那几样（by value）。path = 这位的力度走哪条路：gain（小月相 / 元音版）= dB 表 dynamicsDb、没有 wedgeStepVel；velocity = 力度表 dynamicsVel + wedgeStepVel（16-4）。 */
-const common = (calibrationDb: number, path: DynPath = "velocity") => ({ calibrationDb, chain: [] as unknown[], ...(path === "gain" ? { dynamicsDb: { ...DYNAMICS_DB } } : { dynamicsVel: { ...DYNAMICS_VEL } }), articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...markDefaultsFor(path) } });
+/** 新建乐手的模板里共有的那几样（by value）。path = 这位的力度走哪条路：gain（小月相 / 元音版）= dB 表 dynamicsDb；velocity = 力度表 dynamicsVel；演奏法只放这一路有定义的键（ART_KEYS_BY）。 */
+const common = (calibrationDb: number, path: DynPath = "velocity") => ({ calibrationDb, chain: [] as unknown[], ...(path === "gain" ? { dynamicsDb: { ...DYNAMICS_DB } } : { dynamicsVel: { ...DYNAMICS_VEL } }), articulation: artDefaultsFor(path) });
 /** 这位乐手的力度走哪条路：插件自己报的能力（registry.ts dynamics），不按引擎名分。注册表里没有 = null = 读不懂的引擎（存的时候整份原样带着、不补不筛）。
  *  注册表由会存档的各个入口装上（app 主线程、encode-worker.ts、core/render.ts 都 import performers/index.ts；test/run.mjs 也是）。 */
 type DynPath = "gain" | "velocity";
 const dynPathOf = (c: Json): DynPath | null => performerOf(instrumentOf(c)?.engine)?.dynamics ?? null;
-/** 演奏法的默认里按路分的那一个：没终点的渐强渐弱走多少（wedgeStepVel）只有按力度敲的有；按音量走的「走到表里的下一档」不要数（16-4）。 */
-const markDefaultsFor = (path: DynPath): Partial<typeof MARK_DEFAULTS> => { if (path === "velocity") return { ...MARK_DEFAULTS }; const { wedgeStepVel: _w, ...rest } = MARK_DEFAULTS; return rest; };
+/** 演奏法每个键的默认（一张；按路挑这一路有定义的那几个，artDefaultsFor）。canSwell 没写 = 能；rollHz null = 按乐器（F 那一刀改成只写数）。 */
+const ART_DEFAULTS: Record<string, unknown> = { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS, canSwell: true, rollHz: null };
+const artDefaultsFor = (path: DynPath): Json => Object.fromEntries([...ART_KEYS_BY[path]].map((k) => [k, ART_DEFAULTS[k]]));
 /** 存的时候把一位乐手缺的数按现行默认写全（第 16 条 16-3，2026-11-12）：写了的原样不动，只补没写的；补的值 = 读的时候没写时用的那个（activePerfSpec / activeSingCore /
  *  activeSingChunk / activeTranspose / activeVelocity 同一张表），所以存完声音不变。不认识的引擎 / 键原样带着。
  *  力度那一张表按这位的路补（16-4）：按音量走的补 dB 表 dynamicsDb（只补缺的档：老的六档表缺 ppp / fff = 用模板的），按力度敲的补力度表 dynamicsVel；另一张不补、存的时候不写。 */
@@ -79,10 +80,7 @@ function completeCandidate(c0: Json): Json {
   if (!path) return c;   // 读不懂的引擎：整份原样
   const a = { ...((c.articulation ?? {}) as Json) };
   const fill = (k: string, v: unknown) => { if (!(k in a)) a[k] = v; };
-  fill("staccatoGate", ARTICULATION.staccatoGate); fill("tenutoGate", ARTICULATION.tenutoGate); fill("accentDb", ARTICULATION.accentDb); fill("gapSec", 0);
-  fill("marcatoDb", MARCATO_DB); fill("accentVel", ACCENT_VEL); fill("marcatoVel", MARCATO_VEL);
-  for (const [k, v] of Object.entries(markDefaultsFor(path))) fill(k, v);
-  fill("canSwell", true); fill("rollHz", null);   // 能不能音内渐强：没写 = 能；滚奏每秒几下：null = 按乐器（明写，不靠没写）
+  for (const [k, v] of Object.entries(artDefaultsFor(path))) fill(k, v);   // 只补这一路有定义的键（另一路的、哪条路都不读的不补）
   c.articulation = a;
   if (path === "gain") c.dynamicsDb = { ...DYNAMICS_DB, ...((c.dynamicsDb ?? {}) as Json) }; else c.dynamicsVel = { ...DYNAMICS_VEL, ...((c.dynamicsVel ?? {}) as Json) };
   if (!("calibrationDb" in c)) c.calibrationDb = CALIBRATION_DEFAULT_DB;
@@ -158,12 +156,17 @@ const KNOWN_PART_KEYS = new Set(["id", "role", "mic", "kind", "clef", "host", "c
  *  比这一版新（同一个大版本、小版本更大）= 不认识的原样带回（更新的版本写的）。看版本的地方只有「比不比自己新」。 */
 const ROLE_KEYS = new Set(["version", "minor", "patch", "id", "name", "sound", "active", "candidates", "concept"]);
 const CAND_KEYS = new Set(["id", "name", "castAs", "asCast", "instrument", "gm", "calibrationDb", "transpose", "defaults", "articulation", "sing", "chain", "credit", "spec", "engines"]);
-const ART_KEYS = new Set(["staccatoGate", "tenutoGate", "accentDb", "gapSec", "marcatoDb", "accentVel", "marcatoVel", "accentSec", "breathSec", "breathShare", "gapShare",
-  "sfzDb", "sfzVel", "sfzSec", "fpSec", "swellDb", "canSwell", "stressDb", "stressVel", "unstressDb", "unstressVel", "ghostDb", "ghostVel", "arpeggioSec", "rollHz"]);
+/** 演奏法的键按力度路分（统筹 2026-11-12 夜「v0.17.13 收」）：判法 = 这条路出声的代码读不读这个键（守卫 test/art-keys-by-path.test.ts 拿真的时间线核：
+ *  每个键改一下值，这一路的出声真的变、另一路的不变；那一路上用「什么记号都认、能叠音」的乐手跑，只按力度路分、不按认不认分）。
+ *  两路都读的两边都有；只有一路读的，另一路的乐手身上没有定义（不补、不写、乐器页不列）；哪条路都不读的（tenutoGate：保持在代码里就是「不留缝」）没有定义。 */
+const ART_BOTH = ["staccatoGate", "gapSec", "gapShare", "breathSec", "breathShare", "fpSec", "swellDb", "canSwell", "arpeggioSec", "rollHz"];
+export const ART_KEYS_BY = {
+  gain: new Set([...ART_BOTH, "accentDb", "marcatoDb", "accentSec", "sfzDb", "sfzSec", "stressDb", "unstressDb", "ghostDb"]),
+  velocity: new Set([...ART_BOTH, "accentVel", "marcatoVel", "wedgeStepVel", "sfzVel", "stressVel", "unstressVel", "ghostVel"]),
+} as const;
 /** 力度那张表按路分（16-4，统筹 2026-11-12 夜）：按音量走的 = dynamicsDb；按力度敲的 = dynamicsVel + articulation.wedgeStepVel。另一路的（老文件里 SoundFont 身上的 dynamicsDb / wedgeStepDb、
  *  小月相身上的 dynamicsVel / wedgeStepVel）在这一版格式里没有定义 = 存的时候不写。 */
 const CAND_KEYS_BY = { gain: new Set([...CAND_KEYS, "dynamicsDb"]), velocity: new Set([...CAND_KEYS, "dynamicsVel"]) } as const;
-const ART_KEYS_BY = { gain: ART_KEYS, velocity: new Set([...ART_KEYS, "wedgeStepVel"]) } as const;
 const STUDIO_KEYS = new Set(["version", "minor", "patch", "tracks", "master"]), TRACK_KEYS = new Set(["id", "kind", "name", "gainDb", "pan", "chain", "sends", "to", "bypass"]);
 const FX_KEYS = new Set(["id", "kind", "on", "params", "key", "note"]), MASTER_KEYS = new Set(["gainDb", "limiter", "chain"]);
 const MANIFEST_KEYS = new Set(["format", "version", "minor", "patch", "app", "saved", "files", "derived", "sounds", "core"]);
@@ -617,7 +620,7 @@ export function withSf2Candidate(extras: Extras, role: string, c: Sf2CandidateAr
   const n = Math.max(0, ...list.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n}`;
   const embed = c.embed !== false, path = embed ? `${SOUNDS}${c.sha256}.sf2` : null;
   const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), ...(c.sfx ? { sfx: { ...c.sfx } } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
-  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(c.calibrationDb), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS, ...(c.canSwell === false ? { canSwell: false } : {}) }, dynamicsVel: { ...DYNAMICS_VEL }, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(c.calibrationDb), articulation: { ...artDefaultsFor("velocity"), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)), ...(c.canSwell === false ? { canSwell: false } : {}) }, dynamicsVel: { ...DYNAMICS_VEL }, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r.candidates = list; r.active = id;
   return { ...extras, lounge: { ...extras.lounge, [role]: r }, sounds: path ? { ...extras.sounds, [path]: c.subset } : extras.sounds };
 }

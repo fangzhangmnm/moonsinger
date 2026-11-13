@@ -36,6 +36,10 @@ export declare const CANDIDATE_ID: {
     readonly light: "c2";
 };
 export type Engine = InstrumentV2["engine"];
+export declare const ART_KEYS_BY: {
+    readonly gain: Set<string>;
+    readonly velocity: Set<string>;
+};
 export interface SaveArgs {
     song: Song;
     extras: Extras;

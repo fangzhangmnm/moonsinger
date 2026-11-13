@@ -23,6 +23,14 @@ export function fullParams(kind: string): ParamDef[] { return [...(HOST_PARAMS[k
 export function defaults(kind: string): Params { const p: Params = {}; for (const d of fullParams(kind)) p[d.id] = d.default; return p; }
 /** 一格的参数（缺的补参数表的默认；第 16 条起「原声」没写也是参数表的默认，和录音房同一个意思——原来按 1 − 湿 算）。 */
 export const paramsOf = (fx: FxV2): Params => ({ ...defaults(fx.kind), ...fx.params });
+/** 全量面板里关掉「自动低切」/ 把「跟速度」拨到 0 的那一刻：把关之前面板上正显示的那个算出来的数（resolved = 和录音房同一份换算的这一格）写进 hpHz / timeMs，
+ *  和关开关同一步（统筹 2026-11-12 夜「v0.17.14 收」补的一件）。别的改动原样。一键面板不走这里（它的公式里关 = 0）。 */
+export function keepShownOnOff(fx: FxV2, next: Params, resolved: FxV2): Params {
+  const was = paramsOf(fx);
+  if (fx.kind === "eq" && was.hpAuto && !next.hpAuto) return { ...next, hpHz: resolved.params.hpHz ?? next.hpHz! };
+  if (fx.kind === "delay" && was.syncBeats && !next.syncBeats) return { ...next, timeMs: resolved.params.timeMs ?? next.timeMs! };
+  return next;
+}
 /** 这一格是不是「全湿」（原声 0、湿 100%：当发送的返回轨用；出到它 = 原声没了）。 */
 export const fullyWet = (fx: FxV2): boolean => (fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.on !== false && paramsOf(fx).dry === 0;
 

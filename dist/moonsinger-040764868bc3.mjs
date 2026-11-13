@@ -6061,7 +6061,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.14-2026-11-12";
+var APP_VERSION = "v0.17.15-2026-11-12";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -13232,7 +13232,7 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/format/performance.ts
-var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
+var ARTICULATION = { staccatoGate: 0.5, accentDb: 4 };
 var ROLL_HZ_MIN = 4;
 var ROLL_HZ_MAX = 40;
 var MARK_DEFAULTS = {
@@ -34758,7 +34758,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-ffb55c544c9c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-2ac9a340b347.mjs");
+      return pick(() => "encode-worker-78eefced9234.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -38692,13 +38692,10 @@ var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], t
 var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 var withThumbnail = (extras, png) => ({ ...extras, thumbnail: png });
 var CANDIDATE_ID = { full: "c1", light: "c2" };
-var common = (calibrationDb, path = "velocity") => ({ calibrationDb, chain: [], ...path === "gain" ? { dynamicsDb: { ...DYNAMICS_DB } } : { dynamicsVel: { ...DYNAMICS_VEL } }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...markDefaultsFor(path) } });
+var common = (calibrationDb, path = "velocity") => ({ calibrationDb, chain: [], ...path === "gain" ? { dynamicsDb: { ...DYNAMICS_DB } } : { dynamicsVel: { ...DYNAMICS_VEL } }, articulation: artDefaultsFor(path) });
 var dynPathOf = (c10) => performerOf(instrumentOf(c10)?.engine)?.dynamics ?? null;
-var markDefaultsFor = (path) => {
-  if (path === "velocity") return { ...MARK_DEFAULTS };
-  const { wedgeStepVel: _w, ...rest } = MARK_DEFAULTS;
-  return rest;
-};
+var ART_DEFAULTS = { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS, canSwell: true, rollHz: null };
+var artDefaultsFor = (path) => Object.fromEntries([...ART_KEYS_BY[path]].map((k2) => [k2, ART_DEFAULTS[k2]]));
 function completeCandidate(c02) {
   const c10 = { ...c02 }, eng = instrumentOf(c10)?.engine, path = dynPathOf(c10);
   if (!path) return c10;
@@ -38706,16 +38703,7 @@ function completeCandidate(c02) {
   const fill2 = (k2, v) => {
     if (!(k2 in a10)) a10[k2] = v;
   };
-  fill2("staccatoGate", ARTICULATION.staccatoGate);
-  fill2("tenutoGate", ARTICULATION.tenutoGate);
-  fill2("accentDb", ARTICULATION.accentDb);
-  fill2("gapSec", 0);
-  fill2("marcatoDb", MARCATO_DB);
-  fill2("accentVel", ACCENT_VEL);
-  fill2("marcatoVel", MARCATO_VEL);
-  for (const [k2, v] of Object.entries(markDefaultsFor(path))) fill2(k2, v);
-  fill2("canSwell", true);
-  fill2("rollHz", null);
+  for (const [k2, v] of Object.entries(artDefaultsFor(path))) fill2(k2, v);
   c10.articulation = a10;
   if (path === "gain") c10.dynamicsDb = { ...DYNAMICS_DB, ...c10.dynamicsDb ?? {} };
   else c10.dynamicsVel = { ...DYNAMICS_VEL, ...c10.dynamicsVel ?? {} };
@@ -38785,35 +38773,12 @@ var KNOWN_PAPER_KEYS = /* @__PURE__ */ new Set(["id", "file", "manualBars", "unw
 var KNOWN_PART_KEYS = /* @__PURE__ */ new Set(["id", "role", "mic", "kind", "clef", "host", "chords"]);
 var ROLE_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "id", "name", "sound", "active", "candidates", "concept"]);
 var CAND_KEYS = /* @__PURE__ */ new Set(["id", "name", "castAs", "asCast", "instrument", "gm", "calibrationDb", "transpose", "defaults", "articulation", "sing", "chain", "credit", "spec", "engines"]);
-var ART_KEYS = /* @__PURE__ */ new Set([
-  "staccatoGate",
-  "tenutoGate",
-  "accentDb",
-  "gapSec",
-  "marcatoDb",
-  "accentVel",
-  "marcatoVel",
-  "accentSec",
-  "breathSec",
-  "breathShare",
-  "gapShare",
-  "sfzDb",
-  "sfzVel",
-  "sfzSec",
-  "fpSec",
-  "swellDb",
-  "canSwell",
-  "stressDb",
-  "stressVel",
-  "unstressDb",
-  "unstressVel",
-  "ghostDb",
-  "ghostVel",
-  "arpeggioSec",
-  "rollHz"
-]);
+var ART_BOTH = ["staccatoGate", "gapSec", "gapShare", "breathSec", "breathShare", "fpSec", "swellDb", "canSwell", "arpeggioSec", "rollHz"];
+var ART_KEYS_BY = {
+  gain: /* @__PURE__ */ new Set([...ART_BOTH, "accentDb", "marcatoDb", "accentSec", "sfzDb", "sfzSec", "stressDb", "unstressDb", "ghostDb"]),
+  velocity: /* @__PURE__ */ new Set([...ART_BOTH, "accentVel", "marcatoVel", "wedgeStepVel", "sfzVel", "stressVel", "unstressVel", "ghostVel"])
+};
 var CAND_KEYS_BY = { gain: /* @__PURE__ */ new Set([...CAND_KEYS, "dynamicsDb"]), velocity: /* @__PURE__ */ new Set([...CAND_KEYS, "dynamicsVel"]) };
-var ART_KEYS_BY = { gain: ART_KEYS, velocity: /* @__PURE__ */ new Set([...ART_KEYS, "wedgeStepVel"]) };
 var STUDIO_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "tracks", "master"]);
 var TRACK_KEYS = /* @__PURE__ */ new Set(["id", "kind", "name", "gainDb", "pan", "chain", "sends", "to", "bypass"]);
 var FX_KEYS = /* @__PURE__ */ new Set(["id", "kind", "on", "params", "key", "note"]);
@@ -39311,7 +39276,7 @@ function withSf2Candidate(extras, role, c10, hum) {
   const n10 = Math.max(0, ...list2.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
   const embed = c10.embed !== false, path = embed ? `${SOUNDS2}${c10.sha256}.sf2` : null;
   const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, ...c10.sfx ? { sfx: { ...c10.sfx } } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
-  list2.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(c10.calibrationDb), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c10.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS, ...c10.canSwell === false ? { canSwell: false } : {} }, dynamicsVel: { ...DYNAMICS_VEL }, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list2.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(c10.calibrationDb), articulation: { ...artDefaultsFor("velocity"), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c10.gapSec ?? 0)), ...c10.canSwell === false ? { canSwell: false } : {} }, dynamicsVel: { ...DYNAMICS_VEL }, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r10.candidates = list2;
   r10.active = id2;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 }, sounds: path ? { ...extras.sounds, [path]: c10.subset } : extras.sounds };
@@ -44166,6 +44131,12 @@ function defaults(kind) {
   return p2;
 }
 var paramsOf = (fx) => ({ ...defaults(fx.kind), ...fx.params });
+function keepShownOnOff(fx, next2, resolved) {
+  const was = paramsOf(fx);
+  if (fx.kind === "eq" && was.hpAuto && !next2.hpAuto) return { ...next2, hpHz: resolved.params.hpHz ?? next2.hpHz };
+  if (fx.kind === "delay" && was.syncBeats && !next2.syncBeats) return { ...next2, timeMs: resolved.params.timeMs ?? next2.timeMs };
+  return next2;
+}
 var fullyWet = (fx) => (fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.on !== false && paramsOf(fx).dry === 0;
 var near = (a10, b3, e10 = 1e-3) => Math.abs(a10 - b3) <= e10;
 var r12 = (x2) => Math.round(x2 * 10) / 10;
@@ -44959,7 +44930,7 @@ ${tg2.fx}`, t10.closest("[data-mode]").dataset.mode);
       this.render();
     } else if (v === "fxbool" && tg2) {
       const id2 = t10.closest("[data-p]").dataset.p;
-      this.patch(tg2, (fx) => ({ ...fx, params: { ...paramsOf(fx), [id2]: paramsOf(fx)[id2] ? 0 : 1 } }), id2);
+      this.patch(tg2, (fx) => ({ ...fx, params: this.keepShown(tg2, fx, { ...paramsOf(fx), [id2]: paramsOf(fx)[id2] ? 0 : 1 }) }), id2);
       this.render();
     }
   }
@@ -45110,13 +45081,18 @@ ${tg2.fx}`);
       w2?.querySelector(".fx-note")?.remove();
     }
   }
+  /** 全量面板里关掉「自动低切」/ 把「跟速度」拨到 0 的那一刻（统筹 2026-11-12 夜「v0.17.14 收」补的一件）：把关之前面板上正显示的那个算出来的数写进 hpHz / timeMs，
+   *  和关开关同一步撤销——不然这次打开里刚开的、没存过的那一格，关掉后会落回内存里一个没在用的旧数（存过再开的则停在存的时候写的数上：同一个动作两种结果）。一键面板不走这里。 */
+  keepShown(tg2, fx, next2) {
+    return keepShownOnOff(fx, next2, this.host.resolve(tg2.track, fx));
+  }
   fullSet(tg2, t10) {
     const s10 = this.slotOf(tg2);
     if (!s10) return;
     const id2 = t10.dataset.p, d3 = fullParams(s10.fx.kind).find((x2) => x2.id === id2);
     if (!d3) return;
     const sl2 = paramView(s10.fx.kind, d3), v = sl2.toV(Number(t10.value));
-    this.patch(tg2, (fx) => ({ ...fx, params: { ...paramsOf(fx), [id2]: v } }), d3.label, true);
+    this.patch(tg2, (fx) => ({ ...fx, params: this.keepShown(tg2, fx, { ...paramsOf(fx), [id2]: v }) }), d3.label, true);
     const out = t10.parentElement?.querySelector("output");
     if (out) out.textContent = sl2.fmt(v);
   }
@@ -45307,7 +45283,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "160c130d20d4581b" : "dev";
+var CORE_HASH = true ? "94b0f8f0ef1fd8bc" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -65454,4 +65430,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-bdc284469245.mjs.map
+//# sourceMappingURL=moonsinger-040764868bc3.mjs.map
