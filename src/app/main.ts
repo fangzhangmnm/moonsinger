@@ -1468,11 +1468,13 @@ function openChordInfo(r: HarmonyRead, at: { x: number; y: number }, where: { pa
     return true;
   });
 }
-/** 改「这首歌怎么看」（谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项）：**调用点只许走这里**，带着 songLook 这个类别（修改锁的「看法」：锁着也能切，锁着期间不写文件；
- *  进撤销、会标脏；test/edit-lock-guard.test.mjs 钉）。next = src/score/song-view.ts 的 setter 算好的。 */
+/** 改「这首歌怎么看」（谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项）选一个具体的值：走这里，带着 songLook 这个类别（修改锁的「看法」：锁着也能切，锁着期间不写文件；
+ *  进撤销、会标脏；test/edit-lock-guard.test.mjs 钉）。next = src/score/song-view.ts 的 setter 算好的。
+ *  页面设置里选「跟着软件」那一步不走这里：它在页面设置的 change 里直接走写入口，类别从 edit-lock-table.ts 的 LOOK_KEY_OP 拿（同一张表管每一项是哪一类看法；v0.17.33）。 */
 function setSongLook(next: EditorState, label: string): void { if (next !== D.st) D.commit({ st: next }, { locus: { kind: "songLook", label } }); }
-/** 改页面设置「版面」页里走写入口的四样（纸张 / 版式 / 小节号 / 歌词排法；7-C）：**调用点只许走这里**，各带自己的类别（修改锁的「看法」：锁着能切、锁着期间不写文件；
- *  写入口按 src/app/edit-lock-table.ts 的核验核过才放行）。调用点把类别写成字面量（test/edit-lock-guard.test.mjs 按字面量找调用点）。 */
+/** 改页面设置「版面」页里走写入口的四样（纸张 / 版式 / 小节号 / 歌词排法；7-C）选一个具体的值，和「套用我的习惯」：走这里，各带自己的类别（修改锁的「看法」：锁着能切、锁着期间不写文件；
+ *  写入口按 src/app/edit-lock-table.ts 的核验核过才放行）。调用点把类别写成字面量（test/edit-lock-guard.test.mjs 按字面量找调用点）。
+ *  选「跟着软件」那一步不走这里：它在页面设置的 change 里直接走写入口，类别从 edit-lock-table.ts 的 LOOK_KEY_OP 拿（v0.17.33）。 */
 function setPageLook(next: EditorState, locus: { kind: "paperSize" | "density" | "barNumbers" | "lyricFit" | "allLooks"; label: string }): void { if (next !== D.st) D.commit({ st: next }, { locus }); }
 
 /** 设置分五页（v0.16.80，总表第 10 条：界面 / 辅助功能 / 音源与缓存 / MIDI / 开发者）；记住这次运行里上次看的那页。 */

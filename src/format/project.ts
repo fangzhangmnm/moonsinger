@@ -22,7 +22,7 @@ import { sungLangsOf } from "../engine/timeline.ts";
 import { FX_KINDS } from "../engine/fx.ts";
 import { withGrooveData } from "../score/groove.ts";
 import { TEXT_LANGS, CHORDS_MODES } from "../score/song-view.ts";
-import { lookOf, trackLookOf, lookFromFile } from "../look/index.ts";
+import { lookOf, trackLookOf, lookFromFile, type WordLookKey } from "../look/index.ts";
 import type { ReadPaper } from "../score/paper.ts";   // 「现在怎么画」、每张纸每个声部那几样、读文件时这几项怎么认：只问这一处（第 17 条 17-1）
 import { HOST_PARAMS, writeResolved, lowestMidiOf, songBpm } from "../engine/chain.ts";
 import { performerOf, performers } from "../performers/registry.ts";
@@ -158,11 +158,12 @@ const stampFor = (k: FormatFile, j: unknown): Json => (newerThanMe(j, k) ? { ver
  *  写了的、认得的原样留；没写的、类型不对的（不比这一版新的那一份里的怪值）= 新建时写的那一组（song.ts NEW_SONG_LOOK），不说话（统筹「v0.17.12 收」第 2 条）；
  *  **比这一版新的那一份**里键认识、值不认识的（以后的谱种 / 排法…）= 原样留在歌里、存的时候照写，画的时候按最基本的那一档（song-view.ts），这里记一句打开时说。
  *  别家的 MusicXML 没有 score.json = 整组按新建的写。 */
-/** 页面设置里这几样的人话名字（打开时那一句用）。 */
-const LOOK_LABEL: Partial<Record<string, () => string>> = { notation: () => _t("谱种"), chordTagStyle: () => _t("和弦写法"), lyricFit: () => _t("歌词怎么排"), barNumbers: () => _t("小节号"), textLang: () => _t("谱上的字用哪种语言") };
+/** 打开时那一句「这几样这一版不认识」里的人话名字 = 人照着去页面设置里找的那一行。按门口会记进 odd 的键写满（look 门口按字认的 WordLookKey + 这里认的 textLang；漏了 = 类型报错，不会露出键名）。 */
+type OddLookKey = WordLookKey | "textLang";
+const LOOK_LABEL: Readonly<Record<OddLookKey, () => string>> = { notation: () => _t("谱种"), chordTagStyle: () => _t("和弦写法"), lyricFit: () => _t("歌词怎么排"), barNumbers: () => _t("小节号"), textLang: () => _t("谱上的字用哪种语言") };
 /** 第 17 条 17-1：能跟着软件的那十一项（看谱那几样 + 版面那几样 + 纸张四项）的读法在 src/look lookFromFile（没写 = "default"，纸张没写 = 从 <defaults> 认一次）；
  *  这里只管住在同一组里的另两样：编排（改声音，第 16 条那一侧；没写 = 空）、谱上的字（"ui" 本身就是跟界面；没写 = "ui"，更新的版本写的不认识的字原样留）。音距（spacing）退役：读到不理。 */
-function songLookOf(x: Json | undefined, newer: boolean, odd: string[], xmlPaper: ReadPaper | undefined): Pick<Song, SongLookKey> {
+function songLookOf(x: Json | undefined, newer: boolean, odd: OddLookKey[], xmlPaper: ReadPaper | undefined): Pick<Song, SongLookKey> {
   const a = x?.arrangement, tl = x?.textLang;
   const textLang = typeof tl === "string" && (TEXT_LANGS as readonly string[]).includes(tl) ? tl : newer && typeof tl === "string" && tl ? (odd.push("textLang"), tl) : NEW_SONG_LOOK.textLang;
   return { ...lookFromFile(x, xmlPaper, newer, odd), arrangement: typeof a === "string" ? a : NEW_SONG_LOOK.arrangement, textLang };
@@ -1153,7 +1154,7 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
   // 风格记号的拍子表（16-4 D）：歌里写着的照读（形状对得上的）；谱上用到、歌里没有的 = 门口从现行预设补（withGrooveData）；预设里也没有 = 不补（记号不起作用、画灰）
   const gr = readGrooves(extras.scoreExt?.grooves);
   // 歌级的十样显示设置（16-4 A3）：门口补成明写的；比这一版新的那一份里认不出来的值原样留着，打开时说一句
-  const odd: string[] = [], look = songLookOf(extras.scoreExt, newerThanMe(extras.scoreExt, "score"), odd, reads[0]?.paper);   // 纸张：score.json 没写 = 从第一份 MusicXML 的 <defaults> 认一次
-  if (odd.length) notices.push(_t("这首歌是更新版本的 MoonSinger 存的，页面设置里这几样这一版不认识：{keys}。画的时候先按最基本的那一档，存的时候照原样写回。", { keys: odd.map((k) => LOOK_LABEL[k]?.() ?? k).join("、") }));
+  const odd: OddLookKey[] = [], look = songLookOf(extras.scoreExt, newerThanMe(extras.scoreExt, "score"), odd, reads[0]?.paper);   // 纸张：score.json 没写 = 从第一份 MusicXML 的 <defaults> 认一次
+  if (odd.length) notices.push(_t("这首歌是更新版本的 MoonSinger 存的，页面设置里这几样这一版不认识：{keys}。画的时候先按最基本的那一档，存的时候照原样写回。", { keys: odd.map((k) => LOOK_LABEL[k]()).join("、") }));
   return { song: withGrooveData({ ...song0, ...look, ...(gr ? { grooves: gr } : {}) }), stem, extras, ours, notices, view: safeView((extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null), references: {}, advice: [] };
 }

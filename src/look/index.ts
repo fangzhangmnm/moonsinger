@@ -210,9 +210,11 @@ export function paperChoicesOf(p: ReadPaper | undefined): Pick<Song, "paper" | "
 /** 读文件的门口（17-1）：score.json 顶层这几项 → 歌字段。没写 / 写坏了 = "default"（补的是这个字，不是当时的默认值）；认得的值原样；
  *  比这一版新的文件里键认识、值不认识的字（以后的谱种 / 排法…）原样留在歌里、存的时候照写，记进 odd（打开时说一句）——画的时候 lookOf 按最基本的那一档。
  *  纸张那四项：score.json 里有任何一项 = 以它为准（缺的那几项 = "default"）；一项都没有（老文件、别家的谱）= 从 MusicXML <defaults> 认一次（paperChoicesOf）。 */
-export function lookFromFile(x: Record<string, unknown> | undefined, xmlPaper: ReadPaper | undefined, newer: boolean, odd: string[]): Pick<Song, LookKey> {
+/** 门口按「字」认的那几项：比这一版新的文件里值不认识 = 原样留、记进 odd（打开时那一句按 project.ts LOOK_LABEL 说名字；那张表按这个类型写满，漏了 = 类型报错）。 */
+export type WordLookKey = "notation" | "barNumbers" | "lyricFit" | "chordTagStyle";
+export function lookFromFile(x: Record<string, unknown> | undefined, xmlPaper: ReadPaper | undefined, newer: boolean, odd: { push(k: WordLookKey): unknown }): Pick<Song, LookKey> {
   const g = (k: string): unknown => x?.[k];
-  const word = (k: "notation" | "barNumbers" | "lyricFit" | "chordTagStyle", allowed: readonly string[]): string => { const v = g(k);
+  const word = (k: WordLookKey, allowed: readonly string[]): string => { const v = g(k);
     if (v === "default" || (typeof v === "string" && allowed.includes(v))) return v as string;
     if (newer && typeof v === "string" && v) { odd.push(k); return v; }
     return "default"; };
