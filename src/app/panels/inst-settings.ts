@@ -90,7 +90,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       // 踏板（11-2；设计第 7 节「记号怎么演」加三行）：认不认 = 插件报的 pedals（不在 honors 里，见 marksTableHtml）
       [_t("延音踏板"), "pedal:sustain", _t("写的结尾落在踩着的一段里 = 留到下一次换踏板 / 抬起；同一个音再弹 = 旧的先松")],
       [_t("持音踏板"), "pedal:sostenuto", _t("踩下那一刻按着的音留到抬起；之后弹的照常")],
-      [_t("弱音踏板"), "pedal:soft", sp.path === "velocity" ? _t("踩着期间起的音力度 {softVel}，时值不动", { softVel: sp.softVel }) : _t("踩着期间起的音变轻")],
+      [_t("弱音踏板"), "pedal:soft", sp.path === "velocity" ? _t("踩着期间起的音力度 {softVel}，时值不动", { softVel: `${sp.softVel > 0 ? "+" : sp.softVel < 0 ? "−" : ""}${Math.abs(sp.softVel)}` }) : _t("踩着期间起的音变轻")],
     ];
     return rows;
   }

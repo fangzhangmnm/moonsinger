@@ -4246,7 +4246,8 @@ var S = {
   "\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09": { en: "Lift (stop the notes)" },
   "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09": { en: "Change pedal (stop, then keep again)" },
   "\u8E29\u4E0B\uFF08\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09": { en: "Press (keep the keys held at this moment)" },
-  "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\uFF09": { en: "Change pedal (stop, then keep the keys held at this moment)" },
+  "\u62AC\u8D77\uFF08\u653E\u5F00\u7559\u4F4F\u7684\u97F3\uFF09": { en: "Lift (let go of the held notes)" },
+  "\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09": { en: "Change pedal (let go, then keep the keys held at this moment)" },
   "\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09": { en: "Press (play a little softer)" },
   "\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09": { en: "Lift (back to the written loudness)" },
   "\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09": { en: "Change pedal (means nothing for the soft pedal: stays pressed)" },
@@ -5592,7 +5593,7 @@ var S = {
   "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A": { en: "Change evenly from the previous dynamic mark to this one" },
   "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C": { en: "Pedal down: keys you let go keep sounding until the next pedal change or lift" },
   "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38": { en: "Keys held at the moment of pressing keep sounding; later notes play as usual" },
-  "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3001\u97F3\u8272\u6697\u4E00\u70B9": { en: "Pedal down: play a little softer and darker" },
+  "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3002\u97F3\u8272\u53D8\u4E0D\u53D8\u770B\u8FD9\u4EF6\u4E50\u5668\u7684\u97F3\u8272\u5E93": { en: "Press: play a little softer. Whether the tone changes depends on the instrument's sound library" },
   "{src} \u8F7D\u8FDB\u6765\u4E86\uFF0C\u4F46\u91CC\u9762\u6CA1\u6709\u300C{key}\u300D": { en: "{src} loaded, but \u201C{key}\u201D isn't in it" },
   "\u5907\u7528\u7248\u6587\u4EF6\u5939\u91CC\u5C11\u4E86 {src}\uFF08\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u8BFB\uFF09": { en: "{src} is missing from the standalone folder (or the browser won't let it be read)" },
   "\u5907\u7528\u7248\u91CC\u6CA1\u6709 {path}": { en: "{path} isn't in the standalone version" },
@@ -6368,7 +6369,7 @@ var SIGNS = {
   // 踏板（11-1）：这一位最下面那条谱下面最外一道；线 / 尖 / 钩 = 共用挂件 ornaments layPedals 画（五线谱的名字 = Bravura 字形，数字行 = 细斜体字，同力度）
   "pedal:sustain": { id: "pedal:sustain", name: (l10) => _tIn(l10, "\u5EF6\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C"), lane: "pedal", draw: { staff: G("\uE650"), jianpu: T("Ped."), letters: T("Ped.") } },
   "pedal:sostenuto": { id: "pedal:sostenuto", name: (l10) => _tIn(l10, "\u6301\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38"), lane: "pedal", draw: { staff: G("\uE659"), jianpu: T("Sost."), letters: T("Sost.") } },
-  "pedal:soft": { id: "pedal:soft", name: (l10) => _tIn(l10, "\u5F31\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3001\u97F3\u8272\u6697\u4E00\u70B9"), lane: "pedal", draw: { staff: T("una corda"), jianpu: T("una corda"), letters: T("una corda") } }
+  "pedal:soft": { id: "pedal:soft", name: (l10) => _tIn(l10, "\u5F31\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3002\u97F3\u8272\u53D8\u4E0D\u53D8\u770B\u8FD9\u4EF6\u4E50\u5668\u7684\u97F3\u8272\u5E93"), lane: "pedal", draw: { staff: T("una corda"), jianpu: T("una corda"), letters: T("una corda") } }
   // 字 + 同延音的线和钩（统筹 11-12）
 };
 function dynDepiction(d3, notation) {
@@ -35392,15 +35393,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-be7074809a36.mjs");
+      return pick3(() => "singer-worker-de6adc7189c4.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-bfcf786ae698.mjs");
+      return pick3(() => "layout-worker-66273c98ab80.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-739b4ab94de9.mjs");
+      return pick3(() => "encode-worker-598d74515a39.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -45116,7 +45117,7 @@ function createInstSettings(el2, h2) {
       // 踏板（11-2；设计第 7 节「记号怎么演」加三行）：认不认 = 插件报的 pedals（不在 honors 里，见 marksTableHtml）
       [_t("\u5EF6\u97F3\u8E0F\u677F"), "pedal:sustain", _t("\u5199\u7684\u7ED3\u5C3E\u843D\u5728\u8E29\u7740\u7684\u4E00\u6BB5\u91CC = \u7559\u5230\u4E0B\u4E00\u6B21\u6362\u8E0F\u677F / \u62AC\u8D77\uFF1B\u540C\u4E00\u4E2A\u97F3\u518D\u5F39 = \u65E7\u7684\u5148\u677E")],
       [_t("\u6301\u97F3\u8E0F\u677F"), "pedal:sostenuto", _t("\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u97F3\u7559\u5230\u62AC\u8D77\uFF1B\u4E4B\u540E\u5F39\u7684\u7167\u5E38")],
-      [_t("\u5F31\u97F3\u8E0F\u677F"), "pedal:soft", sp2.path === "velocity" ? _t("\u8E29\u7740\u671F\u95F4\u8D77\u7684\u97F3\u529B\u5EA6 {softVel}\uFF0C\u65F6\u503C\u4E0D\u52A8", { softVel: sp2.softVel }) : _t("\u8E29\u7740\u671F\u95F4\u8D77\u7684\u97F3\u53D8\u8F7B")]
+      [_t("\u5F31\u97F3\u8E0F\u677F"), "pedal:soft", sp2.path === "velocity" ? _t("\u8E29\u7740\u671F\u95F4\u8D77\u7684\u97F3\u529B\u5EA6 {softVel}\uFF0C\u65F6\u503C\u4E0D\u52A8", { softVel: `${sp2.softVel > 0 ? "+" : sp2.softVel < 0 ? "\u2212" : ""}${Math.abs(sp2.softVel)}` }) : _t("\u8E29\u7740\u671F\u95F4\u8D77\u7684\u97F3\u53D8\u8F7B")]
     ];
     return rows;
   }
@@ -64860,7 +64861,8 @@ function openRepeatMenu() {
 }
 var PEDAL_ACT_LABEL = {
   sustain: { down: _t("\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09"), up: _t("\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09") },
-  sostenuto: { down: _t("\u8E29\u4E0B\uFF08\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09"), up: _t("\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\uFF09") },
+  sostenuto: { down: _t("\u8E29\u4E0B\uFF08\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09"), up: _t("\u62AC\u8D77\uFF08\u653E\u5F00\u7559\u4F4F\u7684\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09") },
+  // 持音只放开它留住的那几个（统筹审 11-2：「止音」说大了）
   soft: { down: _t("\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09"), up: _t("\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09") }
 };
 var PEDAL_ACTS = { sustain: ["down", "up", "change"], sostenuto: ["down", "up"], soft: ["down", "up"] };
@@ -67615,4 +67617,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-dcc2b161b6a9.mjs.map
+//# sourceMappingURL=moonsinger-1a1fc9848cb8.mjs.map

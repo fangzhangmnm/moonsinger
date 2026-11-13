@@ -70,7 +70,7 @@ export const SIGNS: Readonly<Record<SignId, Sign>> = {
   // 踏板（11-1）：这一位最下面那条谱下面最外一道；线 / 尖 / 钩 = 共用挂件 ornaments layPedals 画（五线谱的名字 = Bravura 字形，数字行 = 细斜体字，同力度）
   "pedal:sustain": { id: "pedal:sustain", name: (l) => _tIn(l, "延音踏板"), says: (l) => _tIn(l, "踩下：之后松开的键先不停，到换踏板或抬起才停"), lane: "pedal", draw: { staff: G("\u{E650}"), jianpu: T("Ped."), letters: T("Ped.") } },
   "pedal:sostenuto": { id: "pedal:sostenuto", name: (l) => _tIn(l, "持音踏板"), says: (l) => _tIn(l, "踩下那一刻按着的键留住，后面弹的照常"), lane: "pedal", draw: { staff: G("\u{E659}"), jianpu: T("Sost."), letters: T("Sost.") } },
-  "pedal:soft": { id: "pedal:soft", name: (l) => _tIn(l, "弱音踏板"), says: (l) => _tIn(l, "踩下：弹得轻一点、音色暗一点"), lane: "pedal", draw: { staff: T("una corda"), jianpu: T("una corda"), letters: T("una corda") } },   // 字 + 同延音的线和钩（统筹 11-12）
+  "pedal:soft": { id: "pedal:soft", name: (l) => _tIn(l, "弱音踏板"), says: (l) => _tIn(l, "踩下：弹得轻一点。音色变不变看这件乐器的音色库"), lane: "pedal", draw: { staff: T("una corda"), jianpu: T("una corda"), letters: T("una corda") } },   // 字 + 同延音的线和钩（统筹 11-12）
 };
 
 /** 力度字在这种谱里画成什么：五线谱 = Bravura 字形 + 墨迹；简谱 = 普通的字（细斜体小写，墨迹按字宽现量）。不分界面语言（纪要第 88 节）。 */
