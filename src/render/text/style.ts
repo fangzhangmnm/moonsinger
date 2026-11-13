@@ -12,6 +12,9 @@ export { TEXT_STYLES, TEMPO_EM, LYRIC_EM, LYRIC_LOOK, LYRIC_MIN_SX, STEM_REGULAR
 export const TEXT_FACES: Record<TextFace, string> = {
   sans: `system-ui, -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", sans-serif`,
   serif: `"Noto Serif", "Times New Roman", Times, Georgia, serif`,
+  // 和弦标（v0.17.36，统筹 796e524b）：随 app 发的子集（styles.css @font-face，vendor/fonts/serif/chord-serif.ttf = Noto Serif SemiBold 里和弦标用得到的那几十个字）。
+  //   字体还没载到时先用后面的（字的位置照字宽表排、不量，所以载到之后只换字形、不挪位置）；font-display: swap。
+  chord: `"MoonSinger Chord", "Noto Serif", "Times New Roman", Times, Georgia, serif`,
   lyric: `system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`,
 };
 

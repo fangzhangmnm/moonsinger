@@ -3,8 +3,9 @@
 //   小字补粗的公式（smallWeight）和它用的竖笔数跟着样式表一起搬：表是它算出来的（STEM_REGULAR 是量 Noto Sans SC 的数，test/text-style.test.ts 照旧核着）。
 import type { LyricGaps } from "../render/text/index.ts";   // 只要类型（文字模块只从入口进）
 
-/** 字体：sans = 正文的无衬线（和界面同一套）；serif = 衬线（和弦级数、cresc.）；lyric = 歌词（日文汉字优先日本字形）。 */
-export type TextFace = "sans" | "serif" | "lyric";
+/** 字体：sans = 正文的无衬线（和界面同一套）；serif = 衬线（cresc. 这类）；lyric = 歌词（日文汉字优先日本字形）；
+ *  chord = 和弦标（随 app 发的那款衬线半粗子集，v0.17.36：屏幕、字宽表、PDF 轮廓同一款字；只给和弦标用）。 */
+export type TextFace = "sans" | "serif" | "lyric" | "chord";
 /** 尺子：staff = 跟谱（紧凑档跟着谱缩）；text = 跟字（紧凑档照舒适档那么大，刀 2）。 */
 export type TextRuler = "staff" | "text";
 export interface TextStyle { face: TextFace; weight: 400 | 600 | 700; italic: boolean; /** 字号（线间距的倍数）。 */ em: number; ruler: TextRuler }
@@ -24,6 +25,8 @@ const JP_MAIN_EM = 2.5;
  *  tight = 贴着它所属的那个字（B♭ 的 B、♭VII 的 V）——比这款衬线半粗字和字之间看得见的缝的中位 0.06 小一点；loose = 另一边（B♭ 和后面的 7），比字距大，读成「B♭ 7」不是「B ♭7」。
  *  数是 AI 照量出来的字距起的（施工 Claude Opus 5.5），好不好看归 user 看图。 */
 export const CHORD_ACC_GAP = { tight: 0.05, loose: 0.1 } as const;
+/** 和弦标里的升降号比谱头「1=♭B」那一套的升降号大多少（v0.17.36；user 看了两档的放大图「可以用大一点的」= 1.2 倍）。只管和弦标，谱头那一套不动。 */
+export const CHORD_ACC_SCALE = 1.2;
 /** 速度那一串的字号（线间距）；「1=X」、和弦级数、风格记号和它一样大。 */
 export const TEMPO_EM = 1.35;
 /** 歌词的字号（线间距；跟谱）。 */
@@ -49,7 +52,7 @@ export const TEXT_STYLES = {
   /** 专业模式 C 调的淡「1=C」（覆盖层写、不印）：和「1=F」一样跟谱。 */
   "key-hint": s("sans", TEMPO_EM, "staff"),
   "groove-mark": s("sans", TEMPO_EM, "staff", 600, true),
-  "chord-tag": s("serif", TEMPO_EM, "staff", 600),
+  "chord-tag": s("chord", TEMPO_EM, "staff", 600),
   "nav-word": s("sans", TEMPO_EM * 1.05, "staff", 600, true), "nav-mark": s("sans", TEMPO_EM * 1.05, "staff", 600),   // 反复的字（房子「1.」、×3、D.C.…）：屏幕一直是粗的，PDF 原来印细的——统一成粗的
   "bar-no": s("sans", 1.05, "staff"), "page-no": s("sans", 1.2, "text"),
   lyric: s("lyric", LYRIC_EM, "staff"),

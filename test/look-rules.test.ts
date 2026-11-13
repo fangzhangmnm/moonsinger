@@ -54,7 +54,7 @@ const RULES = [
 /** ② src/render 里留着的顶层大写常数：glyph = 字形的数据（字体给的 / 照样张量的 / 记谱的定规），algo = 算法内部（登记表、精度、没人想调）。键 = 文件 + 名字。 */
 const GLYPH = "glyph", ALGO = "algo";
 const KEPT: Record<string, typeof GLYPH | typeof ALGO> = {
-  "chord-text.ts ACC_K": GLYPH, "chord-text.ts RISE_K": GLYPH,   // 和弦标里升降号字形的字号、顶比大写字母高多少 = 谱头「1=♭B」那一套（jianpu/glyphs.ts ACC_GLYPH_EM / ACC_RISE ÷ DIGIT_EM），字形的数据（v0.17.34）
+  "chord-text.ts ACC_K": GLYPH, "chord-text.ts RISE_K": GLYPH,   // 和弦标里升降号字形的字号（× src/look 的 CHORD_ACC_SCALE，v0.17.36）、顶比大写字母高多少 = 谱头「1=♭B」那一套（jianpu/glyphs.ts ACC_GLYPH_EM / ACC_RISE ÷ DIGIT_EM），字形的数据（v0.17.34）
   "expressions.ts FOLDED_TOKEN_KINDS": ALGO,
   "frame/cell.ts ORIGIN": ALGO, "frame/furniture.ts NO_LINE_START": ALGO, "frame/lanes.ts INK_UP_TO": ALGO,
   "frame/units.ts MIN_PLAIN": ALGO, "frame/units.ts NOTATABLE": ALGO, "frame/units.ts RATIOS": ALGO,

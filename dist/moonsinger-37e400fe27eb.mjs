@@ -6365,7 +6365,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.35-2026-11-13";
+var APP_VERSION = "v0.17.36-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -11829,6 +11829,7 @@ function smallWeight(k2) {
 }
 var JP_MAIN_EM = 2.5;
 var CHORD_ACC_GAP = { tight: 0.05, loose: 0.1 };
+var CHORD_ACC_SCALE = 1.2;
 var TEMPO_EM = 1.35;
 var LYRIC_EM = 1.6;
 var LYRIC_LOOK = { cozy: { k: 1, sx: 1, gapFloor: 0.2 }, compact: { k: 1.15, sx: 0.85, gapFloor: 0.2 } };
@@ -11850,7 +11851,7 @@ var TEXT_STYLES = {
   /** 专业模式 C 调的淡「1=C」（覆盖层写、不印）：和「1=F」一样跟谱。 */
   "key-hint": s("sans", TEMPO_EM, "staff"),
   "groove-mark": s("sans", TEMPO_EM, "staff", 600, true),
-  "chord-tag": s("serif", TEMPO_EM, "staff", 600),
+  "chord-tag": s("chord", TEMPO_EM, "staff", 600),
   "nav-word": s("sans", TEMPO_EM * 1.05, "staff", 600, true),
   "nav-mark": s("sans", TEMPO_EM * 1.05, "staff", 600),
   // 反复的字（房子「1.」、×3、D.C.…）：屏幕一直是粗的，PDF 原来印细的——统一成粗的
@@ -11887,6 +11888,9 @@ var DEFAULT_GAPS = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHE
 var TEXT_FACES = {
   sans: `system-ui, -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", sans-serif`,
   serif: `"Noto Serif", "Times New Roman", Times, Georgia, serif`,
+  // 和弦标（v0.17.36，统筹 796e524b）：随 app 发的子集（styles.css @font-face，vendor/fonts/serif/chord-serif.ttf = Noto Serif SemiBold 里和弦标用得到的那几十个字）。
+  //   字体还没载到时先用后面的（字的位置照字宽表排、不量，所以载到之后只换字形、不挪位置）；font-display: swap。
+  chord: `"MoonSinger Chord", "Noto Serif", "Times New Roman", Times, Georgia, serif`,
   lyric: `system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`
 };
 var isBlockScript = (s10) => /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af\uff66-\uff9f]/.test(s10);
@@ -12648,7 +12652,7 @@ var CHORD_STEM = 0.137;
 
 // src/render/chord-text.ts
 var { tight: CHORD_TIGHT, loose: CHORD_LOOSE } = CHORD_ACC_GAP;
-var ACC_K = ACC_GLYPH_EM / DIGIT_EM;
+var ACC_K = ACC_GLYPH_EM / DIGIT_EM * CHORD_ACC_SCALE;
 var RISE_K = ACC_RISE / DIGIT_EM;
 var adv = (s10) => [...s10].reduce((w2, c10) => w2 + (CHORD_ADV[c10] ?? 0.6), 0);
 var chordTextW = (s10, fs) => adv(s10) * fs;
@@ -15013,11 +15017,13 @@ function drawStaff(c10, mine) {
       }
       const ds = (c11.pitches.length ? c11.pitches : [c11.pitch]).map((pp) => dIdx(pp, c11.staff, c11.index));
       const d3 = ds[0], y2 = yOf(row2, d3), x0 = nhX(c11);
+      const headMute = (k2) => [k2 > 0 && !!q2.p.mono ? "chord-mute" : "", c11.whisper && whisperMute ? "art-mute" : ""].filter(Boolean);
       c11.accs.forEach((a10, k2) => {
         if (a10 === null || percHere) return;
         const ag2 = a10 === 1 ? GLYPH.accidentalSharp : a10 === -1 ? GLYPH.accidentalFlat : a10 === 2 ? GLYPH.accidentalDoubleSharp : a10 === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
         const near2 = c11.accs.slice(0, k2).some((b3, kk) => b3 !== null && Math.abs(ds[kk] - ds[k2]) < 3);
-        put2(row2, { tok: tokOf(c11), t: "glyph", x: P2(c11.x - 1.1) - (near2 ? P2(1.1) : 0) - (c11.art.includes("ghost") ? P2(0.6) : 0), y: yOf(row2, ds[k2]), ch: ag2, cls });
+        const hm = headMute(k2), acls = hm.length ? [cls ?? "", ...hm].filter(Boolean).join(" ") : cls;
+        put2(row2, { tok: tokOf(c11), t: "glyph", x: P2(c11.x - 1.1) - (near2 ? P2(1.1) : 0) - (c11.art.includes("ghost") ? P2(0.6) : 0), y: yOf(row2, ds[k2]), ch: ag2, cls: acls });
       });
       const ledgers = /* @__PURE__ */ new Set();
       for (const dd of ds) {
@@ -15030,10 +15036,9 @@ function drawStaff(c10, mine) {
       ds.forEach((dd, k2) => {
         const second = k2 > 0 && Math.abs(ds[k2 - 1] - dd) === 1 && !shifted;
         shifted = second;
-        const mute = k2 > 0 && !!q2.p.mono;
         if (c11.j === 0 && k2 > 0) chordHeads.push({ ...tag2, index: c11.index, system: row2, x: second ? x0 + nhW(c11) * 0.95 : x0, y: yOf(row2, dd), w: nhW(c11) });
         const hch = percHere && !xOf(c11) ? percHead(c11, (c11.pitches.length ? c11.pitches : [c11.pitch])[k2]).ch : ng2;
-        put2(row2, { tok: tokOf(c11), t: "glyph", x: second ? x0 + nhW(c11) * 0.95 : x0, y: yOf(row2, dd), ch: hch, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c11.whisper && whisperMute ? "art-mute" : ""].filter(Boolean).join(" ") });
+        put2(row2, { tok: tokOf(c11), t: "glyph", x: second ? x0 + nhW(c11) * 0.95 : x0, y: yOf(row2, dd), ch: hch, cls: ["note", cls ?? "", ...headMute(k2)].filter(Boolean).join(" ") });
         if (c11.art.includes("ghost")) {
           const hx = second ? x0 + nhW(c11) * 0.95 : x0, pc2 = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
           put2(row2, { tok: tokOf(c11), t: "glyph", x: hx - P2(0.6), y: yOf(row2, dd), ch: "\uE0F5", cls: pc2 });
@@ -15342,7 +15347,7 @@ function drawStaff(c10, mine) {
           const ct2 = chordTextPrims(label, tx3, y2, fs, cls);
           prims.push(...ct2.prims);
           chordTagsOut.push({ x: tx3 - TR("chord-tag", 0.3), y: y2 - fs * 1.05, w: ct2.w + TR("chord-tag", 0.6), h: fs * 1.4, read: rd2, system: row2, index: c11.index, ...atRow !== null ? { part: q2.p.id } : {} });
-        }));
+        }, { wall: true }));
       }
     }
     const bracket = (cs2, openL, openR, num2) => {
@@ -16305,7 +16310,7 @@ function drawJianpu(c10, mine, mode = "digits") {
           const ct2 = chordTextPrims(label, lx2, y2, fs, cls);
           c10.prims.push(...ct2.prims);
           chordTagsOut.push({ x: lx2 - TR("chord-tag", 0.3), y: y2 - fs * 1.05, w: ct2.w + TR("chord-tag", 0.6), h: fs * 1.4, read: rd2, system: row2, index: u2.index, ...atOwn ? { part: q2.p.id } : {} });
-        }, { min: (BAR_Y1 + 0.3) * jk + fs / P2(1) * 0.8 }));
+        }, { min: (BAR_Y1 + 0.3) * jk + fs / P2(1) * 0.8, wall: true }));
       }
     }
     layDynamics(orn);
@@ -16934,6 +16939,14 @@ function engrave(song, o10) {
       commit(sk2, dy, true);
       return dy;
     };
+    const walls = /* @__PURE__ */ new Map();
+    const flushWall = (row2) => {
+      const w2 = walls.get(row2);
+      if (!w2) return;
+      const sk2 = sky(row2);
+      for (let i10 = 0; i10 < w2.pend.length; i10 += 4) sk2.ink(w2.pend[i10], w2.pend[i10 + 1], w2.pend[i10 + 2], w2.pend[i10 + 3], w2.count);
+      walls.delete(row2);
+    };
     const placeBelow = (row2, gap, draw, o22 = {}) => {
       const m2 = mark();
       draw(staffTop(row2));
@@ -16947,6 +16960,30 @@ function engrave(song, o10) {
       }
       let dy = Math.max(need === -Infinity ? 0 : need, o22.min ?? -Infinity);
       if (o22.step && o22.min !== void 0 && dy > o22.min + 1e-9) dy = o22.min + Math.ceil((dy - o22.min) / o22.step - 1e-9) * o22.step;
+      if (o22.wall) {
+        let w2 = walls.get(row2);
+        if (!w2) walls.set(row2, w2 = { boxes: [], pend: [], count: o22.count !== false });
+        let x0 = Infinity, x1 = -Infinity, y02 = Infinity, y1 = -Infinity;
+        for (let i10 = 0; i10 < pieces.length; i10 += 4) {
+          x0 = Math.min(x0, pieces[i10]);
+          x1 = Math.max(x1, pieces[i10 + 1]);
+          y02 = Math.min(y02, pieces[i10 + 2]);
+          y1 = Math.max(y1, pieces[i10 + 3]);
+        }
+        if (x0 < x1) {
+          for (let moved2 = true; moved2; ) {
+            moved2 = false;
+            for (const b3 of w2.boxes) if (x0 < b3[1] + gap && x1 > b3[0] - gap && y02 + dy < b3[3] + gap && y1 + dy > b3[2] - gap) {
+              dy = b3[3] + gap - y02;
+              moved2 = true;
+            }
+          }
+          w2.boxes.push([x0, x1, y02 + dy, y1 + dy]);
+        }
+        shiftSince(m2, P2(dy));
+        for (let i10 = 0; i10 < pieces.length; i10 += 4) w2.pend.push(pieces[i10], pieces[i10 + 1], pieces[i10 + 2] + dy, pieces[i10 + 3] + dy);
+        return dy;
+      }
       shiftSince(m2, P2(dy));
       commit(sk2, dy, o22.count !== false);
       return dy;
@@ -17190,6 +17227,7 @@ function engrave(song, o10) {
       const m2 = attached.get(row2), lanes = DRAWERS[rows[row2].kind].lanes;
       for (const lane of lanes) {
         for (const f2 of m2?.get(lane) ?? []) f2();
+        flushWall(row2);
         if (lane === INK_UP_TO) upToNav[row2 - rowBase] = sky(row2).hUp;
       }
       if (m2) {
@@ -35317,9 +35355,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-1fedd31fe654.mjs");
+      return pick3(() => "layout-worker-a7065623bb18.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-15b4c97a199e.mjs");
+      return pick3(() => "encode-worker-315163c846bb.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -62899,7 +62937,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, activePerfSpec(D3.extras, curRole())?.sing ?? {});
   },
   state: () => D3.st,
-  cssHash: "9d167751043f",
+  cssHash: "e5c68309bab4",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -67427,4 +67465,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-df03cba23c82.mjs.map
+//# sourceMappingURL=moonsinger-37e400fe27eb.mjs.map

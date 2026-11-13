@@ -1,6 +1,7 @@
 import type { LyricGaps } from "../render/text/index.ts";
-/** 字体：sans = 正文的无衬线（和界面同一套）；serif = 衬线（和弦级数、cresc.）；lyric = 歌词（日文汉字优先日本字形）。 */
-export type TextFace = "sans" | "serif" | "lyric";
+/** 字体：sans = 正文的无衬线（和界面同一套）；serif = 衬线（cresc. 这类）；lyric = 歌词（日文汉字优先日本字形）；
+ *  chord = 和弦标（随 app 发的那款衬线半粗子集，v0.17.36：屏幕、字宽表、PDF 轮廓同一款字；只给和弦标用）。 */
+export type TextFace = "sans" | "serif" | "lyric" | "chord";
 /** 尺子：staff = 跟谱（紧凑档跟着谱缩）；text = 跟字（紧凑档照舒适档那么大，刀 2）。 */
 export type TextRuler = "staff" | "text";
 export interface TextStyle {
@@ -22,6 +23,8 @@ export declare const CHORD_ACC_GAP: {
     readonly tight: 0.05;
     readonly loose: 0.1;
 };
+/** 和弦标里的升降号比谱头「1=♭B」那一套的升降号大多少（v0.17.36；user 看了两档的放大图「可以用大一点的」= 1.2 倍）。只管和弦标，谱头那一套不动。 */
+export declare const CHORD_ACC_SCALE = 1.2;
 /** 速度那一串的字号（线间距）；「1=X」、和弦级数、风格记号和它一样大。 */
 export declare const TEMPO_EM = 1.35;
 /** 歌词的字号（线间距；跟谱）。 */

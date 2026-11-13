@@ -64,8 +64,9 @@ import "./look-habits.test.ts";   // 这台设备的习惯：三层各管各的�
 import "./panel-shell.test.ts";   // 面板外壳是唯一的面板外壳：.settings-card 只剩名单上的五处；设置、页面设置在壳上
 import "./strip-layout.test.ts";   // 「初始设置」卡第一行：放不下时露出来的永远是整数格 + 半格
 import "./habits-preview.test.ts";   // 「初始设置」卡的预览图：开标签换上了（data-k、k ≤ 1、150 : 92）
-import "./note-name-outlets.test.ts";
-import "./chord-text.test.ts";   // 和弦标里的升降号贴着所属的字（v0.17.34）   // 给人看的音名的出口两类：照眼前的谱写 / 永远写实际的（第 19 条）
+import "./note-name-outlets.test.ts";   // 给人看的音名的出口两类：照眼前的谱写 / 永远写实际的（第 19 条）
+import "./chord-text.test.ts";   // 和弦标里的升降号贴着所属的字（v0.17.34）
+import "./acc-color.test.ts";   // 音头是什么颜色，它自己的升降号就是什么颜色（v0.17.36）
 import "./settings-libs.test.ts";   // 设置的音源 / 维护两页：钮碰的存储对白名单、维护页不删库、不 import 歌库 / 同步（13-2）
 import "./gm-format.test.ts";
 import "./sounds.test.ts";

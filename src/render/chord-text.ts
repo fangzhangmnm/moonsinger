@@ -3,7 +3,7 @@
 //   为什么：原来整串当一行衬线字画，升降号是字体里的 ♭ ♯——放大图里「B ♭7」字母和降号之间空得比字距大（读成 B 加降七），降号也比旁边的字细。
 //   规矩（统筹）：升降号和它所属的字之间不留比字距更大的空，粗细和旁边的字对得上；四种位置都算——根音字母后面（B♭）、级数前面（♭VII）、变化音数字前面（♭5、♯9）、低音字母后面（/B♭）。
 //   做法：
-//   · 升降号用乐谱字体 Bravura 的字形（同 7-P、谱头「1=♭B」keytext.ts）：字号 = 字的 ACC_GLYPH_EM / DIGIT_EM 倍，顶比大写字母顶高 ACC_RISE / DIGIT_EM 倍（照 keytext）；
+//   · 升降号用乐谱字体 Bravura 的字形（同 7-P、谱头「1=♭B」keytext.ts）：字号 = 字的 ACC_GLYPH_EM / DIGIT_EM 倍 × CHORD_ACC_SCALE（v0.17.36 user 定大一点 = 1.2），顶比大写字母顶高 ACC_RISE / DIGIT_EM 倍（照 keytext）；
 //     补粗照 7-P 那条（jianpu/glyphs.ts accStroke），只是主字竖笔换成这款衬线半粗「I」量的（CHORD_STEM）。
 //   · 谁的升降号：紧跟在大写字母 A–G 后面 = 那个字母的（B♭、F♯、/B♭）；别的 = 后面那个字的（♭VII、♭5、♯9）。
 //   · 缝按「看得见的缝」（墨到墨）：贴所属的那个字 tight、另一边 loose（src/look/text.ts CHORD_ACC_GAP）——这样「B♭7」读成 B♭ 加 7。
@@ -12,10 +12,10 @@
 import type { Prim } from "./engrave.ts";
 import { ACC_GLYPH_EM, ACC_RISE, DIGIT_EM, accGlyphsOfText, accStroke } from "./jianpu/glyphs.ts";
 import { CHORD_ADV, CHORD_SB, CHORD_CAP, CHORD_STEM } from "./chord-text.gen.ts";
-import { CHORD_ACC_GAP } from "../look/text.ts";   // 缝的两个数是排版规则（人会想调），住 src/look
+import { CHORD_ACC_GAP, CHORD_ACC_SCALE } from "../look/text.ts";   // 缝的两个数、升降号大多少是排版规则（人会想调），住 src/look
 
 const { tight: CHORD_TIGHT, loose: CHORD_LOOSE } = CHORD_ACC_GAP;
-const ACC_K = ACC_GLYPH_EM / DIGIT_EM, RISE_K = ACC_RISE / DIGIT_EM;
+const ACC_K = (ACC_GLYPH_EM / DIGIT_EM) * CHORD_ACC_SCALE, RISE_K = ACC_RISE / DIGIT_EM;
 const adv = (s: string): number => [...s].reduce((w, c) => w + (CHORD_ADV[c] ?? 0.6), 0);
 /** 一段和弦标的字在字号 fs（px）下多宽（px）：这款衬线字自己的字宽。天际线算和弦标的墨也用它（skyline.ts primInk）——原来按正文的尺子量，衬线半粗「VII」比量的宽三成，
  *  两个标会挤到同一行贴在一起（v0.17.34 出图时抓到：「♭VII」「V7♯9」排成「♭VIIV7♯9」）。 */

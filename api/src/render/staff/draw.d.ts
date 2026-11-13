@@ -76,6 +76,7 @@ export interface StaffDrawCtx {
         min?: number;
         count?: boolean;
         step?: number;
+        wall?: boolean;
     }) => number;
     attach: (row: number, lane: LaneKind, run: () => void) => void;
     /** 每条要排的轨、声部 2 画在哪一行、鼓谱模式、量的结果（墨往左伸多远）。 */

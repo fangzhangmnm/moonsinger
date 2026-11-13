@@ -53,7 +53,7 @@ export interface StaffDrawCtx {
   staffTop: (r: number) => number; lyricY: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
   /** 挂件：贴在谱上方 / 下方（天际线）；attach = 往某一道上登记一件（框架按 STAFF_LANES 的先后执行）。 */
   placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
-  placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: { min?: number; count?: boolean; step?: number }) => number;
+  placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: { min?: number; count?: boolean; step?: number; wall?: boolean }) => number;
   attach: (row: number, lane: LaneKind, run: () => void) => void;   // 第四刀：按行登记（每一行按自己那种画法的道的先后贴；统筹审第四刀接口第 3 条）
   /** 每条要排的轨、声部 2 画在哪一行、鼓谱模式、量的结果（墨往左伸多远）。 */
   per: StaffTrack[]; rowHost: number[]; pmode: ("five" | "one" | null)[]; measured: { inkL: Map<Chunk, number> }[];
@@ -209,11 +209,15 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
       }
       const ds = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff, c.index));   // 叠音的符头从高到低；第一个 = 旋律线
       const d = ds[0], y = yOf(row, d), x0 = nhX(c);
+      // 第 k 个音的符头画灰的那几个类（单声乐器下面的音 = chord-mute；不认的气声 = art-mute）。它自己的升降号跟着同样的类（v0.17.36；user 11-13
+      //   「如果音是灰色的话，它对应的升降号也应该对齐是灰色」；规矩：音头是什么颜色，它自己的升降号就是什么颜色——简谱那边 jp-acc.chord-mute 早就是这样）
+      const headMute = (k: number): string[] => [k > 0 && !!q.p.mono ? "chord-mute" : "", c.whisper && whisperMute ? "art-mute" : ""].filter(Boolean);
       c.accs.forEach((a, k) => {
         if (a === null || percHere) return;
         const ag = a === 1 ? GLYPH.accidentalSharp : a === -1 ? GLYPH.accidentalFlat : a === 2 ? GLYPH.accidentalDoubleSharp : a === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
         const near = c.accs.slice(0, k).some((b, kk) => b !== null && Math.abs(ds[kk] - ds[k]) < 3);   // 挨得近的两个临时记号错开一列
-        put(row, { tok: tokOf(c), t: "glyph", x: P(c.x - 1.1) - (near ? P(1.1) : 0) - (c.art.includes("ghost") ? P(0.6) : 0), y: yOf(row, ds[k]), ch: ag, cls });   // 幽灵音：给左括号让位
+        const hm = headMute(k), acls = hm.length ? [cls ?? "", ...hm].filter(Boolean).join(" ") : cls;   // 没画灰的照旧（类一个字都不变）
+        put(row, { tok: tokOf(c), t: "glyph", x: P(c.x - 1.1) - (near ? P(1.1) : 0) - (c.art.includes("ghost") ? P(0.6) : 0), y: yOf(row, ds[k]), ch: ag, cls: acls });   // 幽灵音：给左括号让位
       });
       const ledgers = new Set<number>();
       for (const dd of ds) { for (let L = 28; L >= dd; L -= 2) ledgers.add(L); for (let L = 40; L <= dd; L += 2) ledgers.add(L); }
@@ -222,10 +226,10 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
       let shifted = false;
       ds.forEach((dd, k) => {
         const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted; shifted = second;   // 二度：下面那个符头往右错开（连着的二度交错）
-        const mute = k > 0 && !!q.p.mono;   // 单声乐器的声部：下面的音灰掉、只唱最上面（user「叠音声部换单声乐器时下方音数据结构上保留，但是变灰」）
+        // 单声乐器的声部：下面的音灰掉、只唱最上面（user「叠音声部换单声乐器时下方音数据结构上保留，但是变灰」）——和它的升降号同一份（headMute）
         if (c.j === 0 && k > 0) chordHeads.push({ ...tag, index: c.index, system: row, x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), w: nhW(c) });
         const hch = percHere && !xOf(c) ? percHead(c, (c.pitches.length ? c.pitches : [c.pitch!])[k]).ch : ng;
-        put(row, { tok: tokOf(c), t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: hch, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c.whisper && whisperMute ? "art-mute" : ""].filter(Boolean).join(" ") });
+        put(row, { tok: tokOf(c), t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: hch, cls: ["note", cls ?? "", ...headMute(k)].filter(Boolean).join(" ") });
         if (c.art.includes("ghost")) {   // 幽灵音 = 符头两边一对括号（SMuFL noteheadParenthesisLeft / Right；墨迹按 canvas 量的）
           const hx = second ? x0 + nhW(c) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
           put(row, { tok: tokOf(c), t: "glyph", x: hx - P(0.6), y: yOf(row, dd), ch: "\u{E0F5}", cls: pc });
@@ -488,7 +492,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
         attach(row, "chordTag", () => placeBelow(row, 0.3, (y) => {
           const ct = chordTextPrims(label, tx, y, fs, cls); prims.push(...ct.prims);   // 字 + 升降号字形（v0.17.34；宽 = 画出来的，src/render/chord-text.ts）
           chordTagsOut.push({ x: tx - TR("chord-tag", 0.3), y: y - fs * 1.05, w: ct.w + TR("chord-tag", 0.6), h: fs * 1.4, read: rd, system: row, index: c.index, ...(atRow !== null ? { part: q.p.id } : {}) });
-        }));
+        }, { wall: true }));   // 砖墙排（v0.17.36）：挤的时候先回到本来的位置、只和已经放好的和弦标按框比
       }
     }
     // 10. 连音括号：同一比例连着的一串，凑满「m 个最小写出单位」就收一组。一组跨行（2026-10-08 Opus 5.5，user「跨行的连音符显示不正常」）=

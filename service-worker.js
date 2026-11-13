@@ -17,6 +17,7 @@ const STATIC_PRECACHE = [
   "./styles.css",
   "./boot-guard.js",
   "./vendor/fonts/bravura/Bravura.woff2",
+  "./vendor/fonts/serif/chord-serif.ttf",   // 和弦标那款字（v0.17.36；styles.css @font-face「MoonSinger Chord」）
   "./vendor/internal-css/workbench-elements.css",
   "./vendor/internal-css/gallery.css",
   "./vendor/msal/msal-browser.min.js",

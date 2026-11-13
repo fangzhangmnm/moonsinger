@@ -57,7 +57,8 @@ check((await p.inputValue(".offer #fnIn")) === `${day}-春の歌`, "点文件名
 await p.click('.offer [data-v="cancel"]'); await p.waitForTimeout(100);
 // 导出 hub（v0.3.0）：另存为住这里（user 2026-08-20「另存为也变成导出」）；存一份副本 = 下载、文件名带时刻、「•」不变（导出不清 dirty）
 await p.click("#setBtn"); await p.waitForSelector(".main-menu");
-check(!(await p.$('.main-menu [data-v="saveAs"]')) && !!(await p.$('.main-menu [data-v="export"]')) && !!(await p.$('.main-menu [data-v="rename"]')), "三条杠菜单：没有「另存为」、有「导出…」；还没有家 = 有「改文件名」");
+// 13-3（统筹 2026-11-12）起三条杠里拿掉了「改文件名…」（搬进纸右上角「这首歌」；点顶栏文件名改名照旧，上面那一条核着）——v0.17.36 跑冒烟时这一条还按老菜单写着
+check(!(await p.$('.main-menu [data-v="saveAs"]')) && !!(await p.$('.main-menu [data-v="export"]')) && !(await p.$('.main-menu [data-v="rename"]')), "三条杠菜单：没有「另存为」、有「导出…」；没有「改文件名」（13-3 搬进「这首歌」，点文件名照旧能改）");
 await p.click('.main-menu [data-v="export"]'); await p.waitForFunction(() => document.querySelector(".offer .offer-title")?.textContent === "导出");
 check(!!(await p.$('.offer [data-v="mp3"]')) && !!(await p.$('.offer [data-v="mxl"]')), "三条杠「导出…」→ 导出 hub：歌声 mp3 / 存一份 .mxl 副本");
 await p.click('.offer [data-v="mxl"]'); await p.waitForSelector('.offer [data-v="download"]');

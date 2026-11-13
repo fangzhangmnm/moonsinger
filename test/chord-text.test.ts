@@ -48,3 +48,23 @@ describe("和弦标的升降号贴着所属的字（四种位置）", () => {
     assert(prims[0]!.t === "text" && prims[0]!.s === "B" && prims[2]!.t === "text" && prims[2]!.s === "7");
   });
 });
+
+// ── 砖墙（v0.17.36，统筹 29df68c6；user「因为挤不下往下跑的时候，再下第三个和弦能看一下上面能不能重新有位置了，这样就不会挤很高，而是说会是两排砖墙的样子」）──
+//   连着 5 个标、每个只和前一个撞：用到的排数 = 2（原来按天际线排，后面的只能更低 = 5 排的楼梯）。三种谱同一套（engrave.ts placeBelow 的 wall）；五线谱上每个标本来的高低跟着自己的音走，不数排数。
+import { initState, withTrack, tr, TPQ, type Token } from "../src/score/song.ts";
+import { engrave } from "../src/render/engrave.ts";
+import { editorBase } from "./fixtures/layout/cases.ts";
+describe("和弦标挤的时候排成砖墙，不排成楼梯", () => {
+  const P = (step: string, octave: number, alter = 0) => ({ step, alter, octave });
+  let id = 900; const c = (ps: ReturnType<typeof P>[]) => ({ kind: "note", id: id++, pitch: ps[0], chord: ps.slice(1), dur: TPQ, lyric: null }) as unknown as Token;
+  const five = () => [c([P("F", 4), P("D", 4), P("B", 3, -1)]), c([P("A", 4, 1), P("F", 4), P("D", 4), P("B", 3), P("G", 3)]), c([P("E", 5), P("C", 5), P("A", 4), P("F", 4, 1)]), c([P("G", 4), P("E", 4), P("C", 4), P("B", 3, -1)]), c([P("A", 4), P("G", 4), P("E", 4), P("C", 4)])];
+  //   用简谱（统筹给的例子，v0.17.34 的图里是 5 排的楼梯）：字母谱一列宽一点，第 4、5 个不挨，凑不成连着 5 个，不在这里数
+  for (const notation of ["jianpu"] as const) it(`${notation}：♭VII V7♯9 ♯ivø7 I7/♭7 I6 连着挤 = 两排`, () => {
+    const st = initState(), song = { ...withTrack(st.song, st.at.paper, st.at.part, [...tr(st).slice(0, 3), ...five()]), notation, chordTags: true, chordTagStyle: "degree" };
+    const tags = engrave(song as never, editorBase(song as never, ["P"])).chordTags, ov = (a: typeof tags[0], b: typeof tags[0]) => a.x < b.x + b.w && b.x < a.x + a.w;
+    eq(tags.length, 5);
+    for (let i = 0; i + 1 < 5; i++) assert(ov(tags[i]!, tags[i + 1]!), `前提：第 ${i + 1}、${i + 2} 个横着挨着（会撞）`);
+    for (let i = 0; i + 2 < 5; i++) assert(!ov(tags[i]!, tags[i + 2]!), `前提：第 ${i + 1}、${i + 3} 个横着不挨（只和前一个撞）`);
+    eq(new Set(tags.map((t) => t.y.toFixed(2))).size, 2, `用到的排数（${tags.map((t) => t.y.toFixed(0)).join(" ")}）`);
+  });
+});

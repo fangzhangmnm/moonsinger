@@ -45,7 +45,7 @@ export interface JianpuDrawCtx {
   prims: Prim[]; notes: HitNote[]; chordHeads: Layout["chordHeads"]; keyHints: Layout["keyHints"]; chordTagsOut: Layout["chordTags"]; rests: RestHit[]; marks: MarkHit[]; dyns: DynHit[]; clefs: ClefHit[]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
   staffTop: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
   placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
-  placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: { min?: number; count?: boolean }) => number;
+  placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: { min?: number; count?: boolean; wall?: boolean }) => number;
   /** 和弦级数（预处理，theory/families.ts）：合租的一家合起来认、标在这一家最下面那一行；不标 = null。 */
   harmony: ReadonlyMap<string, readonly PlacedTag[]> | null;
   /** 每条轨的预处理（下标同 per）：叠着的和弦折成的和弦名（第五刀 5-4）。 */
@@ -372,7 +372,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         c.attach(row, "chordTag", () => placeBelow(row, 0.3 * jk, (y) => {
           const ct = chordTextPrims(label, lx, y, fs, cls); c.prims.push(...ct.prims);   // 字 + 升降号字形（v0.17.34，同五线谱）
           chordTagsOut.push({ x: lx - TR("chord-tag", 0.3), y: y - fs * 1.05, w: ct.w + TR("chord-tag", 0.6), h: fs * 1.4, read: rd, system: row, index: u.index, ...(atOwn ? { part: q.p.id } : {}) });
-        }, { min: (BAR_Y1 + 0.3) * jk + (fs / P(1)) * 0.8 }));
+        }, { min: (BAR_Y1 + 0.3) * jk + (fs / P(1)) * 0.8, wall: true }));   // 砖墙排（v0.17.36，同五线谱）
       }
     }
     layDynamics(orn);   // 力度那一层（力度字：中文界面写中文、别的界面写字母；记号表 signs.ts）

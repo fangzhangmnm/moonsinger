@@ -53,7 +53,11 @@ try {
 
   // ④ 清缓存重启只动自己的
   await page.evaluate(async () => { await (await caches.open("pwa-models")).put("/__pwa-models__/x/chunk-000", new Response("x")); await (await caches.open("jrb-sibling")).put("/x", new Response("x")); });
-  await page.click("#setBtn"); await page.click('.main-menu [data-v="settings"]'); await page.click('[data-v="reset"]');
+  await page.click("#setBtn"); await page.click('.main-menu [data-v="settings"]');
+  // 设置分页（施工单 13-1）之后「清缓存重启」不在第一页：先点它所在那一页的页签（同 test/e2e/dd.mjs pickOnPage）；v0.17.36 跑冒烟时抓到这一步一直等不到
+  const resetPage = await page.$eval('[data-v="reset"]', (b) => { const pg = b.closest(".set-page"); return pg && pg.hidden ? pg.dataset.page : null; });
+  if (resetPage) await page.click(`[data-tab="${resetPage}"]`);
+  await page.click('[data-v="reset"]');
   await page.waitForURL(/\?reset=/, { timeout: 10000 }); await page.waitForSelector("#bar #fileBtn");
   const after = await page.evaluate(() => caches.keys());
   check(after.includes("pwa-models") && after.includes("jrb-sibling"), "④「清缓存重启」后共享模型缓存和兄弟 app 的缓存都还在", JSON.stringify(after));

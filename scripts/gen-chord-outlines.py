@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """和弦标的衬线字：轮廓 → vendor/fonts/serif/chord-outlines.json（PDF 导出把和弦标画成路径用；不在 PDF 里嵌这个字体）
-+ 字宽表 → src/render/chord-text.gen.ts（排版按字形量宽、摆升降号用；屏幕和 PDF 同一份数）。
++ 字宽表 → src/render/chord-text.gen.ts（排版按字形量宽、摆升降号用；屏幕和 PDF 同一份数）
++ 子集字体 → vendor/fonts/serif/chord-serif.ttf（屏幕上的和弦标用它画，v0.17.36；三处同一款字、同一组字，test/pdf.test.ts 守着）。
 
 created 2026-11-09 by Claude Opus 5.5（user 11-08「和弦级数能不能也用英文，也用同样的这种音乐的字体」→ 11-09「和弦级数的字体做」）。
 字 = Noto Serif SemiBold（SIL OFL 1.1，没有保留名；本机 /usr/share/fonts/truetype/noto/，可传别的路径）：只取和弦标会用到的字符
@@ -65,4 +66,13 @@ sb = ", ".join(f"{json.dumps(ch, ensure_ascii=False)}: [{side(ch)[0]:g}, {side(c
     f"export const CHORD_ADV: Readonly<Record<string, number>> = {{ {adv} }};\n"
     f"export const CHORD_SB: Readonly<Record<string, readonly [number, number]>> = {{ {sb} }};\n"
     f"export const CHORD_CAP = {cap:g}, CHORD_STEM = {stem:g};\n", encoding="utf-8")
-print(f"{len(out)} glyphs → vendor/fonts/serif/chord-outlines.json；字宽表 → src/render/chord-text.gen.ts（cap {cap}、竖笔 {stem}）")
+# 屏幕上的字（v0.17.36，统筹 796e524b：user 的 iPad / Windows 上没有 Noto Serif、会落到 Times = 我们看到的和他看到的不一样）：同一款字、同一组字切成子集随 app 发。
+#   不留排版表（GPOS / GSUB / kern）：浏览器不再自己挤字距、换连字，画出来的字宽 = 上面那张表（屏幕、字宽表、PDF 轮廓三处同一款字、同一组字）。
+#   不带 hinting；时间戳照原字体（recalcTimestamp=False），同样的输入生成同样的字节。TTF 不压缩（Pages 传输时压；仓里的 parseTtf 读得了，守卫拿它核）。
+from fontTools import subset
+opts = subset.Options(); opts.layout_features = []; opts.hinting = False; opts.name_IDs = ["*"]; opts.name_languages = ["*"]; opts.notdef_outline = True
+opts.drop_tables += ["GPOS", "GSUB", "GDEF", "kern"]
+sub = subset.Subsetter(options=opts); sub.populate(unicodes=[ord(ch) for ch in sorted(chars)])
+small = TTFont(SRC, recalcTimestamp=False); sub.subset(small)
+small.save(ROOT / "vendor/fonts/serif/chord-serif.ttf")
+print(f"{len(out)} glyphs → vendor/fonts/serif/chord-outlines.json；字宽表 → src/render/chord-text.gen.ts（cap {cap}、竖笔 {stem}）；子集字体 → vendor/fonts/serif/chord-serif.ttf")

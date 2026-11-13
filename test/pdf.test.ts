@@ -46,6 +46,18 @@ describe("PDF：资产", () => {
     eq(Object.keys(G.CHORD_ADV).sort().join(""), Object.keys(out.glyphs).map((k) => String.fromCodePoint(parseInt(k.slice(1), 16))).sort().join(""), "字宽表和轮廓的字一样");
     for (const [c, a] of Object.entries(G.CHORD_ADV)) eq(a, out.glyphs[key(c)]!.adv / 1000, `「${c}」的字宽`);
   });
+  it("屏幕上的和弦标字体（v0.17.36，统筹 796e524b）：随 app 发的子集 = 字宽表 = PDF 轮廓，同一组字、同样的字宽；不带排版表（浏览器不另挤字距、不换连字）；只有和弦标用它", async () => {
+    const bytes = new Uint8Array(fs.readFileSync(new URL("vendor/fonts/serif/chord-serif.ttf", root)));
+    const { parseTtf } = await import("../src/export/ttf.ts"), G = await import("../src/render/chord-text.gen.ts"), f = parseTtf(bytes);
+    const chars = Object.keys(G.CHORD_ADV);
+    eq(f.numGlyphs, chars.length + 1, "子集里的字形 = 字宽表里的字 + .notdef（不多不少）");
+    for (const c of chars) { const gid = f.glyphId(c.codePointAt(0)!); assert(gid > 0, `子集里没有「${c}」`); eq(f.advance(gid) / f.unitsPerEm, G.CHORD_ADV[c], `「${c}」的字宽（子集 vs 字宽表）`); }
+    const dv = new DataView(bytes.buffer, bytes.byteOffset), n = dv.getUint16(4), tags = Array.from({ length: n }, (_, i) => String.fromCharCode(...bytes.slice(12 + i * 16, 16 + i * 16)));
+    for (const t of ["GPOS", "GSUB", "GDEF", "kern"]) assert(!tags.includes(t), `子集里不该有 ${t}（字宽就是字宽表）`);
+    const S = await import("../src/render/text/style.ts");
+    assert(S.TEXT_FACES.chord.startsWith('"MoonSinger Chord"'), S.TEXT_FACES.chord);
+    eq(Object.entries(S.TEXT_STYLES).filter(([, st]) => st.face === "chord").map(([k]) => k).join(","), "chord-tag", "只有和弦标用这款字");
+  });
   it("字体（思源黑体）= 从 WXHW 拷来的那份（逐字节）；拼音字体退役了（7-J）", () => {
     const sha = (p: string) => createHash("sha256").update(fs.readFileSync(new URL(p, root))).digest("hex");
     eq(sha("vendor/fonts/sans.ttf.gz"), "e29b80bf17ad17bbd07b59642a817b04075b5a9001c53f4783e42c82188d575a");

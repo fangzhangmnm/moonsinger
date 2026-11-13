@@ -53,6 +53,7 @@ export interface JianpuDrawCtx {
     placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: {
         min?: number;
         count?: boolean;
+        wall?: boolean;
     }) => number;
     /** 和弦级数（预处理，theory/families.ts）：合租的一家合起来认、标在这一家最下面那一行；不标 = null。 */
     harmony: ReadonlyMap<string, readonly PlacedTag[]> | null;

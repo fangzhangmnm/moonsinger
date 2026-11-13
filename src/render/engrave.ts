@@ -574,13 +574,33 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       commit(sk, dy, true);
       return dy;
     };
-    /** 谱下方贴一样东西（同上，往下挪到离上面的天际线 gap）；min = 最少挪到哪（局部 y 往下挪的下限，歌词的版式最小值用）；count = 算不算进行高。 */
-    const placeBelow = (row: number, gap: number, draw: (y: number) => void, o2: { min?: number; count?: boolean; step?: number } = {}): number => {
+    /** 砖墙（v0.17.36，和弦标；user 11-13「因为挤不下往下跑的时候，再下第三个和弦能看一下上面能不能重新有位置了，这样就不会挤很高，而是说会是两排砖墙的样子」）：
+     *  一行里这一道已经放好的那几块的框（局部 sp）+ 还没进天际线的墨。这一道放完（第 12 步每道之后）才把墨记进天际线——这一道里的块彼此只按框比，不按天际线比。 */
+    const walls = new Map<number, { boxes: [number, number, number, number][]; pend: number[]; count: boolean }>();
+    const flushWall = (row: number) => { const w = walls.get(row); if (!w) return; const sk = sky(row); for (let i = 0; i < w.pend.length; i += 4) sk.ink(w.pend[i]!, w.pend[i + 1]!, w.pend[i + 2]!, w.pend[i + 3]!, w.count); walls.delete(row); };
+    /** 谱下方贴一样东西（同上，往下挪到离上面的天际线 gap）；min = 最少挪到哪（局部 y 往下挪的下限，歌词的版式最小值用）；count = 算不算进行高。
+     *  wall = 砖墙排（和弦标）：先回到它本来的位置（只让开这一道之前天际线上的东西），和这一道里已经放好的块真相撞（框之间留 gap）才往下挪到不撞为止；墨等这一道放完再进天际线。 */
+    const placeBelow = (row: number, gap: number, draw: (y: number) => void, o2: { min?: number; count?: boolean; step?: number; wall?: boolean } = {}): number => {
       const m = mark(); draw(staffTop(row)); tagSince(m, row); collect(m, row);
       let need = -Infinity; const sk = sky(row);
       for (let i = 0; i < pieces.length; i += 4) { const b = sk.bottom(pieces[i]!, pieces[i + 1]!); if (b > -Infinity) need = Math.max(need, b + gap - pieces[i + 2]!); }
       let dy = Math.max(need === -Infinity ? 0 : need, o2.min ?? -Infinity);
       if (o2.step && o2.min !== undefined && dy > o2.min + 1e-9) dy = o2.min + Math.ceil((dy - o2.min) / o2.step - 1e-9) * o2.step;   // 防抖：往下让按整格
+      if (o2.wall) {
+        let w = walls.get(row); if (!w) walls.set(row, (w = { boxes: [], pend: [], count: o2.count !== false }));
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        for (let i = 0; i < pieces.length; i += 4) { x0 = Math.min(x0, pieces[i]!); x1 = Math.max(x1, pieces[i + 1]!); y0 = Math.min(y0, pieces[i + 2]!); y1 = Math.max(y1, pieces[i + 3]!); }
+        if (x0 < x1) {
+          for (let moved = true; moved;) {   // 每挪一次 dy 只增不减，块是有限个：一定停
+            moved = false;
+            for (const b of w.boxes) if (x0 < b[1] + gap && x1 > b[0] - gap && y0 + dy < b[3] + gap && y1 + dy > b[2] - gap) { dy = b[3] + gap - y0; moved = true; }
+          }
+          w.boxes.push([x0, x1, y0 + dy, y1 + dy]);
+        }
+        shiftSince(m, P(dy));
+        for (let i = 0; i < pieces.length; i += 4) w.pend.push(pieces[i]!, pieces[i + 1]!, pieces[i + 2]! + dy, pieces[i + 3]! + dy);
+        return dy;
+      }
       shiftSince(m, P(dy));
       commit(sk, dy, o2.count !== false);
       return dy;
@@ -712,7 +732,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       return { ...drawCtx, scale: kScale(who), put: (row: number, p: Prim) => { chk(row); put(row, p); }, hitRow: (h: object, row: number) => { chk(row); hitRow(h, row); },
         attach: (row: number, lane: LaneKind, run: () => void) => { chk(row); attach(row, lane, run); },
         placeAbove: (row: number, gap: number, d: (y: number) => void) => { chk(row); return placeAbove(row, gap, d); },
-        placeBelow: (row: number, gap: number, d: (y: number) => void, o2?: { min?: number; count?: boolean; step?: number }) => { chk(row); return placeBelow(row, gap, d, o2); } };
+        placeBelow: (row: number, gap: number, d: (y: number) => void, o2?: { min?: number; count?: boolean; step?: number; wall?: boolean }) => { chk(row); return placeBelow(row, gap, d, o2); } };
     };
     const sIdx = kIdx("staff");
     const staffOut = DRAWERS.staff.draw(ctxFor(sIdx, "staff"), sIdx);
@@ -764,7 +784,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     for (let row = rowBase; row - rowBase < skies.length; row++) {   // 一行一行贴，每一行按它那种画法的道的先后（第四刀；统筹审接口第 3 条：两种先后不一样时并不成全纸一张）
       if (!skies[row - rowBase]) continue;
       const m = attached.get(row), lanes = DRAWERS[rows[row]!.kind].lanes;
-      for (const lane of lanes) { for (const f of m?.get(lane) ?? []) f(); if (lane === INK_UP_TO) upToNav[row - rowBase] = sky(row).hUp; }
+      for (const lane of lanes) { for (const f of m?.get(lane) ?? []) f(); flushWall(row); if (lane === INK_UP_TO) upToNav[row - rowBase] = sky(row).hUp; }   // 砖墙排的那一道放完才进天际线
       if (m) for (const lane of m.keys()) if (!lanes.includes(lane)) throw new Error(`engrave: row ${row} (${rows[row]!.kind}) has no lane "${lane}"`);
     }
     const pEnd = mark();

@@ -9,6 +9,22 @@ const at = (f: string) => new URL(`../${f}`, import.meta.url);
 const read = (f: string) => fs.readFileSync(at(f), "utf8");
 const rootFile = (href: string) => { const m = href.match(/^\.\/([^/?#]+)$/); return m ? m[1] : null; };
 
+describe("字体接线（v0.17.36）", () => {
+  it("styles.css 里每个 @font-face 的文件都在、在 SW 预缓存里（离线也有字）、在本机服务和部署的目录里（vendor/ 整个端出去、整个拷）", () => {
+    const css = read("styles.css"), sw = read("service-worker.js"), deploy = read(".github/workflows/deploy.yml"), serve = read("scripts/serve.sh");
+    const urls = [...css.matchAll(/@font-face\s*\{[^}]*?url\("\.\/([^"]+)"\)/g)].map((m) => m[1]!);
+    assert(urls.length >= 2 && urls.includes("vendor/fonts/serif/chord-serif.ttf") && urls.includes("vendor/fonts/bravura/Bravura.woff2"), urls.join(","));
+    const serveList = (serve.match(/^SERVED="([^"]+)"/m) ?? [])[1]?.split(/\s+/) ?? [];
+    for (const u of urls) {
+      assert(fs.existsSync(at(u)), `${u} 不存在`);
+      assert(sw.includes(`"./${u}"`), `${u} 不在 service-worker.js 的预缓存里`);
+      const top = u.split("/")[0]!;
+      assert(serveList.includes(top), `${top}/ 不在 scripts/serve.sh 端出去的清单里`);
+      assert(new RegExp(`for d in [^;]*\\b${top}\\b`).test(deploy), `${top}/ 不在 deploy.yml 整个拷的目录里`);
+    }
+  });
+});
+
 describe("图标接线", () => {
   it("index.html / manifest 引用的根目录文件都在，且 SW 预缓存 / deploy 白名单 / serve.sh 都登记了", () => {
     const html = read("index.html"), man = JSON.parse(read("manifest.webmanifest"));
