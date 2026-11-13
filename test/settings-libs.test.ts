@@ -142,9 +142,17 @@ describe("删掉的库不自己下回来（v0.17.25）", () => {
       const { createSoundSources } = await import("../src/sources/sounds.ts");
       const cand = { id: "c", name: "Piano", bank: 0, program: 0, subsetSha256: "s".repeat(64), origin: { name: GS.name, fileSha256: GS.sha256, bytes: GS.bytes, library: GS.id } } as unknown as Parameters<ReturnType<typeof createSoundSources>["resolveGmBytes"]>[0];
       let removed = true; const src = createSoundSources({ progress: () => {}, roleLabel: () => "x", removed: () => removed });
-      const msg = await src.resolveGmBytes(cand).then(() => "", (e: Error) => e.message);
-      eq(msg, removedWhy("gs"), "有记号：报「被删了」"); eq(fetched, 0, "有记号：一次都没去下载");
+      const err = await src.resolveGmBytes(cand).then(() => null, (e: Error) => e);
+      eq(err?.message, removedWhy("gs"), "有记号：报「被删了」"); eq((err as unknown as { removedLib?: string })?.removedLib, "gs", "错上带着是哪个库（认种类靠它，不比字）"); eq(fetched, 0, "有记号：一次都没去下载");
       removed = false; await src.resolveGmBytes(cand).catch(() => {}); assert(fetched > 0, "没记号：照原来去下载");
     } finally { g.location = keep.location; g.fetch = keep.fetch; }
+  });
+});
+
+describe("「被删了」认种类、不比那句话（统筹「v0.17.25 收」第 1 条）", () => {
+  it("没有哪个文件拿 removedWhy(…) 的字去比：准备那一步认错上带的 lib", () => {
+    const files = ["src/app/performance.ts", "src/app/main.ts", "src/core/render.ts", "src/sources/sounds.ts"];
+    eq(files.filter((f) => /===\s*removedWhy\(|removedWhy\([^)]*\)\s*===/.test(fs.readFileSync(new URL(f, ROOT), "utf8"))).join("、"), "");
+    assert(/const lib = \(e as \{ removedLib\?: BuiltinLib \}\)\.removedLib/.test(fs.readFileSync(new URL("src/core/render.ts", ROOT), "utf8")), "core 的准备那一步把错上带的 lib 抄到 PrepareError 上");
   });
 });

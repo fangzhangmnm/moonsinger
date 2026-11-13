@@ -269,11 +269,6 @@ body.listen-mode .ink-caret { display: none; }
 /* 一项一行 = 界面零件库的 .wbe-row（13-1；行、头、名字、控件区、小标记的样子在 vendor/internal-css/workbench-elements.css）；这里只放本仓多出来的 */
 .set-page > .wbe-row:last-child, .set-page > div:last-child > .wbe-row:last-child { border-bottom: 0; }   /* 一页最后那一行不画线；音源 / 维护两页的栏装在各自的盒子里（13-2），盒子里的行照样画 */
 .wbe-row-note { color: var(--muted); line-height: 1.45; }   /* 「?」展开那一段：和别处的说明字一个颜色 */
-/* 名字和控件一行放不下 = 控件换到名字下面一行、靠右，名字不被挤（13-2 量出来的旧毛病：英文手机宽时控件最多占 62%，长的下拉框伸出去从右往左盖住名字
- *  ——「Note density」只剩「Note d」、「?」被盖住；v0.17.21 起就这样）。行可以折；名字不缩到比自己的字还窄；控件可以占满一整行。零件库 0.4.0 的 .wbe-row 里还是 62% 那一版，记给统筹。 */
-.wbe-row-head { flex-wrap: wrap; }
-.wbe-row-label { min-width: auto; }
-.wbe-row-ctl { max-width: 100%; margin-left: auto; }
 .wbe-row-ctl .set-sel { width: auto; min-width: 8em; flex: none; }
 /* 控件里的字放不下（src/ui/fit-wide.ts 量了才加）：控件区换到说明下面、占满一整行靠右；放得下的照旧 */
 .wbe-row-head.is-wrap { flex-wrap: wrap; }
@@ -505,7 +500,7 @@ body:not(.print-look) .staff-svg .part-name.focus { fill: var(--accent); }      
 .staff-svg .credits { fill: var(--ink); cursor: pointer; }
 /* 歌词框左边的「合」：这个字并进前一个音（回头改用） */
 .lyric-merge { position: absolute; z-index: 5; min-width: 0; padding: 0; font-size: 15px; color: var(--accent); border-color: #b8cde8; background: #fff; box-sizing: border-box; }
-.credits-card .credits-in { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font: inherit; font-size: 15px; line-height: 1.5; color: var(--ink); resize: vertical; -webkit-user-select: text; user-select: text; }
+.credits-card .credits-in, .song-panel .credits-in { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font: inherit; font-size: 15px; line-height: 1.5; color: var(--ink); resize: vertical; -webkit-user-select: text; user-select: text; }
 
 /* 找人视图（src/ui/finder.ts）：全屏替掉谱区，pad 留着当试听键盘；按概念列，展开 = 谁能演 */
 .finder { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--panel); }   /* 占 #stage 的 main 区（grid-area 在上面）*/

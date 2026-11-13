@@ -66,6 +66,16 @@ const ms = Math.round(performance.now() - t0);
 check(done === 20, `设备上二十块：名字都读出来了（开页到读完 ${ms} ms，含开设置面板）`, String(done));
 await closeSettings();
 for (const sha of fakes) await p.evaluate(async (sha) => (await caches.open("pwa-sounds")).delete(`${location.origin}/__pwa-sounds__/${sha}`), sha);
+// ⑥ 零件库 0.4.1（统筹「回库里修」）：英文、手机宽，页面设置每一行的名字不被控件盖住（名字的右边不压到同一行控件的左边；放不下 = 控件换到下一行）
+{ const q = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+  await q.addInitScript(() => localStorage.setItem("moonsinger-5b1e7c0a92d34f6e:lang", "en"));
+  await q.goto(BASE); await q.waitForTimeout(900);
+  const c = await q.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
+  await q.mouse.click(c.x, c.y); await q.waitForSelector(".settings-card"); await q.click('[data-tab="layout"]'); await q.waitForTimeout(400);
+  const bad = await q.$$eval('.settings-card .set-page:not([hidden]) .wbe-row-head', (hs) => hs.flatMap((h) => { const l = h.querySelector(".wbe-row-label")?.getBoundingClientRect(), k = h.querySelector(".wbe-row-ctl")?.getBoundingClientRect(); if (!l || !k) return [];
+    const sameLine = k.top < l.bottom - 2 && k.bottom > l.top + 2; return sameLine && l.right > k.left + 1 ? [(h.querySelector(".wbe-row-label")?.textContent ?? "").slice(0, 20)] : []; }));
+  check(!bad.length, "英文手机宽：页面设置每一行的名字都没被控件盖住（放不下的控件换到下一行）", bad.join(" | "));
+  await q.context().close(); }
 check(!errs.length, "没有页面错误", errs.join(" / "));
 await b.close();
 console.log(`\n  ${pass} passed, ${fail} failed`);

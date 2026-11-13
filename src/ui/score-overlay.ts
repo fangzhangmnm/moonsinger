@@ -24,6 +24,8 @@ export interface OverlayHost {
   onNavFrom(paper: string, dir: -1 | 1): void;
   onScopeOf(paper: string): void;
   onPaper(): void;
+  /** 纸右上角「这首歌」（13-3）。 */
+  onSong(): void;
   onCredits(): void;
   onKeyHint(paper: string, part: string, index: number, at: { x: number; y: number }): void;
   onLeaveFamily(paper: string, host: string): void;
@@ -83,7 +85,9 @@ export class ScoreOverlay {
 
     // ② 纸角的小钮（纸的设置）+ 只有一张纸时歌名左边的「⋯」
     { const s = CTL_H * sp, x = L.content.right - s, y = L.title.y + 0.5 * sp;
-      add("chip", "button", "ov-i ov-chip ov-paper-chip", box(x, y, s, s), icon("jianpu-staff", CTL_GLYPH * sp), { "data-ov": "chip", title: _t("谱种和纸：{paperLabel}", { paperLabel: v.paperLabel }) }); }   // 「1 / ♪」（user 11-11：一看就知道是切换五线谱和简谱的地方）
+      add("chip", "button", "ov-i ov-chip ov-paper-chip", box(x, y, s, s), icon("jianpu-staff", CTL_GLYPH * sp), { "data-ov": "chip", title: _t("谱种和纸：{paperLabel}", { paperLabel: v.paperLabel }) });   // 「1 / ♪」（user 11-11：一看就知道是切换五线谱和简谱的地方）
+      // 「这首歌」（13-3，user 2026-11-12「这首歌 要不要放在页面设置旁边…这样的话纸=歌的mental model会非常牢固」）：页面设置那颗的左边；不印、不进排版
+      add("song", "button", "ov-i ov-chip ov-song-chip", box(x - s - 0.4 * sp, y, s, s), icon("info", CTL_GLYPH * sp), { "data-ov": "song", title: _t("这首歌：名字、作者和许可、封面、声音、署名") }); }
     if (!multi && v.edit) add(`menu:${papers[0]!.id}`, "button", "ov-i ov-chip ov-menu", `${box(L.content.left, L.title.y + 0.5 * sp, (CTL_H + 0.6) * sp, CTL_H * sp)};font-size:${px(CTL_GLYPH * sp)}`, "⋯", { "data-ov": "menu", "data-paper": papers[0]!.id, title: _t("这一段的菜单") });
     // ③ 每张纸曲段名那一条：曲段控件组「（隐藏 N）‹ k/n › 只看本段 ⋯」靠右；单纸 = 「隐藏 N」挂在曲段名 / 歌名那一条
     const hiddenChip = (paperId: string, ids: string[], style: string) => {
@@ -206,6 +210,7 @@ export class ScoreOverlay {
     const d = el.dataset, mid = { x: (r.left + r.right) / 2, y: r.bottom }, top = { x: (r.left + r.right) / 2, y: r.top };
     switch (d.ov) {
       case "chip": this.host.onPaper(); break;
+      case "song": this.host.onSong(); break;
       case "menu": this.host.onPaperMenu(d.paper!); break;
       case "prev": if (!el.classList.contains("off")) this.host.onNavFrom(d.paper!, -1); break;
       case "next": if (!el.classList.contains("off")) this.host.onNavFrom(d.paper!, 1); break;

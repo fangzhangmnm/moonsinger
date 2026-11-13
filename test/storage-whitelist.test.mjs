@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { describe, it, assert } from "./runner.mjs";
 
 const ALLOW = {
-  "src/device-kv.ts": "localStorage：device 层标量唯一器官（storeAttached / gallery-folder / last-scene / diag-log）",
+  "src/device-kv.ts": "localStorage：device 层标量唯一器官（storeAttached / gallery-folder / last-scene / diag-log；v0.17.25 起 lib-removed-voice / lib-removed-gs = 自带的库「你删了」；v0.17.26 起 loop-editor / loop-gallery = 两个「循环」记在这台设备上）",
   "src/app/pwa-shell.ts": "Cache Storage：forceReset 只清自己前缀（moonsinger-）的壳缓存；兄弟 app 的缓存和 pwa-models / pwa-sounds 不碰",
   "src/gm/sound-cache.ts": "Cache Storage `pwa-sounds`（家族共享名）：音源整包按 sha256 留着离线能用（可再生派生缓存，user 2026-10-07 批）",
   "service-worker.js": "Cache Storage `moonsinger-<hash>`：app 壳预缓存 + 运行时缓存",

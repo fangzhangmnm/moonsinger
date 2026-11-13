@@ -8,7 +8,7 @@ import { subsetSf2 } from "../gm/sf2-subset.ts";
 import type { GmCandidate } from "../format/project.ts";
 import { sha256Hex } from "./sha256.ts";
 import { getBytes } from "../resources.ts";
-import { removedWhy } from "./removed.ts";
+import { LibRemovedError } from "./removed.ts";
 
 export interface SoundSources {
   /** 设置里填的音源库来源（这次打开里有效；空 = 出厂默认）。 */
@@ -68,7 +68,7 @@ export function createSoundSources(o: { progress(msg: string): void; /** 报错�
     let bank = await cachedSound(g.origin.fileSha256);
     if (!bank) {
       const e = Object.values(SOUNDS).find((x) => x.sha256 === g.origin.fileSha256);
-      if (e && o.removed?.(e.id)) throw new Error(removedWhy("gs"));   // 被人删了 = 不自己下回来（v0.17.25）
+      if (e && o.removed?.(e.id)) throw new LibRemovedError("gs");   // 被人删了 = 不自己下回来（v0.17.25）
       if (e) { try { bank = await fetchSound(e, (done) => o.progress(_t("找「{name}」的声音：下载 {name2} {bytes}%", { name: g.name, name2: e.name, bytes: Math.round((done / e.bytes) * 100) }))); } finally { o.progress(""); } }
     }
     if (!bank) throw new Error(_t("「{name}」的声音没随歌带（弱引用），这台设备和家族音源库里也没有它来自的「{name2}」（sha256 {p}…）。点谱前面的「{p2}」，给它「找文件…」，或换一个「谁来演」", { name: g.name, name2: g.origin.name, p: g.origin.fileSha256.slice(0, 12), p2: o.roleLabel() }));

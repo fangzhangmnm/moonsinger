@@ -1162,8 +1162,32 @@ export declare const S: {
     readonly "\u300C{next}\u300D\u6362\u4EBA\uFF1A{next2}": {
         readonly en: "“{next}” performer change: {next2}";
     };
-    readonly 作者栏: {
-        readonly en: "Credits";
+    readonly 小月相: {
+        readonly en: "Tsukuyomi-chan";
+    };
+    readonly "\u4F60\u81EA\u5DF1\u7684 {name}": {
+        readonly en: "your own {name}";
+    };
+    readonly "{lib}\uFF08{parts}\uFF09": {
+        readonly en: "{lib} ({parts})";
+    };
+    readonly "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F {name}\uFF09": {
+        readonly en: "Rename local files in your file manager (currently {name})";
+    };
+    readonly 文件名: {
+        readonly en: "File name";
+    };
+    readonly "\u6539\u2026": {
+        readonly en: "Rename…";
+    };
+    readonly 名字: {
+        readonly en: "Name";
+    };
+    readonly 歌名: {
+        readonly en: "Title";
+    };
+    readonly 作者和许可: {
+        readonly en: "Author and license";
     };
     readonly "\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09": {
         readonly en: "Any number of lines, shown as written on the sheet (right-aligned under the title)";
@@ -1185,6 +1209,54 @@ export declare const S: {
     };
     readonly "\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002": {
         readonly en: "Listed strictest to loosest; once published under a CC license, published copies can't be taken back. Saved in MusicXML &lt;rights&gt;; written into the file tags with the credits when exporting mp3.";
+    };
+    readonly 没有封面图: {
+        readonly en: "No cover image";
+    };
+    readonly "\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\u00B2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09": {
+        readonly en: "Choose an image as the cover (shrunk to 256² and stored in the song; the library card prints the title over it)";
+    };
+    readonly "\u6362\u4E00\u5F20\u2026": {
+        readonly en: "Replace…";
+    };
+    readonly "\u9009\u4E00\u5F20\u56FE\u2026": {
+        readonly en: "Choose an image…";
+    };
+    readonly 去掉封面图: {
+        readonly en: "Remove cover image";
+    };
+    readonly "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE\uFF1B\u6B4C\u540D\u548C\u65E5\u671F\u7167\u6837\u5370\u5728\u4E0A\u9762\u3002\u7F29\u6210 256\u00B2 \u5B58\u8FDB\u6B4C\u91CC\u3002": {
+        readonly en: "The picture on the library card; title and date still print over it. Shrunk to 256² and stored in the song.";
+    };
+    readonly 声音: {
+        readonly en: "Sound";
+    };
+    readonly "\u7528\u5230\u7684\uFF1A{libs}": {
+        readonly en: "Uses: {libs}";
+    };
+    readonly "\u7F3A\uFF1A{list}": {
+        readonly en: "Missing: {list}";
+    };
+    readonly "\u770B\u6E05\u5355\u2026": {
+        readonly en: "See the list…";
+    };
+    readonly "\u8FD9\u9996\u6B4C\u6CA1\u7528\u4E50\u5668\u7684\u58F0\u97F3\u6587\u4EF6\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248\u7684\u58F0\u97F3\u968F app \u8D70\uFF0C\u4E0D\u8FDB\u6B4C\uFF09\u3002": {
+        readonly en: "This song uses no instrument sound files (Tsukuyomi-chan / vowel versions come with the app, not the song).";
+    };
+    readonly 署名: {
+        readonly en: "Credits";
+    };
+    readonly 这首歌用了谁的声音: {
+        readonly en: "Whose sounds this song uses";
+    };
+    readonly 还没有可署的名: {
+        readonly en: "Nothing to credit yet";
+    };
+    readonly 这首歌: {
+        readonly en: "This song";
+    };
+    readonly 去掉了封面图: {
+        readonly en: "Cover image removed";
     };
     readonly "\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\uFF08{v}\uFF09": {
         readonly en: "Not known to this version ({v})";
@@ -2308,9 +2380,6 @@ export declare const S: {
     readonly "\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002": {
         readonly en: "This copy's license was written as “not stated” (your chosen license may conflict with Tsukuyomi-chan's terms; your choice in the credits is unchanged).";
     };
-    readonly 署名: {
-        readonly en: "Credits";
-    };
     readonly "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u8FD9\u4EFD\u526F\u672C\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09": {
         readonly en: "Licenses for packed distribution (this copy carries these source files)";
     };
@@ -2530,9 +2599,6 @@ export declare const S: {
     readonly "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl": {
         readonly en: "On this device “Save” = download or share an .mxl";
     };
-    readonly "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F {name}\uFF09": {
-        readonly en: "Rename local files in your file manager (currently {name})";
-    };
     readonly "\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026": {
         readonly en: "Open local file…";
     };
@@ -2559,24 +2625,6 @@ export declare const S: {
     };
     readonly "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09": {
         readonly en: "Put this song in the library (a copy stays only in this browser; OneDrive is on the official site)";
-    };
-    readonly "\u6539\u6587\u4EF6\u540D\u2026": {
-        readonly en: "Rename file…";
-    };
-    readonly "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09": {
-        readonly en: "Only the file name changes, not the title on the sheet (same as tapping the file name at the top)";
-    };
-    readonly "\u5C01\u9762\u56FE\u2026": {
-        readonly en: "Cover image…";
-    };
-    readonly 歌库卡片上的图: {
-        readonly en: "The picture on the library card";
-    };
-    readonly "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026": {
-        readonly en: "Sounds and credits…";
-    };
-    readonly "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3": {
-        readonly en: "Pack / unpack instrument sounds; whose sounds this song uses";
     };
     readonly "\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09": {
         readonly en: "Lock (done editing for now)";
@@ -2614,41 +2662,8 @@ export declare const S: {
     readonly "\u6CA1\u9501\u4E0A\uFF1A{Error}": {
         readonly en: "Not locked: {Error}";
     };
-    readonly 封面图: {
-        readonly en: "Cover image";
-    };
-    readonly 没有封面图: {
-        readonly en: "No cover image";
-    };
-    readonly "\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\u00B2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09": {
-        readonly en: "Choose an image as the cover (shrunk to 256² and stored in the song; the library card prints the title over it)";
-    };
-    readonly "\u6362\u4E00\u5F20\u2026": {
-        readonly en: "Replace…";
-    };
-    readonly "\u9009\u4E00\u5F20\u56FE\u2026": {
-        readonly en: "Choose an image…";
-    };
-    readonly 去掉封面图: {
-        readonly en: "Remove cover image";
-    };
-    readonly "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE\uFF1B\u6B4C\u540D\u548C\u65E5\u671F\u7167\u6837\u5370\u5728\u4E0A\u9762\u3002\u7F29\u6210 256\u00B2 \u5B58\u8FDB\u6B4C\u91CC\u3002": {
-        readonly en: "The picture on the library card; title and date still print over it. Shrunk to 256² and stored in the song.";
-    };
-    readonly 去掉了封面图: {
-        readonly en: "Cover image removed";
-    };
-    readonly 声音与署名: {
-        readonly en: "Sounds and credits";
-    };
-    readonly "\u8FD9\u9996\u6B4C\u6CA1\u7528\u4E50\u5668\u7684\u58F0\u97F3\u6587\u4EF6\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248\u7684\u58F0\u97F3\u968F app \u8D70\uFF0C\u4E0D\u8FDB\u6B4C\uFF09\u3002": {
-        readonly en: "This song uses no instrument sound files (Tsukuyomi-chan / vowel versions come with the app, not the song).";
-    };
     readonly 改文件名: {
         readonly en: "Rename file";
-    };
-    readonly 文件名: {
-        readonly en: "File name";
     };
     readonly "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002\u4E0B\u6B21\u5B58\u7684\u65F6\u5019\u7528\u8FD9\u4E2A\u540D\u5B57\u3002": {
         readonly en: "Only the file name changes, not the title on the sheet. The next save uses this name.";
@@ -3619,9 +3634,6 @@ export declare const S: {
     readonly 现在下载: {
         readonly en: "Download now";
     };
-    readonly 小月相: {
-        readonly en: "Tsukuyomi-chan";
-    };
     readonly 来源: {
         readonly en: "Source";
     };
@@ -4323,9 +4335,6 @@ export declare const S: {
     };
     readonly "\u97F3\u4E50\u5B57\u5F62\u4E0B\u4E0D\u6765\uFF08{Error}\uFF09": {
         readonly en: "Couldn't download the music glyphs ({Error})";
-    };
-    readonly 这首歌: {
-        readonly en: "This song";
     };
     readonly "\uFF08\u6CA1\u58F0\u660E\u8BB8\u53EF\uFF09": {
         readonly en: "(no license stated)";
@@ -6919,6 +6928,9 @@ export declare const S: {
     readonly "\u8C31\u79CD\u548C\u7EB8\uFF1A{paperLabel}": {
         readonly en: "Notation and paper: {paperLabel}";
     };
+    readonly "\u8FD9\u9996\u6B4C\uFF1A\u540D\u5B57\u3001\u4F5C\u8005\u548C\u8BB8\u53EF\u3001\u5C01\u9762\u3001\u58F0\u97F3\u3001\u7F72\u540D": {
+        readonly en: "This song: name, author and license, cover, sound, credits";
+    };
     readonly 这一段的菜单: {
         readonly en: "This section's menu";
     };
@@ -6951,9 +6963,6 @@ export declare const S: {
     };
     readonly "\uFF0B \u65B0\u66F2\u6BB5": {
         readonly en: "＋ New section";
-    };
-    readonly 歌名: {
-        readonly en: "Title";
     };
     readonly 作者: {
         readonly en: "Author";

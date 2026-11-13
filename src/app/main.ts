@@ -16,7 +16,7 @@ import { SIGNS } from "../render/signs.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
-import { PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type PedalTok, setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
+import { PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type PedalTok, setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setPaper, setCredits, setTitle, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
 import { textLangIn, setTextLang, TEXT_LANGS, type TextLang, setViewInC, setChordTags, setNotation, setMiddleC, setExpressions, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { foldedMarks, type FoldedMark } from "../render/expressions.ts";   // 演奏法和表情不显示时改到 / 写上了它们：轻轻说一句（7-G）
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
@@ -47,7 +47,7 @@ import { TEMPLATE } from "../format/template.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
 import { createPackStore } from "@internal/model-packs";
-import { showNotice, closeNotice, configureFloors, createTabStrip, settingRowHtml, wireSettingRows, type TabSpec } from "@internal/workbench-elements";
+import { showNotice, closeNotice, configureFloors, createTabStrip, settingRowHtml, wireSettingRows, openPanelShell, type TabSpec } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT } from "../gm/sounds.gen.ts";
@@ -598,6 +598,8 @@ function setLibRemoved(lib: BuiltinLib, on: boolean): void {
   deviceKvSet(KV_LIB_REMOVED(lib), on ? "1" : null); diagNote("libs", `${lib} ${on ? "removed by user" : "installed"}`); libsRowSync?.();
   perfApi.refreshIssues();   // 清单跟着变（用到她 / 它的声部挂上或摘掉「不出声」）
 }
+/** 编辑器的「循环」记在这台设备上（user 2026-11-13；统筹「两个循环记在这台设备上」）：不进歌、不进撤销、不标脏；启动时读回来走 setLoop。歌库播放条的另记一个（gallery-host.ts）。 */
+const KV_LOOP_EDITOR = "loop-editor";
 const KV_PRIMER = "audio-primer", IS_IOS = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const PRIMER_URL = new URLSearchParams(location.search).get("primer");
 setPrimer(PRIMER_URL === "1" || (PRIMER_URL !== "0" && IS_IOS));
@@ -723,7 +725,7 @@ const view = new ScoreView(scoreEl, {
       case "clef": openClefMenu(e.hit, e.at); return;
       case "header": headerPanel.open(e.paper, e.part, e.index, e.at); return;
       case "chordTag": openChordInfo(e.read, e.at, e.where); return;
-      case "credits": openCreditsSheet(); return;
+      case "credits": openSongPanel("credits"); return;
       case "listen": openListenMenu(e.at, e.target); return;   // 听模式：长按 / 右键 = 从这儿放 / 接着放 / 从头放
       default: { const missed: never = e; void missed; }   // 谱面多了一种「按在什么上」没人接 = 编译不过
     }
@@ -744,7 +746,8 @@ const overlayHost: import("../ui/score-overlay.ts").OverlayHost = {
   onNavFrom: (paper, dir) => navPaperFrom(paper, dir),
   onScopeOf: (paper) => { if (viewScope === "segment" && D.st.at.paper === paper) viewScope = "all"; else { viewScope = "segment"; if (D.st.at.paper !== paper) navPaperTo(paper); } view.render(); },
   onPaper: () => openPaperSheet(),
-  onCredits: () => { showPad(false); openCreditsSheet(); },   // 作者栏空着时的提示字（有字的作者栏照旧是谱面上点）
+  onSong: () => openSongPanel(),
+  onCredits: () => { showPad(false); openSongPanel("credits"); },   // 作者栏空着时的提示字（有字的作者栏照旧是谱面上点）
   onKeyHint: (paper, part, index, at) => headerPanel.open(paper, part, index, at),
   onLeaveFamily: (paper, host) => view.leaveFamily(paper, host),
   onHidden: (paper, ids, at) => {   // 「隐藏 N」（施工单 §4 第 5 条：隐藏的声部不留空，提醒换成这颗不占位的小标）：点开一列，点谁放出谁（= showPart：有人在「只看」就加进只看）
@@ -1097,6 +1100,7 @@ const perfApi = createPerformance({
   renders: { take: (o) => takeRender(o), keep: (o, bytes) => keepRender(o, bytes) },   // 这台设备上记着的渲好的声音（内容没变 = 不重渲）
 });
 const { humOpt, resetLatencyLog, refreshIssues, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, renderMixForTest, tickOfCaret, playPause, resumePlay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, onSongSwitch, jumpPlaybackToPaper, previewTrack } = perfApi;
+if (deviceKvGet(KV_LOOP_EDITOR) === "1") setLoop(true);   // 编辑器的「循环」：上次在这台设备上开着 = 开着、|▶ 上的角标跟着亮（新设备、还原出厂 = 关着）
 const BUDGET = perfApi.budget, TURN_LEADS = perfApi.TURN_LEADS;
 /** 焦点在能打字的框里（文字输入 / 多行）：空格归它。推子（range）、下拉、按钮不算。 */
 function typingIn(t: EventTarget | null): boolean { const el = t as HTMLElement | null; if (!el) return false; if (el.tagName === "TEXTAREA" || el.isContentEditable) return true; return el.tagName === "INPUT" && !["range", "checkbox", "radio", "button"].includes((el as HTMLInputElement).type); }
@@ -1189,7 +1193,7 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
     else if (v.startsWith("lead:")) { perfApi.turnLead = Number(v.slice(5)); info(perfApi.turnLead ? _t("翻谱提前 {turnLead} 秒", { turnLead: perfApi.turnLead }) : _t("翻谱不提前（换了行才翻）")); }
     else if (v === "reveal") { if (!view.revealPlayhead()) info(_t("现在没有在放的地方")); }
     else if (v === "follow") { view.autoFollow = !view.autoFollow; info(view.autoFollow ? _t("自动翻：开") : _t("自动翻：关")); }
-    else if (v === "loop") setLoop(!perfApi.loopOn);
+    else if (v === "loop") { const on = !perfApi.loopOn; setLoop(on); deviceKvSet(KV_LOOP_EDITOR, on ? "1" : null); }   // 点的那一下就记在这台设备上（user 2026-11-13「每次我点了它都不循环就很烦」）；「听接缝」的临时循环不走这里、不记
     else if (v === "head") playFromHead();
     else if (v === "seam") playSeam();
   });
@@ -1495,6 +1499,7 @@ function openSettings(): void {
   };
   const refreshSound = async (): Promise<void> => {
     keepSources();
+    await reconcileLibMarks();   // 记号和实际对不上 = 以实际为准（v0.17.25 收第 2 条）
     const packs = await voicePacks(); sizes.set("voice", packs.reduce((n, p) => n + p.bytesCached, 0));
     libVoice.innerHTML = voiceColumnHtml({ packs, folder: inFolder ? FOLDER_TEXT.models : null, source: models.source, removed: libRemoved("voice") });
     const cached = inFolder ? [] : await listCachedSounds(), gsHere = cached.find((c) => c.sha256 === GS.sha256); sizes.set("gs", gsHere?.bytes ?? 0);
@@ -1762,6 +1767,13 @@ function conceptRange(role: string): { lo: number; hi: number; title: string } |
   return rangeOf(catalogNow.byId.get(id));
 }   // 试听台上的（GS 预设；note = 鼓件，pad 任何键都敲它）；null = 月读 / 没选
 const GS = SOUNDS["generaluser-gs-2.0.3"];
+/** 「你删了」的记号和实际对不上时以实际为准（统筹「v0.17.25 收」第 2 条）：小月相的包都在 / 乐器音色库的整包在设备上 = 记号去掉。
+ *  会对不上 = 同一个网址下的正式版（或开发版）把它下回来了：不然音源页写「装着」、清单写「被你删了」。启动时、音源页算状态时各核一次。乐器音色库同一个规矩（统筹只点了小月相，照着对齐）。 */
+async function reconcileLibMarks(): Promise<void> {
+  if (libRemoved("voice") && !resourcesInFolder() && (await packStore.status(Object.keys(PACKS))).every((x) => x.ready)) setLibRemoved("voice", false);
+  if (libRemoved("gs") && (await isSoundPersisted(GS.sha256))) setLibRemoved("gs", false);
+}
+void reconcileLibMarks();
 /** 试听台：从 GS 切出这个预设、载进实时合成器（22 ms + 几 MB）；换到月读 = 清掉。 */
 async function setAudition(p: FinderPick | FinderNobody | null): Promise<void> {
   const gen = ++auditionGen;   // 后点的说了算：前一件还在下载 / 切子集时又点了别的（含「没人能演」），前一件回来不许再盖上去
@@ -2020,31 +2032,81 @@ function setActive(id: string): void {
   updateExtras(next, { kind: "lounge", label: _t("「{next}」换人：{next2}", { next: roleLabel(curRole(), next), next2: activeCandidateName(next, curRole()) ?? id }) }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); }
 /** 作者栏（标题下面靠右那一块点开）：一块纯文本，纸上照写的显示（不认「作词：」这类格式，所见即所得）。
  *  不提醒、不帮用户写任何东西（user「只是举例子，然后这个你也不应该强迫或者提醒用户写这个，因为谱子也不绑定乐器的」「…一键插入按钮 不要」）。 */
-function openCreditsSheet(): void {
+/** 「这首歌」（施工单 13-3；user 2026-11-12「这首歌 要不要放在页面设置旁边…这样的话纸=歌的mental model会非常牢固」）：纸右上角页面设置左边那颗钮、谱上点作者栏也到这里。
+ *  分块：名字（歌名、文件名）· 作者和许可 · 封面 · 声音（用到了哪些库、缺哪些、打包 / 解包）· 署名。内容照原来的「封面图」「声音与署名」两张面板和作者栏卡搬，行为不变；
+ *  壳 = 界面零件库的 openPanelShell。改动照旧走写入口（修改锁那张表照旧管，不另开口子）。歌名、作者栏、许可在关面板、或者面板里换别的块之前一起写进去（一步撤销）。
+ *  改文件名：图库库（@internal/gallery）没有能直接用的改名出口（13-3 核过），照原来的 renameActive。 */
+function openSongPanel(focus?: "name" | "credits" | "cover" | "sounds"): void {
   ui.close();
-  const box = document.createElement("div");
-  box.className = "offer";
-  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">${_t("作者栏")}</div>` +
-    `<textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="${_t("几行都行，照写的显示在纸上（标题下面靠右）")}">${esc(D.st.song.credits ?? "")}</textarea>` +
-    `<div class="offer-msg">${_t("可不填。存进 MusicXML「印在页面上的字」，别的乐谱软件打开也在纸上。")}</div>` +
-    // 这首歌自己的许可（user 2026-10-08「你计算的时候别忘了用户自己写的那一部分，用户可以选」）：默认不写、不替用户选；选了照抄进 <rights>，还能改
-    // 折叠着（user「只有用户自己关心协议的时候才提出这些」）：选过许可才默认展开
-    `<details class="rights-sec"${D.st.song.rights ? " open" : ""}><summary class="part-sec">${_t("许可（可选；你写的这部分：词 / 曲 / 编）")}</summary><div class="set-row">` +
-    `<button class="btn cand" data-r="-1" title="${_t("不写：法律默认 = 保留所有权利（别人用要先问你）")}">${_t("未声明（默认）")}</button>` + RIGHTS_PRESETS.map((p, k) => `<button class="btn cand" data-r="${k}" title="${esc(p.note)}">${esc(p.label)}</button>`).join("") + `</div>` +
-    `<input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="${_t("空着 = 未声明（法律默认就是保留所有权利）；也可以自己写")}" value="${esc(D.st.song.rights ?? "")}" />` +
-    `<div class="offer-msg">${_t("从紧到松排；CC 那几个发出去以后对已经发出去的收不回。存进 MusicXML 的 &lt;rights&gt;；导出 mp3 时连同署名写进文件的标签里。")}</div></details>` +
-    `<div class="offer-btns"><button class="btn primary" data-v="ok">${_t("好")}</button></div></div>`;
-  document.body.append(box);
-  const ta = box.querySelector<HTMLTextAreaElement>("#crIn")!, rt = box.querySelector<HTMLInputElement>("#rtIn")!;
-  const close = () => { update(setRights(setCredits(D.st, ta.value), rt.value)); box.remove(); ui.closed(close); scoreEl.focus(); };
-  ui.open({ k: "sheet", close });
-  box.addEventListener("click", (e) => {
+  const content = document.createElement("div"); content.className = "song-panel";
+  let coverUrl: string | null = null;
+  const libsUsed = (): string => {   // 这首歌里上场的各位用的是哪个库（小月相 = 按句出块的那种演奏者；SoundFont = 它那一块从哪个整包切的）
+    const names = labelsNow(), used = new Map<string, string[]>();
+    D.st.song.parts.forEach((p, i) => {
+      const ins = activeInstrument(D.extras, p.role); if (!ins) return;
+      const s = ("source" in ins ? ins.source : null) as Sf2Source | null;
+      const lib = performerOf(ins.engine)?.sound === "chunks" ? _t("小月相") : s?.subsetSha256 ? ((s.origin.library && SOUNDS[s.origin.library]?.name) || _t("你自己的 {name}", { name: s.origin.name })) : null;
+      if (lib) used.set(lib, [...(used.get(lib) ?? []), names[i] ?? p.id]);
+    });
+    return [...used].map(([k, v]) => _t("{lib}（{parts}）", { lib: k, parts: v.join("、") })).join(" · ");
+  };
+  const draw = () => {
+    if (coverUrl) URL.revokeObjectURL(coverUrl);
+    const song = D.st.song, thumb = D.extras.thumbnail; coverUrl = thumb ? URL.createObjectURL(new Blob([thumb as unknown as BlobPart], { type: "image/png" })) : null;
+    const file = H.home.kind === "file" ? `<div class="set-row"><span class="set-note">${esc(_t("本机文件的名字在文件管理器里改（现在是 {name}）", { name: H.home.handle.name }))}</span></div>`
+      : `<div class="set-row lib-line"><span>${_t("文件名")}：${esc(docName())}${SONG_SUFFIX}</span><button class="btn" data-v="rename">${_t("改…")}</button></div>`;
+    const sounds = soundsSection(), used = libsUsed(), missing = perfApi.issues();
+    content.innerHTML =
+      settingRowHtml({ labelHtml: esc(_t("名字")), attrs: { "data-sec": "name" },
+        belowHtml: `<label class="set-field">${_t("歌名")}<input id="songTitleIn" type="text" spellcheck="false" autocomplete="off" value="${esc(song.title ?? "")}" /></label>` + file }) +
+      settingRowHtml({ labelHtml: esc(_t("作者和许可")), attrs: { "data-sec": "credits" },
+        belowHtml: `<textarea id="crIn" class="credits-in" rows="4" spellcheck="false" placeholder="${_t("几行都行，照写的显示在纸上（标题下面靠右）")}">${esc(song.credits ?? "")}</textarea>` +
+          `<div class="offer-msg">${_t("可不填。存进 MusicXML「印在页面上的字」，别的乐谱软件打开也在纸上。")}</div>` +
+          // 这首歌自己的许可（user 2026-10-08「你计算的时候别忘了用户自己写的那一部分，用户可以选」）：默认不写、不替用户选；折叠着（「只有用户自己关心协议的时候才提出这些」）
+          `<details class="rights-sec"${song.rights ? " open" : ""}><summary class="part-sec">${_t("许可（可选；你写的这部分：词 / 曲 / 编）")}</summary><div class="set-row">` +
+          `<button class="btn cand" data-r="-1" title="${_t("不写：法律默认 = 保留所有权利（别人用要先问你）")}">${_t("未声明（默认）")}</button>` + RIGHTS_PRESETS.map((p, k) => `<button class="btn cand" data-r="${k}" title="${esc(p.note)}">${esc(p.label)}</button>`).join("") + `</div>` +
+          `<input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="${_t("空着 = 未声明（法律默认就是保留所有权利）；也可以自己写")}" value="${esc(song.rights ?? "")}" />` +
+          `<div class="offer-msg">${_t("从紧到松排；CC 那几个发出去以后对已经发出去的收不回。存进 MusicXML 的 &lt;rights&gt;；导出 mp3 时连同署名写进文件的标签里。")}</div></details>` }) +
+      settingRowHtml({ labelHtml: esc(_t("封面")), attrs: { "data-sec": "cover" },
+        belowHtml: `<div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="${_t("封面")}" />` : `<span class="cover-none">${_t("没有封面图")}</span>`}</span>` +
+          `<label class="btn" title="${_t("选一张图当封面（缩成 256² 存进歌里；歌库卡片上歌名印在图上面）")}"><svg class="ico"><use href="#image"/></svg>${thumb ? _t("换一张…") : _t("选一张图…")}<input id="coverIn" type="file" accept="image/*" hidden /></label>` +
+          (thumb ? `<button class="btn" data-v="coverOff">${_t("去掉封面图")}</button>` : "") + `</div>` +
+          `<div class="offer-msg">${_t("歌库卡片上的图；歌名和日期照样印在上面。缩成 256² 存进歌里。")}</div>` }) +
+      settingRowHtml({ labelHtml: esc(_t("声音")), attrs: { "data-sec": "sounds" },
+        belowHtml: (used ? `<div class="offer-msg">${esc(_t("用到的：{libs}", { libs: used }))}</div>` : "") +
+          (missing.length ? `<div class="set-row lib-line"><span class="set-note">${esc(_t("缺：{list}", { list: missing.map((i) => `${i.label}（${i.why}）`).join("；") }))}</span><button class="btn" data-v="issues">${_t("看清单…")}</button></div>` : "") +
+          (sounds || `<div class="offer-msg">${_t("这首歌没用乐器的声音文件（小月相 / 元音版的声音随 app 走，不进歌）。")}</div>`) }) +
+      settingRowHtml({ labelHtml: esc(_t("署名")), attrs: { "data-sec": "credit-lines" }, belowHtml: performersBlock(soundingRoles(), _t("这首歌用了谁的声音")) || `<div class="offer-msg">${_t("还没有可署的名")}</div>` });
+    content.querySelector<HTMLInputElement>("#coverIn")!.addEventListener("change", (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) { commitText(); void setCover(f).then(draw); } });
+  };
+  /** 歌名、作者栏、许可：一起写进去（改了才写；一步撤销）。 */
+  const commitText = () => {
+    const ti = content.querySelector<HTMLInputElement>("#songTitleIn"), ta = content.querySelector<HTMLTextAreaElement>("#crIn"), rt = content.querySelector<HTMLInputElement>("#rtIn"); if (!ti || !ta || !rt) return;
+    let st = D.st;
+    if (ti.value !== (st.song.title ?? "")) st = setTitle(st, ti.value);
+    if (ta.value !== (st.song.credits ?? "")) st = setCredits(st, ta.value);
+    if (rt.value !== (st.song.rights ?? "")) st = setRights(st, rt.value);
+    if (st !== D.st) update(st);
+  };
+  const cleanup = () => { if (coverUrl) URL.revokeObjectURL(coverUrl); coverUrl = null; };
+  draw();
+  const closeByHost = () => { commitText(); shell.close(); cleanup(); ui.closed(closeByHost); scoreEl.focus(); };
+  const shell = openPanelShell({ title: _t("这首歌"), content, width: "wide", buttons: [{ id: "ok", label: _t("好"), primary: true }], closeId: "ok",
+    onClose: () => { commitText(); cleanup(); ui.closed(closeByHost); scoreEl.focus(); } });
+  ui.open({ k: "sheet", close: closeByHost });
+  content.addEventListener("click", (e) => {
     const t = e.target as HTMLElement, r = t.closest<HTMLElement>("[data-r]")?.dataset.r;
-    if (r !== undefined) { const k = Number(r); rt.value = k < 0 ? "" : RIGHTS_PRESETS[k].text(new Date().getFullYear()); rt.focus(); return; }
-    const v = t.closest<HTMLElement>("[data-v]")?.dataset.v;
-    if (e.target === box || v === "ok") close();
+    if (r !== undefined) { const rt = content.querySelector<HTMLInputElement>("#rtIn")!; const k = Number(r); rt.value = k < 0 ? "" : RIGHTS_PRESETS[k]!.text(new Date().getFullYear()); rt.focus(); return; }
+    const v = t.closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
+    if (v === "coverOff") { commitText(); updateExtras(withThumbnail(D.extras, null), { kind: "cover", label: _t("去掉封面图") }); info(_t("去掉了封面图")); draw(); }
+    else if (v === "rename") { closeByHost(); void renameActive().then(() => openSongPanel("name")); }
+    else if (v === "issues") { closeByHost(); openIssuesSheet(); }
+    else if (v === "pack" || v === "unpack") { closeByHost(); void (v === "pack" ? packAll() : unpackAll()).then(() => openSongPanel("sounds")); }   // 做完回到这里：看得见新状态和署名
   });
-  ta.focus();
+  if (focus) {
+    const sec = content.querySelector<HTMLElement>(`[data-sec="${focus}"]`); sec?.scrollIntoView({ block: "start" });
+    if (focus === "credits") content.querySelector<HTMLTextAreaElement>("#crIn")?.focus();
+  }
 }
 /** 页面设置（谱右上角那颗「1 / ♪」钮；7-C 起：页面设置 = 视图——怎么看、怎么印；user 2026-11-12「这个不应该在页面设置里面页面设置是视图」「整理成和设置一样的一页页的那个…都弄成下拉框」）。
  *  两页：看谱（谱种、按 C 调看、和弦标级数、演奏法和表情、只看一号轨）/ 版面（纸张、版式、排法、屏幕放不下纸的时候、小节号、歌词排法）；样子同设置面板（setTabsHtml / setItem / wireSetPages：
@@ -3450,9 +3512,6 @@ function openMainMenu(): void {
     (inStore ? item("renderHere", "play", _t("渲染到缓存"), _t("渲一遍放进渲染缓存（只在这台设备上）：歌库里这首的封面上能直接听；不导出文件")) : "") +
     (hasStore() && !inStore && !H.pending() ? item("intoLib", "import", _t("存进歌库"), cloudAvailable() ? _t("把这首歌放进歌库（这台设备上留一份；登录后同步到 OneDrive）") : _t("把这首歌放进歌库（只在这个浏览器里留一份；网盘在官网版）")) : "") +
     `<div class="ctx-sep"></div>` +
-    (H.home.kind === "file" ? "" : item("rename", "rename", _t("改文件名…"), _t("只改文件名，纸上的歌名不变（点顶栏的文件名也一样）"))) +
-    item("cover", "image", _t("封面图…"), _t("歌库卡片上的图")) +
-    item("sounds", "volume", _t("声音与署名…"), _t("乐器的声音打包 / 解包；这首歌用了谁的声音")) +
     (lock.canLockNow() ? item("lockEdit", "lock", _t("锁上（先不改了）"), _t("先把改动存好，再把这首歌锁上：之后打开是只能看、能听的，点「接着改」随时解开")) : "") +   // 修改锁：解着才有；解锁在谱上面那一条
     item("ref", "picture-in-picture", refHost.isOpen() ? _t("收起参考窗") : _t("参考窗{p}", { p: refHost.count() ? _t("（{p} 张）", { p: refHost.count() }) : "" }), _t("截图 / 文字放在旁边对着看：点开后粘贴（Ctrl / ⌘+V）、拖进来，或者「＋」导入；跟着歌一起存")) +
     `<div class="ctx-sep"></div>` +
@@ -3469,8 +3528,8 @@ function openMainMenu(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
     if (v === "new") void fileNew(); else if (v === "open") void fileOpen(); else if (v === "export") openExportHub(); else if (v === "renderHere") void renderHere();
-    else if (v === "intoLib") void saveIntoGallery(); else if (v === "rename") void renameActive();
-    else if (v === "cover") openCoverSheet(); else if (v === "sounds") openSoundsSheet(); else if (v === "settings") openSettings(); else if (v === "ref") refHost.toggle();
+    else if (v === "intoLib") void saveIntoGallery();
+    else if (v === "settings") openSettings(); else if (v === "ref") refHost.toggle();   // 改文件名 / 封面 / 声音与署名 13-3 起在纸右上角「这首歌」里
     else if (v === "lockEdit") void lockEditNow();
   });
 }
@@ -3492,47 +3551,6 @@ async function lockEditNow(): Promise<void> {
       lock.lockLocalFile(); info(_t("锁上了。要改，点谱上面的「接着改」。"));
     }
   } catch (e) { showError(_t("没锁上：{Error}", { Error: (e as Error).message })); }
-}
-/** 封面图（歌库卡片上的图；缩成 256² 存进歌里）。 */
-function openCoverSheet(): void {
-  ui.close();
-  const box = document.createElement("div");
-  box.className = "offer";
-  const thumb = D.extras.thumbnail;
-  const coverUrl = thumb ? URL.createObjectURL(new Blob([thumb as unknown as BlobPart], { type: "image/png" })) : null;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("封面图")}</div>` +
-    `<div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="${_t("封面")}" />` : `<span class="cover-none">${_t("没有封面图")}</span>`}</span>` +
-    `<label class="btn" title="${_t("选一张图当封面（缩成 256² 存进歌里；歌库卡片上歌名印在图上面）")}"><svg class="ico"><use href="#image"/></svg>${thumb ? _t("换一张…") : _t("选一张图…")}<input id="coverIn" type="file" accept="image/*" hidden /></label>` +
-    (thumb ? `<button class="btn" data-v="coverOff">${_t("去掉封面图")}</button>` : "") + `</div>` +
-    `<div class="offer-msg">${_t("歌库卡片上的图；歌名和日期照样印在上面。缩成 256² 存进歌里。")}</div>` +
-    `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
-  document.body.append(box);
-  const close = () => { box.remove(); ui.closed(close); if (coverUrl) URL.revokeObjectURL(coverUrl); scoreEl.focus(); };
-  ui.open({ k: "sheet", close });
-  box.querySelector<HTMLInputElement>("#coverIn")!.addEventListener("change", (e) => { const f = (e.target as HTMLInputElement).files?.[0]; close(); if (f) void setCover(f); });
-  box.addEventListener("click", (e) => {
-    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
-    if (e.target === box || v === "close") { close(); return; }
-    if (v === "coverOff") { close(); updateExtras(withThumbnail(D.extras, null), { kind: "cover", label: _t("去掉封面图") }); info(_t("去掉了封面图")); }
-  });
-}
-/** 声音与署名：乐器的声音打包 / 解包（Blender 式）+ 这首歌用了谁的声音（演出署名，折叠）。 */
-function openSoundsSheet(): void {
-  ui.close();
-  const box = document.createElement("div");
-  box.className = "offer";
-  const sounds = soundsSection();
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("声音与署名")}</div>` +
-    (sounds || `<div class="offer-msg">${_t("这首歌没用乐器的声音文件（小月相 / 元音版的声音随 app 走，不进歌）。")}</div>`) + performersBlock(soundingRoles()) +
-    `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
-  document.body.append(box);
-  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
-  ui.open({ k: "sheet", close });
-  box.addEventListener("click", (e) => {
-    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
-    if (e.target === box || v === "close") { close(); return; }
-    if (v === "pack" || v === "unpack") { close(); void (v === "pack" ? packAll() : unpackAll()).then(() => openSoundsSheet()); }   // 做完回到这里：看得见新状态和署名
-  });
 }
 /** 改文件名（只给还没有家的：下次存 / 下载用这个名字；纸上的歌名不变；user「之后各管各的同意，但是要有改文件名的规则？」）。
  *  有家的不进这里（菜单不露）：浏览器改不了磁盘上的名字，在文件管理器里改。 */

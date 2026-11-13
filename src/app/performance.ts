@@ -290,7 +290,7 @@ export function createPerformance(host: PerfHost) {
     const tl = timelineOf(planOf(song, parts), engine);
     // 出不了声的进清单（§2.2½）：这次准备过的声部先清掉旧账，再按结果记；toast 只在清单变了时说（refreshIssues），不再每按一次播放弹一次
     for (const p of parts) prepErrs.delete(p.id);
-    for (const e of errs) prepErrs.set(e.part, e.why === removedWhy("gs") ? { cand: e.cand, kind: "removed", why: e.why, lib: "gs" } : { cand: e.cand, kind: "sound", why: e.why });
+    for (const e of errs) prepErrs.set(e.part, e.lib ? { cand: e.cand, kind: "removed", why: e.why, lib: e.lib } : { cand: e.cand, kind: "sound", why: e.why });   // 认种类靠错上带的 lib，不比字
     for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); }
     refreshIssues();
     if (!tl.tracks.length) { showError(_t("没有出声：{issues}。点谱前面的声部名换一个「谁来演」。", { issues: issuesText(issues) || _t("没有会出声的声部") })); return null; }   // 一个都放不了 = 这一下必须说
@@ -541,7 +541,7 @@ export function createPerformance(host: PerfHost) {
     progress(_t("准备…"));
     const r = await renderSong(planOf(song, parts, false), { ...deps, sing: async (tl) => { pruneChunks(tl); await awaitAllChunks(tl); } },
       { sr: GM_SR, pv, progress: (m, f) => { if (f === undefined) { progress(m); return; } if (f === 0) { progress(m); renderBar.start(1); } renderBar.frac(f); },
-        onPrepared: (errs, tl) => { for (const p of parts) prepErrs.delete(p.id); for (const e of errs) prepErrs.set(e.part, e.why === removedWhy("gs") ? { cand: e.cand, kind: "removed", why: e.why, lib: "gs" } : { cand: e.cand, kind: "sound", why: e.why }); for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); } refreshIssues(); } })
+        onPrepared: (errs, tl) => { for (const p of parts) prepErrs.delete(p.id); for (const e of errs) prepErrs.set(e.part, e.lib ? { cand: e.cand, kind: "removed", why: e.why, lib: e.lib } : { cand: e.cand, kind: "sound", why: e.why }); for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); } refreshIssues(); } })
       .finally(() => { renderBar.end(); if (mixBypass) pushChannels(); });   // 效果全关（A/B）不影响导出；导完按开关重推
     const roles = st().song.parts.filter((p) => r.timeline.tracks.some((t) => t.id === p.id)).map((p) => p.role);   // 真出了声的声部（署名推演）
     if (renderAbort) throw cancelledErr();

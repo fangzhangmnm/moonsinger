@@ -100,10 +100,11 @@ try {
   const id2 = await p.evaluate(() => window.__moonsinger.identifier()); check(id2 === "小星星.mxl", "改名 = store tryMove 后的新身份", id2);
   check(!(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id1)), "旧身份不再占用");
   check((await title()).startsWith("小星星"), "标题跟着新名", await title());
-  // 封面图（三条杠 → 封面图…）
-  await p.click("#setBtn"); await p.waitForTimeout(200); await p.click('.main-menu [data-v="cover"]'); await p.waitForTimeout(200);
+  // 封面图（13-3 起：纸右上角「这首歌」→ 封面那一块）
+  await p.click("#score .score-overlay .ov-song-chip"); await p.waitForSelector(".wbe-panel #coverIn", { state: "attached" });
   const tmp = path.join(OUT, "cover.png"); fs.writeFileSync(tmp, png(64, 48));
   await p.setInputFiles("#coverIn", tmp); await p.waitForTimeout(600);
+  await p.click('.wbe-panel [data-panel-btn="ok"]'); await p.waitForTimeout(200);
   const thumbLen = await p.evaluate(() => window.__moonsinger.extras().thumbnail?.length ?? 0); check(thumbLen > 100 && thumbLen < 70 * 1024, "封面图缩成 PNG 进 extras", String(thumbLen));
   await saved();
   const zipHas = await p.evaluate(async (id) => { const bl = await window.__moonsinger.store().zip(id, { mode: "existing" }).open(); const u = new Uint8Array(await bl.arrayBuffer()); const list = window.__moonsinger.zipList(u); return { last: list[list.length - 1], n: list.length }; }, id2);

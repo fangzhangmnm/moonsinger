@@ -2729,6 +2729,9 @@ var taken = /* @__PURE__ */ new WeakSet();
 function noteOutsideTap(e10) {
   taken.add(e10);
 }
+function wasOutsideTap(e10) {
+  return taken.has(e10);
+}
 
 // node_modules/@internal/workbench-elements/dist/popup-menu.js
 var _open = [];
@@ -3275,6 +3278,157 @@ function createTabStrip(opts) {
   };
 }
 
+// node_modules/@internal/workbench-elements/dist/panel-shell.js
+function openPanelShell(opts) {
+  const before = typeof document !== "undefined" ? document.activeElement : null;
+  const el2 = document.createElement("div");
+  el2.className = "wbe-panel";
+  const card = document.createElement("div");
+  card.className = `wbe-panel-card wbe-panel-card--${opts.width ?? "narrow"}`;
+  card.setAttribute("role", "dialog");
+  card.setAttribute("aria-modal", "true");
+  card.setAttribute("aria-label", opts.title);
+  card.setAttribute("tabindex", "-1");
+  const head = document.createElement("div");
+  head.className = "wbe-panel-title";
+  head.textContent = opts.title;
+  card.appendChild(head);
+  const scroller = document.createElement("div");
+  scroller.className = "wbe-panel-scroll";
+  const hostTabs = opts.tabs;
+  const tabs = hostTabs ? createTabStrip({ ...hostTabs, onPick: (id2) => {
+    scroller.scrollTop = 0;
+    hostTabs.onPick(id2);
+  } }) : null;
+  if (tabs)
+    card.appendChild(tabs.el);
+  card.appendChild(scroller);
+  let content = opts.content;
+  scroller.appendChild(content);
+  const foot = document.createElement("div");
+  foot.className = "wbe-panel-btns";
+  for (const b3 of opts.buttons) {
+    const x2 = document.createElement("button");
+    x2.type = "button";
+    x2.dataset.panelBtn = b3.id;
+    x2.className = "wbe-panel-btn" + (b3.primary ? " primary" : "") + (b3.danger ? " danger" : "");
+    x2.textContent = b3.label;
+    foot.appendChild(x2);
+  }
+  card.appendChild(foot);
+  el2.appendChild(card);
+  let open2 = true, downOnBackdrop = false;
+  const teardown = () => {
+    if (!open2)
+      return false;
+    open2 = false;
+    el2.removeEventListener("pointerdown", onDown);
+    el2.removeEventListener("click", onClick);
+    el2.removeEventListener("keydown", onKey);
+    tabs?.dispose();
+    el2.remove();
+    try {
+      if (before && before.isConnected)
+        before.focus();
+    } catch {
+    }
+    return true;
+  };
+  const humanClose = () => {
+    if (teardown())
+      opts.onClose();
+  };
+  const onDown = (e10) => {
+    downOnBackdrop = e10.target === el2 && !wasOutsideTap(e10);
+  };
+  const onClick = (e10) => {
+    const t10 = e10.target, wasDown = downOnBackdrop;
+    downOnBackdrop = false;
+    if (t10 === el2) {
+      if (wasDown)
+        humanClose();
+      return;
+    }
+    const b3 = t10?.closest?.("[data-panel-btn]");
+    if (!b3 || !foot.contains(b3))
+      return;
+    const id2 = b3.dataset.panelBtn;
+    if (id2 === opts.closeId)
+      humanClose();
+    else
+      opts.onButton?.(id2);
+  };
+  const focusables = () => {
+    const out = [];
+    const walk = (n10) => {
+      for (const c10 of Array.from(n10.children)) {
+        if (c10.hidden)
+          continue;
+        const tag2 = c10.tagName, ti2 = c10.getAttribute("tabindex");
+        const can = ti2 !== null ? ti2 !== "-1" : tag2 === "BUTTON" || tag2 === "INPUT" || tag2 === "SELECT" || tag2 === "TEXTAREA" || tag2 === "A" && c10.getAttribute("href") !== null;
+        if (can && !c10.disabled)
+          out.push(c10);
+        walk(c10);
+      }
+    };
+    walk(card);
+    return out;
+  };
+  const onKey = (e10) => {
+    if (e10.key === "Tab") {
+      const f2 = focusables();
+      if (!f2.length) {
+        e10.preventDefault();
+        return;
+      }
+      const at3 = document.activeElement, first = f2[0], last = f2[f2.length - 1];
+      if (e10.shiftKey && (at3 === first || !card.contains(at3))) {
+        e10.preventDefault();
+        last.focus();
+      } else if (!e10.shiftKey && (at3 === last || !card.contains(at3))) {
+        e10.preventDefault();
+        first.focus();
+      }
+      return;
+    }
+    if (e10.key !== "Escape" || e10.defaultPrevented)
+      return;
+    if (e10.isComposing || e10.keyCode === 229)
+      return;
+    e10.preventDefault();
+    e10.stopPropagation();
+    humanClose();
+  };
+  el2.addEventListener("pointerdown", onDown);
+  el2.addEventListener("click", onClick);
+  el2.addEventListener("keydown", onKey);
+  (opts.mount ?? document.body).appendChild(el2);
+  try {
+    card.focus();
+  } catch {
+  }
+  return {
+    el: el2,
+    scroller,
+    tabs,
+    get content() {
+      return content;
+    },
+    get isOpen() {
+      return open2;
+    },
+    setContent(next2) {
+      if (next2 === content)
+        return;
+      scroller.replaceChild(next2, content);
+      content = next2;
+    },
+    close() {
+      teardown();
+    }
+  };
+}
+
 // node_modules/@internal/workbench-elements/dist/setting-row.js
 var esc = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
 var attrsHtml = (a10) => Object.entries(a10 ?? {}).map(([k2, v]) => {
@@ -3817,7 +3971,15 @@ var S = {
   "{extras} \u58F0\u50CF": { en: "{extras} pan" },
   "{track} \u51FA\u5230 {to}": { en: "{track} output to {to}" },
   "\u300C{next}\u300D\u6362\u4EBA\uFF1A{next2}": { en: "\u201C{next}\u201D performer change: {next2}" },
-  "\u4F5C\u8005\u680F": { en: "Credits" },
+  "\u5C0F\u6708\u76F8": { en: "Tsukuyomi-chan" },
+  "\u4F60\u81EA\u5DF1\u7684 {name}": { en: "your own {name}" },
+  "{lib}\uFF08{parts}\uFF09": { en: "{lib} ({parts})" },
+  "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F {name}\uFF09": { en: "Rename local files in your file manager (currently {name})" },
+  "\u6587\u4EF6\u540D": { en: "File name" },
+  "\u6539\u2026": { en: "Rename\u2026" },
+  "\u540D\u5B57": { en: "Name" },
+  "\u6B4C\u540D": { en: "Title" },
+  "\u4F5C\u8005\u548C\u8BB8\u53EF": { en: "Author and license" },
   "\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09": { en: "Any number of lines, shown as written on the sheet (right-aligned under the title)" },
   "\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002": { en: "Optional. Saved as MusicXML page text, so other score software shows it too." },
   "\u8BB8\u53EF\uFF08\u53EF\u9009\uFF1B\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09": { en: "License (optional; for your part: lyrics / music / arrangement)" },
@@ -3825,6 +3987,22 @@ var S = {
   "\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09": { en: "Not stated (default)" },
   "\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199": { en: "Empty = not stated (the legal default is all rights reserved); or write your own" },
   "\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002": { en: "Listed strictest to loosest; once published under a CC license, published copies can't be taken back. Saved in MusicXML &lt;rights&gt;; written into the file tags with the credits when exporting mp3." },
+  "\u6CA1\u6709\u5C01\u9762\u56FE": { en: "No cover image" },
+  "\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09": { en: "Choose an image as the cover (shrunk to 256\xB2 and stored in the song; the library card prints the title over it)" },
+  "\u6362\u4E00\u5F20\u2026": { en: "Replace\u2026" },
+  "\u9009\u4E00\u5F20\u56FE\u2026": { en: "Choose an image\u2026" },
+  "\u53BB\u6389\u5C01\u9762\u56FE": { en: "Remove cover image" },
+  "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE\uFF1B\u6B4C\u540D\u548C\u65E5\u671F\u7167\u6837\u5370\u5728\u4E0A\u9762\u3002\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\u3002": { en: "The picture on the library card; title and date still print over it. Shrunk to 256\xB2 and stored in the song." },
+  "\u58F0\u97F3": { en: "Sound" },
+  "\u7528\u5230\u7684\uFF1A{libs}": { en: "Uses: {libs}" },
+  "\u7F3A\uFF1A{list}": { en: "Missing: {list}" },
+  "\u770B\u6E05\u5355\u2026": { en: "See the list\u2026" },
+  "\u8FD9\u9996\u6B4C\u6CA1\u7528\u4E50\u5668\u7684\u58F0\u97F3\u6587\u4EF6\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248\u7684\u58F0\u97F3\u968F app \u8D70\uFF0C\u4E0D\u8FDB\u6B4C\uFF09\u3002": { en: "This song uses no instrument sound files (Tsukuyomi-chan / vowel versions come with the app, not the song)." },
+  "\u7F72\u540D": { en: "Credits" },
+  "\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3": { en: "Whose sounds this song uses" },
+  "\u8FD8\u6CA1\u6709\u53EF\u7F72\u7684\u540D": { en: "Nothing to credit yet" },
+  "\u8FD9\u9996\u6B4C": { en: "This song" },
+  "\u53BB\u6389\u4E86\u5C01\u9762\u56FE": { en: "Cover image removed" },
   "\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\uFF08{v}\uFF09": { en: "Not known to this version ({v})" },
   "\u8DDF\u7740\u8FD9\u9996\u6B4C\u5B58\uFF1A\u8FDB\u6B4C\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002": { en: "Saved with this song: it goes into the song, can be undone, and the exported PDF prints it this way." },
   "\u8DDF\u7740\u8FD9\u9996\u6B4C\u7684\u89C6\u56FE\u5B58\uFF1A\u5B58\u7684\u65F6\u5019\u987A\u624B\u5E26\u4E0A\uFF0C\u4E0D\u7B97\u6539\u52A8\u3001\u4E0D\u8FDB\u64A4\u9500\u3002": { en: "Saved with this song's view: it rides along when you save, but doesn't count as a change and isn't in undo." },
@@ -4199,7 +4377,6 @@ var S = {
   "\u6CA1\u5B58\u4E0A\uFF1A{Error}": { en: "Couldn't save: {Error}" },
   "\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u526F\u672C\u91CC\u6CA1\u5E26\uFF1A{p}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u518D\u5BFC\u51FA\u4E00\u6B21\u3002": { en: "No sound found for these, so the copy doesn't include them: {p}. Tap the part name at the front of the score, \u201CFind file\u2026\u201D under \u201CWho performs\u201D, and export again." },
   "\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002": { en: "This copy's license was written as \u201Cnot stated\u201D (your chosen license may conflict with Tsukuyomi-chan's terms; your choice in the credits is unchanged)." },
-  "\u7F72\u540D": { en: "Credits" },
   "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u8FD9\u4EFD\u526F\u672C\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09": { en: "Licenses for packed distribution (this copy carries these source files)" },
   "\u5B58\u4E86\u4E00\u4EFD\uFF1A{name}{fellBack}": { en: "Saved a copy: {name}{fellBack}" },
   "\uFF08\u8BB8\u53EF\u6309\u672A\u58F0\u660E\u5199\uFF09": { en: " (license written as not stated)" },
@@ -4273,7 +4450,6 @@ var S = {
   "\u65B0\u7684\u4E00\u9996\uFF1A\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93": { en: "New song: joins the library with the first thing you write" },
   "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA": { en: "Not saved yet: \u201CSave\u201D will ask where" },
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl": { en: "On this device \u201CSave\u201D = download or share an .mxl" },
-  "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F {name}\uFF09": { en: "Rename local files in your file manager (currently {name})" },
   "\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026": { en: "Open local file\u2026" },
   "\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09": { en: "Open .mxl / .musicxml (or drag it in; Ctrl / \u2318+O)" },
   "\u5BFC\u51FA\u2026": { en: "Export\u2026" },
@@ -4283,12 +4459,6 @@ var S = {
   "\u5B58\u8FDB\u6B4C\u5E93": { en: "Save to library" },
   "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09": { en: "Put this song in the library (a copy stays on this device; syncs to OneDrive after signing in)" },
   "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09": { en: "Put this song in the library (a copy stays only in this browser; OneDrive is on the official site)" },
-  "\u6539\u6587\u4EF6\u540D\u2026": { en: "Rename file\u2026" },
-  "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09": { en: "Only the file name changes, not the title on the sheet (same as tapping the file name at the top)" },
-  "\u5C01\u9762\u56FE\u2026": { en: "Cover image\u2026" },
-  "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE": { en: "The picture on the library card" },
-  "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026": { en: "Sounds and credits\u2026" },
-  "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3": { en: "Pack / unpack instrument sounds; whose sounds this song uses" },
   "\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09": { en: "Lock (done editing for now)" },
   "\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00": { en: "Saves your changes, then locks this song: it opens view-and-listen only until you tap \u201CKeep editing\u201D" },
   "\u6536\u8D77\u53C2\u8003\u7A97": { en: "Hide reference window" },
@@ -4301,18 +4471,7 @@ var S = {
   "\u6CA1\u9501\u4E0A\uFF1A\u6539\u52A8\u6CA1\u6709\u5199\u56DE\u6587\u4EF6\u3002": { en: "Not locked: the changes were not written back to the file." },
   "\u9501\u4E0A\u4E86\u3002\u8981\u6539\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u3002": { en: "Locked. To edit, tap \u201CKeep editing\u201D above the score." },
   "\u6CA1\u9501\u4E0A\uFF1A{Error}": { en: "Not locked: {Error}" },
-  "\u5C01\u9762\u56FE": { en: "Cover image" },
-  "\u6CA1\u6709\u5C01\u9762\u56FE": { en: "No cover image" },
-  "\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09": { en: "Choose an image as the cover (shrunk to 256\xB2 and stored in the song; the library card prints the title over it)" },
-  "\u6362\u4E00\u5F20\u2026": { en: "Replace\u2026" },
-  "\u9009\u4E00\u5F20\u56FE\u2026": { en: "Choose an image\u2026" },
-  "\u53BB\u6389\u5C01\u9762\u56FE": { en: "Remove cover image" },
-  "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE\uFF1B\u6B4C\u540D\u548C\u65E5\u671F\u7167\u6837\u5370\u5728\u4E0A\u9762\u3002\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\u3002": { en: "The picture on the library card; title and date still print over it. Shrunk to 256\xB2 and stored in the song." },
-  "\u53BB\u6389\u4E86\u5C01\u9762\u56FE": { en: "Cover image removed" },
-  "\u58F0\u97F3\u4E0E\u7F72\u540D": { en: "Sounds and credits" },
-  "\u8FD9\u9996\u6B4C\u6CA1\u7528\u4E50\u5668\u7684\u58F0\u97F3\u6587\u4EF6\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248\u7684\u58F0\u97F3\u968F app \u8D70\uFF0C\u4E0D\u8FDB\u6B4C\uFF09\u3002": { en: "This song uses no instrument sound files (Tsukuyomi-chan / vowel versions come with the app, not the song)." },
   "\u6539\u6587\u4EF6\u540D": { en: "Rename file" },
-  "\u6587\u4EF6\u540D": { en: "File name" },
   "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002\u4E0B\u6B21\u5B58\u7684\u65F6\u5019\u7528\u8FD9\u4E2A\u540D\u5B57\u3002": { en: "Only the file name changes, not the title on the sheet. The next save uses this name." },
   "\u6539": { en: "Rename" },
   "\u6587\u4EF6\u540D\u6539\u6210 {stem}{SONG_SUFFIX}": { en: "File renamed to {stem}{SONG_SUFFIX}" },
@@ -4636,7 +4795,6 @@ var S = {
   "\u5168\u6587\u2026": { en: "Full text\u2026" },
   "\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165": { en: "Import from a local file" },
   "\u73B0\u5728\u4E0B\u8F7D": { en: "Download now" },
-  "\u5C0F\u6708\u76F8": { en: "Tsukuyomi-chan" },
   "\u6765\u6E90": { en: "Source" },
   "\u6062\u590D\u9ED8\u8BA4": { en: "Reset to default" },
   "\u4E00\u4E2A\u6587\u4EF6\uFF08{size}\uFF09\uFF0C\u4E0D\u662F AI \u6A21\u578B\uFF1B\u6B4C\u91CC\u7528\u5230\u7684\u90A3\u51E0\u4EF6\u4F1A\u5207\u4E0B\u6765\u6253\u5305\u8FDB\u6B4C\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\u3002": { en: "One file ({size}), not an AI model; the instruments a song uses are cut out and packed into the song \u2014 this is just the shelf." },
@@ -4871,7 +5029,6 @@ var S = {
   "mp3 \u7F16\u7801 worker \u51FA\u9519": { en: "mp3 encoder worker error" },
   "\u5B57\u4F53\u4E0B\u4E0D\u6765\uFF08{Error}\uFF09": { en: "Couldn't download the font ({Error})" },
   "\u97F3\u4E50\u5B57\u5F62\u4E0B\u4E0D\u6765\uFF08{Error}\uFF09": { en: "Couldn't download the music glyphs ({Error})" },
-  "\u8FD9\u9996\u6B4C": { en: "This song" },
   "\uFF08\u6CA1\u58F0\u660E\u8BB8\u53EF\uFF09": { en: "(no license stated)" },
   "\u4FDD\u7559\u6240\u6709\u6743\u5229": { en: "All rights reserved" },
   "\u4EC0\u4E48\u90FD\u8981\u5148\u95EE\u4F60\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u8FD9\u6837\uFF0C\u8FD9\u91CC\u53EA\u662F\u5199\u660E\uFF09": { en: "Everyone must ask you first for anything (that's the legal default; this just says so)" },
@@ -5736,6 +5893,7 @@ var S = {
   " \u539A": { en: " warm" },
   " \u4EAE": { en: " bright" },
   "\u8C31\u79CD\u548C\u7EB8\uFF1A{paperLabel}": { en: "Notation and paper: {paperLabel}" },
+  "\u8FD9\u9996\u6B4C\uFF1A\u540D\u5B57\u3001\u4F5C\u8005\u548C\u8BB8\u53EF\u3001\u5C01\u9762\u3001\u58F0\u97F3\u3001\u7F72\u540D": { en: "This song: name, author and license, cover, sound, credits" },
   "\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355": { en: "This section's menu" },
   "\u9690\u85CF {n}": { en: "{n} hidden" },
   "\u8FD9\u4E00\u6BB5\u6709 {n} \u4F4D\u9690\u85CF\u7740\uFF08\u4E0D\u6392\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u770B\u662F\u8C01\u3001\u653E\u51FA\u6765": { en: "{n} {n|part is|parts are} hidden in this section (not laid out, no space taken): tap to see who and show them" },
@@ -5747,7 +5905,6 @@ var S = {
   "\u8FD9\u4E00\u6BB5\u9690\u85CF\u7740\uFF1A\u4E0D\u653E\u3001\u4E0D\u5370\uFF08\u300C\u22EF\u300D\u91CC\u80FD\u653E\u51FA\u6765\uFF09": { en: "This section is hidden: not played, not printed (unhide it from \u201C\u22EF\u201D)" },
   "\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u6CA1\u6709\u58F0\u90E8\uFF09": { en: "(no parts on this sheet)" },
   "\uFF0B \u65B0\u66F2\u6BB5": { en: "\uFF0B New section" },
-  "\u6B4C\u540D": { en: "Title" },
   "\u4F5C\u8005": { en: "Author" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D\uFF08\u4F8B\uFF1A\u524D\u594F (A A1)\xD73 A A2 [\u526F\u6B4C]\uFF09": { en: "Empty = each sheet plays once in order (e.g. Intro (A A1)\xD73 A A2 [Chorus])" },
   "\u5C0F\u8C03\uFF1A\u548C\u5F26\u7EA7\u6570\u4ECE la \u6570\u3002\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6": { en: "Minor: chord degrees count from la. Tap = clef / key / time / tempo" },
@@ -6185,7 +6342,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.25-2026-11-13";
+var APP_VERSION = "v0.17.26-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -20212,6 +20369,7 @@ var ScoreOverlay = class {
     {
       const s10 = CTL_H * sp2, x2 = L2.content.right - s10, y2 = L2.title.y + 0.5 * sp2;
       add("chip", "button", "ov-i ov-chip ov-paper-chip", box(x2, y2, s10, s10), icon("jianpu-staff", CTL_GLYPH * sp2), { "data-ov": "chip", title: _t("\u8C31\u79CD\u548C\u7EB8\uFF1A{paperLabel}", { paperLabel: v.paperLabel }) });
+      add("song", "button", "ov-i ov-chip ov-song-chip", box(x2 - s10 - 0.4 * sp2, y2, s10, s10), icon("info", CTL_GLYPH * sp2), { "data-ov": "song", title: _t("\u8FD9\u9996\u6B4C\uFF1A\u540D\u5B57\u3001\u4F5C\u8005\u548C\u8BB8\u53EF\u3001\u5C01\u9762\u3001\u58F0\u97F3\u3001\u7F72\u540D") });
     }
     if (!multi && v.edit) add(`menu:${papers[0].id}`, "button", "ov-i ov-chip ov-menu", `${box(L2.content.left, L2.title.y + 0.5 * sp2, (CTL_H + 0.6) * sp2, CTL_H * sp2)};font-size:${px(CTL_GLYPH * sp2)}`, "\u22EF", { "data-ov": "menu", "data-paper": papers[0].id, title: _t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355") });
     const hiddenChip = (paperId, ids, style) => {
@@ -20356,6 +20514,9 @@ var ScoreOverlay = class {
     switch (d3.ov) {
       case "chip":
         this.host.onPaper();
+        break;
+      case "song":
+        this.host.onSong();
         break;
       case "menu":
         this.host.onPaperMenu(d3.paper);
@@ -34963,15 +35124,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick2(() => "singer-worker-33f36b738410.mjs");
+      return pick2(() => "singer-worker-5560aca67848.mjs");
     case "mp3-worker":
       return pick2(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick2(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick2(() => "layout-worker-a6b24cd3e4ac.mjs");
+      return pick2(() => "layout-worker-7d60d0b6d081.mjs");
     case "encode-worker":
-      return pick2(() => "encode-worker-1b067a66739e.mjs");
+      return pick2(() => "encode-worker-3f4c6b2dcd2c.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -36672,6 +36833,14 @@ var sha256Hex3 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SH
 
 // src/sources/removed.ts
 var removedWhy = (lib) => lib === "voice" ? _t("\u5C0F\u6708\u76F8\u88AB\u4F60\u5220\u4E86") : _t("\u4E50\u5668\u97F3\u8272\u5E93\u88AB\u4F60\u5220\u4E86");
+var LibRemovedError = class extends Error {
+  removedLib;
+  constructor(lib) {
+    super(removedWhy(lib));
+    this.name = "LibRemovedError";
+    this.removedLib = lib;
+  }
+};
 
 // src/sources/sounds.ts
 function createSoundSources(o10) {
@@ -36733,7 +36902,7 @@ function createSoundSources(o10) {
     let bank = await cachedSound(g3.origin.fileSha256);
     if (!bank) {
       const e10 = Object.values(SOUNDS).find((x2) => x2.sha256 === g3.origin.fileSha256);
-      if (e10 && o10.removed?.(e10.id)) throw new Error(removedWhy("gs"));
+      if (e10 && o10.removed?.(e10.id)) throw new LibRemovedError("gs");
       if (e10) {
         try {
           bank = await fetchSound(e10, (done2) => o10.progress(_t("\u627E\u300C{name}\u300D\u7684\u58F0\u97F3\uFF1A\u4E0B\u8F7D {name2} {bytes}%", { name: g3.name, name2: e10.name, bytes: Math.round(done2 / e10.bytes * 100) })));
@@ -42671,7 +42840,8 @@ async function prepareParts(parts, extras, deps) {
     try {
       await plugin.prepare({ extras, role: part2.role, engine: deps.engine, resolveGmBytes: (g3) => deps.sounds.resolveGmBytes(g3), ensureVowels: () => deps.sounds.ensureVowels() });
     } catch (e10) {
-      errs.push({ part: part2.id, cand: activeId(extras, part2.role), why: e10.message });
+      const lib = e10.removedLib;
+      errs.push({ part: part2.id, cand: activeId(extras, part2.role), why: e10.message, ...lib ? { lib } : {} });
     }
   }
   return errs;
@@ -43190,7 +43360,7 @@ function createPerformance(host2) {
     const errs = await prepareBanks(parts);
     const tl2 = timelineOf(planOf(song, parts), engine2);
     for (const p2 of parts) prepErrs.delete(p2.id);
-    for (const e10 of errs) prepErrs.set(e10.part, e10.why === removedWhy("gs") ? { cand: e10.cand, kind: "removed", why: e10.why, lib: "gs" } : { cand: e10.cand, kind: "sound", why: e10.why });
+    for (const e10 of errs) prepErrs.set(e10.part, e10.lib ? { cand: e10.cand, kind: "removed", why: e10.why, lib: e10.lib } : { cand: e10.cand, kind: "sound", why: e10.why });
     for (const u2 of tl2.unplayable) {
       const p2 = st2().song.parts.find((x2) => x2.id === u2.part);
       if (p2 && !prepErrs.has(u2.part)) prepErrs.set(u2.part, { cand: activeId(extras(), p2.role), kind: "unplayable", why: u2.why });
@@ -43554,7 +43724,7 @@ function createPerformance(host2) {
         },
         onPrepared: (errs, tl2) => {
           for (const p2 of parts) prepErrs.delete(p2.id);
-          for (const e10 of errs) prepErrs.set(e10.part, e10.why === removedWhy("gs") ? { cand: e10.cand, kind: "removed", why: e10.why, lib: "gs" } : { cand: e10.cand, kind: "sound", why: e10.why });
+          for (const e10 of errs) prepErrs.set(e10.part, e10.lib ? { cand: e10.cand, kind: "removed", why: e10.why, lib: e10.lib } : { cand: e10.cand, kind: "sound", why: e10.why });
           for (const u2 of tl2.unplayable) {
             const p2 = st2().song.parts.find((x2) => x2.id === u2.part);
             if (p2 && !prepErrs.has(u2.part)) prepErrs.set(u2.part, { cand: activeId(extras(), p2.role), kind: "unplayable", why: u2.why });
@@ -46184,7 +46354,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "1a2337518e5e5631" : "dev";
+var CORE_HASH = true ? "693863664f724552" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -54225,7 +54395,9 @@ function initGalleryHost(d3) {
   playerEl.innerHTML = `<button type="button" class="btn" data-p="restart" title="${_t("\u4ECE\u5934\u653E\uFF08\u9501\u5C4F / \u8033\u673A\u7684\u300C\u4E0A\u4E00\u9996\u300D\u4E5F\u662F\uFF09")}">${iconHtml2("play-from-start")}</button><button type="button" class="btn ms-player-toggle" data-p="toggle" title="${_t("\u653E / \u6682\u505C")}">${iconHtml2("pause")}</button><span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span><button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">${_t("\u5FAA\u73AF")}</button><button type="button" class="btn ms-player-rerender" data-p="rerender" hidden title="${_t("\u6309\u73B0\u5728\u7684\u6837\u5B50\u91CD\u65B0\u6E32\u4E00\u904D")}">${_t("\u91CD\u65B0\u6E32\u67D3")}</button><button type="button" class="btn" data-p="share" title="${_t("\u5206\u4EAB / \u4E0B\u8F7D\u8FD9\u9996\u7684 mp3")}">${iconHtml2("export")}</button><button type="button" class="btn" data-p="close" title="${_t("\u505C")}">${iconHtml2("x")}</button>`;
   fullEl.append(playerEl);
   const appIcon = (file, sizes) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
+  const KV_LOOP_GALLERY = "loop-gallery";
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
+  if (deviceKvGet(KV_LOOP_GALLERY) === "1") player.setLoop(true);
   let barTitle = "", barBlob = null, barStale = false, barOld = false, barNoSpan = false;
   const fmtTime2 = (s10) => Number.isFinite(s10) ? `${Math.floor(s10 / 60)}:${String(Math.floor(s10 % 60)).padStart(2, "0")}` : "0:00";
   function drawPlayer() {
@@ -54300,8 +54472,11 @@ function initGalleryHost(d3) {
     if (!v) return;
     if (v === "toggle") player.toggle();
     else if (v === "restart") player.restart();
-    else if (v === "loop") player.setLoop(!player.state().loop);
-    else if (v === "close") player.stop();
+    else if (v === "loop") {
+      const on2 = !player.state().loop;
+      player.setLoop(on2);
+      deviceKvSet(KV_LOOP_GALLERY, on2 ? "1" : null);
+    } else if (v === "close") player.stop();
     else if (v === "share") void shareMp3();
     else if (v === "rerender") {
       const id2 = player.state().key;
@@ -60661,6 +60836,7 @@ function setLibRemoved(lib, on2) {
   libsRowSync?.();
   perfApi.refreshIssues();
 }
+var KV_LOOP_EDITOR = "loop-editor";
 var KV_PRIMER = "audio-primer";
 var IS_IOS = /iPad|iPhone|iPod/.test(navigator.platform) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
 var PRIMER_URL = new URLSearchParams(location.search).get("primer");
@@ -60892,7 +61068,7 @@ var view = new ScoreView(scoreEl, {
         openChordInfo(e10.read, e10.at, e10.where);
         return;
       case "credits":
-        openCreditsSheet();
+        openSongPanel("credits");
         return;
       case "listen":
         openListenMenu(e10.at, e10.target);
@@ -60931,9 +61107,10 @@ var overlayHost = {
     view.render();
   },
   onPaper: () => openPaperSheet(),
+  onSong: () => openSongPanel(),
   onCredits: () => {
     showPad(false);
-    openCreditsSheet();
+    openSongPanel("credits");
   },
   // 作者栏空着时的提示字（有字的作者栏照旧是谱面上点）
   onKeyHint: (paper, part2, index, at3) => headerPanel.open(paper, part2, index, at3),
@@ -61440,6 +61617,7 @@ var perfApi = createPerformance({
   // 这台设备上记着的渲好的声音（内容没变 = 不重渲）
 });
 var { humOpt: humOpt2, resetLatencyLog, refreshIssues, playSong, curFlat, songIn, audibleParts: audibleParts2, micOf: micOf2, channelOf: channelOf2, pushChannels, lowestMidiOf: lowestMidiOf2, songBpm: songBpm2, performerInfo, renderMixForTest, tickOfCaret, playPause, resumePlay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, onSongSwitch, jumpPlaybackToPaper, previewTrack } = perfApi;
+if (deviceKvGet(KV_LOOP_EDITOR) === "1") setLoop(true);
 var BUDGET = perfApi.budget;
 var TURN_LEADS = perfApi.TURN_LEADS;
 function typingIn(t10) {
@@ -61579,8 +61757,11 @@ function openTransportMenu(btn2 = $2("playBtn")) {
     } else if (v === "follow") {
       view.autoFollow = !view.autoFollow;
       info(view.autoFollow ? _t("\u81EA\u52A8\u7FFB\uFF1A\u5F00") : _t("\u81EA\u52A8\u7FFB\uFF1A\u5173"));
-    } else if (v === "loop") setLoop(!perfApi.loopOn);
-    else if (v === "head") playFromHead();
+    } else if (v === "loop") {
+      const on2 = !perfApi.loopOn;
+      setLoop(on2);
+      deviceKvSet(KV_LOOP_EDITOR, on2 ? "1" : null);
+    } else if (v === "head") playFromHead();
     else if (v === "seam") playSeam();
   });
 }
@@ -61947,6 +62128,7 @@ function openSettings() {
   };
   const refreshSound = async () => {
     keepSources();
+    await reconcileLibMarks();
     const packs = await voicePacks();
     sizes.set("voice", packs.reduce((n10, p2) => n10 + p2.bytesCached, 0));
     libVoice.innerHTML = voiceColumnHtml({ packs, folder: inFolder2 ? FOLDER_TEXT.models : null, source: models.source, removed: libRemoved("voice") });
@@ -62247,7 +62429,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, activePerfSpec(D3.extras, curRole())?.sing ?? {});
   },
   state: () => D3.st,
-  cssHash: "66af027ed183",
+  cssHash: "42ce92693bf3",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -62452,6 +62634,11 @@ function conceptRange(role) {
   return rangeOf(catalogNow.byId.get(id2));
 }
 var GS = SOUNDS["generaluser-gs-2.0.3"];
+async function reconcileLibMarks() {
+  if (libRemoved("voice") && !resourcesInFolder() && (await packStore.status(Object.keys(PACKS))).every((x2) => x2.ready)) setLibRemoved("voice", false);
+  if (libRemoved("gs") && await isSoundPersisted(GS.sha256)) setLibRemoved("gs", false);
+}
+void reconcileLibMarks();
 async function setAudition(p2) {
   const gen = ++auditionGen;
   if (p2?.kind === "none") {
@@ -62941,32 +63128,120 @@ function setActive(id2) {
   view.render();
   renderTitle();
 }
-function openCreditsSheet() {
+function openSongPanel(focus) {
   ui2.close();
-  const box = document.createElement("div");
-  box.className = "offer";
-  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">${_t("\u4F5C\u8005\u680F")}</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="${_t("\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09")}">${esc13(D3.st.song.credits ?? "")}</textarea><div class="offer-msg">${_t("\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002")}</div><details class="rights-sec"${D3.st.song.rights ? " open" : ""}><summary class="part-sec">${_t("\u8BB8\u53EF\uFF08\u53EF\u9009\uFF1B\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09")}</summary><div class="set-row"><button class="btn cand" data-r="-1" title="${_t("\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09")}">${_t("\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09")}</button>` + RIGHTS_PRESETS.map((p2, k2) => `<button class="btn cand" data-r="${k2}" title="${esc13(p2.note)}">${esc13(p2.label)}</button>`).join("") + `</div><input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="${_t("\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199")}" value="${esc13(D3.st.song.rights ?? "")}" /><div class="offer-msg">${_t("\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002")}</div></details><div class="offer-btns"><button class="btn primary" data-v="ok">${_t("\u597D")}</button></div></div>`;
-  document.body.append(box);
-  const ta2 = box.querySelector("#crIn"), rt2 = box.querySelector("#rtIn");
-  const close = () => {
-    update(setRights(setCredits(D3.st, ta2.value), rt2.value));
-    box.remove();
-    ui2.closed(close);
+  const content = document.createElement("div");
+  content.className = "song-panel";
+  let coverUrl = null;
+  const libsUsed = () => {
+    const names = labelsNow(), used = /* @__PURE__ */ new Map();
+    D3.st.song.parts.forEach((p2, i10) => {
+      const ins = activeInstrument(D3.extras, p2.role);
+      if (!ins) return;
+      const s10 = "source" in ins ? ins.source : null;
+      const lib = performerOf(ins.engine)?.sound === "chunks" ? _t("\u5C0F\u6708\u76F8") : s10?.subsetSha256 ? s10.origin.library && SOUNDS[s10.origin.library]?.name || _t("\u4F60\u81EA\u5DF1\u7684 {name}", { name: s10.origin.name }) : null;
+      if (lib) used.set(lib, [...used.get(lib) ?? [], names[i10] ?? p2.id]);
+    });
+    return [...used].map(([k2, v]) => _t("{lib}\uFF08{parts}\uFF09", { lib: k2, parts: v.join("\u3001") })).join(" \xB7 ");
+  };
+  const draw = () => {
+    if (coverUrl) URL.revokeObjectURL(coverUrl);
+    const song = D3.st.song, thumb = D3.extras.thumbnail;
+    coverUrl = thumb ? URL.createObjectURL(new Blob([thumb], { type: "image/png" })) : null;
+    const file = H2.home.kind === "file" ? `<div class="set-row"><span class="set-note">${esc13(_t("\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F {name}\uFF09", { name: H2.home.handle.name }))}</span></div>` : `<div class="set-row lib-line"><span>${_t("\u6587\u4EF6\u540D")}\uFF1A${esc13(docName())}${SONG_SUFFIX}</span><button class="btn" data-v="rename">${_t("\u6539\u2026")}</button></div>`;
+    const sounds = soundsSection(), used = libsUsed(), missing = perfApi.issues();
+    content.innerHTML = settingRowHtml({
+      labelHtml: esc13(_t("\u540D\u5B57")),
+      attrs: { "data-sec": "name" },
+      belowHtml: `<label class="set-field">${_t("\u6B4C\u540D")}<input id="songTitleIn" type="text" spellcheck="false" autocomplete="off" value="${esc13(song.title ?? "")}" /></label>` + file
+    }) + settingRowHtml({
+      labelHtml: esc13(_t("\u4F5C\u8005\u548C\u8BB8\u53EF")),
+      attrs: { "data-sec": "credits" },
+      belowHtml: `<textarea id="crIn" class="credits-in" rows="4" spellcheck="false" placeholder="${_t("\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09")}">${esc13(song.credits ?? "")}</textarea><div class="offer-msg">${_t("\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002")}</div><details class="rights-sec"${song.rights ? " open" : ""}><summary class="part-sec">${_t("\u8BB8\u53EF\uFF08\u53EF\u9009\uFF1B\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09")}</summary><div class="set-row"><button class="btn cand" data-r="-1" title="${_t("\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09")}">${_t("\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09")}</button>` + RIGHTS_PRESETS.map((p2, k2) => `<button class="btn cand" data-r="${k2}" title="${esc13(p2.note)}">${esc13(p2.label)}</button>`).join("") + `</div><input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="${_t("\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199")}" value="${esc13(song.rights ?? "")}" /><div class="offer-msg">${_t("\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002")}</div></details>`
+    }) + settingRowHtml({
+      labelHtml: esc13(_t("\u5C01\u9762")),
+      attrs: { "data-sec": "cover" },
+      belowHtml: `<div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="${_t("\u5C01\u9762")}" />` : `<span class="cover-none">${_t("\u6CA1\u6709\u5C01\u9762\u56FE")}</span>`}</span><label class="btn" title="${_t("\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09")}"><svg class="ico"><use href="#image"/></svg>${thumb ? _t("\u6362\u4E00\u5F20\u2026") : _t("\u9009\u4E00\u5F20\u56FE\u2026")}<input id="coverIn" type="file" accept="image/*" hidden /></label>` + (thumb ? `<button class="btn" data-v="coverOff">${_t("\u53BB\u6389\u5C01\u9762\u56FE")}</button>` : "") + `</div><div class="offer-msg">${_t("\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE\uFF1B\u6B4C\u540D\u548C\u65E5\u671F\u7167\u6837\u5370\u5728\u4E0A\u9762\u3002\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\u3002")}</div>`
+    }) + settingRowHtml({
+      labelHtml: esc13(_t("\u58F0\u97F3")),
+      attrs: { "data-sec": "sounds" },
+      belowHtml: (used ? `<div class="offer-msg">${esc13(_t("\u7528\u5230\u7684\uFF1A{libs}", { libs: used }))}</div>` : "") + (missing.length ? `<div class="set-row lib-line"><span class="set-note">${esc13(_t("\u7F3A\uFF1A{list}", { list: missing.map((i10) => `${i10.label}\uFF08${i10.why}\uFF09`).join("\uFF1B") }))}</span><button class="btn" data-v="issues">${_t("\u770B\u6E05\u5355\u2026")}</button></div>` : "") + (sounds || `<div class="offer-msg">${_t("\u8FD9\u9996\u6B4C\u6CA1\u7528\u4E50\u5668\u7684\u58F0\u97F3\u6587\u4EF6\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248\u7684\u58F0\u97F3\u968F app \u8D70\uFF0C\u4E0D\u8FDB\u6B4C\uFF09\u3002")}</div>`)
+    }) + settingRowHtml({ labelHtml: esc13(_t("\u7F72\u540D")), attrs: { "data-sec": "credit-lines" }, belowHtml: performersBlock(soundingRoles(), _t("\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3")) || `<div class="offer-msg">${_t("\u8FD8\u6CA1\u6709\u53EF\u7F72\u7684\u540D")}</div>` });
+    content.querySelector("#coverIn").addEventListener("change", (e10) => {
+      const f2 = e10.target.files?.[0];
+      if (f2) {
+        commitText();
+        void setCover(f2).then(draw);
+      }
+    });
+  };
+  const commitText = () => {
+    const ti2 = content.querySelector("#songTitleIn"), ta2 = content.querySelector("#crIn"), rt2 = content.querySelector("#rtIn");
+    if (!ti2 || !ta2 || !rt2) return;
+    let st2 = D3.st;
+    if (ti2.value !== (st2.song.title ?? "")) st2 = setTitle(st2, ti2.value);
+    if (ta2.value !== (st2.song.credits ?? "")) st2 = setCredits(st2, ta2.value);
+    if (rt2.value !== (st2.song.rights ?? "")) st2 = setRights(st2, rt2.value);
+    if (st2 !== D3.st) update(st2);
+  };
+  const cleanup = () => {
+    if (coverUrl) URL.revokeObjectURL(coverUrl);
+    coverUrl = null;
+  };
+  draw();
+  const closeByHost = () => {
+    commitText();
+    shell2.close();
+    cleanup();
+    ui2.closed(closeByHost);
     scoreEl.focus();
   };
-  ui2.open({ k: "sheet", close });
-  box.addEventListener("click", (e10) => {
+  const shell2 = openPanelShell({
+    title: _t("\u8FD9\u9996\u6B4C"),
+    content,
+    width: "wide",
+    buttons: [{ id: "ok", label: _t("\u597D"), primary: true }],
+    closeId: "ok",
+    onClose: () => {
+      commitText();
+      cleanup();
+      ui2.closed(closeByHost);
+      scoreEl.focus();
+    }
+  });
+  ui2.open({ k: "sheet", close: closeByHost });
+  content.addEventListener("click", (e10) => {
     const t10 = e10.target, r10 = t10.closest("[data-r]")?.dataset.r;
     if (r10 !== void 0) {
+      const rt2 = content.querySelector("#rtIn");
       const k2 = Number(r10);
       rt2.value = k2 < 0 ? "" : RIGHTS_PRESETS[k2].text((/* @__PURE__ */ new Date()).getFullYear());
       rt2.focus();
       return;
     }
     const v = t10.closest("[data-v]")?.dataset.v;
-    if (e10.target === box || v === "ok") close();
+    if (!v) return;
+    if (v === "coverOff") {
+      commitText();
+      updateExtras(withThumbnail(D3.extras, null), { kind: "cover", label: _t("\u53BB\u6389\u5C01\u9762\u56FE") });
+      info(_t("\u53BB\u6389\u4E86\u5C01\u9762\u56FE"));
+      draw();
+    } else if (v === "rename") {
+      closeByHost();
+      void renameActive().then(() => openSongPanel("name"));
+    } else if (v === "issues") {
+      closeByHost();
+      openIssuesSheet();
+    } else if (v === "pack" || v === "unpack") {
+      closeByHost();
+      void (v === "pack" ? packAll() : unpackAll()).then(() => openSongPanel("sounds"));
+    }
   });
-  ta2.focus();
+  if (focus) {
+    const sec = content.querySelector(`[data-sec="${focus}"]`);
+    sec?.scrollIntoView({ block: "start" });
+    if (focus === "credits") content.querySelector("#crIn")?.focus();
+  }
 }
 function openPaperSheet(focus) {
   ui2.close();
@@ -64921,7 +65196,7 @@ function openMainMenu() {
   box.setAttribute("role", "menu");
   const inStore = H2.home.kind === "gallery";
   const item = (v, icon, label, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc13(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
-  box.innerHTML = `<div class="ctx-head"><b>${esc13(H2.fileName())}</b><span>${esc13(fileWhere())}</span></div>` + item("new", "new", _t("\u65B0\u5EFA")) + item("open", "folder-open", _t("\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026"), _t("\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09")) + item("export", "export", _t("\u5BFC\u51FA\u2026"), _t("mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09")) + (inStore ? item("renderHere", "play", _t("\u6E32\u67D3\u5230\u7F13\u5B58"), _t("\u6E32\u4E00\u904D\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF08\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u4E0D\u5BFC\u51FA\u6587\u4EF6")) : "") + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", _t("\u5B58\u8FDB\u6B4C\u5E93"), cloudAvailable() ? _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09")) : "") + `<div class="ctx-sep"></div>` + (H2.home.kind === "file" ? "" : item("rename", "rename", _t("\u6539\u6587\u4EF6\u540D\u2026"), _t("\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09"))) + item("cover", "image", _t("\u5C01\u9762\u56FE\u2026"), _t("\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE")) + item("sounds", "volume", _t("\u58F0\u97F3\u4E0E\u7F72\u540D\u2026"), _t("\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3")) + (lock.canLockNow() ? item("lockEdit", "lock", _t("\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09"), _t("\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00")) : "") + // 修改锁：解着才有；解锁在谱上面那一条
+  box.innerHTML = `<div class="ctx-head"><b>${esc13(H2.fileName())}</b><span>${esc13(fileWhere())}</span></div>` + item("new", "new", _t("\u65B0\u5EFA")) + item("open", "folder-open", _t("\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026"), _t("\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09")) + item("export", "export", _t("\u5BFC\u51FA\u2026"), _t("mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09")) + (inStore ? item("renderHere", "play", _t("\u6E32\u67D3\u5230\u7F13\u5B58"), _t("\u6E32\u4E00\u904D\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF08\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u4E0D\u5BFC\u51FA\u6587\u4EF6")) : "") + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", _t("\u5B58\u8FDB\u6B4C\u5E93"), cloudAvailable() ? _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09")) : "") + `<div class="ctx-sep"></div>` + (lock.canLockNow() ? item("lockEdit", "lock", _t("\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09"), _t("\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00")) : "") + // 修改锁：解着才有；解锁在谱上面那一条
   item("ref", "picture-in-picture", refHost.isOpen() ? _t("\u6536\u8D77\u53C2\u8003\u7A97") : _t("\u53C2\u8003\u7A97{p}", { p: refHost.count() ? _t("\uFF08{p} \u5F20\uFF09", { p: refHost.count() }) : "" }), _t("\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58")) + `<div class="ctx-sep"></div><div class="ctx-ver">${esc13(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
   item("settings", "settings", _t("\u8BBE\u7F6E\u2026"), _t("\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"));
   document.body.append(box);
@@ -64949,9 +65224,6 @@ function openMainMenu() {
     else if (v === "export") openExportHub();
     else if (v === "renderHere") void renderHere();
     else if (v === "intoLib") void saveIntoGallery();
-    else if (v === "rename") void renameActive();
-    else if (v === "cover") openCoverSheet();
-    else if (v === "sounds") openSoundsSheet();
     else if (v === "settings") openSettings();
     else if (v === "ref") refHost.toggle();
     else if (v === "lockEdit") void lockEditNow();
@@ -64988,64 +65260,6 @@ async function lockEditNow() {
   } catch (e10) {
     showError(_t("\u6CA1\u9501\u4E0A\uFF1A{Error}", { Error: e10.message }));
   }
-}
-function openCoverSheet() {
-  ui2.close();
-  const box = document.createElement("div");
-  box.className = "offer";
-  const thumb = D3.extras.thumbnail;
-  const coverUrl = thumb ? URL.createObjectURL(new Blob([thumb], { type: "image/png" })) : null;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5C01\u9762\u56FE")}</div><div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="${_t("\u5C01\u9762")}" />` : `<span class="cover-none">${_t("\u6CA1\u6709\u5C01\u9762\u56FE")}</span>`}</span><label class="btn" title="${_t("\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09")}"><svg class="ico"><use href="#image"/></svg>${thumb ? _t("\u6362\u4E00\u5F20\u2026") : _t("\u9009\u4E00\u5F20\u56FE\u2026")}<input id="coverIn" type="file" accept="image/*" hidden /></label>` + (thumb ? `<button class="btn" data-v="coverOff">${_t("\u53BB\u6389\u5C01\u9762\u56FE")}</button>` : "") + `</div><div class="offer-msg">${_t("\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE\uFF1B\u6B4C\u540D\u548C\u65E5\u671F\u7167\u6837\u5370\u5728\u4E0A\u9762\u3002\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
-  document.body.append(box);
-  const close = () => {
-    box.remove();
-    ui2.closed(close);
-    if (coverUrl) URL.revokeObjectURL(coverUrl);
-    scoreEl.focus();
-  };
-  ui2.open({ k: "sheet", close });
-  box.querySelector("#coverIn").addEventListener("change", (e10) => {
-    const f2 = e10.target.files?.[0];
-    close();
-    if (f2) void setCover(f2);
-  });
-  box.addEventListener("click", (e10) => {
-    const v = e10.target.closest("[data-v]")?.dataset.v;
-    if (e10.target === box || v === "close") {
-      close();
-      return;
-    }
-    if (v === "coverOff") {
-      close();
-      updateExtras(withThumbnail(D3.extras, null), { kind: "cover", label: _t("\u53BB\u6389\u5C01\u9762\u56FE") });
-      info(_t("\u53BB\u6389\u4E86\u5C01\u9762\u56FE"));
-    }
-  });
-}
-function openSoundsSheet() {
-  ui2.close();
-  const box = document.createElement("div");
-  box.className = "offer";
-  const sounds = soundsSection();
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u58F0\u97F3\u4E0E\u7F72\u540D")}</div>` + (sounds || `<div class="offer-msg">${_t("\u8FD9\u9996\u6B4C\u6CA1\u7528\u4E50\u5668\u7684\u58F0\u97F3\u6587\u4EF6\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248\u7684\u58F0\u97F3\u968F app \u8D70\uFF0C\u4E0D\u8FDB\u6B4C\uFF09\u3002")}</div>`) + performersBlock(soundingRoles()) + `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
-  document.body.append(box);
-  const close = () => {
-    box.remove();
-    ui2.closed(close);
-    scoreEl.focus();
-  };
-  ui2.open({ k: "sheet", close });
-  box.addEventListener("click", (e10) => {
-    const v = e10.target.closest("[data-v]")?.dataset.v;
-    if (e10.target === box || v === "close") {
-      close();
-      return;
-    }
-    if (v === "pack" || v === "unpack") {
-      close();
-      void (v === "pack" ? packAll() : unpackAll()).then(() => openSoundsSheet());
-    }
-  });
 }
 function renameFile() {
   if (H2.home.kind === "file") return;
@@ -66710,4 +66924,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2ec2b28a8def.mjs.map
+//# sourceMappingURL=moonsinger-d07a99237db9.mjs.map

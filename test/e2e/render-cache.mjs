@@ -87,6 +87,7 @@ check(await p.evaluate(() => !document.getElementById("galleryFull").hidden && w
 check(!(await engPlaying()), "点了封面 ▶：编辑器的走带没跟着响（只有歌库的播放器）");
 await p.click('.ms-player [data-p="loop"]'); await p.waitForTimeout(60);
 check(await p.evaluate(() => window.__moonsinger.gallery().playerState().loop), "点「循环」= 开");
+check((await p.evaluate(() => localStorage.getItem("moonsinger-5b1e7c0a92d34f6e:loop-gallery"))) === "1", "点的那一下就记在这台设备上（loop-memory.mjs 核读回来）");
 await p.click('.ms-player [data-p="restart"]'); await p.waitForTimeout(80);
 check((await p.evaluate(() => window.__moonsinger.gallery().playerState().time)) < 0.5, "点「从头放」= 回到开头");
 { // 「分享 mp3」（设计稿第三节；v0.16.99）：无头浏览器没有系统分享 = 走下载；文件名「歌名-年月日-时分.mp3」、字节是正在放的那一份

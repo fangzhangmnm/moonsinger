@@ -170,8 +170,10 @@ button.select-field { padding-right: 12px; }   /* 文字给角标让 12px */
 
 /* ── 一项一行（.wbe-row；0.4.0）：名字 + 小标记（「?」「©」）+ 右边控件；点小标记 = 下面展开那一段 ── */
 .wbe-row { border-bottom: 1px solid var(--line); padding: 6px 0; }
-.wbe-row-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; }
-.wbe-row-label { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 14px; color: var(--ink); min-width: 0; }
+/* 名字和控件一行放不下 = 控件换到名字下面一行、靠右；名字不缩到比自己的字还窄（0.4.1：0.4.0 控件最多占 62%，长下拉框伸出去从右往左盖住名字——
+ *  写歌软件英文手机宽「Note density」只剩「Note d」、「?」被盖住；写歌软件统筹「回库里修」）。 */
+.wbe-row-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; }
+.wbe-row-label { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 14px; color: var(--ink); min-width: auto; }
 .wbe-row-mark { width: 16px; height: 16px; min-width: 0; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink-soft, var(--ink));
   font-size: 11px; line-height: 14px; cursor: pointer; position: relative; }
 .wbe-row-mark::after { content: ""; position: absolute; inset: -14px; }   /* 手指的点击区 ≥ 44 px，样子不变 */
@@ -179,5 +181,5 @@ button.select-field { padding-right: 12px; }   /* 文字给角标让 12px */
 .wbe-row-mark:has(+ .wbe-row-mark)::after { right: -2px; }
 .wbe-row-mark + .wbe-row-mark::after { left: -2px; }
 .wbe-row-mark[aria-expanded="true"], .wbe-row-mark:hover { color: var(--accent, var(--ink)); border-color: var(--accent, var(--ink)); }
-.wbe-row-ctl { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: none; max-width: 62%; }
+.wbe-row-ctl { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: none; max-width: 100%; margin-left: auto; }
 .wbe-row-note { padding: 2px 0 4px; font-size: 12px; color: var(--ink-soft, var(--ink)); }

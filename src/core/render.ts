@@ -19,6 +19,7 @@ import { resolveChain, lowestMidiOf, songBpm, HOST_PARAMS } from "../engine/chai
 import { FX_KINDS } from "../engine/fx.ts";
 import type { TimelineMsg, ChannelParams, BusSpec, MasterParams } from "../engine/studio.ts";
 import type { VowelTableMsg } from "../engine/studio-client.ts";   // 只要类型（元音表的形状）；运行时不碰 studio-client（它要 AudioWorklet）
+import type { BuiltinLib } from "../sources/removed.ts";   // 只要类型
 
 /** 录音房的离线面：浏览器的 StudioClient 和 node 的 OfflineStudio 都长这样（结构类型）。 */
 export interface RenderEngine {
@@ -59,7 +60,7 @@ export interface RenderPlan {
   /** 静音的混音轨（视图态）。 */
   busMuted?: ReadonlySet<string>;
 }
-export interface PrepareError { part: string; cand: string; why: string }
+export interface PrepareError { part: string; cand: string; why: string; /** 用的自带库被人删了（错上带着的种类，v0.17.25）。 */ lib?: BuiltinLib }
 
 /** 整首唱时给唱法核心的哼的参数：ん 闭嘴（N_m）、哼的字辅音至少 70 ms（核心默认关，Lab 命令行不受影响）；leadIn 明说（块按它摆）。歌级；小月相自己的旋钮在候选里（performers/tsukuyomi.ts info → ChunkPlan.opt）。 */
 export const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
@@ -88,7 +89,7 @@ export async function prepareParts(parts: readonly PartDef[], extras: Extras, de
   for (const part of parts) {
     const plugin = performerOf(activeInstrument(extras, part.role)?.engine); if (!plugin) continue;   // 没人上场：时间线会报
     try { await plugin.prepare({ extras, role: part.role, engine: deps.engine, resolveGmBytes: (g) => deps.sounds.resolveGmBytes(g), ensureVowels: () => deps.sounds.ensureVowels() }); }
-    catch (e) { errs.push({ part: part.id, cand: activeId(extras, part.role), why: (e as Error).message }); }
+    catch (e) { const lib = (e as { removedLib?: BuiltinLib }).removedLib; errs.push({ part: part.id, cand: activeId(extras, part.role), why: (e as Error).message, ...(lib ? { lib } : {}) }); }
   }
   return errs;
 }

@@ -6,6 +6,7 @@ import { type Timeline, type PerformerInfo } from "../engine/timeline.ts";
 import { lowestMidiOf, songBpm } from "../engine/chain.ts";
 import type { TimelineMsg, ChannelParams, BusSpec, MasterParams } from "../engine/studio.ts";
 import type { VowelTableMsg } from "../engine/studio-client.ts";
+import type { BuiltinLib } from "../sources/removed.ts";
 /** 录音房的离线面：浏览器的 StudioClient 和 node 的 OfflineStudio 都长这样（结构类型）。 */
 export interface RenderEngine {
     hasBank(sha: string): boolean;
@@ -59,7 +60,8 @@ export interface RenderPlan {
 export interface PrepareError {
     part: string;
     cand: string;
-    why: string;
+    why: string; /** 用的自带库被人删了（错上带着的种类，v0.17.25）。 */
+    lib?: BuiltinLib;
 }
 /** 整首唱时给唱法核心的哼的参数：ん 闭嘴（N_m）、哼的字辅音至少 70 ms（核心默认关，Lab 命令行不受影响）；leadIn 明说（块按它摆）。歌级；小月相自己的旋钮在候选里（performers/tsukuyomi.ts info → ChunkPlan.opt）。 */
 export declare const humOpt: () => Record<string, unknown>;

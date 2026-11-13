@@ -50,7 +50,7 @@ const note = (where, res) => {
   for (const t of res.overflow) { const k = t.replace(/ \[.*/, ""); if (!seenOver.has(k)) seenOver.set(k, `${where}: ${t}`); }
 };
 
-const MUST_REACH = ["写音", "词", "听 · 基础", "☰", "导出", "声音与署名", "封面", "设置 ui", "设置 sound", "设置 input", "设置 upkeep", "设置 about", "设置 dev",
+const MUST_REACH = ["写音", "词", "听 · 基础", "☰", "导出", "这首歌", "设置 ui", "设置 sound", "设置 input", "设置 upkeep", "设置 about", "设置 dev",
   "这一段的菜单", "谱头面板", "声部小卡", "乐器目录", "乐器页", "声部管理", "选区条", "选区菜单", "歌库 / 选家"];
 const cardBad = [];
 for (const [size, w, h] of SIZES) {
@@ -86,8 +86,8 @@ for (const [size, w, h] of SIZES) {
     await esc();
   }
   await tap("#setBtn"); if (await tap('button:has-text("Export…")')) { await scan("导出"); await esc(); }
-  await tap("#setBtn"); if (await tap('button:has-text("Sounds and credits…")')) { await scan("声音与署名"); await esc(); }
-  await tap("#setBtn"); if (await tap('button:has-text("Cover image…")')) { await scan("封面"); await esc(); }
+  // 13-3 起声音与署名、封面、改文件名都在纸右上角「这首歌」那一张面板里
+  if (await tap("#score .score-overlay .ov-song-chip")) { await scan("这首歌"); await esc(); }
   // 设置五页（v0.16.90 起分页）：逐页量
   await tap("#setBtn");
   if (await tap('button:has-text("Settings…")')) {

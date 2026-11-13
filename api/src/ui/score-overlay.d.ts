@@ -9,6 +9,8 @@ export interface OverlayHost {
     onNavFrom(paper: string, dir: -1 | 1): void;
     onScopeOf(paper: string): void;
     onPaper(): void;
+    /** 纸右上角「这首歌」（13-3）。 */
+    onSong(): void;
     onCredits(): void;
     onKeyHint(paper: string, part: string, index: number, at: {
         x: number;

@@ -211,7 +211,10 @@ export function initGalleryHost(d: GalleryHostDeps) {
     `<button type="button" class="btn" data-p="close" title="${_t("停")}">${iconHtml("x")}</button>`;
   fullEl.append(playerEl);
   const appIcon = (file: string, sizes: string) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
+  /** 歌库播放条的「循环」记在这台设备上（user 2026-11-13「你图库里的循环和编辑器里的循环能记忆一下吗？每次我点了它都不循环就很烦」）：点的那一下就写、建播放器时读回来。编辑器的另记一个。 */
+  const KV_LOOP_GALLERY = "loop-gallery";
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
+  if (deviceKvGet(KV_LOOP_GALLERY) === "1") player.setLoop(true);   // 上次在这台设备上开着 = 开着（新设备、还原出厂 = 关着）
   let barTitle = "", barBlob: Blob | null = null, barStale = false, barOld = false, barNoSpan = false;   // barOld = 旧版本的引擎渲的（7-S）   // 正在放的那份 mp3（分享 / 下载用）；barNoSpan = 这一遍没记循环那一圈（之前渲的 / 老文件里的）
   const fmtTime = (s: number) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "0:00");
   function drawPlayer(): void {
@@ -257,7 +260,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
   }
   playerEl.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-p]")?.dataset.p; if (!v) return;
-    if (v === "toggle") player.toggle(); else if (v === "restart") player.restart(); else if (v === "loop") player.setLoop(!player.state().loop); else if (v === "close") player.stop();
+    if (v === "toggle") player.toggle(); else if (v === "restart") player.restart(); else if (v === "loop") { const on = !player.state().loop; player.setLoop(on); deviceKvSet(KV_LOOP_GALLERY, on ? "1" : null); } else if (v === "close") player.stop();
     else if (v === "share") void shareMp3();
     else if (v === "rerender") { const id = player.state().key; if (id) { player.stop(); void renderThenPlay(id, null); } }
   });
