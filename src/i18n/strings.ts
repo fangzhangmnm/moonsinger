@@ -1185,6 +1185,8 @@ export const S = {
   "浅一点（−3 dB）": { en: "Shallower (−3 dB)" },
   "深一点（+3 dB）": { en: "Deeper (+3 dB)" },
   "音内渐强 / 渐弱 / 鼓起的深浅：写的力度是最高点，< 从低 {d} dB 长到写的力度、> 收到低 {d} dB、<> 两头低 {d} dB。{vel}": { en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}" },
+  "缺的数": { en: "Missing values" },
+  "这位乐手身上这几个数缺了或者不是数：没有出声（在「不出声」清单里），按键试听也不响；音和音之间、力度记号、记号怎么演这几样不拿它算，先不显示": { en: "These values on this performer are missing or not numbers: it makes no sound (it is on the “not sounding” list) and key audition is silent too; gaps between notes, dynamic marks and how marks are played are not computed from it and are hidden for now" },
   "力度记号 → 响度：这位身上带着一张表，每个力度记号乘多少 dB。渐强渐弱在 dB 上平均地变；后面没写力度记号的，走到表里的下一档。没有录音层，只变响度：{table}": { en: "Dynamic markings → loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers — only loudness changes: {table}" },
   "力度记号 → MIDI 力度（重音 +{accentVel}、强音 +{marcatoVel}；别的记号见下面「记号怎么演」）：{table}": { en: "Dynamics → MIDI velocity (accent +{accentVel}, marcato +{marcatoVel}; other marks under “How marks are played” below): {table}" },
   "记号怎么唱": { en: "How marks are sung" },

@@ -783,7 +783,7 @@ export function activePerfSpec(extras: Extras, role: string): PerfSpec | null {
     wedgeStepVel: a.wedgeStepVel, sfzVel: a.sfzVel, stressVel: a.stressVel, unstressVel: a.unstressVel, ghostVel: a.ghostVel, softVel: a.softVel, pedal: (a as unknown as Json).pedal as "down" | "up" };
 }
 const DYN_KEYS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const;
-/** 送进录音房之前的那一处查（统筹 2026-11-12 夜第 5 条；core/render.ts performerInfoOf 叫它）：这位的数缺了哪些 / 不是数的有哪些（空 = 没毛病）。缺 = 明着报错，不在音频线程里抛。 */
+/** 送进录音房之前的那一处查（统筹 2026-11-12 夜第 5 条；v0.17.42 起只有 perfSpecOf 叫它）：这位的数缺了哪些 / 不是数的有哪些（空 = 没毛病）。缺 = 明着报错，不在音频线程里抛。 */
 export function perfSpecProblems(sp: PerfSpec, velocity: number): string[] {
   const bad: string[] = [];
   for (const [k, v] of Object.entries(sp)) {
@@ -795,6 +795,17 @@ export function perfSpecProblems(sp: PerfSpec, velocity: number): string[] {
   }
   if (sp.path === "velocity" && !Number.isFinite(velocity)) bad.push("defaults.velocity");
   return bad;
+}
+/** 拿上场那位演奏规格的结果：查过、没毛病的规格；或者问题清单（缺了 / 不是数的那几个键名，同 perfSpecProblems）。 */
+export type PerfSpecCheck = { ok: true; spec: PerfSpec } | { ok: false; problems: string[] };
+/** **拿乐手规格只有这一个口**（杂事版 v0.17.42，统筹「拿乐手规格的口收成一个」）：出声前那道查（core/render.ts）、按键试听的力度（main.ts dynAtCursor）、
+ *  谱上画灰的「不认」（main.ts ignoredFor）、乐器页的那几张表都从这里拿。回来的要么是查过的规格，要么是问题清单——缺了数的规格不交出去：
+ *  出声 = 这个声部进「不出声」清单；试听 = 不响；乐器页 = 那一行标出来、不拿它算。没人上场 / 读不懂的引擎 = null。
+ *  src 里 activePerfSpec / perfSpecProblems 只许在这里调（test/perf-spec-entry.test.ts 守）；测试里照写的读、单测那道查照旧直接用。 */
+export function perfSpecOf(extras: Extras, role: string): PerfSpecCheck | null {
+  const sp = activePerfSpec(extras, role); if (!sp) return null;
+  const bad = perfSpecProblems(sp, activeVelocity(extras, role));
+  return bad.length ? { ok: false, problems: bad } : { ok: true, spec: sp };
 }
 /** 连断底色能调到多大（秒）。 */
 export const GAP_MAX_SEC = 0.2;

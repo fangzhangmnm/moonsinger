@@ -1119,6 +1119,7 @@ body:not(.print-look) .staff-svg .nav-mark.sel, body:not(.print-look) .staff-svg
 .ip-diff-sum { font-size: 13px; line-height: 1.6; margin: 0 0 8px; color: var(--ink); }
 .ip-diff-sum .btn.link { height: auto; padding: 0 2px; border: 0; background: none; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font-size: inherit; }
 .ip-faint { color: var(--muted); }
+.ip-bad { color: var(--danger); }   /* 乐手规格缺数（v0.17.42）：缺的那几个键名 */
 .ip-flash { animation: ip-flash 1.2s ease-out; }
 @keyframes ip-flash { from { background: color-mix(in srgb, var(--accent) 22%, transparent); } to { background: transparent; } }
 /* 修改锁锁着：点、灰字、顶上那一句、混音台那一颗照样显示；顶上那一句和混音台那两颗只是跳过去，照样能点；「默认」钮灰着（统筹 16-6 补的第四条） */

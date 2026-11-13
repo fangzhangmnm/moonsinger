@@ -2,7 +2,7 @@
 //   能叠音；不唱字；鼓 / 音效的着力点（hitSec）和谱上的画法（× 符头 / 鼓谱）在这里（原 main.ts hitOf / partViews）；每个音敲哪个键 = src/gm/sf-key.ts（固定原速 / 音高对齐 / 修八度）。
 import { _t, lang } from "../i18n/index.ts";
 import { registerPerformer, type InspectorRow } from "./registry.ts";
-import { activeGm, activeVelocity, activeTranspose, activePerfSpec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, withActiveKeys, candPath, activePedalDefault, withPedalDefault, type GmCandidate } from "../format/project.ts";
+import { activeGm, activeVelocity, activeTranspose, withVelocity, withTranspose, withSfxFixed, withSfxAlign, withActiveKeys, candPath, activePedalDefault, withPedalDefault, type GmCandidate } from "../format/project.ts";
 import { TEMPLATE, CALIBRATION_DEFAULT_DB, templateCandidate } from "../format/template.ts";   // 乐器页的「默认」和新上场的响度问模板（这里只有乐器页那一半和新建可以问，统筹 2026-11-12 夜第 3 条）
 import { velLayersOf, octaveCheckOf, conceptOfIds, octaveDisclosure, castArgsOf, GS_LIBRARY_ID } from "../gm/catalog.ts";
 import { sf2VelocityDepths, sf2HalfVelocityDb } from "../gm/sf2-subset.ts";

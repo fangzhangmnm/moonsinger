@@ -58,7 +58,7 @@ import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
 import { withCastAs, candidateJson, activeCalibrationDb, templateExtras, activeHum, withHum, activePedalDefault } from "../format/project.ts";
 import type { CandidateV2, Sf2Source } from "../format/contract.ts";
-import { contentFingerprintOf, moveBus, saveMxl, openBytes, emptyExtras, roleSound, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, activePerfSpec, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
+import { contentFingerprintOf, moveBus, saveMxl, openBytes, emptyExtras, roleSound, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, perfSpecOf, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
 import { navWhy } from "../score/repeats.ts";
@@ -256,7 +256,7 @@ async function relinkAfterSave(name: string, fingerprint: string | null): Promis
 /** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
 const curPart = (): PartDef => D.st.song.parts.find((p) => p.id === D.st.at.part) ?? D.st.song.parts[0];
 /** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
-const ignoredFor = (role: string): Mark[] => { const sp = activePerfSpec(D.extras, role); return sp ? ignoredArts(performerOf(activeInstrument(D.extras, role)?.engine), sp.gapSec, sp.canSwell) : []; };   // 没人上场 = 整个声部本来就不出声，不逐个画灰
+const ignoredFor = (role: string): Mark[] => { const c = perfSpecOf(D.extras, role); return c?.ok ? ignoredArts(performerOf(activeInstrument(D.extras, role)?.engine), c.spec.gapSec, c.spec.canSwell) : []; }   // 规格缺数 = 这位整个不出声（在「不出声」清单里），不另画「不认」;   // 没人上场 = 整个声部本来就不出声，不逐个画灰
 /** 台上这位不认的踏板（插件能力 pedals；11-1）：交给排版画灰，记成「pedal:<种类>」。没人上场 = 不逐个画灰（同演奏法）。 */
 const pedalIgnoredFor = (role: string): string[] => { const pl = performerOf(activeInstrument(D.extras, role)?.engine); return pl ? PEDAL_KINDS.filter((k) => !pl.pedals?.includes(k)).map((k) => `pedal:${k}`) : []; };
 const ignoredHere = (): Mark[] => ignoredFor(curPart().role);
@@ -542,11 +542,14 @@ function ensureVowels(): Promise<void> { return (vowelLoading ??= loadVowelTable
 /** 光标那一刻生效的力度（和放的时候同一个状态机 perform.ts dynLevels：力度记号 / 渐强渐弱 / 渐到插值；挂在音上的记号不管）——按键试听用（刀 3；
  *  user「软键盘输入和乐谱里瞎弹时能不能respect这一轨的表情记号…尤其是音量」）。vel = MIDI 力度 0–1（按力度敲的；没写力度记号 = 乐器页的旋钮）；dB = 响度（按音量曲线的小月相 / 元音版：
  *  直接查她的 dB 表、和放的时候同一条（在 dB 上线性、没终点走到表里的下一档；没写力度记号 = 表里的 mf；16-4）。
- *  光标在两个音之间 = 后面那个音的音头；在纸尾 = 前面那个音的尾。 */
-function dynAtCursor(role: string): { vel: number; dB: number } {
-  const tokens = tr(D.st), i = D.st.sel ? D.st.sel.from : D.st.caret, sp = activePerfSpec(D.extras, role);
+ *  光标在两个音之间 = 后面那个音的音头；在纸尾 = 前面那个音的尾。
+ *  规格从拿规格的唯一的口拿（perfSpecOf，v0.17.42）：这位的数缺了 = null = 试听不响（这位已经在「不出声」清单里，不拿缺了的数算力度）。 */
+function dynAtCursor(role: string): { vel: number; dB: number } | null {
+  const tokens = tr(D.st), i = D.st.sel ? D.st.sel.from : D.st.caret, chk = perfSpecOf(D.extras, role);
   const pick = (m: Map<number, { at0: number; at1: number }>) => { for (let k = i; k < tokens.length; k++) { const l = m.get(k); if (l) return l.at0; } for (let k = Math.min(i, tokens.length) - 1; k >= 0; k--) { const l = m.get(k); if (l) return l.at1; } return null; };
-  if (!sp) return { vel: 1, dB: 0 };   // 没人上场：试听台上的那一位自己定（不碰这一路）
+  if (!chk) return { vel: 1, dB: 0 };   // 没人上场：试听台上的那一位自己定（不碰这一路）
+  if (!chk.ok) return null;
+  const sp = chk.spec;
   if (sp.path === "velocity") { const v0 = activeVelocity(D.extras, role) * 127, vel = pick(dynLevels(tokens, undefined, sp.dynamicsVel, v0, sp.wedgeStepVel)) ?? v0; return { vel: Math.max(1, Math.min(127, vel)) / 127, dB: 0 }; }
   const dbt = sp.dynamicsDb, dB = pick(dynLevels(tokens, undefined, dbt, dbt.mf, "table")) ?? dbt.mf;
   return { vel: 1, dB };   // 按音量走的：力度只在 dB 上
@@ -561,6 +564,7 @@ function auditionTarget(): { inst: AuditionInst; key: (midi: number) => number; 
     return { inst: { kind: "vowel", kana }, key: (m) => m, vel: 1, gainDb: 0, pan: 0 };
   }
   const part = D.st.song.parts.find((p) => p.id === D.st.at.part), ch = part ? channelOf(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
+  if (!dyn) return null;   // 台上那位的规格缺数：不响（它在「不出声」清单里，那边写着缺哪几个）
   // 谁出声、怎么出 = 台上那位的插件（SoundFont 走库 + sfKey、人声走元音表；ADR-0004）；通道的增益 / 声像是轨的事，胶水加
   const t = performerOf(engineNow())?.audition?.({ extras: D.extras, role: curRole(), kana, dyn, engine, ensureBank: () => { void prepareBank(); } });
   return t ? { ...t, gainDb: ch.gainDb + t.gainDb, pan: ch.pan } : null;
@@ -1778,7 +1782,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   addBus: (name = _t("总线")) => { const id = newBusId(D.extras); updateExtras(withTrack(D.extras, id, { kind: "bus", name }), { kind: "studio", label: _t("加总线「{name}」", { name }) }); return id; },
   removeBus: (id: string) => updateExtras(withoutBus(D.extras, id), { kind: "studio", label: _t("删总线「{id}」", { id }) }),
   setMaster: (patch: Record<string, unknown>) => updateExtras(withMaster(D.extras, patch as never), { kind: "studio", label: _t("总轨") }),
-  studioTracks: () => studioTracks(D.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, activeHum(D.extras, curRole()), songLangOf(tokens, activeHum(D.extras, curRole())), map, activePerfSpec(D.extras, curRole())?.sing ?? {}); }, state: () => D.st, cssHash: __CSS_HASH__, extras: () => D.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => ({ ...view.layoutNow(), head: view.head() }) /* head = 光标画在哪（ink 层，W-17 第 1 刀；E2E 看它） */, zoomInfo: () => view.zoomInfo(), dockSide: () => stageEl.dataset.side ?? null, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(songOfOpened(o), { home: { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references }), refHost, makePdf: async (pick?: PdfPick) => { const { r, file } = await makePdf(pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
+  studioTracks: () => studioTracks(D.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, activeHum(D.extras, curRole()), songLangOf(tokens, activeHum(D.extras, curRole())), map, ((c) => (c?.ok ? c.spec.sing : {}))(perfSpecOf(D.extras, curRole()))); }, state: () => D.st, cssHash: __CSS_HASH__, extras: () => D.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => ({ ...view.layoutNow(), head: view.head() }) /* head = 光标画在哪（ink 层，W-17 第 1 刀；E2E 看它） */, zoomInfo: () => view.zoomInfo(), dockSide: () => stageEl.dataset.side ?? null, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(songOfOpened(o), { home: { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references }), refHost, makePdf: async (pick?: PdfPick) => { const { r, file } = await makePdf(pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
   setChunk: (v: "phrase" | "sheet" | "whole") => { const role = D.st.song.parts.find((x) => x.id === D.st.at.part)?.role; if (role) updateExtras(withSingChunk(D.extras, role, v, activeHum(D.extras, role)), { kind: "lounge", label: _t("分段唱：{v}", { v }) }); },
   openHeader: (part: string) => headerPanel.open(D.st.at.paper, part, 0, { x: innerWidth / 2, y: 120 }),   // 谱头面板（E2E；v0.16.21 起小卡里没有「谱怎么画」，点谱号开）
   finderCastVoice: async () => { const c = conceptOfIds(await loadCatalog(), { wikidata: "Q7390" }); if (c) await castPick({ kind: "voice", concept: c }); },   // E2E：目录里选小月相（= 人声那一行「选这个」；新声部要先选乐器，v0.16.35）

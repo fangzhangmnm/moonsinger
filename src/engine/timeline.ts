@@ -35,7 +35,7 @@ export interface PerformerInfo {
   hum: Hum;
   /** 上场那位的插件；null = 还没有人上场（认不出的引擎也算；ADR-0004）。出声方式 / 叠音 / 唱不唱字都问它。 */
   plugin: PerformerPlugin | null;
-  /** 这位的数（每个都必填，按力度路分）；没人上场 = null。core/render.ts performerInfoOf 送进来之前查过缺不缺：缺了的写在 missing 里。 */
+  /** 这位的数（每个都必填，按力度路分）；没人上场 = null。core/render.ts performerInfoOf 从拿规格的唯一的口（perfSpecOf）拿：查过的才交出来，缺了 = null、缺哪几个写在 missing 里。 */
   spec: PerfSpec | null;
   /** 这位身上缺的 / 不是数的键（门口没补上；不该有）：有 = 这个声部不出声，「不出声」清单里写清缺哪几个。 */
   missing?: string[];
@@ -186,8 +186,9 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const { tokens, starts } = flat(part.id), bounds = starts.map((s) => s.index), tl = timeline(tokens, map);
     if (tl.length) total = Math.max(total, tl[tl.length - 1].t1);
     const info = inp.info(part);
-    if (!info.plugin || !info.spec) { unplayable.push({ part: part.id, why: _t("还没有人上场") }); continue; }
-    if (info.missing?.length) { unplayable.push({ part: part.id, why: _t("这位乐手身上缺这几个数，没有出声：{keys}", { keys: info.missing.join("、") }) }); continue; }
+    if (!info.plugin) { unplayable.push({ part: part.id, why: _t("还没有人上场") }); continue; }
+    if (info.missing?.length) { unplayable.push({ part: part.id, why: _t("这位乐手身上缺这几个数，没有出声：{keys}", { keys: info.missing.join("、") }) }); continue; }   // 先于下一行：缺数的规格不交出来（spec = null），原因照实说缺哪几个
+    if (!info.spec) { unplayable.push({ part: part.id, why: _t("还没有人上场") }); continue; }
     if (info.mixMissing?.length) { unplayable.push({ part: part.id, why: _t("混音台上缺这几个数，没有出声：{keys}", { keys: info.mixMissing.join("；") }) }); continue; }
     const groove = grooveWeights(tokens, bounds, gmap, info.follow);
     const sp = info.spec, byVel = sp.path === "velocity";   // 按力度敲（乐器）/ 按音量曲线（小月相 / 元音版）= 插件报的路，规格跟着它分（16-4 A）

@@ -16,7 +16,7 @@ export const AREAS = {
     "dock-zoom", "save-keys", "swell-art", "start-dyn", "lyric-dash", "phrase", "sel-tweak", "title-keys", "midi", "pedal", "pedal-default", "dock-side", "finder-width", "finder-memory", "finder-names", "cast-back", "audition-banks", "part-toggles", "finder-accordion", "finder-hide", "finder-trynew", "header-panel", "pad-follow"],
   // 放：走带 / 循环 / 翻谱 / 播放头 / 节拍器 / 月读的块与预听
   play: ["transport", "put-down", "loop", "loop-memory", "follow", "measure-follow", "playhead", "seg-jump", "metronome", "progress", "sing-chunks", "sing-stale", "sung-preview",
-    "listen-ghost", "lyric-mute", "reading", "ramp", "groove", "repeat", "arrange", "issues", "sing-experiments", "audio-revive"],
+    "listen-ghost", "lyric-mute", "reading", "ramp", "groove", "repeat", "arrange", "issues", "sing-experiments", "audio-revive", "perf-spec"],
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
   studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "parts-manager", "paper-adds", "inst-split", "finder-pins", "finder-sf2", "finder-presets", "landscape-widgets", "modes", "dyn-levels", "sing-experiments", "performer-db", "performer-defaults"],
   // 歌库 / 云 / 文件 / 念缓存
