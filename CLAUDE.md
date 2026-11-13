@@ -249,6 +249,22 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
   - 原生下拉自带、换了之后要明着做的三样（都有守卫，新加下拉时别丢）：面板的「点外面就收」不许把「按在列表上」算成外面；列表开着时的键归列表（键盘总闸 `keyOwner` 的 `list`：Esc 只收列表、上下键不挪谱上的光标）；焦点在下拉按钮上按空格不播放。
   - 守卫：`src` 和 `index.html` 里不许再出现原生下拉框的元素（no-native-select）；E2E `test/e2e/dropdown.mjs`；E2E 里选下拉走帮手 `test/e2e/dd.mjs`。
   - 这条只管本仓。别的家族 app 各按各的进度，不拿这条去要求它们（user 同一句）。
+- **加一样显示设置（页面设置里的一行），这几处一起动**（统筹 2026-11-13 读代码整理的，v0.17.42；added by Claude Fable 5.2）。显示设置 = 改了它、放出来的声音不变的那一类。
+  - 类型会拦的（漏了 = tsc 报错）：
+    - `src/look/index.ts` 的 `LOOK_KEYS`（这一样的名字）、`LOOK_ROW_NAME`（页面设置里那一行叫什么）；
+    - `src/look/habits.ts` 的 `BASE_DEFAULTS`（软件的默认）；
+    - `src/app/edit-lock-table.ts` 的 `LOOK_KEY_OP`（修改锁里它算哪一类看法：锁着能切、锁着期间不写文件）；
+    - 值是一个词、不是数的：`WordLookKey`，和 `src/format/project.ts` 的 `LOOK_LABEL`（更新版本的文件里这一样的值不认识时，打开那一句说的名字）。
+  - 类型拦不住、要自己记得的：
+    - 文件门口 `lookFromFile`（读）和存。歌文件多一个键 = 格式红线区，先问。
+    - 页面设置面板里那一行（下拉用标准件）；界面字中英两份。
+    - 测试：`test/look.test.ts`、`test/look-rules.test.ts`、`test/edit-lock.test.ts`（照 `LOOK_KEYS` 逐项跑）、E2E `test/e2e/born-looks.mjs`。
+  - 做不做成「这台设备的习惯」另算，要 user 定。做成习惯再加：`HABIT_KEYS`、`HABIT_CODEC`、`HABIT_DEVICE_KEY`（类型会拦）；设备键登记进下面「持久层白名单」那张表；「初始设置」卡和设置「界面」页各一行；`test/look-habits.test.ts`、E2E `test/e2e/habits-card.mjs`。
+  - 不用另写的（现成的一处管着，照 `LOOK_KEYS` / `HABIT_KEYS` 走）：新建时把「跟着」写成那一刻的值（`stampLooks`；user 2026-11-13「我建议是新建时写下来，跟default只是一个技术上的选项，用户不太会用」）；最后一格叫「跟着我的习惯」还是「跟着软件的默认」（`isHabitKey`）；「全部跟着软件」。
+- **一笔没动的空白歌跟着习惯重建 = 只换歌本身**（统筹 2026-11-13，v0.17.42；added by Claude Fable 5.2）。重建走的是「新建 + 载入口」，所以每样「不算提交、但跟着这次打开」的东西都要点名带过去：现在是文件名和它是不是人起的、视图态（键盘的状态在里面）、参考窗的卡、开着的面板和键盘收没收。
+  - 清单只在 `src/app/main.ts` `loadNewSong` 的 `rebuild` 参数一处。
+  - 以后给文档加任何不算提交的状态，同一个提交里答「重建时带不带」，E2E `test/e2e/born-looks.mjs` 那条守卫加一句。
+  - 再漏一次（重建丢了人做的东西）= 不再往清单里加，改成原地只换歌本身、不走载入口；先问统筹。
 
 ## 声部是什么 = 乐器，不是功能（只管本仓；added 2026-11-12 by Claude Fable 5.2）
 
@@ -549,7 +565,7 @@ user 2026-10-08「真的需要做store了…要不要硬着头皮进store」「�
 
 | 文件 | 碰什么 | 为什么 |
 |---|---|---|
-| `src/device-kv.ts` | localStorage（前缀 `moonsinger-5b1e7c0a92d34f6e:`） | device 层标量：lang / storeAttached / gallery-folder / last-scene / last-doc / diag-log / midi-chip-hidden（v0.13.3）/ zoom（谱面缩放的物理倍数，v0.14.8；user 2026-10-21「缩放跨会话记住，按设备存」批）/ lib-removed-voice、lib-removed-gs（自带的库「你删了」的记号：有它就不自己下载，v0.17.25；统筹 2026-11-13 定的记法，已报 user）/ loop-editor、loop-gallery（编辑器和歌库播放条的「循环」，v0.17.26；user 2026-11-13「你图库里的循环和编辑器里的循环能记忆一下吗」）/ habit-notation、habit-transpose-aid、habit-middle-c、habits-asked（这台设备看谱的习惯：看什么谱、要不要移调辅助、中央 C 叫 C 几，和「第一次打开的卡问过了」，v0.17.28；user 2026-11-13 定的，各记各的、不进歌）/ habit-chord-tag-style（和弦辅助标出来的字写级数还是根音，第四样习惯，v0.17.32；user 2026-11-13 定了要做成习惯；统筹核过 `src/look/habits.ts` 和 storage-whitelist 测试之后登记） |
+| `src/device-kv.ts` | localStorage（前缀 `moonsinger-5b1e7c0a92d34f6e:`） | device 层标量：lang / storeAttached / gallery-folder / last-scene / last-doc / diag-log / midi-chip-hidden（v0.13.3）/ zoom（谱面缩放的物理倍数，v0.14.8；user 2026-10-21「缩放跨会话记住，按设备存」批）/ lib-removed-voice、lib-removed-gs（自带的库「你删了」的记号：有它就不自己下载，v0.17.25；统筹 2026-11-13 定的记法，已报 user）/ loop-editor、loop-gallery（编辑器和歌库播放条的「循环」，v0.17.26；user 2026-11-13「你图库里的循环和编辑器里的循环能记忆一下吗」）/ habit-notation、habit-transpose-aid、habit-middle-c、habits-asked（这台设备看谱的习惯：看什么谱、要不要移调辅助、中央 C 叫 C 几，和「第一次打开的卡问过了」，v0.17.28；user 2026-11-13 定的，各记各的、不进歌）/ habit-chord-tag-style（和弦辅助标出来的字写级数还是根音，第四样习惯，v0.17.32；user 2026-11-13 定了要做成习惯；统筹核过 `src/look/habits.ts` 和 storage-whitelist 测试之后登记）/ auto-follow、turn-lead（「自动翻」开不开、「提前翻」多少秒，v0.17.42；统筹 2026-11-13 排进小件那一版的，和两个「循环」同一种做法：点的那一下写、启动时读回来，没点过 = 开着、0.6 秒；值是 "1" / "0" 和菜单上那几档秒数，别的值不理） |
 | `src/app/pwa-shell.ts` | Cache Storage | 清缓存只清自己前缀 `moonsinger-` 的壳缓存 |
 | `src/gm/sound-cache.ts` | Cache Storage `pwa-sounds` | 音源整包按 sha256 留着离线能用（user 2026-10-07 批）；2026-10-08 起也存**子集**（自己的 .sf2 加进来时 / 解包时留的，同样按 sha256、取出来核过；设置里逐条能删，认得出是哪首歌的哪件——Opus 5.5 加，没另问 user，形状同一种）；`navigator.storage.estimate` 只读显示 |
 | `service-worker.js` | Cache Storage `moonsinger-<hash>` | app 壳 |
