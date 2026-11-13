@@ -46521,20 +46521,9 @@ function sectionsHtml(sections) {
   return sections.map((s10) => `<section class="doc-section" id="doc-${s10.id}"><h3>${escapeHtml2(s10.title)}</h3>${renderMdLite(s10.body)}</section>`).join("");
 }
 
-// src/app/panels/strip-layout.ts
-function stripLayout(visible, n10, gap, base2) {
-  if (n10 <= 0 || visible <= 0) return { cell: base2, scroll: false };
-  if (n10 * base2 + (n10 - 1) * gap <= visible) return { cell: (visible - (n10 - 1) * gap) / n10, scroll: false };
-  const k2 = Math.max(1, Math.floor((visible + gap) / (base2 + gap)));
-  return { cell: (visible - k2 * gap) / (k2 + 0.5), scroll: true };
-}
-
-// src/app/panels/habits-card.ts
+// src/app/panels/habits-preview.ts
 var PREVIEW_W = 150;
 var PREVIEW_H = 92;
-var TILE_BASE = 150;
-var TILE_GAP = 10;
-var TILE_INSET = 14;
 var PREVIEW_SP = 8;
 function previewSong() {
   let id2 = 10;
@@ -46565,6 +46554,19 @@ function previewSvg(notation, measure) {
   const vx = (x0 + x1) / 2 - vw / 2, vy = (y0 + y1) / 2 - vh / 2;
   return toSvg(L2).replace(/ width="[^"]*" height="[^"]*" viewBox="[^"]*"/, ` width="${PREVIEW_W}" height="${PREVIEW_H}" viewBox="${vx.toFixed(1)} ${vy.toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}" data-k="${k2.toFixed(3)}"`);
 }
+
+// src/app/panels/strip-layout.ts
+function stripLayout(visible, n10, gap, base2) {
+  if (n10 <= 0 || visible <= 0) return { cell: base2, scroll: false };
+  if (n10 * base2 + (n10 - 1) * gap <= visible) return { cell: (visible - (n10 - 1) * gap) / n10, scroll: false };
+  const k2 = Math.max(1, Math.floor((visible + gap) / (base2 + gap)));
+  return { cell: (visible - k2 * gap) / (k2 + 0.5), scroll: true };
+}
+
+// src/app/panels/habits-card.ts
+var TILE_BASE = 150;
+var TILE_GAP = 10;
+var TILE_INSET = 14;
 function openHabitsCard(d3) {
   const chosen = { ...d3.current.notation !== void 0 ? { notation: d3.current.notation } : {}, ...d3.current.viewInC !== void 0 ? { viewInC: d3.current.viewInC } : {} };
   const content = document.createElement("div");
@@ -62779,7 +62781,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, activePerfSpec(D3.extras, curRole())?.sing ?? {});
   },
   state: () => D3.st,
-  cssHash: "8124a87101c0",
+  cssHash: "58b48d1854ae",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -67309,4 +67311,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5a9f404339ae.mjs.map
+//# sourceMappingURL=moonsinger-21e74dffb24f.mjs.map

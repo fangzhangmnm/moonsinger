@@ -1242,7 +1242,8 @@ button.chord-cand.is-on { box-shadow: 0 0 0 2px var(--accent) inset; }
 .song-panel :is(input, textarea):disabled { opacity: .55; background: color-mix(in srgb, var(--muted) 12%, var(--panel)); cursor: default; -webkit-user-select: none; user-select: none; }
 .song-panel label.btn.is-disabled { opacity: .35; cursor: default; pointer-events: none; }
 /* 「初始设置」卡（第 18 条 + 卡第二版，统筹 b7a48b84 / d871aadf；src/app/panels/habits-card.ts）：一张普通的卡（面板外壳）。
-   第一行 习惯看的谱 = 一行小卡片横着滑（吸附），格子大小固定（预览 150 × 92 按固定大小画、超出的裁掉，不随格子 / 内容变）；第二行 移调辅助 = 两颗一样宽的钮；第三行起 = 小下拉（和设置同一处出的行） */
+   第一行 习惯看的谱 = 一行小卡片横着滑（吸附）：放得下均分不滑、放不下 = 整数格 + 半格（strip-layout.ts），三格一样大；预览 = 真排版按 150 × 92 放，墨迹大了整张等比缩到刚好放下、
+   按墨迹居中（habits-preview.ts），格子窄了跟着框等比缩；第二行 移调辅助 = 两颗一样宽的钮；第三行起 = 小下拉（和设置同一处出的行） */
 .habits-card { display: flex; flex-direction: column; gap: 14px; }
 .habits-card .hab-lead { color: var(--muted); font-size: 13px; line-height: 1.5; }
 .habits-card .hab-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; }   /* 行名比标题「初始设置」（壳的标题 14px）小一档（统筹 a4c3d030） */
