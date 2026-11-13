@@ -21,6 +21,12 @@ const door = () => p.evaluate(() => { const d = document.getElementById("lockBar
 const armFlash = () => p.evaluate(() => document.getElementById("lockBar")?.classList.remove("flash"));
 const flashed = () => p.evaluate(() => !!document.getElementById("lockBar")?.classList.contains("flash"));
 const errorToasts = () => p.evaluate(() => [...document.querySelectorAll(".notice-stack [data-notice-id]")].map((n) => n.textContent ?? "").filter((t) => /改不了|没存|锁着，有改动/.test(t)));
+/** 键盘上 ← → 和「休止」看上去灰不灰、点不点得动（← → 只挪光标 = 读的动作，杂事版 v0.17.42）。 */
+const keyLook = () => p.evaluate(() => Object.fromEntries([['left', '[data-caret="-1"]'], ['right', '[data-caret="1"]'], ['rest', '[data-cmd="rest"]']].map(([k, sel]) => { const cs = getComputedStyle(document.querySelector(`.pad-tools.writes ${sel}`)); return [k, cs.opacity === "1" && cs.pointerEvents !== "none"]; })));
+const caretNow = () => p.evaluate(() => window.__moonsinger.state().caret);
+/** 点键盘上的 ← 再点 → ：回 [点之前, 点 ← 之后, 点 → 之后] 的光标。先把光标放到第一段（有音的那段）的末尾，好让 ← 有地方走（← → 跳过不占时值的记号，一下可能走几格）。 */
+const tapArrows = async () => { await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), pp = s.song.papers[0]; m.set({ ...s, at: { paper: pp.id, part: s.at.part }, caret: pp.tracks[s.at.part].length, sel: null }); }); await p.waitForTimeout(250);
+  const c0 = await caretNow(); await p.click('.pad-tools.writes [data-caret="-1"]'); await p.waitForTimeout(150); const c1 = await caretNow(); await p.click('.pad-tools.writes [data-caret="1"]'); await p.waitForTimeout(150); return [c0, c1, await caretNow()]; };
 const openFile = () => p.evaluate(async (name) => window.__moonsinger.openFileHandle(await (await navigator.storage.getDirectory()).getFileHandle(name)), FILE);   // 每次拿到的是一个新的句柄对象 = 新的一次打开
 
 // ── 备料：没有家的新歌里写三个音、加一段 → 字节写进 OPFS 的一个文件 → 刷新（手里干净）→ 当硬盘文件打开 ──
@@ -61,6 +67,12 @@ await armFlash(); await p.keyboard.press("Backquote"); await p.waitForTimeout(15
 check(await p.evaluate(() => document.querySelector(".pad-panel")?.classList.contains("is-unplugged")), "锁着：插头接不回去"); check(await flashed(), "想把插头接回去：门闪一下");
 check((await errorToasts()).length === 0, "蹭到了只闪、不弹报错", JSON.stringify(await errorToasts()));
 { await p.evaluate(() => window.__moonsinger.undo()); check((await notes()) === n0, "撤销：没有可翻的，谱没变"); }
+// ── ← → 是读的动作（杂事版 v0.17.42，统筹）：锁着照样能点、光标动、文件一个字节都不写；会写谱的那几颗照旧灰着 ──
+{ const look = await keyLook();
+  check(look.left && look.right && !look.rest, "锁着：键盘上的 ← → 不灰、点得动；休止照旧灰着", JSON.stringify(look));
+  const [c0, c1, c2] = await tapArrows();
+  check(c1 < c0 && c2 === c0 && (await notes()) === n0, "锁着：点 ← 光标往前、点 → 回来，谱没变", `${c0} → ${c1} → ${c2}`);
+  await p.waitForTimeout(400); check((await fileSig()) === sig0, "锁着：挪光标，文件一个字节都没写"); }
 
 // ── 看法：曲段的隐藏锁着能点；文件一个字节都不写；能撤回来 ──
 const pid2 = await p.evaluate(() => window.__moonsinger.state().song.papers[1].id);
@@ -146,6 +158,13 @@ await p.click('#lockBar [data-v="continue"]'); await p.waitForTimeout(250);
 await p.evaluate(() => { if (document.querySelector(".pad-panel")?.hidden) document.querySelector("#padTab")?.click(); }); await p.waitForTimeout(150);   // 鼠标时键盘只手动开合（v0.16.89）；前面看混音台时它收着
 await p.click(".pad-key[data-k] >> nth=4"); await p.waitForTimeout(200);   // 用触屏键写（「加一段之后电脑键盘的第一个音键被吞」是另一件事，和锁无关，上一版也这样；记在计划书里待查）
 check((await notes()) === n0 + 1, "能写了", String(await notes()));
+// ── 「弹」（人自己拔的插头）：← → 也不灰，光标照样挪；写谱的那几颗灰着 ──
+await p.keyboard.press("Backquote"); await p.waitForTimeout(150);
+{ const look = await keyLook(), unplugged = await p.evaluate(() => document.querySelector(".pad-panel")?.classList.contains("is-unplugged"));
+  check(unplugged && look.left && look.right && !look.rest, "「弹」：← → 不灰、点得动；休止灰着", JSON.stringify(look));
+  const [c0, c1, c2] = await tapArrows();
+  check(c1 < c0 && c2 === c0 && (await notes()) === n0 + 1, "「弹」：点 ← → 光标挪、谱没变", `${c0} → ${c1} → ${c2}`); }
+await p.keyboard.press("Backquote"); await p.waitForTimeout(150);
 await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(400);
 const sig1 = await fileSig();
 check(sig1 !== sig0 && !(await lk()).dirty, "按「存」：写回文件了");

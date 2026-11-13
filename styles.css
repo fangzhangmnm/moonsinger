@@ -1363,9 +1363,10 @@ body.doc-locked .parts-mgr .pm-card :is(button, input, select):not([data-v^="mor
 .feel-chip .feel-revive { flex: none; height: 26px; padding: 0 8px; font-size: 12px; }
 .feel-chip[hidden], .feel-chip .feel-revive[hidden] { display: none; }
 
-/* 键盘总闸（v0.16.52，src/app/input-gate.ts）：人自己拔着（「弹」）= 会往谱上写的那一排灰掉、点不动（升降留着：只改弹出来的音）；和乐器目录里那套 .is-locked 同一个样子，
-   但「弹」钮自己照样能点（再点 = 接回去）。键盘想写而写不了的时候「弹」钮晃一下。 */
-.pad-panel.is-unplugged .pad-tools.writes .btn:not(.accshift), .pad-panel.is-unplugged [data-mark] { opacity: .3; pointer-events: none; }
+/* 键盘总闸（v0.16.52，src/app/input-gate.ts）：人自己拔着（「弹」）或者歌锁着 = 会往谱上写的那一排灰掉、点不动（升降留着：只改弹出来的音）；和乐器目录里那套 .is-locked 同一个样子，
+   但「弹」钮自己照样能点（再点 = 接回去）。键盘想写而写不了的时候「弹」钮晃一下。
+   ← → 不灰（杂事版 v0.17.42，统筹）：只挪光标 = 读的动作，不问锁（总闸 may() 本来就放行挪光标）。选乐器时（.is-locked，谱被盖住）照旧灰。 */
+.pad-panel.is-unplugged .pad-tools.writes .btn:not(.accshift):not([data-caret]), .pad-panel.is-unplugged [data-mark] { opacity: .3; pointer-events: none; }
 @keyframes plug-nudge { 0%, 100% { transform: none; } 25% { transform: translateX(-3px) rotate(-6deg); } 75% { transform: translateX(3px) rotate(6deg); } }
 .pad-tools .btn.impro-pad.nudge { animation: plug-nudge .22s linear 2; }
 @media (prefers-reduced-motion: reduce) { .pad-tools .btn.impro-pad.nudge { animation: none; outline: 2px solid currentColor; } }
