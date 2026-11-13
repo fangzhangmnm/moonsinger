@@ -1269,6 +1269,7 @@ button.chord-cand.is-on { box-shadow: 0 0 0 2px var(--accent) inset; }
 .habits-card .hab-strip.fade-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 .habits-card .hab-strip.fade-l { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px); mask-image: linear-gradient(to right, transparent, #000 28px); }
 .habits-card .hab-strip.fade-l.fade-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+.habits-card .hab-lang-ico { display: inline-block; width: 18px; height: 18px; vertical-align: -4px; margin-right: 6px; }   /* 第一行「语言」行首的地球（v0.17.37；看不懂当前语言的人靠它找到这一行） */
 .habits-card .hab-tile { flex: none; width: 122px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); font: inherit; cursor: pointer; box-sizing: border-box; }
 .habits-card .hab-tile:last-child { scroll-snap-align: end; }
 .habits-card .hab-tile.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }

@@ -142,6 +142,25 @@ for (const [w, h] of [[320, 700], [360, 760], [390, 844], [430, 900], [744, 1133
   check((await rowKind(p)) === "staff", "锁着时在设置里改习惯：马上跟着变");
   await ctx.close(); }
 
+// ── 第一行「语言」（v0.17.37，统筹 42d5f807）：排在「习惯看的谱」前面、行首地球图标；选了马上换界面语言（整页重载），卡照样开着、点过的不丢 ──
+{ const { ctx, p } = await fresh();
+  await p.goto(BASE); await p.waitForSelector(".habits-card", { timeout: 6000 });
+  const order = await p.$$eval(".habits-card section", (ss) => ss.map((x) => x.dataset.q ?? x.className));
+  check(order[0] === "lang" && order[1] === "notation", "第一行是语言、第二行是习惯看的谱", order.join(","));
+  check(!!(await p.$('.habits-card .hab-lang use[href="#globe-speech"]')) && !!(await p.$('#globe-speech')), "行首有地球图标（页面里内联了 globe-speech）");
+  check((await p.$eval(".habits-card .hab-lang", (e) => e.textContent ?? "")).includes("语言 · Language"), "行名用设置里那个双语的");
+  await p.click('.habits-card [data-h="notation"][data-v="jianpu"]'); await p.waitForTimeout(80);
+  await pick(p, '.habits-card [data-set="cardlang"]', "en");
+  await p.waitForSelector(".habits-card", { timeout: 8000 }); await p.waitForTimeout(400);
+  check(await p.evaluate(() => !location.search.includes("card=")), "重载完网址里带过来的那一段抹掉了", await p.evaluate(() => location.search));
+  check((await p.$eval(".wbe-panel .wbe-panel-title", (e) => e.textContent)) !== "初始设置" && (await p.evaluate(() => document.documentElement.lang)).startsWith("en"), "界面换成英文了（卡的标题也是）", await p.$eval(".wbe-panel .wbe-panel-title", (e) => e.textContent));
+  check(await p.$eval('.habits-card [data-h="notation"][data-v="jianpu"]', (e) => e.classList.contains("on")), "换语言之前点的简谱还亮着（卡上点过的不丢）");
+  check((await ddValue(p, '.habits-card [data-set="cardlang"]')) === "en", "语言那一行亮着 English");
+  const k = await kv(p); check(k["habits-asked"] === null && k["habit-notation"] === null, "换语言不等于「好」：习惯还没写、也不算问过了", JSON.stringify(k));
+  await p.click('.wbe-panel [data-panel-btn="ok"]'); await p.waitForTimeout(200);
+  check((await kv(p))["habit-notation"] === "jianpu", "按「好」= 简谱记进设备");
+  await ctx.close(); }
+
 check(!errs.length, "没有页面错误", errs.join(" / "));
 await b.close();
 console.log(`\n  ${pass} passed, ${fail} failed`);

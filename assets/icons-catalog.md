@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-85 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+86 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -130,6 +130,12 @@
 | `download` | 下载 |
 | `local-cache` | 本地缓存副本:database(=本地已缓存, 与 unload-local-cache 同形去掉删除线) |
 | `unload-local-cache` | 卸载本地副本:database(=本地) + 斜删除线(mask 留 gap)【非垃圾桶, 云端仍保留】 |
+
+## globalization
+
+| name | 说明 |
+|------|------|
+| `globe-speech` | 语言=地球+对话气泡(mask 抠洞遮挡,留 gap) |
 
 ## viewport
 

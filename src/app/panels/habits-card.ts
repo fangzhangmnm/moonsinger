@@ -41,12 +41,16 @@ export interface HabitsCardDeps {
   later(): void;
   /** Esc / 点外面。 */
   dismissed(): void;
+  /** 第一行「语言」（v0.17.37，统筹 42d5f807；user「初始设置第一个是语言，放在看谱前面…加一个图标方便人识别」）：宿主出的那一行 + 装好它。
+   *  它不是看谱的习惯（不进 HABIT_KEYS、「好」不写它）；选了 = 宿主马上换界面语言。draft = 卡上现在点着的（换语言要整页重载，宿主带过去、重载完照这个再开）。 */
+  lang: { html: string; mount(root: HTMLElement, draft: () => Habits): void };
 }
 export interface HabitsCard { close(): void; readonly el: HTMLElement }
 
 /** 卡上摆着哪几样习惯（只有这一份：画卡、「好」写设备都从它来；v0.17.30 收跟进第 1 条）：第一行谱的小卡片、第二行两颗钮、第三行起小下拉。
  *  不在这里的习惯（以后加了、还没上卡的）从卡上点「好」不动它。 */
-export const CARD_HABITS = { tiles: "notation", pair: "viewInC", rows: ["middleC", "chordTagStyle"] } as const satisfies { tiles: HabitKey; pair: HabitKey; rows: readonly HabitKey[] };
+//   lead = 第一行「语言」（v0.17.37）：单独一格，不是习惯（不在 cardHabitKeys 里，「好」不写它）。
+export const CARD_HABITS = { lead: "lang", tiles: "notation", pair: "viewInC", rows: ["middleC", "chordTagStyle"] } as const satisfies { lead: "lang"; tiles: HabitKey; pair: HabitKey; rows: readonly HabitKey[] };
 export const cardHabitKeys = (): readonly HabitKey[] => [CARD_HABITS.tiles, CARD_HABITS.pair, ...CARD_HABITS.rows];
 /** 一行小卡片：格子的基准宽、格子之间的间隔、格子里图两边留的（内边距 + 边框）。 */
 // 格子的基准宽 122（v0.17.35，统筹 dc2b1b44；user 11-13「手机可以，甚至电脑上也用这个宽度的小图…我只是要看个大概就行」）：= 390 宽手机上原来的格宽，
@@ -58,6 +62,7 @@ export function openHabitsCard(d: HabitsCardDeps): HabitsCard {
   const content = document.createElement("div"); content.className = "habits-card";
   content.innerHTML =
     `<div class="hab-lead">${esc(_t("记在这台设备上，都可以不选，以后在设置里改。"))}</div>` +
+    `<section class="hab-small hab-lang" data-q="${CARD_HABITS.lead}">${d.lang.html}</section>` +
     `<section class="hab-q" data-q="notation"><div class="hab-title">${esc(_t("习惯看的谱"))}</div>` +
       `<div class="hab-strip">${NOTATIONS.map((id) => `<button type="button" class="hab-tile" data-h="${CARD_HABITS.tiles}" data-v="${id}" aria-pressed="false"><span class="hab-prev">${previewSvg(id, d.measure)}</span><span class="hab-name">${esc(notationName(id))}</span></button>`).join("")}</div>` +
       `<div class="hab-foot">${esc(_t("字母谱：玩 tracker 的可以先用这个，不完全一样。钢琴卷帘、录音还没做，做好了会加在这里。"))}</div></section>` +
@@ -90,6 +95,7 @@ export function openHabitsCard(d: HabitsCardDeps): HabitsCard {
     onClose: () => { if (closed) return; closed = true; d.dismissed(); } });
   shell.el.classList.add("habits-panel");
   d.rows.mount(content);
+  d.lang.mount(content, () => ({ ...chosen, ...pick(d.rows.read(content), d.rows.keys) }));   // 换语言前卡上点着的（宿主带过整页重载）
   // 一行小卡片多宽（统筹 1dda0433；v0.17.35 dc2b1b44）：都放得下 = 不滑、按基准宽靠左排；放不下 = 露出来的永远是「整数格 + 半格」；被切的那一侧淡出；可见宽变了重算
   const strip = content.querySelector<HTMLElement>(".hab-strip")!, tiles = [...strip.querySelectorAll<HTMLElement>(".hab-tile")];
   const fades = () => { const max = strip.scrollWidth - strip.clientWidth; strip.classList.toggle("fade-l", strip.scrollLeft > 1); strip.classList.toggle("fade-r", strip.scrollLeft < max - 1); };

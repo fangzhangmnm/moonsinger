@@ -6365,7 +6365,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.36-2026-11-13";
+var APP_VERSION = "v0.17.37-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -35357,7 +35357,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick3(() => "layout-worker-a7065623bb18.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-315163c846bb.mjs");
+      return pick3(() => "encode-worker-e2cd52c7f986.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -46698,7 +46698,7 @@ function stripLayout(visible, n10, gap, base2) {
 }
 
 // src/app/panels/habits-card.ts
-var CARD_HABITS = { tiles: "notation", pair: "viewInC", rows: ["middleC", "chordTagStyle"] };
+var CARD_HABITS = { lead: "lang", tiles: "notation", pair: "viewInC", rows: ["middleC", "chordTagStyle"] };
 var cardHabitKeys = () => [CARD_HABITS.tiles, CARD_HABITS.pair, ...CARD_HABITS.rows];
 var TILE_BASE = 122;
 var TILE_GAP = 10;
@@ -46707,7 +46707,7 @@ function openHabitsCard(d3) {
   const chosen = { ...d3.current.notation !== void 0 ? { notation: d3.current.notation } : {}, ...d3.current.viewInC !== void 0 ? { viewInC: d3.current.viewInC } : {} };
   const content = document.createElement("div");
   content.className = "habits-card";
-  content.innerHTML = `<div class="hab-lead">${escapeHtml2(_t("\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002"))}</div><section class="hab-q" data-q="notation"><div class="hab-title">${escapeHtml2(_t("\u4E60\u60EF\u770B\u7684\u8C31"))}</div><div class="hab-strip">${NOTATIONS.map((id2) => `<button type="button" class="hab-tile" data-h="${CARD_HABITS.tiles}" data-v="${id2}" aria-pressed="false"><span class="hab-prev">${previewSvg(id2, d3.measure)}</span><span class="hab-name">${escapeHtml2(notationName(id2))}</span></button>`).join("")}</div><div class="hab-foot">${escapeHtml2(_t("\u5B57\u6BCD\u8C31\uFF1A\u73A9 tracker \u7684\u53EF\u4EE5\u5148\u7528\u8FD9\u4E2A\uFF0C\u4E0D\u5B8C\u5168\u4E00\u6837\u3002\u94A2\u7434\u5377\u5E18\u3001\u5F55\u97F3\u8FD8\u6CA1\u505A\uFF0C\u505A\u597D\u4E86\u4F1A\u52A0\u5728\u8FD9\u91CC\u3002"))}</div></section><section class="hab-q" data-q="viewInC"><div class="hab-title">${escapeHtml2(_t("\u79FB\u8C03\u8F85\u52A9"))}</div><div class="hab-pair"><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="off" aria-pressed="false">${escapeHtml2(_t("\u4E0D\u7528"))}</button><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="on" aria-pressed="false">${escapeHtml2(_t("\u6309 C \u8C03\u770B"))}</button></div><div class="hab-note">${escapeHtml2(TRANSPOSE_AID_NOTE())}</div></section><section class="hab-small">${d3.rows.html(d3.current)}</section>`;
+  content.innerHTML = `<div class="hab-lead">${escapeHtml2(_t("\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002"))}</div><section class="hab-small hab-lang" data-q="${CARD_HABITS.lead}">${d3.lang.html}</section><section class="hab-q" data-q="notation"><div class="hab-title">${escapeHtml2(_t("\u4E60\u60EF\u770B\u7684\u8C31"))}</div><div class="hab-strip">${NOTATIONS.map((id2) => `<button type="button" class="hab-tile" data-h="${CARD_HABITS.tiles}" data-v="${id2}" aria-pressed="false"><span class="hab-prev">${previewSvg(id2, d3.measure)}</span><span class="hab-name">${escapeHtml2(notationName(id2))}</span></button>`).join("")}</div><div class="hab-foot">${escapeHtml2(_t("\u5B57\u6BCD\u8C31\uFF1A\u73A9 tracker \u7684\u53EF\u4EE5\u5148\u7528\u8FD9\u4E2A\uFF0C\u4E0D\u5B8C\u5168\u4E00\u6837\u3002\u94A2\u7434\u5377\u5E18\u3001\u5F55\u97F3\u8FD8\u6CA1\u505A\uFF0C\u505A\u597D\u4E86\u4F1A\u52A0\u5728\u8FD9\u91CC\u3002"))}</div></section><section class="hab-q" data-q="viewInC"><div class="hab-title">${escapeHtml2(_t("\u79FB\u8C03\u8F85\u52A9"))}</div><div class="hab-pair"><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="off" aria-pressed="false">${escapeHtml2(_t("\u4E0D\u7528"))}</button><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="on" aria-pressed="false">${escapeHtml2(_t("\u6309 C \u8C03\u770B"))}</button></div><div class="hab-note">${escapeHtml2(TRANSPOSE_AID_NOTE())}</div></section><section class="hab-small">${d3.rows.html(d3.current)}</section>`;
   const valueOf2 = (h2, v) => h2 === "viewInC" ? v === "on" : v;
   const sync = (reveal) => {
     for (const b3 of content.querySelectorAll("[data-h]")) {
@@ -46747,6 +46747,7 @@ function openHabitsCard(d3) {
   });
   shell2.el.classList.add("habits-panel");
   d3.rows.mount(content);
+  d3.lang.mount(content, () => ({ ...chosen, ...pick2(d3.rows.read(content), d3.rows.keys) }));
   const strip = content.querySelector(".hab-strip"), tiles = [...strip.querySelectorAll(".hab-tile")];
   const fades = () => {
     const max2 = strip.scrollWidth - strip.clientWidth;
@@ -61230,19 +61231,63 @@ function writeHabit(k2, v) {
 }
 var habitsCard = null;
 var habitsAsked = () => deviceKvGet(HABITS_ASKED_KEY) !== null;
+var CARD_DRAFT_PARAM = "card";
+var cardDraft = (() => {
+  const raw = new URLSearchParams(location.search).get(CARD_DRAFT_PARAM);
+  if (raw === null) return null;
+  const u2 = new URL(location.href);
+  u2.searchParams.delete(CARD_DRAFT_PARAM);
+  history.replaceState(history.state, "", u2.toString());
+  let j2 = {};
+  try {
+    j2 = JSON.parse(raw) ?? {};
+  } catch {
+  }
+  const habits = {};
+  for (const k2 of HABIT_KEYS) {
+    const s10 = j2.h?.[k2];
+    const v = typeof s10 === "string" ? HABIT_CODEC[k2].parse(s10) : void 0;
+    if (v !== void 0) habits[k2] = v;
+  }
+  return { from: j2.f === "settings" ? "settings" : "boot", habits };
+})();
 function offerHabitsCardWhenFree() {
-  if (habitsAsked()) return;
+  const draft = cardDraft;
+  if (!draft && habitsAsked()) return;
   const t10 = setInterval(() => {
-    if (habitsAsked()) {
+    if (!draft && habitsAsked()) {
       clearInterval(t10);
       return;
     }
     if (habitsCard || document.hidden || ui2.overlay || isGateOpen() || isSheetOpen() || document.getElementById("updateBar") || document.querySelector(".wbe-panel, .offer, .doc-layer")) return;
     clearInterval(t10);
-    openHabitsCardNow();
+    if (draft) openHabitsCardNow(draft.from, draft.habits);
+    else openHabitsCardNow();
   }, 1200);
 }
-function openHabitsCardNow(from = "boot") {
+var LANG_AUTO_BOTH = "\u8DDF\u7CFB\u7EDF \xB7 System";
+function cardLangRow(from) {
+  return {
+    html: setItem(`<svg class="ico hab-lang-ico" aria-hidden="true"><use href="#globe-speech"/></svg>${LANG_LABEL}`, setSel("cardlang", [["auto", LANG_AUTO_BOTH], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }),
+    mount: (root, draft) => {
+      root.querySelector('[data-set="cardlang"]')?.addEventListener("change", (e10) => {
+        const v = e10.currentTarget.value, next2 = v === "auto" ? null : v;
+        if (next2 === langChosen()) return;
+        saveLang(next2);
+        diagNote("habits", `lang \u2192 ${v} (card, ${from})`);
+        const h2 = {}, d3 = draft();
+        for (const k2 of HABIT_KEYS) {
+          const x2 = d3[k2];
+          if (x2 !== void 0) h2[k2] = HABIT_CODEC[k2].write(x2);
+        }
+        const u2 = new URL(location.href);
+        u2.searchParams.set(CARD_DRAFT_PARAM, JSON.stringify({ f: from, h: h2 }));
+        location.replace(u2.toString());
+      });
+    }
+  };
+}
+function openHabitsCardNow(from = "boot", current2) {
   const close = () => {
     habitsCard?.close();
     habitsCard = null;
@@ -61258,8 +61303,9 @@ function openHabitsCardNow(from = "boot") {
   ui2.open({ k: "sheet", close });
   habitsCard = openHabitsCard({
     measure: view.rawMeasure,
-    current: habitCtx.habits ?? {},
+    current: current2 ?? habitCtx.habits ?? {},
     rows: cardRows,
+    lang: cardLangRow(from),
     // 「好」只写卡上摆着的那几样（cardHabitKeys；v0.17.30 收跟进第 1 条：不在卡上的那一样不被清成没选）
     done: (c10) => {
       gone();
@@ -62937,7 +62983,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, activePerfSpec(D3.extras, curRole())?.sing ?? {});
   },
   state: () => D3.st,
-  cssHash: "e5c68309bab4",
+  cssHash: "a5762a520b04",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -67465,4 +67511,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-37e400fe27eb.mjs.map
+//# sourceMappingURL=moonsinger-2769c93ca88e.mjs.map

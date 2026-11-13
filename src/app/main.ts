@@ -617,21 +617,51 @@ function writeHabit<K extends HabitKey>(k: K, v: LookDefaults[K] | undefined): v
  *  别的面板和弹层、还原出厂（它清完会重新载入，载入后照样没问过）。「好」/「以后再说」= 记「问过了」；Esc / 点外面 = 这次收起，下次打开 app 再问。 */
 let habitsCard: HabitsCard | null = null;
 const habitsAsked = (): boolean => deviceKvGet(HABITS_ASKED_KEY) !== null;
+/** 卡上换了语言（v0.17.37，统筹 42d5f807）：语言写进设备、整页重载（界面上的字很多是载入时就定了的，换不了半页）；卡上点着的放在重载的网址里带过去（?card=，
+ *  不另外存——不新开设备键），重载完照它把卡再开出来，网址里这一段读完马上抹掉。带的：从哪儿打开的（boot / settings）+ 点着的几样（设备键值的写法，读的时候照样核）。 */
+const CARD_DRAFT_PARAM = "card";
+const cardDraft: { from: "boot" | "settings"; habits: Habits } | null = (() => {
+  const raw = new URLSearchParams(location.search).get(CARD_DRAFT_PARAM); if (raw === null) return null;
+  const u = new URL(location.href); u.searchParams.delete(CARD_DRAFT_PARAM); history.replaceState(history.state, "", u.toString());
+  let j: { f?: unknown; h?: Record<string, unknown> } = {}; try { j = JSON.parse(raw) ?? {}; } catch { /* 读不懂 = 照没点过开 */ }
+  const habits: Record<string, unknown> = {};
+  for (const k of HABIT_KEYS) { const s = j.h?.[k]; const v = typeof s === "string" ? HABIT_CODEC[k].parse(s) : undefined; if (v !== undefined) habits[k] = v; }
+  return { from: j.f === "settings" ? "settings" : "boot", habits: habits as Habits };
+})();
 function offerHabitsCardWhenFree(): void {
-  if (habitsAsked()) return;
+  const draft = cardDraft;   // 卡上换了语言重载回来 = 不管问没问过，照点着的再开
+  if (!draft && habitsAsked()) return;
   const t = setInterval(() => {
-    if (habitsAsked()) { clearInterval(t); return; }
+    if (!draft && habitsAsked()) { clearInterval(t); return; }
     if (habitsCard || document.hidden || ui.overlay || isGateOpen() || isSheetOpen() || document.getElementById("updateBar") || document.querySelector(".wbe-panel, .offer, .doc-layer")) return;
-    clearInterval(t); openHabitsCardNow();
+    clearInterval(t); if (draft) openHabitsCardNow(draft.from, draft.habits); else openHabitsCardNow();
   }, 1200);
 }
+/** 卡上第一行「语言」（v0.17.37）：和设置里那一行同样三项，各用自己的语言写（不跟着界面翻；「跟系统」两种语言并写）；行名用设置里那个双语的；行首 globe-speech。
+ *  选了 = 语言写进设备 → 带着卡上点着的整页重载（见 cardDraft）。 */
+const LANG_AUTO_BOTH = "跟系统 · System";   // i18n-keep
+function cardLangRow(from: "boot" | "settings"): { html: string; mount(root: HTMLElement, draft: () => Habits): void } {
+  return {
+    html: setItem(`<svg class="ico hab-lang-ico" aria-hidden="true"><use href="#globe-speech"/></svg>${LANG_LABEL}`, setSel("cardlang", [["auto", LANG_AUTO_BOTH], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }),
+    mount: (root, draft) => {
+      root.querySelector<HTMLButtonElement>('[data-set="cardlang"]')?.addEventListener("change", (e) => {
+        const v = (e.currentTarget as HTMLButtonElement).value, next = v === "auto" ? null : (v as Lang);
+        if (next === langChosen()) return;
+        saveLang(next); diagNote("habits", `lang → ${v} (card, ${from})`);
+        const h: Record<string, string> = {}, d = draft();
+        for (const k of HABIT_KEYS) { const x = d[k]; if (x !== undefined) h[k] = (HABIT_CODEC[k].write as (y: unknown) => string)(x); }
+        const u = new URL(location.href); u.searchParams.set(CARD_DRAFT_PARAM, JSON.stringify({ f: from, h })); location.replace(u.toString());
+      });
+    },
+  };
+}
 /** from = boot（第一次打开问一次）/ settings（设置「界面」页「初始设置」那一颗；卡第二版）。从设置里打开的：「以后再说」/ 关掉 = 什么都不改、不动「问过了」，收了回到设置。 */
-function openHabitsCardNow(from: "boot" | "settings" = "boot"): void {
+function openHabitsCardNow(from: "boot" | "settings" = "boot", current?: Habits): void {   // current = 卡上换语言重载回来时点着的（cardDraft）
   const close = () => { habitsCard?.close(); habitsCard = null; ui.closed(close); };
   const gone = () => { habitsCard = null; ui.closed(close); };
   const back = () => { if (from === "settings") openSettings(); };
   ui.open({ k: "sheet", close });
-  habitsCard = openHabitsCard({ measure: view.rawMeasure, current: habitCtx.habits ?? {}, rows: cardRows,
+  habitsCard = openHabitsCard({ measure: view.rawMeasure, current: current ?? habitCtx.habits ?? {}, rows: cardRows, lang: cardLangRow(from),
     // 「好」只写卡上摆着的那几样（cardHabitKeys；v0.17.30 收跟进第 1 条：不在卡上的那一样不被清成没选）
     done: (c) => { gone(); for (const k of cardHabitKeys()) writeHabit(k, c[k]); deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", `ok (${from})`); habitCtx = { habits: habitsFrom(deviceKvGet) }; afterHabits(); back(); },
     later: () => { gone(); if (from === "boot") deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", `later (${from})`); back(); },
