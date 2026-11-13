@@ -1,9 +1,9 @@
 import { type Song, type PaperSeg, type Choice, type ClefChoice } from "../score/song.ts";
 import { type Paper, type ReadPaper, type PaperKind, type PaperChoice, type Margins } from "../score/paper.ts";
-import { type SongView, type NotationId } from "../score/song-view.ts";
+import { type SongView, type NotationId, type ChordTagStyle } from "../score/song-view.ts";
 import { type LookContext, type LookDefaults } from "./habits.ts";
 /** 能跟着软件的那几项（歌级；score.json 顶层同名的键）。arrangement 改声音（第 16 条），textLang 的 "ui" 本身就是跟界面，都不在这里。 */
-export declare const LOOK_KEYS: readonly ["notation", "viewInC", "middleC", "chordTags", "expressions", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"];
+export declare const LOOK_KEYS: readonly ["notation", "viewInC", "middleC", "chordTags", "chordTagStyle", "expressions", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"];
 export type LookKey = typeof LOOK_KEYS[number];
 /** "default" 现在等于什么（只在这里；改了 = 所有跟着软件的歌跟着变）。纸的边距和谱高没有自己的一个数：边距 = 这张纸自己的，谱高 = 这一档的。 */
 export { BASE_DEFAULTS, HABIT_KEYS, defaultsFor, type HabitKey, type Habits, type LookContext, type LookDefaults } from "./habits.ts";
@@ -49,6 +49,10 @@ export declare const notationName: (id: NotationId) => string;
 export declare const NOTATION_NOTE: Record<NotationId, (middleC: number) => string>;
 /** 「中央 C 叫」的选项上写什么（页面设置、设置「界面」页、第一次打开的卡同一份）。 */
 export declare const middleCLabel: (n: number) => string;
+/** 和弦写法（第 19 条；统筹 0d97f07a：「和弦辅助」管标不标、「和弦写法」管标成什么样，一行一个键）：页面设置、设置「界面」页、「初始设置」卡同一份名字。 */
+export declare const CHORD_TAG_STYLE_LABEL: Record<ChordTagStyle, () => string>;
+/** 「和弦写法」是什么（一句；三处同一份）。 */
+export declare const CHORD_TAG_STYLE_NOTE: () => string;
 /** 「移调辅助」是什么（一句；设置「界面」页、页面设置、「初始设置」卡同一份）。后半句 = 第 19 条第 7 点的披露之一：键上的字也按 C 调写。 */
 export declare const TRANSPOSE_AID_NOTE: () => string;
 /** 「中央 C 叫」是什么（一句；三处同一份）。 */

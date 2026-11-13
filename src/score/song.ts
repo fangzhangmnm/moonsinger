@@ -207,6 +207,9 @@ export interface Song {
    *  notation = 谱种（不认识的原样留着）；chordTags = 和弦标级数；viewInC = 按 C 调看。存档 = score.json 同名的键。 */
   notation: string;
   chordTags: Choice<boolean>;
+  /** 和弦辅助写成什么（score minor 14，施工单第 19 条）："degree" = 级数（V7、ii）/ "root" = 根音（G7、Am）/ "default" = 跟着软件（软件的默认 = 级数，设备上能记成习惯）。
+   *  标不标照旧是 chordTags；这一项只管标的时候怎么写。比这一版新的文件里的不认识的值原样留着。 */
+  chordTagStyle: string;
   viewInC: Choice<boolean>;
   /** 字母谱里中央 C 叫 C 几（score minor 6，7-B）；"default" = 跟着软件（17-1）。 */
   middleC: Choice<number>;
@@ -281,11 +284,11 @@ export const FIRST_PART = "P1", FIRST_PAPER = "p1";
 /** 一项显示设置的写法（第 17 条 17-1）：没选 = "default"（界面上叫「跟着软件」），选了 = 具体的值。"default" 现在等于什么只在 src/look 里定，谱这一层不判断它。 */
 export type Choice<T> = "default" | T;
 /** 歌级的显示设置（16-4 A3，score.json 同名键；17-1 起多了纸张和版式的四个键，音距退役）。arrangement 改声音（第 16 条那一侧），只是住在这一组里；textLang 的 "ui" 本身就是跟界面，不加 "default"。 */
-export type SongLookKey = "arrangement" | "lyricFit" | "barNumbers" | "notation" | "chordTags" | "viewInC" | "middleC" | "expressions" | "textLang" | "paper" | "density" | "staffMm" | "marginMm";
+export type SongLookKey = "arrangement" | "lyricFit" | "barNumbers" | "notation" | "chordTags" | "chordTagStyle" | "viewInC" | "middleC" | "expressions" | "textLang" | "paper" | "density" | "staffMm" | "marginMm";
 /** 新建的歌写进去的歌级显示设置（16-4 A3；模板的「谱的扩展」那一块就是这一个对象——src/format/template.ts 原样列出，不另抄）。
  *  17-1 起：能跟着软件的每一项都是 "default"（第 17 条定下来的第 2 条）；编排空、谱上的字跟着界面。
  *  **只给构造函数用**（emptySong / songOf；守卫 test/template.test.ts：src/score 里这个名字只出现在这两个函数里）。读的一侧（src/look、排版、出声）照歌里写着的读，不碰它。 */
-export const NEW_SONG_LOOK: Readonly<Pick<Song, SongLookKey>> = Object.freeze({ arrangement: "", lyricFit: "default", barNumbers: "default", notation: "default", chordTags: "default", viewInC: "default", middleC: "default", expressions: "default", textLang: "ui",
+export const NEW_SONG_LOOK: Readonly<Pick<Song, SongLookKey>> = Object.freeze({ arrangement: "", lyricFit: "default", barNumbers: "default", notation: "default", chordTags: "default", chordTagStyle: "default", viewInC: "default", middleC: "default", expressions: "default", textLang: "ui",
   paper: "default", density: "default", staffMm: "default", marginMm: "default" });
 export function emptySong(m: { fifths?: number; beats?: number; beatType?: number; bpm?: number } = {}): Song {
   return { ...NEW_SONG_LOOK, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m) } }] };   // 显示设置按新建的那一组明写（16-4 A3）

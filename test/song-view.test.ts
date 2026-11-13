@@ -21,7 +21,7 @@ const viewOf = (s: Song) => { const v = lookOf(s); return { notation: v.notation
 
 describe("这首歌怎么看：新建的歌跟着软件（第 17 条 17-1）", () => {
   it("新建的歌每一项都是 \"default\"（跟着软件），现在画成五线谱 / 标和弦级数 / 不按 C 调看 / 也认拆开弹的（\"default\" 现在等于什么在 src/look）；存出去明写 \"default\"", () => {
-    eq(JSON.stringify(NEW_SONG_LOOK), JSON.stringify({ arrangement: "", lyricFit: "default", barNumbers: "default", notation: "default", chordTags: "default", viewInC: "default", middleC: "default", expressions: "default", textLang: "ui", paper: "default", density: "default", staffMm: "default", marginMm: "default" }), "改了这些值 = 改了所有旧歌的样子（后三样第四刀 4-5 收进来，是原来就有的意思）");
+    eq(JSON.stringify(NEW_SONG_LOOK), JSON.stringify({ arrangement: "", lyricFit: "default", barNumbers: "default", notation: "default", chordTags: "default", chordTagStyle: "default", viewInC: "default", middleC: "default", expressions: "default", textLang: "ui", paper: "default", density: "default", staffMm: "default", marginMm: "default" }), "改了这些值 = 改了所有旧歌的样子（后三样第四刀 4-5 收进来，是原来就有的意思）");
     { const v = lookOf(initState().song); eq([v.density, v.lyricFit, v.barNumbers].join(","), "cozy,rhythm,true", "版式 / 歌词排法 / 小节号没写 = 舒适 / 按节奏 / 每行开头印");
       const w = lookOf({ ...initState().song, lyricFit: "lyrics", barNumbers: "off", density: "compact" });
       eq([w.density, w.lyricFit, w.barNumbers].join(","), "compact,lyrics,false", "写了 = 照写的读"); }

@@ -482,7 +482,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
         //   这样会压到这个和弦挂在谱下面的符头（符干朝下 = 符头在符干右边、二度挤开的那个也在右边）= 退回符头右边 + 0.3（原来的位置）。没有符干（全音符）= 符头右边
         const headR = nhX(c) + nhW(c) * (second ? 1.95 : 1), sx = stemXOf.get(c), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
         const atStem = sx !== undefined && !(low && headR > sx + P(0.1));
-        const label = theory.label(rd), tx = atStem ? sx! - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const label = look.chordTagStyle === "root" ? theory.rootLabel(rd) : theory.label(rd), tx = atStem ? sx! - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
         const row = atRow ?? RW(c), cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;   // 人挑的 = 换个颜色；对不上了 = 灰 + 「?」（v0.16.87）
         attach(row, "chordTag", () => placeBelow(row, 0.3, (y) => {
           prims.push({ t: "text", x: tx, y, s: label, cls, size: fs, anchor: "start" });

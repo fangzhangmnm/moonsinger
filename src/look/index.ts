@@ -13,12 +13,12 @@
 import { headClefOf, type Song, type PaperSeg, type Choice, type ClefChoice } from "../score/song.ts";
 import { isPaperKind, PAPER_LABEL, DENSITIES, type Paper, type ReadPaper, type PaperKind, type Density, type PaperChoice, type Margins } from "../score/paper.ts";
 import { paperOf, marginsOf, sizeOf, staffMmFor, STAFF_MM, STAFF_MM_COMPACT, paperSizeText } from "./paper.ts";
-import { isNotation, isMiddleC, isTextLang, IN_C_APPLIES, NOTATIONS, type SongView, type ChordsMode, type NotationId, CHORDS_MODES } from "../score/song-view.ts";
+import { isNotation, isMiddleC, isTextLang, IN_C_APPLIES, NOTATIONS, CHORD_TAG_STYLES, type SongView, type ChordsMode, type NotationId, type ChordTagStyle, CHORDS_MODES } from "../score/song-view.ts";
 import { _t } from "../i18n/index.ts";
 import { BASE_DEFAULTS, defaultsFor, type LookContext, type LookDefaults } from "./habits.ts";
 
 /** 能跟着软件的那几项（歌级；score.json 顶层同名的键）。arrangement 改声音（第 16 条），textLang 的 "ui" 本身就是跟界面，都不在这里。 */
-export const LOOK_KEYS = ["notation", "viewInC", "middleC", "chordTags", "expressions", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"] as const;
+export const LOOK_KEYS = ["notation", "viewInC", "middleC", "chordTags", "chordTagStyle", "expressions", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"] as const;
 export type LookKey = typeof LOOK_KEYS[number];
 
 /** "default" 现在等于什么（只在这里；改了 = 所有跟着软件的歌跟着变）。纸的边距和谱高没有自己的一个数：边距 = 这张纸自己的，谱高 = 这一档的。 */
@@ -52,6 +52,7 @@ export function lookOf(song: Song, ctx: LookContext = {}): Look {   // ctx = 当
   return {
     notation, viewInC, inCActive: viewInC && IN_C_APPLIES[notation],
     chordTags: pick(song.chordTags, D.chordTags) !== false,
+    chordTagStyle: pick(song.chordTagStyle, D.chordTagStyle) === "root" ? "root" : "degree",   // 认不出来的值（比这一版新的文件带来的）按级数画
     chordsOf: (part) => chords.get(part) ?? UNWRITTEN_TRACK.chords,
     density: densityIn(song, D),
     lyricFit: lf === "lyrics" ? "lyrics" : "rhythm",
@@ -123,6 +124,10 @@ export const NOTATION_NOTE: Record<NotationId, (middleC: number) => string> = {
 };
 /** 「中央 C 叫」的选项上写什么（页面设置、设置「界面」页、第一次打开的卡同一份）。 */
 export const middleCLabel = (n: number): string => (n === 4 ? _t("C{n}（国际通用）", { n }) : `C${n}`);
+/** 和弦写法（第 19 条；统筹 0d97f07a：「和弦辅助」管标不标、「和弦写法」管标成什么样，一行一个键）：页面设置、设置「界面」页、「初始设置」卡同一份名字。 */
+export const CHORD_TAG_STYLE_LABEL: Record<ChordTagStyle, () => string> = { degree: () => _t("级数（I、V7）"), root: () => _t("根音（C、G7）") };
+/** 「和弦写法」是什么（一句；三处同一份）。 */
+export const CHORD_TAG_STYLE_NOTE = (): string => _t("和弦辅助标出来的字写成级数还是根音。开着移调辅助时根音照换到 C 调之后的写，和眼前的谱对得上。");
 /** 「移调辅助」是什么（一句；设置「界面」页、页面设置、「初始设置」卡同一份）。后半句 = 第 19 条第 7 点的披露之一：键上的字也按 C 调写。 */
 export const TRANSPOSE_AID_NOTE = (): string => _t("调号多的时候把谱换到 C 调来画，只改显示、声音不变；看五线谱时起作用。键上的大字也按 C 调写，小字是实际的音。");
 /** 「中央 C 叫」是什么（一句；三处同一份）。 */
@@ -133,7 +138,8 @@ export function defaultText(key: LookKey, ctx: LookContext = {}): string {   // 
     case "notation": return notationName(D.notation);
     case "viewInC": return D.viewInC ? _t("按 C 调看") : _t("不用");   // 第一格是「跟着软件（现在是：X）」，X 里不再套括号（17-2 顺手）
     case "middleC": return `C${D.middleC}`;
-    case "chordTags": return D.chordTags ? _t("标级数") : _t("不标");
+    case "chordTags": return D.chordTags ? _t("标") : _t("不标");
+    case "chordTagStyle": return CHORD_TAG_STYLE_LABEL[D.chordTagStyle]();
     case "expressions": return D.expressions ? _t("显示") : _t("不显示");
     case "barNumbers": return D.barNumbers === "line" ? _t("每行开头") : _t("不印");
     case "lyricFit": return D.lyricFit === "rhythm" ? _t("按节奏") : _t("按歌词");
@@ -165,7 +171,7 @@ export function paperChoicesOf(p: ReadPaper | undefined): Pick<Song, "paper" | "
  *  纸张那四项：score.json 里有任何一项 = 以它为准（缺的那几项 = "default"）；一项都没有（老文件、别家的谱）= 从 MusicXML <defaults> 认一次（paperChoicesOf）。 */
 export function lookFromFile(x: Record<string, unknown> | undefined, xmlPaper: ReadPaper | undefined, newer: boolean, odd: string[]): Pick<Song, LookKey> {
   const g = (k: string): unknown => x?.[k];
-  const word = (k: "notation" | "barNumbers" | "lyricFit", allowed: readonly string[]): string => { const v = g(k);
+  const word = (k: "notation" | "barNumbers" | "lyricFit" | "chordTagStyle", allowed: readonly string[]): string => { const v = g(k);
     if (v === "default" || (typeof v === "string" && allowed.includes(v))) return v as string;
     if (newer && typeof v === "string" && v) { odd.push(k); return v; }
     return "default"; };
@@ -175,7 +181,7 @@ export function lookFromFile(x: Record<string, unknown> | undefined, xmlPaper: R
   const paper = paperKeys ? { paper: readPaperChoice(g("paper")) ?? "default", density: g("density") === "compact" || g("density") === "cozy" ? (g("density") as Density) : "default",
     staffMm: typeof g("staffMm") === "number" && (g("staffMm") as number) > 0 ? (g("staffMm") as number) : "default", marginMm: readMargins(g("marginMm")) ?? "default" } as Pick<Song, "paper" | "density" | "staffMm" | "marginMm">
     : paperChoicesOf(xmlPaper);
-  return { notation: word("notation", NOTATIONS), barNumbers: word("barNumbers", ["line", "off"]), lyricFit: word("lyricFit", ["rhythm", "lyrics"]),
+  return { notation: word("notation", NOTATIONS), barNumbers: word("barNumbers", ["line", "off"]), lyricFit: word("lyricFit", ["rhythm", "lyrics"]), chordTagStyle: word("chordTagStyle", CHORD_TAG_STYLES),
     viewInC: bool("viewInC"), chordTags: bool("chordTags"), expressions: bool("expressions"), middleC: isMiddleC(mc) ? mc : "default", ...paper };
 }
 /** score.json 里读到的一项纸张的选择（门口）：认不出来 = null（宽容：当没写）。 */

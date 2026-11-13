@@ -883,6 +883,9 @@ export declare const S: {
     readonly "\u6309 C \u8C03\u770B": {
         readonly en: "Read in C";
     };
+    readonly 和弦写法: {
+        readonly en: "Chord naming";
+    };
     readonly "\u4E2D\u592E C \u53EB": {
         readonly en: "Middle C is";
     };
@@ -1360,14 +1363,14 @@ export declare const S: {
     readonly 和弦辅助: {
         readonly en: "Chord aid";
     };
-    readonly 标级数: {
-        readonly en: "Show degrees";
+    readonly 标: {
+        readonly en: "On";
     };
     readonly 不标: {
         readonly en: "Don’t show";
     };
-    readonly "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009": {
-        readonly en: "Write the degree of stacked chords in this key above them (V7, ii, ♭VII, I/3…); tap one to see all candidates";
+    readonly "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u6807\u51FA\u5B83\u662F\u4EC0\u4E48\u548C\u5F26\uFF08\u5199\u6CD5\u5728\u4E0B\u4E00\u884C\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009": {
+        readonly en: "Label stacked chords with what chord they are (how they are written is the next row); tap one to see all candidates";
     };
     readonly 演奏法和表情: {
         readonly en: "Articulations & dynamics";
@@ -5592,6 +5595,15 @@ export declare const S: {
     };
     readonly "C{n}\uFF08\u56FD\u9645\u901A\u7528\uFF09": {
         readonly en: "C{n} (international)";
+    };
+    readonly "\u7EA7\u6570\uFF08I\u3001V7\uFF09": {
+        readonly en: "Degrees (I, V7)";
+    };
+    readonly "\u6839\u97F3\uFF08C\u3001G7\uFF09": {
+        readonly en: "Roots (C, G7)";
+    };
+    readonly "\u548C\u5F26\u8F85\u52A9\u6807\u51FA\u6765\u7684\u5B57\u5199\u6210\u7EA7\u6570\u8FD8\u662F\u6839\u97F3\u3002\u5F00\u7740\u79FB\u8C03\u8F85\u52A9\u65F6\u6839\u97F3\u7167\u6362\u5230 C \u8C03\u4E4B\u540E\u7684\u5199\uFF0C\u548C\u773C\u524D\u7684\u8C31\u5BF9\u5F97\u4E0A\u3002": {
+        readonly en: "Whether chord labels are written as degrees or as roots. With the transposition aid on, roots follow the score in C, so they match what you see.";
     };
     readonly "\u8C03\u53F7\u591A\u7684\u65F6\u5019\u628A\u8C31\u6362\u5230 C \u8C03\u6765\u753B\uFF0C\u53EA\u6539\u663E\u793A\u3001\u58F0\u97F3\u4E0D\u53D8\uFF1B\u770B\u4E94\u7EBF\u8C31\u65F6\u8D77\u4F5C\u7528\u3002\u952E\u4E0A\u7684\u5927\u5B57\u4E5F\u6309 C \u8C03\u5199\uFF0C\u5C0F\u5B57\u662F\u5B9E\u9645\u7684\u97F3\u3002": {
         readonly en: "When there are many sharps or flats, redraws the score in C; only the display changes, the sound stays the same. Applies to the staff. The big labels on the keys are in C too; the small labels are the actual notes.";

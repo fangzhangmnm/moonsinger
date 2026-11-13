@@ -35,6 +35,7 @@
     "score": {
       "arrangement": "string",
       "barNumbers": "string",
+      "chordTagStyle": "string",
       "chordTags": "boolean",
       "density": "string",
       "expressions": "boolean",

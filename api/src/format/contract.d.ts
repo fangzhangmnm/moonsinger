@@ -132,6 +132,10 @@ export type FormatFile = keyof typeof FORMAT;
  *     门口不放「原来没写是什么意思」的第二张表。
  *  ② 新加的「跟着谁」的开关（跟着谱 / 速度 / 音域…），模板里必须是「不跟」：不然老歌里写着的那个数会因为补了一个开关变成不算数。
  *  ③ 新加的数，定模板值的时候按「歌库里每一首都会变成它」来想；交付时写明它让多少首、多少处变成了什么。 */
+/** score minor 14（施工单第 19 条，2026-11-13；统筹审过这一键再推）：新顶层键 chordTagStyle = 和弦辅助写成什么："default" | "degree"（级数 V7）| "root"（根音 G7）。
+ *  模板 / 新歌 = "default"（"default" 现在等于什么只在 src/look：软件的默认 = 级数，设备上能记成习惯）。MusicXML 里不写（同 chordTags）。chordTags（标不标）的意思不变。
+ *  读的门口照文件纪律第四节：没写 = 模板的值 "default"、存的时候写下来、不说；值读不懂、这一份不比这一版新 = "default"、不说；比这一版新、值不认识 = 原样留着、
+ *  存的时候照写、画的时候按级数，页面设置那一项「这一版不认识」、打开时一句话。旧读者（13）读到 = 比自己新的小版本，不认识的键原样带回、说一次。冻结样本 minor/score-14。 */
 export declare const FORMAT_MINOR: Readonly<Record<FormatFile, number>>;
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；

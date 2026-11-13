@@ -44,6 +44,10 @@ export interface HabitsCardDeps {
 }
 export interface HabitsCard { close(): void; readonly el: HTMLElement }
 
+/** 卡上摆着哪几样习惯（只有这一份：画卡、「好」写设备都从它来；v0.17.30 收跟进第 1 条）：第一行谱的小卡片、第二行两颗钮、第三行起小下拉。
+ *  不在这里的习惯（以后加了、还没上卡的）从卡上点「好」不动它。 */
+export const CARD_HABITS = { tiles: "notation", pair: "viewInC", rows: ["middleC", "chordTagStyle"] } as const satisfies { tiles: HabitKey; pair: HabitKey; rows: readonly HabitKey[] };
+export const cardHabitKeys = (): readonly HabitKey[] => [CARD_HABITS.tiles, CARD_HABITS.pair, ...CARD_HABITS.rows];
 /** 一行小卡片：格子的基准宽、格子之间的间隔、格子里图两边留的（内边距 + 边框）。 */
 const TILE_BASE = 150, TILE_GAP = 10, TILE_INSET = 14;
 
@@ -53,10 +57,10 @@ export function openHabitsCard(d: HabitsCardDeps): HabitsCard {
   content.innerHTML =
     `<div class="hab-lead">${esc(_t("记在这台设备上，都可以不选，以后在设置里改。"))}</div>` +
     `<section class="hab-q" data-q="notation"><div class="hab-title">${esc(_t("习惯看的谱"))}</div>` +
-      `<div class="hab-strip">${NOTATIONS.map((id) => `<button type="button" class="hab-tile" data-h="notation" data-v="${id}" aria-pressed="false"><span class="hab-prev">${previewSvg(id, d.measure)}</span><span class="hab-name">${esc(notationName(id))}</span></button>`).join("")}</div>` +
+      `<div class="hab-strip">${NOTATIONS.map((id) => `<button type="button" class="hab-tile" data-h="${CARD_HABITS.tiles}" data-v="${id}" aria-pressed="false"><span class="hab-prev">${previewSvg(id, d.measure)}</span><span class="hab-name">${esc(notationName(id))}</span></button>`).join("")}</div>` +
       `<div class="hab-foot">${esc(_t("字母谱：玩 tracker 的可以先用这个，不完全一样。钢琴卷帘、录音还没做，做好了会加在这里。"))}</div></section>` +
     `<section class="hab-q" data-q="viewInC"><div class="hab-title">${esc(_t("移调辅助"))}</div>` +
-      `<div class="hab-pair"><button type="button" class="btn hab-btn" data-h="viewInC" data-v="off" aria-pressed="false">${esc(_t("不用"))}</button><button type="button" class="btn hab-btn" data-h="viewInC" data-v="on" aria-pressed="false">${esc(_t("按 C 调看"))}</button></div>` +
+      `<div class="hab-pair"><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="off" aria-pressed="false">${esc(_t("不用"))}</button><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="on" aria-pressed="false">${esc(_t("按 C 调看"))}</button></div>` +
       `<div class="hab-note">${esc(TRANSPOSE_AID_NOTE())}</div></section>` +
     `<section class="hab-small">${d.rows.html(d.current)}</section>`;
   const valueOf = (h: string, v: string): string | boolean => (h === "viewInC" ? v === "on" : v);

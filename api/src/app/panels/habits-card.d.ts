@@ -26,4 +26,12 @@ export interface HabitsCard {
     close(): void;
     readonly el: HTMLElement;
 }
+/** 卡上摆着哪几样习惯（只有这一份：画卡、「好」写设备都从它来；v0.17.30 收跟进第 1 条）：第一行谱的小卡片、第二行两颗钮、第三行起小下拉。
+ *  不在这里的习惯（以后加了、还没上卡的）从卡上点「好」不动它。 */
+export declare const CARD_HABITS: {
+    readonly tiles: "notation";
+    readonly pair: "viewInC";
+    readonly rows: readonly ["middleC", "chordTagStyle"];
+};
+export declare const cardHabitKeys: () => readonly HabitKey[];
 export declare function openHabitsCard(d: HabitsCardDeps): HabitsCard;

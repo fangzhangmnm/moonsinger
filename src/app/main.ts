@@ -17,7 +17,7 @@ import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
 import { PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type PedalTok, setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setPaper, setCredits, setTitle, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
-import { textLangIn, setTextLang, TEXT_LANGS, type TextLang, setViewInC, setChordTags, setNotation, setMiddleC, setExpressions, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, NOTATIONS, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
+import { textLangIn, setTextLang, TEXT_LANGS, type TextLang, setViewInC, setChordTags, setNotation, setMiddleC, setExpressions, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, NOTATIONS, CHORD_TAG_STYLES, setChordTagStyle, type ChordTagStyle, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { foldedMarks, type FoldedMark } from "../render/expressions.ts";   // 演奏法和表情不显示时改到 / 写上了它们：轻轻说一句（7-G）
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveDataIn, withGrooveData, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
@@ -89,9 +89,9 @@ import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf
 import { partShow, partNameOf, roleNameIn, roleGivenName, roleInstrumentLabel, type PartShow } from "../format/part-show.ts";   // 声部显示成什么：唯一出口（12-4）
 import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES } from "../score/paper.ts";
 import { paperSizeText } from "../look/paper.ts";
-import { lookOf, notationName, NOTATION_NOTE, middleCLabel, MIDDLE_C_NOTE, TRANSPOSE_AID_NOTE, trackLookOf, followDefault, allDefault, chosenCount, defaultText, customStaffMm, marginRow, type LookKey, type LookContext, type LookDefaults, type HabitKey, type Habits, HABIT_KEYS } from "../look/index.ts";
+import { lookOf, notationName, NOTATION_NOTE, middleCLabel, MIDDLE_C_NOTE, TRANSPOSE_AID_NOTE, CHORD_TAG_STYLE_LABEL, CHORD_TAG_STYLE_NOTE, trackLookOf, followDefault, allDefault, chosenCount, defaultText, customStaffMm, marginRow, type LookKey, type LookContext, type LookDefaults, type HabitKey, type Habits, HABIT_KEYS } from "../look/index.ts";
 import { habitsFrom, HABIT_CODEC, HABIT_DEVICE_KEY, HABITS_ASKED_KEY } from "../look/habits.ts";
-import { openHabitsCard, type HabitsCard, type HabitRows } from "./panels/habits-card.ts";   // 这台设备的习惯（第 18 条）   // 「现在怎么画」和「跟着软件」只问这一处（第 17 条）
+import { openHabitsCard, CARD_HABITS, cardHabitKeys, type HabitsCard, type HabitRows } from "./panels/habits-card.ts";   // 这台设备的习惯（第 18 条）   // 「现在怎么画」和「跟着软件」只问这一处（第 17 条）
 import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
@@ -631,7 +631,8 @@ function openHabitsCardNow(from: "boot" | "settings" = "boot"): void {
   const back = () => { if (from === "settings") openSettings(); };
   ui.open({ k: "sheet", close });
   habitsCard = openHabitsCard({ measure: view.rawMeasure, current: habitCtx.habits ?? {}, rows: cardRows,
-    done: (c) => { gone(); for (const k of HABIT_KEYS) writeHabit(k, c[k]); deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", `ok (${from})`); habitCtx = { habits: habitsFrom(deviceKvGet) }; afterHabits(); back(); },
+    // 「好」只写卡上摆着的那几样（cardHabitKeys；v0.17.30 收跟进第 1 条：不在卡上的那一样不被清成没选）
+    done: (c) => { gone(); for (const k of cardHabitKeys()) writeHabit(k, c[k]); deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", `ok (${from})`); habitCtx = { habits: habitsFrom(deviceKvGet) }; afterHabits(); back(); },
     later: () => { gone(); if (from === "boot") deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", `later (${from})`); back(); },
     dismissed: () => { gone(); diagNote("habits", `dismissed (${from})`); back(); } });
 }
@@ -1477,6 +1478,7 @@ function habitRowHtml(k: HabitKey, h: Habits): string {
   const NONE = "none", none: [string, string] = [NONE, _t("没选（照软件的默认：{x}）", { x: defaultText(k, {}) })];
   if (k === "notation") return setItem(_t("习惯看的谱"), setSel("habit:notation", [none, ...NOTATIONS.map((id): [string, string] => [id, notationName(id)])], h.notation ?? NONE), _t("新歌和没单独选过的歌照它显示；每首歌在页面设置里能单独换。"));
   if (k === "viewInC") return setItem(_t("移调辅助"), setSel("habit:viewInC", [none, ["off", _t("不用（照写的调）")], ["on", _t("按 C 调看")]], h.viewInC === undefined ? NONE : h.viewInC ? "on" : "off"), TRANSPOSE_AID_NOTE());
+  if (k === "chordTagStyle") return setItem(_t("和弦写法"), setSel("habit:chordTagStyle", [none, ...CHORD_TAG_STYLES.map((v): [string, string] => [v, CHORD_TAG_STYLE_LABEL[v]()])], h.chordTagStyle ?? NONE), CHORD_TAG_STYLE_NOTE());
   return setItem(_t("中央 C 叫"), setSel("habit:middleC", [none, ...MIDDLE_C_NAMES.map((n): [string, string] => [String(n), middleCLabel(n)])], h.middleC === undefined ? NONE : String(h.middleC)), MIDDLE_C_NOTE());
 }
 /** 设置「界面」页：「初始设置」那一行（打开那张卡）+ 每样习惯一行。 */
@@ -1491,8 +1493,8 @@ function readHabitRows(root: HTMLElement, keys: readonly HabitKey[]): Habits {
   for (const k of keys) { const raw = root.querySelector<HTMLButtonElement>(`[data-set="habit:${k}"]`)?.value ?? "none"; const v = raw === "none" ? undefined : HABIT_CODEC[k].parse(raw); if (v !== undefined) out[k] = v; }
   return out as Habits;
 }
-/** 「初始设置」卡第三行起的小下拉：现在只有「中央 C 叫」（第 19 条的和弦标法到时加在这里）。 */
-const CARD_ROW_KEYS: readonly HabitKey[] = ["middleC"];
+/** 「初始设置」卡第三行起的小下拉：中央 C 叫、和弦写法（第 19 条）。卡上摆着的那几样 = CARD_HABITS（habits-card.ts），画卡和「好」写设备都从那一份来。 */
+const CARD_ROW_KEYS: readonly HabitKey[] = CARD_HABITS.rows;
 const cardRows: HabitRows = {
   keys: CARD_ROW_KEYS,
   html: (cur) => CARD_ROW_KEYS.map((k) => habitRowHtml(k, cur)).join(""),
@@ -1504,6 +1506,7 @@ function onHabitRow(k: HabitKey, raw: string): void {
   if (k === "notation") setHabit("notation", raw === "none" ? undefined : HABIT_CODEC.notation.parse(raw));
   else if (k === "viewInC") setHabit("viewInC", raw === "none" ? undefined : HABIT_CODEC.viewInC.parse(raw));
   else if (k === "middleC") setHabit("middleC", raw === "none" ? undefined : HABIT_CODEC.middleC.parse(raw));
+  else if (k === "chordTagStyle") setHabit("chordTagStyle", raw === "none" ? undefined : HABIT_CODEC.chordTagStyle.parse(raw));
 }
 /** 设置面板（应用内，不用系统弹窗）：六页（13-1）；音源 / 维护两页的格局和按钮在 panels/settings-libs.ts（13-2）。 */
 function openSettings(): void {
@@ -2242,7 +2245,9 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
           : defs([[_t("不用（照写的调）"), _t("按实际的调画谱，键上大字写音名")], [_t("按 C 调看"), _t("谱换到 C 调画、每个调号上方写「1=原来的调」；键上的大字也按 C 调写（谱上画成的名字），小字是实际的音；键的位置不动")]])) + IN_SONG) +
       // 中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；第 18 条起一直在——它管所有写成「字母 + 八度数字」的地方，统筹 b149a4d9 第 4 点）
       setItem(_t("中央 C 叫"), sel("mc", [fol("middleC"), ...MIDDLE_C_NAMES.map((n) => [String(n), middleCLabel(n)] as const)], cur("middleC", String(look.middleC))), MIDDLE_C_NOTE() + IN_SONG) +
-      setItem(_t("和弦辅助"), sel("ct", [fol("chordTags"), ["on", _t("标级数")], ["off", _t("不标")]], cur("chordTags", look.chordTags ? "on" : "off")), _t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选") + IN_SONG) +
+      // 和弦辅助 = 标不标（chordTags）、和弦写法 = 标成什么样（chordTagStyle）：一行一个键（第 19 条，统筹 0d97f07a）
+      setItem(_t("和弦辅助"), sel("ct", [fol("chordTags"), ["on", _t("标")], ["off", _t("不标")]], cur("chordTags", look.chordTags ? "on" : "off")), _t("叠在一起的和弦上方标出它是什么和弦（写法在下一行）；点它看全部候选") + IN_SONG) +
+      setItem(_t("和弦写法"), sel("cts", ...known(cur("chordTagStyle", D.st.song.chordTagStyle), [fol("chordTagStyle"), ...CHORD_TAG_STYLES.map((v) => [v, CHORD_TAG_STYLE_LABEL[v]()] as const)], cur("chordTagStyle", look.chordTagStyle))), CHORD_TAG_STYLE_NOTE() + IN_SONG) +
       // 演奏法和表情（7-G；user 11-11 深夜「显示里面再加一个不显示articulation和表情的选项。打印时也许会用，相当于前面讨论的不overwhelm小孩和初学者」）
       setItem(_t("演奏法和表情"), sel("expr", [fol("expressions"), ["on", _t("显示")], ["off", _t("不显示")]], cur("expressions", look.expressions ? "on" : "off")),
         _t("不显示 = 键盘「演奏法」「力度」两页上的东西都不画、不占地方（跳音、重音、连线、呼吸、力度、渐强渐弱…），行跟着变矮；第一行谱头那一行的右端有一行淡字「演奏法和表情：不显示」（不印），点它回到这里。只管画：播放照写的来，歌里的记号一个不动；PDF 照眼前的样子印。") + IN_SONG) +
@@ -2295,9 +2300,9 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
   box.addEventListener("change", (e) => {
     const el = e.target as HTMLButtonElement, k = el.dataset.pg, v = el.value; if (!k || v === ODD) return;   // 「这一版不认识」那一项不是一个可选的值
     // 选「跟着软件」：这一项写回跟着软件（src/look followDefault）；按这一项原来那一类走写入口（修改锁的「看法」按类别核）
-    const FOLLOW_KEY: Record<string, LookKey> = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit", margin: "marginMm" };
+    const FOLLOW_KEY: Record<string, LookKey> = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", cts: "chordTagStyle", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit", margin: "marginMm" };
     if (v === FOLLOW && FOLLOW_KEY[k]) {
-      const key = FOLLOW_KEY[k]!, next = { ...D.st, song: followDefault(D.st.song, key) }, label = _t("{what}：跟着软件", { what: ({ nota: _t("谱种"), inc: _t("移调辅助"), mc: _t("中央 C 叫"), ct: _t("和弦辅助"), expr: _t("演奏法和表情"), paper: _t("纸张"), density: _t("音符密度"), bn: _t("小节号"), lyr: _t("歌词排法"), margin: _t("边距") } as Record<string, string>)[k] ?? key });
+      const key = FOLLOW_KEY[k]!, next = { ...D.st, song: followDefault(D.st.song, key) }, label = _t("{what}：跟着软件", { what: ({ nota: _t("谱种"), inc: _t("移调辅助"), mc: _t("中央 C 叫"), ct: _t("和弦辅助"), cts: _t("和弦写法"), expr: _t("演奏法和表情"), paper: _t("纸张"), density: _t("音符密度"), bn: _t("小节号"), lyr: _t("歌词排法"), margin: _t("边距") } as Record<string, string>)[k] ?? key });
       if (key === "paper" || key === "marginMm") setPageLook(next, { kind: "paperSize", label }); else if (key === "density") setPageLook(next, { kind: "density", label });
       else if (key === "barNumbers") setPageLook(next, { kind: "barNumbers", label }); else if (key === "lyricFit") setPageLook(next, { kind: "lyricFit", label });
       else setSongLook(next, label);
@@ -2306,7 +2311,8 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
     if (k === "nota") setSongLook(setNotation(D.st, v as NotationId), v === "jianpu" ? _t("简谱") : v === "letters" ? _t("字母谱") : _t("五线谱"));
     else if (k === "inc") setSongLook(setViewInC(D.st, v === "on"), `${_t("移调辅助")} ${v === "on" ? _t("按 C 调看") : _t("不用（照写的调）")}`);
     else if (k === "mc") { const n = Number(v); setSongLook(setMiddleC(D.st, n), _t("中央 C 叫 C{n}", { n })); }
-    else if (k === "ct") setSongLook(setChordTags(D.st, v === "on"), `${_t("和弦辅助")} ${v === "on" ? _t("标级数") : _t("不标")}`);
+    else if (k === "ct") setSongLook(setChordTags(D.st, v === "on"), `${_t("和弦辅助")} ${v === "on" ? _t("标") : _t("不标")}`);
+    else if (k === "cts" && (CHORD_TAG_STYLES as readonly string[]).includes(v)) setSongLook(setChordTagStyle(D.st, v as ChordTagStyle), `${_t("和弦写法")} ${CHORD_TAG_STYLE_LABEL[v as ChordTagStyle]()}`);
     else if (k === "expr") setSongLook(setExpressions(D.st, v === "on"), v === "on" ? _t("显示演奏法和表情") : _t("不显示演奏法和表情"));
     else if (k === "only1") { const one = D.st.song.parts[0]; if (one) { for (const q of D.st.song.parts) setPv(q.id, { only: v === "on" && q === one }); afterViewChange(); } }
     else if (k === "paper") { if ((PAPER_KINDS as string[]).includes(v)) setPageLook(setPaper(D.st, v as PaperKind), { kind: "paperSize", label: `${_t("纸张")} ${PAPER_LABEL[v as PaperKind]}` }); }

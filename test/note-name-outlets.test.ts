@@ -48,6 +48,38 @@ describe("给人看的音名 · 照眼前的谱写", () => {
   });
 });
 
+describe("和弦写法：后缀只有一份，两处用（谱上「根音」写法的字、候选小表的根音名；统筹 5068622f）", () => {
+  let id = 700;
+  const P = (step: string, octave: number, alter = 0): Pitch => ({ step: step as Pitch["step"], alter, octave });
+  const chordNote = (ps: Pitch[]): Token => ({ kind: "note", id: id++, pitch: ps[0], chord: ps.slice(1), dur: TPQ, lyric: null }) as unknown as Token;
+  const layout = (fifths: number, chords: Pitch[][], style: "degree" | "root", inC = false) => {
+    let st = setMark(initState(), 0, { kind: "key", fifths });
+    st = { ...st, song: { ...withTrack(st.song, st.at.paper, st.at.part, [...tr(st).slice(0, 3), ...chords.map(chordNote)]), chordTagStyle: style } };
+    if (inC) st = setViewInC(st, true);
+    const L = engrave(st.song, printOpts(st.song, 10, [{ id: st.at.part, name: "", first: true }], createTextMeasure((x: string, px: number) => x.length * px * 0.6), true));
+    return { tags: L.prims.filter((q) => q.t === "text" && /chord-tag/.test(q.cls ?? "")).map((q) => (q.t === "text" ? q.s : "")), reads: L.chordTags.map((c) => c.read) };
+  };
+  // 和弦从高到低写：pitch = 最高的，chord = 其余
+  const Bb7 = [P("A", 4, -1), P("F", 4), P("D", 4), P("B", 3, -1)], Fsm7b5 = [P("E", 5), P("C", 5), P("A", 4), P("F", 4, 1)], G7B = [P("F", 5), P("D", 5), P("G", 4), P("B", 3)], G69 = [P("E", 5), P("A", 4), P("D", 4), P("B", 3), P("G", 3)];
+  it("根音写法：谱上的字 = 候选小表的根音名（同一个读法的 name）", () => {
+    const r = layout(-1, [Bb7, Fsm7b5, G7B], "root");
+    eq(r.tags.length, 3); r.tags.forEach((t, i) => eq(t.split(" / ")[0], r.reads[i]!.best.name, `第 ${i + 1} 个`));
+  });
+  it("交付要看的几个：B♭7、F♯m7♭5、G7/B；六九写 69（G69、V69），斜线只表示转位", () => {
+    eq(layout(-1, [Bb7], "root").tags[0]!.split(" / ")[0], "B♭7");
+    eq(layout(0, [Fsm7b5], "root").tags[0]!.split(" / ")[0], "F♯m7♭5");
+    eq(layout(0, [G7B], "root").tags[0]!.split(" / ")[0], "G7/B");
+    const g69 = layout(0, [G69], "root").reads[0]!, d69 = layout(0, [G69], "degree");
+    assert(g69.all.some((g) => g.name === "G69") && !g69.all.some((g) => g.name.includes("6/9")), g69.all.map((g) => g.name).join(","));
+    assert(d69.reads[0]!.all.some((g) => g.label === "V69"), d69.reads[0]!.all.map((g) => g.label).join(","));
+  });
+  it("级数写法照旧（IV7…）；开着移调辅助时根音照换到 C 调之后的写", () => {
+    eq(layout(-1, [Bb7], "degree").tags[0]!.split(" / ")[0], "IV7", "F 大调里 B♭7 = IV7");
+    eq(layout(-1, [Bb7], "root", true).tags[0]!.split(" / ")[0], "F7", "F 大调的 B♭7 换到 C 调 = F7");
+    eq(layout(-1, [Bb7], "degree", true).tags[0]!.split(" / ")[0], "IV7", "级数换不换调都一样");
+  });
+});
+
 describe("给人看的音名 · 永远写实际的", () => {
   const m = pad(Eb, true), k = keyOf(m, "E♭4");
   it("K2 小字（含升降滑时）= 实际的", () => { eq(T(m.cell(k).small), "E♭4"); eq(T(m.altered(k, 1).small), "E4"); });

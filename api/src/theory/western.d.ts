@@ -26,6 +26,8 @@ export declare function degreeOf(p: Pitch, fifths: number, mode?: Mode): {
 export declare function readChord(pitches: readonly Pitch[], fifths: number, mode?: Mode): ChordRead | null;
 /** 标在谱上的那一行字：打平的用「 / 」连起来（最多两个）。 */
 export declare const chordLabel: (r: HarmonyRead) => string;
+/** 根音写法（第 19 条）：和 chordLabel 一样的取法，只是每个读法写它的 name（候选小表里的根音名就是这一个）。 */
+export declare const rootChordLabel: (r: HarmonyRead) => string;
 /** 人能挑的和弦种类（测试守「每一种在文件里都有写法」用）。 */
 export declare const PIN_KIND_IDS: readonly string[];
 export declare function pinXmlKind(kind: string): {

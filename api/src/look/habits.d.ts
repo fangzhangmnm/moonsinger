@@ -1,4 +1,4 @@
-import { type NotationId } from "../score/song-view.ts";
+import { type NotationId, type ChordTagStyle } from "../score/song-view.ts";
 import type { PaperKind, Density } from "../score/paper.ts";
 /** 「跟着软件」时各项是什么（歌里某一项是 "default" 时用）。 */
 export interface LookDefaults {
@@ -6,6 +6,7 @@ export interface LookDefaults {
     viewInC: boolean;
     middleC: number;
     chordTags: boolean;
+    chordTagStyle: ChordTagStyle;
     expressions: boolean;
     barNumbers: "line" | "off";
     lyricFit: "rhythm" | "lyrics";
@@ -15,7 +16,7 @@ export interface LookDefaults {
 /** 软件的默认（第 17 条起的「跟着软件」）。读别家的谱认「哪一档算跟着软件」也只用这一份。 */
 export declare const BASE_DEFAULTS: LookDefaults;
 /** 能当习惯的几项（各记各的）。 */
-export declare const HABIT_KEYS: readonly ["notation", "viewInC", "middleC"];
+export declare const HABIT_KEYS: readonly ["notation", "viewInC", "middleC", "chordTagStyle"];
 export type HabitKey = (typeof HABIT_KEYS)[number];
 /** 这台设备上的习惯：每一项 = 没选（不在里面），或者一个具体的值。 */
 export type Habits = {

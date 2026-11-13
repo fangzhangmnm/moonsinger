@@ -39,7 +39,7 @@ const TPLS: Tpl[] = [
   { id: "7sus4", iv: [0, 5, 10], opt: [7], minor: false, rs: "7sus4", sym: "7sus4" },
   { id: "add9", iv: [0, 4, 2], opt: [7], minor: false, rs: "add9", sym: "add9" },
   { id: "madd9", iv: [0, 3, 2], opt: [7], minor: true, rs: "(add9)", sym: "m(add9)" },
-  { id: "69", iv: [0, 4, 9, 2], opt: [7], minor: false, rs: "6/9", sym: "6/9" },
+  { id: "69", iv: [0, 4, 9, 2], opt: [7], minor: false, rs: "69", sym: "69" },   // 写 69 不写 6/9：斜线只表示转位（统筹 5068622f）
   { id: "9", iv: [0, 4, 10, 2], opt: [7], minor: false, rs: "9", sym: "9" },
   { id: "m9", iv: [0, 3, 10, 2], opt: [7], minor: true, rs: "9", sym: "m9" },
   { id: "maj9", iv: [0, 4, 11, 2], opt: [7], minor: false, rs: "maj9", sym: "maj9" },
@@ -142,6 +142,8 @@ function thirdDyad(ps: Pitch[], fifths: number, mode: Mode): ChordRead | null {
 }
 /** 标在谱上的那一行字：打平的用「 / 」连起来（最多两个）。 */
 export const chordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g) => g.label).join(" / ") + (r.stale ? "?" : "");   // 人挑的对不上这几个音了 = 带「?」
+/** 根音写法（第 19 条）：和 chordLabel 一样的取法，只是每个读法写它的 name（候选小表里的根音名就是这一个）。 */
+export const rootChordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g) => g.name).join(" / ") + (r.stale ? "?" : "");
 /** 一个和弦（根音 + 种类 + 最低音）在这个调里怎么写（v0.16.87：人挑过的按这个现算；算法和 readChord 里同一套）。种类不认识 = null。 */
 function guessOf(root: Pitch, tplId: string, bass: Pitch, fifths: number, mode: Mode): ChordGuess | null {
   if (tplId.startsWith(FREE)) { const nm = stepName(root) + tplId.slice(FREE.length) + (pc(root) === pc(bass) ? "" : `/${stepName(bass)}`); return { root, bass, tpl: tplId, label: nm, name: nm, cost: 0, omitted: 0, no3: false }; }   // 这一版不认识的种类：只写和弦名，不算级数
@@ -291,6 +293,7 @@ export const western: HarmonyTheory = {
   id: ID,
   readBar,
   label: chordLabel,
+  rootLabel: rootChordLabel,
   pinRead,
   pinOf,
   fold: foldChord,

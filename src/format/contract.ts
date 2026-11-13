@@ -155,14 +155,18 @@ export type FormatFile = keyof typeof FORMAT;
  *     门口不放「原来没写是什么意思」的第二张表。
  *  ② 新加的「跟着谁」的开关（跟着谱 / 速度 / 音域…），模板里必须是「不跟」：不然老歌里写着的那个数会因为补了一个开关变成不算数。
  *  ③ 新加的数，定模板值的时候按「歌库里每一首都会变成它」来想；交付时写明它让多少首、多少处变成了什么。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 13, lounge: 4, studio: 3 };   // lounge 3（9-2）起小版本从 0 数
+/** score minor 14（施工单第 19 条，2026-11-13；统筹审过这一键再推）：新顶层键 chordTagStyle = 和弦辅助写成什么："default" | "degree"（级数 V7）| "root"（根音 G7）。
+ *  模板 / 新歌 = "default"（"default" 现在等于什么只在 src/look：软件的默认 = 级数，设备上能记成习惯）。MusicXML 里不写（同 chordTags）。chordTags（标不标）的意思不变。
+ *  读的门口照文件纪律第四节：没写 = 模板的值 "default"、存的时候写下来、不说；值读不懂、这一份不比这一版新 = "default"、不说；比这一版新、值不认识 = 原样留着、
+ *  存的时候照写、画的时候按级数，页面设置那一项「这一版不认识」、打开时一句话。旧读者（13）读到 = 比自己新的小版本，不认识的键原样带回、说一次。冻结样本 minor/score-14。 */
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 14, lounge: 4, studio: 3 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
 /** score patch 1（施工单 7-J，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「现在有没有人真的在用带拼音的导出。 no, 我也建议先sunset」）：拼音字体退役，
  *  视图态 view.pdf（乐谱 PDF 的字体，只写过 "pinyin"）**不再写**。少写一个视图态的键、别的一个没动：老版本读到 = 没写 = 黑体，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件里的 "pinyin" = 不理（照黑体印、不报错），再存就不带了。不用迁移、不用冻结样本（照 minor / patch 的规矩，只更新形状快照）。 */
-export const FORMAT_PATCH: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 1, lounge: 0, studio: 0 };
+export const FORMAT_PATCH: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 0, lounge: 0, studio: 0 };   // score minor 14 起 patch 从 0 数
 
 // ═══ 现役（project.ts 写的就是这些）═══════════════════════════════════════════════════════
 

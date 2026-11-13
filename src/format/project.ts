@@ -155,7 +155,7 @@ const stampFor = (k: FormatFile, j: unknown): Json => (newerThanMe(j, k) ? { ver
  *  **比这一版新的那一份**里键认识、值不认识的（以后的谱种 / 排法…）= 原样留在歌里、存的时候照写，画的时候按最基本的那一档（song-view.ts），这里记一句打开时说。
  *  别家的 MusicXML 没有 score.json = 整组按新建的写。 */
 /** 页面设置里这几样的人话名字（打开时那一句用）。 */
-const LOOK_LABEL: Partial<Record<string, () => string>> = { notation: () => _t("谱种"), lyricFit: () => _t("歌词怎么排"), barNumbers: () => _t("小节号"), textLang: () => _t("谱上的字用哪种语言") };
+const LOOK_LABEL: Partial<Record<string, () => string>> = { notation: () => _t("谱种"), chordTagStyle: () => _t("和弦辅助"), lyricFit: () => _t("歌词怎么排"), barNumbers: () => _t("小节号"), textLang: () => _t("谱上的字用哪种语言") };
 /** 第 17 条 17-1：能跟着软件的那十一项（看谱那几样 + 版面那几样 + 纸张四项）的读法在 src/look lookFromFile（没写 = "default"，纸张没写 = 从 <defaults> 认一次）；
  *  这里只管住在同一组里的另两样：编排（改声音，第 16 条那一侧；没写 = 空）、谱上的字（"ui" 本身就是跟界面；没写 = "ui"，更新的版本写的不认识的字原样留）。音距（spacing）退役：读到不理。 */
 function songLookOf(x: Json | undefined, newer: boolean, odd: string[], xmlPaper: ReadPaper | undefined): Pick<Song, SongLookKey> {
@@ -164,7 +164,7 @@ function songLookOf(x: Json | undefined, newer: boolean, odd: string[], xmlPaper
   return { ...lookFromFile(x, xmlPaper, newer, odd), arrangement: typeof a === "string" ? a : NEW_SONG_LOOK.arrangement, textLang };
 }
 const fpTextOf = (o: Json): string => { const { minor: _m, patch: _p, ...rest } = o; return JSON.stringify(rest, null, 2) + "\n"; };
-const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "grooves", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort", "notation", "chordTags", "viewInC", "middleC", "expressions", "textLang", "paper", "density", "staffMm", "marginMm"]);   // spacing / denseShort = 退役的键：认得、读到不理、不带回
+const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "grooves", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort", "notation", "chordTags", "chordTagStyle", "viewInC", "middleC", "expressions", "textLang", "paper", "density", "staffMm", "marginMm"]);   // spacing / denseShort = 退役的键：认得、读到不理、不带回
 /** papers[] / parts[] 每一条里这一版认得的键（v0.16.88，设计稿第五节）：别的（更新的版本写的）按段 id / 声部 id 原样带回。
  *  phrases / parts.autoOttava 是退役的键（这一版读的时候已经处理了），算认得、不带回。
  *  规矩（Claude Fable 5.2 2026-11-10 定）：
@@ -341,7 +341,7 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
     grooves: groovesInUse(song),   // 风格记号用到的那几种风格出声用的五样（16-4 D）：只写谱上还用着的
     // 歌级的十样显示设置：照歌里写着的写（16-4 A3：新建时按 NEW_SONG_LOOK 写、门口补过、改设置永远写值；比这一版新的那一份里认不出来的值原样写回）
     arrangement: song.arrangement, lyricFit: song.lyricFit, barNumbers: song.barNumbers, notation: song.notation,
-    chordTags: song.chordTags, viewInC: song.viewInC, middleC: song.middleC, expressions: song.expressions, textLang: song.textLang,
+    chordTags: song.chordTags, chordTagStyle: song.chordTagStyle, viewInC: song.viewInC, middleC: song.middleC, expressions: song.expressions, textLang: song.textLang,
     // 纸张和版式（17-1，score minor 13）：存选择（"default" 或这首歌选的），MusicXML <defaults> 里的数是照「现在怎么画」算出来写给别的软件看的
     paper: song.paper, density: song.density, staffMm: song.staffMm, marginMm: song.marginMm };
   // 嵌的音源：只写还有候选引用着的（换了音源 = 旧块从歌里丢掉；§10.2）

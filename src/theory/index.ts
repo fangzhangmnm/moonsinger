@@ -62,8 +62,10 @@ export interface HarmonyTheory {
   /** 读一小节：这一小节 + 上一小节交出来的 carry（第一小节 = undefined）→ 这一小节里要标的音 + 交给下一小节的 carry。纯函数、纯数据（排版 worker 里跑）。
    *  理论只见得到喂给它的这一小节（见文件头「只看前面」）。 */
   readBar(bar: BarInput, carry: unknown, opts: ReadOpts): { tags: HarmonyTag[]; carry: unknown };
-  /** 谱上写的那一行字。 */
+  /** 谱上写的那一行字（级数写法：V7、ii）。 */
   label(read: HarmonyRead): string;
+  /** 同一处读法写成根音（G7、Am、C/E；和弦写法选「根音」时谱上写这个，第 19 条）。后缀和候选小表里的根音名是同一张表（读法里的 name）。 */
+  rootLabel(read: HarmonyRead): string;
   /** 点开候选时：顶上那句「怎么认的」、每个读法后面的小字。界面上跑（可以用 _t）。 */
   howTo(read?: HarmonyRead): string;
   explain(guess: HarmonyGuess): string[];

@@ -3,22 +3,22 @@
 //     可能我们确实不适合做这种直接根据你看什么谱去判断，这个不就是刻板偏见吗？」「…所以说就是问两样，一个是你习惯看什么谱，一个是你要不要移调。」
 //   · 三层，各管各的：歌里这一项选过 → 照歌的；歌里是 "default" → 这台设备上这一项的习惯；设备上没选 → 软件的默认（BASE_DEFAULTS）。
 //   · **每样习惯只盖它自己那一项，不从一样推另一样**（defaultsFor 按 HABIT_KEYS 一项一项盖；test/look-habits.test.ts 钉住）。
-//   · 现在三样：看什么谱、要不要移调辅助、中央 C 叫 C 几（统筹 b149a4d9：user 要它也做成习惯、上卡）。和弦辅助不问、不做成习惯（软件的默认就是开）。加一样 = HABIT_KEYS 多一个名字 + 设备上一个键 + 设置里一行 + 卡上一段。
+//   · 现在四样：看什么谱、要不要移调辅助、中央 C 叫 C 几（统筹 b149a4d9）、和弦辅助写级数还是根音（第 19 条）。和弦辅助不问、不做成习惯（软件的默认就是开）。加一样 = HABIT_KEYS 多一个名字 + 设备上一个键 + 设置里一行 + 卡上一段。
 //   · 这里纯：不读设备、不碰界面。设备上记的由 app 读（main.ts），随「当时的情况」（LookContext）交给 lookOf / defaultText。
 //   · 存文件只用不带习惯的那一份（project.ts 的 lookOf(song)）：习惯怎么换，存出来的文件一个字节都不变。
-import { NOTATIONS, MIDDLE_C_NAMES, type NotationId } from "../score/song-view.ts";
+import { NOTATIONS, MIDDLE_C_NAMES, CHORD_TAG_STYLES, type NotationId, type ChordTagStyle } from "../score/song-view.ts";
 import type { PaperKind, Density } from "../score/paper.ts";
 
 /** 「跟着软件」时各项是什么（歌里某一项是 "default" 时用）。 */
 export interface LookDefaults {
-  notation: NotationId; viewInC: boolean; middleC: number; chordTags: boolean; expressions: boolean;
+  notation: NotationId; viewInC: boolean; middleC: number; chordTags: boolean; chordTagStyle: ChordTagStyle; expressions: boolean;
   barNumbers: "line" | "off"; lyricFit: "rhythm" | "lyrics"; paper: PaperKind; density: Density;
 }
 /** 软件的默认（第 17 条起的「跟着软件」）。读别家的谱认「哪一档算跟着软件」也只用这一份。 */
-export const BASE_DEFAULTS: LookDefaults = { notation: "staff", viewInC: false, middleC: 4, chordTags: true, expressions: true, barNumbers: "line", lyricFit: "rhythm", paper: "A5", density: "cozy" };
+export const BASE_DEFAULTS: LookDefaults = { notation: "staff", viewInC: false, middleC: 4, chordTags: true, chordTagStyle: "degree", expressions: true, barNumbers: "line", lyricFit: "rhythm", paper: "A5", density: "cozy" };
 
 /** 能当习惯的几项（各记各的）。 */
-export const HABIT_KEYS = ["notation", "viewInC", "middleC"] as const;
+export const HABIT_KEYS = ["notation", "viewInC", "middleC", "chordTagStyle"] as const;
 export type HabitKey = (typeof HABIT_KEYS)[number];
 /** 这台设备上的习惯：每一项 = 没选（不在里面），或者一个具体的值。 */
 export type Habits = { readonly [K in HabitKey]?: LookDefaults[K] };
@@ -38,9 +38,10 @@ export const HABIT_CODEC: { readonly [K in HabitKey]: { parse(raw: string | null
   notation: { parse: (raw) => (NOTATIONS as readonly string[]).includes(raw ?? "") ? (raw as NotationId) : undefined, write: (v) => v },
   viewInC: { parse: (raw) => (raw === "on" ? true : raw === "off" ? false : undefined), write: (v) => (v ? "on" : "off") },
   middleC: { parse: (raw) => { const n = Number(raw); return raw && MIDDLE_C_NAMES.includes(n) ? n : undefined; }, write: (v) => String(v) },
+  chordTagStyle: { parse: (raw) => ((CHORD_TAG_STYLES as readonly string[]).includes(raw ?? "") ? (raw as ChordTagStyle) : undefined), write: (v) => v },
 };
 /** 设备键值里的名字（不用以前的 view-in-c / chord-tags：意思不一样，不读它们、不转换）。 */
-export const HABIT_DEVICE_KEY: { readonly [K in HabitKey]: string } = { notation: "habit-notation", viewInC: "habit-transpose-aid", middleC: "habit-middle-c" };
+export const HABIT_DEVICE_KEY: { readonly [K in HabitKey]: string } = { notation: "habit-notation", viewInC: "habit-transpose-aid", middleC: "habit-middle-c", chordTagStyle: "habit-chord-tag-style" };
 /** 从设备上读这几样习惯（read = 设备键值的读；纯：给什么读什么）。认不出的 = 没选。 */
 export function habitsFrom(read: (key: string) => string | null): Habits {
   const h: { -readonly [K in HabitKey]?: LookDefaults[K] } = {};

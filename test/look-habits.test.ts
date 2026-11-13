@@ -15,7 +15,7 @@ const fs = (await import("node:fs" as string)) as { readdirSync(u: URL): string[
 const ROOT = new URL("../", import.meta.url);
 const read = (f: string): string => fs.readFileSync(new URL(f, ROOT), "utf8");
 /** 每样习惯能取的值（全列：一样一样试）。 */
-const VALUES: { [K in (typeof HABIT_KEYS)[number]]: readonly unknown[] } = { notation: NOTATIONS, viewInC: [true, false], middleC: MIDDLE_C_NAMES };
+const VALUES: { [K in (typeof HABIT_KEYS)[number]]: readonly unknown[] } = { notation: NOTATIONS, viewInC: [true, false], middleC: MIDDLE_C_NAMES, chordTagStyle: ["degree", "root"] };
 
 let id = 9100;
 function song(): EditorState {
@@ -76,6 +76,19 @@ describe("这台设备的习惯 · 设备上记的", () => {
     eq(new Set(names).size, names.length);
     const src = read("src/app/main.ts");
     assert(!/"view-in-c"|"chord-tags"/.test(src), "main.ts 里不再出现老的键名");
+  });
+});
+
+describe("「初始设置」卡上摆着的那几样（v0.17.30 收跟进第 1 条）", () => {
+  it("名单只有一份：画卡、「好」写设备都从 CARD_HABITS 来；都是习惯、不重复", async () => {
+    const { cardHabitKeys, CARD_HABITS } = await import("../src/app/panels/habits-card.ts");
+    const keys = cardHabitKeys();
+    eq(new Set(keys).size, keys.length); for (const k of keys) assert((HABIT_KEYS as readonly string[]).includes(k), k);
+    eq(CARD_HABITS.rows.join(","), "middleC,chordTagStyle");
+    const card = read("src/app/panels/habits-card.ts"), main = read("src/app/main.ts");
+    assert(!/data-h="(notation|viewInC|middleC|chordTagStyle)"/.test(card), "卡上的格子 / 钮从 CARD_HABITS 拿 data-h，不写死");
+    assert(/done: \(c\) => \{ gone\(\); for \(const k of cardHabitKeys\(\)\) writeHabit\(k, c\[k\]\)/.test(main), "「好」只写 cardHabitKeys()（不在卡上的那一样值不变）");
+    assert(!/done: \(c\) => \{ gone\(\); for \(const k of HABIT_KEYS\)/.test(main), "「好」不许照 HABIT_KEYS 全写");
   });
 });
 

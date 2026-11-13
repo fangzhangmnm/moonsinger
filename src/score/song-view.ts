@@ -20,6 +20,9 @@ export type NotationId = "staff" | "jianpu" | "letters";
 export const NOTATIONS: readonly NotationId[] = ["staff", "jianpu", "letters"];
 /** 每条轨的和弦选项三档（设计稿第 3.7 节）：只认叠在一起的和弦 / 也认拆开弹的和弦 / 折叠成和弦名（折叠 = 第五刀，现在画法同 auto）。 */
 export type ChordsMode = "stacked" | "auto" | "fold";
+/** 和弦辅助写成什么（第 19 条）。 */
+export type ChordTagStyle = "degree" | "root";
+export const CHORD_TAG_STYLES: readonly ChordTagStyle[] = ["degree", "root"];
 export const CHORDS_MODES: readonly ChordsMode[] = ["stacked", "auto", "fold"];
 
 /** 谱上的字用哪种语言（12-4）：跟着界面 / 界面语言里的一种。歌里存的不认识的值（更新的版本写的）读成「跟着界面」，原样留在歌里。 */
@@ -37,6 +40,8 @@ export interface SongView {
   readonly notation: NotationId;
   /** 叠音的和弦上方写级数（乐理模块 src/theory/）。 */
   readonly chordTags: boolean;
+  /** 标的时候写成什么：级数（V7）还是根音（G7）（第 19 条）。认不出来的值 = 级数。 */
+  readonly chordTagStyle: ChordTagStyle;
   /** 按 C 调看（辅助）：谱换到 C 调画、每个调号上方写「1=原来的调」、键上大字写谱上画成的名字（第 19 条；原来写级数）；拖音高 / 鬼音符按显示的换回实际的。= 存着的值（设置面板亮哪个钮）。 */
   readonly viewInC: boolean;
   /** 按 C 调看此刻起不起作用 = 存着开 ∧ 这种谱上起作用（IN_C_APPLIES：简谱本来就是首调、字母谱写的是实际的音名：开关变灰、存着的值不动；施工单第三节「4」、7-B）。排版、谱面、键上的大字都看这个。 */
@@ -95,6 +100,11 @@ export function setTextLang(st: EditorState, v: TextLang): EditorState {
 export function setChordTags(st: EditorState, on: boolean): EditorState {
   if (st.song.chordTags === on) return st;
   return { ...st, song: { ...st.song, chordTags: on } };
+}
+/** 和弦辅助写成什么（第 19 条）：级数 / 根音。 */
+export function setChordTagStyle(st: EditorState, v: ChordTagStyle): EditorState {
+  if (st.song.chordTagStyle === v) return st;
+  return { ...st, song: { ...st.song, chordTagStyle: v } };
 }
 /** 按 C 调看开 / 关。 */
 export function setViewInC(st: EditorState, on: boolean): EditorState {

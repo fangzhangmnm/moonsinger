@@ -13,7 +13,7 @@ let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const BASE = process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/", PREFIX = "moonsinger-5b1e7c0a92d34f6e:";
 const b = await chromium.launch(), errs = [];
-const kv = (p) => p.evaluate((pre) => Object.fromEntries(["habits-asked", "habit-notation", "habit-transpose-aid", "habit-middle-c"].map((k) => [k, localStorage.getItem(pre + k)])), PREFIX);
+const kv = (p) => p.evaluate((pre) => Object.fromEntries(["habits-asked", "habit-notation", "habit-transpose-aid", "habit-middle-c", "habit-chord-tag-style"].map((k) => [k, localStorage.getItem(pre + k)])), PREFIX);
 const rowKind = (p) => p.evaluate(() => window.__moonsinger.layout().systems[0]?.kind ?? null);
 const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 1000, height: 900 }, firstOpen: true }), p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message)); return { ctx, p }; };
 
@@ -25,7 +25,7 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   check((await p.$eval(".wbe-panel .wbe-panel-title", (e) => e.textContent)) === "初始设置", "标题叫「初始设置」");
   const tiles = await p.$$eval(".habits-card [data-h]", (bs) => bs.map((x) => `${x.dataset.h}:${x.dataset.v}`));
   check(tiles.join(",") === "notation:staff,notation:jianpu,notation:letters,viewInC:off,viewInC:on", "格子：谱种表的三种 + 移调辅助两颗钮", tiles.join(","));
-  check(!!(await p.$('.habits-card [data-set="habit:middleC"]')), "中央 C 是一个小下拉（和设置那一行同一处出）");
+  check(!!(await p.$('.habits-card [data-set="habit:middleC"]')) && !!(await p.$('.habits-card [data-set="habit:chordTagStyle"]')), "中央 C、和弦写法是小下拉（和设置那几行同一处出）");
   const words = await p.$eval(".habits-card", (e) => e.textContent ?? "");
   check(/玩 tracker 的可以先用这个，不完全一样/.test(words) && /钢琴卷帘、录音还没做/.test(words), "字母谱那句和钢琴卷帘 / 录音还没做");
   check(!/新手|刚开始|学过|专家|你是哪一种|？/.test(words), "格子不写水平、不写问句");
@@ -38,13 +38,13 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   await p.reload(); const again = await p.waitForSelector(".habits-card", { timeout: 6000 }).then(() => true, () => false);
   check(again, "重新载入：没问过 = 还问");
   // 「好」：选简谱 + 按 C 调看 + C3
-  await p.click('.hab-tile[data-v="jianpu"]'); await p.click('.habits-card [data-h="viewInC"][data-v="on"]'); await pick(p, '.habits-card [data-set="habit:middleC"]', "3");
+  await p.click('.hab-tile[data-v="jianpu"]'); await p.click('.habits-card [data-h="viewInC"][data-v="on"]'); await pick(p, '.habits-card [data-set="habit:middleC"]', "3"); await pick(p, '.habits-card [data-set="habit:chordTagStyle"]', "root");
   await p.click('.hab-tile[data-v="staff"]'); await p.click('.hab-tile[data-v="staff"]');   // 点亮着的那格 = 取消；点两下回到没选
   check((await p.$$eval('.habits-card .on[data-h="notation"]', (s) => s.length)) === 0, "点亮着的那格 = 取消（每一问都可以不选）");
   await p.click('.hab-tile[data-v="jianpu"]');
   await p.click('.wbe-panel [data-panel-btn="ok"]'); await p.waitForTimeout(300);
   const k1 = await kv(p);
-  check(k1["habits-asked"] === "1" && k1["habit-notation"] === "jianpu" && k1["habit-transpose-aid"] === "on" && k1["habit-middle-c"] === "3", "「好」= 选了的记进设备、记「问过了」", JSON.stringify(k1));
+  check(k1["habits-asked"] === "1" && k1["habit-notation"] === "jianpu" && k1["habit-transpose-aid"] === "on" && k1["habit-middle-c"] === "3" && k1["habit-chord-tag-style"] === "root", "「好」= 选了的记进设备、记「问过了」（含和弦写法）", JSON.stringify(k1));
   check((await rowKind(p)) === "jianpu", "新歌（谱种「跟着软件」）马上按简谱排", await rowKind(p));
   check(await p.$eval('.pad-key[data-midi="60"] .kf-big', (e) => e.textContent === "C3").catch(() => false), "键上的字照中央 C 的叫法：中央 C 写 C3");
   await p.reload(); await p.waitForTimeout(3000);

@@ -1,0 +1,27 @@
+{
+  "score": {
+    "version": 2,
+    "minor": 14
+  },
+  "songView": {
+    "notation": "letters",
+    "chordTags": false,
+    "chordTagStyle": "root",
+    "viewInC": true,
+    "expressions": false,
+    "textLang": "en",
+    "chords": {
+      "P1": "stacked",
+      "P2": "fold"
+    }
+  },
+  "raw": {
+    "notation": "letters",
+    "chordTagStyle": "root",
+    "textLang": "en",
+    "parts": {
+      "P1": "stacked",
+      "P2": "fold"
+    }
+  }
+}

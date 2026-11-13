@@ -365,7 +365,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         if (u.kind !== "chunk" || !u.note || u.j !== 0 || u.index < 0 || u.pad) continue;
         const pt = placed.get(u.index); if (!pt) continue;
         const rd = pt.read, rAt = pt.at === q.p.id ? -1 : per.findIndex((x) => x.p.id === pt.at), atOwn = rAt >= 0 && mineSet.has(rAt);   // 一家的：画在最下面那一位的那一行（不是数字行的 = 画在自己这一行）
-        const row = rowOf(u.system, atOwn ? rAt : r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = theory.label(rd), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const row = rowOf(u.system, atOwn ? rAt : r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = c.look.chordTagStyle === "root" ? theory.rootLabel(rd) : theory.label(rd), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
         const cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;   // 人挑的 = 换个颜色；对不上了 = 灰 + 「?」（同五线谱）
         //   最少往下让到行身（小节线那一段）下面 + 字高：数字行没有五条线，数字右边的那一截下面可能一点墨都没有（五线谱靠线挡着），不给最小值就贴在行顶上
         c.attach(row, "chordTag", () => placeBelow(row, 0.3 * jk, (y) => {
