@@ -36,7 +36,7 @@ export const MIN_DUR = (TPQ / 8) * 4 / 7;
 export const MAX_DUR = WHOLE * 4;
 
 /** lang = 这个音节唱哪种语言，**只在和自动认的不一样时才有**（持久化第 6 题：存档时每个音节都写明，编辑时自动认、认错了才改；规则见 score/lang.ts）。 */
-export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean; inhale?: "soft" | "big"; harm?: ChordPin }
+export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean; inhale?: "soft" | "big"; harm?: ChordPin }
 /** 人写明的和弦（v0.16.87；user 11-09 拍「输入法候选」= 点开挑一个读法，11-10「一同意」往歌里存、「三可以接」别人谱里的和弦记号）：
  *  根音 + 种类 + 最低音，挂在那个音上（音删了它就没了，撤销一起回来）。kind = 理论里的和弦种类 id（src/theory/western.ts 的表；"5" = 空五度）；
  *  bass 没有 = 和根音一样。级数不存（按这里的调号现算，换调号跟着变）；移调 / 转调跟着音一起挪。MusicXML 原生 <harmony>（紧挨在那个音前面）。

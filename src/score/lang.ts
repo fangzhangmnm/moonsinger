@@ -1,7 +1,7 @@
-// lang.ts —— 歌词每个音节唱哪种语言：自动认 + 手动改过的。created 2026-10-07 by Claude Opus 5.5
+// lang.ts —— 歌词每个音节唱哪种语言：按文字系统认。created 2026-10-07 by Claude Opus 5.5
 // 持久化第 6 题（user 选「每个音节都写明」）：存档时每个音节都写明语言（MusicXML `<text xml:lang>`），编辑时自动认——
 //   有假名 → 日；拉丁字母（且没有假名汉字）→ 英；只有汉字 → 跟前一个音节；一条声部开头就是汉字 → 跟这条声部的默认语言。
-//   认错了才在音符上记 lang（只记和自动认不一样的），所以猜法以后改了，写明过的不变。
+//   2026-11-12 夜（统筹「v0.17.12 收」第三件）：音符上不再记 lang；存档的 xml:lang 是程序按唱的规矩写出去的，读的时候不看。
 // 唱 / 画灰不用这里的逐音节规则，按小月相唱的那一段判（engine/timeline.ts sungPlan：一段里有假名 = 日、只有汉字 = 中；user 2026-10-13「每一段里面有假名就算日文」
 //   「就是句子的单位」「用同一个深模块」）。段要歌手的分段设置 + 速度表，这里够不着，存档标注暂仍逐音节；两者只在「日语段后面紧跟中文段」的第一个字上可能不一致。
 //   edited by Claude Fable 5.1 / Claude Opus 5.5 2026-10-13
@@ -22,28 +22,14 @@ export function partDefaultLang(tokens: Token[]): string {
   return "ja";
 }
 
-/** 每个下标的语言：有歌词（不含拖腔记号）的音符 = 语言，别的 = null。override = 用音符上记着的 lang（编辑 / 唱用）；false = 只算自动认的（判断要不要记）。 */
-export function syllableLangs(tokens: Token[], override = true): (string | null)[] {
+/** 每个下标按逐音节规矩认的语言（有歌词、不含拖腔记号的音符 = 语言，别的 = null）。只在没给唱的那一份语言时写 xml:lang 用（project.ts 存档给的是唱的那一份）。 */
+export function syllableLangs(tokens: Token[]): (string | null)[] {
   const def = partDefaultLang(tokens);
   let prev = def;
   return tokens.map((t) => {
     if (t.kind !== "note" || !t.lyric || t.lyric === MELISMA_MARK) return null;
-    let l = KANA.test(t.lyric) ? "ja" : HAN.test(t.lyric) ? prev : LATIN.test(t.lyric) ? "en" : prev;
-    if (override && t.lang) l = t.lang;
+    const l = KANA.test(t.lyric) ? "ja" : HAN.test(t.lyric) ? prev : LATIN.test(t.lyric) ? "en" : prev;
     prev = l;
     return l;
-  });
-}
-
-/** 读档用：每个音节读到的语言（null = 文件里没写）→ 只在和自动认（按前面已定的语言往后推）不一样的音符上记 lang。原地改 tokens 里的音符。 */
-export function keepOnlyOverrides(tokens: Token[], read: (string | null)[]): void {
-  const def = partDefaultLang(tokens);
-  let prev = def;
-  tokens.forEach((t, i) => {
-    if (t.kind !== "note" || !t.lyric || t.lyric === MELISMA_MARK) return;
-    const auto = KANA.test(t.lyric) ? "ja" : HAN.test(t.lyric) ? prev : LATIN.test(t.lyric) ? "en" : prev;
-    const got = read[i];
-    if (got && got !== auto) t.lang = got; else delete t.lang;
-    prev = got ?? auto;
   });
 }

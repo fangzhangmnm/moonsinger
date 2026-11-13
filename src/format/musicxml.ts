@@ -14,7 +14,7 @@ import type { ChordPin, PedalTok, PedalKind } from "../score/song.ts";
 import { pinXmlKind, xmlKindToPin } from "../theory/index.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
-import { syllableLangs, keepOnlyOverrides } from "../score/lang.ts";
+import { syllableLangs } from "../score/lang.ts";
 import { type El, esc, parseXml, kids, kid, childText, text } from "./xml.ts";
 import { grooveLabel } from "../score/groove.ts";
 
@@ -422,7 +422,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     const manual = hints?.manualBars ? new Set(hints.manualBars[pid] ?? []) : null;
     const H = { fifths: DEFAULT_KEY, minor: false, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
     // 谱头 = 第一个音之前、每种记号第一次出现的那个；同一种再出现（谱头后面紧跟着插的）= 记号 token
-    const body: Token[] = [], langRead = new Map<Token, string>();
+    const body: Token[] = [];
     let headPhase = true, divisions = TPQ, voice: string | null = null;
     const openSlurs = new Set<string>();
     const mark = (t: Token) => { body.push(t); };
@@ -570,7 +570,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
             if (tx) {
               tok.lyric = kids(ly, "text").map((e) => text(e)).filter(Boolean).join(ELISION);   // <elision/> 隔开的几段 = 一个音上几个音节
               const syl = childText(ly, "syllabic"); if (syl === "begin" || syl === "middle") tok.hyph = true;
-              if (tx.attrs["xml:lang"]) langRead.set(tok, tx.attrs["xml:lang"]);
+              // xml:lang 不读（统筹 2026-11-12 夜第三件）：自家写的是程序按唱的规矩算出来的，别家的也不照它唱（唱按段认，timeline.ts sungPlan）
             } else if (kid(ly, "extend")) tok.lyric = MELISMA_MARK;
           }
           mark(tok);
@@ -583,7 +583,6 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     });
     for (const [k, t] of body.entries()) if (t.kind === "note" && !t.chord?.length && t.art?.includes("arpeggio")) body[k] = withArt(t, "arpeggio", false);   // 单音上的琶音不认（v0.9.46：琶音只挂在和弦上）
     const tokens: Token[] = [{ kind: "key", id: 0, fifths: H.fifths, ...(H.minor ? { mode: "minor" as const } : {}) }, { kind: "time", id: 0, beats: H.beats, beatType: H.beatType }, { kind: "tempo", id: 0, bpm: H.bpm }, ...body];
-    keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
     // 大谱表：文件里每个音都写了 <staff>；和「按音高自动」一样的不记（只留手动指定的），单谱表的一律不记
     if (info.staves === 2) { const auto = autoStaffs(tokens, 2); tokens.forEach((t, i) => { if ((t.kind === "note" || t.kind === "rest") && t.staff !== undefined) { const keep = t.kind === "note" ? t.staff !== auto[i] : t.staff !== staffOfTokens(tokens.map((x, j) => (j === i ? { ...x, staff: undefined } : x)) as Token[], 2)[i]; if (!keep) delete t.staff; } }); }
     else for (const t of tokens) if ((t.kind === "note" || t.kind === "rest") && t.staff !== undefined) delete t.staff;

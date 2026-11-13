@@ -3,7 +3,5 @@ import type { Token } from "./song.ts";
 export declare const scriptLang: (lyric: string) => "ja" | "zh" | "en" | null;
 /** 这条声部的默认语言：整条歌词里有假名 → 日；只有汉字 → 中；只有拉丁字母 → 英；什么都没有 → 日。 */
 export declare function partDefaultLang(tokens: Token[]): string;
-/** 每个下标的语言：有歌词（不含拖腔记号）的音符 = 语言，别的 = null。override = 用音符上记着的 lang（编辑 / 唱用）；false = 只算自动认的（判断要不要记）。 */
-export declare function syllableLangs(tokens: Token[], override?: boolean): (string | null)[];
-/** 读档用：每个音节读到的语言（null = 文件里没写）→ 只在和自动认（按前面已定的语言往后推）不一样的音符上记 lang。原地改 tokens 里的音符。 */
-export declare function keepOnlyOverrides(tokens: Token[], read: (string | null)[]): void;
+/** 每个下标按逐音节规矩认的语言（有歌词、不含拖腔记号的音符 = 语言，别的 = null）。只在没给唱的那一份语言时写 xml:lang 用（project.ts 存档给的是唱的那一份）。 */
+export declare function syllableLangs(tokens: Token[]): (string | null)[];

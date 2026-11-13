@@ -22,7 +22,6 @@ export interface NoteTok {
     lyric: string | null;
     hyph?: boolean;
     tie?: boolean;
-    lang?: string;
     staff?: Staff;
     chord?: Pitch[];
     art?: Art[];

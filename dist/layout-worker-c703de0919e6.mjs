@@ -1657,20 +1657,20 @@ var S = {
   "\u62D0\u70B9": { en: "Knee" },
   "\u8865\u507F": { en: "Makeup" },
   "\u5EF6\u8FDF": { en: "Delay" },
-  "y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = \u53C2\u6570\u8868\u7684\u9ED8\u8BA4 1\uFF0C\u7B2C 16 \u6761\u8D77\uFF1B\u539F\u6765\u6CA1\u5199 = 1 \u2212 mix\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002": { en: "y[n] = x[n]\xB7dry + d[n]\xB7mix (dry not written = the parameter table default 1, from item 16 on; it used to be 1 \u2212 mix), d[n] = x[n - D] + fb \xB7 LP(d[n - D]), LP = one-pole low-pass at dampHz. D = timeMs (at most 2 s)." },
+  "y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08mix / dry = \u7EBF\u6027\u7684\u5E45\u5EA6\u500D\u6570\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002": { en: "y[n] = x[n]\xB7dry + d[n]\xB7mix (mix / dry = linear amplitude multipliers), d[n] = x[n - D] + fb \xB7 LP(d[n - D]), LP = one-pole low-pass at dampHz. D = timeMs (max 2 s)." },
   "\u65F6\u95F4": { en: "Time" },
   "\u53CD\u9988": { en: "Feedback" },
   "\u6E7F": { en: "Wet" },
   "\u539F\u58F0": { en: "Dry" },
   "\u53CD\u9988\u9AD8\u5207": { en: "Feedback high cut" },
   "\u6DF7\u54CD": { en: "Reverb" },
-  "Freeverb\uFF1A8 \u6761\u4F4E\u901A\u53CD\u9988\u68B3\u72B6\uFF08\u957F\u5EA6 1116\u20261617 @44.1k\uFF0C\u6309\u91C7\u6837\u7387\u7F29\u653E\uFF1B\u53CD\u9988 = 0.7 + 0.28\xB7room\uFF0C\u4F4E\u901A = damp\uFF09\u5E76\u8054\uFF0C\u518D\u4E32 4 \u6761\u5168\u901A\uFF08g = 0.5\uFF09\uFF1B\u53F3\u8FB9\u5404\u957F 23 \u4E2A\u91C7\u6837\uFF1B\u524D\u9762\u4E00\u6BB5 preDelayMs \u7EAF\u5EF6\u8FDF\uFF1By = x\xB7(1-mix) + wet\xB7mix\u3002": { en: "Freeverb: 8 low-pass feedback combs in parallel (lengths 1116\u20261617 @44.1k, scaled by sample rate; feedback = 0.7 + 0.28\xB7room, low-pass = damp), then 4 all-pass in series (g = 0.5); the right side is 23 samples longer each; a preDelayMs pure delay in front; y = x\xB7(1-mix) + wet\xB7mix." },
+  "Freeverb\uFF08\u516C\u5F00\u7B97\u6CD5\uFF0Croom / damp \u5C31\u662F\u5B83\u7684\u540C\u540D\u53C2\u6570\uFF09\uFF1A8 \u6761\u4F4E\u901A\u53CD\u9988\u68B3\u72B6\uFF08\u957F\u5EA6 1116\u20261617 @44.1k\uFF0C\u6309\u91C7\u6837\u7387\u7F29\u653E\uFF1B\u53CD\u9988 = 0.7 + 0.28\xB7room\uFF0C\u4F4E\u901A = damp\uFF09\u5E76\u8054\uFF0C\u518D\u4E32 4 \u6761\u5168\u901A\uFF08g = 0.5\uFF09\uFF1B\u53F3\u8FB9\u5404\u957F 23 \u4E2A\u91C7\u6837\uFF1B\u524D\u9762\u4E00\u6BB5 preDelayMs \u7EAF\u5EF6\u8FDF\uFF1By = x\xB7dry + wet\xB7mix\uFF08mix / dry = \u7EBF\u6027\u7684\u5E45\u5EA6\u500D\u6570\uFF1B\u754C\u9762\u4E0A\u7684\u79D2 / kHz / dB \u662F\u4ECE\u8FD9\u51E0\u4E2A\u6570\u6362\u7B97\u51FA\u6765\u7ED9\u4EBA\u770B\u7684\uFF09\u3002": { en: "Freeverb (a public algorithm; room / damp are its parameters of the same name): 8 low-pass feedback combs (lengths 1116\u20261617 @44.1k, scaled to the sample rate; feedback = 0.7 + 0.28\xB7room, low-pass = damp) in parallel, then 4 allpasses in series (g = 0.5); the right side is 23 samples longer each; a preDelayMs pure delay in front; y = x\xB7dry + wet\xB7mix (mix / dry = linear amplitude multipliers; the seconds / kHz / dB shown in the panel are converted from these numbers for people to read)." },
   "\u623F\u95F4\u5927\u5C0F": { en: "Room size" },
   "\u9AD8\u9891\u5438\u6536": { en: "Damping" },
   "\u9884\u5EF6\u8FDF": { en: "Pre-delay" },
   "\u5BBD\u5EA6": { en: "Width" },
   "\u5408\u5531": { en: "Chorus" },
-  "v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7(1-mix) + mix \xB7 \u03A3_k d_k / v\u3002": { en: "v delays d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v) (read with linear interpolation), voice k placed at pan_k = spread \xB7 (2k/(v-1) - 1); y = x\xB7(1-mix) + mix \xB7 \u03A3_k d_k / v." },
+  "v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7dry + mix \xB7 \u03A3_k d_k / v\uFF08mix / dry = \u7EBF\u6027\u7684\u5E45\u5EA6\u500D\u6570\uFF09\u3002": { en: "v delay lines d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v) (read with linear interpolation), line k panned to pan_k = spread \xB7 (2k/(v-1) - 1); y = x\xB7dry + mix \xB7 \u03A3_k d_k / v (mix / dry = linear amplitude multipliers)." },
   "\u51E0\u6761": { en: "Voices" },
   "\u6296\u52A8\u6DF1\u5EA6": { en: "Depth" },
   "\u6296\u52A8\u5FEB\u6162": { en: "Rate" },
@@ -9657,4 +9657,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-bfb6c565b8ad.mjs.map
+//# sourceMappingURL=layout-worker-c703de0919e6.mjs.map

@@ -22,7 +22,7 @@ function bigSong(): Song {
     t({ kind: "bar" }),                                                            // 人插的小节线（满）
     t({ kind: "note", pitch: p("D", 5), dur: T3, lyric: "hap", hyph: true }),      // 三连音 + 英文连字符
     t({ kind: "note", pitch: p("C", 5, 1), dur: T3, lyric: "py" }),
-    t({ kind: "note", pitch: null, dur: T3, lyric: "爱", lang: "zh" }),            // 还没写音高；手动改过语言
+    t({ kind: "note", pitch: null, dur: T3, lyric: "爱" }),                        // 还没写音高
     t({ kind: "note", pitch: p("B"), dur: Q * 1.5, lyric: "你" }),                 // 附点四分
     t({ kind: "key", fifths: -1 }),                                                // 小节中间换调号
     t({ kind: "rest", dur: Q }),                                                   // 跨过自动小节线（休止也会拆）
@@ -36,14 +36,13 @@ function bigSong(): Song {
 }
 /** 比较用：小节线 / 记号的 id 是编辑器自己的（文件里不存），去掉；音符 / 休止的 id 要原样。 */
 const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon((v as Record<string, unknown>)[k])])) : v;
-/** lang 不比：第 16 条 16-3 起每个音节的 xml:lang 按唱的那一段写（engine/timeline.ts sungLangsOf），音符上记着的 lang（只从文件读进来、唱不用）不再写出去；写什么语言下面单独核。 */
-const norm = (s: Song) => JSON.stringify(canon(firstTrack(s).map((t) => (t.kind === "note" || t.kind === "rest" ? (({ lang: _l, ...r }) => r)(t as Token & { lang?: string }) : { ...t, id: 0 }))));
+const norm = (s: Song) => JSON.stringify(canon(firstTrack(s).map((t) => (t.kind === "note" || t.kind === "rest" ? t : { ...t, id: 0 }))));
 const save = (song: Song, extras = emptyExtras(), quality: "full" | "light" | "none" = "light") =>   // quality = 上场的：full 月读 / light 元音版 / none 不动 role.active
   saveMxl({ song, extras: quality === "none" ? extras : withActive(extras, "r1", quality === "full" ? CANDIDATE_ID.full : CANDIDATE_ID.light, "u"), app: "v0.0.0-test", date: "2026-10-07" });
 const engineOf = (o: { extras: Extras }) => activeInstrument(o.extras, "r1")?.engine ?? "unknown";
 
 describe("存档 .mxl", () => {
-  it("自家文件：存了再开，每个 token 原样复原（连音、附点、连音线、人插 / 自动的小节线、跨小节的音、中途换记号、连字符、拖腔、改过的语言、没写音高）", () => {
+  it("自家文件：存了再开，每个 token 原样复原（连音、附点、连音线、人插 / 自动的小节线、跨小节的音、中途换记号、连字符、拖腔、没写音高）", () => {
     const song = bigSong(), bytes = save(song), o = openBytes("x.mxl", bytes);
     eq(norm(o.song), norm(song), "tokens");
     eq(activeHum(o.extras, "r1"), "u", "哼的字（只在乐手身上，第 16 条 16-3）"); eq(engineOf(o), "vowel-sampler", "上场的是元音版"); eq(o.song.title, "測試", "歌名"); eq(o.stem, "x", "文件名主干"); eq(o.ours, true, "认得是自家文件");
@@ -79,7 +78,7 @@ describe("存档 .mxl", () => {
     eq((again.extras.lounge.r1.candidates as Record<string, unknown>[])[0].future, undefined, "候选上不认识的键不写");
     eq(again.extras.lounge.r1.future, undefined, "角色上不认识的键不写");
   });
-  it("比这一版新（小版本更大）的那一份：不认识的原样带回（版本记号照「写永远只写当前拍」写这一版的）", () => {
+  it("比这一版新（小版本更大）的那一份：不认识的原样带回，版本记号也照原样留；再开再存还在（统筹 2026-11-12 夜第一件）", () => {
     const files = unzipSync(save(bigSong()));
     const man = JSON.parse(strFromU8(files[".moonsinger/manifest.json"])); man.minor = (man.minor ?? 0) + 1; man.futureKey = 7;
     files[".moonsinger/manifest.json"] = strToU8(JSON.stringify(man)); files["attachments/cover.png"] = new Uint8Array([1, 2, 3]);
@@ -88,8 +87,18 @@ describe("存档 .mxl", () => {
     files[lp] = strToU8(JSON.stringify(role));
     const o = openBytes("x.mxl", zipSync(files)), out = unzipSync(save(o.song, o.extras, "none"));
     const man2 = JSON.parse(strFromU8(out[".moonsinger/manifest.json"])), role2 = JSON.parse(strFromU8(out[lp]));
-    eq(`${man2.minor},${man2.futureKey},${Array.from(out["attachments/cover.png"] ?? []).join("")}`, `${man.minor - 1},7,123`, "总目录：不认识的键、包里不认识的文件");
-    eq(`${role2.minor},${JSON.stringify(role2.future)},${role2.candidates[0].future}`, `${role.minor - 1},{"anything":true},1`, "休息室：角色 / 候选上不认识的键");
+    eq(`${man2.minor},${man2.futureKey},${Array.from(out["attachments/cover.png"] ?? []).join("")}`, `${man.minor},7,123`, "总目录：版本记号、不认识的键、包里不认识的文件");
+    eq(`${role2.minor},${JSON.stringify(role2.future)},${role2.candidates[0].future}`, `${role.minor},{"anything":true},1`, "休息室：版本记号、角色 / 候选上不认识的键");
+    const o2 = openBytes("x.mxl", zipSync(out)), out2 = unzipSync(save(o2.song, o2.extras, "none"));
+    const man3 = JSON.parse(strFromU8(out2[".moonsinger/manifest.json"])), role3 = JSON.parse(strFromU8(out2[lp]));
+    eq(`${man3.minor},${man3.futureKey},${out2["attachments/cover.png"]?.length},${role3.minor},${role3.candidates[0].future}`, `${man.minor},7,3,${role.minor},1`, "再开再存：都还在");
+  });
+  it("音符上不记语言（统筹 2026-11-12 夜第三件）：文件里每个音节的 xml:lang 读的时候不看——写成别的语言读进来也一样", () => {
+    const files = unzipSync(save(bigSong())), x = strFromU8(files["score.musicxml"]).replace(/xml:lang="ja"/g, 'xml:lang="zh"');
+    files["score.musicxml"] = strToU8(x);
+    for (const p of Object.keys(files)) if (p.startsWith(".moonsinger/papers/")) files[p] = strToU8(strFromU8(files[p]).replace(/xml:lang="ja"/g, 'xml:lang="zh"'));
+    const o = openBytes("x.mxl", zipSync(files));
+    eq(norm(o.song), norm(bigSong())); assert(firstTrack(o.song).every((t) => !("lang" in t)), "没有一个音记着 lang");
   });
   it("比这一版新的文件：拒开、明说（打开再存会丢东西）", () => {
     const files = unzipSync(save(bigSong()));

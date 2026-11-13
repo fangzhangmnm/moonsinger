@@ -42,12 +42,12 @@ describe("拖歌词：往后（分）", () => {
     const st = song([n(`我${ELISION}爱`), n("你"), n(null)]);
     eq(lyr(moveSyllable(st, at(st, 0), 1).st), `我 爱 你`);
   });
-  it("词没完（连字符）和手动语言跟着字走", () => {
+  it("词没完（连字符）跟着字走", () => {
     const toks: Token[] = [n("hap"), n("py"), n(null)];
-    (toks[0] as NoteTok).hyph = true; (toks[1] as NoteTok).lang = "en";
+    (toks[0] as NoteTok).hyph = true;
     const st = song(toks), r = moveSyllable(st, at(st, 1), 1), out = tr(r.st);
-    eq((out[at(st, 0)] as NoteTok).hyph, true); eq((out[at(st, 1)] as NoteTok).lyric, L); eq((out[at(st, 1)] as NoteTok).lang, undefined);
-    eq((out[at(st, 2)] as NoteTok).lyric, "py"); eq((out[at(st, 2)] as NoteTok).lang, "en");
+    eq((out[at(st, 0)] as NoteTok).hyph, true); eq((out[at(st, 1)] as NoteTok).lyric, L);
+    eq((out[at(st, 2)] as NoteTok).lyric, "py");
   });
 });
 

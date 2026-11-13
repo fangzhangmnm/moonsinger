@@ -127,7 +127,7 @@ class Comp implements FxInstance {
 }
 
 // ── 延迟（反馈里一个低通，立体声同长）─────────────────────────────────────────────────────────────────────────────
-const DELAY: FxKindDef = { kind: "delay", name: _t("延迟"), formula: _t("y[n] = x[n]·dry + d[n]·mix（dry 没写 = 参数表的默认 1，第 16 条起；原来没写 = 1 − mix），d[n] = x[n - D] + fb · LP(d[n - D])，LP = 一阶低通 dampHz。D = timeMs（最长 2 s）。"),
+const DELAY: FxKindDef = { kind: "delay", name: _t("延迟"), formula: _t("y[n] = x[n]·dry + d[n]·mix（mix / dry = 线性的幅度倍数），d[n] = x[n - D] + fb · LP(d[n - D])，LP = 一阶低通 dampHz。D = timeMs（最长 2 s）。"),
   params: [
     { id: "timeMs", unit: "ms", min: 1, max: 2000, default: 375, label: _t("时间") }, { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: _t("反馈") },
     { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("原声") }, { id: "dampHz", unit: "Hz", min: 500, max: 20000, default: 6000, label: _t("反馈高切") },
@@ -155,7 +155,7 @@ class Delay implements FxInstance {
 }
 
 // ── 算法混响（Freeverb 结构：8 条梳状 + 4 条全通，每边一组、右边错开；公共领域的经典结构）────────────────────────────
-const REVERB: FxKindDef = { kind: "reverb", name: _t("混响"), formula: _t("Freeverb：8 条低通反馈梳状（长度 1116…1617 @44.1k，按采样率缩放；反馈 = 0.7 + 0.28·room，低通 = damp）并联，再串 4 条全通（g = 0.5）；右边各长 23 个采样；前面一段 preDelayMs 纯延迟；y = x·(1-mix) + wet·mix。"),
+const REVERB: FxKindDef = { kind: "reverb", name: _t("混响"), formula: _t("Freeverb（公开算法，room / damp 就是它的同名参数）：8 条低通反馈梳状（长度 1116…1617 @44.1k，按采样率缩放；反馈 = 0.7 + 0.28·room，低通 = damp）并联，再串 4 条全通（g = 0.5）；右边各长 23 个采样；前面一段 preDelayMs 纯延迟；y = x·dry + wet·mix（mix / dry = 线性的幅度倍数；界面上的秒 / kHz / dB 是从这几个数换算出来给人看的）。"),
   params: [
     { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("房间大小") }, { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("高频吸收") },
     { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("原声") }, { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: _t("预延迟") }, { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: _t("宽度") },
@@ -199,7 +199,7 @@ class Reverb implements FxInstance {
 }
 
 // ── 合唱 / 加倍（user 2026-10-10「齐唱 我想的是用混音效果做，clannad也只有茶太一名歌手啊」）：几条短延迟各自被低频抖动（= 轻微的音高抖动），分到左右，和干声叠在一起 ──
-const CHORUS: FxKindDef = { kind: "chorus", name: _t("合唱"), formula: _t("v 条延迟 d_k(t) = delayMs + depthMs · sin(2π · rateHz · t + 2πk/v)（线性插值读），第 k 条摆在 pan_k = spread · (2k/(v-1) - 1)；y = x·(1-mix) + mix · Σ_k d_k / v。"),
+const CHORUS: FxKindDef = { kind: "chorus", name: _t("合唱"), formula: _t("v 条延迟 d_k(t) = delayMs + depthMs · sin(2π · rateHz · t + 2πk/v)（线性插值读），第 k 条摆在 pan_k = spread · (2k/(v-1) - 1)；y = x·dry + mix · Σ_k d_k / v（mix / dry = 线性的幅度倍数）。"),
   params: [
     { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: _t("几条") }, { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: _t("延迟") },
     { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: _t("抖动深度") }, { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: _t("抖动快慢") },

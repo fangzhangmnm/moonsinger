@@ -84,8 +84,15 @@ function completeCandidate(c0: Json): Json {
     c.defaults = { ...TSUKUYOMI_DEFAULTS, ...((c.defaults ?? {}) as Json) };
     const i = c.instrument as Json; if (i.chunk !== "sheet" && i.chunk !== "whole" && i.chunk !== "phrase") c.instrument = { ...i, chunk: "phrase" };
   }
-  if (eng === "soundfont") c.defaults = { ...SOUNDFONT_DEFAULTS, ...((c.defaults ?? {}) as Json) };
+  if (eng === "soundfont") {
+    c.defaults = { ...SOUNDFONT_DEFAULTS, ...((c.defaults ?? {}) as Json) };
+    const i = c.instrument as Json; if (i.note === undefined) c.instrument = { ...i, note: null };   // 不固定敲一个键也明写 null（统筹 2026-11-12 夜清单；读的时候 null = 没写，见 openBytes）
+  }
   return c;
+}
+/** 读进来的那一份乐手：SoundFont 的 note: null（不固定敲一个键）在内存里 = 没有这个键（程序各处按「有没有 note」判固定；就地改）。 */
+function noteNullAsUnset(role: Json): void {
+  for (const c of (Array.isArray(role.candidates) ? role.candidates : []) as Json[]) { const i = c?.instrument as Json | undefined; if (i && i.engine === "soundfont" && i.note === null) delete i.note; }
 }
 /** 概念（按值）换成现行的表里的谱上叫法 / 简写（就地改；表里没有这个概念 = 不动，留着按值存的）。只在存的时候用（buildEntries）。 */
 function withCurrentLabels(c: unknown): void {
@@ -111,6 +118,9 @@ const nextKey = (ids: string[], prefix: string) => `${prefix}${Math.max(0, ...id
 
 /** 这一版写出的拍子（家族格式版本纪律 2026-10-21，contract.ts）：version = major 照旧，minor / patch 两个可选整数键。写永远只写当前拍。 */
 const stampOf = (k: FormatFile): Json => ({ version: FORMAT[k], minor: FORMAT_MINOR[k], patch: FORMAT_PATCH[k] });
+/** 写出去的版本记号：平常 = 当前拍；那一份比这一版新 = 照文件写的原样留（记号的意思 =「这一份里的东西最新到哪一拍」，不是谁最后存的；
+ *  不然下次打开认不出它新、把一起带回来的不认识的键又丢掉。统筹 2026-11-12 夜「v0.17.12 收」第一件）。 */
+const stampFor = (k: FormatFile, j: unknown): Json => (newerThanMe(j, k) ? { version: (j as Json).version, minor: (j as Json).minor, patch: (j as Json).patch ?? 0 } : stampOf(k));
 /** 指纹用的 JSON 文本 = 去掉 minor / patch 再按写文件同一个样子串化（拍子不是内容：定稿时记的指纹里没有它们，升了 minor 的 app 再存不能把定稿的歌判成「内容变了」；
  *  老文件的原文本来就是这么串出来的，去掉两个不存在的键 = 原文）。读写两边都走这一把。 */
 /** score.json 里「这首歌怎么看」的三样（score minor 5）→ 歌字段：只认 notation（非空、不是 staff 的字）/ chordTags: false / viewInC: true，别的值 = 没写（src/score/song-view.ts 的冻住的意思）。 */
@@ -278,7 +288,7 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   const scoreNewer = newerThanMe(a.extras.scoreExt, "score");
   const scoreRest = scoreNewer ? Object.fromEntries(Object.entries((a.extras.scoreExt ?? {}) as Json).filter(([k]) => !KNOWN_SCORE_KEYS.has(k))) : {};   // 不认识的顶层键原样带回（家族纪律「未知键直通」；papers / parts 是从歌重建的）
   const oldExt = (a.extras.scoreExt ?? {}) as Json, paperExtra = scoreNewer ? unknownById(oldExt.papers, KNOWN_PAPER_KEYS) : new Map<string, Json>(), partExtra = scoreNewer ? unknownById(oldExt.parts, KNOWN_PART_KEYS) : new Map<string, Json>();
-  const scoreExt: Json = { ...scoreRest, ...stampOf("score"), papers: papers.map((e) => ({ ...(paperExtra.get(String(e.id)) ?? {}), ...e })), parts: song.parts.map((p) => ({ ...(partExtra.get(p.id) ?? {}), id: p.id, role: p.role, mic: p.mic, kind: "pitched", clef: "auto", host: p.host ?? p.hostBroken ?? null, chords: p.chords ?? "auto" })),   // chords（score minor 5）：这条轨的和弦选项；auto 也写（第 16 条 16-3）   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
+  const scoreExt: Json = { ...scoreRest, ...stampFor("score", a.extras.scoreExt), papers: papers.map((e) => ({ ...(paperExtra.get(String(e.id)) ?? {}), ...e })), parts: song.parts.map((p) => ({ ...(partExtra.get(p.id) ?? {}), id: p.id, role: p.role, mic: p.mic, kind: "pitched", clef: "auto", host: p.host ?? p.hostBroken ?? null, chords: p.chords ?? "auto" })),   // chords（score minor 5）：这条轨的和弦选项；auto 也写（第 16 条 16-3）   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
     // 每一项都明写（第 16 条 16-3，2026-11-12：不靠「只写不是默认的」省字——省掉的那个默认就是程序里的隐藏约定）。默认那一档有自己的名字（rhythm / line / normal / staff / ui…），读的一侧照旧认
     view: a.view ?? (serializeDesk(freshDesk()) as unknown as Json),   // 视图态（desk）：存时顺手捞进来；没给（无头存 / 副本）= 新的那一份
     arrangement: song.arrangement ?? "",
@@ -301,7 +311,7 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
     lounge: Object.fromEntries(Object.entries(lounge).map(([id, r]) => [id, fpTextOf(r)])), studio: fpTextOf(studio), sounds: sounds.map(([p]) => p), thumbnail: a.extras.thumbnail };
   const fingerprint = contentFingerprint(fpParts);
   const { final: _f, finalRev: _r, core: _c, ...manifestRest0 } = (a.extras.manifest ?? {}) as Json, manifestNewer = newerThanMe(a.extras.manifest, "manifest"), manifestRest = only(manifestRest0, MANIFEST_KEYS, manifestNewer);   // 核心按这一次存的写；final / finalRev = 退役的定稿（v0.16.97 起不再写，读进来的总目录里有也不带回去）
-  const manifest: Json = { ...manifestRest, format: "moonsinger", ...stampOf("manifest"), app: a.app, saved: a.date,
+  const manifest: Json = { ...manifestRest, format: "moonsinger", ...stampFor("manifest", a.extras.manifest), app: a.app, saved: a.date,
     files: { "score.json": FORMAT.score, "studio.json": FORMAT.studio, ...Object.fromEntries(Object.entries(lounge).map(([id, r]) => [`lounge/${id}.json`, Number(r.version ?? 1)])),
       ...Object.fromEntries(papers.map((p) => [`papers/${p.id}.musicxml`, 0])) },   // 0 = 标准件（MusicXML），不是我们的版本号
     derived: ["score.musicxml"],
@@ -315,8 +325,8 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   out["score.musicxml"] = strToU8(flat.xml);
   out[`${DIR}score.json`] = json(scoreExt);
   for (const [path, bytes] of Object.entries(files)) out[path] = bytes;
-  for (const [id, r] of Object.entries(lounge)) out[`${DIR}lounge/${id}.json`] = json({ ...r, ...stampOf("lounge") });   // r 在上面按 ROLE_KEYS / CAND_KEYS / ART_KEYS 收过（loungeOut）
-  out[`${DIR}studio.json`] = json({ ...studio, ...stampOf("studio") });
+  for (const [id, r] of Object.entries(lounge)) out[`${DIR}lounge/${id}.json`] = json({ ...r, ...stampFor("lounge", r) });   // r 在上面按 ROLE_KEYS / CAND_KEYS / ART_KEYS 收过（loungeOut）
+  out[`${DIR}studio.json`] = json({ ...studio, ...stampFor("studio", a.extras.studio) });
   for (const [path, bytes] of sounds) out[path] = bytes;
   for (const [path, bytes] of Object.entries(a.references ?? {})) {
     if (!path.startsWith(REFERENCES_DIR)) throw new Error(_t("参考窗的文件不在 {REFERENCES_DIR} 下：{path}", { REFERENCES_DIR, path }));
@@ -852,7 +862,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   }
   for (const p of Object.keys(files)) {
     const m = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p);
-    if (m) { const r = parse(p); newer(_t("休息室「{name}」", { name: r.name ?? m[1] }), r, "lounge"); extras.lounge[m[1]] = r; known.add(p); rawLounge[m[1]] = fpTextOf(r); }   // 角色名照文件（第 16 条，user 定的甲：老歌里存着的名字照显示，不判起没起）
+    if (m) { const r = parse(p); newer(_t("休息室「{name}」", { name: r.name ?? m[1] }), r, "lounge"); rawLounge[m[1]] = fpTextOf(r); noteNullAsUnset(r); extras.lounge[m[1]] = r; known.add(p); }   // 角色名照文件（第 16 条，user 定的甲：老歌里存着的名字照显示，不判起没起）
   }
   if (files[`${DIR}studio.json`]) { const s = parse(`${DIR}studio.json`); known.add(`${DIR}studio.json`); newer(_t("录音房"), s, "studio"); extras.studio = s; }
   for (const p of Object.keys(files)) if (p.startsWith(SOUNDS) && !p.endsWith("/")) { extras.sounds[p] = files[p]; known.add(p); }   // 嵌的音源字节（整份留着；存档只写还引用着的）

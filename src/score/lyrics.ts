@@ -131,21 +131,19 @@ export function mergeIntoPrev(st: EditorState, i: number): EditorState {
   const merged: NoteTok = { ...prev, lyric: prev.lyric + ELISION + cur.lyric };
   if (cur.hyph) merged.hyph = true; else delete merged.hyph;
   tokens[p] = merged;
-  slots.forEach((at, k) => {   // 字往前挪一个音（「词没完」和手动改过的语言跟着字走）
+  slots.forEach((at, k) => {   // 字往前挪一个音（「词没完」跟着字走）
     const from = k + 1 < slots.length ? (toks[slots[k + 1]] as NoteTok) : null, t: NoteTok = { ...(toks[at] as NoteTok), lyric: from ? from.lyric : null };
     if (from?.hyph) t.hyph = true; else delete t.hyph;
-    if (from?.lang) t.lang = from.lang; else delete t.lang;
     tokens[at] = t;
   });
   return { ...st, song: withTrack(st.song, st.at.paper, st.at.part, tokens) };
 }
-/** 一个音上的「一颗字」：字 + 词没完 + 手动改过的语言（挪的时候一起走）。 */
-interface Bead { lyric: string | null; hyph?: boolean; lang?: string }
-const beadOf = (t: NoteTok): Bead => ({ lyric: t.lyric, hyph: t.hyph, lang: t.lang });
+/** 一个音上的「一颗字」：字 + 词没完（挪的时候一起走）。 */
+interface Bead { lyric: string | null; hyph?: boolean }
+const beadOf = (t: NoteTok): Bead => ({ lyric: t.lyric, hyph: t.hyph });
 function put(t: NoteTok, b: Bead): NoteTok {
   const o: NoteTok = { ...t, lyric: b.lyric };
   if (b.hyph) o.hyph = true; else delete o.hyph;
-  if (b.lang) o.lang = b.lang; else delete o.lang;
   return o;
 }
 const hasText = (t: Token | undefined): boolean => !!t && t.kind === "note" && !!t.lyric && t.lyric !== MELISMA_MARK;
@@ -161,7 +159,7 @@ function stepRight(st: EditorState, i: number): { st: EditorState; at: number } 
   if (g < 0) return null;
   const tokens = toks.slice(), parts = cur.lyric!.split(ELISION);
   let carry: Bead;
-  if (parts.length > 1) { carry = { lyric: parts[parts.length - 1], hyph: cur.hyph, lang: cur.lang }; tokens[i] = put(cur, { lyric: parts.slice(0, -1).join(ELISION), lang: cur.lang }); }
+  if (parts.length > 1) { carry = { lyric: parts[parts.length - 1], hyph: cur.hyph }; tokens[i] = put(cur, { lyric: parts.slice(0, -1).join(ELISION) }); }
   else { carry = beadOf(cur); const p = slotBefore(toks, i); tokens[i] = put(cur, { lyric: p >= 0 && (toks[p] as NoteTok).lyric !== null ? MELISMA_MARK : null }); }
   for (let n = 0; n <= g; n++) { const t = tokens[after[n]] as NoteTok, was = beadOf(t); tokens[after[n]] = put(t, carry); carry = was; }
   return { st: { ...st, song: withTrack(st.song, st.at.paper, st.at.part, tokens) }, at: after[0] };

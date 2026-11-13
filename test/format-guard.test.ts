@@ -51,7 +51,7 @@ describe("持久化守卫", () => {
   it("三级拍子读取（家族格式版本纪律 2026-10-21）：minor 比自己新 = 能开 + advice 一句；patch 比自己新 = 静默；major 比自己新 = 拒开", () => {
     const o1 = openBytes("x.mxl", sampleWith(".moonsinger/score.json", (j) => ({ ...j, minor: FORMAT_MINOR.score + 1 })));
     eq(o1.advice.length, 1, "minor 更新 = 一句 advice"); assert(o1.advice[0].includes("谱的扩展"), o1.advice[0]); eq(o1.notices.length, 0, "不是报错");
-    eq((o1.extras.scoreExt as Json).minor, FORMAT_MINOR.score + 1, "读进来的拍子原样留着（写出去时换成自己的）");
+    eq((o1.extras.scoreExt as Json).minor, FORMAT_MINOR.score + 1, "读进来的拍子原样留着");
     const o2 = openBytes("x.mxl", sampleWith(".moonsinger/studio.json", (j) => ({ ...j, patch: FORMAT_PATCH.studio + 7 })));
     eq(o2.advice.length, 0, "patch 更新 = 静默");
     const o3 = openBytes("x.mxl", sampleWith(".moonsinger/lounge/r1.json", (j) => ({ ...j, minor: FORMAT_MINOR.lounge + 1 })));
@@ -59,9 +59,13 @@ describe("持久化守卫", () => {
     let threw = "";
     try { openBytes("x.mxl", sampleWith(".moonsinger/manifest.json", (j) => ({ ...j, version: FORMAT.manifest + 1 }))); } catch (e) { threw = (e as Error).message; }
     assert(/更新版本/.test(threw), `major 更新 = 拒开：${threw}`);
-    // 再存：写出去的拍子是自己的（不是读进来的更高 minor）
-    const files = unzipSync(saveMxl({ song: o1.song, extras: o1.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: null }));
-    eq(JSON.parse(strFromU8(files[".moonsinger/score.json"])).minor, FORMAT_MINOR.score, "写永远只写当前拍");
+    // 再存（统筹 2026-11-12 夜「v0.17.12 收」第一件）：平常写当前拍；那一份比自己新 = 记号照原样留（意思 =「这一份里的东西最新到哪一拍」），再开再存还在
+    const resave = (o: ReturnType<typeof openBytes>) => unzipSync(saveMxl({ song: o.song, extras: o.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: null }));
+    const files = resave(o1);
+    eq(JSON.parse(strFromU8(files[".moonsinger/score.json"])).minor, FORMAT_MINOR.score + 1, "比自己新的那一份：拍子照文件写");
+    eq(JSON.parse(strFromU8(resave(openBytes("x.mxl", zipSync(files)))[".moonsinger/score.json"])).minor, FORMAT_MINOR.score + 1, "再开再存：还是那一拍");
+    const plain = resave(openBytes("x.mxl", sampleWith(".moonsinger/score.json", (j) => j)));
+    for (const [k, f] of [["score", ".moonsinger/score.json"], ["studio", ".moonsinger/studio.json"], ["manifest", ".moonsinger/manifest.json"]] as const) eq(JSON.parse(strFromU8(plain[f])).minor, FORMAT_MINOR[k], `平常写当前拍：${k}`);
   });
   it("定稿的指纹不看 minor / patch（升 minor 之后再存，定稿的歌不能被判成「内容变了」）；老样本读进来的指纹 = 这一版重新写出去的指纹", () => {
     const song = sampleSong(), extras = sampleExtras(song);
@@ -90,7 +94,7 @@ describe("持久化守卫", () => {
     assert(dirs.length >= 1, "至少一个冻结样本");
     // 纸头的谱号不进红线（统筹 2026-11-12）：照文件写的读出来的纸头谱号记号先拿掉再比
     const isHead = (toks: { kind: string }[], k: number) => toks[k]?.kind === "clef" && !toks.slice(0, k).some((t) => t.kind === "note" || t.kind === "rest" || t.kind === "bar");
-    const noIds = (x: unknown): string => JSON.stringify(x, (k, v) => (k === "id" && typeof v === "number" ? undefined : v));   // token 编号不是内容（读的时候整首重编）
+    const noIds = (x: unknown): string => JSON.stringify(x, (k, v) => ((k === "id" && typeof v === "number") || k === "lang" ? undefined : v));   // token 编号不是内容（读的时候整首重编）；音符上的 lang 删了（统筹 2026-11-12 夜第三件），冻结时记下的不比
     const noHeadClef = (song: ReturnType<typeof openBytes>["song"]) => ({ ...song, papers: song.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).map(([id, t]) => [id, t.filter((_, k) => !isHead(t, k))])) })) });
     for (const d of dirs) {
       const exp = JSON.parse(fs.readFileSync(at(d, "expected.json"), "utf8"));
