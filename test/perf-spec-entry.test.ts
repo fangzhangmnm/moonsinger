@@ -1,7 +1,7 @@
 // 拿乐手规格只有一个口（杂事版 v0.17.42，统筹「拿乐手规格的口收成一个」）。created 2026-11-13 by Claude Opus 5.5（MoonSinger小弟）。
 // 守：① 结构——src 里 activePerfSpec( / perfSpecProblems( 只许在 src/format/project.ts 的 perfSpecOf 里调（出声前那道查、按键试听、谱上的「不认」、乐器页都从它拿）；
 //   ② 回来的要么是查过的规格、要么是问题清单：缺数的规格不交出来；没人上场 = null。
-//   缺数之后出声那边（这位进「不出声」清单、原因写着键名）由 read-as-written.test.ts「更新版本的文件、乐手身上写着怪值」那条守；试听不响、乐器页标出来由 E2E issues.mjs 守。
+//   缺数之后出声那边（这位进「不出声」清单、原因写着键名）由 read-as-written.test.ts「更新版本的文件、乐手身上写着怪值」那条守；试听不响、乐器页标出来、不按播放就进「不出声」清单由 E2E perf-spec.mjs 守。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { openBytes, templateExtras, emptyExtras, perfSpecOf } from "../src/format/project.ts";
 import { initState } from "../src/score/song.ts";

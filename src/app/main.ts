@@ -256,7 +256,7 @@ async function relinkAfterSave(name: string, fingerprint: string | null): Promis
 /** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
 const curPart = (): PartDef => D.st.song.parts.find((p) => p.id === D.st.at.part) ?? D.st.song.parts[0];
 /** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
-const ignoredFor = (role: string): Mark[] => { const c = perfSpecOf(D.extras, role); return c?.ok ? ignoredArts(performerOf(activeInstrument(D.extras, role)?.engine), c.spec.gapSec, c.spec.canSwell) : []; }   // 规格缺数 = 这位整个不出声（在「不出声」清单里），不另画「不认」;   // 没人上场 = 整个声部本来就不出声，不逐个画灰
+const ignoredFor = (role: string): Mark[] => { const c = perfSpecOf(D.extras, role); return c?.ok ? ignoredArts(performerOf(activeInstrument(D.extras, role)?.engine), c.spec.gapSec, c.spec.canSwell) : []; };   // 规格缺数 = 这位整个不出声（在「不出声」清单里），不另画「不认」；没人上场 = 整个声部本来就不出声，不逐个画灰
 /** 台上这位不认的踏板（插件能力 pedals；11-1）：交给排版画灰，记成「pedal:<种类>」。没人上场 = 不逐个画灰（同演奏法）。 */
 const pedalIgnoredFor = (role: string): string[] => { const pl = performerOf(activeInstrument(D.extras, role)?.engine); return pl ? PEDAL_KINDS.filter((k) => !pl.pedals?.includes(k)).map((k) => `pedal:${k}`) : []; };
 const ignoredHere = (): Mark[] => ignoredFor(curPart().role);

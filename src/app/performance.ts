@@ -16,7 +16,7 @@ import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
-import { activeGm, activeInstrument, type Extras, type GmCandidate, activeId } from "../format/project.ts";
+import { activeGm, activeInstrument, type Extras, type GmCandidate, activeId, perfSpecOf } from "../format/project.ts";
 import { performerCredits, licenseHints, creditsText, type CreditLine } from "../format/credits.ts";
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf } from "../performers/index.ts";
@@ -132,6 +132,8 @@ export function createPerformance(host: PerfHost) {
         return [{ part: p.id, role: p.role, label: labels[k], kind: "unknown", why }]; }
       // 唱的那一种（按句出块）要小月相的库：被人删了 = 不出声，不用等放一次才知道（v0.17.25）
       if (plugin.sound === "chunks" && host.libRemoved("voice")) return [{ part: p.id, role: p.role, label: labels[k], kind: "removed", why: removedWhy("voice"), lib: "voice" }];
+      // 乐手身上缺数 / 不是数（更新版本写的怪值、手改坏的文件）：问拿规格的唯一的口，不用等放一次才知道（统筹审 v0.17.42，同上一条库被删了）；原因和时间线那一句同一个说法
+      { const chk = perfSpecOf(extras(), p.role); if (chk && !chk.ok) return [{ part: p.id, role: p.role, label: labels[k], kind: "unplayable", why: _t("这位乐手身上缺这几个数，没有出声：{keys}", { keys: chk.problems.join("、") }) }]; }
       const e = prepErrs.get(p.id);
       return e && e.cand === activeId(extras(), p.role) ? [{ part: p.id, role: p.role, label: labels[k], kind: e.kind, why: e.why, ...(e.lib ? { lib: e.lib } : {}) }] : [];
     });
