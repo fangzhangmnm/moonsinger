@@ -16,6 +16,7 @@ import { sfKey } from "../../gm/sf-key.ts";
 import { DYNS, type Dyn, type Hum, type Song } from "../../score/song.ts";
 import { jointOf, velLayersOf, GS_LIBRARY_ID, type Catalog } from "../../gm/catalog.ts";
 import { DYN_GLYPH } from "../../render/smufl.ts";
+import { sizeText } from "../../ui/size-text.ts";
 
 export interface InstSettingsHost {
   shown(): boolean;                    // 乐器页开着没
@@ -37,7 +38,6 @@ export interface InstSettingsHost {
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const chip = (v: string, label: string, on: boolean, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v="${esc(v)}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
 const fmtDb = (dB: number) => `${dB > 0 ? "+" : dB < 0 ? "−" : ""}${Math.abs(dB)} dB`;
-const sizeText = (n: number) => (n < 1e6 ? `${Math.max(1, Math.round(n / 1e3))} KB` : `${(n / 1e6).toFixed(1)} MB`);
 const HUMS: [Hum, string][] = [["n", _t("ん / 嗯")], ["a", _t("あ / 啊")], ["o", _t("お / 哦")], ["u", _t("う / 呜")], ["la", _t("ら / 啦")]];
 
 /** el = 页面的容器（宿主建好、挂进 #stage）。返回 draw = 重画（开着才画）。 */

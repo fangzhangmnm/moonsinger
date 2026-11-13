@@ -160,6 +160,29 @@ export function sf2Info(input: Uint8Array): { name?: string; engineer?: string; 
   return out;
 }
 
+/** 一块 sf2 给人看的名字（施工单 13-2，统筹「13 开工前…五件的回话」第 2 条）：只读开头的 INFO 和结尾的预设表两小段，不把整块读进内存；
+ *  拼成一个没有采样的小 sf2，交给上面现成的 sf2Info / listSf2Presets 读。preset = 第一个预设的名字（切下来的一块通常只有一个），library = INFO 里的 INAM。
+ *  read(start, end) = 读 [start, end) 这一段字节；size = 整块多大。读不出（不是 sf2、缺块）= null。created 2026-11-13 by Claude Opus 5.5（MoonSinger小弟）。 */
+export async function sf2Label(read: (start: number, end: number) => Promise<Uint8Array>, size: number): Promise<{ preset?: string; library?: string; presets: number } | null> {
+  try {
+    const head = await read(0, Math.min(12, size));
+    if (head.length < 12 || tag(head, 0) !== "RIFF" || tag(head, 8) !== "sfbk") return null;
+    let info: Uint8Array | null = null, pdta: Uint8Array | null = null, o = 12;
+    while (o + 12 <= size && !(info && pdta)) {
+      const h = await read(o, o + 12), len = new DataView(h.buffer, h.byteOffset, h.byteLength).getUint32(4, true);
+      if (tag(h, 0) === "LIST" && (tag(h, 8) === "INFO" || tag(h, 8) === "pdta")) { const whole = await read(o, o + 8 + len); if (tag(h, 8) === "INFO") info = whole; else pdta = whole; }
+      o += 8 + len + (len & 1);
+    }
+    if (!info || !pdta) return null;
+    const empty = new Uint8Array([..."LIST"].map((c) => c.charCodeAt(0)).concat([12, 0, 0, 0], [..."sdtasmpl"].map((c) => c.charCodeAt(0)), [0, 0, 0, 0]));
+    const body = info.length + empty.length + pdta.length, mini = new Uint8Array(12 + body), dv = new DataView(mini.buffer);
+    mini.set([..."RIFF"].map((c) => c.charCodeAt(0)), 0); dv.setUint32(4, 4 + body, true); mini.set([..."sfbk"].map((c) => c.charCodeAt(0)), 8);
+    mini.set(info, 12); mini.set(empty, 12 + info.length); mini.set(pdta, 12 + info.length + empty.length);
+    const presets = listSf2Presets(mini), name = sf2Info(mini).name;
+    return { ...(presets[0]?.name ? { preset: presets[0].name.trim() } : {}), ...(name ? { library: name } : {}), presets: presets.length };
+  } catch { return null; }
+}
+
 /** 这件乐器（一个预设；给了 key = 只看盖到这个键的区）的「力度深度」：库给每个区写的「力度 → 初始衰减」调制器的量（cB），照 FluidSynth 合
  *  （施工单 9-4，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；引擎那一半 = vendor/tsf/patch-tsf.py 补丁 2，两边同一套规矩）：
  *  规范默认 960（来源 0x0502 = 力度、负向、单极、凹，量来源 = 无）；乐器一级同源的盖掉它（区里的盖过全局区的），预设一级同源的加上去（量 0 不加）。

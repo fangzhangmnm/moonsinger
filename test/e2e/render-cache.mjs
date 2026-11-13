@@ -216,18 +216,19 @@ check(/旧版本的引擎渲的/.test(await p.$eval(".ms-player-title", (e) => e
   check(await fresh(), "重新渲染完：接着放，播放条上不再写「旧」");
   check((await rc()).stats.count === n0 && !(await p.$(`${tileOf(id3)} .ms-cover-tag`)) && !!(await rc()).hit, "用现在的引擎渲的换掉了那一条（内容没变 = 同一条，份数不变）；封面上的「旧」没了", `${n0} → ${(await rc()).stats.count}`);
   await p.click('.ms-player [data-p="close"]'); await p.waitForTimeout(100); }
-// 设置里一键删旧：每条标「这一版渲的 / 旧版本渲的」，钮上写几条、多大；删完旧的没了、这一版渲的留着
+// 设置里一键清旧：旧的那几条标「旧版本渲的」（版本号在这一组的「?」里，13-2「13 再补」第 3 条），钮上写几条、多大；清完旧的没了、这一版渲的留着
 await p.click(tileOf(id3)); await p.waitForTimeout(800); await later();   // 回到编辑器（设置在三条杠里）
 check(await ageIt(), "再造一条旧的");
 await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card"); await p.click('.set-tabs [data-tab="upkeep"]'); await p.waitForTimeout(150);   // 渲染缓存在「维护」那一页（13-1）
-const rcText = async () => { for (let i = 0; i < 40; i++) { const t = await p.$eval("#rcList", (e) => e.textContent ?? "").catch(() => ""); if (t && t !== "…") return t; await p.waitForTimeout(100); } return ""; };
-{ const t = await rcText(), oldRows = (t.match(/旧版本渲的（渲染核心/g) ?? []).length, newRows = (t.match(/这一版渲的/g) ?? []).length, n0 = (await rc()).stats.count;
+const rcRows = async () => { for (let i = 0; i < 40; i++) { const r = await p.$$eval("#rcList .rc-row", (es) => es.map((e) => !!e.querySelector(".rc-core.is-old"))).catch(() => []); if (r.length) return r; await p.waitForTimeout(100); } return []; };
+{ const rows = await rcRows(), oldRows = rows.filter(Boolean).length, newRows = rows.length - oldRows, n0 = (await rc()).stats.count;
+  const what = await p.$eval('.wbe-row[data-group="renders"] > .wbe-row-note', (e) => e.textContent ?? "").catch(() => "");
   const btn = await p.$eval('#rcList [data-v="rc:old"]', (e) => e.textContent ?? "").catch(() => "");
-  check(oldRows >= 1 && newRows >= 1 && oldRows + newRows === n0 && /渲染核心 0\.2\.1/.test(t), "设置的渲染缓存列表：每条标「这一版渲的 / 旧版本渲的（渲染核心 …）」", `旧 ${oldRows} · 新 ${newRows} · 共 ${n0}`);
-  check(new RegExp(`删掉旧版本渲的（${oldRows} 条，共 `).test(btn), "有「删掉旧版本渲的（N 条，共多大）」，N = 标旧的条数", btn);
+  check(oldRows >= 1 && newRows >= 1 && rows.length === n0 && /0\.2\.1/.test(what), "设置的渲染缓存列表：一首一行，旧的标「旧版本渲的」，版本号在这一组的「?」里", `旧 ${oldRows} · 新 ${newRows} · 共 ${n0}`);
+  check(new RegExp(`清旧版本渲的（${oldRows} 条，共 `).test(btn), "有「清旧版本渲的（N 条，共多大）」，N = 标旧的条数", btn);
   await p.click('#rcList [data-v="rc:old"]');
-  let after = ""; for (let i = 0; i < 40; i++) { after = await rcText(); if (!/旧版本渲的（渲染核心/.test(after)) break; await p.waitForTimeout(100); }
-  check(!/旧版本渲的（渲染核心/.test(after) && !(await p.$('#rcList [data-v="rc:old"]')) && (await rc()).stats.count === n0 - oldRows, "点了：旧的都删了、钮没了，这一版渲的留着", `${n0} → ${(await rc()).stats.count}`); }
+  let after = rows; for (let i = 0; i < 40; i++) { after = await rcRows(); if (!after.some(Boolean)) break; await p.waitForTimeout(100); }
+  check(!after.some(Boolean) && !(await p.$('#rcList [data-v="rc:old"]')) && (await rc()).stats.count === n0 - oldRows, "点了：旧的都清了、钮没了，这一版渲的留着", `${n0} → ${(await rc()).stats.count}`); }
 await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
 await openGallery();
 { const a = await p.$eval(`${tileOf(id3)} .gallery-tile-action`, (e) => e.className).catch(() => "");

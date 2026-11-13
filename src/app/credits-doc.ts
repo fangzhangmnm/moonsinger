@@ -9,12 +9,14 @@ import { ICON_CREDITS } from "../gm/instruments.gen.ts";
 import { renderMdLite, escapeHtml } from "../ui/md-lite.ts";
 
 export interface DocSection { id: string; title: string; body: string }
+/** 小月相的署名与使用条款那一节的 id（设置「音源」页她那一栏的「全文…」只开这一节；「关于」页开别的几节，13-2）。 */
+export const VOICE_CREDIT_SECTION = "tsukuyomi";
 const link = (raw: string) => { const url = raw.replace(/&amp;/g, "&"); return /^https?:\/\//.test(url) ? `[${url}](${url})` : url; };   // 目录数据里有的网址带着 HTML 转义（&amp;），先还原
 
 /** 这一篇的各节（顺序 = 文里的顺序）。lang = 界面语言（中文界面多给中文译文；英文译文都给）。 */
 export function creditsSections(lang: string): DocSection[] {
   return [
-    { id: "tsukuyomi", title: _t("小月相（つくよみちゃん）的署名与使用条款"),
+    { id: VOICE_CREDIT_SECTION, title: _t("小月相（つくよみちゃん）的署名与使用条款"),
       // 原文在上（条款要求的是原文）；中 / 英译文在下、只给人读（user 2026-10-08「月读的license的展示你守的很紧，但是没做翻译」「还有英文，中国人还能读白字」）
       body: `## ${_t("原文（以此为准）")}\n\n${CREDIT.credit}\n\n${CREDIT.terms}` +
         (lang === "zh" ? `\n\n## ${_t("中文译文（仅供阅读，以日文原文为准）")}\n\n${CREDIT_TRANSLATIONS.zh.credit}\n\n${CREDIT_TRANSLATIONS.zh.terms}` : "") +

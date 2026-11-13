@@ -57,12 +57,12 @@ import { createModelSources, MODEL_SOURCE_DEFAULT } from "../sources/models.ts";
 import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
 import { withCastAs, candidateJson, activeCalibrationDb, templateExtras, activeHum, withHum } from "../format/project.ts";
-import type { CandidateV2 } from "../format/contract.ts";
+import type { CandidateV2, Sf2Source } from "../format/contract.ts";
 import { contentFingerprintOf, moveBus, saveMxl, openBytes, emptyExtras, roleSound, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, activePerfSpec, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
 import { navWhy } from "../score/repeats.ts";
-import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
+import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted, cachedSoundLabel } from "../gm/sound-cache.ts";
 // ── 实时试听（2026-10-09 Claude Fable 5.1，刀 1；提案 ai-docs/20261009-realtime-preview-engine-proposal.md）：谱 → 时间线（秒）→ 录音房（音频线程）
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf, TSUKUYOMI_RANGE } from "../performers/index.ts";
@@ -84,7 +84,7 @@ import { Studio, MASTER as STUDIO_MASTER, STEREO_TABS } from "../ui/studio.ts";
 import { resolveChain } from "../ui/plugins.ts";
 import { coreInfo } from "../core/version.ts";
 import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, castArgsOf, sampleKeyOf, GS_LIBRARY_ID, gmKey, conceptOfIds, type Catalog, type Concept } from "../gm/catalog.ts";
-import { creditsSections, sectionsHtml } from "./credits-doc.ts";
+import { creditsSections, sectionsHtml, VOICE_CREDIT_SECTION } from "./credits-doc.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { partShow, partNameOf, roleNameIn, roleGivenName, roleInstrumentLabel, type PartShow } from "../format/part-show.ts";   // 声部显示成什么：唯一出口（12-4）
 import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES } from "../score/paper.ts";
@@ -141,6 +141,8 @@ import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongLooks, type ResolvedLo
 import type { ClefHit } from "../render/engrave.ts";
 import { TAB20, partColorIndices } from "../ui/part-colors.ts";
 import { fitWide } from "../ui/fit-wide.ts";
+import { sizeText } from "../ui/size-text.ts";
+import { libAction, voiceColumnHtml, gsColumnHtml, ownColumnHtml, ownLabel, upkeepVoiceHtml, upkeepGsHtml, upkeepRendersHtml, upkeepRestHtml, type PackView, type OwnView, type LibId, type LibsHost } from "./panels/settings-libs.ts";   // 设置的音源 / 维护两页（13-2）
 
 installTouchTips();
 applyDocumentLang();   // <html lang> + CSS 里写死的几句：第一个做，后面画界面都已经是这个语言
@@ -1317,14 +1319,6 @@ function openMp3Panel(): void {
 const models = createModelSources();
 const packStore = createPackStore({ packs: PACKS });   // 只用来导入 / 看状态；下载在 worker 里（同一个 Cache Storage pwa-models）
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-async function packStatusText(): Promise<string> {
-  if (resourcesInFolder()) {   // 备用版：模型包就在文件夹里（老实脚本），用到才读、读时核哈希；浏览器缓存在 file: 里用不了（2026-11-03 家族工单 A）
-    const files = localBundle()?.files ?? {};
-    return Object.entries(PACKS).map(([slug, p]) => `${p.manifest.chunks.every((c) => files[`pwa-models/packs/${slug}/${c.name}`]) ? _t("✓ 在文件夹里") : _t("· 文件夹里没有")} ${slug}（${(p.manifest.totalBytes / 1e6).toFixed(1)} MB）`).join("\n");
-  }
-  const packs = await packStore.status(Object.keys(PACKS));
-  return packs.map((s) => `${s.ready ? "✓" : "·"} ${s.slug}（${(s.bytesTotal / 1e6).toFixed(1)} MB）`).join("\n");
-}
 /** 语言这一行：两种语言的字都写，走错语言的人也认得出。切换 = 存 + 重载（语言锁死在这一页，不要半译状态；没存的改动由挽留框 / 退出落盘那一套管）。 */
 const LANG_LABEL = "语言 · Language";   // i18n-keep
 /** 点了谱上的和弦级数：全部候选 + 怎么排的（不是选择题，只是看）。说明的字归读它的那种理论（乐理模块 src/theory/）。 */
@@ -1399,7 +1393,17 @@ function openDocLayer(host: HTMLElement, title: string, html: string, jump?: str
   layer.addEventListener("click", (e) => { e.stopPropagation(); if (e.target === layer || (e.target as HTMLElement).closest("[data-doc-close]")) layer.remove(); });
   if (jump) requestAnimationFrame(() => layer.querySelector(`#doc-${jump}`)?.scrollIntoView({ block: "start" }));
 }
-/** 设置面板（应用内，不用系统弹窗）：模型来源、从本机文件导入模型包、月读的署名与使用条款（包内 LICENSE [1][2] 要求显示）。 */
+/** 在一张面板上面再问一句（不关掉下面那张；设置里删库之前用，13-2）：点 ok = true；点背板 / 算了 = false。 */
+function askOver(host: HTMLElement, title: string, msg: string, okLabel: string, danger = false): Promise<boolean> {
+  return new Promise((resolve) => {
+    const layer = document.createElement("div"); layer.className = "doc-layer ask-layer";
+    layer.innerHTML = `<div class="offer-card"><div class="offer-title">${esc(title)}</div><div class="offer-msg">${esc(msg)}</div><div class="offer-btns"><button class="btn${danger ? " danger" : ""}" data-ask="ok">${esc(okLabel)}</button><button class="btn primary" data-ask="no">${_t("算了")}</button></div></div>`;
+    host.append(layer);
+    const done = (ok: boolean) => { layer.remove(); resolve(ok); };
+    layer.addEventListener("click", (e) => { e.stopPropagation(); const a = (e.target as HTMLElement).closest<HTMLElement>("[data-ask]")?.dataset.ask; if (e.target === layer || a === "no") done(false); else if (a === "ok") done(true); });
+  });
+}
+/** 设置面板（应用内，不用系统弹窗）：六页（13-1）；音源 / 维护两页的格局和按钮在 panels/settings-libs.ts（13-2）。 */
 function openSettings(): void {
   ui.close();
   const inFolder = resourcesInFolder();   // 备用版：模型 / 音源都在文件夹里，浏览器缓存用不了——这几行画灰 + 说一句（规则书 §1 第 6 条）
@@ -1413,131 +1417,146 @@ function openSettings(): void {
     `<div class="set-page" data-page="ui">` +
       item(LANG_LABEL, setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }) +
     `</div>` +
-    `<div class="set-page" data-page="sound">` +
-      item(_t("模型来源"), "", _t("先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。") + (inFolder ? `<br>${FOLDER_TEXT.models}` : ""),
-        inFolder ? `<input id="srcIn" type="url" disabled value="${esc(models.source)}" />` : `<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" />`) +
-      item(_t("音源库来源"), look("default", _t("恢复默认")), _t("乐器音色库、鼓组、音效素材（不是 AI 模型）。「恢复默认」= 模型来源和音源库来源都回到出厂的地址。只在这次打开里有效。"),
-        `<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" />`) +
-      item(_t("小月相的模型包"), inFolder ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入")}</span><input id="impIn" type="file" multiple hidden disabled />`
-          : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入")}<input id="impIn" type="file" multiple hidden /></label>`,
-        _t("选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"), `<pre id="packSt" class="set-packs">…</pre>`) +
-      item(_t("音源库缓存"), "", _t("留在设备上，没网也能用；歌自己带声音，这里只是货架"), `<div id="sndCache" class="set-packs">…</div>`) +
-      item(_t("小月相的署名与使用条款"), look("doc:tsukuyomi", _t("看…"))) +
-    `</div>` +
+    // 音源（13-2）：每个库一栏——小月相 / 乐器音色库 / 你自己加的音色文件；格局和字在 panels/settings-libs.ts
+    `<div class="set-page" data-page="sound"><div id="libVoice">…</div><div id="libGs">…</div><div id="libOwn">…</div></div>` +
     `<div class="set-page" data-page="input">` +
       item(_t("MIDI 键盘"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("连接")}</button>` : ""}`) +
     `</div>` +
-    // 维护（13-1）：清理空间、出毛病时修一下、把日志发给开发者——这一页上的每颗钮按下去都不会让任何一首歌少东西（13 补）
-    `<div class="set-page" data-page="upkeep">` +
-      item(_t("渲染缓存"), look("rc:clear", _t("全清")), _t("导出或「渲染到缓存」时放进来的整首歌声，歌库封面上的 ▶ 靠它；只在这台设备上、不同步，最多 {n} 首，满了丢最久没听的；删了只是要重渲", { n: RENDER_KEEP }), `<div id="rcList" class="set-packs">…</div>`) +
-      item(_t("小月相的念缓存"), look("sp:clear", _t("清空念缓存")), _t("设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念"), `<div id="spCache" class="set-packs">…</div>`) +
-      // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
-      item(_t("重启声音"), look("audio:revive", _t("重启声音")), _t("声音不对劲的时候按一下（按键有延迟、没有声音）：把通向扬声器的那一段换成新的，排着没播完的声音一起丢掉。正在响的声音会断一下")) +
-      item(_t("引擎负载与内存"), `<button class="btn" data-v="eng:restart" title="${_t("小月相引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念")}">${_t("重开小月相引擎")}</button>`,
-        _t("能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说。小月相引擎的内存只涨不落，只有重开才还回去"), `<div id="engRes" class="set-packs">…</div>`) +
-      item(_t("诊断日志"), look("diag:view", _t("看…")), _t("黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备"),
-        `<pre id="diagTxt" hidden>${esc(diagText())}</pre><div class="set-row">${look("diag:copy", _t("复制"))}${look("diag:download", _t("下载 .txt"))}${canShareDiag() ? look("diag:share", _t("分享…")) : ""}${look("diag:clear", _t("清空"))}</div>`) +
-      item(_t("清缓存重启"), `<button class="btn" data-v="reset">${_t("清缓存重启")}</button>`, _t("卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删")) +
+    // 维护（13-2）：按对象分组；这一页上的每颗钮按下去都不会让任何一首歌少东西（「13 补」，守卫 test/settings-libs.test.ts）
+    `<div class="set-page" data-page="upkeep"><div id="upVoice">…</div><div id="upGs">…</div><div id="upRc">…</div>` +
+      upkeepRestHtml({ canShare: canShareDiag(), diagText: diagText() }) +
     `</div>` +
-    // 关于（13-1）：版本、软件自己用到的别人的东西（小月相的署名在「音源」页它那一项）
+    // 关于：版本、软件自己用到的别人的东西（13-1 拆开：小月相的署名与使用条款在「音源」页它那一栏的「©」）
     `<div class="set-page" data-page="about">` +
       item(_t("版本"), `<span class="set-ver">${APP_VERSION}</span>`) +
-      item(_t("版权与署名"), look("doc:top", _t("看…")), _t("小月相的署名与使用条款、乐器目录图标的作者与许可，合在一篇里看")) +
+      item(_t("第三方的作者和许可"), look("doc:top", _t("看…")), _t("软件自己用到的别人的东西（乐器目录的图标…）；小月相的署名与使用条款在「音源」页它那一栏的 ©")) +
     `</div>` +
     // 开发者页（家族规矩 2½：「还原出厂设置…」住这里）
     `<div class="set-page" data-page="dev">` +
       item(_t("按键手感的数字"), setSel("feel", [["off", _t("关")], ["on", _t("开")]], feelAlways ? "on" : "off"), _t("查延迟用：打开 = 按键时在键盘上面露一行数字；关着 = 不显示（晚了也不弹，只记进诊断日志）")) +
       (IS_IOS ? item(_t("声音的起法（试验）"), setSel("primer", [["off", _t("关")], ["on", _t("开")]], primerOn() ? "on" : "off"), _t("开 = 第一次点屏幕先起一个不出声的垫脚把声音硬件叫醒，再起真正出声的那一个；关 = 以前的起法。改了要重开 app 才看得出")) : "") +
-      item(_t("还原出厂设置"), `<button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button>`, _t("这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在「音源与缓存」的模型包里逐个删")) +
+      // 给开发者看的数字（「13 再补」第 4 条：维护页和音源页只留「占多少、能不能清」）：站点配额、录音房几块、小月相几条道和设备预算、输出延迟、音频线程忙多少
+      item(_t("引擎负载与内存"), "", _t("能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在状态条明说"), `<div id="engRes" class="set-packs">…</div><div id="siteQuota" class="set-packs"></div>`) +
+      item(_t("还原出厂设置"), `<button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button>`, _t("这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相和乐器音色库不动——要删在「音源」页各自那一栏删")) +
     `</div>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("检查更新")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("检查更新")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
   document.body.append(box);
-  // 五页：点页签换页（这次运行里记住）；下拉框改了马上生效（语言 = 存 + 重载）
+  // 六页：点页签换页（这次运行里记住）；下拉框改了马上生效（语言 = 存 + 重载）
   mountDropdowns(box);   // 设置里的下拉（setSel）
-  wireSetPages<SetPage>(box, SET_PAGES(), settingsPage, (pg) => { settingsPage = pg; })(settingsPage);
+  const showPage = wireSetPages<SetPage>(box, SET_PAGES(), settingsPage, (pg) => { settingsPage = pg; });
+  showPage(settingsPage);
   box.addEventListener("change", (e) => {
-    const el = e.target as HTMLButtonElement, k = el.dataset.set; if (!k) return;
+    const el = e.target as HTMLButtonElement, k = el.dataset.set;
+    if ((e.target as HTMLElement).id === "impIn") { void importPacks(e.target as HTMLInputElement); return; }
+    if (!k) return;
     if (k === "lang") { saveLang(el.value === "auto" ? null : (el.value as Lang)); location.reload(); }
     else if (k === "feel") { feelAlways = el.value === "on"; deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null); diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`); }
     else if (k === "primer") { const on = el.value === "on"; setPrimer(on); deviceKvSet(KV_PRIMER, on ? null : "0"); }
   });
-  const srcIn = box.querySelector<HTMLInputElement>("#srcIn")!, packSt = box.querySelector<HTMLElement>("#packSt")!;
-  const refresh = () => { void packStatusText().then((t) => (packSt.textContent = t)); };
-  refresh();
-  const engRes = box.querySelector<HTMLElement>("#engRes")!;
-  const refreshRes = () => { const lat = engine.latencyMs(); engRes.textContent = _t("{BUDGET} 小月相 {parallelism} 条道（设备预算 {lanes}）。{p}", { BUDGET: describeResources(resourceSnapshot(), BUDGET), parallelism: singer.parallelism, lanes: BUDGET.lanes, p: lat !== null ? _t("声音的输出延迟（浏览器报的）{lat} ms。", { lat: Math.round(lat) }) : "" }); };
-  refreshRes(); const resTimer = window.setInterval(refreshRes, 1000);
-  const spCache = box.querySelector<HTMLElement>("#spCache")!;
-  const refreshSpeech = () => { void singer.cache("info", BUDGET.speechDisk).then((d) => { spCache.textContent = d ? _t("{bytes} / 预算 {budget}，{entries} 条", { bytes: sizeText(d.bytes), budget: sizeText(d.budget), entries: d.entries }) : inFolder ? FOLDER_TEXT.speech : _t("这个浏览器没有 IndexedDB：只用内存"); }).catch((e) => { spCache.textContent = _t("读不到：{Error}", { Error: (e as Error).message }); }); };
-  refreshSpeech();
-  const sndIn = box.querySelector<HTMLInputElement>("#sndIn")!, sndCache = box.querySelector<HTMLElement>("#sndCache")!;
-  const refreshSounds = async () => {
-    if (inFolder) { sndCache.innerHTML = `<div class="set-row"><span class="set-note">${FOLDER_TEXT.sounds}</span></div>`; return; }
-    const cached = await listCachedSounds(), bySha = new Map(cached.map((c) => [c.sha256, c])), known = new Set(Object.values(SOUNDS).map((e) => e.sha256)), uses = new Map(soundUses(D.extras).map((u) => [u.subsetSha256, u]));
-    const total = cached.reduce((n, c) => n + c.bytes, 0), mem = soundMemoryBytes();
-    let quota = ""; const est = await siteStorageEstimate(); if (est) quota = _t("；这个站点共用了 {usage} / 配额 {quota}", { usage: sizeText(est.usage), quota: sizeText(est.quota) });
-    sndCache.innerHTML = `<div class="set-row"><span>${_t("设备上留着 {total}{quota}；内存里现在 {mem}", { total: sizeText(total), quota, mem: sizeText(mem) })}</span>${mem ? `<button class="btn" data-v="snd:mem" title="${_t("放掉内存里的整包（设备上留着的不动，下次用再从设备读）")}">${_t("放掉内存")}</button>` : ""}</div>` +
-      Object.values(SOUNDS).map((e) => { const c = bySha.get(e.sha256); return `<div class="set-row"><span>${esc(e.name)} · ${sizeText(e.bytes)} · ${c ? _t("已留在设备上") : _t("没下载")}</span>${c ? `<button class="btn" data-v="snd:del:${esc(e.id)}">${_t("删掉")}</button>` : `<button class="btn" data-v="snd:get:${esc(e.id)}">${_t("下载留着")}</button>`}</div>`; }).join("") +
-      // 子集（自己的 .sf2 加进来时 / 解包时留的，按子集 sha256 存）：这首歌弱引用着的写出名字——删了它，没有原文件就找不回来
-      cached.filter((c) => !known.has(c.sha256)).map((c) => { const u = uses.get(c.sha256); return `<div class="set-row"><span>${u ? _t("「{p}」的声音（这首歌{packed}）", { p: esc(u.names.join("、")), packed: u.packed ? _t("也打包着") : _t("引用着；删了要从「{name}」找", { name: esc(u.origin.name) }) }) : _t("别的歌 / 别的版本 / 别的 app 留的（{p}…）", { p: c.sha256.slice(0, 8) })} · ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">${_t("删掉")}</button></div>`; }).join("") || _t("（没有）");
+  // 两个来源框住在各自那一栏里，栏会重画：重画前、关面板时把框里的字收进来（只在这次打开里有效）
+  const keepSources = () => { const a = box.querySelector<HTMLInputElement>("#srcIn"), b = box.querySelector<HTMLInputElement>("#sndIn"); if (a && !a.disabled) models.source = a.value; if (b) sources.source = b.value; };
+  // ── 音源页：量好交给 settings-libs 拼字 ──
+  const libVoice = box.querySelector<HTMLElement>("#libVoice")!, libGs = box.querySelector<HTMLElement>("#libGs")!, libOwn = box.querySelector<HTMLElement>("#libOwn")!;
+  const sizes = new Map<string, number>();   // 删之前面板上写「占多少」：最近一次量的
+  const GS = SOUNDS["generaluser-gs-2.0.3"]!;
+  const voicePacks = async (): Promise<PackView[]> => {
+    if (inFolder) { const files = localBundle()?.files ?? {}; return Object.entries(PACKS).map(([slug, p]) => { const ready = p.manifest.chunks.every((c) => files[`pwa-models/packs/${slug}/${c.name}`]); return { slug, ready, bytesTotal: p.manifest.totalBytes, bytesCached: ready ? p.manifest.totalBytes : 0 }; }); }
+    return (await packStore.status(Object.keys(PACKS))).map((s) => ({ slug: s.slug, ready: s.ready, bytesTotal: s.bytesTotal, bytesCached: s.bytesCached }));
   };
-  void refreshSounds();
-  // 这台设备记着的歌声（v0.16.101）：每条 = 歌名 · 多长 · 多大 · 哪天渲的 · 挂在歌库哪首上；一条一条删 / 全清
-  const rcList = box.querySelector<HTMLElement>("#rcList")!;
+  const refreshSound = async (): Promise<void> => {
+    keepSources();
+    const packs = await voicePacks(); sizes.set("voice", packs.reduce((n, p) => n + p.bytesCached, 0));
+    libVoice.innerHTML = voiceColumnHtml({ packs, folder: inFolder ? FOLDER_TEXT.models : null, source: models.source });
+    const cached = inFolder ? [] : await listCachedSounds(), gsHere = cached.find((c) => c.sha256 === GS.sha256); sizes.set("gs", gsHere?.bytes ?? 0);
+    libGs.innerHTML = gsColumnHtml({ name: GS.name, ...(GS.description ? { description: GS.description } : {}), bytes: GS.bytes, cached: !!gsHere, license: GS.license, attribution: GS.attribution, ...(GS.homepage ? { homepage: GS.homepage } : {}), folder: inFolder ? FOLDER_TEXT.sounds : null, source: sources.source });
+    // 自己加的：设备上留着、又不是目录里认得的整包（「五件的回话」第 2 条：名字从这一块字节里读，先出页面、名字后补）
+    const known = new Set(Object.values(SOUNDS).map((e) => e.sha256)), uses = new Map(soundUses(D.extras).map((u) => [u.subsetSha256, u]));
+    const own: OwnView[] = cached.filter((c) => !known.has(c.sha256)).map((c) => { sizes.set(c.sha256, c.bytes); const u = uses.get(c.sha256); return { sha256: c.sha256, bytes: c.bytes, label: undefined, users: u?.names ?? [], packed: !!u?.packed }; });
+    libOwn.innerHTML = ownColumnHtml(own, inFolder ? FOLDER_TEXT.sounds : null);
+    const t0 = performance.now();
+    await Promise.all(own.map(async (o) => { o.label = await cachedSoundLabel(o.sha256); const el = libOwn.querySelector<HTMLElement>(`[data-sha="${o.sha256}"] .lib-own-name`); if (el) el.textContent = ownLabel(o); }));
+    if (own.length) diagNote("settings", `own sound labels: ${own.length} in ${Math.round(performance.now() - t0)} ms`);
+  };
+  // ── 维护页 ──
+  const upVoice = box.querySelector<HTMLElement>("#upVoice")!, upGs = box.querySelector<HTMLElement>("#upGs")!, upRc = box.querySelector<HTMLElement>("#upRc")!;
   let rcKeys: string[] = [];
-  const refreshRc = async (): Promise<void> => {
+  const refreshUpkeep = async (): Promise<void> => {
+    const snap = resourceSnapshot(), engineBytes = snap.lanes.length ? snap.lanes.reduce((n, l) => n + l.wasm, 0) : null;
+    upVoice.innerHTML = upkeepVoiceHtml({ speech: null, speechNote: null, engineBytes });
+    upGs.innerHTML = upkeepGsHtml(soundMemoryBytes());
+    void singer.cache("info", BUDGET.speechDisk).then((d) => { upVoice.innerHTML = upkeepVoiceHtml({ speech: d ?? null, speechNote: d ? null : inFolder ? FOLDER_TEXT.speech : _t("这个浏览器没有 IndexedDB：念过的句子只在内存里"), engineBytes }); });
     await renders.ready();
     const all = renders.list(), st = renders.stats(), old = renders.oldStats(coreInfo()); rcKeys = all.map((x) => x.meta.key);
-    rcList.innerHTML = !all.length ? `<div class="set-row"><span class="set-note">${_t("还没有记着的")}</span></div>`
-      : `<div class="set-row"><span>${_t("{n} 首 · {size}", { n: st.count, size: sizeText(st.bytes) })}</span>${old.count ? `<button class="btn" data-v="rc:old">${_t("删掉旧版本渲的（{n} 条，共 {size}）", { n: old.count, size: sizeText(old.bytes) })}</button>` : ""}</div>` +
-        all.map((x, i) => `<div class="set-row"><span>${esc(_t("{title} · {secs} 秒 · {size} · {date}", { title: x.meta.title, secs: x.meta.secs.toFixed(0), size: sizeText(x.meta.size), date: new Date(x.meta.at).toLocaleDateString() }))}` +
-          // 7-S（2026-11-12）：这一条是不是这一版的渲染核心渲的（判法 = 记录里的核心哈希；旧的照样能听，只是标出来）
-          `<small class="set-note rc-core${renderedByOldCore(x.meta, coreInfo()) ? " is-old" : ""}"> ${esc(renderedByOldCore(x.meta, coreInfo()) ? _t("旧版本渲的（渲染核心 {v}）", { v: x.meta.core?.version ?? "?" }) : _t("这一版渲的"))}</small>` +
-          `${x.links.length ? `<small class="set-note"> ${esc(_t("歌库里：{names}", { names: x.links.map((l) => stemOfId(l.identifier)).join("、") }))}</small>` : ""}</span><button class="btn" data-v="rc:del:${i}">${_t("删")}</button></div>`).join("");
+    upRc.innerHTML = upkeepRendersHtml({ rows: all.map((x) => ({ key: x.meta.key, title: x.meta.title, secs: x.meta.secs, size: x.meta.size, at: x.meta.at, old: renderedByOldCore(x.meta, coreInfo()), coreVersion: x.meta.core?.version ?? "?", links: x.links.map((l) => stemOfId(l.identifier)) })), bytes: st.bytes, oldCount: old.count, oldBytes: old.bytes, coreNow: coreInfo().version }, RENDER_KEEP);
   };
-  void refreshRc();
+  // ── 开发者页：给开发者看的数（每秒刷） ──
+  const engRes = box.querySelector<HTMLElement>("#engRes")!, siteQuota = box.querySelector<HTMLElement>("#siteQuota")!;
+  const refreshRes = () => { const lat = engine.latencyMs(); engRes.textContent = _t("{BUDGET} 小月相 {parallelism} 条道（设备预算 {lanes}）。{p}", { BUDGET: describeResources(resourceSnapshot(), BUDGET), parallelism: singer.parallelism, lanes: BUDGET.lanes, p: lat !== null ? _t("声音的输出延迟（浏览器报的）：{lat} ms", { lat: Math.round(lat) }) : "" }); };
+  refreshRes(); const resTimer = window.setInterval(refreshRes, 1000);
+  void siteStorageEstimate().then((est) => { if (est) siteQuota.textContent = _t("这个站点共用了 {usage} / 配额 {quota}", { usage: sizeText(est.usage), quota: sizeText(est.quota) }); });
+  void refreshSound(); void refreshUpkeep();
+  const importPacks = async (input: HTMLInputElement): Promise<void> => {
+    const files = [...(input.files ?? [])]; if (!files.length) return;
+    const packSt = box.querySelector<HTMLElement>("#packSt"); if (packSt) { packSt.hidden = false; packSt.textContent = _t("导入中…"); }
+    try { await packStore.importFiles(Object.keys(PACKS), files, (p) => { if (packSt) packSt.textContent = _t("导入中… {total}%", { total: Math.floor((p.done / p.total) * 100) }); }); }
+    catch (err) { showError(_t("导入没成：{Error}", { Error: (err as Error).message === "no-matching-file" ? _t("这些文件不是小月相要的模型包分片") : (err as Error).message })); }
+    void refreshSound();
+  };
+  // 宿主交给 settings-libs 的那一套：碰存储的事都在这里，一样一行
+  const silencedBy = (lib: LibId | { sha256: string }): string[] => {
+    const names = labelsNow();
+    return D.st.song.parts.flatMap((p, i) => {
+      const ins = activeInstrument(D.extras, p.role); if (!ins) return [];
+      // 小月相的库（模型包）= 按句出块的那种演奏者在 worker 里唱要用的（注册表的能力字段，不按引擎名分；ADR-0004 §2.4）
+      if (lib === "voice") return performerOf(ins.engine)?.sound === "chunks" ? [names[i] ?? p.id] : [];
+      const s = ("source" in ins ? ins.source : null) as Sf2Source | null; if (!s?.subsetSha256) return [];   // 带一块 SoundFont 字节的才有 source（格式层的形状 Sf2Source）
+      const packed = !!(s.embedded && D.extras.sounds[s.embedded]); if (packed) return [];
+      return (lib === "gs" ? s.origin.library === GS.id : s.subsetSha256 === lib.sha256) ? [names[i] ?? p.id] : [];
+    });
+  };
+  const host: LibsHost = {
+    ask: (title, msg, ok, danger) => askOver(box, title, msg, ok, danger), info, error: showError, silencedBy, sizeOf: (lib) => sizes.get(typeof lib === "string" ? lib : lib.sha256) ?? 0,
+    voice: {
+      delete: () => packStore.delete(Object.keys(PACKS)),
+      install: async (onPct) => { keepSources(); let last: unknown = null; for (const base of models.bases()) { try { await packStore.download(Object.keys(PACKS), base, (p) => onPct(Math.floor((p.done / p.total) * 100))); return; } catch (e) { last = e; } } throw last ?? new Error("no source"); },
+    },
+    sounds: { gsSha: GS.sha256, delete: (sha) => forgetSound(sha), releaseMemory: () => releaseSoundMemory(), installGs: async (onPct) => { keepSources(); await sources.fetchSound(GS, (done) => onPct(Math.round((done / GS.bytes) * 100))); } },
+    speech: { clear: async () => { await singer.cache("clear", BUDGET.speechDisk); } },
+    lanes: { restart: () => { singer.restart(); diagNote("resource", "manual restart of singer lanes"); } },
+    renders: { clearAll: () => renders.clear(), clearOld: () => renders.removeOld(coreInfo()), clear: async (i) => { const k = rcKeys[i]; if (!k) return false; await renders.remove(k); return true; } },
+    audio: { revive: () => manualRevive("settings") },
+    shell: { check: () => shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? _t("已经是最新版") : _t("这里没有离线壳（本机开发 / 浏览器不支持），不用更新")); }), reset: () => shell.forceReset() },
+    diag: {
+      view: () => openDocLayer(box, _t("诊断日志"), `<pre class="diag-log">${esc(diagText())}</pre>`),
+      copy: () => void copyDiag(box.querySelector("#diagTxt"), info), download: () => downloadDiag(info), share: () => void shareDiag(info), clear: () => clearDiag(box.querySelector("#diagTxt"), info),
+    },
+    refresh: (what) => void (what === "sound" ? refreshSound() : refreshUpkeep()),
+    goto: (page, lib) => {   // 两页之间跳到对应的那一栏 / 那一组，亮一下
+      showPage(page);
+      const el = box.querySelector<HTMLElement>(page === "sound" ? `.wbe-row[data-lib="${lib}"]` : `.wbe-row[data-group="${lib}"]`);
+      if (el) { el.classList.add("is-target"); el.scrollIntoView({ block: "nearest" }); setTimeout(() => el.classList.remove("is-target"), 1600); }
+    },
+    doc: () => openDocLayer(box, _t("小月相（つくよみちゃん）的署名与使用条款"), sectionsHtml(creditsSections(lang()).filter((s) => s.id === VOICE_CREDIT_SECTION))),
+    progress,
+  };
   midiRowSync = (s) => { const el = box.querySelector<HTMLElement>("#midiSt"); if (el) el.innerHTML = midiStatusHtml(s); if (s.k !== "off" && s.k !== "denied") box.querySelector('[data-v="midi:connect"]')?.remove(); };
-  const close = () => { clearInterval(resTimer); midiRowSync = null; models.source = srcIn.value; sources.source = sndIn.value; box.remove(); ui.closed(close); scoreEl.focus(); };
+  const close = () => { clearInterval(resTimer); midiRowSync = null; keepSources(); box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
-    if ((e.target as HTMLElement).closest(".wbe-row-mark, [data-tab]")) return;   // 「?」和页签归 wireSetPages
+    if ((e.target as HTMLElement).closest(".wbe-row-mark, [data-tab]")) return;   // 「?」「©」和页签归 wireSetPages
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
-    if (e.target === box || v === "close") close();
-    else if (v === "doc:top" || v === "doc:tsukuyomi") openDocLayer(box, _t("版权与署名"), sectionsHtml(creditsSections(lang())), v === "doc:top" ? undefined : "tsukuyomi");
-    else if (v === "diag:view") openDocLayer(box, _t("诊断日志"), `<pre class="diag-log">${esc(diagText())}</pre>`);
-    else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
+    if (e.target === box || v === "close") { close(); return; }
+    if (!v) return;
+    if (v === "doc:top") openDocLayer(box, _t("第三方的作者和许可"), sectionsHtml(creditsSections(lang()).filter((s) => s.id !== VOICE_CREDIT_SECTION)));
+    else if (v === "src:default:voice") { const a = box.querySelector<HTMLInputElement>("#srcIn"); if (a) a.value = MODEL_SOURCE_DEFAULT; models.source = MODEL_SOURCE_DEFAULT; }
+    else if (v === "src:default:gs") { const b = box.querySelector<HTMLInputElement>("#sndIn"); if (b) b.value = SOUNDS_SOURCE_DEFAULT; sources.source = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "midi:connect") void midi.connect();
-    else if (v === "audio:revive") {
-      const b = (e.target as HTMLElement).closest("button")!; b.disabled = true;
-      void manualRevive("settings").then((ok) => { b.disabled = false; info(ok ? _t("声音重启了") : _t("换过了，但声音设备还没起来：再按一次，或者把 app 关掉重开")); });
-    }
-    else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
-    else if (v === "diag:download") downloadDiag(info);
-    else if (v === "diag:share") void shareDiag(info);
-    else if (v === "diag:clear") clearDiag(box.querySelector("#diagTxt"), info);
-    else if (v?.startsWith("snd:get:")) { const e = SOUNDS[v.slice(8)]; sources.source = sndIn.value; void sources.fetchSound(e, (done) => progress(_t("下载 {name} {bytes}%", { name: e.name, bytes: Math.round((done / e.bytes) * 100) }))).then(() => { progress(""); info(_t("{name} 留在设备上了", { name: e.name })); }).catch((err) => { progress(""); showError((err as Error).message); }).finally(() => void refreshSounds()); }
-    else if (v?.startsWith("snd:del:")) { const e = SOUNDS[v.slice(8)]; void forgetSound(e.sha256).then(refreshSounds); }
-    else if (v?.startsWith("snd:delsha:")) void forgetSound(v.slice(11)).then(refreshSounds);
-    else if (v === "snd:mem") { releaseSoundMemory(); void refreshSounds(); }
-    else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? _t("已经是最新版") : _t("这里没有离线壳（本机开发 / 浏览器不支持），不用更新")); });
-    else if (v === "reset") void shell.forceReset();
     else if (v === "factory") { close(); void runFactoryReset({
       attached: () => hasStore(), dirtyCount: () => requireStore().files.dirty.count(), openUnsaved: () => dirty(),
       prepare: async () => { H.release(); singer.restart(); if (hasStore()) await detachStore(); },   // 放下身份（es 不再写）、关掉举着念缓存库的 worker、dispose store；不 drain、不造逃生副本（说明 sheet 已经说清）
       clearShell: () => shell.clearOwnShell(), info, report: (e, level) => reportError(e, level) }); }
-    else if (v === "rc:clear") void renders.clear().then(() => { void refreshRc(); info(_t("全清了（要听再渲）")); });
-    else if (v === "rc:old") void renders.removeOld(coreInfo()).then((r) => { void refreshRc(); info(_t("删了 {n} 条旧版本渲的（{size}）：歌库里要听再渲", { n: r.count, size: sizeText(r.bytes) })); });   // 7-S：不自动删，人点了才删
-    else if (v?.startsWith("rc:del:")) { const k = rcKeys[Number(v.slice(7))]; if (k) void renders.remove(k).then(() => { void refreshRc(); info(_t("删了这一遍（要听再渲）")); }); }
-    else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => { refreshSpeech(); info(_t("念缓存清空了（念过的句子要重念）")); });
-    else if (v === "eng:restart") { singer.restart(); diagNote("resource", "manual restart of singer lanes"); refreshRes(); info(_t("小月相引擎重开了，内存还回去了（念过的句子存在这台设备上，不用重念）")); }
-  });
-  box.querySelector<HTMLInputElement>("#impIn")!.addEventListener("change", async (e) => {
-    const files = [...((e.target as HTMLInputElement).files ?? [])]; if (!files.length) return;
-    packSt.textContent = _t("导入中…");
-    try { await packStore.importFiles(Object.keys(PACKS), files, (p) => (packSt.textContent = _t("导入中… {total}%", { total: Math.floor((p.done / p.total) * 100) }))); }
-    catch (err) { showError(_t("导入没成：{Error}", { Error: (err as Error).message === "no-matching-file" ? _t("这些文件不是小月相要的模型包分片") : (err as Error).message })); }
-    refresh();
+    else void libAction(host, v);   // 音源页的删 / 装回来、维护页的清、跳转（settings-libs.ts；不认得的钮它回 false，什么都不做）
   });
 }
 $("setBtn").addEventListener("click", () => openMainMenu());
@@ -3140,7 +3159,6 @@ const bytesNow = (extras?: Extras, song: Song = D.st.song) => saveMxl({ ...saveA
 const saveArgs = (extras?: Extras, song: Song = D.st.song) => ({ view: serializeDesk(deskNow()) as unknown as Record<string, unknown>, song, extras: extrasForSave(extras), app: APP_VERSION, date: new Date().toISOString(), core: coreInfo() });
 const mp3SizeText = (n: number) => (n < 1e6 ? `${Math.round(n / 1e3)} KB` : `${(n / 1e6).toFixed(1)} MB`);   // song = 换一份歌来存（导出副本：许可冲突时按未声明写）
 const mxlFile = (name: string, extras?: Extras, song?: Song) => new File([bytesNow(extras, song) as unknown as BlobPart], name, { type: "application/vnd.recordare.musicxml" });
-const sizeText = (n: number) => (n < 1e6 ? `${Math.max(1, Math.round(n / 1e3))} KB` : `${(n / 1e6).toFixed(1)} MB`);
 /** 存 = 回家，一个动作（WeebPaint 一画一家；user 2026-08-25 grill「保存按钮=回家（单一动作），导出 hub=寄明信片」）：
  *  · 有家（打开的那个文件）= 存回去。写之前对一次 mtime，文件在外面被改过就先问（0819 spec §7「原位写回前查 lastModified」）。
  *  · 还没有家 = 安家：桌面 Chromium 先开系统保存框（在手势里；取消 = 到此为止，不降级弹下载——「AbortError ≠ 环境不支持」），再编码、写、认领句柄。

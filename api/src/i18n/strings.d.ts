@@ -808,12 +808,6 @@ export declare const S: {
     readonly 算了: {
         readonly en: "Never mind";
     };
-    readonly "\u2713 \u5728\u6587\u4EF6\u5939\u91CC": {
-        readonly en: "✓ In the folder";
-    };
-    readonly "\u00B7 \u6587\u4EF6\u5939\u91CC\u6CA1\u6709": {
-        readonly en: "· Not in the folder";
-    };
     readonly "\u4F60\u6311\u7684\u300C{name}\u300D\u4E0D\u5728\u73B0\u5728\u8FD9\u51E0\u4E2A\u97F3\u7684\u8BFB\u6CD5\u91CC\uFF08\u97F3\u6539\u8FC7\u4E86\uFF09\uFF1A\u6362\u4E00\u4E2A\uFF0C\u6216\u8005\u6539\u56DE\u81EA\u52A8": {
         readonly en: "The chord you picked, “{name}”, is no longer one of the readings of these notes (the notes changed): pick another, or go back to automatic";
     };
@@ -874,113 +868,23 @@ export declare const S: {
     readonly 跟系统: {
         readonly en: "System";
     };
-    readonly 模型来源: {
-        readonly en: "Model source";
-    };
-    readonly "\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002": {
-        readonly en: "Looks first for <code>pwa-models/</code> on this site (if you host your own server, copy the model repo there), then uses what's entered here. Only for this session.";
-    };
-    readonly 音源库来源: {
-        readonly en: "Sound library source";
-    };
-    readonly 恢复默认: {
-        readonly en: "Reset to default";
-    };
-    readonly "\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF08\u4E0D\u662F AI \u6A21\u578B\uFF09\u3002\u300C\u6062\u590D\u9ED8\u8BA4\u300D= \u6A21\u578B\u6765\u6E90\u548C\u97F3\u6E90\u5E93\u6765\u6E90\u90FD\u56DE\u5230\u51FA\u5382\u7684\u5730\u5740\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002": {
-        readonly en: "Instrument banks, drum kits, sound effects (not AI models). “Restore defaults” = both the model source and the sound library source go back to the built-in addresses. Only for this session.";
-    };
-    readonly 小月相的模型包: {
-        readonly en: "Tsukuyomi-chan's model packs";
-    };
-    readonly 从本机文件导入: {
-        readonly en: "Import from a local file";
-    };
-    readonly "\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6": {
-        readonly en: "Choose the pack's chunk files (chunk-000 …, names don't matter), or one file with the whole pack joined";
-    };
-    readonly 音源库缓存: {
-        readonly en: "Sound library cache";
-    };
-    readonly "\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6": {
-        readonly en: "Kept on this device, works offline; songs carry their own sound, this is only the shelf";
-    };
-    readonly 小月相的署名与使用条款: {
-        readonly en: "Tsukuyomi-chan's credit and terms of use";
-    };
-    readonly "\u770B\u2026": {
-        readonly en: "View…";
-    };
     readonly "MIDI \u952E\u76D8": {
         readonly en: "MIDI keyboard";
     };
     readonly 连接: {
         readonly en: "Connect";
     };
-    readonly 渲染缓存: {
-        readonly en: "Render cache";
-    };
-    readonly 全清: {
-        readonly en: "Clear all";
-    };
-    readonly "\u5BFC\u51FA\u6216\u300C\u6E32\u67D3\u5230\u7F13\u5B58\u300D\u65F6\u653E\u8FDB\u6765\u7684\u6574\u9996\u6B4C\u58F0\uFF0C\u6B4C\u5E93\u5C01\u9762\u4E0A\u7684 \u25B6 \u9760\u5B83\uFF1B\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3001\u4E0D\u540C\u6B65\uFF0C\u6700\u591A {n} \u9996\uFF0C\u6EE1\u4E86\u4E22\u6700\u4E45\u6CA1\u542C\u7684\uFF1B\u5220\u4E86\u53EA\u662F\u8981\u91CD\u6E32": {
-        readonly en: "Whole songs rendered when you export or use “Render to cache”; the ▶ on library covers plays them. Only on this device, never synced, at most {n} songs (the least recently played goes first); deleting only means rendering again";
-    };
-    readonly 小月相的念缓存: {
-        readonly en: "Tsukuyomi-chan's speech cache";
-    };
-    readonly 清空念缓存: {
-        readonly en: "Clear speech cache";
-    };
-    readonly "\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5": {
-        readonly en: "A global pool on this device: spoken lines are shared across songs and survive restarts; regenerable — clearing only means re-speaking";
-    };
-    readonly "\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B": {
-        readonly en: "Press this when the sound is off (keys respond late, or there is no sound): it rebuilds the path to the speaker and throws away any audio still waiting to play. Anything sounding right now will cut out for a moment";
-    };
-    readonly 引擎负载与内存: {
-        readonly en: "Engine load and memory";
-    };
-    readonly "\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5": {
-        readonly en: "Tsukuyomi-chan's engine WASM memory only grows; only a restart returns it. Spoken lines will need re-speaking";
-    };
-    readonly 重开小月相引擎: {
-        readonly en: "Restart Tsukuyomi-chan's engine";
-    };
-    readonly "\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\u3002\u5C0F\u6708\u76F8\u5F15\u64CE\u7684\u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB": {
-        readonly en: "The parts we can measure; over budget it drops chunks first, then reduces parallelism, then restarts the engine when idle, and says so here / in the status bar. Tsukuyomi-chan's engine memory only grows; restarting is the only way to give it back";
-    };
-    readonly 诊断日志: {
-        readonly en: "Diagnostic log";
-    };
-    readonly "\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907": {
-        readonly en: "Black box: send this to the developer if something breaks; never uploaded, it only leaves the device when you tap Copy / Share";
-    };
-    readonly 复制: {
-        readonly en: "Copy";
-    };
-    readonly "\u4E0B\u8F7D .txt": {
-        readonly en: "Download .txt";
-    };
-    readonly "\u5206\u4EAB\u2026": {
-        readonly en: "Share…";
-    };
-    readonly 清空: {
-        readonly en: "Clear";
-    };
-    readonly 清缓存重启: {
-        readonly en: "Clear cache and restart";
-    };
-    readonly "\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220": {
-        readonly en: "For when you're stuck on an old version: unregisters this app's offline cache and reopens. Downloaded Tsukuyomi-chan model packs stay";
-    };
     readonly 版本: {
         readonly en: "Version";
     };
-    readonly 版权与署名: {
-        readonly en: "Credits and licenses";
+    readonly 第三方的作者和许可: {
+        readonly en: "Third-party authors and licenses";
     };
-    readonly "\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B": {
-        readonly en: "Tsukuyomi-chan's credit and terms of use, plus the authors and licenses of the instrument catalog icons, all in one page";
+    readonly "\u770B\u2026": {
+        readonly en: "View…";
+    };
+    readonly "\u8F6F\u4EF6\u81EA\u5DF1\u7528\u5230\u7684\u522B\u4EBA\u7684\u4E1C\u897F\uFF08\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\u2026\uFF09\uFF1B\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u5728\u300C\u97F3\u6E90\u300D\u9875\u5B83\u90A3\u4E00\u680F\u7684 \u00A9": {
+        readonly en: "Other people’s work the app itself uses (the instrument catalog icons…); Tsukuyomi-chan’s credit and terms of use are under © in her column on the Sounds page";
     };
     readonly 按键手感的数字: {
         readonly en: "Key-feel numbers";
@@ -994,119 +898,32 @@ export declare const S: {
     readonly "\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA": {
         readonly en: "On = the first tap starts a silent primer to wake the audio hardware, then the real output starts; off = the old way. Takes effect the next time the app is opened";
     };
+    readonly 引擎负载与内存: {
+        readonly en: "Engine load and memory";
+    };
+    readonly "\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u72B6\u6001\u6761\u660E\u8BF4": {
+        readonly en: "What can be counted; when over budget it first drops blocks, then lowers parallelism, then restarts the engine when idle, and says so in the status bar";
+    };
     readonly "\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026": {
         readonly en: "Factory reset…";
     };
-    readonly "\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u7684\u6A21\u578B\u5305\u91CC\u9010\u4E2A\u5220": {
-        readonly en: "Wipes all of MoonSinger's local data on this device back to a fresh install: local library copies, speech cache, cover cache, settings, diagnostic log and offline shell; songs in the cloud and local files aren't touched; Tsukuyomi-chan's model packs are shared with other apps on this site and aren't touched — delete them one by one under model packs in Settings › Audio";
+    readonly "\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u548C\u4E50\u5668\u97F3\u8272\u5E93\u4E0D\u52A8\u2014\u2014\u8981\u5220\u5728\u300C\u97F3\u6E90\u300D\u9875\u5404\u81EA\u90A3\u4E00\u680F\u5220": {
+        readonly en: "Resets everything MoonSinger stores on this device to a fresh install: local copies of library songs, the spoken-lyrics cache, cover cache, settings, diagnostic log, offline shell. Songs in the cloud and local files are untouched; Tsukuyomi-chan and the instrument library are untouched too — delete them in their own columns on the Sounds page";
     };
     readonly 检查更新: {
         readonly en: "Check for updates";
     };
+    readonly "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6CA1\u6709 IndexedDB\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u53EA\u5728\u5185\u5B58\u91CC": {
+        readonly en: "This browser has no IndexedDB: spoken lyrics are kept in memory only";
+    };
     readonly "{BUDGET} \u5C0F\u6708\u76F8 {parallelism} \u6761\u9053\uFF08\u8BBE\u5907\u9884\u7B97 {lanes}\uFF09\u3002{p}": {
         readonly en: "{BUDGET} Tsukuyomi-chan {parallelism} lanes (device budget {lanes}). {p}";
     };
-    readonly "\u58F0\u97F3\u7684\u8F93\u51FA\u5EF6\u8FDF\uFF08\u6D4F\u89C8\u5668\u62A5\u7684\uFF09{lat} ms\u3002": {
-        readonly en: "Audio output latency (as reported by the browser): {lat} ms.";
+    readonly "\u58F0\u97F3\u7684\u8F93\u51FA\u5EF6\u8FDF\uFF08\u6D4F\u89C8\u5668\u62A5\u7684\uFF09\uFF1A{lat} ms": {
+        readonly en: "Audio output latency (as reported by the browser): {lat} ms";
     };
-    readonly "{bytes} / \u9884\u7B97 {budget}\uFF0C{entries} \u6761": {
-        readonly en: "{bytes} / budget {budget}, {entries} entries";
-    };
-    readonly "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6CA1\u6709 IndexedDB\uFF1A\u53EA\u7528\u5185\u5B58": {
-        readonly en: "This browser has no IndexedDB: memory only";
-    };
-    readonly "\u8BFB\u4E0D\u5230\uFF1A{Error}": {
-        readonly en: "Can't read: {Error}";
-    };
-    readonly "\uFF1B\u8FD9\u4E2A\u7AD9\u70B9\u5171\u7528\u4E86 {usage} / \u914D\u989D {quota}": {
-        readonly en: "; this site is using {usage} / quota {quota}";
-    };
-    readonly "\u8BBE\u5907\u4E0A\u7559\u7740 {total}{quota}\uFF1B\u5185\u5B58\u91CC\u73B0\u5728 {mem}": {
-        readonly en: "{total} kept on this device{quota}; {mem} in memory now";
-    };
-    readonly "\u653E\u6389\u5185\u5B58\u91CC\u7684\u6574\u5305\uFF08\u8BBE\u5907\u4E0A\u7559\u7740\u7684\u4E0D\u52A8\uFF0C\u4E0B\u6B21\u7528\u518D\u4ECE\u8BBE\u5907\u8BFB\uFF09": {
-        readonly en: "Release whole banks from memory (what's on the device stays; it's read from the device next time)";
-    };
-    readonly 放掉内存: {
-        readonly en: "Release memory";
-    };
-    readonly 已留在设备上: {
-        readonly en: "Kept on this device";
-    };
-    readonly 没下载: {
-        readonly en: "Not downloaded";
-    };
-    readonly 删掉: {
-        readonly en: "Remove";
-    };
-    readonly 下载留着: {
-        readonly en: "Download and keep";
-    };
-    readonly "\u300C{p}\u300D\u7684\u58F0\u97F3\uFF08\u8FD9\u9996\u6B4C{packed}\uFF09": {
-        readonly en: "Sound of “{p}” (in this song{packed})";
-    };
-    readonly 也打包着: {
-        readonly en: ", also packed";
-    };
-    readonly "\u5F15\u7528\u7740\uFF1B\u5220\u4E86\u8981\u4ECE\u300C{name}\u300D\u627E": {
-        readonly en: "Referenced; if removed it must be found from “{name}”";
-    };
-    readonly "\u522B\u7684\u6B4C / \u522B\u7684\u7248\u672C / \u522B\u7684 app \u7559\u7684\uFF08{p}\u2026\uFF09": {
-        readonly en: "Left by other songs / versions / apps ({p}…)";
-    };
-    readonly "\uFF08\u6CA1\u6709\uFF09": {
-        readonly en: "(none)";
-    };
-    readonly 还没有记着的: {
-        readonly en: "Nothing kept yet";
-    };
-    readonly "{n} \u9996 \u00B7 {size}": {
-        readonly en: "{n} {n|song|songs} · {size}";
-    };
-    readonly "\u5220\u6389\u65E7\u7248\u672C\u6E32\u7684\uFF08{n} \u6761\uFF0C\u5171 {size}\uFF09": {
-        readonly en: "Delete ones rendered by an older version ({n}, {size} total)";
-    };
-    readonly "{title} \u00B7 {secs} \u79D2 \u00B7 {size} \u00B7 {date}": {
-        readonly en: "{title} · {secs} s · {size} · {date}";
-    };
-    readonly "\u65E7\u7248\u672C\u6E32\u7684\uFF08\u6E32\u67D3\u6838\u5FC3 {v}\uFF09": {
-        readonly en: "rendered by an older version (render core {v})";
-    };
-    readonly 这一版渲的: {
-        readonly en: "rendered by this version";
-    };
-    readonly "\u6B4C\u5E93\u91CC\uFF1A{names}": {
-        readonly en: "In the library: {names}";
-    };
-    readonly 删: {
-        readonly en: "Delete";
-    };
-    readonly "\u4E0B\u8F7D {name} {bytes}%": {
-        readonly en: "Downloading {name} {bytes}%";
-    };
-    readonly "{name} \u7559\u5728\u8BBE\u5907\u4E0A\u4E86": {
-        readonly en: "{name} is kept on this device";
-    };
-    readonly 已经是最新版: {
-        readonly en: "Already up to date";
-    };
-    readonly "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0": {
-        readonly en: "No offline shell here (local dev / unsupported browser), nothing to update";
-    };
-    readonly "\u5168\u6E05\u4E86\uFF08\u8981\u542C\u518D\u6E32\uFF09": {
-        readonly en: "All cleared (render again to listen)";
-    };
-    readonly "\u5220\u4E86 {n} \u6761\u65E7\u7248\u672C\u6E32\u7684\uFF08{size}\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8981\u542C\u518D\u6E32": {
-        readonly en: "Deleted {n} rendered by an older version ({size}): render again in the library to listen";
-    };
-    readonly "\u5220\u4E86\u8FD9\u4E00\u904D\uFF08\u8981\u542C\u518D\u6E32\uFF09": {
-        readonly en: "Deleted this render (render again to listen)";
-    };
-    readonly "\u5FF5\u7F13\u5B58\u6E05\u7A7A\u4E86\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5\uFF09": {
-        readonly en: "Speech cache cleared (spoken lines will need re-speaking)";
-    };
-    readonly "\u5C0F\u6708\u76F8\u5F15\u64CE\u91CD\u5F00\u4E86\uFF0C\u5185\u5B58\u8FD8\u56DE\u53BB\u4E86\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u4E0D\u7528\u91CD\u5FF5\uFF09": {
-        readonly en: "Tsukuyomi-chan's engine restarted and memory returned (spoken lines are stored on this device, no re-speaking needed)";
+    readonly "\u8FD9\u4E2A\u7AD9\u70B9\u5171\u7528\u4E86 {usage} / \u914D\u989D {quota}": {
+        readonly en: "This site uses {usage} / quota {quota}";
     };
     readonly "\u5BFC\u5165\u4E2D\u2026": {
         readonly en: "Importing…";
@@ -1119,6 +936,15 @@ export declare const S: {
     };
     readonly 这些文件不是小月相要的模型包分片: {
         readonly en: "These files aren't the model pack chunks Tsukuyomi-chan needs";
+    };
+    readonly 已经是最新版: {
+        readonly en: "Already up to date";
+    };
+    readonly "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0": {
+        readonly en: "No offline shell here (local dev / unsupported browser), nothing to update";
+    };
+    readonly 诊断日志: {
+        readonly en: "Diagnostic log";
     };
     readonly 分享: {
         readonly en: "Share";
@@ -1218,6 +1044,9 @@ export declare const S: {
     };
     readonly "\u8BD5\u542C\u4E0D\u4E86\uFF1A{Error}": {
         readonly en: "Can't audition: {Error}";
+    };
+    readonly "\u4E0B\u8F7D {name} {bytes}%": {
+        readonly en: "Downloading {name} {bytes}%";
     };
     readonly 谱上还没有音: {
         readonly en: "No notes on the score yet";
@@ -1666,6 +1495,9 @@ export declare const S: {
     readonly "\u5B83\u5199\u8FC7\u7684\uFF1A{list}\u3002\u8FDE\u540C\u6B4C\u8BCD\u3001\u8BB0\u53F7\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\u6389\uFF08\u80FD\u64A4\u9500\uFF0C\u4E00\u6B65\u5168\u627E\u56DE\uFF09\u3002": {
         readonly en: "What it wrote: {list}. Its lyrics, marks and instrument settings are deleted too (undo brings it all back in one step).";
     };
+    readonly 删掉: {
+        readonly en: "Remove";
+    };
     readonly "\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": {
         readonly en: "Deleted “{name}” (undo brings it back)";
     };
@@ -1866,6 +1698,9 @@ export declare const S: {
     };
     readonly "\u8FD9\u5F20\u7EB8\u4E0A\u6240\u6709\u58F0\u90E8\u5199\u7684\u4E1C\u897F\u4E00\u8D77\u5220\u6389\uFF08\u80FD\u64A4\u9500\uFF1A\u64A4\u9500 / Ctrl+Z\uFF09\u3002": {
         readonly en: "Everything written in all parts on this sheet is deleted (can be undone: Undo / Ctrl+Z).";
+    };
+    readonly 删: {
+        readonly en: "Delete";
     };
     readonly "\u52A0\u8FDB\u300C{p}\u300D": {
         readonly en: "Add to “{p}”";
@@ -2364,6 +2199,9 @@ export declare const S: {
     };
     readonly "\u66F2\u7EA7 + \u97F3\u7EA7\uFF1B\u97F3\u3001\u6B4C\u8BCD\u3001\u8C03\u53F7\u62CD\u53F7\u901F\u5EA6\u3001\u53CD\u590D\u4E0D\u52A8": {
         readonly en: "Passage + note level; notes, lyrics, key / time / tempo and repeats stay";
+    };
+    readonly 复制: {
+        readonly en: "Copy";
     };
     readonly 剪切: {
         readonly en: "Cut";
@@ -3562,6 +3400,9 @@ export declare const S: {
     readonly "\uFF08\u5173\u7740\uFF09": {
         readonly en: " (off)";
     };
+    readonly "\uFF08\u6CA1\u6709\uFF09": {
+        readonly en: "(none)";
+    };
     readonly "\u8FD9\u4E00\u6863\u8F7B\u4E00\u70B9\uFF08\u2212{s}\uFF09": {
         readonly en: "This level a little softer (−{s})";
     };
@@ -3714,6 +3555,240 @@ export declare const S: {
     };
     readonly "\u300C{rn}\u300D\u54CD\u5EA6\u6821\u51C6 {next} dB": {
         readonly en: "“{rn}” loudness calibration {next} dB";
+    };
+    readonly 小月相的声音: {
+        readonly en: "Tsukuyomi-chan’s voice";
+    };
+    readonly 运行引擎: {
+        readonly en: "Runtime engine";
+    };
+    readonly 日语读音: {
+        readonly en: "Japanese readings";
+    };
+    readonly 中文读音: {
+        readonly en: "Chinese readings";
+    };
+    readonly 英文读音: {
+        readonly en: "English readings";
+    };
+    readonly "\u5B58\u5728\u8FD9\u4E2A\u7F51\u5740\u4E0B\uFF0C\u6B63\u5F0F\u7248\u548C\u5F00\u53D1\u7248\u5171\u7528\u8FD9\u4E00\u4EFD\uFF1B\u5728\u8FD9\u91CC\u5220\u4E86\uFF0C\u53E6\u4E00\u4E2A\u7248\u672C\u4E5F\u8981\u91CD\u65B0\u4E0B\u8F7D\u3002": {
+        readonly en: "Stored under this web address; the release and dev versions share this copy. Delete it here and the other version has to download it again too.";
+    };
+    readonly "\u5B83\u7684\u7F13\u5B58\u5728\u300C\u7EF4\u62A4\u300D\u91CC": {
+        readonly en: "Its cache is under Upkeep";
+    };
+    readonly 在文件夹里: {
+        readonly en: "In the folder";
+    };
+    readonly "\u88C5\u7740 \u00B7 {size}": {
+        readonly en: "Installed · {size}";
+    };
+    readonly 没装: {
+        readonly en: "Not installed";
+    };
+    readonly "\u88C5\u4E86\u4E00\u90E8\u5206\uFF08{have} / {total}\uFF09": {
+        readonly en: "Partly installed ({have} / {total})";
+    };
+    readonly "\uFF08\u6CA1\u4E0B\uFF09": {
+        readonly en: " (not downloaded)";
+    };
+    readonly "\u5531\u6B4C\u7684\u90A3\u4E00\u4F4D\uFF1A\u5979\u7684\u58F0\u97F3\uFF0C\u548C\u5531\u7684\u65F6\u5019\u8981\u7528\u7684\u51E0\u6837\uFF08\u8FD0\u884C\u5F15\u64CE\u3001\u65E5\u8BED / \u4E2D\u6587 / \u82F1\u6587\u8BFB\u97F3\uFF09\u3002\u7528\u5230\u624D\u4E0B\u8F7D\uFF0C\u4E0B\u597D\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u5531\u3002": {
+        readonly en: "The singer: her voice, plus what she needs to sing (runtime engine; Japanese / Chinese / English readings). Downloaded when first used and kept on this device, so she sings offline too.";
+    };
+    readonly "\u7EC4\u6210\uFF08\u5305\u7684\u539F\u540D\uFF09\uFF1A": {
+        readonly en: "Made of (original package names): ";
+    };
+    readonly 版权和使用规则: {
+        readonly en: "Copyright and terms of use";
+    };
+    readonly "\u5168\u6587\u2026": {
+        readonly en: "Full text…";
+    };
+    readonly 从本机文件导入: {
+        readonly en: "Import from a local file";
+    };
+    readonly 装回来: {
+        readonly en: "Reinstall";
+    };
+    readonly 小月相: {
+        readonly en: "Tsukuyomi-chan";
+    };
+    readonly 来源: {
+        readonly en: "Source";
+    };
+    readonly 恢复默认: {
+        readonly en: "Reset to default";
+    };
+    readonly "\u4E00\u4E2A\u6587\u4EF6\uFF08{size}\uFF09\uFF0C\u4E0D\u662F AI \u6A21\u578B\uFF1B\u6B4C\u91CC\u7528\u5230\u7684\u90A3\u51E0\u4EF6\u4F1A\u5207\u4E0B\u6765\u6253\u5305\u8FDB\u6B4C\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\u3002": {
+        readonly en: "One file ({size}), not an AI model; the instruments a song uses are cut out and packed into the song — this is just the shelf.";
+    };
+    readonly "{name} \u7B49 {n} \u4EF6": {
+        readonly en: "{name} and {n} more";
+    };
+    readonly 没有: {
+        readonly en: "None";
+    };
+    readonly "\u8FD9\u9996\u6B4C\u91CC\uFF1A{names}\uFF08{how}\uFF09": {
+        readonly en: "In this song: {names} ({how})";
+    };
+    readonly 也打包着: {
+        readonly en: ", also packed";
+    };
+    readonly 引用着: {
+        readonly en: "referenced";
+    };
+    readonly 你自己加的音色文件: {
+        readonly en: "Sound files you added";
+    };
+    readonly "\u4ECE\u81EA\u5DF1\u7684 .sf2 \u9009\u4E50\u5668\u65F6\u3001\u6216\u8005\u300C\u5168\u90E8\u89E3\u5305\u300D\u65F6\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u5C0F\u5757\uFF08\u540D\u5B57\u662F\u4ECE\u8FD9\u5757\u6587\u4EF6\u91CC\u8BFB\u7684\uFF09\u3002\u4E0D\u662F\u81EA\u5E26\u7684\uFF1A\u5220\u4E86\u5C31\u6CA1\u4E86\uFF0C\u6CA1\u6709\u539F\u6765\u7684 .sf2 \u5C31\u627E\u4E0D\u56DE\u6765\u3002": {
+        readonly en: "Small pieces kept on this device when you picked an instrument from your own .sf2 or used Unpack all (the name is read from the piece itself). Not built in: once deleted it is gone, and without the original .sf2 it cannot be recovered.";
+    };
+    readonly "\u5FF5\u8FC7\u7684\u53E5\u5B50\uFF1A\u5FF5\u8FC7\u7684\u6B4C\u8BCD\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u8DE8\u6B4C\u5171\u7528\u3001\u91CD\u5F00 app \u4E5F\u5728\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\u3002\u5F15\u64CE\uFF1A\u5531\u6B4C\u7684\u7A0B\u5E8F\u5360\u7684\u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u6E05 = \u91CD\u5F00\u5B83\u3001\u5185\u5B58\u8FD8\u56DE\u53BB\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u4E0D\u4E22\uFF09\u3002": {
+        readonly en: "Spoken lyrics: lyrics already read aloud, kept on this device, shared across songs and kept after restarting the app; clearing only means reading them again. Engine: the singing program’s memory only grows; clearing restarts it and gives the memory back (spoken lyrics are kept).";
+    };
+    readonly "\u5FF5\u8FC7\u7684\u53E5\u5B50\uFF1A{bytes} / \u9884\u7B97 {budget}\uFF0C{entries} \u6761": {
+        readonly en: "Spoken lyrics: {bytes} / budget {budget}, {entries} entries";
+    };
+    readonly "\u5FF5\u8FC7\u7684\u53E5\u5B50\uFF1A\u2026": {
+        readonly en: "Spoken lyrics: …";
+    };
+    readonly 清: {
+        readonly en: "Clear";
+    };
+    readonly "\u5F15\u64CE\uFF1A\u8FD8\u6CA1\u8D77\u6765": {
+        readonly en: "Engine: not started";
+    };
+    readonly "\u5F15\u64CE\uFF1A\u5185\u5B58 {size}": {
+        readonly en: "Engine: memory {size}";
+    };
+    readonly 乐器音色库: {
+        readonly en: "Instrument library";
+    };
+    readonly "\u8F7D\u8FDB\u5185\u5B58\u7684\u6574\u5305\uFF08\u6700\u591A\u4E24\u4EFD\uFF09\uFF1B\u6E05\u4E86\u53EA\u662F\u4E0B\u6B21\u7528\u5230\u65F6\u4ECE\u8BBE\u5907\u4E0A\u518D\u8BFB\u4E00\u6B21\uFF0C\u6587\u4EF6\u4E0D\u52A8\u3002": {
+        readonly en: "Whole libraries loaded into memory (at most two); clearing only means reading them from this device again next time; the file stays.";
+    };
+    readonly "\u5185\u5B58\u91CC\uFF1A{size}": {
+        readonly en: "In memory: {size}";
+    };
+    readonly "\u5185\u5B58\u91CC\uFF1A\u6CA1\u5360": {
+        readonly en: "In memory: none";
+    };
+    readonly 清内存: {
+        readonly en: "Clear memory";
+    };
+    readonly "\u5BFC\u51FA\u6216\u300C\u6E32\u67D3\u5230\u7F13\u5B58\u300D\u65F6\u653E\u8FDB\u6765\u7684\u6574\u9996\u6B4C\u58F0\uFF0C\u6B4C\u5E93\u5C01\u9762\u4E0A\u7684 \u25B6 \u9760\u5B83\uFF1B\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3001\u4E0D\u540C\u6B65\uFF0C\u6700\u591A {n} \u9996\uFF0C\u6EE1\u4E86\u4E22\u6700\u4E45\u6CA1\u542C\u7684\uFF1B\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u6E32\u3002": {
+        readonly en: "Whole-song audio saved when exporting or using Render to cache; the ▶ on library covers uses it. Only on this device, not synced, at most {n} songs, the least recently played go first when full; clearing only means rendering again.";
+    };
+    readonly "\u8FD9\u4E00\u7248\u7684\u6E32\u67D3\u6838\u5FC3\u662F {v}\uFF1B\u6807\u300C\u65E7\u7248\u672C\u6E32\u7684\u300D= \u66F4\u65E9\u7684\u6E32\u67D3\u6838\u5FC3\u6E32\u7684\uFF0C\u7167\u6837\u80FD\u542C\uFF1A": {
+        readonly en: "This version’s render core is {v}; Rendered by an older version = rendered by an earlier render core, still playable:";
+    };
+    readonly "\uFF08\u73B0\u5728\u6CA1\u6709\uFF09": {
+        readonly en: " (none right now)";
+    };
+    readonly 还没有记着的: {
+        readonly en: "Nothing kept yet";
+    };
+    readonly "{n} \u9996 \u00B7 {size}": {
+        readonly en: "{n} {n|song|songs} · {size}";
+    };
+    readonly "\u6E05\u65E7\u7248\u672C\u6E32\u7684\uFF08{n} \u6761\uFF0C\u5171 {size}\uFF09": {
+        readonly en: "Clear older renders ({n}, {size} total)";
+    };
+    readonly "{title} \u00B7 {secs} \u79D2 \u00B7 {size} \u00B7 {date}": {
+        readonly en: "{title} · {secs} s · {size} · {date}";
+    };
+    readonly 旧版本渲的: {
+        readonly en: "Rendered by an older version";
+    };
+    readonly "\u6B4C\u5E93\u91CC\uFF1A{names}": {
+        readonly en: "In the library: {names}";
+    };
+    readonly 渲染好的声音: {
+        readonly en: "Rendered audio";
+    };
+    readonly 声音设备: {
+        readonly en: "Audio device";
+    };
+    readonly "\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B": {
+        readonly en: "Press this when the sound is off (keys respond late, or there is no sound): it rebuilds the path to the speaker and throws away any audio still waiting to play. Anything sounding right now will cut out for a moment";
+    };
+    readonly 软件: {
+        readonly en: "Software";
+    };
+    readonly "\u300C\u6E05\u7F13\u5B58\u91CD\u542F\u300D= \u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6E05\u6389\u8FD9\u4E2A app \u81EA\u5DF1\u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\uFF1B\u6B4C\u3001\u6A21\u578B\u5305\u3001\u97F3\u6E90\u90FD\u4E0D\u52A8\u3002": {
+        readonly en: "Clear cache and restart = for when you are stuck on an old version: clears this app’s own offline cache and reopens it; songs, model packs and sounds are untouched.";
+    };
+    readonly 清缓存重启: {
+        readonly en: "Clear cache and restart";
+    };
+    readonly "\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907": {
+        readonly en: "Black box: send this to the developer if something breaks; never uploaded, it only leaves the device when you tap Copy / Share";
+    };
+    readonly "\u4E0B\u8F7D .txt": {
+        readonly en: "Download .txt";
+    };
+    readonly "\u5206\u4EAB\u2026": {
+        readonly en: "Share…";
+    };
+    readonly "\u73B0\u5728\u6253\u5F00\u7684\u6B4C\u91CC\uFF0C{names} \u4F1A\u4E0D\u51FA\u58F0\u3002": {
+        readonly en: "In the song that is open now, {names} will go silent.";
+    };
+    readonly "\u73B0\u5728\u6253\u5F00\u7684\u6B4C\u91CC\u6CA1\u6709\u58F0\u90E8\u4F1A\u56E0\u6B64\u4E0D\u51FA\u58F0\u3002": {
+        readonly en: "No voice in the song that is open now goes silent because of this.";
+    };
+    readonly "\u5220\u6389\u5C0F\u6708\u76F8\uFF1F": {
+        readonly en: "Delete Tsukuyomi-chan?";
+    };
+    readonly "\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u8981\u8054\u7F51\u91CD\u65B0\u4E0B\u8F7D\u624D\u80FD\u88C5\u56DE\u6765\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u4E00\u8D77\u6E05\u6389\u3002{silenced}{shared}": {
+        readonly en: "Takes {size}. Reinstalling needs an internet connection to download again; spoken lyrics are cleared as well. {silenced}{shared}";
+    };
+    readonly "\u5C0F\u6708\u76F8\u5220\u4E86\uFF08\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF09": {
+        readonly en: "Tsukuyomi-chan deleted (press Reinstall when you need her)";
+    };
+    readonly "\u5220\u6389\u4E50\u5668\u97F3\u8272\u5E93\uFF1F": {
+        readonly en: "Delete the instrument library?";
+    };
+    readonly "\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u8981\u8054\u7F51\u91CD\u65B0\u4E0B\u8F7D\u624D\u80FD\u88C5\u56DE\u6765\uFF1B\u6B4C\u91CC\u6253\u5305\u7740\u58F0\u97F3\u7684\u7167\u6837\u54CD\uFF0C\u53EA\u5F15\u7528\u5B83\u7684\u8981\u7528\u65F6\u4F1A\u53BB\u91CD\u65B0\u4E0B\u8F7D\uFF0C\u6CA1\u7F51\u5C31\u4E0D\u51FA\u58F0\u3002{silenced}{shared}": {
+        readonly en: "Takes {size}. Reinstalling needs an internet connection to download again; voices whose sound is packed into the song keep playing, voices that only reference it download it again when needed and are silent offline. {silenced}{shared}";
+    };
+    readonly "\u4E50\u5668\u97F3\u8272\u5E93\u5220\u4E86\uFF08\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF09": {
+        readonly en: "Instrument library deleted (press Reinstall when you need it)";
+    };
+    readonly "\u5220\u6389\u8FD9\u4E2A\u97F3\u8272\u6587\u4EF6\uFF1F": {
+        readonly en: "Delete this sound file?";
+    };
+    readonly "\u5360 {size}\u3002\u4E0D\u662F\u81EA\u5E26\u7684\uFF1A\u5220\u4E86\u5C31\u6CA1\u4E86\uFF0C\u6CA1\u6709\u539F\u6765\u7684 .sf2 \u5C31\u627E\u4E0D\u56DE\u6765\u3002{silenced}": {
+        readonly en: "Takes {size}. Not built in: once deleted it is gone, and without the original .sf2 it cannot be recovered. {silenced}";
+    };
+    readonly "\u4E0B\u8F7D\u5C0F\u6708\u76F8 {p}%": {
+        readonly en: "Downloading Tsukuyomi-chan {p}%";
+    };
+    readonly 小月相装好了: {
+        readonly en: "Tsukuyomi-chan installed";
+    };
+    readonly "\u6CA1\u88C5\u4E0A\uFF1A{e}": {
+        readonly en: "Not installed: {e}";
+    };
+    readonly "\u4E0B\u8F7D\u4E50\u5668\u97F3\u8272\u5E93 {p}%": {
+        readonly en: "Downloading the instrument library {p}%";
+    };
+    readonly 乐器音色库装好了: {
+        readonly en: "Instrument library installed";
+    };
+    readonly "\u5FF5\u8FC7\u7684\u53E5\u5B50\u6E05\u4E86\uFF08\u8981\u91CD\u5FF5\uFF09": {
+        readonly en: "Spoken lyrics cleared (they will be read again)";
+    };
+    readonly "\u5C0F\u6708\u76F8\u7684\u5F15\u64CE\u91CD\u5F00\u4E86\uFF0C\u5185\u5B58\u8FD8\u56DE\u53BB\u4E86\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u4E0D\u4E22\uFF09": {
+        readonly en: "Tsukuyomi-chan’s engine restarted and its memory given back (spoken lyrics are kept)";
+    };
+    readonly "\u6E32\u67D3\u597D\u7684\u58F0\u97F3\u6E05\u4E86\uFF08\u8981\u542C\u518D\u6E32\uFF09": {
+        readonly en: "Rendered audio cleared (render again to listen)";
+    };
+    readonly "\u6E05\u4E86 {n} \u6761\u65E7\u7248\u672C\u6E32\u7684\uFF08{size}\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8981\u542C\u518D\u6E32": {
+        readonly en: "Cleared {n} older renders ({size}): render again in the library to listen";
+    };
+    readonly "\u6E05\u4E86\u8FD9\u4E00\u904D\uFF08\u8981\u542C\u518D\u6E32\uFF09": {
+        readonly en: "Cleared this render (render again to listen)";
     };
     readonly "\u5F00\u7740\u72EC\u594F\uFF0C\u8FD9\u51E0\u4E2A\u58F0\u90E8\u88AB\u6321\u4F4F\u3001\u4E0D\u8FDB\u8FD9\u4E00\u4EFD\uFF1A{list}": {
         readonly en: "Solo is on, so these parts are left out of this file: {list}";
@@ -4486,9 +4561,6 @@ export declare const S: {
     readonly "\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF0C\u9875\u9762\u8BBE\u7F6E\u91CC\u8FD9\u51E0\u6837\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\uFF1A{keys}\u3002\u753B\u7684\u65F6\u5019\u5148\u6309\u6700\u57FA\u672C\u7684\u90A3\u4E00\u6863\uFF0C\u5B58\u7684\u65F6\u5019\u7167\u539F\u6837\u5199\u56DE\u3002": {
         readonly en: "This song was saved by a newer MoonSinger; this version doesn’t recognise these page settings: {keys}. They are drawn with the most basic option for now and written back unchanged when you save.";
     };
-    readonly 小月相: {
-        readonly en: "Tsukuyomi-chan";
-    };
     readonly "\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09": {
         readonly en: "Tsukuyomi-chan (vowels)";
     };
@@ -4560,6 +4632,9 @@ export declare const S: {
     };
     readonly 备份箱: {
         readonly en: "Backups";
+    };
+    readonly 清空: {
+        readonly en: "Clear";
     };
     readonly 旧: {
         readonly en: "outdated";

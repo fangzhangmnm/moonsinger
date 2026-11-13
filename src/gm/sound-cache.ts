@@ -4,6 +4,7 @@
 // · 家族共享名 `pwa-sounds`（同域名的兄弟 app 以后也能用同一份 GeneralUser）；app 的「清缓存」不碰它，只在设置里逐条删（家规：共享缓存只能逐包删）。
 // · 信任根仍是 app 内嵌目录钉的 sha256：存进去前核过，取出来再核一次（几十毫秒，换一句「字节到手先核」的踏实）。
 // · 没有 Cache API（file:// / 隐私模式）= 只有内存，静默降级（这次打开里不重下，下次重下）。
+import { sf2Label } from "./sf2-subset.ts";
 const CACHE = "pwa-sounds";
 const keyOf = (sha256: string) => `${location.origin}/__pwa-sounds__/${sha256}`;
 const MEM_MAX = 2;   // 内存里最多留几份整包（32 MB 一份）
@@ -51,9 +52,23 @@ export async function isSoundPersisted(sha256: string): Promise<boolean> {
 }
 /** 从持久缓存和内存里都删掉（人删的）。 */
 export async function forgetSound(sha256: string): Promise<void> {
-  memory.delete(sha256);
+  memory.delete(sha256); labels.delete(sha256);
   if (!hasCaches()) return;
   try { await (await caches.open(CACHE)).delete(keyOf(sha256)); } catch { /* 没有就算了 */ }
+}
+/** 设备上留着的一块叫什么（设置「音源」页「你自己加的音色文件」那一栏；施工单 13-2）：只读这块文件开头的 INFO 和结尾的预设表两小段（Blob 切片），
+ *  不经过上面那个会把整包留在内存里的路、不核 sha256（只是给人看的名字，出声照旧按 sha256 认）。读过的在这次打开里记着；读不出 = null。 */
+const labels = new Map<string, { preset?: string; library?: string; presets: number } | null>();
+export async function cachedSoundLabel(sha256: string): Promise<{ preset?: string; library?: string; presets: number } | null> {
+  if (labels.has(sha256)) return labels.get(sha256)!;
+  let out: { preset?: string; library?: string; presets: number } | null = null;
+  if (hasCaches()) {
+    try {
+      const r = await (await caches.open(CACHE)).match(keyOf(sha256));
+      if (r) { const blob = await r.blob(); out = await sf2Label(async (a, b) => new Uint8Array(await blob.slice(a, b).arrayBuffer()), blob.size); }
+    } catch { out = null; }
+  }
+  labels.set(sha256, out); return out;
 }
 /** 放掉内存里的整包（user「你需要能手动释放缓存空间」）；持久缓存不动。 */
 export function releaseSoundMemory(): void { memory.clear(); }

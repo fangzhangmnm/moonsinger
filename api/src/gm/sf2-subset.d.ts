@@ -17,6 +17,14 @@ export declare function sf2Info(input: Uint8Array): {
     comment?: string;
     product?: string;
 };
+/** 一块 sf2 给人看的名字（施工单 13-2，统筹「13 开工前…五件的回话」第 2 条）：只读开头的 INFO 和结尾的预设表两小段，不把整块读进内存；
+ *  拼成一个没有采样的小 sf2，交给上面现成的 sf2Info / listSf2Presets 读。preset = 第一个预设的名字（切下来的一块通常只有一个），library = INFO 里的 INAM。
+ *  read(start, end) = 读 [start, end) 这一段字节；size = 整块多大。读不出（不是 sf2、缺块）= null。created 2026-11-13 by Claude Opus 5.5（MoonSinger小弟）。 */
+export declare function sf2Label(read: (start: number, end: number) => Promise<Uint8Array>, size: number): Promise<{
+    preset?: string;
+    library?: string;
+    presets: number;
+} | null>;
 /** 这件乐器（一个预设；给了 key = 只看盖到这个键的区）的「力度深度」：库给每个区写的「力度 → 初始衰减」调制器的量（cB），照 FluidSynth 合
  *  （施工单 9-4，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；引擎那一半 = vendor/tsf/patch-tsf.py 补丁 2，两边同一套规矩）：
  *  规范默认 960（来源 0x0502 = 力度、负向、单极、凹，量来源 = 无）；乐器一级同源的盖掉它（区里的盖过全局区的），预设一级同源的加上去（量 0 不加）。

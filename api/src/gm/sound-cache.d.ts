@@ -10,6 +10,11 @@ export declare function listCachedSounds(): Promise<{
 export declare function isSoundPersisted(sha256: string): Promise<boolean>;
 /** 从持久缓存和内存里都删掉（人删的）。 */
 export declare function forgetSound(sha256: string): Promise<void>;
+export declare function cachedSoundLabel(sha256: string): Promise<{
+    preset?: string;
+    library?: string;
+    presets: number;
+} | null>;
 /** 放掉内存里的整包（user「你需要能手动释放缓存空间」）；持久缓存不动。 */
 export declare function releaseSoundMemory(): void;
 /** 内存里现在占着多少字节（整包）。 */
