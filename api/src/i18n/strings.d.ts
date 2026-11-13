@@ -3472,6 +3472,15 @@ export declare const S: {
     readonly "\u7B2C\u4E8C\u884C\u8D77\u5199 {ab}": {
         readonly en: "from the 2nd system: {ab}";
     };
+    readonly 改这一档: {
+        readonly en: "Change this level";
+    };
+    readonly "{d} \u6BD4 {next} \u8FD8\u54CD": {
+        readonly en: "{d} is louder than {next}";
+    };
+    readonly "\uFF1B": {
+        readonly en: "; ";
+    };
     readonly "MIDI \u529B\u5EA6": {
         readonly en: "MIDI velocity";
     };
@@ -3531,6 +3540,15 @@ export declare const S: {
     };
     readonly "\uFF08\u5173\u7740\uFF09": {
         readonly en: " (off)";
+    };
+    readonly "\u8FD9\u4E00\u6863\u8F7B\u4E00\u70B9\uFF08\u2212{s}\uFF09": {
+        readonly en: "This level a little softer (−{s})";
+    };
+    readonly "\u8FD9\u4E00\u6863\u54CD\u4E00\u70B9\uFF08+{s}\uFF09": {
+        readonly en: "This level a little louder (+{s})";
+    };
+    readonly "\u70B9\u8868\u91CC\u7684\u4E00\u683C\uFF0C\u6539\u90A3\u4E00\u6863": {
+        readonly en: "Click a cell in the table to change that level";
     };
     readonly 响度: {
         readonly en: "Loudness";
@@ -3657,6 +3675,9 @@ export declare const S: {
     };
     readonly 改名在声部管理: {
         readonly en: "rename it under Parts";
+    };
+    readonly "\u300C{rn}\u300D\u529B\u5EA6\u8BB0\u53F7 {d} \u2192 {v}": {
+        readonly en: "“{rn}” dynamic {d} → {v}";
     };
     readonly "\u300C{rn}\u300D{what}\u6539\u56DE\u73B0\u5728\u7684\u9ED8\u8BA4": {
         readonly en: "“{rn}”: {what} changed back to the current default";

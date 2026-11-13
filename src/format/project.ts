@@ -809,6 +809,16 @@ export function withSwellDb(extras: Extras, role: string, dB: number | null, hum
   c.articulation = { ...((c.articulation ?? {}) as Json), swellDb: dB === null ? TEMPLATE.lounge.articulation.gain.swellDb : Math.round(Math.max(SWELL_DB_MIN, Math.min(SWELL_DB_MAX, dB))) };   // null = 「默认」= 抄模板现在的值
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
+/** 力度记号表逐档改（乐器页「力度记号」那一行，16-6 之后那一版；统筹 2026-11-13「方案照你写的」）：改上场那位表里的一档。
+ *  按这位的力度路改它自己那张表——按音量走的 = dynamicsDb（dB，记到 0.01，−60 … +24）；按力度敲的 = dynamicsVel（MIDI 力度，整数 1 … 127）。
+ *  不强制单调（不规训人：改出来某档比更响的一档还响，界面上说一句，照存）。没人上场 / 读不懂的引擎 = 原样。 */
+export const DYN_DB_MIN = -60, DYN_DB_MAX = 24;
+export function withDynLevel(extras: Extras, role: string, dyn: Dynamic, value: number, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active), path = c ? dynPathOf(c) : null; if (!c || !path || !Number.isFinite(value)) return extras;
+  if (path === "gain") c.dynamicsDb = { ...((c.dynamicsDb ?? {}) as Json), [dyn]: Math.round(Math.max(DYN_DB_MIN, Math.min(DYN_DB_MAX, value)) * 100) / 100 };
+  else c.dynamicsVel = { ...((c.dynamicsVel ?? {}) as Json), [dyn]: Math.round(Math.max(1, Math.min(127, value))) };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
 /** 改上场那位的连断底色（乐器页；秒，0 … GAP_MAX_SEC，记到毫秒）。没人上场 = 原样。 */
 export function withGapSec(extras: Extras, role: string, sec: number, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;

@@ -1,5 +1,5 @@
 import { type Song } from "../score/song.ts";
-import { FORMAT, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";
+import { FORMAT, type Dynamic, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";
 import { FINAL_MP3_ENTRY, type FinalRecord } from "./final.ts";
 export { FINAL_MP3_ENTRY, type FinalRecord };
 import type { PerfSpec } from "../score/perform.ts";
@@ -292,6 +292,11 @@ export declare function withRollHz(extras: Extras, role: string, hz: number | nu
 export declare const SWELL_DB_MIN = 3, SWELL_DB_MAX = 24;
 /** 改上场那位的音内起伏多深（articulation.swellDb，dB；字段本来就有、格式不动；null = 回到默认 6）。没人上场 = 原样。 */
 export declare function withSwellDb(extras: Extras, role: string, dB: number | null, hum: Hum): Extras;
+/** 力度记号表逐档改（乐器页「力度记号」那一行，16-6 之后那一版；统筹 2026-11-13「方案照你写的」）：改上场那位表里的一档。
+ *  按这位的力度路改它自己那张表——按音量走的 = dynamicsDb（dB，记到 0.01，−60 … +24）；按力度敲的 = dynamicsVel（MIDI 力度，整数 1 … 127）。
+ *  不强制单调（不规训人：改出来某档比更响的一档还响，界面上说一句，照存）。没人上场 / 读不懂的引擎 = 原样。 */
+export declare const DYN_DB_MIN = -60, DYN_DB_MAX = 24;
+export declare function withDynLevel(extras: Extras, role: string, dyn: Dynamic, value: number, hum: Hum): Extras;
 /** 改上场那位的连断底色（乐器页；秒，0 … GAP_MAX_SEC，记到毫秒）。没人上场 = 原样。 */
 export declare function withGapSec(extras: Extras, role: string, sec: number, hum: Hum): Extras;
 /** 上场那位的校准（dB；没写 = 现行的默认 CALIBRATION_DEFAULT_DB，和新建时写进去的同一个数，第 14 条）。渲染时乘在这个声部上，和录音室推子相加（推子 = 混音决定，校准 = 演奏者自己的响度）。 */

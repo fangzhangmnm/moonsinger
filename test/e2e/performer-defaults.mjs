@@ -22,6 +22,20 @@ await openInst();
 check(/和现在的默认都一样/.test(await sum()), "新歌：顶上一句淡字「和现在的默认都一样」", await sum());
 check((await p.$$(".inst-page .ip-k.is-diff, .inst-page tr.is-diff")).length === 0, "新歌：一行都不打点");
 
+// 力度记号表逐档改（v0.17.20）：点一格 = 选中这一档；+ / − 一步 0.5 dB；改出来比更响的一档还响 = 下面说一句、照存；连着点并成一步撤销
+const db = () => art("dynamicsDb");
+const mf0 = (await db()).mf;
+await p.click('.inst-page .dyn-tab [data-v="dynsel:mf"]'); await p.waitForTimeout(150);
+check(!!(await p.$('.inst-page .dyn-tab .dyn-cell.is-sel[data-v="dynsel:mf"]')) && /\+0\.5/.test(await p.$eval('.inst-page [data-row="dyn"] + .ip-v .ip-ctl', (e) => e.textContent ?? "")), "点 mf 那一格 = 选中、这一行出 −0.5 / +0.5");
+for (let i = 0; i < 6; i++) { await p.click('.inst-page [data-v="dyn:1"]'); await p.waitForTimeout(60); }
+check(Math.abs((await db()).mf - (mf0 + 3)) < 1e-9, "+0.5 × 6 = mf 大 3 dB", `${mf0} → ${(await db()).mf}`);
+check(/mf 比 f 还响/.test(await p.$eval('.inst-page [data-row="dyn"] + .ip-v', (e) => e.textContent ?? "")) && !!(await p.$('.inst-page .dyn-cell.is-loud[data-v="dynsel:mf"]')), "比 f 还响：那一格带记号、下面一句，照存");
+check(!!(await p.$('.inst-page .dyn-tab tr:not(.ip-def-row) td.is-diff')) && !(await p.$('.inst-page .dyn-tab tr.ip-def-row td.is-diff')), "不一样的格子：点打在当前那一排，不打在「现在的默认」那一排");
+await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
+check((await db()).mf === mf0, "连着点的六下 = 一步撤销", String((await db()).mf));
+await p.click('.inst-page .dyn-tab [data-v="dynsel:mf"]'); await p.waitForTimeout(150);
+check(!(await p.$('.inst-page .dyn-cell.is-sel')), "再点一次 = 取消选中");
+
 // 模拟老歌：小月相带着一张老 dB 表、幽灵音 −6（模板 −9）
 await p.evaluate((t) => { const m = window.__moonsinger, role = m.state().song.parts[0].role, ex = structuredClone(m.extras()), c = ex.lounge[role].candidates.find((x) => x.id === ex.lounge[role].active);
   c.dynamicsDb = t; c.articulation = { ...c.articulation, ghostDb: -6 }; m.commit({ extras: ex }, { locus: { kind: "lounge", label: "test" } }); }, OLD_DB);

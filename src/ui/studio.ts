@@ -617,13 +617,15 @@ export class Studio {
       const perf = s.performerDb ? `<button class="btn strip-perfdb" data-v="perfdb" title="${_t("这位乐手自己的响度（乐器页「响度」那一行），和推子相加：推子 {g}、乐手 {p} = 这条轨一共 {t}。点这里去乐器页改", { g: dbText(s.gainDb), p: dbText(s.performerDb), t: dbText(s.gainDb + s.performerDb) })}">${_t("乐手 {p}", { p: dbText(s.performerDb) })}</button>` : "";
       // 乐手身上别的几处和现在的默认不一样（16-6，照「乐手 −6 dB」那一颗的样子）：只数响度以外的，点了去乐器页顶上那一句
       const perfDiff = s.performerDiffs ? `<button class="btn strip-perfdiff" data-v="perfdiff" title="${_t("这位乐手身上有 {n} 处和现在的默认不一样（响度另算）。点这里去乐器页看是哪几处", { n: s.performerDiffs })}">${_t("乐手 {n} 处不同", { n: s.performerDiffs })}</button>` : "";
-      const body = tab === "basic" ? row(_t("增益"), HINT.gain, `<output>${dbText(s.gainDb)}</output>${perf}${perfDiff}`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") +
+      // 两颗单独占一行、并排，排在增益那一行下面（统筹「v0.17.19 收」第 2 条：不和「增益」挤一行再折下去）
+      const perfRow = perf || perfDiff ? `<div class="strip-perf">${perf}${perfDiff}</div>` : "";
+      const body = tab === "basic" ? row(_t("增益"), HINT.gain, `<output>${dbText(s.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + perfRow +
           row(_t("声像"), HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW +
           `<div class="btn-row">` +
             `<button class="btn" data-v="partleft" title="${_t("往前挪一位（谱上这个声部也往上挪）")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="partright" title="${_t("往后挪一位（谱上这个声部也往下挪）")}"${k === strips.length - 1 ? " disabled" : ""}>›</button></div>` +
           // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
           (s.refs ? `<div class="strip-refs">${_t("在 {refs} 张纸上", { refs: s.refs })}</div>` : `<div class="strip-refs">${_t("哪张纸上都没有")} <button class="btn cand danger" data-v="delpart" title="${_t("删掉这个声部（它的乐器设置一起删；能撤销）")}">${_t("删掉这个声部")}</button></div>`)
-        : tab === "eq" || tab === "comp" ? this.inlineHtml(s.id, tab) : tab === "send" ? gainRow("data-gain", HINT.gain, s.gainDb, perf) + this.routeHtml(s.id) : this.chipsHtml(s.id);
+        : tab === "eq" || tab === "comp" ? this.inlineHtml(s.id, tab) : tab === "send" ? gainRow("data-gain", HINT.gain, s.gainDb) + perfRow + this.routeHtml(s.id) : this.chipsHtml(s.id);
       // 静音 / 独奏 钉在名字右边、每一页都在（v0.10.34；原来在基础页卡片最底下，卡片定高 = 要在卡片里滚才看得到；user「混音台基础里面应该有mute和solo，和我们已经有的mute和solo绑定」）——
       //   和谱上歌手名下面的「静 / 独」、歌手牌里的是同一个开关（host.toggleMute / toggleSolo → 视图态）
       const ms = `<span class="strip-ms"><button class="btn${s.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("静音（这位不出声；和谱上声部名下面的「静」是同一个）")}">${_t("静")}</button><button class="btn${s.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("独奏（只听独奏的几位；和谱上的「独」是同一个）")}">${_t("独")}</button></span>`;

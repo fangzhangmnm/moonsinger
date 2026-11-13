@@ -4553,6 +4553,9 @@ var S = {
   "\u4E00\u4E0B\u5C31\u5B8C / \u97F3\u6548\uFF08\u4E0D\u7559\u7F1D\uFF09": { en: "One-shot / sound effect (no gap)" },
   "\u8FD9\u4EF6\u4E50\u5668\uFF1A{what}": { en: "Instrument: {what}" },
   "\u7B2C\u4E8C\u884C\u8D77\u5199 {ab}": { en: "from the 2nd system: {ab}" },
+  "\u6539\u8FD9\u4E00\u6863": { en: "Change this level" },
+  "{d} \u6BD4 {next} \u8FD8\u54CD": { en: "{d} is louder than {next}" },
+  "\uFF1B": { en: "; " },
   "MIDI \u529B\u5EA6": { en: "MIDI velocity" },
   "\u73B0\u5728\u7684\u9ED8\u8BA4": { en: "Current default" },
   "\u54CD\u5EA6 dB": { en: "Loudness dB" },
@@ -4573,6 +4576,9 @@ var S = {
   "\u627E\u6587\u4EF6\u2026": { en: "Find file\u2026" },
   "\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u7684\u300C{k}\u300D": { en: "\u201C{k}\u201D (not known to this version)" },
   "\uFF08\u5173\u7740\uFF09": { en: " (off)" },
+  "\u8FD9\u4E00\u6863\u8F7B\u4E00\u70B9\uFF08\u2212{s}\uFF09": { en: "This level a little softer (\u2212{s})" },
+  "\u8FD9\u4E00\u6863\u54CD\u4E00\u70B9\uFF08+{s}\uFF09": { en: "This level a little louder (+{s})" },
+  "\u70B9\u8868\u91CC\u7684\u4E00\u683C\uFF0C\u6539\u90A3\u4E00\u6863": { en: "Click a cell in the table to change that level" },
   "\u54CD\u5EA6": { en: "Loudness" },
   "\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB": { en: "This performer 1 dB softer" },
   "\u5927\u58F0 1 dB": { en: "1 dB louder" },
@@ -4615,6 +4621,7 @@ var S = {
   "\u8C31\u4E0A\u5199\u300C{rn}\u300D": { en: "Shown on the score as \u201C{rn}\u201D" },
   "MusicXML \u7684\u4E50\u5668\u4EE3\u53F7\uFF1A\u6B4C\u91CC\u6CA1\u5199": { en: "MusicXML instrument code: not written in the song" },
   "\u6539\u540D\u5728\u58F0\u90E8\u7BA1\u7406": { en: "rename it under Parts" },
+  "\u300C{rn}\u300D\u529B\u5EA6\u8BB0\u53F7 {d} \u2192 {v}": { en: "\u201C{rn}\u201D dynamic {d} \u2192 {v}" },
   "\u300C{rn}\u300D{what}\u6539\u56DE\u73B0\u5728\u7684\u9ED8\u8BA4": { en: "\u201C{rn}\u201D: {what} changed back to the current default" },
   "\u300C{rn}\u300D\u97F3\u548C\u97F3\u4E4B\u95F4 {p} ms": { en: "\u201C{rn}\u201D between notes {p} ms" },
   "\u300C{rn}\u300D\u97F3\u5185\u8D77\u4F0F {d} dB": { en: "\u201C{rn}\u201D in-note swell {d} dB" },
@@ -6098,7 +6105,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.19-2026-11-13";
+var APP_VERSION = "v0.17.20-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -34731,15 +34738,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-80f344415a77.mjs");
+      return pick(() => "singer-worker-5975ba3aa845.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-fe0c09572b27.mjs");
+      return pick(() => "layout-worker-e84fe4421ff8.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-7e7449154712.mjs");
+      return pick(() => "encode-worker-49e50a154615.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -39612,6 +39619,15 @@ function withSwellDb(extras, role, dB, hum) {
   c10.articulation = { ...c10.articulation ?? {}, swellDb: dB === null ? TEMPLATE.lounge.articulation.gain.swellDb : Math.round(Math.max(SWELL_DB_MIN, Math.min(SWELL_DB_MAX, dB))) };
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
 }
+var DYN_DB_MIN = -60;
+var DYN_DB_MAX = 24;
+function withDynLevel(extras, role, dyn, value, hum) {
+  const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active), path = c10 ? dynPathOf(c10) : null;
+  if (!c10 || !path || !Number.isFinite(value)) return extras;
+  if (path === "gain") c10.dynamicsDb = { ...c10.dynamicsDb ?? {}, [dyn]: Math.round(Math.max(DYN_DB_MIN, Math.min(DYN_DB_MAX, value)) * 100) / 100 };
+  else c10.dynamicsVel = { ...c10.dynamicsVel ?? {}, [dyn]: Math.round(Math.max(1, Math.min(127, value))) };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
 function withGapSec(extras, role, sec, hum) {
   const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
   if (!c10) return extras;
@@ -44310,6 +44326,7 @@ var HUMS = [["n", _t("\u3093 / \u55EF")], ["a", _t("\u3042 / \u554A")], ["o", _t
 function createInstSettings(el2, h2) {
   let instAdvOpen = false;
   let marksOpen = false;
+  let dynSel = null;
   const defBtn = (id2) => `<button class="btn ip-defbtn" data-v="def:${esc7(id2)}" title="${_t("\u6539\u56DE\u73B0\u5728\u7684\u9ED8\u8BA4\uFF08\u5199\u8FDB\u6B4C\u91CC\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u9ED8\u8BA4")}</button>`;
   const spOf = (role) => activePerfSpec(h2.extras(), role);
   function marksRows(x2, role, eng) {
@@ -44393,11 +44410,21 @@ function createInstSettings(el2, h2) {
     const what = cn2 ? lang() === "zh" ? `${cn2.zh} \xB7 ${en2}` : en2 : "";
     return `<div class="role-detail">${what ? _t("\u8FD9\u4EF6\u4E50\u5668\uFF1A{what}", { what: esc7(what) }) + (ab2 ? " \xB7 " : "") : ""}${ab2 ? _t("\u7B2C\u4E8C\u884C\u8D77\u5199 {ab}", { ab: esc7(ab2) }) : ""}</div>`;
   }
-  function dynTable(sp2, layers, L2, def = null) {
+  const selOf = (role) => dynSel && dynSel.role === role ? dynSel.d : null;
+  const louder = (t10) => DYNS.slice(0, -1).filter((d3, k2) => t10[d3] > t10[DYNS[k2 + 1]]);
+  const curCells = (t10, show, sel2, def) => {
+    const up = new Set(louder(t10));
+    return DYNS.map((d3) => `<td${def && def[d3] !== t10[d3] ? ` class="is-diff"` : ""}><button class="dyn-cell${sel2 === d3 ? " is-sel" : ""}${up.has(d3) ? " is-loud" : ""}" data-v="dynsel:${d3}" title="${_t("\u6539\u8FD9\u4E00\u6863")}">${show(t10[d3])}</button></td>`).join("");
+  };
+  const loudNote = (t10) => {
+    const up = louder(t10);
+    return up.length ? `<div class="ip-def">${esc7(up.map((d3) => _t("{d} \u6BD4 {next} \u8FD8\u54CD", { d: d3, next: DYNS[DYNS.indexOf(d3) + 1] })).join(_t("\uFF1B")))}</div>` : "";
+  };
+  function dynTable(sp2, layers, L2, def = null, sel2 = null) {
     const db = (x2) => `${x2 > 0 ? "+" : x2 < 0 ? "\u2212" : ""}${Math.abs(x2)}`;
     const cells = (f2) => DYNS.map((d3) => `<td>${f2(d3)}</td>`).join("");
     const vel = sp2.dynamicsVel;
-    return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d3) => `<th title="${d3}"><span class="smufl">${DYN_GLYPH[d3]}</span></th>`).join("")}</tr><tr><th>${_t("MIDI \u529B\u5EA6")}</th>${cells((d3) => String(vel[d3]))}</tr>` + (def ? `<tr class="ip-def-row"><th>${_t("\u73B0\u5728\u7684\u9ED8\u8BA4")}</th>${DYNS.map((d3) => `<td${def[d3] !== vel[d3] ? ` class="is-diff"` : ""}>${def[d3]}</td>`).join("")}</tr>` : "") + // 16-6：格子对齐，不一样的格子打点
+    return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d3) => `<th title="${d3}"><span class="smufl">${DYN_GLYPH[d3]}</span></th>`).join("")}</tr><tr><th>${_t("MIDI \u529B\u5EA6")}</th>${curCells(vel, String, sel2, def)}</tr>` + (def ? `<tr class="ip-def-row"><th>${_t("\u73B0\u5728\u7684\u9ED8\u8BA4")}</th>${DYNS.map((d3) => `<td>${def[d3]}</td>`).join("")}</tr>` : "") + // 16-6：格子对齐
     // 响度：这件乐器在那个键上实际的 L（库写的深度）；满力度 = 0 dB，一张表看出每档差多少
     // L（7-N）：和出声同一个函数（乐器 = 引擎在那个键上实际的，perform.ts VelDb）；满力度 = 0 dB
     ((top) => L2 && top !== null ? `<tr><th>${_t("\u54CD\u5EA6 dB")}</th>${cells((d3) => {
@@ -44406,17 +44433,17 @@ function createInstSettings(el2, h2) {
     })}</tr>` : "")(L2 ? L2(127) : null) + (layers && layers.count > 1 ? `<tr><th>${_t("\u7B2C\u51E0\u4EFD\u5F55\u97F3")}</th>${cells((d3) => {
       const k2 = layers.ranges.findIndex(([lo2, hi]) => vel[d3] >= lo2 && vel[d3] <= hi);
       return k2 >= 0 ? String(k2 + 1) : "\u2013";
-    })}</tr>` : "") + `</table>`;
+    })}</tr>` : "") + `</table>` + loudNote(vel);
   }
-  function dbTable(t10, def = null) {
+  function dbTable(t10, def = null, sel2 = null) {
     const db = (x2) => `${x2 > 0 ? "+" : x2 < 0 ? "\u2212" : ""}${Math.abs(x2)}`;
-    return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d3) => `<th title="${d3}"><span class="smufl">${DYN_GLYPH[d3]}</span></th>`).join("")}</tr><tr><th>${_t("\u54CD\u5EA6 dB")}</th>${DYNS.map((d3) => `<td>${db(t10[d3])}</td>`).join("")}</tr>` + (def ? `<tr class="ip-def-row"><th>${_t("\u73B0\u5728\u7684\u9ED8\u8BA4")}</th>${DYNS.map((d3) => `<td${def[d3] !== t10[d3] ? ` class="is-diff"` : ""}>${db(def[d3])}</td>`).join("")}</tr>` : "") + `</table>`;
+    return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d3) => `<th title="${d3}"><span class="smufl">${DYN_GLYPH[d3]}</span></th>`).join("")}</tr><tr><th>${_t("\u54CD\u5EA6 dB")}</th>${curCells(t10, db, sel2, def)}</tr>` + (def ? `<tr class="ip-def-row"><th>${_t("\u73B0\u5728\u7684\u9ED8\u8BA4")}</th>${DYNS.map((d3) => `<td>${db(def[d3])}</td>`).join("")}</tr>` : "") + `</table>` + loudNote(t10);
   }
   function singTable(t10, def) {
     const cols = [["staccato", _t("\u8DF3\u97F3")], ["accent", _t("\u91CD\u97F3")], ["marcato", _t("\u5F3A\u97F3")], ["sfz", _t("\u7A81\u5F3A")], ["fp", _t("\u5F3A\u540E\u5373\u5F31")], ["breath", _t("\u547C\u5438")]];
     const cell2 = (m2) => m2 ? _t("{p}\u524D {mark}", { p: m2.at === "next" ? _t("\u4E0B\u4E00\u4E2A\u5B57") : _t("\u8FD9\u4E2A\u5B57"), mark: m2.mark }) : _t("\u4E0D\u53D8");
     const same = (a10, b3) => JSON.stringify(a10 ?? null) === JSON.stringify(b3 ?? null);
-    return `<table class="dyn-tab sing-tab"><tr><th></th>${cols.map(([, l10]) => `<th>${l10}</th>`).join("")}</tr><tr><th>${_t("\u8FD9\u4F4D")}</th>${cols.map(([k2]) => `<td>${esc7(cell2(t10[k2]))}</td>`).join("")}</tr>` + (def ? `<tr class="ip-def-row"><th>${_t("\u73B0\u5728\u7684\u9ED8\u8BA4")}</th>${cols.map(([k2]) => `<td${same(def[k2], t10[k2]) ? "" : ` class="is-diff"`}>${esc7(cell2(def[k2]))}</td>`).join("")}</tr>` : "") + `</table>`;
+    return `<table class="dyn-tab sing-tab"><tr><th></th>${cols.map(([, l10]) => `<th>${l10}</th>`).join("")}</tr><tr><th>${_t("\u8FD9\u4F4D")}</th>${cols.map(([k2]) => `<td${def && !same(def[k2], t10[k2]) ? ` class="is-diff"` : ""}>${esc7(cell2(t10[k2]))}</td>`).join("")}</tr>` + (def ? `<tr class="ip-def-row"><th>${_t("\u73B0\u5728\u7684\u9ED8\u8BA4")}</th>${cols.map(([k2]) => `<td>${esc7(cell2(def[k2]))}</td>`).join("")}</tr>` : "") + `</table>`;
   }
   const curves = /* @__PURE__ */ new Map();
   function curveOf2(sha, bank, program) {
@@ -44486,6 +44513,10 @@ function createInstSettings(el2, h2) {
     const spX = (x2) => activePerfSpec(x2, role), sp2 = activePerfSpec(h2.extras(), role);
     const chainText = (x2) => activeChain(x2, role).map((f2) => (FX_KINDS[f2.kind]?.name ?? _t("\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u7684\u300C{k}\u300D", { k: f2.kind })) + (f2.on === false ? _t("\uFF08\u5173\u7740\uFF09") : "")).join(_t("\u3001")) || _t("\uFF08\u6CA1\u6709\uFF09");
     const g3 = activeGm(h2.extras(), role), layers = g3 && g3.origin.library === GS_LIBRARY_ID && h2.catalog() ? velLayersOf(h2.catalog(), g3.bank, g3.program, g3.note) : null;
+    const dynCtl = (t10, step, show) => {
+      const d3 = selOf(role);
+      return d3 ? `<b class="ip-val"><span class="smufl">${DYN_GLYPH[d3]}</span> ${esc7(show(t10[d3]))}</b><button class="btn" data-v="dyn:-1" title="${_t("\u8FD9\u4E00\u6863\u8F7B\u4E00\u70B9\uFF08\u2212{s}\uFF09", { s: step })}">\u2212${step}</button><button class="btn" data-v="dyn:1" title="${_t("\u8FD9\u4E00\u6863\u54CD\u4E00\u70B9\uFF08+{s}\uFF09", { s: step })}">+${step}</button>` : `<span class="ip-faint">${_t("\u70B9\u8868\u91CC\u7684\u4E00\u683C\uFF0C\u6539\u90A3\u4E00\u6863")}</span>`;
+    };
     const how = (plug ? row2(
       _t("\u54CD\u5EA6"),
       `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="${_t("\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB")}">\u22121 dB</button><button class="btn" data-v="cal:1" title="${_t("\u5927\u58F0 1 dB")}">+1 dB</button>`,
@@ -44523,12 +44554,12 @@ function createInstSettings(el2, h2) {
       (x2) => `${spX(x2).swellDb} dB`
     ))(spOf(role).swellDb) : "") + ownMain.map(rowOf).join("") + // 力度记号那张表（16-6：两条路同一行；表类的行 = 现在的默认那一排摆在当前那一排下面、格子对齐，统筹补的第三条）
     //   按音量走的（小月相 / 元音版）= 她身上的八个 dB（v0.9.23，方便和乐器的那张对比）；按力度敲的 = 八个 MIDI 力度 + 这件乐器在那个键上的响度 + 第几份录音
-    (sp2?.path === "gain" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), "", _t(
+    (sp2?.path === "gain" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), dynCtl(sp2.dynamicsDb, 0.5, (x2) => `${x2 > 0 ? "+" : ""}${x2} dB`), _t(
       "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}",
-      { table: dbTable(sp2.dynamicsDb, diff.has("dyn") && dx ? activePerfSpec(dx, role).dynamicsDb : null) }
-    ), "dyn") : sp2?.path === "velocity" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), "", _t(
+      { table: dbTable(sp2.dynamicsDb, diff.has("dyn") && dx ? activePerfSpec(dx, role).dynamicsDb : null, selOf(role)) }
+    ), "dyn") : sp2?.path === "velocity" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), dynCtl(sp2.dynamicsVel, 1, String), _t(
       "\u529B\u5EA6\u8BB0\u53F7 \u2192 MIDI \u529B\u5EA6\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{table}",
-      { accentVel: sp2.accentVel, marcatoVel: sp2.marcatoVel, table: dynTable(sp2, layers, curveHere(role), diff.has("dyn") && dx ? activePerfSpec(dx, role).dynamicsVel : null) }
+      { accentVel: sp2.accentVel, marcatoVel: sp2.marcatoVel, table: dynTable(sp2, layers, curveHere(role), diff.has("dyn") && dx ? activePerfSpec(dx, role).dynamicsVel : null, selOf(role)) }
     ), "dyn") : "") + // 记号怎么唱（16-6：按块唱的那位身上的 sing 表，原来散在「记号怎么演」各行里，现在单独一行、一张表）
     (plug?.sound === "chunks" && sp2 ? row2(_t("\u8BB0\u53F7\u600E\u4E48\u5531"), "", _t("\u8C31\u4E0A\u7684\u8BB0\u53F7\u53D8\u6210\u5531\u6CD5\u6838\u5FC3\u8BA4\u7684\u5B57\u524D\u8BB0\u53F7\uFF08^ = \u987F\u4E00\u4E0B\u4E0D\u6362\u6C14\uFF0Cv = \u6362\u6C14\uFF09\uFF1A{table}", { table: singTable(sp2.sing, diff.has("sing") && dx ? activePerfSpec(dx, role).sing : null) }), "sing") : "") + ((plug?.lyrics ?? "none") !== "none" ? row2(_t("\u54FC\u7684\u5B57"), HUMS.map(([v, l10]) => chip(`hum:${v}`, l10, hum === v)).join(""), _t("\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u8FD9\u4E00\u4F4D\u7684\uFF09"), "hum", (x2) => HUMS.find(([v]) => v === activeHum(x2, role))?.[1] ?? "") : "") + (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") + ownTail.map(rowOf).join("") + (!plug ? row2("", "", _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")) : "");
     const sum = !plug || !rep.def ? "" : `<div class="ip-diff-sum">${rep.rows.length ? _t("\u548C\u73B0\u5728\u7684\u9ED8\u8BA4\u4E0D\u4E00\u6837\u7684\u6709 {n} \u5904\uFF1A", { n: rep.rows.length }) + rep.rows.map((r10) => `<button class="btn link" data-jump="${esc7(r10.id)}">${esc7(r10.label)}</button>`).join(_t("\u3001")) : `<span class="ip-faint">${_t("\u548C\u73B0\u5728\u7684\u9ED8\u8BA4\u90FD\u4E00\u6837")}</span>`}${rep.pending ? `<span class="ip-faint">${_t("\uFF08\u8FD8\u6709 {n} \u884C\u8981\u7B49\u97F3\u4E50\u76EE\u5F55\u8F7D\u597D\u518D\u6BD4\uFF09", { n: rep.pending })}</span>` : ""}</div>`;
@@ -44582,6 +44613,21 @@ function createInstSettings(el2, h2) {
     }
     if (v.startsWith("find:")) {
       h2.findBankFile(v.slice(5));
+      return;
+    }
+    if (v.startsWith("dynsel:")) {
+      const d3 = v.slice(7);
+      dynSel = selOf(role) === d3 ? null : { role, d: d3 };
+      draw();
+      return;
+    }
+    if (v.startsWith("dyn:")) {
+      const d3 = selOf(role), sp2 = activePerfSpec(h2.extras(), role);
+      if (!d3 || !sp2) return;
+      const gain = sp2.path === "gain", cur = gain ? sp2.dynamicsDb[d3] : sp2.dynamicsVel[d3], next2 = cur + Number(v.slice(4)) * (gain ? 0.5 : 1);
+      const x2 = withDynLevel(h2.extras(), role, d3, next2, hum), sp22 = activePerfSpec(x2, role), got2 = sp22.path === "gain" ? sp22.dynamicsDb[d3] : sp22.dynamicsVel[d3];
+      h2.commit(x2, _t("\u300C{rn}\u300D\u529B\u5EA6\u8BB0\u53F7 {d} \u2192 {v}", { rn: rn2, d: d3, v: gain ? `${got2} dB` : String(got2) }), `dyn:${d3}`);
+      draw();
       return;
     }
     if (v.startsWith("def:")) {
@@ -45844,8 +45890,9 @@ ${tg2.fx}`);
     const strips = this.host.strips(), singers = strips.map((s10, k2) => {
       const perf = s10.performerDb ? `<button class="btn strip-perfdb" data-v="perfdb" title="${_t("\u8FD9\u4F4D\u4E50\u624B\u81EA\u5DF1\u7684\u54CD\u5EA6\uFF08\u4E50\u5668\u9875\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\uFF09\uFF0C\u548C\u63A8\u5B50\u76F8\u52A0\uFF1A\u63A8\u5B50 {g}\u3001\u4E50\u624B {p} = \u8FD9\u6761\u8F68\u4E00\u5171 {t}\u3002\u70B9\u8FD9\u91CC\u53BB\u4E50\u5668\u9875\u6539", { g: dbText(s10.gainDb), p: dbText(s10.performerDb), t: dbText(s10.gainDb + s10.performerDb) })}">${_t("\u4E50\u624B {p}", { p: dbText(s10.performerDb) })}</button>` : "";
       const perfDiff = s10.performerDiffs ? `<button class="btn strip-perfdiff" data-v="perfdiff" title="${_t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u6709 {n} \u5904\u548C\u73B0\u5728\u7684\u9ED8\u8BA4\u4E0D\u4E00\u6837\uFF08\u54CD\u5EA6\u53E6\u7B97\uFF09\u3002\u70B9\u8FD9\u91CC\u53BB\u4E50\u5668\u9875\u770B\u662F\u54EA\u51E0\u5904", { n: s10.performerDiffs })}">${_t("\u4E50\u624B {n} \u5904\u4E0D\u540C", { n: s10.performerDiffs })}</button>` : "";
-      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.gain, `<output>${dbText(s10.gainDb)}</output>${perf}${perfDiff}`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + `<div class="btn-row"><button class="btn" data-v="partleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09")}"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
-      (s10.refs ? `<div class="strip-refs">${_t("\u5728 {refs} \u5F20\u7EB8\u4E0A", { refs: s10.refs })}</div>` : `<div class="strip-refs">${_t("\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709")} <button class="btn cand danger" data-v="delpart" title="${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8")}</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? gainRow("data-gain", HINT2.gain, s10.gainDb, perf) + this.routeHtml(s10.id) : this.chipsHtml(s10.id);
+      const perfRow = perf || perfDiff ? `<div class="strip-perf">${perf}${perfDiff}</div>` : "";
+      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + perfRow + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + `<div class="btn-row"><button class="btn" data-v="partleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09")}"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+      (s10.refs ? `<div class="strip-refs">${_t("\u5728 {refs} \u5F20\u7EB8\u4E0A", { refs: s10.refs })}</div>` : `<div class="strip-refs">${_t("\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709")} <button class="btn cand danger" data-v="delpart" title="${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8")}</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? gainRow("data-gain", HINT2.gain, s10.gainDb) + perfRow + this.routeHtml(s10.id) : this.chipsHtml(s10.id);
       const ms = `<span class="strip-ms"><button class="btn${s10.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09")}">${_t("\u9759")}</button><button class="btn${s10.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09")}">${_t("\u72EC")}</button></span>`;
       return this.card(s10.id, "", `<div class="strip-head">${nameDiv(s10.name)}${ms}</div>${this.brokenLine(s10.id)}`, s10.performer, body2, s10.color);
     }).join("");
@@ -45859,7 +45906,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "8a0d877f40347a39" : "dev";
+var CORE_HASH = true ? "311819c576b9c7df" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -61577,7 +61624,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, activePerfSpec(D3.extras, curRole())?.sing ?? {});
   },
   state: () => D3.st,
-  cssHash: "4a26c28c2ae8",
+  cssHash: "c3e775863039",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -66015,4 +66062,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ebdd8d1d1425.mjs.map
+//# sourceMappingURL=moonsinger-fd2c27bf86ef.mjs.map

@@ -3,7 +3,7 @@
 //   审计风险 2「主程序里一张一张手糊的面板」）。宿主给一组访问器 + 动作，页面自己管画和点击；行为和搬之前一样。各段的来历见段内注释（原注释照搬）。
 import { dropdownHtml, mountDropdowns } from "../../ui/dropdown.ts";
 import { _t, lang } from "../../i18n/index.ts";
-import { writtenRoleSound, activeHum, activeId, activeChain, gmCandidates, activeCandidateName, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withSwellDb, withCalibration, GAP_MAX_SEC, SWELL_DB_MIN, SWELL_DB_MAX, type Extras, type Engine } from "../../format/project.ts";
+import { writtenRoleSound, withDynLevel, activeHum, activeId, activeChain, gmCandidates, activeCandidateName, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withSwellDb, withCalibration, GAP_MAX_SEC, SWELL_DB_MIN, SWELL_DB_MAX, type Extras, type Engine } from "../../format/project.ts";
 import { ROLL_HZ_MIN, ROLL_HZ_MAX } from "../../format/performance.ts";
 import { FX_KINDS } from "../../engine/fx.ts";
 import { CALIBRATION_DEFAULT_DB } from "../../format/template.ts";   // 没人上场时「响度」那一句写的默认；别的「现在的默认」问 performers/defaults.ts（16-6）
@@ -44,6 +44,7 @@ const HUMS: [Hum, string][] = [["n", _t("ん / 嗯")], ["a", _t("あ / 啊")], [
 export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw(): void } {
   let instAdvOpen = false;   // 「高级」折叠开着没（重画保持）
   let marksOpen = false;     // 「记号怎么演」折叠开着没（重画保持；顶上那一句点到表里的行 = 打开）
+  let dynSel: { role: string; d: Dyn } | null = null;   // 力度记号表里选中的那一档（逐档改；换声部 = 不算）
   /** 「默认」钮（16-6）：改回现在的默认，按值写进歌、一步撤销。锁着时灰着（styles.css body.doc-locked）。 */
   const defBtn = (id: string) => `<button class="btn ip-defbtn" data-v="def:${esc(id)}" title="${_t("改回现在的默认（写进歌里；能撤销）")}">${_t("默认")}</button>`;
   /** 「记号怎么演」：这位演奏者 by value 带着的解读表，原样摊开（user 2026-10-08「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）。现在只读；改数以后做。 */
@@ -123,32 +124,38 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
   /** 力度换算表（v0.9.23；user 2026-10-10「wishlist: ppp fff，以及帮我科普这些和db的换算关系，然后应该向用户揭露，方便对比」「揭露表的位置建议是乐器页「力度」那一行 同意」）：
    *  按力度敲的乐器：每个力度记号 → 这位的 MIDI 力度 + 响度（响度 = 引擎在那个键上实际的 L，深度是库给这件乐器写的；声音没载好 = 不写 dB 那一行），
    *  有 GS 力度层数据的再加一行「第几份录音」（跨层 = 换一份录音）。小月相 / 元音版是另一张：dbTable（她身上的八个 dB，16-4）。 */
-  function dynTable(sp: { dynamicsVel: Record<Dyn, number> }, layers: { count: number; ranges: [number, number][] } | null, L: ((vel: number) => number | null) | null, def: Record<Dyn, number> | null = null): string {
+  /** 力度表当前那一排的格子（逐档改，16-6 之后那一版）：每格一颗钮，点 = 选中这一档；比更响的下一档还响 = 打一个记号，表下面说一句（不拦、照存）。 */
+  const selOf = (role: string): Dyn | null => (dynSel && dynSel.role === role ? dynSel.d : null);
+  const louder = (t: Record<Dyn, number>): Dyn[] => DYNS.slice(0, -1).filter((d, k) => t[d] > t[DYNS[k + 1]!]);
+  const curCells = (t: Record<Dyn, number>, show: (x: number) => string, sel: Dyn | null, def: Record<Dyn, number> | null) => { const up = new Set(louder(t));   // 和现在的默认不一样的格子打点（打在当前这一排，统筹「v0.17.19 收」第 1 条）
+    return DYNS.map((d) => `<td${def && def[d] !== t[d] ? ` class="is-diff"` : ""}><button class="dyn-cell${sel === d ? " is-sel" : ""}${up.has(d) ? " is-loud" : ""}" data-v="dynsel:${d}" title="${_t("改这一档")}">${show(t[d])}</button></td>`).join(""); };
+  const loudNote = (t: Record<Dyn, number>) => { const up = louder(t); return up.length ? `<div class="ip-def">${esc(up.map((d) => _t("{d} 比 {next} 还响", { d, next: DYNS[DYNS.indexOf(d) + 1]! })).join(_t("；")))}</div>` : ""; };
+  function dynTable(sp: { dynamicsVel: Record<Dyn, number> }, layers: { count: number; ranges: [number, number][] } | null, L: ((vel: number) => number | null) | null, def: Record<Dyn, number> | null = null, sel: Dyn | null = null): string {
     const db = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(x)}`;
     const cells = (f: (d: Dyn) => string) => DYNS.map((d) => `<td>${f(d)}</td>`).join("");
     const vel = sp.dynamicsVel;
     return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d) => `<th title="${d}"><span class="smufl">${DYN_GLYPH[d]}</span></th>`).join("")}</tr>` +
-      `<tr><th>${_t("MIDI 力度")}</th>${cells((d) => String(vel[d]))}</tr>` +
-      (def ? `<tr class="ip-def-row"><th>${_t("现在的默认")}</th>${DYNS.map((d) => `<td${def[d] !== vel[d] ? ` class="is-diff"` : ""}>${def[d]}</td>`).join("")}</tr>` : "") +   // 16-6：格子对齐，不一样的格子打点
+      `<tr><th>${_t("MIDI 力度")}</th>${curCells(vel, String, sel, def)}</tr>` +
+      (def ? `<tr class="ip-def-row"><th>${_t("现在的默认")}</th>${DYNS.map((d) => `<td>${def[d]}</td>`).join("")}</tr>` : "") +   // 16-6：格子对齐
       // 响度：这件乐器在那个键上实际的 L（库写的深度）；满力度 = 0 dB，一张表看出每档差多少
       // L（7-N）：和出声同一个函数（乐器 = 引擎在那个键上实际的，perform.ts VelDb）；满力度 = 0 dB
       ((top) => (L && top !== null ? `<tr><th>${_t("响度 dB")}</th>${cells((d) => { const x = L(vel[d]); return x === null ? "–" : db(Math.round((x - top) * 10) / 10); })}</tr>` : ""))(L ? L(127) : null) +
-      (layers && layers.count > 1 ? `<tr><th>${_t("第几份录音")}</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
+      (layers && layers.count > 1 ? `<tr><th>${_t("第几份录音")}</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>` + loudNote(vel);
   }
   /** 按音量走力度的这位（小月相 / 元音版）身上的 dB 表：照实显示八个数（16-4，统筹 2026-11-12 夜；逐档能不能改 = 16-6 摆法）。 */
-  function dbTable(t: Record<Dyn, number>, def: Record<Dyn, number> | null = null): string {
+  function dbTable(t: Record<Dyn, number>, def: Record<Dyn, number> | null = null, sel: Dyn | null = null): string {
     const db = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(x)}`;
     return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d) => `<th title="${d}"><span class="smufl">${DYN_GLYPH[d]}</span></th>`).join("")}</tr>` +
-      `<tr><th>${_t("响度 dB")}</th>${DYNS.map((d) => `<td>${db(t[d])}</td>`).join("")}</tr>` +
-      (def ? `<tr class="ip-def-row"><th>${_t("现在的默认")}</th>${DYNS.map((d) => `<td${def[d] !== t[d] ? ` class="is-diff"` : ""}>${db(def[d])}</td>`).join("")}</tr>` : "") + `</table>`;   // 16-6：格子对齐
+      `<tr><th>${_t("响度 dB")}</th>${curCells(t, db, sel, def)}</tr>` +
+      (def ? `<tr class="ip-def-row"><th>${_t("现在的默认")}</th>${DYNS.map((d) => `<td>${db(def[d])}</td>`).join("")}</tr>` : "") + `</table>` + loudNote(t);   // 16-6：格子对齐
   }
   /** 记号怎么唱（16-6）：按块唱的那位身上的 sing 表——谱上的记号 → 唱法核心认的字前记号；def = 现在的默认那一排（不一样才给）。 */
   function singTable(t: Record<string, { mark: string; at: string } | null | undefined>, def: Record<string, { mark: string; at: string } | null | undefined> | null): string {
     const cols: [string, string][] = [["staccato", _t("跳音")], ["accent", _t("重音")], ["marcato", _t("强音")], ["sfz", _t("突强")], ["fp", _t("强后即弱")], ["breath", _t("呼吸")]];
     const cell = (m: { mark: string; at: string } | null | undefined) => (m ? _t("{p}前 {mark}", { p: m.at === "next" ? _t("下一个字") : _t("这个字"), mark: m.mark }) : _t("不变"));
     const same = (a?: { mark: string; at: string } | null, b?: { mark: string; at: string } | null) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
-    return `<table class="dyn-tab sing-tab"><tr><th></th>${cols.map(([, l]) => `<th>${l}</th>`).join("")}</tr><tr><th>${_t("这位")}</th>${cols.map(([k]) => `<td>${esc(cell(t[k]))}</td>`).join("")}</tr>` +
-      (def ? `<tr class="ip-def-row"><th>${_t("现在的默认")}</th>${cols.map(([k]) => `<td${same(def[k], t[k]) ? "" : ` class="is-diff"`}>${esc(cell(def[k]))}</td>`).join("")}</tr>` : "") + `</table>`;
+    return `<table class="dyn-tab sing-tab"><tr><th></th>${cols.map(([, l]) => `<th>${l}</th>`).join("")}</tr><tr><th>${_t("这位")}</th>${cols.map(([k]) => `<td${def && !same(def[k], t[k]) ? ` class="is-diff"` : ""}>${esc(cell(t[k]))}</td>`).join("")}</tr>` +
+      (def ? `<tr class="ip-def-row"><th>${_t("现在的默认")}</th>${cols.map(([k]) => `<td>${esc(cell(def[k]))}</td>`).join("")}</tr>` : "") + `</table>`;
   }
   /** 乐器页的内容（每次改完整页重画；输入框里正在打的字不受影响——只有提交时才改 extras）。 */
   /** 这位的 L 在一个键上（7-N；和出声同一个函数）：乐器 = 库的字节在手边才有（嵌在歌里的 / 这次找到过的），按写的中央 C 换成敲的键。按音量走力度的没有 L（她的力度就是 dB 表）= null。 */
@@ -213,6 +220,10 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     const spX = (x: Extras) => activePerfSpec(x, role)!, sp = activePerfSpec(h.extras(), role);
     const chainText = (x: Extras) => activeChain(x, role).map((f) => (FX_KINDS[f.kind]?.name ?? _t("这一版不认识的「{k}」", { k: f.kind })) + (f.on === false ? _t("（关着）") : "")).join(_t("、")) || _t("（没有）");
     const g = activeGm(h.extras(), role), layers = g && g.origin.library === GS_LIBRARY_ID && h.catalog() ? velLayersOf(h.catalog()!, g.bank, g.program, g.note) : null;
+    /** 力度记号那一行的控件（逐档改）：选中了一档 = 「mf  -6.69 dB  −  +」（一步 0.5 dB / 1 个力度）；没选 = 一句「点表里的一格改那一档」。 */
+    const dynCtl = (t: Record<Dyn, number>, step: number, show: (x: number) => string) => { const d = selOf(role);
+      return d ? `<b class="ip-val"><span class="smufl">${DYN_GLYPH[d]}</span> ${esc(show(t[d]))}</b><button class="btn" data-v="dyn:-1" title="${_t("这一档轻一点（−{s}）", { s: step })}">−${step}</button><button class="btn" data-v="dyn:1" title="${_t("这一档响一点（+{s}）", { s: step })}">+${step}</button>`
+        : `<span class="ip-faint">${_t("点表里的一格，改那一档")}</span>`; };
     const how =
       (plug ? row(_t("响度"), `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="${_t("这位演奏者小声 1 dB")}">−1 dB</button><button class="btn" data-v="cal:1" title="${_t("大声 1 dB")}">+1 dB</button>`,
         _t("这位演奏者自己的音量：这个库的默认是 {d}。库和库之间就在这一个数上对齐，几个声部叠在一起也不顶到天花板、不把声音压变样；混音台的推子是这首歌的决定，另算", { d: fmtDb(calDef) }), "cal", (x) => fmtDb(activeCalibrationDb(x, role))) : "") +
@@ -236,10 +247,10 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       ownMain.map(rowOf).join("") +
       // 力度记号那张表（16-6：两条路同一行；表类的行 = 现在的默认那一排摆在当前那一排下面、格子对齐，统筹补的第三条）
       //   按音量走的（小月相 / 元音版）= 她身上的八个 dB（v0.9.23，方便和乐器的那张对比）；按力度敲的 = 八个 MIDI 力度 + 这件乐器在那个键上的响度 + 第几份录音
-      (sp?.path === "gain" ? row(_t("力度记号"), "", _t("力度记号 → 响度：这位身上带着一张表，每个力度记号乘多少 dB。渐强渐弱在 dB 上平均地变；后面没写力度记号的，走到表里的下一档。没有录音层，只变响度：{table}",
-          { table: dbTable(sp.dynamicsDb, diff.has("dyn") && dx ? (activePerfSpec(dx, role) as typeof sp).dynamicsDb : null) }), "dyn")
-        : sp?.path === "velocity" ? row(_t("力度记号"), "", _t("力度记号 → MIDI 力度（重音 +{accentVel}、强音 +{marcatoVel}；别的记号见下面「记号怎么演」）：{table}",
-          { accentVel: sp.accentVel, marcatoVel: sp.marcatoVel, table: dynTable(sp, layers, curveHere(role), diff.has("dyn") && dx ? (activePerfSpec(dx, role) as typeof sp).dynamicsVel : null) }), "dyn") : "") +
+      (sp?.path === "gain" ? row(_t("力度记号"), dynCtl(sp.dynamicsDb, 0.5, (x) => `${x > 0 ? "+" : ""}${x} dB`), _t("力度记号 → 响度：这位身上带着一张表，每个力度记号乘多少 dB。渐强渐弱在 dB 上平均地变；后面没写力度记号的，走到表里的下一档。没有录音层，只变响度：{table}",
+          { table: dbTable(sp.dynamicsDb, diff.has("dyn") && dx ? (activePerfSpec(dx, role) as typeof sp).dynamicsDb : null, selOf(role)) }), "dyn")
+        : sp?.path === "velocity" ? row(_t("力度记号"), dynCtl(sp.dynamicsVel, 1, String), _t("力度记号 → MIDI 力度（重音 +{accentVel}、强音 +{marcatoVel}；别的记号见下面「记号怎么演」）：{table}",
+          { accentVel: sp.accentVel, marcatoVel: sp.marcatoVel, table: dynTable(sp, layers, curveHere(role), diff.has("dyn") && dx ? (activePerfSpec(dx, role) as typeof sp).dynamicsVel : null, selOf(role)) }), "dyn") : "") +
       // 记号怎么唱（16-6：按块唱的那位身上的 sing 表，原来散在「记号怎么演」各行里，现在单独一行、一张表）
       (plug?.sound === "chunks" && sp ? row(_t("记号怎么唱"), "", _t("谱上的记号变成唱法核心认的字前记号（^ = 顿一下不换气，v = 换气）：{table}", { table: singTable(sp.sing, diff.has("sing") && dx ? activePerfSpec(dx, role)!.sing : null) }), "sing") : "") +
       ((plug?.lyrics ?? "none") !== "none" ? row(_t("哼的字"), HUMS.map(([v, l]) => chip(`hum:${v}`, l, hum === v)).join(""), _t("没写歌词的音唱什么（这一位的）"), "hum", (x) => HUMS.find(([v]) => v === activeHum(x, role))?.[1] ?? "") : "") +
@@ -287,6 +298,13 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     if (v === "pad") { h.togglePad(); draw(); return; }
     if (v === "finder") { h.openFinder(); return; }
     if (v.startsWith("find:")) { h.findBankFile(v.slice(5)); return; }
+    if (v.startsWith("dynsel:")) { const d = v.slice(7) as Dyn; dynSel = selOf(role) === d ? null : { role, d }; draw(); return; }   // 选中 / 再点取消
+    if (v.startsWith("dyn:")) {   // 逐档改：按这位的路一步 0.5 dB / 1 个力度；连着点同一档并成一步撤销
+      const d = selOf(role), sp = activePerfSpec(h.extras(), role); if (!d || !sp) return;
+      const gain = sp.path === "gain", cur = gain ? sp.dynamicsDb[d] : sp.dynamicsVel[d], next = cur + Number(v.slice(4)) * (gain ? 0.5 : 1);
+      const x = withDynLevel(h.extras(), role, d, next, hum), sp2 = activePerfSpec(x, role)!, got = sp2.path === "gain" ? sp2.dynamicsDb[d] : sp2.dynamicsVel[d];
+      h.commit(x, _t("「{rn}」力度记号 {d} → {v}", { rn, d, v: gain ? `${got} dB` : String(got) }), `dyn:${d}`); draw(); return;
+    }
     if (v.startsWith("def:")) {   // 16-6「默认」：这一行改回现在的默认（按值抄进歌；一步撤销）
       const id = v.slice(4), lab = defaultsReport(h.extras(), role, h.catalog()).rows.find((r) => r.id === id)?.label ?? id, next = resetRow(h.extras(), role, id, h.catalog(), hum);
       if (next) { h.commit(next, _t("「{rn}」{what}改回现在的默认", { rn, what: lab })); h.silence(); }

@@ -116,3 +116,26 @@ describe("没有角色的声部（16-6，统筹 2026-11-13）", () => {
     assert(!/<instrument-sound>/.test(xml({ ...templateExtras(song), lounge: {} })), "没有角色：不写");
   });
 });
+describe("力度记号表逐档改（v0.17.20）", () => {
+  const val = (x: Extras, k: "dynamicsDb" | "dynamicsVel") => (activeCandidate(x, role) as Record<string, Record<string, number>>)[k]!;
+  it("按音量走的：改 dB 表的一档，记到 0.01、夹在 −60 … +24；不碰 MIDI 力度表；标出「力度记号」那一行，「默认」改回", async () => {
+    const { withDynLevel } = await import("../src/format/project.ts");
+    const x = KINDS["小月相"]!, y = withDynLevel(x, role, "mf", -3.333, "n");
+    eq(val(y, "dynamicsDb").mf, -3.33); eq(val(y, "dynamicsDb").f, val(x, "dynamicsDb").f, "别的档不动");
+    eq((activeCandidate(y, role) as Record<string, unknown>).dynamicsVel, undefined, "不写另一路的表");
+    eq(val(withDynLevel(x, role, "ppp", -99, "n"), "dynamicsDb").ppp, -60); eq(val(withDynLevel(x, role, "fff", 99, "n"), "dynamicsDb").fff, 24);
+    eq(defaultsReport(y, role, cat).rows.map((r) => r.id).join("、"), "dyn");
+    eq(defaultsReport(resetRow(y, role, "dyn", cat, "n")!, role, cat).rows.length, 0);
+  });
+  it("按力度敲的：改 MIDI 力度表的一档，整数、夹在 1 … 127；不碰 dB 表", async () => {
+    const { withDynLevel } = await import("../src/format/project.ts");
+    const x = KINDS["GS 小提琴"]!, y = withDynLevel(x, role, "p", 52.6, "n");
+    eq(val(y, "dynamicsVel").p, 53); eq((activeCandidate(y, role) as Record<string, unknown>).dynamicsDb, undefined);
+    eq(val(withDynLevel(x, role, "ppp", -5, "n"), "dynamicsVel").ppp, 1); eq(val(withDynLevel(x, role, "fff", 300, "n"), "dynamicsVel").fff, 127);
+    assert(sound(y) !== sound(x), "改了一档出声变了");
+  });
+  it("不强制单调：改出来比更响的一档还响照存（不拦）", async () => {
+    const { withDynLevel } = await import("../src/format/project.ts");
+    eq(val(withDynLevel(KINDS["小月相"]!, role, "mf", 0, "n"), "dynamicsDb").mf, 0);
+  });
+});
