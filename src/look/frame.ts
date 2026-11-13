@@ -2,9 +2,9 @@
 // > moved 2026-11-11 by Claude Opus 5.5（施工单 1b-2 搬家：从 src/render/engrave.ts 原样搬出，内容没改）
 // > edited 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-5）：版式表 SPACING 和 SQUEEZE 搬去排版参数表 src/render/layout-params.ts
 //   （纸一级按谱种、行一级按行的种类；参数表要知道有哪几种行，住在谱种表那一层，框架这一层不往上 import）。
-export const SCROLL_TAIL = 6;
+export const SCROLL_TAIL = 6;   // sp：横卷每张纸内容后面留的尾巴
 /** 谱前简写那一列的宽度参照（7 个半角宽 = part-colors.ts ABBR_W）。 */
-export const ABBR_REF = "Vln.Vc.";   // sp：横卷每张纸内容后面留的尾巴
+export const ABBR_REF = "Vln.Vc.";
 export const NAME_MAX = 6.5;   // sp：谱前声部名一列最宽（再长折行；engrave() 里 nameLines）
 // ── 尺寸（单位 sp） ─────────────────────────────────────────────────────
 /** 防抖：行的上下留白、歌词基线往下让，超出版式最小值的那一截按这么多线间距一格往上取（刀 4b 之后，user 11-09）。 */

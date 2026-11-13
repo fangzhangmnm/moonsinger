@@ -35,7 +35,7 @@ await closeSheet();
 check((await dynHits()) === 0, "谱上没有力度 / 渐强渐弱的点击框（不交给排版）", String(await dynHits()));
 check((await chip()) === "演奏法和表情：不显示", "第一行谱头那一行右端：淡字「演奏法和表情：不显示」（不写数字）", String(await chip()));
 await p.click("#score .score-overlay .ov-fold-hint"); await p.waitForTimeout(250);
-check(await p.evaluate(() => { const pg = document.querySelector('.settings-card .set-page[data-page="look"]'), dd = pg?.querySelector('[data-pg="expr"]'); return !!pg && !pg.hidden && !!dd && dd.closest(".set-item").classList.contains("is-target") && document.activeElement === dd; }), "点淡提示 = 开页面设置「看谱」页、落在「演奏法和表情」那一项（高亮、焦点在它的下拉上）");
+check(await p.evaluate(() => { const pg = document.querySelector('.settings-card .set-page[data-page="look"]'), dd = pg?.querySelector('[data-pg="expr"]'); return !!pg && !pg.hidden && !!dd && dd.closest(".wbe-row").classList.contains("is-target") && document.activeElement === dd; }), "点淡提示 = 开页面设置「看谱」页、落在「演奏法和表情」那一项（高亮、焦点在它的下拉上）");
 await closeSheet();
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
 check((await S()).song.expressions === "default" && (await chip()) === null && (await dynHits()) === 2, "撤销 = 回到跟着软件（显示）、小标没了、点击框回来了");

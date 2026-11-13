@@ -12,6 +12,7 @@ import type { SpItem } from "../spacing.ts";
 import { type ColumnKind } from "../frame/columns.ts";
 import { SLOT } from "../../look/order.ts";
 import { NOTEHEAD_X } from "../../look/spacing.ts";
+import { KEY_SIG, LINE_START } from "../../look/marks.ts";
 import type { ColEntry } from "../frame/arrange.ts";
 import type { PartView } from "../engrave.ts";
 import { TOP_LINE, MID_LINE } from "./glyphs.ts";
@@ -101,7 +102,7 @@ export function measureTrack(q: StaffTrack): { entries: ColEntry<Unit>[]; inkL: 
 export const clefW = (q: { fFam: boolean }) => (q.fFam ? W.fClef : W.gClef);
 /** 行首多宽（sp）：base = 框架给的（名字一栏的缩进 + 边距），后面是这条轨行首要画的：谱号 + 调号（key = 那里生效的调号）+ 第一行的拍号。加的先后照原来（浮点逐位相同）。 */
 export const lineStartWidth = (q: StaffTrack, key: number, first: boolean, base: number): number =>
-  base + 0.6 + clefW(q) + 1.0 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
+  base + LINE_START.beforeClef + clefW(q) + LINE_START.afterClef + Math.abs(key) * KEY_SIG.acc + (key ? LINE_START.afterKey : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + LINE_START.afterTime : LINE_START.noTime);   // 数在 src/look/marks.ts（统筹「v0.17.22 收」第 2 条）
 
 /** 这个音的符头多宽（sp）：× 符头（台上那位固定敲一个键 / 气声）、鼓谱按仓鼠的表、其余按时值挑黑 / 全。画（draw.ts）和歌词的锚点（lyricAnchors）用同一个。 */
 export function noteheadW(q: StaffTrack, c: Chunk): number {

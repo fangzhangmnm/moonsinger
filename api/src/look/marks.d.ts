@@ -49,3 +49,18 @@ export declare const STAFF_UNIT: {
         readonly big: 2.1;
     };
 };
+/** 调号多宽（sp；原来写在 src/render/staff/units.ts keyWidth 和 staff/measure.ts lineStartWidth 的式子里，统筹「v0.17.22 收」第 2 条起名字，数不改）。
+ *  acc = 调号里每个升降号占多宽（行首和行中换调同一个数，只定义这一次）；natural = 行中换成 C 调时每个还原号占多宽；after = 行中换调之后留多少。 */
+export declare const KEY_SIG: {
+    readonly acc: 1.05;
+    readonly natural: 0.8;
+    readonly after: 1;
+};
+/** 五线谱行首（sp；原 src/render/staff/measure.ts lineStartWidth 式子里的数）：谱号前、谱号后、有调号时调号后、第一行拍号后、没有拍号的行首尾巴。 */
+export declare const LINE_START: {
+    readonly beforeClef: 0.6;
+    readonly afterClef: 1;
+    readonly afterKey: 0.8;
+    readonly afterTime: 1.2;
+    readonly noTime: 0.4;
+};

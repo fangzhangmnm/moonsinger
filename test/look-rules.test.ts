@@ -3,6 +3,8 @@
 //   ② src/render 顶层的大写常数（不含生成的 .gen.ts）每个都登记成「字形的数据」或「算法内部」；没登记 = 红，报错说清该搬进 src/look 还是来这里登记；登记了却没有了 = 也红（表不许过期）。
 //   ③ 方向：src/score 不 import src/look；src/look 运行时不 import src/render（只许 import type）。
 //   以后哪个数要按歌选：一次一个加进 LOOK_KEYS、由 lookOf 交出、排版从 Look 拿（见 src/look/index.ts 头上）。
+//   分界线（统筹「v0.17.22 收」第 1 条）：一个音自己那一格里面 = 这种谱的字形设计，留在那种谱的目录（render/jianpu/glyphs.ts、place.ts…）；格子之间、行、纸 = 排版规则，在 src/look。
+//   函数里的字面量这个守卫管不到、也不全量扫（同一条第 3 条）：新写规则的数起名字放 src/look；哪一轮要调某一块排版，先把那一块的数提出来（单独一个提交、版面底本不变）再调。
 import { describe, it, eq } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readdirSync(u: URL, o: { withFileTypes: true }): { name: string; isDirectory(): boolean }[]; readFileSync(u: URL, e: "utf8"): string };
 const ROOT = new URL("../", import.meta.url);
@@ -44,7 +46,7 @@ const RULES = [
   "LYRIC_EM", "TEMPO_EM", "JP_MAIN_EM", "LYRIC_LOOK", "LYRIC_MIN_SX", "TEXT_STYLES", "GHOST_DIGIT_K", "STEM_REGULAR", "BOLD_STROKE", "SMALL_STEM_K",
   "LYRIC_SPACE", "HYPHEN_SX", "GAP_MIN", "GAP_FLOOR", "DEFAULT_GAPS",
   // 记号的摆法、单元留白（look/marks.ts）；STAFF_UNIT = 原来写在 STAFF_WIDTHS 式子里的留白
-  "PIN_GAP", "PIN_MIN", "PIN_WORD", "DASH", "RAMP_DASH", "PEDAL", "KEY_LABEL_W", "CLEF_CUE", "CLEF_CUE_W", "STAFF_UNIT",
+  "PIN_GAP", "PIN_MIN", "PIN_WORD", "DASH", "RAMP_DASH", "PEDAL", "KEY_LABEL_W", "CLEF_CUE", "CLEF_CUE_W", "STAFF_UNIT", "KEY_SIG", "LINE_START",
   // 先后和让路（look/order.ts）
   "SLOT", "STAFF_LANES", "JIANPU_LANES", "LEFT_CLEAR", "MAX_CLIMB",
 ] as const;
@@ -61,7 +63,7 @@ const KEPT: Record<string, typeof GLYPH | typeof ALGO> = {
     "TEN_L TEN_W TEN_STEP BREATH_EM BREATH_Y HEAD_EM GHOST_K CARET_Y0 CARET_Y1 ACC_GLYPH ACC_FAMILY_DOM FAMILY_LIGHT ACC_GLYPH_EM ACC_RISE ACC_SEP SUP_ACC_FIT HEAD_CH_EM GLYPH_INK LETTER_EM " +
     "SCRIPT_K SCRIPT_GAP SUP_DY SUB_DY SUB_DROP SUP_RISE").split(" ").map((n) => [`jianpu/glyphs.ts ${n}`, GLYPH])),   // 简谱字形照样张量的（17-0 表二 ②）
   "jianpu/measure.ts COLUMN_KIND": ALGO, "jianpu/note-cell.ts T0": ALGO, "jianpu/note-cell.ts UL_DROP": ALGO,
-  "jianpu/place.ts PLACE": ALGO, "jianpu/place.ts NOTE_SIGN_PLACE": ALGO,   // 17-0 表二 ③
+  "jianpu/place.ts PLACE": GLYPH, "jianpu/place.ts NOTE_SIGN_PLACE": ALGO,   // PLACE = 一个音自己那一格里记号怎么摆（统筹「v0.17.22 收」第 1 条：字形的数据）；NOTE_SIGN_PLACE = 记号 → 摆法的对照表
   "notations.ts DRAWERS": ALGO, "notations.ts GEOMETRY": ALGO, "notations.ts NOTATIONS": ALGO,
   "ornaments/index.ts PEDAL_GLYPH": GLYPH, "ornaments/index.ts PEDAL_UP_GLYPH": GLYPH,
   "signs.ts G": ALGO, "signs.ts D": ALGO, "signs.ts T": ALGO,   // 造「画成什么」的小帮手

@@ -6038,10 +6038,12 @@ var CLEF_CUE = 0.72;
 var CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
 var KEY_LABEL_W = 3.5;
 var STAFF_UNIT = { repeat: 0.8, barStyle: 0.7, time: 1.2, tempo: 0.3, acc: 1.3, dot: 0.6, lyricHyph: 1.4, lyricPlain: 0.7, breath: 0.8, inhale: { soft: 1.2, big: 2.1 } };
+var KEY_SIG = { acc: 1.05, natural: 0.8, after: 1 };
+var LINE_START = { beforeClef: 0.6, afterClef: 1, afterKey: 0.8, afterTime: 1.2, noTime: 0.4 };
 
 // src/render/staff/units.ts
 var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };
-var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
+var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * KEY_SIG.natural : Math.abs(fifths) * KEY_SIG.acc) + KEY_SIG.after;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 var STAFF_WIDTHS = {
   // 反复小节线：字形宽 1.47（:|: 2.43）+ 两边留一点（Bravura repeatLeft / repeatRight / repeatRightLeft）；段落线 / 终止线（v0.9.32）比一根小节线宽一点
@@ -6354,7 +6356,7 @@ function measureTrack(q) {
   return { entries, inkL };
 }
 var clefW = (q) => q.fFam ? W.fClef : W.gClef;
-var lineStartWidth = (q, key, first, base) => base + 0.6 + clefW(q) + 1 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
+var lineStartWidth = (q, key, first, base) => base + LINE_START.beforeClef + clefW(q) + LINE_START.afterClef + Math.abs(key) * KEY_SIG.acc + (key ? LINE_START.afterKey : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + LINE_START.afterTime : LINE_START.noTime);
 function noteheadW(q, c) {
   const percHere = !!q.pmode && !!q.p.perc, k = c.base >= WHOLE ? 2 : c.base >= TPQ * 2 ? 1 : 0;
   if (!!q.p.xHead && !percHere || !!c.whisper) return k === 2 ? W.noteheadXWhole : k === 1 ? W.noteheadXHalf : W.noteheadXBlack;
@@ -9787,4 +9789,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-78f06fa582dc.mjs.map
+//# sourceMappingURL=layout-worker-117599cdef14.mjs.map

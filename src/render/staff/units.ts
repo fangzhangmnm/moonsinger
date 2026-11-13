@@ -7,10 +7,10 @@ import { GLYPH, W } from "../smufl.ts";
 import { BAR_W } from "../../look/frame.ts";
 import type { UnitWidths } from "../frame/units.ts";
 import { baseWidth } from "./notation.ts";
-import { CLEF_CUE_W, KEY_LABEL_W, STAFF_UNIT as U } from "../../look/marks.ts";   // 留白的数在 src/look/marks.ts（17-2）
+import { CLEF_CUE_W, KEY_LABEL_W, KEY_SIG, STAFF_UNIT as U } from "../../look/marks.ts";   // 留白的数在 src/look/marks.ts（17-2）
 
 export const CLEF_GLYPH: Record<ClefName, string> = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
-export const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
+export const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * KEY_SIG.natural : Math.abs(fifths) * KEY_SIG.acc) + KEY_SIG.after;
 export const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 
 /** 五线谱的单元宽（sp）：交给框架的 unitsOf。= 字形的宽（字形的数据）+ 留白（规则的数，src/look/marks.ts STAFF_UNIT）；这里只管拼（17-2 拆开，数一个没改）。 */

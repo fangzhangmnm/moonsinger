@@ -22,3 +22,9 @@ export const KEY_LABEL_W = 3.5;   // v0.16.34：「1=」和速度字一样大（
  *  repeat = 反复小节线字形两边、barStyle = 段落线 / 终止线比一根小节线多宽、time = 拍号字之外、tempo = 速度那一格、acc = 有临时记号的音前面、dot = 附点、
  *  lyricHyph / lyricPlain = 按歌词排时字后面（有连字符 / 没有）、breath = 呼吸逗号、inhale = 出声的换气（逗号后面的字）。 */
 export const STAFF_UNIT = { repeat: 0.8, barStyle: 0.7, time: 1.2, tempo: 0.3, acc: 1.3, dot: 0.6, lyricHyph: 1.4, lyricPlain: 0.7, breath: 0.8, inhale: { soft: 1.2, big: 2.1 } } as const;
+
+/** 调号多宽（sp；原来写在 src/render/staff/units.ts keyWidth 和 staff/measure.ts lineStartWidth 的式子里，统筹「v0.17.22 收」第 2 条起名字，数不改）。
+ *  acc = 调号里每个升降号占多宽（行首和行中换调同一个数，只定义这一次）；natural = 行中换成 C 调时每个还原号占多宽；after = 行中换调之后留多少。 */
+export const KEY_SIG = { acc: 1.05, natural: 0.8, after: 1.0 } as const;
+/** 五线谱行首（sp；原 src/render/staff/measure.ts lineStartWidth 式子里的数）：谱号前、谱号后、有调号时调号后、第一行拍号后、没有拍号的行首尾巴。 */
+export const LINE_START = { beforeClef: 0.6, afterClef: 1.0, afterKey: 0.8, afterTime: 1.2, noTime: 0.4 } as const;

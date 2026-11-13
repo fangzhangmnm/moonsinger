@@ -8,6 +8,8 @@
 //   17-2：排版规则的数（ai-docs/20261113-view-defaults-recon.md 表二第一类）在这个目录的 paper / layout / spacing / frame / text / marks / order 里——只放数（和造表用的公式），
 //   算法留在 src/render；运行时不 import src/render（只要类型）。这些数不按歌选、不进文件，改了老歌跟着变。守卫 test/look-rules.test.ts。
 //   以后哪个数要按歌选，再一次一个加进 LOOK_KEYS、由 lookOf 交出、排版从 Look 拿（统筹 2026-11-13）。
+//   分界线（统筹「v0.17.22 收」）：一个音自己那一格里面 = 这种谱的字形设计，留在那种谱的目录（render/jianpu/glyphs.ts、place.ts…）；格子之间、行、纸 = 排版规则，在这里。
+//   函数里的字面量不全量扫：新写规则的数起名字放这里；哪一轮要调某一块排版，先把那一块的数提出来（单独一个提交、版面底本不变）再调。
 import { headClefOf, type Song, type PaperSeg, type Choice, type ClefChoice } from "../score/song.ts";
 import { isPaperKind, PAPER_LABEL, DENSITIES, type Paper, type ReadPaper, type PaperKind, type Density, type PaperChoice, type Margins } from "../score/paper.ts";
 import { paperOf, marginsOf, sizeOf, staffMmFor, STAFF_MM, STAFF_MM_COMPACT, paperSizeText } from "./paper.ts";

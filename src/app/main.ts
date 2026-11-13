@@ -47,7 +47,7 @@ import { TEMPLATE } from "../format/template.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
 import { createPackStore } from "@internal/model-packs";
-import { showNotice, closeNotice, configureFloors, createTabStrip, type TabSpec } from "@internal/workbench-elements";
+import { showNotice, closeNotice, configureFloors, createTabStrip, settingRowHtml, wireSettingRows, type TabSpec } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT } from "../gm/sounds.gen.ts";
@@ -1368,11 +1368,11 @@ const SET_PAGES = (): TabSpec<SetPage>[] => [
   { id: "about", label: _t("关于##页签"), icon: "info", title: _t("关于：版本、软件自己用到的别人的东西") },
   { id: "dev", label: _t("开发者##页签"), icon: "chip", title: _t("开发者：试验开关、还原出厂") },
 ];
-// 设置那一套「一项一行」（v0.16.90，user 11-10「主要还是做一个问号机制…避免大段文字或者大段折叠文字放在settings里面」）：短名字 + 控件，长说明进「?」（点了这一行下面展开；
-//   同乐器参数那一套 .row-lab .q / .row-help）。设置面板和页面设置（7-C）共用这一套：页签 + 一页一页 + 一项一行。
-const setQ = (help: string) => (help ? `<button class="q" type="button" data-q aria-label="${_t("这是什么")}">?</button>` : "");
-const setItem = (label: string, ctl: string, help = "", body = "", attrs = "") =>
-  `<div class="set-item"${attrs}><div class="set-head"><span class="row-lab">${label}${setQ(help)}</span>${ctl ? `<span class="set-ctl">${ctl}</span>` : ""}</div>${help ? `<div class="row-help">${help}</div>` : ""}${body}</div>`;
+// 设置那一套「一项一行」（v0.16.90，user 11-10「主要还是做一个问号机制…避免大段文字或者大段折叠文字放在settings里面」）：短名字 + 控件，长说明进「?」（点了这一行下面展开）。
+//   设置面板和页面设置（7-C）共用这一套：页签 + 一页一页 + 一项一行。13-1 起一行 = 界面零件库的 settingRowHtml（.wbe-row；「?」= 它的一个小标记），点小标记由 wireSettingRows 接。
+//   label / ctl / help / body 都是本仓自己拼的 HTML（照旧不转义）；attrs 的值由库转义。
+const setItem = (label: string, ctl: string, help = "", body = "", attrs?: Readonly<Record<string, string>>) =>
+  settingRowHtml({ labelHtml: label, ...(ctl ? { controlHtml: ctl } : {}), notes: help ? [{ mark: "?", label: _t("这是什么"), html: help }] : [], ...(body ? { belowHtml: body } : {}), ...(attrs ? { attrs } : {}) });
 /** 页签条的位子（13-0：页签条本身是界面零件库的 createTabStrip，wireSetPages 放进来）。 */
 const setTabsHtml = (): string => `<div class="set-tabs" data-tabs-slot></div>`;
 /** 只露 pg 那一页、它的页签亮着；页签点了换页；「?」点了 = 这一行下面展开说明（iPad 没有悬停）。回 showPage。 */
@@ -1385,9 +1385,7 @@ function wireSetPages<P extends string>(box: HTMLElement, tabs: readonly TabSpec
     strip.set(pg);
     onPage(pg);
   };
-  box.addEventListener("click", (e) => {
-    const qb = (e.target as HTMLElement).closest<HTMLElement>("[data-q]"); if (qb) qb.closest(".set-item")?.classList.toggle("show-help");
-  });
+  wireSettingRows(box);   // 「?」点了 = 这一行下面展开说明（iPad 没有悬停）；box 每次打开新建，不用解绑
   return showPage;
 }
 /** 设置里的一个下拉框（原来一排小按钮，user 嫌难看 → 下拉框）：data-set = 哪一项，改了走 openSettings 的 change。 */
@@ -1413,7 +1411,7 @@ function openSettings(): void {
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("设置")}</div>` +
     setTabsHtml() +
     `<div class="set-page" data-page="ui">` +
-      item(LANG_LABEL, setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", " data-i18n-skip") +
+      item(LANG_LABEL, setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }) +
     `</div>` +
     `<div class="set-page" data-page="sound">` +
       item(_t("模型来源"), "", _t("先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。") + (inFolder ? `<br>${FOLDER_TEXT.models}` : ""),
@@ -1503,7 +1501,7 @@ function openSettings(): void {
   const close = () => { clearInterval(resTimer); midiRowSync = null; models.source = srcIn.value; sources.source = sndIn.value; box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
-    if ((e.target as HTMLElement).closest("[data-q], [data-tab]")) return;   // 「?」和页签归 wireSetPages
+    if ((e.target as HTMLElement).closest(".wbe-row-mark, [data-tab]")) return;   // 「?」和页签归 wireSetPages
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
     else if (v === "doc:top" || v === "doc:tsukuyomi") openDocLayer(box, _t("版权与署名"), sectionsHtml(creditsSections(lang())), v === "doc:top" ? undefined : "tsukuyomi");
@@ -2081,7 +2079,7 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
   draw();
   document.body.append(box);
   if (focus === "expr") {   // 落在那一项：高亮一下、滚到它、焦点放在它的下拉上（「演奏法和表情：不显示」的淡提示点进来的）
-    const dd = box.querySelector<HTMLButtonElement>(`[data-pg="${focus}"]`), it = dd?.closest<HTMLElement>(".set-item");
+    const dd = box.querySelector<HTMLButtonElement>(`[data-pg="${focus}"]`), it = dd?.closest<HTMLElement>(".wbe-row");
     if (it) { it.classList.add("is-target"); it.scrollIntoView({ block: "nearest" }); dd!.focus(); setTimeout(() => it.classList.remove("is-target"), 1600); }
   }
   const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
