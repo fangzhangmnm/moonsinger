@@ -4717,6 +4717,8 @@ var S = {
   "\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\u2014\u2014\u8F7B\u70B9\u53EA\u8BA4\u770B\u8C31\u7684\uFF08\u58F0\u90E8\u540D / \u7FFB\u7EB8 / \u672C\u6BB5\uFF09\uFF0C\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E / \u63A5\u7740\u653E / \u4ECE\u5934\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\uFF08Esc \u56DE\u5230\u5199\uFF09": { en: "Listen: the score locks to prevent accidental edits \u2014 taps only do viewing things (part names / page turns / this section) and never jump playback; long-press / right-click the score = play from here / resume / from the top; Space = play / stop; the mixer sits below (Esc returns to writing)" },
   "\u6CA1\u6709\u51FA\u58F0\uFF1A{e}": { en: "Nothing sounded: {e}" },
   "\u6DF7\u97F3\u2026": { en: "Mixing\u2026" },
+  "\u81EA\u52A8\u4F4E\u5207": { en: "Auto low cut" },
+  "\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09": { en: "Follow tempo (beats per echo; 0 = use the ms above)" },
   "\u5747\u8861": { en: "EQ" },
   "\u6BCF\u6BB5\u4E00\u4E2A\u53CC\u4E8C\u9636 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)\uFF0C\u7CFB\u6570\u6309 RBJ Audio EQ Cookbook\uFF08hp / lp Q = 0.707\uFF1B\u67B6\u5B50 Q = 0.707\uFF1B\u5CF0 Q \u53EF\u8C03\uFF09\u3002hpHz / lpHz = 0 \u5173\u3002": { en: "One biquad per band H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2), coefficients from the RBJ Audio EQ Cookbook (hp / lp Q = 0.707; shelves Q = 0.707; peak Q adjustable). hpHz / lpHz = 0 is off." },
   "\u4F4E\u5207": { en: "Low cut" },
@@ -5531,9 +5533,7 @@ var S = {
   "\u6253\u51FB": { en: "Percussion" },
   "\u6709\u97F3\u9AD8\u6253\u51FB / \u94C3": { en: "Pitched percussion / bells" },
   "\u97F3\u6548 / \u5176\u4ED6": { en: "Sound effects / other" },
-  "\u81EA\u52A8\u4F4E\u5207": { en: "Auto low cut" },
-  "\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09": { en: "Follow tempo (beats per echo; 0 = use the ms above)" },
-  "\u81EA\u52A8\u4F4E\u5207\uFF1A\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\u653E\u4F4E\u5207\uFF08\u5F80\u4E0B\u5927\u4E09\u5EA6\uFF09\uFF0C\u5207\u6389\u5B83\u7528\u4E0D\u7740\u7684\u4F4E\u9891\u2014\u2014\u9686\u9686\u58F0\u3001\u548C\u522B\u7684\u8F68\u7CCA\u5728\u4E00\u8D77\u7684\u4F4E\u9891": { en: "Auto low cut: sets the low cut from this part's lowest note (a major third below), removing lows it doesn't use \u2014 rumble and lows that muddy other tracks" },
+  "\u81EA\u52A8\u4F4E\u5207\uFF1A\u6309\u8FD9\u4E2A\u58F0\u90E8\u5168\u66F2\u6700\u4F4E\u7684\u97F3\u653E\u4F4E\u5207\u2014\u2014\u90A3\u4E2A\u97F3\u5F80\u4E0B\u5927\u4E09\u5EA6\uFF08\u7EA6 0.79 \u500D\uFF09\uFF0C\u5939\u5728 20\u2013300 Hz\uFF1B\u6DF7\u97F3\u8F68\u3001\u603B\u8F68\u6CA1\u6709\u97F3 = \u4E0D\u5207\u3002\u5207\u6389\u5B83\u7528\u4E0D\u7740\u7684\u4F4E\u9891\uFF08\u9686\u9686\u58F0\u3001\u548C\u522B\u7684\u8F68\u7CCA\u5728\u4E00\u8D77\u7684\u4F4E\u9891\uFF09\u3002\u5F00\u7740\u65F6\u4F4E\u5207\u9891\u7387\u8DDF\u7740\u8C31\u8D70\uFF1B\u5B58\u7684\u65F6\u5019\u628A\u8FD9\u4E00\u523B\u7B97\u51FA\u6765\u7684\u6570\u5199\u8FDB\u300C\u4F4E\u5207\u300D\u90A3\u4E00\u683C": { en: "Auto low cut: sets the low cut from this part's lowest note in the whole song \u2014 a major third below it (about 0.79\xD7), kept within 20\u2013300 Hz; bus and master tracks have no notes = no cut. Cuts lows it doesn't use (rumble, lows that muddy other tracks). While on, the low-cut frequency follows the score; saving writes the number computed at that moment into the \u201CLow cut\u201D field" },
   "\u4F4E\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0B\u7684\u90FD\u5207\u6389\u3002\u4EBA\u58F0\u5E38\u5728 80\u2013120 Hz\uFF0C\u94C3\u8FD9\u7C7B\u9AD8\u7684\u4E50\u5668\u53EF\u4EE5\u66F4\u9AD8\uFF1B\u6700\u5DE6 = \u5173": { en: "Low cut: removes everything below this frequency. Voices are often 80\u2013120 Hz; high instruments like bells can go higher; far left = off" },
   "\u9AD8\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0A\u7684\u90FD\u5207\u6389\uFF0C\u53BB\u523A\u8033\u3001\u5636\u5636\u58F0\uFF1B\u6700\u5DE6 = \u5173": { en: "High cut: removes everything above this frequency, for harshness and hiss; far left = off" },
   "\u4F4E\u67B6\uFF1A\u8F6C\u6298\u9891\u7387\u4EE5\u4E0B\u6574\u4F53\u52A0 / \u51CF\u591A\u5C11\u3002\u51CF = \u53BB\u95F7\u3001\u7ED9\u522B\u7684\u8F68\u8BA9\u51FA\u4F4E\u9891\uFF1B\u52A0 = \u52A0\u539A": { en: "Low shelf: boosts / cuts everything below the corner. Cut = less muddy, leaves lows for other tracks; boost = thicker" },
@@ -5555,7 +5555,7 @@ var S = {
   "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u58F0\u90E8\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173": { en: "Dry: how much of the original to keep. Usually 0 dB (untouched) on a part's track; off on a send's return track" },
   "\u9884\u5EF6\u8FDF\uFF1A\u539F\u58F0\u4E4B\u540E\u8FC7\u591A\u4E45\u6DF7\u54CD\u624D\u8FDB\u6765\u3002\u62C9\u5F00\u4E00\u70B9\uFF0C\u4EBA\u58F0\u66F4\u6E05\u695A\u3001\u4E0D\u88AB\u7CCA\u4F4F": { en: "Pre-delay: how long after the dry sound the reverb comes in. A little keeps voices clear and not smeared" },
   "\u5BBD\u5EA6\uFF1A\u6DF7\u54CD\u5728\u5DE6\u53F3\u94FA\u591A\u5F00": { en: "Width: how far the reverb spreads left and right" },
-  "\u8DDF\u901F\u5EA6\uFF1A\u56DE\u58F0\u9694\u51E0\u62CD\uFF0C\u6309\u6B4C\u7684\u901F\u5EA6\u7B97\u65F6\u95F4\uFF1B0 = \u7528\u4E0B\u9762\u7684\u6BEB\u79D2": { en: "Follow tempo: beats between echoes, timed from the song's tempo; 0 = use the ms below" },
+  "\u8DDF\u901F\u5EA6\uFF1A\u56DE\u58F0\u9694\u51E0\u62CD\u3002\u65F6\u95F4 = \u51E0\u62CD \xD7 60000 \xF7 \u6B4C\u5F00\u5934\u7684\u901F\u5EA6\uFF08\u6BEB\u79D2\uFF0C\u6700\u591A 2000\uFF09\uFF1B0 = \u7528\u4E0B\u9762\u7684\u6BEB\u79D2\u3002\u5F00\u7740\u65F6\u65F6\u95F4\u8DDF\u7740\u8C31\u8D70\uFF1B\u5B58\u7684\u65F6\u5019\u628A\u8FD9\u4E00\u523B\u7B97\u51FA\u6765\u7684\u6BEB\u79D2\u5199\u8FDB\u300C\u65F6\u95F4\u300D\u90A3\u4E00\u683C": { en: "Follow tempo: echoes this many beats apart. Time = beats \xD7 60000 \xF7 the song's opening tempo (ms, at most 2000); 0 = use the milliseconds below. While on, the time follows the score; saving writes the milliseconds computed at that moment into the \u201CTime\u201D field" },
   "\u65F6\u95F4\uFF1A\u6BCF\u6B21\u56DE\u58F0\u9694\u591A\u4E45": { en: "Time: the gap between echoes" },
   "\u6BCF\u6B21\u56DE\u58F0\uFF1A\u6BCF\u91CD\u590D\u4E00\u6B21\u8F7B\u591A\u5C11 dB\uFF1B\u8D8A\u63A5\u8FD1 0\uFF0C\u56DE\u58F0\u8D8A\u4E45": { en: "Each echo: how many dB softer per repeat; closer to 0 lasts longer" },
   "\u6E7F\uFF1A\u56DE\u58F0\u6709\u591A\u54CD": { en: "Wet: how loud the echoes are" },
@@ -6061,7 +6061,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.13-2026-11-12";
+var APP_VERSION = "v0.17.14-2026-11-12";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -34750,15 +34750,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-2aae46589d99.mjs");
+      return pick(() => "singer-worker-6aa9b1d1919b.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-dda6aa774a7b.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-b0b3d2199867.mjs");
+      return pick(() => "layout-worker-ffb55c544c9c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-471e5cd549da.mjs");
+      return pick(() => "encode-worker-2ac9a340b347.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -37479,6 +37479,50 @@ function buildChain(specs, prev, sr2) {
   return out;
 }
 
+// src/engine/chain.ts
+var HOST_PARAMS = {
+  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: _t("\u81EA\u52A8\u4F4E\u5207") }],
+  delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, default: 0, label: _t("\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09") }]
+};
+function lowestMidiOf(song, partId) {
+  let lo2 = null;
+  for (const pp of song.papers) for (const t10 of pp.tracks[partId] ?? []) if (t10.kind === "note" && t10.pitch) for (const q2 of [t10.pitch, ...t10.chord ?? []]) {
+    const m2 = midiOf(q2);
+    if (lo2 === null || m2 < lo2) lo2 = m2;
+  }
+  return lo2;
+}
+function songBpm(song) {
+  const p2 = song.papers[0], t10 = p2 ? p2.tracks[song.parts.find((x2) => p2.tracks[x2.id])?.id ?? ""] : void 0;
+  return t10 ? tempoAt(t10, headLen(t10)) : 90;
+}
+function autoLowCutHz(lowestMidi) {
+  if (lowestMidi === null) return 0;
+  const hz = 440 * 2 ** ((lowestMidi - 69 - 4) / 12);
+  return Math.round(Math.max(20, Math.min(300, hz)));
+}
+var syncedMs = (beats, bpm) => Math.min(2e3, Math.round(6e4 / bpm * beats));
+function writeResolved(chain, ctx2) {
+  return chain.map((fx) => {
+    if (fx.kind === "eq" && fx.params?.hpAuto) return { ...fx, params: { ...fx.params, hpHz: autoLowCutHz(ctx2.lowestMidi) } };
+    if (fx.kind === "delay" && fx.params?.syncBeats) return { ...fx, params: { ...fx.params, timeMs: syncedMs(fx.params.syncBeats, ctx2.bpm) } };
+    return fx;
+  });
+}
+function resolveChain(chain, ctx2) {
+  return chain.map((fx) => {
+    if (fx.kind === "eq" && fx.params.hpAuto) {
+      const { hpAuto: _a2, ...rest } = fx.params;
+      return { ...fx, params: { ...rest, hpHz: autoLowCutHz(ctx2.lowestMidi) } };
+    }
+    if (fx.kind === "delay" && fx.params.syncBeats) {
+      const { syncBeats: _b2, ...rest } = fx.params;
+      return { ...fx, params: { ...rest, timeMs: syncedMs(fx.params.syncBeats, ctx2.bpm) } };
+    }
+    return fx;
+  });
+}
+
 // src/performers/registry.ts
 var byName = /* @__PURE__ */ new Map();
 var byGuid = /* @__PURE__ */ new Map();
@@ -38847,12 +38891,14 @@ function buildEntries(a10) {
   for (const part2 of song.parts) if (!tracks.some((m2) => m2.id === part2.mic)) tracks.push(micTrack(part2.mic, _t("\u9EA6\u514B\u98CE {t}", { t: tracks.filter((t10) => t10.kind === "mic").length + 1 })));
   const fullFx = (f2) => {
     const def = FX_KINDS[String(f2.kind)];
-    return def ? { ...f2, on: f2.on !== false, params: { ...Object.fromEntries(def.params.map((d3) => [d3.id, d3.default])), ...f2.params ?? {} } } : f2;
+    return def ? { ...f2, on: f2.on !== false, params: { ...Object.fromEntries([...HOST_PARAMS[String(f2.kind)] ?? [], ...def.params].map((d3) => [d3.id, d3.default])), ...f2.params ?? {} } } : f2;
   };
   const studioNewer = newerThanMe(a10.extras.studio, "studio"), fx2 = (f2) => only(fullFx(f2), FX_KEYS, studioNewer);
-  studio2.tracks = tracks.map((t10) => only({ ...t10, ...normTrack(t10), chain: (t10.chain ?? []).map(fx2) }, TRACK_KEYS, studioNewer));
+  const bpm = songBpm(song), ctxOf = (t10) => ({ lowestMidi: t10.kind === "mic" ? ((p2) => p2 ? lowestMidiOf(song, p2.id) : null)(song.parts.find((p2) => p2.mic === t10.id)) : null, bpm });
+  const resolved = (chain, ctx2) => writeResolved(chain ?? [], ctx2);
+  studio2.tracks = tracks.map((t10) => only({ ...t10, ...normTrack(t10), chain: resolved(t10.chain, ctxOf(t10)).map(fx2) }, TRACK_KEYS, studioNewer));
   const m0 = studio2.master ?? {}, mm = activeMaster({ ...a10.extras, studio: { master: m0 } });
-  studio2.master = only({ ...m0, gainDb: mm.gainDb, limiter: mm.limiter, chain: mm.chain.map(fx2) }, MASTER_KEYS, studioNewer);
+  studio2.master = only({ ...m0, gainDb: mm.gainDb, limiter: mm.limiter, chain: resolved(mm.chain, { lowestMidi: null, bpm }).map(fx2) }, MASTER_KEYS, studioNewer);
   for (const k2 of Object.keys(studio2)) if (!studioNewer && !STUDIO_KEYS.has(k2)) delete studio2[k2];
   const mics = tracks.filter((t10) => t10.kind === "mic");
   const labels = partNames(song, lounge, song.textLang === "zh" || song.textLang === "en" ? song.textLang : "en");
@@ -41985,26 +42031,6 @@ var soundfont = registerPerformer({
   }
 });
 
-// src/engine/chain.ts
-function autoLowCutHz(lowestMidi) {
-  if (lowestMidi === null) return 0;
-  const hz = 440 * 2 ** ((lowestMidi - 69 - 4) / 12);
-  return Math.round(Math.max(20, Math.min(300, hz)));
-}
-function resolveChain(chain, ctx2) {
-  return chain.map((fx) => {
-    if (fx.kind === "eq" && fx.params.hpAuto) {
-      const { hpAuto: _a2, ...rest } = fx.params;
-      return { ...fx, params: { ...rest, hpHz: autoLowCutHz(ctx2.lowestMidi) } };
-    }
-    if (fx.kind === "delay" && fx.params.syncBeats) {
-      const { syncBeats: _b2, ...rest } = fx.params;
-      return { ...fx, params: { ...rest, timeMs: Math.min(2e3, Math.round(6e4 / ctx2.bpm * fx.params.syncBeats)) } };
-    }
-    return fx;
-  });
-}
-
 // src/core/render.ts
 var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
 var RENDER_SR = 44100;
@@ -42038,18 +42064,6 @@ var channelOf = (extras, part2) => {
   const { gainDb, pan } = micOf(extras, part2);
   return { gainDb: gainDb + activeCalibrationDb(extras, part2.role), pan };
 };
-function lowestMidiOf(song, partId) {
-  let lo2 = null;
-  for (const pp of song.papers) for (const t10 of pp.tracks[partId] ?? []) if (t10.kind === "note" && t10.pitch) for (const q2 of [t10.pitch, ...t10.chord ?? []]) {
-    const m2 = midiOf(q2);
-    if (lo2 === null || m2 < lo2) lo2 = m2;
-  }
-  return lo2;
-}
-function songBpm(song) {
-  const p2 = song.papers[0], t10 = p2 ? p2.tracks[song.parts.find((x2) => p2.tracks[x2.id])?.id ?? ""] : void 0;
-  return t10 ? tempoAt(t10, headLen(t10)) : 90;
-}
 function mixParamsOf(plan, pv2) {
   const { song, extras } = plan, raw = !!plan.mixBypass;
   const bpm = songBpm(song), ctx2 = (lowestMidi) => ({ lowestMidi, bpm }), fx = (x2) => raw ? [] : x2;
@@ -44143,10 +44157,6 @@ function areaPath(b3, lo2 = -80, hi = 4) {
 var PLUGIN_KINDS = ["eq", "comp", "reverb", "delay", "chorus", "gain"];
 var DEFAULT_EQ_ID = "eq";
 var pluginName = (kind) => FX_KINDS[kind]?.name ?? kind;
-var HOST_PARAMS = {
-  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: _t("\u81EA\u52A8\u4F4E\u5207") }],
-  delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, default: 0, label: _t("\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09") }]
-};
 function fullParams(kind) {
   return [...HOST_PARAMS[kind] ?? [], ...FX_KINDS[kind]?.params ?? []];
 }
@@ -44176,7 +44186,7 @@ var linDb = (x2) => x2 <= 1e-3 ? -60 : 20 * Math.log10(x2);
 var dbLin = (d3) => d3 <= -60 ? 0 : 10 ** (d3 / 20);
 var dbt = (d3) => d3 <= -60 ? _t("\u5173") : `${d3 > 0 ? "+" : ""}${d3.toFixed(1)} dB`;
 var PARAM_HINT = {
-  "eq.hpAuto": _t("\u81EA\u52A8\u4F4E\u5207\uFF1A\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\u653E\u4F4E\u5207\uFF08\u5F80\u4E0B\u5927\u4E09\u5EA6\uFF09\uFF0C\u5207\u6389\u5B83\u7528\u4E0D\u7740\u7684\u4F4E\u9891\u2014\u2014\u9686\u9686\u58F0\u3001\u548C\u522B\u7684\u8F68\u7CCA\u5728\u4E00\u8D77\u7684\u4F4E\u9891"),
+  "eq.hpAuto": _t("\u81EA\u52A8\u4F4E\u5207\uFF1A\u6309\u8FD9\u4E2A\u58F0\u90E8\u5168\u66F2\u6700\u4F4E\u7684\u97F3\u653E\u4F4E\u5207\u2014\u2014\u90A3\u4E2A\u97F3\u5F80\u4E0B\u5927\u4E09\u5EA6\uFF08\u7EA6 0.79 \u500D\uFF09\uFF0C\u5939\u5728 20\u2013300 Hz\uFF1B\u6DF7\u97F3\u8F68\u3001\u603B\u8F68\u6CA1\u6709\u97F3 = \u4E0D\u5207\u3002\u5207\u6389\u5B83\u7528\u4E0D\u7740\u7684\u4F4E\u9891\uFF08\u9686\u9686\u58F0\u3001\u548C\u522B\u7684\u8F68\u7CCA\u5728\u4E00\u8D77\u7684\u4F4E\u9891\uFF09\u3002\u5F00\u7740\u65F6\u4F4E\u5207\u9891\u7387\u8DDF\u7740\u8C31\u8D70\uFF1B\u5B58\u7684\u65F6\u5019\u628A\u8FD9\u4E00\u523B\u7B97\u51FA\u6765\u7684\u6570\u5199\u8FDB\u300C\u4F4E\u5207\u300D\u90A3\u4E00\u683C"),
   "eq.hpHz": _t("\u4F4E\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0B\u7684\u90FD\u5207\u6389\u3002\u4EBA\u58F0\u5E38\u5728 80\u2013120 Hz\uFF0C\u94C3\u8FD9\u7C7B\u9AD8\u7684\u4E50\u5668\u53EF\u4EE5\u66F4\u9AD8\uFF1B\u6700\u5DE6 = \u5173"),
   "eq.lpHz": _t("\u9AD8\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0A\u7684\u90FD\u5207\u6389\uFF0C\u53BB\u523A\u8033\u3001\u5636\u5636\u58F0\uFF1B\u6700\u5DE6 = \u5173"),
   "eq.lowDb": _t("\u4F4E\u67B6\uFF1A\u8F6C\u6298\u9891\u7387\u4EE5\u4E0B\u6574\u4F53\u52A0 / \u51CF\u591A\u5C11\u3002\u51CF = \u53BB\u95F7\u3001\u7ED9\u522B\u7684\u8F68\u8BA9\u51FA\u4F4E\u9891\uFF1B\u52A0 = \u52A0\u539A"),
@@ -44198,7 +44208,7 @@ var PARAM_HINT = {
   "reverb.dry": _t("\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u58F0\u90E8\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173"),
   "reverb.preDelayMs": _t("\u9884\u5EF6\u8FDF\uFF1A\u539F\u58F0\u4E4B\u540E\u8FC7\u591A\u4E45\u6DF7\u54CD\u624D\u8FDB\u6765\u3002\u62C9\u5F00\u4E00\u70B9\uFF0C\u4EBA\u58F0\u66F4\u6E05\u695A\u3001\u4E0D\u88AB\u7CCA\u4F4F"),
   "reverb.width": _t("\u5BBD\u5EA6\uFF1A\u6DF7\u54CD\u5728\u5DE6\u53F3\u94FA\u591A\u5F00"),
-  "delay.syncBeats": _t("\u8DDF\u901F\u5EA6\uFF1A\u56DE\u58F0\u9694\u51E0\u62CD\uFF0C\u6309\u6B4C\u7684\u901F\u5EA6\u7B97\u65F6\u95F4\uFF1B0 = \u7528\u4E0B\u9762\u7684\u6BEB\u79D2"),
+  "delay.syncBeats": _t("\u8DDF\u901F\u5EA6\uFF1A\u56DE\u58F0\u9694\u51E0\u62CD\u3002\u65F6\u95F4 = \u51E0\u62CD \xD7 60000 \xF7 \u6B4C\u5F00\u5934\u7684\u901F\u5EA6\uFF08\u6BEB\u79D2\uFF0C\u6700\u591A 2000\uFF09\uFF1B0 = \u7528\u4E0B\u9762\u7684\u6BEB\u79D2\u3002\u5F00\u7740\u65F6\u65F6\u95F4\u8DDF\u7740\u8C31\u8D70\uFF1B\u5B58\u7684\u65F6\u5019\u628A\u8FD9\u4E00\u523B\u7B97\u51FA\u6765\u7684\u6BEB\u79D2\u5199\u8FDB\u300C\u65F6\u95F4\u300D\u90A3\u4E00\u683C"),
   "delay.timeMs": _t("\u65F6\u95F4\uFF1A\u6BCF\u6B21\u56DE\u58F0\u9694\u591A\u4E45"),
   "delay.feedback": _t("\u6BCF\u6B21\u56DE\u58F0\uFF1A\u6BCF\u91CD\u590D\u4E00\u6B21\u8F7B\u591A\u5C11 dB\uFF1B\u8D8A\u63A5\u8FD1 0\uFF0C\u56DE\u58F0\u8D8A\u4E45"),
   "delay.mix": _t("\u6E7F\uFF1A\u56DE\u58F0\u6709\u591A\u54CD"),
@@ -45297,7 +45307,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "2c01e8c0cef72056" : "dev";
+var CORE_HASH = true ? "160c130d20d4581b" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -65444,4 +65454,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-bf00093bdc31.mjs.map
+//# sourceMappingURL=moonsinger-bdc284469245.mjs.map

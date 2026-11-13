@@ -52,6 +52,7 @@ import "./library-calibration.test.ts";
 import "./calibration-default.test.ts";
 import "./read-as-written.test.ts";
 import "./loudness-convention.test.ts";
+import "./chain-numbers.test.ts";   // 自动低切 / 跟速度：存的时候写算出来的数（16-5）
 import "./gm-format.test.ts";
 import "./sounds.test.ts";
 import "./synth-wasm.test.ts";

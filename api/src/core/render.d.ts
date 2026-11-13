@@ -3,6 +3,7 @@ import type { BankLookup } from "../performers/registry.ts";
 import { type Song, type PartDef } from "../score/song.ts";
 import { type Extras, type GmCandidate } from "../format/project.ts";
 import { type Timeline, type PerformerInfo } from "../engine/timeline.ts";
+import { lowestMidiOf, songBpm } from "../engine/chain.ts";
 import type { TimelineMsg, ChannelParams, BusSpec, MasterParams } from "../engine/studio.ts";
 import type { VowelTableMsg } from "../engine/studio-client.ts";
 /** 录音房的离线面：浏览器的 StudioClient 和 node 的 OfflineStudio 都长这样（结构类型）。 */
@@ -79,10 +80,8 @@ export declare const channelOf: (extras: Extras, part: PartDef) => {
     gainDb: number;
     pan: number;
 };
-/** 这位歌手全曲最低的音（自动低切用；没有音 = null）。 */
-export declare function lowestMidiOf(song: Song, partId: string): number | null;
-/** 歌开头的速度（延迟「跟速度」用）。 */
-export declare function songBpm(song: Song): number;
+/** 这位歌手全曲最低的音、歌开头的速度：住在 engine/chain.ts（存档也要用，16-5）。 */
+export { lowestMidiOf, songBpm };
 /** 通道 / 总线 / 总轨的参数（录音房认的样子）：插件里「主线程换算」的参数（自动低切 = 这位最低的音、延迟跟速度）换成数；效果全关 = 插件格和发送都不响、推子 / 声像 / 出到 / 限幅留着。 */
 export declare function mixParamsOf(plan: RenderPlan, pv: PartAudible): {
     channels: {

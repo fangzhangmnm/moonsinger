@@ -6,6 +6,7 @@ export declare const PLUGIN_KINDS: readonly ["eq", "comp", "reverb", "delay", "c
 /** 每条轨默认那一格 EQ 的 id：没碰过 = 不在文件里（引擎没有 = 平）；碰了才写进链的最前面。能关、能换面板，不能删（user「默认会帮你开一个，你可以换但不能删」）。 */
 export declare const DEFAULT_EQ_ID = "eq";
 export declare const pluginName: (kind: string) => string;
+/** 主线程换算的参数（不是原语的，录音房不认）：登记在 engine/chain.ts HOST_PARAMS（存档也按它补、按它写，16-5）。 */
 /** 全量面板：原语参数表的每一个 + 主线程换算的那几个。 */
 export declare function fullParams(kind: string): ParamDef[];
 export declare function defaults(kind: string): Params;

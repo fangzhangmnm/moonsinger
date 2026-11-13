@@ -19,6 +19,7 @@ import { percKindOf } from "../gm/percussion.ts";
 import { songPlayOrder } from "../score/arrange.ts";
 import { sungLangsOf } from "../engine/timeline.ts";
 import { FX_KINDS } from "../engine/fx.ts";
+import { HOST_PARAMS, writeResolved, lowestMidiOf, songBpm } from "../engine/chain.ts";
 import { performerOf, performers } from "../performers/registry.ts";
 import { serializeDesk, freshDesk } from "../score/desk.ts";
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
@@ -229,11 +230,14 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   const tracks = ((studio.tracks as Json[] | undefined) ?? []).slice();
   for (const part of song.parts) if (!tracks.some((m) => m.id === part.mic)) tracks.push(micTrack(part.mic, _t("麦克风 {t}", { t: tracks.filter((t) => t.kind === "mic").length + 1 })));   // 每个声部的麦克风一条轨
   // 每一项都明写（第 16 条 16-3）：轨的增益 / 声像 / 链 / 发送 / 出到 / 旁通，效果的开关和参数表里的每一个参数（没写的按参数表默认写出来——读的一侧没写也是它）；不认识的种类 / 键原样带着
-  const fullFx = (f: Json): Json => { const def = FX_KINDS[String(f.kind)]; return def ? { ...f, on: f.on !== false, params: { ...Object.fromEntries(def.params.map((d) => [d.id, d.default])), ...((f.params as Json | undefined) ?? {}) } } : f; };
+  const fullFx = (f: Json): Json => { const def = FX_KINDS[String(f.kind)]; return def ? { ...f, on: f.on !== false, params: { ...Object.fromEntries([...(HOST_PARAMS[String(f.kind)] ?? []), ...def.params].map((d) => [d.id, d.default])), ...((f.params as Json | undefined) ?? {}) } } : f; };   // 参数表 = 原语的 + 主线程换算的两个开关（16-5）
   const studioNewer = newerThanMe(a.extras.studio, "studio"), fx2 = (f: Json) => only(fullFx(f), FX_KEYS, studioNewer);
-  studio.tracks = tracks.map((t) => only({ ...t, ...normTrack(t), chain: ((t.chain as Json[] | undefined) ?? []).map(fx2) }, TRACK_KEYS, studioNewer));
+  // 自动低切 / 跟速度开着的那一格：存的时候把这一刻算出来的 Hz / 毫秒写进 hpHz / timeMs（16-5；和放的时候同一份换算，core/render.ts mixParamsOf）：歌手轨 = 这位最低的音，混音轨 / 总轨 = 没有音
+  const bpm = songBpm(song), ctxOf = (t: Json) => ({ lowestMidi: t.kind === "mic" ? ((p) => (p ? lowestMidiOf(song, p.id) : null))(song.parts.find((p) => p.mic === t.id)) : null, bpm });
+  const resolved = (chain: unknown, ctx: { lowestMidi: number | null; bpm: number }): Json[] => writeResolved(((chain as Json[] | undefined) ?? []) as unknown as FxV2[], ctx) as unknown as Json[];
+  studio.tracks = tracks.map((t) => only({ ...t, ...normTrack(t), chain: resolved(t.chain, ctxOf(t)).map(fx2) }, TRACK_KEYS, studioNewer));
   const m0 = (studio.master ?? {}) as Json, mm = activeMaster({ ...a.extras, studio: { master: m0 } } as Extras);
-  studio.master = only({ ...m0, gainDb: mm.gainDb, limiter: mm.limiter, chain: (mm.chain as unknown as Json[]).map(fx2) }, MASTER_KEYS, studioNewer);
+  studio.master = only({ ...m0, gainDb: mm.gainDb, limiter: mm.limiter, chain: resolved(mm.chain, { lowestMidi: null, bpm }).map(fx2) }, MASTER_KEYS, studioNewer);
   for (const k of Object.keys(studio)) if (!studioNewer && !STUDIO_KEYS.has(k)) delete studio[k];
   const mics = tracks.filter((t) => t.kind === "mic");
   // <part-name>（给别的软件看的，派生的；自己读回来以休息室为准）：起了名字 = 那个名字；没起 = 这件乐器谱上的叫法，**语言只看歌自己**——「谱上的字」钉了一种 = 那一种，

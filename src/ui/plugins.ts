@@ -7,6 +7,7 @@
 //   两个「主线程换算」的参数：eq.hpAuto = 1（低切按这个声部最低的音自动放）、delay.syncBeats > 0（时间按速度算几拍）——录音房收到之前就换成 hpHz / timeMs。
 import { _t } from "../i18n/index.ts";
 import { FX_KINDS, type ParamDef } from "../engine/fx.ts";
+import { HOST_PARAMS } from "../engine/chain.ts";
 import type { FxV2 } from "../format/contract.ts";
 
 export type Params = Record<string, number>;
@@ -16,11 +17,7 @@ export const PLUGIN_KINDS = ["eq", "comp", "reverb", "delay", "chorus", "gain"] 
 export const DEFAULT_EQ_ID = "eq";
 export const pluginName = (kind: string): string => FX_KINDS[kind]?.name ?? kind;
 
-/** 主线程换算的参数（不是原语的，录音房不认）。 */
-const HOST_PARAMS: Record<string, ParamDef[]> = {
-  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: _t("自动低切") }],
-  delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, default: 0, label: _t("跟速度（几拍一次；0 = 用上面的毫秒）") }],
-};
+/** 主线程换算的参数（不是原语的，录音房不认）：登记在 engine/chain.ts HOST_PARAMS（存档也按它补、按它写，16-5）。 */
 /** 全量面板：原语参数表的每一个 + 主线程换算的那几个。 */
 export function fullParams(kind: string): ParamDef[] { return [...(HOST_PARAMS[kind] ?? []), ...(FX_KINDS[kind]?.params ?? [])]; }
 export function defaults(kind: string): Params { const p: Params = {}; for (const d of fullParams(kind)) p[d.id] = d.default; return p; }
@@ -62,7 +59,7 @@ export const dbLin = (d: number): number => (d <= -60 ? 0 : 10 ** (d / 20));
 const dbt = (d: number) => (d <= -60 ? _t("关") : `${d > 0 ? "+" : ""}${d.toFixed(1)} dB`);
 /** 每个参数干什么用（面板上的 tooltip + iPad 能点的小问号；user「每个参数能不能加一个tooltip解释一下是干什么用的」「然后参数后面加一个小的方块问号这样ipad也可以点」）。 */
 export const PARAM_HINT: Record<string, string> = {
-  "eq.hpAuto": _t("自动低切：按这个声部最低的音放低切（往下大三度），切掉它用不着的低频——隆隆声、和别的轨糊在一起的低频"),
+  "eq.hpAuto": _t("自动低切：按这个声部全曲最低的音放低切——那个音往下大三度（约 0.79 倍），夹在 20–300 Hz；混音轨、总轨没有音 = 不切。切掉它用不着的低频（隆隆声、和别的轨糊在一起的低频）。开着时低切频率跟着谱走；存的时候把这一刻算出来的数写进「低切」那一格"),
   "eq.hpHz": _t("低切：这个频率以下的都切掉。人声常在 80–120 Hz，铃这类高的乐器可以更高；最左 = 关"),
   "eq.lpHz": _t("高切：这个频率以上的都切掉，去刺耳、嘶嘶声；最左 = 关"),
   "eq.lowDb": _t("低架：转折频率以下整体加 / 减多少。减 = 去闷、给别的轨让出低频；加 = 加厚"),
@@ -84,7 +81,7 @@ export const PARAM_HINT: Record<string, string> = {
   "reverb.dry": _t("原声：原来的声音留多少。插在声部轨上一般 0 dB（不动）；当发送的返回轨用 = 关"),
   "reverb.preDelayMs": _t("预延迟：原声之后过多久混响才进来。拉开一点，人声更清楚、不被糊住"),
   "reverb.width": _t("宽度：混响在左右铺多开"),
-  "delay.syncBeats": _t("跟速度：回声隔几拍，按歌的速度算时间；0 = 用下面的毫秒"),
+  "delay.syncBeats": _t("跟速度：回声隔几拍。时间 = 几拍 × 60000 ÷ 歌开头的速度（毫秒，最多 2000）；0 = 用下面的毫秒。开着时时间跟着谱走；存的时候把这一刻算出来的毫秒写进「时间」那一格"),
   "delay.timeMs": _t("时间：每次回声隔多久"),
   "delay.feedback": _t("每次回声：每重复一次轻多少 dB；越接近 0，回声越久"),
   "delay.mix": _t("湿：回声有多响"),

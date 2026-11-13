@@ -15,7 +15,7 @@ import type { Hum } from "../format/contract.ts";
 import { activeGm, activeInstrument, activeHum, activeCalibrationDb, activeVelocity, activePerfSpec, activeTranspose, activeMaster, studioTrack, studioTracks, activeChain, activeId, type Extras, type GmCandidate } from "../format/project.ts";
 import { performerOf } from "../performers/index.ts";
 import { buildTimeline, LEAD_IN, type Timeline, type PerformerInfo } from "../engine/timeline.ts";
-import { resolveChain } from "../engine/chain.ts";
+import { resolveChain, lowestMidiOf, songBpm } from "../engine/chain.ts";
 import type { TimelineMsg, ChannelParams, BusSpec, MasterParams } from "../engine/studio.ts";
 import type { VowelTableMsg } from "../engine/studio-client.ts";   // 只要类型（元音表的形状）；运行时不碰 studio-client（它要 AudioWorklet）
 
@@ -92,14 +92,8 @@ export function micOf(extras: Extras, part: PartDef): { gainDb: number; pan: num
 }
 /** 这条通道 = 麦克风增益 + 上场那位的响度校准（三层不连乘：音符力度 = 意图；校准 = 看得见能调的默认；推子 = dB）。 */
 export const channelOf = (extras: Extras, part: PartDef): { gainDb: number; pan: number } => { const { gainDb, pan } = micOf(extras, part); return { gainDb: gainDb + activeCalibrationDb(extras, part.role), pan }; };
-/** 这位歌手全曲最低的音（自动低切用；没有音 = null）。 */
-export function lowestMidiOf(song: Song, partId: string): number | null {
-  let lo: number | null = null;
-  for (const pp of song.papers) for (const t of pp.tracks[partId] ?? []) if (t.kind === "note" && t.pitch) for (const q of [t.pitch, ...(t.chord ?? [])]) { const m = midiOf(q); if (lo === null || m < lo) lo = m; }
-  return lo;
-}
-/** 歌开头的速度（延迟「跟速度」用）。 */
-export function songBpm(song: Song): number { const p = song.papers[0], t = p ? p.tracks[song.parts.find((x) => p.tracks[x.id])?.id ?? ""] : undefined; return t ? tempoAt(t, headLen(t)) : 90; }
+/** 这位歌手全曲最低的音、歌开头的速度：住在 engine/chain.ts（存档也要用，16-5）。 */
+export { lowestMidiOf, songBpm };
 /** 通道 / 总线 / 总轨的参数（录音房认的样子）：插件里「主线程换算」的参数（自动低切 = 这位最低的音、延迟跟速度）换成数；效果全关 = 插件格和发送都不响、推子 / 声像 / 出到 / 限幅留着。 */
 export function mixParamsOf(plan: RenderPlan, pv: PartAudible): { channels: { id: string; p: Partial<ChannelParams> }[]; buses: BusSpec[]; master: MasterParams } {
   const { song, extras } = plan, raw = !!plan.mixBypass;

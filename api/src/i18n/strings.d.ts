@@ -3964,6 +3964,12 @@ export declare const S: {
     readonly "\u6DF7\u97F3\u2026": {
         readonly en: "Mixing…";
     };
+    readonly 自动低切: {
+        readonly en: "Auto low cut";
+    };
+    readonly "\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09": {
+        readonly en: "Follow tempo (beats per echo; 0 = use the ms above)";
+    };
     readonly 均衡: {
         readonly en: "EQ";
     };
@@ -6406,14 +6412,8 @@ export declare const S: {
     readonly "\u97F3\u6548 / \u5176\u4ED6": {
         readonly en: "Sound effects / other";
     };
-    readonly 自动低切: {
-        readonly en: "Auto low cut";
-    };
-    readonly "\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09": {
-        readonly en: "Follow tempo (beats per echo; 0 = use the ms above)";
-    };
-    readonly "\u81EA\u52A8\u4F4E\u5207\uFF1A\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\u653E\u4F4E\u5207\uFF08\u5F80\u4E0B\u5927\u4E09\u5EA6\uFF09\uFF0C\u5207\u6389\u5B83\u7528\u4E0D\u7740\u7684\u4F4E\u9891\u2014\u2014\u9686\u9686\u58F0\u3001\u548C\u522B\u7684\u8F68\u7CCA\u5728\u4E00\u8D77\u7684\u4F4E\u9891": {
-        readonly en: "Auto low cut: sets the low cut from this part's lowest note (a major third below), removing lows it doesn't use — rumble and lows that muddy other tracks";
+    readonly "\u81EA\u52A8\u4F4E\u5207\uFF1A\u6309\u8FD9\u4E2A\u58F0\u90E8\u5168\u66F2\u6700\u4F4E\u7684\u97F3\u653E\u4F4E\u5207\u2014\u2014\u90A3\u4E2A\u97F3\u5F80\u4E0B\u5927\u4E09\u5EA6\uFF08\u7EA6 0.79 \u500D\uFF09\uFF0C\u5939\u5728 20\u2013300 Hz\uFF1B\u6DF7\u97F3\u8F68\u3001\u603B\u8F68\u6CA1\u6709\u97F3 = \u4E0D\u5207\u3002\u5207\u6389\u5B83\u7528\u4E0D\u7740\u7684\u4F4E\u9891\uFF08\u9686\u9686\u58F0\u3001\u548C\u522B\u7684\u8F68\u7CCA\u5728\u4E00\u8D77\u7684\u4F4E\u9891\uFF09\u3002\u5F00\u7740\u65F6\u4F4E\u5207\u9891\u7387\u8DDF\u7740\u8C31\u8D70\uFF1B\u5B58\u7684\u65F6\u5019\u628A\u8FD9\u4E00\u523B\u7B97\u51FA\u6765\u7684\u6570\u5199\u8FDB\u300C\u4F4E\u5207\u300D\u90A3\u4E00\u683C": {
+        readonly en: "Auto low cut: sets the low cut from this part's lowest note in the whole song — a major third below it (about 0.79×), kept within 20–300 Hz; bus and master tracks have no notes = no cut. Cuts lows it doesn't use (rumble, lows that muddy other tracks). While on, the low-cut frequency follows the score; saving writes the number computed at that moment into the “Low cut” field";
     };
     readonly "\u4F4E\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0B\u7684\u90FD\u5207\u6389\u3002\u4EBA\u58F0\u5E38\u5728 80\u2013120 Hz\uFF0C\u94C3\u8FD9\u7C7B\u9AD8\u7684\u4E50\u5668\u53EF\u4EE5\u66F4\u9AD8\uFF1B\u6700\u5DE6 = \u5173": {
         readonly en: "Low cut: removes everything below this frequency. Voices are often 80–120 Hz; high instruments like bells can go higher; far left = off";
@@ -6478,8 +6478,8 @@ export declare const S: {
     readonly "\u5BBD\u5EA6\uFF1A\u6DF7\u54CD\u5728\u5DE6\u53F3\u94FA\u591A\u5F00": {
         readonly en: "Width: how far the reverb spreads left and right";
     };
-    readonly "\u8DDF\u901F\u5EA6\uFF1A\u56DE\u58F0\u9694\u51E0\u62CD\uFF0C\u6309\u6B4C\u7684\u901F\u5EA6\u7B97\u65F6\u95F4\uFF1B0 = \u7528\u4E0B\u9762\u7684\u6BEB\u79D2": {
-        readonly en: "Follow tempo: beats between echoes, timed from the song's tempo; 0 = use the ms below";
+    readonly "\u8DDF\u901F\u5EA6\uFF1A\u56DE\u58F0\u9694\u51E0\u62CD\u3002\u65F6\u95F4 = \u51E0\u62CD \u00D7 60000 \u00F7 \u6B4C\u5F00\u5934\u7684\u901F\u5EA6\uFF08\u6BEB\u79D2\uFF0C\u6700\u591A 2000\uFF09\uFF1B0 = \u7528\u4E0B\u9762\u7684\u6BEB\u79D2\u3002\u5F00\u7740\u65F6\u65F6\u95F4\u8DDF\u7740\u8C31\u8D70\uFF1B\u5B58\u7684\u65F6\u5019\u628A\u8FD9\u4E00\u523B\u7B97\u51FA\u6765\u7684\u6BEB\u79D2\u5199\u8FDB\u300C\u65F6\u95F4\u300D\u90A3\u4E00\u683C": {
+        readonly en: "Follow tempo: echoes this many beats apart. Time = beats × 60000 ÷ the song's opening tempo (ms, at most 2000); 0 = use the milliseconds below. While on, the time follows the score; saving writes the milliseconds computed at that moment into the “Time” field";
     };
     readonly "\u65F6\u95F4\uFF1A\u6BCF\u6B21\u56DE\u58F0\u9694\u591A\u4E45": {
         readonly en: "Time: the gap between echoes";

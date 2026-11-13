@@ -74,7 +74,8 @@
 - 只写现行格式里有定义的键（`ROLE_KEYS / CAND_KEYS / ART_KEYS / STUDIO_KEYS / TRACK_KEYS / FX_KEYS / MASTER_KEYS / MANIFEST_KEYS`、`KNOWN_SCORE_KEYS / KNOWN_PAPER_KEYS / KNOWN_PART_KEYS`）；那一份比这一版新（同一个大版本、小版本更大）= 不认识的原样带回（包里不认识的文件同理，看总目录）。版本记号照「写永远只写当前拍」写这一版的。退役的不写：老文件里的 mp3、phrases、声部上的 autoOttava / brokenChords。效果参数这一层不按参数表筛（主线程参数 hpAuto / syncBeats 不在引擎的参数表里）。
 - 哼的字只在乐手身上（`instrument.hum`）；歌上不再有一份、存的时候不再互相抄。
 - 歌词每个音节的 `xml:lang` = 唱的那一段的语言（`engine/timeline.ts sungLangsOf`，和唱同一个 `sungPlan`）。
-- 加了新键 / 新值的那几份小版本 +1（`contract.ts FORMAT_MINOR`：manifest 1、score 11、lounge 2、studio 2）。
+- 加了新键 / 新值的那几份小版本 +1（`contract.ts FORMAT_MINOR`：manifest 1、score 11、lounge 2、studio 2；16-4 起 lounge 3）。
+- 效果链里的两个开关（16-5，as-of v0.17.14）：EQ 的自动低切 `hpAuto`、延迟的跟速度 `syncBeats` 登记在 `engine/chain.ts HOST_PARAMS`，存的时候和别的参数一样明写；开着的那一格把这一刻算出来的数写进 `hpHz` / `timeMs`（`writeResolved`，和放的时候 `core/render.ts mixParamsOf` 里的 `resolveChain` 同一份换算：歌手轨 = 这位全曲最低的音往下大三度，混音轨 / 总轨 = 0；延迟 = 几拍 × 60000 ÷ 歌开头的速度）。乐手自己的链放的时候不换算，存的时候也不碰。
 
 ## 五、B：开一首歌 / 换歌
 
