@@ -25,7 +25,7 @@ check((await pedalOf()) === "up", "上场写成具体的：自己的音源文件
 await openInst();
 const page = await p.$eval(".inst-page", (e) => e.textContent ?? "");
 check(!!(await p.$('.inst-page [data-v="pedal:down"]')) && !!(await p.$('.inst-page [data-v="pedal:up"].is-on')), "乐器页「没写踏板记号时」两格，「不留」亮着");
-check(page.includes("出厂：不留——自己的音源文件，目录不认识它"), "出厂那一句：是哪一边 + 依据（自己的音源文件）");
+check(page.includes("余音") && page.includes("没写踏板记号时用这一格。出厂：不留——自己的音源文件，目录不认识它"), "行名「余音」；说明 = 什么时候用这一格 + 出厂是哪一边、依据（自己的音源文件）");
 await p.click('.inst-page [data-v="pedal:down"]'); await p.waitForTimeout(300);
 check((await pedalOf()) === "down", "点「留住音」= 写进乐手身上（down）");
 await closeInst();
@@ -38,7 +38,7 @@ const openMenu = async () => {
   return p.$$eval(".pedal-menu [data-v]", (es) => es.map((e) => e.dataset.v));
 };
 await caretAfterNth(1); const vs = await openMenu();
-check(vs.slice(0, 2).join(",") === "sustain:act:up,sustain:act:change", "默认留住时延音那一行 = 「抬起」「换踏板」（算上默认）", vs.join(","));
+check(vs.slice(0, 2).join(",") === "sustain:act:change,sustain:act:up", "默认留住时延音那一行 = 「换踏板」「抬起」（算上默认；换踏板排前面，统筹审 11-3）", vs.join(","));
 await p.click('.pedal-menu [data-v="sustain:act:change"]'); await p.waitForTimeout(200);
 await caretAfterNth(3); await openMenu(); await p.click('.pedal-menu [data-v="sustain:act:up"]'); await p.waitForTimeout(200);
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);

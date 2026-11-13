@@ -2951,7 +2951,9 @@ function openPedalMenu(): void {
   const item = (v: string, label: string, on = false, title = "") => `<button class="btn ctx-item${on ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</button>`;
   const rows = KINDS.map((which) => {
     const here = pedalHere(D.st, which, pedalStart(which))!, why = pedalIgnoredWhy(which);   // 字跟着光标处的状态（算上默认，设计第 6 节）
+    // 这位没写踏板记号时留住音（踏板 11-3）：踩着的时候延音那一行「换踏板」排在「抬起」前面（竖琴这类常用它；按乐手身上的值排，不按这一截是怎么踩下的；统筹审 11-3）
     const acts: PedalTok["act"][] = here.down ? PEDAL_ACTS[which].filter((a) => a !== "down") : ["down"];
+    if (here.down && pedalStart(which)) acts.reverse();
     if (here.mark && !acts.includes(here.mark.act)) acts.unshift(here.mark.act);   // 那个音上已经挂着的（哪怕不起作用）也列出来、亮着，点了 = 去掉
     const body = D.st.sel
       ? item(`${which}:span`, _t("把这一段踩住（选区开头踩下、结尾抬起）"))

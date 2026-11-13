@@ -5484,7 +5484,7 @@ var S = {
   "\u529B\u5EA6##MIDI": { en: "Velocity" },
   "\u4FEE\u516B\u5EA6": { en: "Octave fix" },
   "\u7740\u529B\u70B9": { en: "Hit point" },
-  "\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6": { en: "When no pedal is written" },
+  "\u4F59\u97F3": { en: "Ring-on" },
   "\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668": { en: "The performer on stage isn't a SoundFont instrument" },
   "\u529B\u5EA6\u6DF1\u5EA6 = \u5E93\u91CC\u7ED9\u8FD9\u4EF6\u4E50\u5668\u5199\u7684\uFF08\u58F0\u97F3\u8F7D\u597D\u540E\u663E\u793A\uFF09\uFF1B\u54CD\u5EA6 = \u6DF1\u5EA6 \xF7 960 \xD7 40\xB7log10(\u529B\u5EA6 \xF7 127)\u3002": { en: "Velocity depth = what the library sets for this instrument (shown once the sound is loaded); loudness = depth \xF7 960 \xD7 40\xB7log10(velocity \xF7 127). " },
   "\u8FD9\u4EF6\u4E50\u5668\u6309\u591A\u91CD\u90FD\u4E00\u6837\u54CD\uFF08\u5E93\u91CC\u8FD9\u4E48\u5B9A\u7684\uFF1A\u529B\u5EA6\u6DF1\u5EA6 0\uFF09\u3002": { en: "This instrument sounds equally loud however hard you play (the library sets it so: velocity depth 0). " },
@@ -5520,7 +5520,7 @@ var S = {
   "\u76EE\u5F55\u91CC\u6CA1\u6709\u6807\u6210\u81EA\u5DF1\u4E00\u76F4\u54CD": { en: "Not marked in the catalog as ringing on by itself" },
   "\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u5C31\u8E29\u7740\uFF1A\u5199\u7684\u7ED3\u5C3E\u5230\u4E86\u4E5F\u4E0D\u505C\uFF0C\u54CD\u5230\u540C\u4E00\u4E2A\u97F3\u518D\u5F39\u3001\u5199\u4E86\u62AC\u8D77\u6216\u8FD9\u4E00\u6BB5\u7ED3\u675F\uFF1B\u9760\u8FD9\u4E2A\u7559\u4F4F\u7684\u97F3\u91CC\uFF0C\u8DF3\u97F3\u7167\u5199\u7684\u677E": { en: "Sustain pedal is down at the start of every section: notes keep sounding past their written end, until the same key is played again, a lift is written, or the section ends; staccato notes held only by this still stop as written" },
   "\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF1A\u7167\u5199\u7684\u65F6\u503C\u505C\uFF08\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709\uFF09": { en: "Sustain pedal is up at the start of every section: notes stop at their written length (the instrument's own release still sounds)" },
-  "\u51FA\u5382\uFF1A{side}\u2014\u2014{why}": { en: "Factory: {side} \u2014 {why}" },
+  "\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}": { en: "Used when no pedal is written. Factory: {side} \u2014 {why}" },
   "\u4E0D\u56FA\u5B9A\u539F\u901F\uFF08\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF09": { en: "Not fixed speed (transposes by the written note)" },
   "\u300C{rn}\u300D\u97F3\u9AD8\u5BF9\u9F50{on}": { en: "\u201C{rn}\u201D pitch align{on}" },
   "\u300C{rn}\u300D\u4FEE\u516B\u5EA6 / \u79FB\u8C03 {next} \u534A\u97F3": { en: "\u201C{rn}\u201D octave fix / transpose {next} semitones" },
@@ -35439,15 +35439,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-17b9bff3f2bd.mjs");
+      return pick3(() => "singer-worker-197e9c64443f.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-049742f2086c.mjs");
+      return pick3(() => "layout-worker-0ba185c81240.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-f05538cfbdd6.mjs");
+      return pick3(() => "encode-worker-bff78d9ce4ae.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -43081,7 +43081,7 @@ var soundfont = registerPerformer({
     { id: "tr", label: () => _t("\u4FEE\u516B\u5EA6"), keys: ["transpose"], when: (_p, c10) => candPath(c10, "instrument.note") === void 0 },
     { id: "hit", label: () => _t("\u7740\u529B\u70B9"), keys: ["instrument.hitSecByKey"], when: (_p, c10) => candPath(c10, "instrument.bank") === 128 || typeof candPath(c10, "instrument.note") === "number" },
     // 没写踏板记号时留不留（踏板 11-3）：「默认」钮 = 照这件乐器出厂的（castNow 里那一份 = 目录的短名单）
-    { id: "pedal", label: () => _t("\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6"), keys: ["articulation.pedal"] }
+    { id: "pedal", label: () => _t("\u4F59\u97F3"), keys: ["articulation.pedal"] }
   ],
   info: ({ extras, role, presetIndex, velCurve }) => {
     const g3 = activeGm(extras, role), c10 = g3 ? velCurve(g3.subsetSha256, g3.bank, g3.program) : null, tr3 = activeTranspose(extras, role);
@@ -43185,9 +43185,10 @@ var soundfont = registerPerformer({
         rows.push({
           id: "pedal",
           value: cur === "down" ? _t("\u7559\u4F4F\u97F3") : _t("\u4E0D\u7559"),
-          label: _t("\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6"),
+          label: _t("\u4F59\u97F3"),
+          // 行名在那一栏里放得下（统筹审 11-3：「没写踏板记号时」折成两行，挪进说明开头）
           control: chip2("pedal:down", _t("\u7559\u4F4F\u97F3"), cur === "down", _t("\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u5C31\u8E29\u7740\uFF1A\u5199\u7684\u7ED3\u5C3E\u5230\u4E86\u4E5F\u4E0D\u505C\uFF0C\u54CD\u5230\u540C\u4E00\u4E2A\u97F3\u518D\u5F39\u3001\u5199\u4E86\u62AC\u8D77\u6216\u8FD9\u4E00\u6BB5\u7ED3\u675F\uFF1B\u9760\u8FD9\u4E2A\u7559\u4F4F\u7684\u97F3\u91CC\uFF0C\u8DF3\u97F3\u7167\u5199\u7684\u677E")) + chip2("pedal:up", _t("\u4E0D\u7559"), cur === "up", _t("\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF1A\u7167\u5199\u7684\u65F6\u503C\u505C\uFF08\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709\uFF09")),
-          note: esc14(_t("\u51FA\u5382\uFF1A{side}\u2014\u2014{why}", { side, why: why2 }))
+          note: esc14(_t("\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}", { side, why: why2 }))
         });
       }
     }
@@ -46770,7 +46771,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "73aa2fcfde332b95" : "dev";
+var CORE_HASH = true ? "2e5fae9830384619" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -65001,6 +65002,7 @@ function openPedalMenu() {
   const rows = KINDS2.map((which) => {
     const here = pedalHere(D3.st, which, pedalStart(which)), why2 = pedalIgnoredWhy(which);
     const acts = here.down ? PEDAL_ACTS[which].filter((a10) => a10 !== "down") : ["down"];
+    if (here.down && pedalStart(which)) acts.reverse();
     if (here.mark && !acts.includes(here.mark.act)) acts.unshift(here.mark.act);
     const body2 = D3.st.sel ? item(`${which}:span`, _t("\u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\uFF08\u9009\u533A\u5F00\u5934\u8E29\u4E0B\u3001\u7ED3\u5C3E\u62AC\u8D77\uFF09")) : acts.map((a10) => item(`${which}:act:${a10}`, PEDAL_ACT_LABEL[which][a10], here.mark?.act === a10, here.mark?.act === a10 ? _t("\u8FD9\u4E2A\u97F3\u4E0A\u5DF2\u7ECF\u6709\u4E86\uFF1A\u518D\u70B9 = \u53BB\u6389") : "")).join("");
     return `<div class="ctx-hint ctx-what">${esc13(PEDAL_NAME[which])}\uFF1A${esc13(SIGNS[`pedal:${which}`].says(lang()))}</div>` + (why2 ? `<div class="ctx-hint">${esc13(why2)}</div>` : "") + body2;
@@ -67728,4 +67730,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f257bb7fb0ce.mjs.map
+//# sourceMappingURL=moonsinger-22aa7ff1ea97.mjs.map

@@ -66,7 +66,7 @@ export const soundfont = registerPerformer({
     { id: "tr", label: () => _t("修八度"), keys: ["transpose"], when: (_p, c) => candPath(c, "instrument.note") === undefined },
     { id: "hit", label: () => _t("着力点"), keys: ["instrument.hitSecByKey"], when: (_p, c) => candPath(c, "instrument.bank") === 128 || typeof candPath(c, "instrument.note") === "number" },
     // 没写踏板记号时留不留（踏板 11-3）：「默认」钮 = 照这件乐器出厂的（castNow 里那一份 = 目录的短名单）
-    { id: "pedal", label: () => _t("没写踏板记号时"), keys: ["articulation.pedal"] },
+    { id: "pedal", label: () => _t("余音"), keys: ["articulation.pedal"] },
   ],
   info: ({ extras, role, presetIndex, velCurve }) => {
     const g = activeGm(extras, role), c = g ? velCurve(g.subsetSha256, g.bank, g.program) : null, tr = activeTranspose(extras, role);
@@ -142,10 +142,10 @@ export const soundfont = registerPerformer({
         const f = ringFactory({ library: active.origin.library ?? null, bank: active.bank, program: active.program, ...(active.note !== undefined ? { note: active.note } : {}) });
         const side = f.pedal === "down" ? _t("留住音") : _t("不留");
         const why = f.reason === "free" ? (lang() === "zh" ? f.why!.zh : f.why!.en) : f.reason === "own" ? _t("自己的音源文件，目录不认识它") : _t("目录里没有标成自己一直响");
-        rows.push({ id: "pedal", value: cur === "down" ? _t("留住音") : _t("不留"), label: _t("没写踏板记号时"),
+        rows.push({ id: "pedal", value: cur === "down" ? _t("留住音") : _t("不留"), label: _t("余音"),   // 行名在那一栏里放得下（统筹审 11-3：「没写踏板记号时」折成两行，挪进说明开头）
           control: chip("pedal:down", _t("留住音"), cur === "down", _t("每一段开头延音踏板就踩着：写的结尾到了也不停，响到同一个音再弹、写了抬起或这一段结束；靠这个留住的音里，跳音照写的松")) +
             chip("pedal:up", _t("不留"), cur === "up", _t("每一段开头延音踏板抬着：照写的时值停（乐器自己的收尾照样有）")),
-          note: esc(_t("出厂：{side}——{why}", { side, why })) });
+          note: esc(_t("没写踏板记号时用这一格。出厂：{side}——{why}", { side, why })) });
       }
     }
     return rows;
