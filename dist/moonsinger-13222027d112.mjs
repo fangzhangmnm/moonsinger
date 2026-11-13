@@ -3684,8 +3684,7 @@ var S = {
   "\u5206\u89E3\u548C\u5F26": { en: "Broken chords" },
   "\u8BA4": { en: "Read" },
   "\u4E0D\u8BA4": { en: "Ignored" },
-  "\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D": { en: "Read; fold stacked chords into names" },
-  "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807\u3002\u300C\u6298\u53E0\u300D= \u7B80\u8C31\u91CC\u53E0\u7740\u7684\u548C\u5F26\u5199\u6210\u548C\u5F26\u540D\uFF08\u7167\u540D\u5B57\u7684\u6807\u51C6\u6392\u6CD5\u8FD8\u539F\u5F97\u56DE\u624D\u6298\uFF0C\u4E0D\u7136\u7167\u5199\u6570\u5B57\uFF09": { en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way \u201CFold\u201D = in numbered notation, stacked chords are written as a chord name (only when the name\u2019s standard voicing gives back exactly these notes; otherwise the numbers stay)." },
+  "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807": { en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way" },
   "\u5408\u79DF": { en: "Shared staff" },
   "\u6709\u522B\u7684\u58F0\u90E8\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA": { en: "Other parts are attached to this line (it's the host), so it can't attach to another" },
   "\u81EA\u5DF1\u4E00\u884C": { en: "Own line" },
@@ -3694,7 +3693,6 @@ var S = {
   "\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09": { en: "Draw on another part's staff (shared: just an overview, colliding notes collide; only notes are drawn, no rests / lyrics / dynamics; tap the name to split it out and write)" },
   "\u65AD\u4E86\uFF1A\u6587\u4EF6\u91CC\u5199\u7740\u6302\u5728\u300C{id}\u300D\u4E0A\uFF0C\u8FD9\u4E00\u9996\u91CC\u6CA1\u6709\u8FD9\u4F4D\uFF08\u6216\u90A3\u4F4D\u81EA\u5DF1\u4E5F\u6302\u5728\u522B\u4EBA\u4E0A\uFF09\u3002\u73B0\u5728\u7167\u81EA\u5DF1\u4E00\u884C\u753B\uFF1B\u4E0A\u9762\u9009\u4E00\u4E2A\u5C31\u6539\u6389": { en: "Broken: the file says this part shares the staff of \u201C{id}\u201D, but that part is not in this song (or it is itself sharing someone else\u2019s staff). It is drawn on its own row for now; pick one above to change it" },
   "\u8FD9\u4E00\u6BB5\u8C03\u53F7\u4E00\u6837\u7684 {n} \u4E2A\u58F0\u90E8\u4E00\u8D77\u6539\u4E86": { en: "Changed {n} parts in this section that share this key signature" },
-  "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D": { en: "Broken chords: read; stacked chords folded into chord names" },
   "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4": { en: "Broken chords: read" },
   "\u5206\u89E3\u548C\u5F26\uFF1A\u4E0D\u8BA4": { en: "Broken chords: ignored" },
   "\u4E50\u8C31": { en: "Score" },
@@ -4766,6 +4764,8 @@ var S = {
   "\u6D45\u4E00\u70B9\uFF08\u22123 dB\uFF09": { en: "Shallower (\u22123 dB)" },
   "\u6DF1\u4E00\u70B9\uFF08+3 dB\uFF09": { en: "Deeper (+3 dB)" },
   "\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}": { en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}" },
+  "\u7F3A\u7684\u6570": { en: "Missing values" },
+  "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A": { en: "These values on this performer are missing or not numbers: it makes no sound (it is on the \u201Cnot sounding\u201D list) and key audition is silent too; gaps between notes, dynamic marks and how marks are played are not computed from it and are hidden for now" },
   "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": { en: "Dynamic markings \u2192 loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers \u2014 only loudness changes: {table}" },
   "\u529B\u5EA6\u8BB0\u53F7 \u2192 MIDI \u529B\u5EA6\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{table}": { en: "Dynamics \u2192 MIDI velocity (accent +{accentVel}, marcato +{marcatoVel}; other marks under \u201CHow marks are played\u201D below): {table}" },
   "\u8BB0\u53F7\u600E\u4E48\u5531": { en: "How marks are sung" },
@@ -6391,7 +6391,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.41-2026-11-13";
+var APP_VERSION = "v0.17.42-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10254,49 +10254,6 @@ var pinOf = (guess) => {
   const g3 = guess;
   return { root: { step: g3.root.step, alter: g3.root.alter }, kind: g3.tpl, ...pc(g3.bass) !== pc(g3.root) ? { bass: { step: g3.bass.step, alter: g3.bass.alter } } : {} };
 };
-var STEPS_OF_IV = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6];
-var STEPS_OVERRIDE = { aug: { 8: 4 }, aug7: { 8: 4 }, dim7: { 9: 6 }, "7s9": { 3: 1 } };
-var NAT_PC = [0, 2, 4, 5, 7, 9, 11];
-var pcOfSpelled = (x2) => ((NAT_PC[stepIndex(x2.step)] + x2.alter) % 12 + 12) % 12;
-function voicingOf(g3, bassOctave) {
-  const t10 = g3.tpl === "5" ? { iv: [0, 7], opt: [] } : TPLS.find((x2) => x2.id === g3.tpl);
-  if (!t10) return null;
-  const tones = [];
-  for (const iv2 of [...t10.iv, ...t10.opt ?? []]) {
-    const li2 = (stepIndex(g3.root.step) + (STEPS_OVERRIDE[g3.tpl]?.[iv2] ?? STEPS_OF_IV[iv2])) % 7, target = (pc(g3.root) + iv2) % 12;
-    const alter = ((target - NAT_PC[li2]) % 12 + 18) % 12 - 6;
-    if (Math.abs(alter) > 2) return null;
-    tones.push({ step: STEPS[li2], alter });
-  }
-  const bpc = pc(g3.bass), b3 = tones.find((x2) => pcOfSpelled(x2) === bpc);
-  if (!b3) return null;
-  const bass = { ...b3, octave: bassOctave }, bm = midiOf(bass);
-  const above = tones.filter((x2) => pcOfSpelled(x2) !== bpc).map((x2) => {
-    let p2 = { ...x2, octave: bassOctave - 1 };
-    while (midiOf(p2) <= bm) p2 = { ...p2, octave: p2.octave + 1 };
-    return p2;
-  });
-  return [bass, ...above.sort((x2, y2) => midiOf(x2) - midiOf(y2))];
-}
-function foldChord(pitches, at3, pin) {
-  if (pitches.length < 2) return null;
-  const auto = readChord(pitches, at3.fifths, at3.minor ? "la" : "do");
-  if (!auto) return null;
-  const ps = [...pitches].sort((x2, y2) => midiOf(x2) - midiOf(y2)), lo2 = ps[0];
-  const restores = (g3) => {
-    const v = voicingOf(g3, lo2.octave);
-    return !!v && v.length === ps.length && v.every((p2, i10) => p2.step === ps[i10].step && p2.alter === ps[i10].alter && p2.octave === ps[i10].octave);
-  };
-  const ok2 = auto.all.filter(restores);
-  if (!ok2.length) return null;
-  const ambiguous = new Set(ok2.map((g3) => g3.name)).size > 1;
-  if (pin) {
-    const rd2 = pinRead(pin, at3, auto);
-    if (!rd2 || !restores(rd2.best)) return null;
-    return { name: rd2.best.name, bass: lo2, ambiguous, read: rd2 };
-  }
-  return { name: ok2[0].name, bass: lo2, ambiguous, read: auto };
-}
 var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
 function brokenInBar(bar2, prev) {
   const beatLen = beatTicks(bar2.beats, bar2.beatType), nb2 = Math.max(1, Math.round(bar2.beats * WHOLE / bar2.beatType / beatLen));
@@ -10371,7 +10328,6 @@ var western = {
   rootLabel: rootChordLabel,
   pinRead,
   pinOf,
-  fold: foldChord,
   howTo: () => _t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002"),
   explain: (guess) => {
     const g3 = guess;
@@ -10608,7 +10564,7 @@ function harmonyTags(theory, track) {
 // src/score/song-view.ts
 var NOTATIONS = ["staff", "jianpu", "letters"];
 var CHORD_TAG_STYLES = ["degree", "root"];
-var CHORDS_MODES = ["stacked", "auto", "fold"];
+var CHORDS_MODES = ["stacked", "auto"];
 var TEXT_LANGS = ["ui", "zh", "en"];
 var isTextLang = (v) => TEXT_LANGS.includes(v);
 function textLangIn(look, ui3) {
@@ -11924,7 +11880,6 @@ var TEXT_STYLES = {
   "jp-letter-sub": s("sans", 1.75, "staff", smallWeight(1.75 / JP_MAIN_EM)),
   // 字母谱的角标（7-L）：半粗，学小字号专用字形的思路——缩小了笔画不跟着变细；字号在图元上（字母的 SCRIPT_K 倍） "jp-head": s("sans", TEMPO_EM, "staff"),   // 谱头「1=C 3/4」：常规粗细（第五刀起照样张；字号在图元上 = 0.773 个数字字号）
   // 叠着的和弦折成的和弦名（第五刀 5-4）：窄字 = 正文字体横向压（图元的 sx），宽查 render/jianpu/glyphs.ts
-  "jp-chord": s("sans", 2, "staff"),
   // 数字行连音的小数字（8-3；7-P 小字补粗：字号 1.1 = 主字的 0.44 倍 → 算出来的粗细）
   "jp-tuplet": s("sans", 1.1, "staff", smallWeight(1.1 / JP_MAIN_EM)),
   // 简谱数字行上的力度（pp…ff、sfz、fp）：和数字同一款字、常规粗细、斜体，约数字的 0.8（user 11-11「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）
@@ -12578,15 +12533,6 @@ function stackBases(dots) {
 var X_EM = 0.8;
 var KIT_CHAR = { normal: "\u25CF", x: "\xD7", "circle-x": "\u2297", diamond: "\u25C7", "triangle-up": "\u25B3", "triangle-down": "\u25BD", ti: "\u25BD", la: "\u25A1", plus: "+", slash: "/", slashed1: "\u2298", slashed2: "\u2298" };
 var KIT_EM = 0.62;
-var CHORD_EM = 2;
-var CHORD_SX = 0.82;
-var CHORD_H = 1.45;
-var CHORD_CH_EM = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.7, m: 0.86, a: 0.55, j: 0.26, d: 0.58, i: 0.25, u: 0.57, g: 0.58, s: 0.48, "/": 0.36, "\u266D": 1, "\u266F": 1, "\xB0": 0.4, \u00F8: 0.6, "(": 0.32, ")": 0.32, "+": 0.6 };
-var chordNameW = (s10) => [...s10].reduce((w2, ch2) => w2 + (CHORD_CH_EM[ch2] ?? (/[0-9]/.test(ch2) ? 0.56 : 0.6)), 0) * CHORD_EM * CHORD_SX;
-var chordBassCx = (s10) => {
-  const cs2 = [...s10], i10 = cs2.indexOf("/") + 1;
-  return chordNameW(cs2.slice(0, i10).join("")) + chordNameW(cs2[i10] ?? "") / 2;
-};
 var TEN_DY = 0.136 * FS;
 var MARK_GAP2 = 0.12 * FS;
 var MARCATO_EM = 1.38 * FS;
@@ -15509,11 +15455,8 @@ function hasAugDot(u2) {
   if (u2.note) return u2.dotted && u2.base < TPQ * 2 && !contDash(u2);
   return u2.base >= TPQ ? Math.floor(u2.ticks / TPQ + 1e-6) * TPQ < u2.ticks - 1e-6 : u2.dotted;
 }
-var foldOf = (u2, aux) => u2.note && u2.pitch && !contDash(u2) ? aux?.folds?.get(u2.index) : void 0;
-var lettersOf = (q2, u2, mode, aux) => q2.letters !== void 0 && mode === "digits" && u2.note && u2.pitch && !u2.ghost && !contDash(u2) && !foldOf(u2, aux) ? { w: letterNoteW(u2.pitches.length ? u2.pitches : [u2.pitch], q2.letters) } : null;
+var lettersOf = (q2, u2, mode, aux) => q2.letters !== void 0 && mode === "digits" && u2.note && u2.pitch && !u2.ghost && !contDash(u2) ? { w: letterNoteW(u2.pitches.length ? u2.pitches : [u2.pitch], q2.letters) } : null;
 var glyphWOf = (u2, aux, q2 = {}) => {
-  const f2 = foldOf(u2, aux);
-  if (f2) return chordNameW(f2.name);
   const lt2 = lettersOf(q2, u2, "digits", aux);
   return lt2 ? lt2.w : DIGIT_W;
 };
@@ -15637,7 +15580,6 @@ var groupOf = (id2) => PLACE[id2].group ?? id2;
 
 // src/render/jianpu/note-cell.ts
 var T0 = (tok) => tok !== void 0 ? { tok } : {};
-var textInk = (x0, x1, top, base2) => ({ x0, x1, y0: top, y1: base2 });
 var part = (ink, prims) => ({ ink, prims });
 var unionInk = (ks) => ({ x0: Math.min(...ks.map((k2) => k2.x0)), x1: Math.max(...ks.map((k2) => k2.x1)), y0: Math.min(...ks.map((k2) => k2.y0)), y1: Math.max(...ks.map((k2) => k2.y1)) });
 function coreBottom(u2, q2, mode, aux) {
@@ -15669,7 +15611,7 @@ function accRun(gs, em2, xr, top, cls, T3, main) {
 }
 function noteCell(a10) {
   const { u: u2, q: q2, mode, aux } = a10, T3 = T0(a10.tok), art3 = a10.artCls ?? ((x2, b3 = "art") => b3 || x2);
-  const fd2 = mode === "digits" ? foldOf(u2, aux) : void 0, nameW = fd2 ? chordNameW(fd2.name) : 0, lt2 = lettersOf(q2, u2, mode, aux), glyphW = fd2 ? nameW : lt2 ? lt2.w : DIGIT_W;
+  const lt2 = lettersOf(q2, u2, mode, aux), glyphW = lt2 ? lt2.w : DIGIT_W;
   const x0 = 0.1, cx2 = x0 + glyphW / 2, n10 = extraGlyphs(u2), contDash2 = contDash(u2), small = u2.art.includes("ghost"), gk = small ? GHOST_K : 1;
   const letters = q2.letters !== void 0 && mode === "digits", xHead = mode === "digits" && !!q2.p.xHead, kit = q2.p.perc?.kind === "kit";
   const nUL = underlines(u2);
@@ -15693,7 +15635,7 @@ function noteCell(a10) {
   if (u2.note && (u2.ghost || !u2.pitch)) {
     head.core(contDash2 ? dashPart(cx2) : digitPart(cx2, BASE_Y, "x", "jp-digit ghost", 1));
   } else if (u2.note && u2.pitch) {
-    const ps = fd2 ? [fd2.bass] : u2.pitches.length > 1 ? u2.pitches : [u2.pitch], accs = fd2 ? [] : accsOf(u2);
+    const ps = u2.pitches.length > 1 ? u2.pitches : [u2.pitch], accs = accsOf(u2);
     const dg = ps.map((pp) => toDegree(pp, letters ? 0 : a10.fifths)), dotsOf = dg.map((d3) => mode === "x" || letters ? 0 : d3.shift - a10.base);
     const order = ps.map((_2, i10) => ps.length - 1 - i10);
     const bases = letters ? order.map((_2, k2) => BASE_Y - k2 * (DIGIT_H + SUB_DROP + SUP_RISE + CHORD_GAP)) : stackBases(order.map((i10) => dotsOf[i10]));
@@ -15701,22 +15643,7 @@ function noteCell(a10) {
     const hiDots = dotsOf[0], lowDots = dotsOf[order[0]];
     const mute = (i10) => i10 > 0 && !!q2.p.mono ? " chord-mute" : "";
     if (contDash2) head.core(dashPart(cx2));
-    else if (fd2) {
-      head.core(part(textInk(x0, x0 + nameW, BASE_Y - CHORD_H, BASE_Y), [{ ...T3, t: "text", x: x0, y: BASE_Y, s: fd2.name, cls: "jp-chord", size: CHORD_EM, sx: CHORD_SX, anchor: "start" }]));
-      const bd = dotsOf[0], bx = x0 + chordBassCx(fd2.name);
-      const dots = (sign) => {
-        const ps2 = [];
-        for (let j2 = 0; j2 < Math.abs(bd); j2++) ps2.push({ ...T3, t: "path", d: dotPath(bx, -sign * (DOT_R + j2 * DOT_STEP), DOT_R), cls: "jp-dot" });
-        return part({ x0: bx - DOT_R, x1: bx + DOT_R, y0: sign > 0 ? -(2 * DOT_R + (Math.abs(bd) - 1) * DOT_STEP) : 0, y1: sign > 0 ? 0 : 2 * DOT_R + (Math.abs(bd) - 1) * DOT_STEP }, ps2);
-      };
-      if (hasArp(u2)) {
-        const yTop = BASE_Y - CHORD_H - 0.2, yBot = BASE_Y + 0.2;
-        stick("arpeggio", arpPart(yTop, yBot, T3, art3("arpeggio", "arpeggio jp-arp")), { cross: 0 });
-      }
-      if (bd > 0) stick("dotHigh", dots(1), { cross: 0 });
-      if (bd < 0) stick("dotLow", dots(-1), { cross: 0 });
-      members = [{ i: 0, yb: BASE_Y }];
-    } else if (mode === "x" && kit) {
+    else if (mode === "x" && kit) {
       const hits = ps.map((pp, i10) => ({ i: i10, pi: percOf(128, 0, midiOf(pp)) })).sort((p1, p2) => (p2.pi?.line ?? 4) - (p1.pi?.line ?? 4) || p2.i - p1.i);
       hits.forEach(({ i: i10, pi }, k2) => {
         const yb = bases[k2] - DIGIT_H * 0.12, sz2 = DIGIT_EM * KIT_EM * gk, ch2 = KIT_CHAR[pi?.head ?? "normal"] ?? "\u25CF";
@@ -15899,8 +15826,8 @@ function measureJianpu(q2, k2 = 1, mode = "digits", aux) {
   const spItems = (u2) => {
     if (u2.pad) return [];
     const nc2 = noteCell({ u: u2, q: q2, mode, ...aux ? { aux } : {}, fifths, base: 0, step: null }), b3 = nc2.cell.box(), gw = nc2.glyphW;
-    const fd2 = mode === "digits" ? foldOf(u2, aux) : void 0, lt2 = lettersOf(q2, u2, mode, aux);
-    const left = -Math.min(b3.x0, nc2.x0) * k2, right = Math.max(0, (core(u2, fd2 || lt2 && gw > DIGIT_W ? gw : 0) + 0.1 + Math.max(0, b3.x1 - (nc2.x0 + gw))) * k2 - SP_DEFAULTS.pad);
+    const lt2 = lettersOf(q2, u2, mode, aux);
+    const left = -Math.min(b3.x0, nc2.x0) * k2, right = Math.max(0, (core(u2, lt2 && gw > DIGIT_W ? gw : 0) + 0.1 + Math.max(0, b3.x1 - (nc2.x0 + gw))) * k2 - SP_DEFAULTS.pad);
     inkL.set(u2, Math.max(0, left));
     const out = [{ row: 0, left, right, dur: u2.ticks, inkR: b3.x1 * k2, ...nc2.leftGap !== void 0 ? { clear: LEFT_CLEAR * nc2.leftGap * k2 } : {} }];
     const cx2 = (0.1 + gw / 2) * k2;
@@ -16232,7 +16159,7 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
       if (u2.kind !== "chunk" || u2.pad) continue;
       const row2 = rowOf(u2.system, r10, 0), tok = tokOf(u2), T3 = tok !== void 0 ? { tok } : {};
-      const fd2 = mode === "digits" ? foldOf(u2, c10.aux[r10]) : void 0, lt2 = lettersOf(q2, u2, mode, c10.aux[r10]), n10 = extraGlyphs(u2), contDash2 = contDash(u2);
+      const lt2 = lettersOf(q2, u2, mode, c10.aux[r10]), n10 = extraGlyphs(u2), contDash2 = contDash(u2);
       const span3 = (spanTo.get(u2) ?? u2.x + u2.w) - u2.x;
       const nc2 = noteCell({ u: u2, q: q2, mode, ...c10.aux[r10] ? { aux: c10.aux[r10] } : {}, fifths, base: base2, ...underlines(u2) ? { ulY: ulTop.get(ulKey(u2)) } : {}, step: n10 ? Math.max(DASH_PITCH, (span3 / jk - tailW(u2)) / (n10 + 1)) : null, limit: span3 / jk, ...tok !== void 0 ? { tok } : {}, artCls });
       {
@@ -16252,16 +16179,6 @@ function drawJianpu(c10, mine, mode = "digits") {
         if (u2.j === 0) notes.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: Q2(DIGIT_W), d: NaN });
         if (u2.j === 0 && !u2.tie) spots.push({ index: u2.index, sys: u2.system, row: row2, cx0: cx2, mx0: x0 - Q2(0.6), mx1: x0 + Q2(DIGIT_W) + Q2(0.4), lyric: u2.lyric, tok, cls: "ghost", mute: !!q2.p.lyricMute?.has(tokens[u2.index]?.id ?? -1), hyph: !!tokens[u2.index]?.hyph });
       } else if (u2.note && u2.pitch) {
-        if (fd2?.ambiguous && !contDash2) {
-          const nw2 = Q2(chordNameW(fd2.name)), tx0 = x0 + nw2 + Q2(0.05), ty2 = Y2(row2, BASE_Y), a10 = Q2(0.45), rd2 = fd2.read, ui3 = u2.index, first = u2.j === 0;
-          c10.hint(row2, {
-            part: { ink: { x0: 0, x1: a10, y0: -a10, y1: 0 }, prims: [{ ...T3, t: "path", d: `M0,0L${a10},0L${a10},${-a10}Z`, cls: "jp-chord-amb ann" }] },
-            tries: [{ x: tx0, y: ty2 }, { x: tx0, y: Y2(row2, BASE_Y - CHORD_H) + a10 }, { x: x0 + nw2 / 2 - a10 / 2, y: ty2 + a10 + Q2(0.35) }],
-            onPlace: (hx2, hy) => {
-              if (first) chordTagsOut.push({ x: hx2 - Q2(0.2), y: hy - a10 - Q2(0.3), w: a10 + Q2(0.5), h: a10 + Q2(0.6), read: rd2, system: row2, index: ui3 });
-            }
-          });
-        }
         if (u2.j === 0) {
           for (const m2 of nc2.members) if (m2.i > 0) chordHeads.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, m2.yb - DIGIT_H / 2), w: Q2(DIGIT_W) });
         }
@@ -16291,7 +16208,7 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
       const nUL = underlines(u2);
       if (nUL) {
-        const uh = fd2 || lt2 ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
+        const uh = lt2 ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
         ul2.push({ row: row2, x0: cx2 - Q2(uh), x1: cx2 + Q2(uh), level: nUL, group: ulKey(u2), y0: ulTop.get(ulKey(u2)), tok, ch: u2 });
       }
     }
@@ -16860,25 +16777,11 @@ function engrave(song, o10) {
     const pmode = per0.map((q2) => q2.pmode);
     const hasV2 = per0.map((q2) => q2.hasV2);
     const kScale = (k2) => ROW_PARAMS[k2][density].scale;
-    const foldsOf = (q2, i10) => {
-      const th2 = harmonyTheory();
-      if (q2.vrt || rowHost[i10] >= 0 || q2.p.perc || songLook.chordsOf(q2.p.id) !== "fold" || !th2.fold) return null;
-      const folds = /* @__PURE__ */ new Map();
-      let at4 = { fifths: DEFAULT_KEY, minor: false };
-      q2.tokens.forEach((t10, k2) => {
-        if (t10.kind === "key") at4 = { fifths: t10.fifths, minor: t10.mode === "minor" };
-        else if (t10.kind === "note" && t10.pitch && t10.chord?.length) {
-          const f2 = th2.fold([t10.pitch, ...t10.chord], at4, t10.harm);
-          if (f2) folds.set(k2, f2);
-        }
-      });
-      return folds.size ? folds : null;
-    };
     const labelOf = (text2, k2) => ({ text: text2, size: tx2("breath-label") / P2(k2), w: mw("breath-label", text2) / k2 });
-    const aux = per0.map((q2, i10) => {
-      const folds = foldsOf(q2, i10), k2 = kScale(kinds[i10]);
+    const aux = per0.map((_q, i10) => {
+      const k2 = kScale(kinds[i10]);
       const labels2 = kinds[i10] === "staff" ? null : { inhale: { soft: labelOf(_tIn(textLang, "\u5438##\u8BB0\u53F7"), k2), big: labelOf(_tIn(textLang, "\u6DF1\u5438##\u8BB0\u53F7"), k2) } };
-      return { ...folds ? { folds } : {}, ...labels2 ? { labels: labels2 } : {} };
+      return labels2 ? { labels: labels2 } : {};
     });
     const measured = per0.map((q2, i10) => DRAWERS[kinds[i10]].measure(q2, kScale(kinds[i10]), aux[i10]));
     const atracks = per0.map((_q, pi) => ({ entries: measured[pi].entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));
@@ -19054,7 +18957,8 @@ var ScoreView = class {
    *  听（edit = false）：谱面不写——轻点 = 告诉宿主「从这儿放」，拖 = 滚动，别的手势都不接。 */
   rules = RULES.notes;
   /** 自动翻（2026-10-10 user「...里面加自动滚动，你思考下怎么对齐不会觉得别扭」「自动滚动默认开」）：放着的时候谱跟着正在放的那一行滚。
-   *  不逐帧跟：只在那一行换行、并且出了舒服区（屏幕上沿往下 5% 到 80%）时，平滑滚到让它落在上方两成处（下面能看见接下来几行）；你刚自己滚过（滚轮 / 手指）4 秒内不跟，不抢。 */
+   *  不逐帧跟：只在那一行换行、并且出了舒服区（屏幕上沿往下 5% 到 80%）时，平滑滚到让它落在上方两成处（下面能看见接下来几行）；你刚自己滚过（滚轮 / 手指）4 秒内不跟，不抢。
+   *  开关记在这台设备上（宿主 main.ts 的 auto-follow 键，v0.17.42）；这里的 true = 这台设备上没点过时的样子。 */
   autoFollow = true;
   playSysKey = "";
   userScrollAt = -1e9;
@@ -35439,15 +35343,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-197e9c64443f.mjs");
+      return pick3(() => "singer-worker-4ba6c2252bd5.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-0ba185c81240.mjs");
+      return pick3(() => "layout-worker-7bb911c39b04.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-bff78d9ce4ae.mjs");
+      return pick3(() => "encode-worker-134b5db17e90.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -37722,12 +37626,16 @@ function buildTimeline(inp) {
     const { tokens, starts } = flat(part2.id), bounds = starts.map((s10) => s10.index), tl2 = timeline(tokens, map);
     if (tl2.length) total = Math.max(total, tl2[tl2.length - 1].t1);
     const info2 = inp.info(part2);
-    if (!info2.plugin || !info2.spec) {
+    if (!info2.plugin) {
       unplayable.push({ part: part2.id, why: _t("\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A") });
       continue;
     }
     if (info2.missing?.length) {
       unplayable.push({ part: part2.id, why: _t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}", { keys: info2.missing.join("\u3001") }) });
+      continue;
+    }
+    if (!info2.spec) {
+      unplayable.push({ part: part2.id, why: _t("\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A") });
       continue;
     }
     if (info2.mixMissing?.length) {
@@ -40406,6 +40314,12 @@ function perfSpecProblems(sp2, velocity) {
   if (sp2.path === "velocity" && !Number.isFinite(velocity)) bad.push("defaults.velocity");
   return bad;
 }
+function perfSpecOf(extras, role) {
+  const sp2 = activePerfSpec(extras, role);
+  if (!sp2) return null;
+  const bad = perfSpecProblems(sp2, activeVelocity(extras, role));
+  return bad.length ? { ok: false, problems: bad } : { ok: true, spec: sp2 };
+}
 var GAP_MAX_SEC = 0.2;
 function withRollHz(extras, role, hz, hum) {
   const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
@@ -40696,21 +40610,21 @@ function openBytes(name, bytes) {
     papers.push(seg);
   });
   for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
-  const song = songFromReads(reads, papers, scoreExt?.parts ?? null);
+  const song = songFromReads(reads, papers, scoreExt?.parts ?? null, newerThanMe(scoreExt, "score"));
   const studioUnreadable = !!extras.studio && !Array.isArray(extras.studio.tracks);
   const o10 = finish(reads, song, pruneSounds(extras), ours, name);
   const advice = newerMinor.length ? [_t("\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u53EA\u662F\u90A3\u4E9B\u4E1C\u897F\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\uFF0C\u5728\u8FD9\u4E00\u7248\u91CC\u5B58\u4E00\u6B21\uFF0C\u5176\u4E2D\u4E00\u90E8\u5206\u4F1A\u4E22\u3002\u60F3\u539F\u6837\u7559\u7740\uFF0C\u5148\u66F4\u65B0 app \u518D\u6539\u3002", { p: newerMinor.join("\u3001") })] : [];
   if (studioUnreadable) o10.notices.push(_t("\u8FD9\u9996\u6B4C\u7684\u6DF7\u97F3\u53F0\u90A3\u4E00\u4EFD\u8BFB\u4E0D\u61C2\uFF1A\u6BCF\u6761\u8F68\u7684\u63A8\u5B50\u3001\u58F0\u50CF\u6309\u9ED8\u8BA4\u5F00\u7684\uFF08\u603B\u8F68\u7167\u6587\u4EF6\u91CC\u5199\u7684\uFF09\u3002\u5B58\u4E00\u6B21\u5C31\u6309\u73B0\u5728\u7684\u6837\u5B50\u5199\u8FDB\u6587\u4EF6\u3002"));
   return { ...o10, references, advice };
 }
-function songFromReads(reads, papers, partList = null) {
+function songFromReads(reads, papers, partList = null, newer = false) {
   const ps = papers ?? [paperOfRead("p1", reads[0])];
   const seen = /* @__PURE__ */ new Map();
   const autoClef2 = /* @__PURE__ */ new Set();
   for (const p2 of partList ?? []) {
     const d3 = { id: String(p2.id), role: String(p2.role ?? `r${seen.size + 1}`), mic: String(p2.mic ?? `m${seen.size + 1}`) };
     if (p2.clef === "auto") autoClef2.add(d3.id);
-    if (typeof p2.chords === "string" && p2.chords && p2.chords !== "auto") d3.chords = p2.chords;
+    if (typeof p2.chords === "string" && p2.chords && p2.chords !== "auto" && (CHORDS_MODES.includes(p2.chords) || newer)) d3.chords = p2.chords;
     if (typeof p2.host === "string" && p2.host) d3.host = p2.host;
     seen.set(d3.id, d3);
   }
@@ -40810,7 +40724,7 @@ function finish(reads, song0, extras, ours, name) {
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const gr = readGrooves(extras.scoreExt?.grooves);
   const odd = [], look = songLookOf(extras.scoreExt, newerThanMe(extras.scoreExt, "score"), odd, reads[0]?.paper);
-  if (odd.length) notices.push(_t("\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF0C\u9875\u9762\u8BBE\u7F6E\u91CC\u8FD9\u51E0\u6837\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\uFF1A{keys}\u3002\u753B\u7684\u65F6\u5019\u5148\u6309\u6700\u57FA\u672C\u7684\u90A3\u4E00\u6863\uFF0C\u5B58\u7684\u65F6\u5019\u7167\u539F\u6837\u5199\u56DE\u3002", { keys: odd.map((k2) => LOOK_LABEL[k2]?.() ?? k2).join("\u3001") }));
+  if (odd.length) notices.push(_t("\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF0C\u9875\u9762\u8BBE\u7F6E\u91CC\u8FD9\u51E0\u6837\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\uFF1A{keys}\u3002\u753B\u7684\u65F6\u5019\u5148\u6309\u6700\u57FA\u672C\u7684\u90A3\u4E00\u6863\uFF0C\u5B58\u7684\u65F6\u5019\u7167\u539F\u6837\u5199\u56DE\u3002", { keys: odd.map((k2) => LOOK_LABEL[k2]()).join("\u3001") }));
   return { song: withGrooveData({ ...song0, ...look, ...gr ? { grooves: gr } : {} }), stem, extras, ours, notices, view: safeView(extras.scoreExt?.view ?? null), references: {}, advice: [] };
 }
 
@@ -43230,8 +43144,8 @@ function audibleParts(song, pv2) {
 function performerInfoOf(extras, part2, banks) {
   const role = part2.role, eng = activeInstrument(extras, role)?.engine ?? "unknown", plugin = performerOf(eng), cat2 = grooveCategory(plugin?.grooveCategory ?? null, activeGm(extras, role));
   const own = plugin ? plugin.info({ extras, role, presetIndex: (s10, b3, p2) => banks.presetIndex(s10, b3, p2), velCurve: (s10, b3, p2) => banks.velCurve(s10, b3, p2) }) : { gm: null, chunk: "phrase" };
-  const spec = activePerfSpec(extras, role), velocity = activeVelocity(extras, role);
-  const missing = [...plugin && spec ? perfSpecProblems(spec, velocity) : plugin ? ["articulation"] : [], ...own.missing ?? []];
+  const chk = perfSpecOf(extras, role), spec = chk?.ok ? chk.spec : null, velocity = activeVelocity(extras, role);
+  const missing = [...!plugin ? [] : !chk ? ["articulation"] : chk.ok ? [] : chk.problems, ...own.missing ?? []];
   for (const [k2, v] of Object.entries(own.singOpt ?? {})) if (!Number.isFinite(v)) missing.push(`defaults.${k2}`);
   if (plugin?.sound === "chunks" && !Number.isFinite(own.outputGainDb)) missing.push("instrument.outputGainDb");
   const { missing: _m, ...ownRest } = own, mixMissing = mixProblemsFor(extras, part2);
@@ -45009,7 +44923,7 @@ function createHeaderPanel(g3) {
         const song = g3.state().song, me = song.parts.find((p2) => p2.id === partId);
         if (!me) return "";
         const tenants = song.parts.some((p2) => p2.host === me.id), hosts = song.parts.filter((p2) => p2.id !== me.id && !p2.host);
-        return `<div class="ctx-sep"></div><div class="ctx-hint hp-sec">${_t("\u300C{name}\u300D\u7684\u8C31\uFF08\u6574\u9996\u90FD\u7B97\uFF09", { name: esc7(g3.partName(partId)) })}</div><div class="hp-grid"><span class="hp-k">${_t("\u5206\u89E3\u548C\u5F26")}</span>${sel([opt("on", _t("\u8BA4"), lookOf(song, g3.lookCtx()).chordsOf(partId) === "auto"), opt("off", _t("\u4E0D\u8BA4"), lookOf(song, g3.lookCtx()).chordsOf(partId) === "stacked"), opt("fold", _t("\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D"), lookOf(song, g3.lookCtx()).chordsOf(partId) === "fold")], 'data-hp="broken"', _t("\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807\u3002\u300C\u6298\u53E0\u300D= \u7B80\u8C31\u91CC\u53E0\u7740\u7684\u548C\u5F26\u5199\u6210\u548C\u5F26\u540D\uFF08\u7167\u540D\u5B57\u7684\u6807\u51C6\u6392\u6CD5\u8FD8\u539F\u5F97\u56DE\u624D\u6298\uFF0C\u4E0D\u7136\u7167\u5199\u6570\u5B57\uFF09"))}` + // 文件里写着、但不成立的合租（第 16 条「断了要看得见」，统筹 11-12：在人会去修它的地方写清）：照没有合租来画，这里写原来挂在谁上、那位不在
+        return `<div class="ctx-sep"></div><div class="ctx-hint hp-sec">${_t("\u300C{name}\u300D\u7684\u8C31\uFF08\u6574\u9996\u90FD\u7B97\uFF09", { name: esc7(g3.partName(partId)) })}</div><div class="hp-grid"><span class="hp-k">${_t("\u5206\u89E3\u548C\u5F26")}</span>${sel([opt("on", _t("\u8BA4"), lookOf(song, g3.lookCtx()).chordsOf(partId) === "auto"), opt("off", _t("\u4E0D\u8BA4"), lookOf(song, g3.lookCtx()).chordsOf(partId) === "stacked")], 'data-hp="broken"', _t("\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807"))}` + // 文件里写着、但不成立的合租（第 16 条「断了要看得见」，统筹 11-12：在人会去修它的地方写清）：照没有合租来画，这里写原来挂在谁上、那位不在
         (song.parts.length > 1 ? `<span class="hp-k">${_t("\u5408\u79DF")}</span>` + (tenants ? `<span class="hp-v hp-note">${_t("\u6709\u522B\u7684\u58F0\u90E8\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA")}</span>` : sel([opt("", _t("\u81EA\u5DF1\u4E00\u884C"), !me.host && !me.hostBroken), ...me.hostBroken ? [opt(me.hostBroken, _t("{key}\uFF08\u65AD\u4E86\uFF09", { key: me.hostBroken }), true)] : [], ...hosts.map((p2) => opt(p2.id, _t("\u6302\u5728\u300C{name}\u300D\u4E0A", { name: g3.partName(p2.id) }), me.host === p2.id))], 'data-hp="host"', _t("\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09"))) : "") + (me.hostBroken ? `<span class="hp-k"></span><span class="hp-v hp-note hp-broken">${esc7(_t("\u65AD\u4E86\uFF1A\u6587\u4EF6\u91CC\u5199\u7740\u6302\u5728\u300C{id}\u300D\u4E0A\uFF0C\u8FD9\u4E00\u9996\u91CC\u6CA1\u6709\u8FD9\u4F4D\uFF08\u6216\u90A3\u4F4D\u81EA\u5DF1\u4E5F\u6302\u5728\u522B\u4EBA\u4E0A\uFF09\u3002\u73B0\u5728\u7167\u81EA\u5DF1\u4E00\u884C\u753B\uFF1B\u4E0A\u9762\u9009\u4E00\u4E2A\u5C31\u6539\u6389", { id: me.hostBroken }))}</span>` : "") + `</div>`;
       };
       const commit = (next2) => {
@@ -45096,9 +45010,9 @@ function createHeaderPanel(g3) {
           } else el2.classList.add("bad");
         } else if (k2 === "ao") commit(setPaperLook(g3.state(), paperId, partId, { autoOttava: el2.value === "on" }));
         else if (k2 === "broken") {
-          const mode = el2.value === "fold" ? "fold" : el2.value === "on" ? "auto" : "stacked", next2 = setPartChords(g3.state(), partId, mode);
+          const mode = el2.value === "on" ? "auto" : "stacked", next2 = setPartChords(g3.state(), partId, mode);
           if (next2 !== g3.state()) {
-            g3.updateLook(next2, mode === "fold" ? _t("\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D") : mode === "auto" ? _t("\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4") : _t("\u5206\u89E3\u548C\u5F26\uFF1A\u4E0D\u8BA4"));
+            g3.updateLook(next2, mode === "auto" ? _t("\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4") : _t("\u5206\u89E3\u548C\u5F26\uFF1A\u4E0D\u8BA4"));
             spot = headerSpot(track(paperId, partId), spot.a);
             render();
           }
@@ -45187,9 +45101,13 @@ function createInstSettings(el2, h2) {
   let marksOpen = false;
   let dynSel = null;
   const defBtn = (id2) => `<button class="btn ip-defbtn" data-v="def:${esc8(id2)}" title="${_t("\u6539\u56DE\u73B0\u5728\u7684\u9ED8\u8BA4\uFF08\u5199\u8FDB\u6B4C\u91CC\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u9ED8\u8BA4")}</button>`;
-  const spOf = (role) => activePerfSpec(h2.extras(), role);
+  const specIn = (x2, role) => {
+    const c10 = perfSpecOf(x2, role);
+    return c10?.ok ? c10.spec : null;
+  };
+  const spOf = (role) => specIn(h2.extras(), role);
   function marksRows(x2, role, eng) {
-    const sp2 = activePerfSpec(x2, role);
+    const sp2 = specIn(x2, role);
     if (!sp2) return null;
     const ms = (x3) => `${Math.round(x3 * 1e3)} ms`, pct2 = (x3) => `${Math.round(x3 * 100)}%`, db = (x3) => `${x3 > 0 ? "+" : ""}${x3} dB`;
     const plug0 = performerOf(eng);
@@ -45247,7 +45165,7 @@ function createInstSettings(el2, h2) {
   };
   const rowIdOf = (k2, m2) => MARK_ROW[m2] ?? (k2 === _t("\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9") ? "m:wedge" : k2 === _t("\u97F3\u548C\u97F3\u4E4B\u95F4") ? "m:gap" : "");
   function marksTableHtml(role, eng, dx, diff) {
-    const rows = marksRows(h2.extras(), role, eng), sp2 = activePerfSpec(h2.extras(), role);
+    const rows = marksRows(h2.extras(), role, eng), sp2 = spOf(role);
     if (!rows || !sp2) return "";
     const drows = dx ? marksRows(dx, role, eng) : null, ign0 = ignoredArts(performerOf(eng), sp2.gapSec), pedals = performerOf(eng)?.pedals ?? [];
     const ign = { includes: (m2) => m2.startsWith("pedal:") ? !pedals.includes(m2.slice(6)) : ign0.includes(m2) };
@@ -45338,7 +45256,7 @@ function createInstSettings(el2, h2) {
     if (plug?.dynamics !== "velocity") return "";
     const L2 = curveHere(role);
     if (!L2) return _t("\u6EDA\u594F\u7684\u97F3\u4E0A\u6309\u529B\u5EA6\u505A\uFF08\u58F0\u97F3\u8F7D\u597D\u540E\u663E\u793A\u7EA6\u51E0\u6863\uFF09\u3002");
-    const sp2 = activePerfSpec(h2.extras(), role);
+    const sp2 = spOf(role);
     if (sp2?.path !== "velocity") return "";
     const tab = sp2.dynamicsVel, to2 = velocityForDb((_m, v) => L2(v), 60, tab.mf, D4);
     const order = DYNS.map((d3) => tab[d3]), i10 = order.indexOf(tab.mf);
@@ -45375,7 +45293,11 @@ function createInstSettings(el2, h2) {
     const own = plug?.inspector?.(ictx) ?? [], ownDef = dx ? new Map((plug?.inspector?.(inspectorCtx(dx, role)) ?? []).filter((x2) => x2.id).map((x2) => [x2.id, x2.value ?? ""])) : /* @__PURE__ */ new Map();
     const ownMain = own.filter((x2) => !x2.place), ownAdv = own.filter((x2) => x2.place === "adv"), ownTail = own.filter((x2) => x2.place === "tail");
     const rowOf = (x2) => row2(x2.label, x2.control, x2.note ?? "", x2.id ?? "", x2.id && ownDef.has(x2.id) ? () => ownDef.get(x2.id) : void 0);
-    const spX = (x2) => activePerfSpec(x2, role), sp2 = activePerfSpec(h2.extras(), role);
+    const chk = perfSpecOf(h2.extras(), role), sp2 = chk?.ok ? chk.spec : null, bad = chk && !chk.ok ? chk.problems : null;
+    const spX = (x2, f2) => {
+      const s23 = specIn(x2, role);
+      return s23 ? f2(s23) : "?";
+    };
     const chainText = (x2) => activeChain(x2, role).map((f2) => (FX_KINDS[f2.kind]?.name ?? _t("\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u7684\u300C{k}\u300D", { k: f2.kind })) + (f2.on === false ? _t("\uFF08\u5173\u7740\uFF09") : "")).join(_t("\u3001")) || _t("\uFF08\u6CA1\u6709\uFF09");
     const g3 = activeGm(h2.extras(), role), layers = g3 && g3.origin.library === GS_LIBRARY_ID && h2.catalog() ? velLayersOf(h2.catalog(), g3.bank, g3.program, g3.note) : null;
     const dynCtl = (t10, step, show) => {
@@ -45397,36 +45319,37 @@ function createInstSettings(el2, h2) {
       chainText
     ) : "")(activeChain(h2.extras(), role)) + // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
     //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
-    (plug?.sound === "notes" ? ((gap, d3) => row2(
+    (plug?.sound === "notes" && sp2 ? ((gap, d3) => row2(
       _t("\u97F3\u548C\u97F3\u4E4B\u95F4"),
       `<b class="ip-val">${Math.round(gap * 1e3)} ms</b><button class="btn" data-v="gap:-0.01" title="${_t("\u7F1D\u5C0F 10 ms\uFF08\u66F4\u8FDE\uFF09")}">\u221210</button><button class="btn" data-v="gap:0.01" title="${_t("\u7F1D\u5927 10 ms\uFF08\u66F4\u65AD\uFF09")}">+10</button>`,
       _t("\u4E0D\u5199\u8BB0\u53F7\u7684\u97F3\u548C\u4E0B\u4E00\u4E2A\u97F3\u4E4B\u95F4\u7559\u7684\u7F1D\uFF1A0 = \u8FDE\u7740\u3002{d}\u8FDE\u7EBF\uFF08\u8FDE\u594F\uFF09\u3001\u4FDD\u6301\u7684\u97F3\u4E0D\u7559\u7F1D\uFF1B\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u8DF3\u97F3\u53E6\u7B97", { d: d3 ? _t("{label}\uFF1A\u9ED8\u8BA4 {p} ms\uFF08\u97F3\u4E50\u76EE\u5F55\u7ED9\u7684\uFF0C\u6309\u97F3\u8272\u9010\u4E2A\uFF09\u3002", { label: esc8(d3.label), p: Math.round(d3.gapSec * 1e3) }) : "" }),
       "gap",
-      (x2) => `${Math.round(spX(x2).gapSec * 1e3)} ms`
-    ))(spOf(role).gapSec, gapDefaultOf(role)) : "") + // 滚奏的密度（v0.16.64；user 11-07「标准滚奏记号 可以，但是要可以调整密度」）：只给认滚奏的演奏者
-    (plug?.honors.includes("roll") ? ((hz) => row2(
+      (x2) => spX(x2, (s23) => `${Math.round(s23.gapSec * 1e3)} ms`)
+    ))(sp2.gapSec, gapDefaultOf(role)) : "") + // 滚奏的密度（v0.16.64；user 11-07「标准滚奏记号 可以，但是要可以调整密度」）：只给认滚奏的演奏者
+    (plug?.honors.includes("roll") && sp2 ? ((hz) => row2(
       _t("\u6EDA\u594F"),
       `<b class="ip-val">${esc8(_t("\u6BCF\u79D2 {n} \u4E0B", { n: hz }))}</b><button class="btn" data-v="roll:-2" title="${_t("\u6EDA\u594F\u7A00\u4E00\u70B9\uFF08\u6BCF\u79D2\u5C11 2 \u4E0B\uFF09")}">\u22122</button><button class="btn" data-v="roll:2" title="${_t("\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09")}">+2</button>`,
       _t("\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u6BCF\u4E00\u4E0B\u90FD\u662F\u6574\u4E0B\u6572\uFF1A\u60F3\u8F7B\u4E00\u70B9\uFF0C\u5C31\u5728\u8FD9\u4E2A\u97F3\u4E0A\u518D\u52A0\u5E7D\u7075\u97F3\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002"),
       "roll",
-      (x2) => _t("\u6BCF\u79D2 {n} \u4E0B", { n: spX(x2).rollHz })
-    ))(spOf(role).rollHz) : "") + // 音内起伏多深（7-N，2026-11-12；user「上了音内渐强是从-6db开始的还是从0开始的这个我也没法配置」）：swellDb，一档 3 dB，3–24；按力度敲的旁边写约几档力度
-    (plug?.honors.includes("swellGrow") || plug?.honors.includes("swellFade") ? ((D4) => row2(
+      (x2) => spX(x2, (s23) => _t("\u6BCF\u79D2 {n} \u4E0B", { n: s23.rollHz }))
+    ))(sp2.rollHz) : "") + // 音内起伏多深（7-N，2026-11-12；user「上了音内渐强是从-6db开始的还是从0开始的这个我也没法配置」）：swellDb，一档 3 dB，3–24；按力度敲的旁边写约几档力度
+    ((plug?.honors.includes("swellGrow") || plug?.honors.includes("swellFade")) && sp2 ? ((D4) => row2(
       _t("\u97F3\u5185\u8D77\u4F0F\u591A\u6DF1"),
       `<b class="ip-val">${D4} dB</b><button class="btn" data-v="swell:-3" title="${_t("\u6D45\u4E00\u70B9\uFF08\u22123 dB\uFF09")}">\u22123</button><button class="btn" data-v="swell:3" title="${_t("\u6DF1\u4E00\u70B9\uFF08+3 dB\uFF09")}">+3</button>`,
       _t("\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}", { d: D4, vel: swellVelNote(role, D4) }),
       "swell",
-      (x2) => `${spX(x2).swellDb} dB`
-    ))(spOf(role).swellDb) : "") + ownMain.map(rowOf).join("") + // 力度记号那张表（16-6：两条路同一行；表类的行 = 现在的默认那一排摆在当前那一排下面、格子对齐，统筹补的第三条）
+      (x2) => spX(x2, (s23) => `${s23.swellDb} dB`)
+    ))(sp2.swellDb) : "") + ownMain.map(rowOf).join("") + // 规格缺数（更新版本写的怪值、手改坏的文件；v0.17.42）：依赖规格的几行不画，这一行标出来缺哪几个
+    (bad ? row2(_t("\u7F3A\u7684\u6570"), `<b class="ip-val ip-bad">${esc8(bad.join(_t("\u3001")))}</b>`, _t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A")) : "") + // 力度记号那张表（16-6：两条路同一行；表类的行 = 现在的默认那一排摆在当前那一排下面、格子对齐，统筹补的第三条）
     //   按音量走的（小月相 / 元音版）= 她身上的八个 dB（v0.9.23，方便和乐器的那张对比）；按力度敲的 = 八个 MIDI 力度 + 这件乐器在那个键上的响度 + 第几份录音
     (sp2?.path === "gain" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), dynCtl(sp2.dynamicsDb, 0.5, (x2) => `${x2 > 0 ? "+" : ""}${x2} dB`), _t(
       "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}",
-      { table: dbTable(sp2.dynamicsDb, diff.has("dyn") && dx ? activePerfSpec(dx, role).dynamicsDb : null, selOf(role)) }
+      { table: dbTable(sp2.dynamicsDb, diff.has("dyn") && dx ? ((d22) => d22?.path === "gain" ? d22.dynamicsDb : null)(specIn(dx, role)) : null, selOf(role)) }
     ), "dyn") : sp2?.path === "velocity" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), dynCtl(sp2.dynamicsVel, 1, String), _t(
       "\u529B\u5EA6\u8BB0\u53F7 \u2192 MIDI \u529B\u5EA6\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{table}",
-      { accentVel: sp2.accentVel, marcatoVel: sp2.marcatoVel, table: dynTable(sp2, layers, curveHere(role), diff.has("dyn") && dx ? activePerfSpec(dx, role).dynamicsVel : null, selOf(role)) }
+      { accentVel: sp2.accentVel, marcatoVel: sp2.marcatoVel, table: dynTable(sp2, layers, curveHere(role), diff.has("dyn") && dx ? ((d22) => d22?.path === "velocity" ? d22.dynamicsVel : null)(specIn(dx, role)) : null, selOf(role)) }
     ), "dyn") : "") + // 记号怎么唱（16-6：按块唱的那位身上的 sing 表，原来散在「记号怎么演」各行里，现在单独一行、一张表）
-    (plug?.sound === "chunks" && sp2 ? row2(_t("\u8BB0\u53F7\u600E\u4E48\u5531"), "", _t("\u8C31\u4E0A\u7684\u8BB0\u53F7\u53D8\u6210\u5531\u6CD5\u6838\u5FC3\u8BA4\u7684\u5B57\u524D\u8BB0\u53F7\uFF08^ = \u987F\u4E00\u4E0B\u4E0D\u6362\u6C14\uFF0Cv = \u6362\u6C14\uFF09\uFF1A{table}", { table: singTable(sp2.sing, diff.has("sing") && dx ? activePerfSpec(dx, role).sing : null) }), "sing") : "") + ((plug?.lyrics ?? "none") !== "none" ? row2(_t("\u54FC\u7684\u5B57"), HUMS.map(([v, l10]) => chip(`hum:${v}`, l10, hum === v)).join(""), _t("\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u8FD9\u4E00\u4F4D\u7684\uFF09"), "hum", (x2) => HUMS.find(([v]) => v === activeHum(x2, role))?.[1] ?? "") : "") + (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") + ownTail.map(rowOf).join("") + (!plug ? row2("", "", _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")) : "");
+    (plug?.sound === "chunks" && sp2 ? row2(_t("\u8BB0\u53F7\u600E\u4E48\u5531"), "", _t("\u8C31\u4E0A\u7684\u8BB0\u53F7\u53D8\u6210\u5531\u6CD5\u6838\u5FC3\u8BA4\u7684\u5B57\u524D\u8BB0\u53F7\uFF08^ = \u987F\u4E00\u4E0B\u4E0D\u6362\u6C14\uFF0Cv = \u6362\u6C14\uFF09\uFF1A{table}", { table: singTable(sp2.sing, diff.has("sing") && dx ? specIn(dx, role)?.sing ?? null : null) }), "sing") : "") + ((plug?.lyrics ?? "none") !== "none" ? row2(_t("\u54FC\u7684\u5B57"), HUMS.map(([v, l10]) => chip(`hum:${v}`, l10, hum === v)).join(""), _t("\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u8FD9\u4E00\u4F4D\u7684\uFF09"), "hum", (x2) => HUMS.find(([v]) => v === activeHum(x2, role))?.[1] ?? "") : "") + (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") + ownTail.map(rowOf).join("") + (!plug ? row2("", "", _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")) : "");
     const sum = !plug || !rep.def ? "" : `<div class="ip-diff-sum">${rep.rows.length ? _t("\u548C\u73B0\u5728\u7684\u9ED8\u8BA4\u4E0D\u4E00\u6837\u7684\u6709 {n} \u5904\uFF1A", { n: rep.rows.length }) + rep.rows.map((r10) => `<button class="btn link" data-jump="${esc8(r10.id)}">${esc8(r10.label)}</button>`).join(_t("\u3001")) : `<span class="ip-faint">${_t("\u548C\u73B0\u5728\u7684\u9ED8\u8BA4\u90FD\u4E00\u6837")}</span>`}${rep.pending ? `<span class="ip-faint">${_t("\uFF08\u8FD8\u6709 {n} \u884C\u8981\u7B49\u97F3\u4E50\u76EE\u5F55\u8F7D\u597D\u518D\u6BD4\uFF09", { n: rep.pending })}</span>` : ""}</div>`;
     const keepScroll = el2.querySelector(".ip-body")?.scrollTop ?? 0;
     el2.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="ip-title">${_t("\u4E50\u5668")}</span>` + (parts.length > 1 ? dropdownHtml(parts.map((x2) => ({ value: x2.p.id, label: x2.label })), h2.at().part, { cls: "ip-part", title: _t("\u6362\u4E00\u4E2A\u58F0\u90E8") }) : `<span class="ip-part-one">${esc8(parts[0]?.label ?? rn2)}</span>`) + // 下拉 = 界面零件库的标准件（7-T）
@@ -45487,10 +45410,10 @@ function createInstSettings(el2, h2) {
       return;
     }
     if (v.startsWith("dyn:")) {
-      const d3 = selOf(role), sp2 = activePerfSpec(h2.extras(), role);
+      const d3 = selOf(role), sp2 = spOf(role);
       if (!d3 || !sp2) return;
       const gain = sp2.path === "gain", cur = gain ? sp2.dynamicsDb[d3] : sp2.dynamicsVel[d3], next2 = cur + Number(v.slice(4)) * (gain ? 0.5 : 1);
-      const x2 = withDynLevel(h2.extras(), role, d3, next2, hum), sp22 = activePerfSpec(x2, role), got2 = sp22.path === "gain" ? sp22.dynamicsDb[d3] : sp22.dynamicsVel[d3];
+      const x2 = withDynLevel(h2.extras(), role, d3, next2, hum), sp22 = specIn(x2, role), got2 = !sp22 ? next2 : sp22.path === "gain" ? sp22.dynamicsDb[d3] : sp22.dynamicsVel[d3];
       h2.commit(x2, _t("\u300C{rn}\u300D\u529B\u5EA6\u8BB0\u53F7 {d} \u2192 {v}", { rn: rn2, d: d3, v: gain ? `${got2} dB` : String(got2) }), `dyn:${d3}`);
       draw();
       return;
@@ -45504,6 +45427,7 @@ function createInstSettings(el2, h2) {
       draw();
       return;
     }
+    if (/^(gap|swell|roll):/.test(v) && !spOf(role)) return;
     if (v.startsWith("gap:")) {
       const next2 = Math.max(0, Math.min(GAP_MAX_SEC, spOf(role).gapSec + Number(v.slice(4))));
       h2.commit(withGapSec(h2.extras(), role, next2, hum), _t("\u300C{rn}\u300D\u97F3\u548C\u97F3\u4E4B\u95F4 {p} ms", { rn: rn2, p: Math.round(next2 * 1e3) }), "gap");
@@ -46771,7 +46695,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "2e5fae9830384619" : "dev";
+var CORE_HASH = true ? "69b98db0ac719605" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -60931,8 +60855,8 @@ async function relinkAfterSave(name, fingerprint) {
 }
 var curPart = () => D3.st.song.parts.find((p2) => p2.id === D3.st.at.part) ?? D3.st.song.parts[0];
 var ignoredFor = (role) => {
-  const sp2 = activePerfSpec(D3.extras, role);
-  return sp2 ? ignoredArts(performerOf(activeInstrument(D3.extras, role)?.engine), sp2.gapSec, sp2.canSwell) : [];
+  const c10 = perfSpecOf(D3.extras, role);
+  return c10?.ok ? ignoredArts(performerOf(activeInstrument(D3.extras, role)?.engine), c10.spec.gapSec, c10.spec.canSwell) : [];
 };
 var pedalIgnoredFor = (role) => {
   const pl = performerOf(activeInstrument(D3.extras, role)?.engine);
@@ -61323,7 +61247,7 @@ function ensureVowels() {
   });
 }
 function dynAtCursor(role) {
-  const tokens = tr(D3.st), i10 = D3.st.sel ? D3.st.sel.from : D3.st.caret, sp2 = activePerfSpec(D3.extras, role);
+  const tokens = tr(D3.st), i10 = D3.st.sel ? D3.st.sel.from : D3.st.caret, chk = perfSpecOf(D3.extras, role);
   const pick3 = (m2) => {
     for (let k2 = i10; k2 < tokens.length; k2++) {
       const l10 = m2.get(k2);
@@ -61335,7 +61259,9 @@ function dynAtCursor(role) {
     }
     return null;
   };
-  if (!sp2) return { vel: 1, dB: 0 };
+  if (!chk) return { vel: 1, dB: 0 };
+  if (!chk.ok) return null;
+  const sp2 = chk.spec;
   if (sp2.path === "velocity") {
     const v0 = activeVelocity(D3.extras, role) * 127, vel = pick3(dynLevels(tokens, void 0, sp2.dynamicsVel, v0, sp2.wedgeStepVel)) ?? v0;
     return { vel: Math.max(1, Math.min(127, vel)) / 127, dB: 0 };
@@ -61352,6 +61278,7 @@ function auditionTarget() {
     return { inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: 0, pan: 0 };
   }
   const part2 = D3.st.song.parts.find((p2) => p2.id === D3.st.at.part), ch2 = part2 ? channelOf2(part2) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
+  if (!dyn) return null;
   const t10 = performerOf(engineNow())?.audition?.({ extras: D3.extras, role: curRole(), kana, dyn, engine, ensureBank: () => {
     void prepareBank();
   } });
@@ -61417,6 +61344,8 @@ function setLibRemoved(lib, on2) {
   perfApi.refreshIssues();
 }
 var KV_LOOP_EDITOR = "loop-editor";
+var KV_AUTO_FOLLOW = "auto-follow";
+var KV_TURN_LEAD = "turn-lead";
 var habitCtx = { habits: habitsFrom(deviceKvGet) };
 var lookCtx = () => habitCtx;
 var bornSong = (s10) => stampLooks(s10, habitCtx, lang(), "born");
@@ -61430,7 +61359,7 @@ function habitsChanged() {
   habitCtx = { habits: habitsFrom(deviceKvGet) };
   if (untouchedNewSong()) {
     const h2 = H2.home;
-    loadNewSong(h2.kind === "none" ? h2.pendingFolder : null, { stem: H2.stem });
+    loadNewSong(h2.kind === "none" ? h2.pendingFolder : null, { stem: H2.stem, named: H2.named, view: serializeDesk(deskNow()), references: refHost.files() });
     diagNote("habits", "rebuilt the untouched new song");
   }
   afterHabits();
@@ -62333,6 +62262,11 @@ var { humOpt: humOpt2, resetLatencyLog, refreshIssues, playSong, curFlat, songIn
 if (deviceKvGet(KV_LOOP_EDITOR) === "1") setLoop(true);
 var BUDGET = perfApi.budget;
 var TURN_LEADS = perfApi.TURN_LEADS;
+{
+  const f2 = deviceKvGet(KV_AUTO_FOLLOW), l10 = deviceKvGet(KV_TURN_LEAD);
+  if (f2 === "1" || f2 === "0") view.autoFollow = f2 === "1";
+  if (l10 != null && TURN_LEADS.includes(Number(l10))) perfApi.turnLead = Number(l10);
+}
 function typingIn(t10) {
   const el2 = t10;
   if (!el2) return false;
@@ -62464,11 +62398,13 @@ function openTransportMenu(btn2 = $2("playBtn")) {
     if (v === "resume") resumePlay();
     else if (v.startsWith("lead:")) {
       perfApi.turnLead = Number(v.slice(5));
+      deviceKvSet(KV_TURN_LEAD, String(perfApi.turnLead));
       info(perfApi.turnLead ? _t("\u7FFB\u8C31\u63D0\u524D {turnLead} \u79D2", { turnLead: perfApi.turnLead }) : _t("\u7FFB\u8C31\u4E0D\u63D0\u524D\uFF08\u6362\u4E86\u884C\u624D\u7FFB\uFF09"));
     } else if (v === "reveal") {
       if (!view.revealPlayhead()) info(_t("\u73B0\u5728\u6CA1\u6709\u5728\u653E\u7684\u5730\u65B9"));
     } else if (v === "follow") {
       view.autoFollow = !view.autoFollow;
+      deviceKvSet(KV_AUTO_FOLLOW, view.autoFollow ? "1" : "0");
       info(view.autoFollow ? _t("\u81EA\u52A8\u7FFB\uFF1A\u5F00") : _t("\u81EA\u52A8\u7FFB\uFF1A\u5173"));
     } else if (v === "loop") {
       const on2 = !perfApi.loopOn;
@@ -63189,10 +63125,10 @@ window.__moonsinger = {
   studioTracks: () => studioTracks(D3.extras),
   labScore: () => {
     const { tokens, map } = curFlat();
-    return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, activePerfSpec(D3.extras, curRole())?.sing ?? {});
+    return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "a2a0fbe0b580",
+  cssHash: "418e51b301b7",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -64976,7 +64912,7 @@ var PEDAL_ACT_LABEL = {
   // 持音只放开它留住的那几个（统筹审 11-2：「止音」说大了）
   soft: { down: _t("\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09"), up: _t("\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09") }
 };
-var PEDAL_ACTS = { sustain: ["down", "up", "change"], sostenuto: ["down", "up"], soft: ["down", "up"] };
+var PEDAL_ACTS = { sustain: ["down", "up", "change"], sostenuto: ["down", "up", "change"], soft: ["down", "up"] };
 var PEDAL_NAME = { sustain: _t("\u5EF6\u97F3\u8E0F\u677F"), sostenuto: _t("\u6301\u97F3\u8E0F\u677F"), soft: _t("\u5F31\u97F3\u8E0F\u677F") };
 function pedalIgnoredWhy(which) {
   const role = curPart().role, pl = performerOf(activeInstrument(D3.extras, role)?.engine);
@@ -65581,7 +65517,14 @@ function putDownSong() {
 }
 function loadNewSong(pendingFolder, rebuild) {
   const song = bornSong(initState().song);
-  loadDoc(song, { home: { kind: "none", pendingFolder }, stem: rebuild?.stem ?? defaultStem(), named: false, extras: templateExtras(song), isNew: true, ...rebuild ? { keepPanels: true } : {} });
+  loadDoc(song, {
+    home: { kind: "none", pendingFolder },
+    stem: rebuild?.stem ?? defaultStem(),
+    named: rebuild?.named ?? false,
+    extras: templateExtras(song),
+    isNew: true,
+    ...rebuild ? { keepPanels: true, view: rebuild.view, references: rebuild.references } : {}
+  });
 }
 function loadDoc(song, o10) {
   perfApi.mixBypass = false;
@@ -65616,8 +65559,10 @@ function loadDocInner(song, o10) {
   applyDesk(d3);
   ws.mode = d3.mode;
   if (d3.mode !== "listen") lastEditMode = d3.mode;
-  if (touchLike) ws.collapsed = D3.st.song.papers.some((pp) => Object.values(pp.tracks).some((t10) => t10.some((x2) => x2.kind === "note")));
-  ws.aside = false;
+  if (!o10.keepPanels) {
+    if (touchLike) ws.collapsed = D3.st.song.papers.some((pp) => Object.values(pp.tracks).some((t10) => t10.some((x2) => x2.kind === "note")));
+    ws.aside = false;
+  }
   applyWorkspace();
   void refHost.apply(o10.references ?? {}, d3.ref);
   pad3.setRangeLow(d3.pad.low);
@@ -67730,4 +67675,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-22aa7ff1ea97.mjs.map
+//# sourceMappingURL=moonsinger-13222027d112.mjs.map

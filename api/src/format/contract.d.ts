@@ -42,7 +42,7 @@ export type FormatFile = keyof typeof FORMAT;
  *  冻结样本 = test/fixtures/format/minor/score-6/。归修改锁的「看法」（锁着能切、锁着期间不写）。 */
 /** score minor 5（谱面分家第三刀，2026-11-11 Claude Opus 5.5；user 11-11 夜「可以」= 把四样显示设置存进歌文件、都可选、没写就按默认、小版本号加一）：
  *  这首歌怎么看 = 顶层 notation（谱种，只写不是五线谱的；不认识的值原样带回）/ chordTags（只写 false = 不标和弦级数）/ viewInC（只写 true = 按 C 调看）+ parts[].chords（这条轨的和弦选项，
- *  只写不是 auto 的："stacked" = 只认叠在一起的、"fold" = 折叠成和弦名；不认识的值原样带回）。读 / 改 / 没写的意思只在 src/score/song-view.ts（没写 = 五线谱 / 标 / 不按 / auto，冻住不变）。
+ *  只写不是 auto 的："stacked" = 只认叠在一起的；这两档以外的值：文件比这一版新 = 原样带回，不比这一版新 = 读成 auto（2026-11-13「折叠成和弦名」那一档退役，走这一条））。读 / 改 / 没写的意思只在 src/score/song-view.ts（没写 = 五线谱 / 标 / 不按 / auto，冻住不变）。
  *  parts[].brokenChords（minor 2）退役：读成 chords: "stacked"，不再写。
  *  旧版本打开：顶层三个键在 score.json 里原样带回（未知键直通），chords 按声部 id 原样带回（minor 4 起的读者），画的时候按五线谱、标和弦级数、不按 C 调看、也认拆开弹的；
  *  minor 2–4 的读者看不到「只认叠在一起的」（它们只认 brokenChords）。提示一次，音不丢。
@@ -249,7 +249,7 @@ export interface ScoreExtV2 {
         host?: string;
         /** v0.16.73 加（可选，只写 false；score minor 2）：这位不认分解和弦（没写 = 认）。score minor 5 起退役：读成 chords: "stacked"，不再写。 */
         brokenChords?: false;
-        /** score minor 5（谱面分家第三刀）：这条轨的和弦选项，只写不是 auto 的——"stacked" = 只认叠在一起的和弦、"fold" = 折叠成和弦名（第五刀）。不认识的值原样带回。 */
+        /** score minor 5（谱面分家第三刀）：这条轨的和弦选项，只写不是 auto 的——"stacked" = 只认叠在一起的和弦。这两档以外的值：文件比这一版新 = 原样带回，不比这一版新 = 读成 auto（2026-11-13 第三档「折叠成和弦名」退役）。 */
         chords?: string;
     }[];
     /** score minor 5（谱面分家第三刀；src/score/song-view.ts）：这首歌怎么看。都可选、只写不是「没写的意思」的值：

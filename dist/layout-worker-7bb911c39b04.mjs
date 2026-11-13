@@ -49,7 +49,6 @@ var TEXT_STYLES = {
   "jp-letter-sub": s("sans", 1.75, "staff", smallWeight(1.75 / JP_MAIN_EM)),
   // 字母谱的角标（7-L）：半粗，学小字号专用字形的思路——缩小了笔画不跟着变细；字号在图元上（字母的 SCRIPT_K 倍） "jp-head": s("sans", TEMPO_EM, "staff"),   // 谱头「1=C 3/4」：常规粗细（第五刀起照样张；字号在图元上 = 0.773 个数字字号）
   // 叠着的和弦折成的和弦名（第五刀 5-4）：窄字 = 正文字体横向压（图元的 sx），宽查 render/jianpu/glyphs.ts
-  "jp-chord": s("sans", 2, "staff"),
   // 数字行连音的小数字（8-3；7-P 小字补粗：字号 1.1 = 主字的 0.44 倍 → 算出来的粗细）
   "jp-tuplet": s("sans", 1.1, "staff", smallWeight(1.1 / JP_MAIN_EM)),
   // 简谱数字行上的力度（pp…ff、sfz、fp）：和数字同一款字、常规粗细、斜体，约数字的 0.8（user 11-11「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）
@@ -424,8 +423,7 @@ var S = {
   "\u5206\u89E3\u548C\u5F26": { en: "Broken chords" },
   "\u8BA4": { en: "Read" },
   "\u4E0D\u8BA4": { en: "Ignored" },
-  "\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D": { en: "Read; fold stacked chords into names" },
-  "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807\u3002\u300C\u6298\u53E0\u300D= \u7B80\u8C31\u91CC\u53E0\u7740\u7684\u548C\u5F26\u5199\u6210\u548C\u5F26\u540D\uFF08\u7167\u540D\u5B57\u7684\u6807\u51C6\u6392\u6CD5\u8FD8\u539F\u5F97\u56DE\u624D\u6298\uFF0C\u4E0D\u7136\u7167\u5199\u6570\u5B57\uFF09": { en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way \u201CFold\u201D = in numbered notation, stacked chords are written as a chord name (only when the name\u2019s standard voicing gives back exactly these notes; otherwise the numbers stay)." },
+  "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807": { en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way" },
   "\u5408\u79DF": { en: "Shared staff" },
   "\u6709\u522B\u7684\u58F0\u90E8\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA": { en: "Other parts are attached to this line (it's the host), so it can't attach to another" },
   "\u81EA\u5DF1\u4E00\u884C": { en: "Own line" },
@@ -434,7 +432,6 @@ var S = {
   "\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09": { en: "Draw on another part's staff (shared: just an overview, colliding notes collide; only notes are drawn, no rests / lyrics / dynamics; tap the name to split it out and write)" },
   "\u65AD\u4E86\uFF1A\u6587\u4EF6\u91CC\u5199\u7740\u6302\u5728\u300C{id}\u300D\u4E0A\uFF0C\u8FD9\u4E00\u9996\u91CC\u6CA1\u6709\u8FD9\u4F4D\uFF08\u6216\u90A3\u4F4D\u81EA\u5DF1\u4E5F\u6302\u5728\u522B\u4EBA\u4E0A\uFF09\u3002\u73B0\u5728\u7167\u81EA\u5DF1\u4E00\u884C\u753B\uFF1B\u4E0A\u9762\u9009\u4E00\u4E2A\u5C31\u6539\u6389": { en: "Broken: the file says this part shares the staff of \u201C{id}\u201D, but that part is not in this song (or it is itself sharing someone else\u2019s staff). It is drawn on its own row for now; pick one above to change it" },
   "\u8FD9\u4E00\u6BB5\u8C03\u53F7\u4E00\u6837\u7684 {n} \u4E2A\u58F0\u90E8\u4E00\u8D77\u6539\u4E86": { en: "Changed {n} parts in this section that share this key signature" },
-  "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D": { en: "Broken chords: read; stacked chords folded into chord names" },
   "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4": { en: "Broken chords: read" },
   "\u5206\u89E3\u548C\u5F26\uFF1A\u4E0D\u8BA4": { en: "Broken chords: ignored" },
   "\u4E50\u8C31": { en: "Score" },
@@ -1506,6 +1503,8 @@ var S = {
   "\u6D45\u4E00\u70B9\uFF08\u22123 dB\uFF09": { en: "Shallower (\u22123 dB)" },
   "\u6DF1\u4E00\u70B9\uFF08+3 dB\uFF09": { en: "Deeper (+3 dB)" },
   "\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}": { en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}" },
+  "\u7F3A\u7684\u6570": { en: "Missing values" },
+  "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A": { en: "These values on this performer are missing or not numbers: it makes no sound (it is on the \u201Cnot sounding\u201D list) and key audition is silent too; gaps between notes, dynamic marks and how marks are played are not computed from it and are hidden for now" },
   "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": { en: "Dynamic markings \u2192 loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers \u2014 only loudness changes: {table}" },
   "\u529B\u5EA6\u8BB0\u53F7 \u2192 MIDI \u529B\u5EA6\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{table}": { en: "Dynamics \u2192 MIDI velocity (accent +{accentVel}, marcato +{marcatoVel}; other marks under \u201CHow marks are played\u201D below): {table}" },
   "\u8BB0\u53F7\u600E\u4E48\u5531": { en: "How marks are sung" },
@@ -3601,15 +3600,6 @@ function stackBases(dots) {
 var X_EM = 0.8;
 var KIT_CHAR = { normal: "\u25CF", x: "\xD7", "circle-x": "\u2297", diamond: "\u25C7", "triangle-up": "\u25B3", "triangle-down": "\u25BD", ti: "\u25BD", la: "\u25A1", plus: "+", slash: "/", slashed1: "\u2298", slashed2: "\u2298" };
 var KIT_EM = 0.62;
-var CHORD_EM = 2;
-var CHORD_SX = 0.82;
-var CHORD_H = 1.45;
-var CHORD_CH_EM = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.7, m: 0.86, a: 0.55, j: 0.26, d: 0.58, i: 0.25, u: 0.57, g: 0.58, s: 0.48, "/": 0.36, "\u266D": 1, "\u266F": 1, "\xB0": 0.4, \u00F8: 0.6, "(": 0.32, ")": 0.32, "+": 0.6 };
-var chordNameW = (s2) => [...s2].reduce((w, ch) => w + (CHORD_CH_EM[ch] ?? (/[0-9]/.test(ch) ? 0.56 : 0.6)), 0) * CHORD_EM * CHORD_SX;
-var chordBassCx = (s2) => {
-  const cs = [...s2], i = cs.indexOf("/") + 1;
-  return chordNameW(cs.slice(0, i).join("")) + chordNameW(cs[i] ?? "") / 2;
-};
 var TEN_DY = 0.136 * FS;
 var MARK_GAP2 = 0.12 * FS;
 var MARCATO_EM = 1.38 * FS;
@@ -4108,7 +4098,7 @@ function songInC(song, skip) {
 
 // src/score/song-view.ts
 var NOTATIONS = ["staff", "jianpu", "letters"];
-var CHORDS_MODES = ["stacked", "auto", "fold"];
+var CHORDS_MODES = ["stacked", "auto"];
 var TEXT_LANGS = ["ui", "zh", "en"];
 var isTextLang = (v) => TEXT_LANGS.includes(v);
 function textLangIn(look, ui) {
@@ -5265,49 +5255,6 @@ var pinOf = (guess) => {
   const g = guess;
   return { root: { step: g.root.step, alter: g.root.alter }, kind: g.tpl, ...pc(g.bass) !== pc(g.root) ? { bass: { step: g.bass.step, alter: g.bass.alter } } : {} };
 };
-var STEPS_OF_IV = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6];
-var STEPS_OVERRIDE = { aug: { 8: 4 }, aug7: { 8: 4 }, dim7: { 9: 6 }, "7s9": { 3: 1 } };
-var NAT_PC = [0, 2, 4, 5, 7, 9, 11];
-var pcOfSpelled = (x) => ((NAT_PC[stepIndex(x.step)] + x.alter) % 12 + 12) % 12;
-function voicingOf(g, bassOctave) {
-  const t = g.tpl === "5" ? { iv: [0, 7], opt: [] } : TPLS.find((x) => x.id === g.tpl);
-  if (!t) return null;
-  const tones = [];
-  for (const iv of [...t.iv, ...t.opt ?? []]) {
-    const li = (stepIndex(g.root.step) + (STEPS_OVERRIDE[g.tpl]?.[iv] ?? STEPS_OF_IV[iv])) % 7, target = (pc(g.root) + iv) % 12;
-    const alter = ((target - NAT_PC[li]) % 12 + 18) % 12 - 6;
-    if (Math.abs(alter) > 2) return null;
-    tones.push({ step: STEPS[li], alter });
-  }
-  const bpc = pc(g.bass), b = tones.find((x) => pcOfSpelled(x) === bpc);
-  if (!b) return null;
-  const bass = { ...b, octave: bassOctave }, bm = midiOf(bass);
-  const above = tones.filter((x) => pcOfSpelled(x) !== bpc).map((x) => {
-    let p = { ...x, octave: bassOctave - 1 };
-    while (midiOf(p) <= bm) p = { ...p, octave: p.octave + 1 };
-    return p;
-  });
-  return [bass, ...above.sort((x, y) => midiOf(x) - midiOf(y))];
-}
-function foldChord(pitches, at2, pin) {
-  if (pitches.length < 2) return null;
-  const auto = readChord(pitches, at2.fifths, at2.minor ? "la" : "do");
-  if (!auto) return null;
-  const ps = [...pitches].sort((x, y) => midiOf(x) - midiOf(y)), lo = ps[0];
-  const restores = (g) => {
-    const v = voicingOf(g, lo.octave);
-    return !!v && v.length === ps.length && v.every((p, i) => p.step === ps[i].step && p.alter === ps[i].alter && p.octave === ps[i].octave);
-  };
-  const ok = auto.all.filter(restores);
-  if (!ok.length) return null;
-  const ambiguous = new Set(ok.map((g) => g.name)).size > 1;
-  if (pin) {
-    const rd = pinRead(pin, at2, auto);
-    if (!rd || !restores(rd.best)) return null;
-    return { name: rd.best.name, bass: lo, ambiguous, read: rd };
-  }
-  return { name: ok[0].name, bass: lo, ambiguous, read: auto };
-}
 var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
 function brokenInBar(bar, prev) {
   const beatLen = beatTicks(bar.beats, bar.beatType), nb = Math.max(1, Math.round(bar.beats * WHOLE / bar.beatType / beatLen));
@@ -5382,7 +5329,6 @@ var western = {
   rootLabel: rootChordLabel,
   pinRead,
   pinOf,
-  fold: foldChord,
   howTo: () => _t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002"),
   explain: (guess) => {
     const g = guess;
@@ -7983,11 +7929,8 @@ function hasAugDot(u) {
   if (u.note) return u.dotted && u.base < TPQ * 2 && !contDash(u);
   return u.base >= TPQ ? Math.floor(u.ticks / TPQ + 1e-6) * TPQ < u.ticks - 1e-6 : u.dotted;
 }
-var foldOf = (u, aux) => u.note && u.pitch && !contDash(u) ? aux?.folds?.get(u.index) : void 0;
-var lettersOf = (q, u, mode, aux) => q.letters !== void 0 && mode === "digits" && u.note && u.pitch && !u.ghost && !contDash(u) && !foldOf(u, aux) ? { w: letterNoteW(u.pitches.length ? u.pitches : [u.pitch], q.letters) } : null;
+var lettersOf = (q, u, mode, aux) => q.letters !== void 0 && mode === "digits" && u.note && u.pitch && !u.ghost && !contDash(u) ? { w: letterNoteW(u.pitches.length ? u.pitches : [u.pitch], q.letters) } : null;
 var glyphWOf = (u, aux, q = {}) => {
-  const f = foldOf(u, aux);
-  if (f) return chordNameW(f.name);
   const lt = lettersOf(q, u, "digits", aux);
   return lt ? lt.w : DIGIT_W;
 };
@@ -8111,7 +8054,6 @@ var groupOf = (id) => PLACE[id].group ?? id;
 
 // src/render/jianpu/note-cell.ts
 var T0 = (tok) => tok !== void 0 ? { tok } : {};
-var textInk = (x0, x1, top, base) => ({ x0, x1, y0: top, y1: base });
 var part = (ink, prims) => ({ ink, prims });
 var unionInk = (ks) => ({ x0: Math.min(...ks.map((k) => k.x0)), x1: Math.max(...ks.map((k) => k.x1)), y0: Math.min(...ks.map((k) => k.y0)), y1: Math.max(...ks.map((k) => k.y1)) });
 function coreBottom(u, q, mode, aux) {
@@ -8143,7 +8085,7 @@ function accRun(gs, em, xr, top, cls, T2, main) {
 }
 function noteCell(a) {
   const { u, q, mode, aux } = a, T2 = T0(a.tok), art2 = a.artCls ?? ((x, b = "art") => b || x);
-  const fd = mode === "digits" ? foldOf(u, aux) : void 0, nameW = fd ? chordNameW(fd.name) : 0, lt = lettersOf(q, u, mode, aux), glyphW = fd ? nameW : lt ? lt.w : DIGIT_W;
+  const lt = lettersOf(q, u, mode, aux), glyphW = lt ? lt.w : DIGIT_W;
   const x0 = 0.1, cx = x0 + glyphW / 2, n2 = extraGlyphs(u), contDash2 = contDash(u), small = u.art.includes("ghost"), gk = small ? GHOST_K : 1;
   const letters = q.letters !== void 0 && mode === "digits", xHead = mode === "digits" && !!q.p.xHead, kit = q.p.perc?.kind === "kit";
   const nUL = underlines(u);
@@ -8167,7 +8109,7 @@ function noteCell(a) {
   if (u.note && (u.ghost || !u.pitch)) {
     head.core(contDash2 ? dashPart(cx) : digitPart(cx, BASE_Y, "x", "jp-digit ghost", 1));
   } else if (u.note && u.pitch) {
-    const ps = fd ? [fd.bass] : u.pitches.length > 1 ? u.pitches : [u.pitch], accs = fd ? [] : accsOf(u);
+    const ps = u.pitches.length > 1 ? u.pitches : [u.pitch], accs = accsOf(u);
     const dg = ps.map((pp) => toDegree(pp, letters ? 0 : a.fifths)), dotsOf = dg.map((d) => mode === "x" || letters ? 0 : d.shift - a.base);
     const order = ps.map((_, i) => ps.length - 1 - i);
     const bases = letters ? order.map((_, k) => BASE_Y - k * (DIGIT_H + SUB_DROP + SUP_RISE + CHORD_GAP)) : stackBases(order.map((i) => dotsOf[i]));
@@ -8175,22 +8117,7 @@ function noteCell(a) {
     const hiDots = dotsOf[0], lowDots = dotsOf[order[0]];
     const mute = (i) => i > 0 && !!q.p.mono ? " chord-mute" : "";
     if (contDash2) head.core(dashPart(cx));
-    else if (fd) {
-      head.core(part(textInk(x0, x0 + nameW, BASE_Y - CHORD_H, BASE_Y), [{ ...T2, t: "text", x: x0, y: BASE_Y, s: fd.name, cls: "jp-chord", size: CHORD_EM, sx: CHORD_SX, anchor: "start" }]));
-      const bd = dotsOf[0], bx = x0 + chordBassCx(fd.name);
-      const dots = (sign) => {
-        const ps2 = [];
-        for (let j = 0; j < Math.abs(bd); j++) ps2.push({ ...T2, t: "path", d: dotPath(bx, -sign * (DOT_R + j * DOT_STEP), DOT_R), cls: "jp-dot" });
-        return part({ x0: bx - DOT_R, x1: bx + DOT_R, y0: sign > 0 ? -(2 * DOT_R + (Math.abs(bd) - 1) * DOT_STEP) : 0, y1: sign > 0 ? 0 : 2 * DOT_R + (Math.abs(bd) - 1) * DOT_STEP }, ps2);
-      };
-      if (hasArp(u)) {
-        const yTop = BASE_Y - CHORD_H - 0.2, yBot = BASE_Y + 0.2;
-        stick("arpeggio", arpPart(yTop, yBot, T2, art2("arpeggio", "arpeggio jp-arp")), { cross: 0 });
-      }
-      if (bd > 0) stick("dotHigh", dots(1), { cross: 0 });
-      if (bd < 0) stick("dotLow", dots(-1), { cross: 0 });
-      members = [{ i: 0, yb: BASE_Y }];
-    } else if (mode === "x" && kit) {
+    else if (mode === "x" && kit) {
       const hits = ps.map((pp, i) => ({ i, pi: percOf(128, 0, midiOf(pp)) })).sort((p1, p2) => (p2.pi?.line ?? 4) - (p1.pi?.line ?? 4) || p2.i - p1.i);
       hits.forEach(({ i, pi }, k) => {
         const yb = bases[k] - DIGIT_H * 0.12, sz = DIGIT_EM * KIT_EM * gk, ch = KIT_CHAR[pi?.head ?? "normal"] ?? "\u25CF";
@@ -8373,8 +8300,8 @@ function measureJianpu(q, k = 1, mode = "digits", aux) {
   const spItems = (u) => {
     if (u.pad) return [];
     const nc = noteCell({ u, q, mode, ...aux ? { aux } : {}, fifths, base: 0, step: null }), b = nc.cell.box(), gw = nc.glyphW;
-    const fd = mode === "digits" ? foldOf(u, aux) : void 0, lt = lettersOf(q, u, mode, aux);
-    const left = -Math.min(b.x0, nc.x0) * k, right = Math.max(0, (core(u, fd || lt && gw > DIGIT_W ? gw : 0) + 0.1 + Math.max(0, b.x1 - (nc.x0 + gw))) * k - SP_DEFAULTS.pad);
+    const lt = lettersOf(q, u, mode, aux);
+    const left = -Math.min(b.x0, nc.x0) * k, right = Math.max(0, (core(u, lt && gw > DIGIT_W ? gw : 0) + 0.1 + Math.max(0, b.x1 - (nc.x0 + gw))) * k - SP_DEFAULTS.pad);
     inkL.set(u, Math.max(0, left));
     const out = [{ row: 0, left, right, dur: u.ticks, inkR: b.x1 * k, ...nc.leftGap !== void 0 ? { clear: LEFT_CLEAR * nc.leftGap * k } : {} }];
     const cx = (0.1 + gw / 2) * k;
@@ -8706,7 +8633,7 @@ function drawJianpu(c, mine, mode = "digits") {
       }
       if (u.kind !== "chunk" || u.pad) continue;
       const row = rowOf(u.system, r, 0), tok = tokOf(u), T2 = tok !== void 0 ? { tok } : {};
-      const fd = mode === "digits" ? foldOf(u, c.aux[r]) : void 0, lt = lettersOf(q, u, mode, c.aux[r]), n2 = extraGlyphs(u), contDash2 = contDash(u);
+      const lt = lettersOf(q, u, mode, c.aux[r]), n2 = extraGlyphs(u), contDash2 = contDash(u);
       const span2 = (spanTo.get(u) ?? u.x + u.w) - u.x;
       const nc = noteCell({ u, q, mode, ...c.aux[r] ? { aux: c.aux[r] } : {}, fifths, base, ...underlines(u) ? { ulY: ulTop.get(ulKey(u)) } : {}, step: n2 ? Math.max(DASH_PITCH, (span2 / jk - tailW(u)) / (n2 + 1)) : null, limit: span2 / jk, ...tok !== void 0 ? { tok } : {}, artCls });
       {
@@ -8726,16 +8653,6 @@ function drawJianpu(c, mine, mode = "digits") {
         if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W), d: NaN });
         if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - Q(0.6), mx1: x0 + Q(DIGIT_W) + Q(0.4), lyric: u.lyric, tok, cls: "ghost", mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!tokens[u.index]?.hyph });
       } else if (u.note && u.pitch) {
-        if (fd?.ambiguous && !contDash2) {
-          const nw = Q(chordNameW(fd.name)), tx0 = x0 + nw + Q(0.05), ty = Y(row, BASE_Y), a = Q(0.45), rd = fd.read, ui = u.index, first = u.j === 0;
-          c.hint(row, {
-            part: { ink: { x0: 0, x1: a, y0: -a, y1: 0 }, prims: [{ ...T2, t: "path", d: `M0,0L${a},0L${a},${-a}Z`, cls: "jp-chord-amb ann" }] },
-            tries: [{ x: tx0, y: ty }, { x: tx0, y: Y(row, BASE_Y - CHORD_H) + a }, { x: x0 + nw / 2 - a / 2, y: ty + a + Q(0.35) }],
-            onPlace: (hx2, hy) => {
-              if (first) chordTagsOut.push({ x: hx2 - Q(0.2), y: hy - a - Q(0.3), w: a + Q(0.5), h: a + Q(0.6), read: rd, system: row, index: ui });
-            }
-          });
-        }
         if (u.j === 0) {
           for (const m of nc.members) if (m.i > 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, m.yb - DIGIT_H / 2), w: Q(DIGIT_W) });
         }
@@ -8765,7 +8682,7 @@ function drawJianpu(c, mine, mode = "digits") {
       }
       const nUL = underlines(u);
       if (nUL) {
-        const uh = fd || lt ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
+        const uh = lt ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
         ul.push({ row, x0: cx - Q(uh), x1: cx + Q(uh), level: nUL, group: ulKey(u), y0: ulTop.get(ulKey(u)), tok, ch: u });
       }
     }
@@ -9296,25 +9213,11 @@ function engrave(song, o) {
     const pmode = per0.map((q) => q.pmode);
     const hasV2 = per0.map((q) => q.hasV2);
     const kScale = (k) => ROW_PARAMS[k][density].scale;
-    const foldsOf = (q, i) => {
-      const th = harmonyTheory();
-      if (q.vrt || rowHost[i] >= 0 || q.p.perc || songLook.chordsOf(q.p.id) !== "fold" || !th.fold) return null;
-      const folds = /* @__PURE__ */ new Map();
-      let at3 = { fifths: DEFAULT_KEY, minor: false };
-      q.tokens.forEach((t, k) => {
-        if (t.kind === "key") at3 = { fifths: t.fifths, minor: t.mode === "minor" };
-        else if (t.kind === "note" && t.pitch && t.chord?.length) {
-          const f = th.fold([t.pitch, ...t.chord], at3, t.harm);
-          if (f) folds.set(k, f);
-        }
-      });
-      return folds.size ? folds : null;
-    };
     const labelOf = (text, k) => ({ text, size: tx("breath-label") / P(k), w: mw("breath-label", text) / k });
-    const aux = per0.map((q, i) => {
-      const folds = foldsOf(q, i), k = kScale(kinds[i]);
+    const aux = per0.map((_q, i) => {
+      const k = kScale(kinds[i]);
       const labels = kinds[i] === "staff" ? null : { inhale: { soft: labelOf(_tIn(textLang, "\u5438##\u8BB0\u53F7"), k), big: labelOf(_tIn(textLang, "\u6DF1\u5438##\u8BB0\u53F7"), k) } };
-      return { ...folds ? { folds } : {}, ...labels ? { labels } : {} };
+      return labels ? { labels } : {};
     });
     const measured = per0.map((q, i) => DRAWERS[kinds[i]].measure(q, kScale(kinds[i]), aux[i]));
     const atracks = per0.map((_q, pi) => ({ entries: measured[pi].entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));
@@ -10021,4 +9924,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-0ba185c81240.mjs.map
+//# sourceMappingURL=layout-worker-7bb911c39b04.mjs.map

@@ -301,11 +301,8 @@ export declare const S: {
     readonly 不认: {
         readonly en: "Ignored";
     };
-    readonly "\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D": {
-        readonly en: "Read; fold stacked chords into names";
-    };
-    readonly "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807\u3002\u300C\u6298\u53E0\u300D= \u7B80\u8C31\u91CC\u53E0\u7740\u7684\u548C\u5F26\u5199\u6210\u548C\u5F26\u540D\uFF08\u7167\u540D\u5B57\u7684\u6807\u51C6\u6392\u6CD5\u8FD8\u539F\u5F97\u56DE\u624D\u6298\uFF0C\u4E0D\u7136\u7167\u5199\u6570\u5B57\uFF09": {
-        readonly en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way “Fold” = in numbered notation, stacked chords are written as a chord name (only when the name’s standard voicing gives back exactly these notes; otherwise the numbers stay).";
+    readonly "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807": {
+        readonly en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way";
     };
     readonly 合租: {
         readonly en: "Shared staff";
@@ -330,9 +327,6 @@ export declare const S: {
     };
     readonly "\u8FD9\u4E00\u6BB5\u8C03\u53F7\u4E00\u6837\u7684 {n} \u4E2A\u58F0\u90E8\u4E00\u8D77\u6539\u4E86": {
         readonly en: "Changed {n} parts in this section that share this key signature";
-    };
-    readonly "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D": {
-        readonly en: "Broken chords: read; stacked chords folded into chord names";
     };
     readonly "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4": {
         readonly en: "Broken chords: read";
@@ -3547,6 +3541,12 @@ export declare const S: {
     readonly "\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}": {
         readonly en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}";
     };
+    readonly 缺的数: {
+        readonly en: "Missing values";
+    };
+    readonly "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A": {
+        readonly en: "These values on this performer are missing or not numbers: it makes no sound (it is on the “not sounding” list) and key audition is silent too; gaps between notes, dynamic marks and how marks are played are not computed from it and are hidden for now";
+    };
     readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": {
         readonly en: "Dynamic markings → loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers — only loudness changes: {table}";
     };
@@ -5701,8 +5701,8 @@ export declare const S: {
     readonly 着力点: {
         readonly en: "Hit point";
     };
-    readonly 没写踏板记号时: {
-        readonly en: "When no pedal is written";
+    readonly 余音: {
+        readonly en: "Ring-on";
     };
     readonly "\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668": {
         readonly en: "The performer on stage isn't a SoundFont instrument";
@@ -5809,8 +5809,8 @@ export declare const S: {
     readonly "\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF1A\u7167\u5199\u7684\u65F6\u503C\u505C\uFF08\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709\uFF09": {
         readonly en: "Sustain pedal is up at the start of every section: notes stop at their written length (the instrument's own release still sounds)";
     };
-    readonly "\u51FA\u5382\uFF1A{side}\u2014\u2014{why}": {
-        readonly en: "Factory: {side} — {why}";
+    readonly "\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}": {
+        readonly en: "Used when no pedal is written. Factory: {side} — {why}";
     };
     readonly "\u4E0D\u56FA\u5B9A\u539F\u901F\uFF08\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF09": {
         readonly en: "Not fixed speed (transposes by the written note)";

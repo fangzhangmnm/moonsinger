@@ -1,7 +1,6 @@
 import type { Token } from "../../score/song.ts";
 import type { PartView } from "../engrave.ts";
 import type { Unit, Chunk, Head } from "../frame/units.ts";
-import type { ChordFold } from "../../theory/index.ts";
 /** 一条要排的简谱轨（一个声部在这张纸上；框架交来的单元已经切好了时值）。 */
 export interface JianpuTrack {
     p: PartView;
@@ -26,10 +25,8 @@ export declare function extraGlyphs(u: Chunk): number;
 export declare function hasAugDot(u: Chunk): boolean;
 /** 数字行的两种写法：digits = 数字（有音高的声部）；x = 鼓的 X 行（音画成 X，没有升降号 / 八度点 / 琶音；UX 稿第 7 节，第五刀 5-4）。 */
 export type JianpuMode = "digits" | "x";
-/** 框架交来的这一条轨的预处理里数字行用得上的：叠着的和弦折成的和弦名（token 下标 → 折法；这条轨的和弦选项是「折叠」才有；第五刀 5-4）。 */
-/** 框架给的这条轨的预处理（同 notations.ts TrackAux 的形状）：folds = 折成的和弦名；labels = 「吸 / 深吸」那行小字（字、字号、多宽，这一种行的单位；量和画同一份）。 */
+/** 框架给的这条轨的预处理（同 notations.ts TrackAux 的形状）：labels = 「吸 / 深吸」那行小字（字、字号、多宽，这一种行的单位；量和画同一份）。 */
 export interface JianpuAux {
-    folds?: ReadonlyMap<number, ChordFold>;
     labels?: {
         readonly inhale: Readonly<Record<"soft" | "big", {
             readonly text: string;
@@ -38,9 +35,7 @@ export interface JianpuAux {
         }>>;
     };
 }
-/** 这一段画成和弦名吗（接着上一段、画成横线的那一段不算：第一个字形是横线）：是 = 折法。 */
-export declare const foldOf: (u: Chunk, aux: JianpuAux | undefined) => ChordFold | undefined;
-/** 字母谱（7-B）里这一段第一个字形（字母 + 右上的升降号 / 右下的八度数字）多宽；不是字母谱 / 不写音高的（横线、没写音高的、和弦名）= null。 */
+/** 字母谱（7-B）里这一段第一个字形（字母 + 右上的升降号 / 右下的八度数字）多宽；不是字母谱 / 不写音高的（横线、没写音高的）= null。 */
 export declare const lettersOf: (q: {
     letters?: number;
 }, u: Chunk, mode: JianpuMode, aux: JianpuAux | undefined) => {

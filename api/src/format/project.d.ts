@@ -281,8 +281,21 @@ export declare function withUnpacked(extras: Extras, only?: (subsetSha256: strin
 /** 上场那位交给出声代码的数（PerfSpec：按力度路分、每个数都必填）。内存里的乐手门口补全过 / 新建按模板抄过，这里只照写的读（不带默认）、夹到能调的范围里；
  *  没人上场 / 读不懂的引擎 = null（不出声）。缺了的数（不该有）= NaN / undefined，送进录音房之前 perfSpecProblems 明着报出来。 */
 export declare function activePerfSpec(extras: Extras, role: string): PerfSpec | null;
-/** 送进录音房之前的那一处查（统筹 2026-11-12 夜第 5 条；core/render.ts performerInfoOf 叫它）：这位的数缺了哪些 / 不是数的有哪些（空 = 没毛病）。缺 = 明着报错，不在音频线程里抛。 */
+/** 送进录音房之前的那一处查（统筹 2026-11-12 夜第 5 条；v0.17.42 起只有 perfSpecOf 叫它）：这位的数缺了哪些 / 不是数的有哪些（空 = 没毛病）。缺 = 明着报错，不在音频线程里抛。 */
 export declare function perfSpecProblems(sp: PerfSpec, velocity: number): string[];
+/** 拿上场那位演奏规格的结果：查过、没毛病的规格；或者问题清单（缺了 / 不是数的那几个键名，同 perfSpecProblems）。 */
+export type PerfSpecCheck = {
+    ok: true;
+    spec: PerfSpec;
+} | {
+    ok: false;
+    problems: string[];
+};
+/** **拿乐手规格只有这一个口**（杂事版 v0.17.42，统筹「拿乐手规格的口收成一个」）：出声前那道查（core/render.ts）、按键试听的力度（main.ts dynAtCursor）、
+ *  谱上画灰的「不认」（main.ts ignoredFor）、乐器页的那几张表都从这里拿。回来的要么是查过的规格，要么是问题清单——缺了数的规格不交出去：
+ *  出声 = 这个声部进「不出声」清单；试听 = 不响；乐器页 = 那一行标出来、不拿它算。没人上场 / 读不懂的引擎 = null。
+ *  src 里 activePerfSpec / perfSpecProblems 只许在这里调（test/perf-spec-entry.test.ts 守）；测试里照写的读、单测那道查照旧直接用。 */
+export declare function perfSpecOf(extras: Extras, role: string): PerfSpecCheck | null;
 /** 连断底色能调到多大（秒）。 */
 export declare const GAP_MAX_SEC = 0.2;
 /** 这位乐手滚奏的出厂密度（乐器页「默认」钮问它；鼓 12 / 有音高的 14，template.ts）。 */

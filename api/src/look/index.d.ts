@@ -83,7 +83,11 @@ export declare function paperChoicesOf(p: ReadPaper | undefined): Pick<Song, "pa
 /** 读文件的门口（17-1）：score.json 顶层这几项 → 歌字段。没写 / 写坏了 = "default"（补的是这个字，不是当时的默认值）；认得的值原样；
  *  比这一版新的文件里键认识、值不认识的字（以后的谱种 / 排法…）原样留在歌里、存的时候照写，记进 odd（打开时说一句）——画的时候 lookOf 按最基本的那一档。
  *  纸张那四项：score.json 里有任何一项 = 以它为准（缺的那几项 = "default"）；一项都没有（老文件、别家的谱）= 从 MusicXML <defaults> 认一次（paperChoicesOf）。 */
-export declare function lookFromFile(x: Record<string, unknown> | undefined, xmlPaper: ReadPaper | undefined, newer: boolean, odd: string[]): Pick<Song, LookKey>;
+/** 门口按「字」认的那几项：比这一版新的文件里值不认识 = 原样留、记进 odd（打开时那一句按 project.ts LOOK_LABEL 说名字；那张表按这个类型写满，漏了 = 类型报错）。 */
+export type WordLookKey = "notation" | "barNumbers" | "lyricFit" | "chordTagStyle";
+export declare function lookFromFile(x: Record<string, unknown> | undefined, xmlPaper: ReadPaper | undefined, newer: boolean, odd: {
+    push(k: WordLookKey): unknown;
+}): Pick<Song, LookKey>;
 /** score.json 里读到的一项纸张的选择（门口）：认不出来 = null（宽容：当没写）。 */
 export declare function readPaperChoice(v: unknown): Choice<PaperChoice> | null;
 export declare function readMargins(v: unknown): Choice<Margins> | null;

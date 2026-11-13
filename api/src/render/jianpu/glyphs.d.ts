@@ -38,17 +38,6 @@ export declare const X_EM = 0.8;
  *  只有一件鼓的行照旧一律 X（行首的名字已经说了是哪件）。这几个字在 PDF 那款字（思源黑体）里都是满一个字宽，字号按 KIT_EM 收到和数字差不多宽。 */
 export declare const KIT_CHAR: Readonly<Record<string, string>>;
 export declare const KIT_EM = 0.62;
-/** 叠着的和弦折成的和弦名（第五刀 5-4，UX 稿第 7 节「和弦名用窄字、按实际宽度占位」）：字号（sp，数字原大起）、横向压到几成；每个字占多宽（em，写死的表，不现场量；
- *  表里没有的数字 0.56、别的 0.6）。名字的高（基线往上）。
- *  ♭ ♯ 照 PDF 那款字（vendor/fonts/sans.ttf = 思源黑体 / Noto Sans SC）的前进宽量过一次进表 = 满一个字宽（统筹看样张 ⑨：原来估 0.5 / 0.58，「B♭」带附点时点挤；test/jianpu.test.ts 拿真字体核着）。 */
-export declare const CHORD_EM = 2, CHORD_SX = 0.82, CHORD_H = 1.45;
-export declare const CHORD_CH_EM: Readonly<Record<string, number>>;
-/** 这个和弦名在数字行上占多宽（sp，数字原大起；乘行里的比例才是这一行的）。 */
-export declare const chordNameW: (s: string) => number;
-/** 有歧义的小三角（名字右下角，编辑器里）占多宽（sp，数字原大起；量的时候也让出来，不然挨着下一个名字）。 */
-export declare const CHORD_AMB_W = 0.55;
-/** 最低音那个字母的中心离名字左边多远（sp，数字原大起）：有斜杠 = 斜杠后面那个字母（转位的最低音），没有 = 第一个字母（根音就是最低音）。八度点标在它上下。 */
-export declare const chordBassCx: (s: string) => number;
 /** 数字上方的记号（样张）：第一个记号离数字（和高八度点）的上沿 0.545 FS；顿音 = 实心窄楔形 宽 0.19 FS、高 0.27 FS，占 0.41 FS；
  *  重音 / 次重音 = 描边的 >（宽 0.455 FS、高 0.364 FS，重音描边 0.068 FS、次重音 0.032 FS），占 0.545 FS；保持 = 短横（长 0.455 FS、粗 0.064 FS），占 0.364 FS；
  *  换气 V = 0.5 FS 的字，在基线上 1.09 FS。 */

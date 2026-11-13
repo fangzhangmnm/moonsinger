@@ -7,7 +7,6 @@ import type { SystemBox } from "./engrave.ts";
 import type { TextRole } from "./text/index.ts";
 import type { GhostNote } from "./frame/ghost.ts";
 export type { GhostNote } from "./frame/ghost.ts";
-import type { ChordFold } from "../theory/index.ts";
 import type { FoldFamily } from "./staff/index.ts";
 export type { FoldFamily, StaffTrack, StaffDrawCtx, Unit, Chunk } from "./staff/index.ts";
 /** 一行用哪种画法（SystemBox.kind，每一行都写）。jianpuX = 简谱里鼓的那种行（UX 稿第 7 节「鼓 = X」：数字行的节奏写法，音画成 X；第五刀 5-4）。 */
@@ -23,10 +22,9 @@ export interface LyricAnchor {
     lyric: string;
     hyph: boolean;
 }
-/** 框架交给画法的这一条轨的预处理（和谱种无关，画法用得上就用）：folds = 叠着的和弦折成的和弦名（这条轨的和弦选项是「折叠」时才有；token 下标 → 折法；第五刀 5-4）。
+/** 框架交给画法的这一条轨的预处理（和谱种无关，画法用得上就用）：
  *  labels = 出声的换气那行小字（「吸」「深吸」，按界面语言）：字、字号、写出来多宽，单位 = 这一种行自己的单位（sp ÷ 行里的尺寸比例）；量和画用同一份（第八刀守卫 2：量 = 画，不估）。数字行才有。 */
 export interface TrackAux {
-    folds?: ReadonlyMap<number, ChordFold>;
     labels?: {
         readonly inhale: Readonly<Record<"soft" | "big", RowLabel>>;
     };

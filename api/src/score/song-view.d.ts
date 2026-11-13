@@ -4,8 +4,9 @@ import type { Density } from "./paper.ts";
 /** 谱种：五线谱 / 简谱（第四刀）/ 字母谱（7-B：简谱的变体，数字换成实际音名的字母，同一种数字行）。以后 "figures"（设计稿第 7 节）。封闭的联合，不走注册表（ADR-0004：显示 = 库）。 */
 export type NotationId = "staff" | "jianpu" | "letters";
 export declare const NOTATIONS: readonly NotationId[];
-/** 每条轨的和弦选项三档（设计稿第 3.7 节）：只认叠在一起的和弦 / 也认拆开弹的和弦 / 折叠成和弦名（折叠 = 第五刀，现在画法同 auto）。 */
-export type ChordsMode = "stacked" | "auto" | "fold";
+/** 每条轨的和弦选项两档（设计稿第 3.7 节）：只认叠在一起的和弦 / 也认拆开弹的和弦。叠着的和弦永远照叠着画；和弦叫什么只由和弦辅助那一行说。
+ *  2026-11-13 第三档退役（user「同意」；施工单第 19 条退役那一节）：文件里读到这两档以外的值、文件不比这一版新 = 读成 auto（src/format/project.ts）。 */
+export type ChordsMode = "stacked" | "auto";
 /** 和弦辅助写成什么（第 19 条）。 */
 export type ChordTagStyle = "degree" | "root";
 export declare const CHORD_TAG_STYLES: readonly ChordTagStyle[];
