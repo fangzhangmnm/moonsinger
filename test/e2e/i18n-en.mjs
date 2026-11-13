@@ -91,7 +91,7 @@ for (const [size, w, h] of SIZES) {
   // 设置五页（v0.16.90 起分页）：逐页量
   await tap("#setBtn");
   if (await tap('button:has-text("Settings…")')) {
-    for (const tab of await p.$$eval(".set-tabs [data-tab]", (els) => els.map((e) => e.dataset.tab))) { if (await tap(`.set-tabs [data-tab="${tab}"]`)) await scan(`设置 ${tab}`); }
+    for (const tab of await p.$$eval(".set-panel [data-tab]", (els) => els.map((e) => e.dataset.tab))) { if (await tap(`.set-panel [data-tab="${tab}"]`)) await scan(`设置 ${tab}`); }
     await esc();
   }
   // 这一段的菜单（纸顶 ⋯）+ 谱头面板（v0.16.8）

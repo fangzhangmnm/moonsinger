@@ -36,9 +36,9 @@ const c = await p.evaluate(() => { const r = document.querySelector("#score .sco
 if (c) { await p.evaluate(() => { const el = document.querySelector("#score .score-overlay .ov-tall-hint"); el?.scrollIntoView({ block: "center" }); }); await p.waitForTimeout(200); }
 const c2 = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-tall-hint")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
 if (c2) await p.mouse.click(c2.x, c2.y); await p.waitForTimeout(300);
-const sheet = await p.evaluate(() => { const pg = (k) => document.querySelector(`.offer .set-page[data-page="${k}"]`); return { open: !!document.querySelector(".offer .set-page"), layout: !!pg("layout") && !pg("layout").hidden, look: !!pg("look") && !pg("look").hidden }; });
+const sheet = await p.evaluate(() => { const pg = (k) => document.querySelector(`.set-panel .set-page[data-page="${k}"]`); return { open: !!document.querySelector(".set-panel .set-page"), layout: !!pg("layout") && !pg("layout").hidden, look: !!pg("look") && !pg("look").hidden }; });
 check(sheet.open && sheet.layout && !sheet.look, "点它 = 页面设置开在「版面」页", JSON.stringify(sheet));
-await p.click('.offer [data-v="close"]').catch(() => {}); await p.waitForTimeout(200);
+await p.click('.set-panel [data-panel-btn="close"]').catch(() => {}); await p.waitForTimeout(200);
 // 换回连续排：不分页 = 没有这条提示
 await p.evaluate(() => window.__moonsinger.setPages(false)); await p.waitForTimeout(400);
 const z = await info();

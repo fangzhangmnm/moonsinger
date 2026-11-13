@@ -47,7 +47,7 @@ import { TEMPLATE } from "../format/template.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
 import { createPackStore } from "@internal/model-packs";
-import { showNotice, closeNotice, configureFloors, createTabStrip, settingRowHtml, wireSettingRows, openPanelShell, type TabSpec } from "@internal/workbench-elements";
+import { showNotice, closeNotice, configureFloors, settingRowHtml, wireSettingRows, openPanelShell, type TabSpec, type PanelShell } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT } from "../gm/sounds.gen.ts";
@@ -1436,19 +1436,15 @@ const SET_PAGES = (): TabSpec<SetPage>[] => [
 //   label / ctl / help / body 都是本仓自己拼的 HTML（照旧不转义）；attrs 的值由库转义。
 const setItem = (label: string, ctl: string, help = "", body = "", attrs?: Readonly<Record<string, string>>) =>
   settingRowHtml({ labelHtml: label, ...(ctl ? { controlHtml: ctl } : {}), notes: help ? [{ mark: "?", label: _t("这是什么"), html: help }] : [], ...(body ? { belowHtml: body } : {}), ...(attrs ? { attrs } : {}) });
-/** 页签条的位子（13-0：页签条本身是界面零件库的 createTabStrip，wireSetPages 放进来）。 */
-const setTabsHtml = (): string => `<div class="set-tabs" data-tabs-slot></div>`;
-/** 只露 pg 那一页、它的页签亮着；页签点了换页；「?」点了 = 这一行下面展开说明（iPad 没有悬停）。回 showPage。 */
-function wireSetPages<P extends string>(box: HTMLElement, tabs: readonly TabSpec<P>[], start: P, onPage: (pg: P) => void): (pg: P) => void {
-  const strip = createTabStrip<P>({ tabs, current: start, onPick: (id) => showPage(id) });
+/** 面板外壳上的分页（设置、页面设置；2026-11-13 搬到壳上，原来的 setTabsHtml / wireSetPages 退场）：页签条是壳自己的（opts.tabs），这里只管露哪一页、亮哪一格、「?」点了在这一行下面展开说明（iPad 没有悬停）。回 showPage。 */
+function wireShellPages<P extends string>(panel: PanelShell<P>, box: HTMLElement, onPage: (pg: P) => void): (pg: P) => void {
   const showPage = (pg: P): void => {
-    const slot = box.querySelector<HTMLElement>("[data-tabs-slot]"); if (slot && !slot.contains(strip.el)) slot.append(strip.el);   // 页面设置整张重画（innerHTML）后放回去
     box.querySelectorAll<HTMLElement>(".set-page").forEach((el) => { el.hidden = el.dataset.page !== pg; });
-    fitWide(box);   // 这一页露出来了：字放不下的控件跟着字变宽（英文界面）
-    strip.set(pg);
+    fitWide(box);
+    panel.tabs?.set(pg);
     onPage(pg);
   };
-  wireSettingRows(box);   // 「?」点了 = 这一行下面展开说明（iPad 没有悬停）；box 每次打开新建，不用解绑
+  wireSettingRows(box);
   return showPage;
 }
 /** 设置里的一个下拉框（原来一排小按钮，user 嫌难看 → 下拉框）：data-set = 哪一项，改了走 openSettings 的 change。 */
@@ -1491,13 +1487,12 @@ function onHabitRow(k: HabitKey, raw: string): void {
 function openSettings(): void {
   ui.close();
   const inFolder = resourcesInFolder();   // 备用版：模型 / 音源都在文件夹里，浏览器缓存用不了——这几行画灰 + 说一句（规则书 §1 第 6 条）
-  const box = document.createElement("div");
-  box.className = "offer";
+  const box = document.createElement("div");   // 面板外壳里那一块（壳 = 界面零件库的 openPanelShell：标题、页签条、能滚的一层、底下的「好」都是壳的）
+  box.className = "settings-body";
   // 一项一行（setItem，和页面设置共用）；版权署名不放这里，进「版权与署名」那一篇长文（src/app/credits-doc.ts，按需跳到那一节）
   const item = setItem;
   const look = (v: string, label: string) => `<button class="btn" data-v="${v}">${label}</button>`;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("设置")}</div>` +
-    setTabsHtml() +
+  box.innerHTML =
     `<div class="set-page" data-page="ui">` +
       item(LANG_LABEL, setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }) +
       habitRowsHtml() +
@@ -1525,11 +1520,15 @@ function openSettings(): void {
       item(_t("还原出厂设置"), `<button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button>`, _t("这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相和乐器音色库不动——要删在「音源」页各自那一栏删")) +
     `</div>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("检查更新")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("检查更新")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}</div>` +
-    `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
-  document.body.append(box);
+    "";
+  // 壳（「设置、页面设置搬到壳上」：看上去不变；关 = 底下「好」/ 点外面 / Esc，都回 onClose）
+  let showPage: (pg: SetPage) => void = () => undefined;
+  const panel = openPanelShell<SetPage>({ title: _t("设置"), content: box, width: "wide", tabs: { tabs: SET_PAGES(), current: settingsPage, onPick: (pg) => showPage(pg) },
+    buttons: [{ id: "close", label: _t("好"), primary: true }], closeId: "close", onClose: () => cleanup() });
+  panel.el.classList.add("set-panel", "settings-panel");   // set-panel = 搬到壳上的设置 / 页面设置（E2E 认它）
   // 六页：点页签换页（这次运行里记住）；下拉框改了马上生效（语言 = 存 + 重载）
   mountDropdowns(box);   // 设置里的下拉（setSel）
-  const showPage = wireSetPages<SetPage>(box, SET_PAGES(), settingsPage, (pg) => { settingsPage = pg; });
+  showPage = wireShellPages(panel, box, (pg) => { settingsPage = pg; });
   showPage(settingsPage);
   box.addEventListener("change", (e) => {
     const el = e.target as HTMLButtonElement, k = el.dataset.set;
@@ -1603,7 +1602,7 @@ function openSettings(): void {
     });
   };
   const host: LibsHost = {
-    ask: (title, msg, ok, danger) => askOver(box, title, msg, ok, danger), info, removed: { set: setLibRemoved }, error: showError, silencedBy, sizeOf: (lib) => sizes.get(typeof lib === "string" ? lib : lib.sha256) ?? 0,
+    ask: (title, msg, ok, danger) => askOver(panel.el, title, msg, ok, danger), info, removed: { set: setLibRemoved }, error: showError, silencedBy, sizeOf: (lib) => sizes.get(typeof lib === "string" ? lib : lib.sha256) ?? 0,
     voice: {
       delete: () => packStore.delete(Object.keys(PACKS)),
       install: async (onPct) => { keepSources(); await installVoicePacks(onPct); },
@@ -1615,7 +1614,7 @@ function openSettings(): void {
     audio: { revive: () => manualRevive("settings") },
     shell: { check: () => shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? _t("已经是最新版") : _t("这里没有离线壳（本机开发 / 浏览器不支持），不用更新")); }), reset: () => shell.forceReset() },
     diag: {
-      view: () => openDocLayer(box, _t("诊断日志"), `<pre class="diag-log">${esc(diagText())}</pre>`),
+      view: () => openDocLayer(panel.el, _t("诊断日志"), `<pre class="diag-log">${esc(diagText())}</pre>`),
       copy: () => void copyDiag(box.querySelector("#diagTxt"), info), download: () => downloadDiag(info), share: () => void shareDiag(info), clear: () => clearDiag(box.querySelector("#diagTxt"), info),
     },
     refresh: (what) => void (what === "sound" ? refreshSound() : refreshUpkeep()),
@@ -1624,19 +1623,20 @@ function openSettings(): void {
       const el = box.querySelector<HTMLElement>(page === "sound" ? `.wbe-row[data-lib="${lib}"]` : `.wbe-row[data-group="${lib}"]`);
       if (el) { el.classList.add("is-target"); el.scrollIntoView({ block: "nearest" }); setTimeout(() => el.classList.remove("is-target"), 1600); }
     },
-    doc: () => openDocLayer(box, _t("小月相（つくよみちゃん）的署名与使用条款"), sectionsHtml(creditsSections(lang()).filter((s) => s.id === VOICE_CREDIT_SECTION))),
+    doc: () => openDocLayer(panel.el, _t("小月相（つくよみちゃん）的署名与使用条款"), sectionsHtml(creditsSections(lang()).filter((s) => s.id === VOICE_CREDIT_SECTION))),
     progress,
   };
   midiRowSync = (s) => { const el = box.querySelector<HTMLElement>("#midiSt"); if (el) el.innerHTML = midiStatusHtml(s); if (s.k !== "off" && s.k !== "denied") box.querySelector('[data-v="midi:connect"]')?.remove(); };
   libsRowSync = () => { void refreshSound(); void refreshUpkeep(); };
-  const close = () => { clearInterval(resTimer); midiRowSync = null; libsRowSync = null; keepSources(); box.remove(); ui.closed(close); scoreEl.focus(); };
+  let gone = false;
+  const cleanup = () => { if (gone) return; gone = true; clearInterval(resTimer); midiRowSync = null; libsRowSync = null; keepSources(); ui.closed(close); scoreEl.focus(); };
+  const close = () => { panel.close(); cleanup(); };
   ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
-    if ((e.target as HTMLElement).closest(".wbe-row-mark, [data-tab]")) return;   // 「?」「©」和页签归 wireSetPages
+    if ((e.target as HTMLElement).closest(".wbe-row-mark, [data-tab]")) return;   // 「?」「©」归 wireSettingRows，页签归壳
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
-    if (e.target === box || v === "close") { close(); return; }
     if (!v) return;
-    if (v === "doc:top") openDocLayer(box, _t("第三方的作者和许可"), sectionsHtml(creditsSections(lang()).filter((s) => s.id !== VOICE_CREDIT_SECTION)));
+    if (v === "doc:top") openDocLayer(panel.el, _t("第三方的作者和许可"), sectionsHtml(creditsSections(lang()).filter((s) => s.id !== VOICE_CREDIT_SECTION)));
     else if (v === "src:default:voice") { const a = box.querySelector<HTMLInputElement>("#srcIn"); if (a) a.value = MODEL_SOURCE_DEFAULT; models.source = MODEL_SOURCE_DEFAULT; }
     else if (v === "src:default:gs") { const b = box.querySelector<HTMLInputElement>("#sndIn"); if (b) b.value = SOUNDS_SOURCE_DEFAULT; sources.source = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "midi:connect") void midi.connect();
@@ -2180,8 +2180,8 @@ function openSongPanel(focus?: "name" | "credits" | "cover" | "sounds"): void {
  *  每一项的「?」里写清它存在哪：跟着这首歌（进歌、能撤销、PDF 照着印）/ 跟着这首歌的视图（存时顺手带，不算改动）/ 只在这次打开里。 */
 function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = 「看谱」页落在「演奏法和表情」那一项；layout = 开在「版面」页（7-V 的提示点进来）
   ui.close();
-  const box = document.createElement("div");
-  box.className = "offer";
+  const box = document.createElement("div");   // 面板外壳里那一块（壳 = 界面零件库的 openPanelShell；「设置、页面设置搬到壳上」，看上去不变）
+  box.className = "paper-body";
   let page: "look" | "layout" = focus === "layout" ? "layout" : "look";   // 打开默认「看谱」这一页
   const sel = (k: string, items: readonly (readonly [string, string])[], cur: string, disabled = false) =>
     dropdownHtml(items.map(([value, label]) => ({ value, label })), cur, { cls: "hp-sel set-sel", attrs: `data-pg="${k}"`, ...(disabled ? { disabled: true } : {}) });
@@ -2244,28 +2244,31 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
         defs([[_t("按节奏"), _t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 这一行一起缩一点 → 还放不下画灰")], [_t("按歌词"), _t("长的字把音推开（出版谱的老规矩）")]]) + IN_SONG) +
       // 谱上的字用哪种语言（施工单 12-4；user「页面设置是不是也应该有一个语言，影响打印？」）：这首歌的，走修改锁的「看法」（同小节号、音符密度）
       setItem(_t("谱上的字"), sel("tl", ...known(D.st.song.textLang, textLangItems(), look.textLang)), TEXT_LANG_HELP() + IN_SONG);
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("页面设置")}</div>` +
-      setTabsHtml() +
-      `<div class="set-page" data-page="look">${lookPage}</div><div class="set-page" data-page="layout">${layoutPage}</div>` +
-      // 「全部跟着软件」（第 17 条 17-1）：把这首歌里选过的都改回跟着软件，一步撤销；一项都没选过 = 灰着
-      `<div class="offer-btns"><button class="btn" data-v="alldef" title="${_t("把这首歌里选过的显示设置都改回跟着软件（能撤销）")}"${chosenCount(D.st.song) ? "" : " disabled"}>${_t("全部跟着软件")}</button><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
+    box.innerHTML = `<div class="set-page" data-page="look">${lookPage}</div><div class="set-page" data-page="layout">${layoutPage}</div>`;
     mountDropdowns(box);
+    // 「全部跟着软件」（第 17 条 17-1）= 壳底下那一颗：把这首歌里选过的都改回跟着软件，一步撤销；一项都没选过 = 灰着
+    const all = panel.el.querySelector<HTMLButtonElement>('[data-panel-btn="alldef"]');
+    if (all) { all.disabled = !chosenCount(D.st.song); all.title = _t("把这首歌里选过的显示设置都改回跟着软件（能撤销）"); }
     showPage(page);
   };
-  const showPage = wireSetPages<"look" | "layout">(box, [{ id: "look", label: _t("看谱"), icon: "visibility-show", title: _t("看谱：这张纸在屏幕上怎么看") }, { id: "layout", label: _t("版面"), icon: "file", title: _t("版面：纸张和音符密度") }], page, (pg) => { page = pg; });
+  // 壳：标题、页签条、能滚的一层、底下两颗（全部跟着软件 / 好）；关 = 「好」/ 点外面 / Esc，都回 onClose
+  let showPage: (pg: "look" | "layout") => void = () => undefined;
+  const panel = openPanelShell<"look" | "layout">({ title: _t("页面设置"), content: box, width: "wide",
+    tabs: { tabs: [{ id: "look", label: _t("看谱"), icon: "visibility-show", title: _t("看谱：这张纸在屏幕上怎么看") }, { id: "layout", label: _t("版面"), icon: "file", title: _t("版面：纸张和音符密度") }], current: page, onPick: (pg) => showPage(pg) },
+    buttons: [{ id: "alldef", label: _t("全部跟着软件") }, { id: "close", label: _t("好"), primary: true }], closeId: "close",
+    onButton: (id) => { if (id === "alldef") { setPageLook({ ...D.st, song: allDefault(D.st.song) }, { kind: "allLooks", label: _t("全部跟着软件") }); draw(); } },
+    onClose: () => cleanup() });
+  panel.el.classList.add("set-panel", "paper-panel");
+  showPage = wireShellPages(panel, box, (pg) => { page = pg; });
   draw();
-  document.body.append(box);
   if (focus === "expr") {   // 落在那一项：高亮一下、滚到它、焦点放在它的下拉上（「演奏法和表情：不显示」的淡提示点进来的）
     const dd = box.querySelector<HTMLButtonElement>(`[data-pg="${focus}"]`), it = dd?.closest<HTMLElement>(".wbe-row");
     if (it) { it.classList.add("is-target"); it.scrollIntoView({ block: "nearest" }); dd!.focus(); setTimeout(() => it.classList.remove("is-target"), 1600); }
   }
-  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
+  let gone = false;
+  const cleanup = () => { if (gone) return; gone = true; ui.closed(close); scoreEl.focus(); };
+  const close = () => { panel.close(); cleanup(); };
   ui.open({ k: "sheet", close });
-  box.addEventListener("click", (e) => {
-    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
-    if (e.target === box || v === "close") close();
-    else if (v === "alldef") { setPageLook({ ...D.st, song: allDefault(D.st.song) }, { kind: "allLooks", label: _t("全部跟着软件") }); draw(); }
-  });
   box.addEventListener("change", (e) => {
     const el = e.target as HTMLButtonElement, k = el.dataset.pg, v = el.value; if (!k || v === ODD) return;   // 「这一版不认识」那一项不是一个可选的值
     // 选「跟着软件」：这一项写回跟着软件（src/look followDefault）；按这一项原来那一类走写入口（修改锁的「看法」按类别核）

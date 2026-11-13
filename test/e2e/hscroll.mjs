@@ -21,7 +21,7 @@ check(!!(await p.$('[data-pg="flow"]')), "页面设置里有排法");
 await pickOnPage(p, '[data-pg="flow"]', "scroll"); await p.waitForTimeout(300);
 check((await ddValue(p, '[data-pg="flow"]')) === "scroll", "下拉里是「横卷」");
 await p.keyboard.press("Escape"); await p.mouse.click(990, 790).catch(() => {}); await p.waitForTimeout(200);
-await p.click('.offer [data-v="close"]').catch(() => {}); await p.waitForTimeout(200);
+await p.click('.set-panel [data-panel-btn="close"]').catch(() => {}); await p.waitForTimeout(200);
 check((await rows()) === 1, "横卷：一行（不折行）", String(await rows()));
 const g = await p.evaluate(() => { const el = document.querySelector("#score"); return { sw: el.scrollWidth, cw: el.clientWidth, sl: el.scrollLeft, h: el.classList.contains("hscroll") }; });
 check(g.h && g.sw > g.cw * 1.5, "谱面板横着能滚（纸按内容撑宽）", JSON.stringify(g));
@@ -46,7 +46,7 @@ await p.evaluate(() => window.__moonsinger.view.setPlayhead(null));
 check((await p.evaluate(() => window.__moonsinger.desk().scroll)) === true, "视图态里记着横卷（存时进 score.json view.scroll）");
 // 换回连续（纸的扳手在卷首那一屏：先滚回最左）
 await p.evaluate(() => { document.querySelector("#score").scrollLeft = 0; document.querySelector("#score").scrollTop = 0; }); await p.waitForTimeout(150);
-await openSheet(); await pickOnPage(p, '[data-pg="flow"]', "cont"); await p.waitForTimeout(300); await p.click('.offer [data-v="close"]').catch(() => {}); await p.waitForTimeout(200);
+await openSheet(); await pickOnPage(p, '[data-pg="flow"]', "cont"); await p.waitForTimeout(300); await p.click('.set-panel [data-panel-btn="close"]').catch(() => {}); await p.waitForTimeout(200);
 check((await rows()) > 1, "换回连续 = 照旧折行", String(await rows()));
 check(!(await p.$eval("#score", (e) => e.classList.contains("hscroll"))) && !(await p.$(".pin-names")), "不横滚了、钉住的名字没了");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));

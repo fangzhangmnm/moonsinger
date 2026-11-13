@@ -29,7 +29,7 @@ await pickOnPage(p, '[data-pg="tl"]', "en"); await p.waitForTimeout(250);
 check((await textLang()) === "en", "选 English = 歌里那一项变成 en", await textLang());
 check((await breathLabel()) === "in", "谱上印出来的换气字变成英文", await breathLabel());
 check(await p.evaluate(() => document.documentElement.dataset.lang) === "zh", "界面语言没变（还是中文）");
-await p.click('.offer [data-v="close"]'); await p.waitForTimeout(150);
+await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(150);
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
 check((await textLang()) === "ui" && (await breathLabel()) === "吸", "能撤销（回到跟着界面）", `${await textLang()} ${await breathLabel()}`);
 // 导出乐谱的面板

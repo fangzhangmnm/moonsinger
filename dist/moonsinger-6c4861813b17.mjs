@@ -6359,7 +6359,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.28-2026-11-13";
+var APP_VERSION = "v0.17.29-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -35226,7 +35226,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick2(() => "layout-worker-4825cfb8b171.mjs");
     case "encode-worker":
-      return pick2(() => "encode-worker-d95bd880f0fa.mjs");
+      return pick2(() => "encode-worker-aa16aedb24aa.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -62279,17 +62279,13 @@ var SET_PAGES = () => [
   { id: "dev", label: _t("\u5F00\u53D1\u8005##\u9875\u7B7E"), icon: "chip", title: _t("\u5F00\u53D1\u8005\uFF1A\u8BD5\u9A8C\u5F00\u5173\u3001\u8FD8\u539F\u51FA\u5382") }
 ];
 var setItem = (label, ctl, help = "", body2 = "", attrs) => settingRowHtml({ labelHtml: label, ...ctl ? { controlHtml: ctl } : {}, notes: help ? [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: help }] : [], ...body2 ? { belowHtml: body2 } : {}, ...attrs ? { attrs } : {} });
-var setTabsHtml = () => `<div class="set-tabs" data-tabs-slot></div>`;
-function wireSetPages(box, tabs, start, onPage) {
-  const strip = createTabStrip({ tabs, current: start, onPick: (id2) => showPage(id2) });
+function wireShellPages(panel, box, onPage) {
   const showPage = (pg) => {
-    const slot = box.querySelector("[data-tabs-slot]");
-    if (slot && !slot.contains(strip.el)) slot.append(strip.el);
     box.querySelectorAll(".set-page").forEach((el2) => {
       el2.hidden = el2.dataset.page !== pg;
     });
     fitWide(box);
-    strip.set(pg);
+    panel.tabs?.set(pg);
     onPage(pg);
   };
   wireSettingRows(box);
@@ -62340,14 +62336,24 @@ function openSettings() {
   ui2.close();
   const inFolder2 = resourcesInFolder();
   const box = document.createElement("div");
-  box.className = "offer";
+  box.className = "settings-body";
   const item = setItem;
   const look = (v, label) => `<button class="btn" data-v="${v}">${label}</button>`;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div>` + setTabsHtml() + `<div class="set-page" data-page="ui">` + item(LANG_LABEL, setSel("lang", [["auto", _t("\u8DDF\u7CFB\u7EDF")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }) + habitRowsHtml() + `</div><div class="set-page" data-page="sound"><div id="libVoice">\u2026</div><div id="libGs">\u2026</div><div id="libOwn">\u2026</div></div><div class="set-page" data-page="input">` + item(_t("MIDI \u952E\u76D8"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}`) + `</div><div class="set-page" data-page="upkeep"><div id="upVoice">\u2026</div><div id="upGs">\u2026</div><div id="upRc">\u2026</div>` + upkeepRestHtml({ canShare: canShareDiag(), diagText: diagText() }) + `</div><div class="set-page" data-page="about">` + item(_t("\u7248\u672C"), `<span class="set-ver">${APP_VERSION}</span>`) + item(_t("\u7B2C\u4E09\u65B9\u7684\u4F5C\u8005\u548C\u8BB8\u53EF"), look("doc:top", _t("\u770B\u2026")), _t("\u8F6F\u4EF6\u81EA\u5DF1\u7528\u5230\u7684\u522B\u4EBA\u7684\u4E1C\u897F\uFF08\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\u2026\uFF09\uFF1B\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u5728\u300C\u97F3\u6E90\u300D\u9875\u5B83\u90A3\u4E00\u680F\u7684 \xA9")) + `</div><div class="set-page" data-page="dev">` + item(_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57"), setSel("feel", [["off", _t("\u5173")], ["on", _t("\u5F00")]], feelAlways ? "on" : "off"), _t("\u67E5\u5EF6\u8FDF\u7528\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")) + (IS_IOS ? item(_t("\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09"), setSel("primer", [["off", _t("\u5173")], ["on", _t("\u5F00")]], primerOn() ? "on" : "off"), _t("\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA")) : "") + // 给开发者看的数字（「13 再补」第 4 条：维护页和音源页只留「占多少、能不能清」）：站点配额、录音房几块、小月相几条道和设备预算、输出延迟、音频线程忙多少
-  item(_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58"), "", _t("\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u72B6\u6001\u6761\u660E\u8BF4"), `<div id="engRes" class="set-packs">\u2026</div><div id="siteQuota" class="set-packs"></div>`) + item(_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E"), `<button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u548C\u4E50\u5668\u97F3\u8272\u5E93\u4E0D\u52A8\u2014\u2014\u8981\u5220\u5728\u300C\u97F3\u6E90\u300D\u9875\u5404\u81EA\u90A3\u4E00\u680F\u5220")) + `</div><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
-  document.body.append(box);
+  box.innerHTML = `<div class="set-page" data-page="ui">` + item(LANG_LABEL, setSel("lang", [["auto", _t("\u8DDF\u7CFB\u7EDF")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }) + habitRowsHtml() + `</div><div class="set-page" data-page="sound"><div id="libVoice">\u2026</div><div id="libGs">\u2026</div><div id="libOwn">\u2026</div></div><div class="set-page" data-page="input">` + item(_t("MIDI \u952E\u76D8"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}`) + `</div><div class="set-page" data-page="upkeep"><div id="upVoice">\u2026</div><div id="upGs">\u2026</div><div id="upRc">\u2026</div>` + upkeepRestHtml({ canShare: canShareDiag(), diagText: diagText() }) + `</div><div class="set-page" data-page="about">` + item(_t("\u7248\u672C"), `<span class="set-ver">${APP_VERSION}</span>`) + item(_t("\u7B2C\u4E09\u65B9\u7684\u4F5C\u8005\u548C\u8BB8\u53EF"), look("doc:top", _t("\u770B\u2026")), _t("\u8F6F\u4EF6\u81EA\u5DF1\u7528\u5230\u7684\u522B\u4EBA\u7684\u4E1C\u897F\uFF08\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\u2026\uFF09\uFF1B\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u5728\u300C\u97F3\u6E90\u300D\u9875\u5B83\u90A3\u4E00\u680F\u7684 \xA9")) + `</div><div class="set-page" data-page="dev">` + item(_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57"), setSel("feel", [["off", _t("\u5173")], ["on", _t("\u5F00")]], feelAlways ? "on" : "off"), _t("\u67E5\u5EF6\u8FDF\u7528\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")) + (IS_IOS ? item(_t("\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09"), setSel("primer", [["off", _t("\u5173")], ["on", _t("\u5F00")]], primerOn() ? "on" : "off"), _t("\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA")) : "") + // 给开发者看的数字（「13 再补」第 4 条：维护页和音源页只留「占多少、能不能清」）：站点配额、录音房几块、小月相几条道和设备预算、输出延迟、音频线程忙多少
+  item(_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58"), "", _t("\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u72B6\u6001\u6761\u660E\u8BF4"), `<div id="engRes" class="set-packs">\u2026</div><div id="siteQuota" class="set-packs"></div>`) + item(_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E"), `<button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u548C\u4E50\u5668\u97F3\u8272\u5E93\u4E0D\u52A8\u2014\u2014\u8981\u5220\u5728\u300C\u97F3\u6E90\u300D\u9875\u5404\u81EA\u90A3\u4E00\u680F\u5220")) + `</div><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}</div>`;
+  let showPage = () => void 0;
+  const panel = openPanelShell({
+    title: _t("\u8BBE\u7F6E"),
+    content: box,
+    width: "wide",
+    tabs: { tabs: SET_PAGES(), current: settingsPage, onPick: (pg) => showPage(pg) },
+    buttons: [{ id: "close", label: _t("\u597D"), primary: true }],
+    closeId: "close",
+    onClose: () => cleanup()
+  });
+  panel.el.classList.add("set-panel", "settings-panel");
   mountDropdowns(box);
-  const showPage = wireSetPages(box, SET_PAGES(), settingsPage, (pg) => {
+  showPage = wireShellPages(panel, box, (pg) => {
     settingsPage = pg;
   });
   showPage(settingsPage);
@@ -62474,7 +62480,7 @@ function openSettings() {
     });
   };
   const host2 = {
-    ask: (title, msg, ok2, danger) => askOver(box, title, msg, ok2, danger),
+    ask: (title, msg, ok2, danger) => askOver(panel.el, title, msg, ok2, danger),
     info,
     removed: { set: setLibRemoved },
     error: showError,
@@ -62515,7 +62521,7 @@ function openSettings() {
       } else info(r10 === "latest" ? _t("\u5DF2\u7ECF\u662F\u6700\u65B0\u7248") : _t("\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0"));
     }), reset: () => shell.forceReset() },
     diag: {
-      view: () => openDocLayer(box, _t("\u8BCA\u65AD\u65E5\u5FD7"), `<pre class="diag-log">${esc13(diagText())}</pre>`),
+      view: () => openDocLayer(panel.el, _t("\u8BCA\u65AD\u65E5\u5FD7"), `<pre class="diag-log">${esc13(diagText())}</pre>`),
       copy: () => void copyDiag(box.querySelector("#diagTxt"), info),
       download: () => downloadDiag(info),
       share: () => void shareDiag(info),
@@ -62531,7 +62537,7 @@ function openSettings() {
         setTimeout(() => el2.classList.remove("is-target"), 1600);
       }
     },
-    doc: () => openDocLayer(box, _t("\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"), sectionsHtml(creditsSections(lang()).filter((s10) => s10.id === VOICE_CREDIT_SECTION))),
+    doc: () => openDocLayer(panel.el, _t("\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"), sectionsHtml(creditsSections(lang()).filter((s10) => s10.id === VOICE_CREDIT_SECTION))),
     progress
   };
   midiRowSync = (s10) => {
@@ -62543,25 +62549,27 @@ function openSettings() {
     void refreshSound();
     void refreshUpkeep();
   };
-  const close = () => {
+  let gone = false;
+  const cleanup = () => {
+    if (gone) return;
+    gone = true;
     clearInterval(resTimer);
     midiRowSync = null;
     libsRowSync = null;
     keepSources();
-    box.remove();
     ui2.closed(close);
     scoreEl.focus();
+  };
+  const close = () => {
+    panel.close();
+    cleanup();
   };
   ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
     if (e10.target.closest(".wbe-row-mark, [data-tab]")) return;
     const v = e10.target.closest("[data-v]")?.dataset.v;
-    if (e10.target === box || v === "close") {
-      close();
-      return;
-    }
     if (!v) return;
-    if (v === "doc:top") openDocLayer(box, _t("\u7B2C\u4E09\u65B9\u7684\u4F5C\u8005\u548C\u8BB8\u53EF"), sectionsHtml(creditsSections(lang()).filter((s10) => s10.id !== VOICE_CREDIT_SECTION)));
+    if (v === "doc:top") openDocLayer(panel.el, _t("\u7B2C\u4E09\u65B9\u7684\u4F5C\u8005\u548C\u8BB8\u53EF"), sectionsHtml(creditsSections(lang()).filter((s10) => s10.id !== VOICE_CREDIT_SECTION)));
     else if (v === "src:default:voice") {
       const a10 = box.querySelector("#srcIn");
       if (a10) a10.value = MODEL_SOURCE_DEFAULT;
@@ -62695,7 +62703,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, activePerfSpec(D3.extras, curRole())?.sing ?? {});
   },
   state: () => D3.st,
-  cssHash: "efd3113639b2",
+  cssHash: "cb4634fc1b72",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -63526,7 +63534,7 @@ function openSongPanel(focus) {
 function openPaperSheet(focus) {
   ui2.close();
   const box = document.createElement("div");
-  box.className = "offer";
+  box.className = "paper-body";
   let page = focus === "layout" ? "layout" : "look";
   const sel2 = (k2, items, cur, disabled = false) => dropdownHtml(items.map(([value, label]) => ({ value, label })), cur, { cls: "hp-sel set-sel", attrs: `data-pg="${k2}"`, ...disabled ? { disabled: true } : {} });
   const ODD = "?odd";
@@ -63593,15 +63601,36 @@ function openPaperSheet(focus) {
       defs([[_t("\u6309\u8282\u594F"), _t("\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070")], [_t("\u6309\u6B4C\u8BCD"), _t("\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09")]]) + IN_SONG
     ) + // 谱上的字用哪种语言（施工单 12-4；user「页面设置是不是也应该有一个语言，影响打印？」）：这首歌的，走修改锁的「看法」（同小节号、音符密度）
     setItem(_t("\u8C31\u4E0A\u7684\u5B57"), sel2("tl", ...known(D3.st.song.textLang, textLangItems(), look.textLang)), TEXT_LANG_HELP() + IN_SONG);
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u9875\u9762\u8BBE\u7F6E")}</div>` + setTabsHtml() + `<div class="set-page" data-page="look">${lookPage}</div><div class="set-page" data-page="layout">${layoutPage}</div><div class="offer-btns"><button class="btn" data-v="alldef" title="${_t("\u628A\u8FD9\u9996\u6B4C\u91CC\u9009\u8FC7\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u6539\u56DE\u8DDF\u7740\u8F6F\u4EF6\uFF08\u80FD\u64A4\u9500\uFF09")}"${chosenCount(D3.st.song) ? "" : " disabled"}>${_t("\u5168\u90E8\u8DDF\u7740\u8F6F\u4EF6")}</button><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+    box.innerHTML = `<div class="set-page" data-page="look">${lookPage}</div><div class="set-page" data-page="layout">${layoutPage}</div>`;
     mountDropdowns(box);
+    const all = panel.el.querySelector('[data-panel-btn="alldef"]');
+    if (all) {
+      all.disabled = !chosenCount(D3.st.song);
+      all.title = _t("\u628A\u8FD9\u9996\u6B4C\u91CC\u9009\u8FC7\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u6539\u56DE\u8DDF\u7740\u8F6F\u4EF6\uFF08\u80FD\u64A4\u9500\uFF09");
+    }
     showPage(page);
   };
-  const showPage = wireSetPages(box, [{ id: "look", label: _t("\u770B\u8C31"), icon: "visibility-show", title: _t("\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B") }, { id: "layout", label: _t("\u7248\u9762"), icon: "file", title: _t("\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6") }], page, (pg) => {
+  let showPage = () => void 0;
+  const panel = openPanelShell({
+    title: _t("\u9875\u9762\u8BBE\u7F6E"),
+    content: box,
+    width: "wide",
+    tabs: { tabs: [{ id: "look", label: _t("\u770B\u8C31"), icon: "visibility-show", title: _t("\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B") }, { id: "layout", label: _t("\u7248\u9762"), icon: "file", title: _t("\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6") }], current: page, onPick: (pg) => showPage(pg) },
+    buttons: [{ id: "alldef", label: _t("\u5168\u90E8\u8DDF\u7740\u8F6F\u4EF6") }, { id: "close", label: _t("\u597D"), primary: true }],
+    closeId: "close",
+    onButton: (id2) => {
+      if (id2 === "alldef") {
+        setPageLook({ ...D3.st, song: allDefault(D3.st.song) }, { kind: "allLooks", label: _t("\u5168\u90E8\u8DDF\u7740\u8F6F\u4EF6") });
+        draw();
+      }
+    },
+    onClose: () => cleanup()
+  });
+  panel.el.classList.add("set-panel", "paper-panel");
+  showPage = wireShellPages(panel, box, (pg) => {
     page = pg;
   });
   draw();
-  document.body.append(box);
   if (focus === "expr") {
     const dd = box.querySelector(`[data-pg="${focus}"]`), it2 = dd?.closest(".wbe-row");
     if (it2) {
@@ -63611,20 +63640,18 @@ function openPaperSheet(focus) {
       setTimeout(() => it2.classList.remove("is-target"), 1600);
     }
   }
-  const close = () => {
-    box.remove();
+  let gone = false;
+  const cleanup = () => {
+    if (gone) return;
+    gone = true;
     ui2.closed(close);
     scoreEl.focus();
   };
+  const close = () => {
+    panel.close();
+    cleanup();
+  };
   ui2.open({ k: "sheet", close });
-  box.addEventListener("click", (e10) => {
-    const v = e10.target.closest("[data-v]")?.dataset.v;
-    if (e10.target === box || v === "close") close();
-    else if (v === "alldef") {
-      setPageLook({ ...D3.st, song: allDefault(D3.st.song) }, { kind: "allLooks", label: _t("\u5168\u90E8\u8DDF\u7740\u8F6F\u4EF6") });
-      draw();
-    }
-  });
   box.addEventListener("change", (e10) => {
     const el2 = e10.target, k2 = el2.dataset.pg, v = el2.value;
     if (!k2 || v === ODD) return;
@@ -67206,4 +67233,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-96b24527ad3c.mjs.map
+//# sourceMappingURL=moonsinger-6c4861813b17.mjs.map

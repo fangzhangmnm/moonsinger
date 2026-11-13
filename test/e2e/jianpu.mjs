@@ -21,24 +21,24 @@ for (const x of await p.$$(".notice-stack .toast button.dismiss")) await x.click
 await p.waitForTimeout(100);
 const S = () => p.evaluate(() => window.__moonsinger.state());
 const kinds = () => p.evaluate(() => window.__moonsinger.layout().systems.map((r) => r.kind).join(","));
-const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
+const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".set-panel"); };
 /** 第 k 个音的数字在屏幕上的中心（点击框 = 数字那一格）。 */
 const digitAt = (k) => p.evaluate((k) => { const L = window.__moonsinger.layout(), sh = document.querySelector("#score .sheet").getBoundingClientRect(), n = L.notes[k]; return { x: sh.left + L.pageX.left + n.x + n.w / 2, y: sh.top + n.y, index: n.index, d: n.d, row: n.system }; }, k);
 
 // ① 纸角的钮 = 「1 / ♪」；面板第一行 = 视图（施工单第 12 条 12-3，原来的「排法」挪到最上面）、第二行 = 谱种
 check((await p.evaluate(() => document.querySelector("#score .score-overlay .ov-paper-chip use")?.getAttribute("href"))) === "#jianpu-staff", "纸角的「页面设置」钮 = 「1 / ♪」图标（jianpu-staff）");
 await openSheet();
-check((await p.$$eval('.settings-card .set-page[data-page="look"] .wbe-row-label', (es) => es.slice(0, 2).map((e) => e.firstChild.textContent).join(","))) === "视图,谱种" && !(await p.$eval('.settings-card .set-page[data-page="look"]', (e) => e.hidden)), "面板打开在「看谱」页、第一行 = 视图（12-3）、第二行 = 谱种（7-C）");
-check((await ddValue(p, '.settings-card [data-pg="nota"]')) === "?follow" && (await p.$eval('.settings-card [data-pg="nota"]', (e) => e.textContent ?? "")).includes("跟着软件（现在是：五线谱）"), "新歌 = 跟着软件（现在是五线谱）（17-1）");
-check(!(await p.$eval('.settings-card [data-pg="inc"]', (e) => e.disabled)), "五线谱时「按 C 调看」能选");
+check((await p.$$eval('.set-panel .set-page[data-page="look"] .wbe-row-label', (es) => es.slice(0, 2).map((e) => e.firstChild.textContent).join(","))) === "视图,谱种" && !(await p.$eval('.set-panel .set-page[data-page="look"]', (e) => e.hidden)), "面板打开在「看谱」页、第一行 = 视图（12-3）、第二行 = 谱种（7-C）");
+check((await ddValue(p, '.set-panel [data-pg="nota"]')) === "?follow" && (await p.$eval('.set-panel [data-pg="nota"]', (e) => e.textContent ?? "")).includes("跟着软件（现在是：五线谱）"), "新歌 = 跟着软件（现在是五线谱）（17-1）");
+check(!(await p.$eval('.set-panel [data-pg="inc"]', (e) => e.disabled)), "五线谱时「按 C 调看」能选");
 // ② 点「简谱」= 谱上是数字行；按 C 调看那两颗变灰、写明为什么
-await pickOnPage(p, '.settings-card [data-pg="nota"]', "jianpu"); await p.waitForTimeout(300);
+await pickOnPage(p, '.set-panel [data-pg="nota"]', "jianpu"); await p.waitForTimeout(300);
 check((await S()).song.notation === "jianpu", "写进歌里（notation: jianpu）");
 check((await kinds()).split(",").every((k) => k === "jianpu"), "谱上每一行都是数字行", await kinds());
 check((await p.evaluate(() => [...document.querySelectorAll("#score text.jp-digit")].map((t) => t.textContent).join(""))) === "12345671", "数字 = 1234 5671（高八度的 1 带点）");
-check(await p.$eval('.settings-card [data-pg="inc"]', (e) => e.disabled), "简谱时「按 C 调看」变灰");
-check((await p.$eval('.settings-card .wbe-row:has([data-pg="inc"]) .wbe-row-note', (e) => e.textContent)).includes("首调"), "「?」里写明为什么（简谱本来就是首调）");
-await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
+check(await p.$eval('.set-panel [data-pg="inc"]', (e) => e.disabled), "简谱时「按 C 调看」变灰");
+check((await p.$eval('.set-panel .wbe-row:has([data-pg="inc"]) .wbe-row-note', (e) => e.textContent)).includes("首调"), "「?」里写明为什么（简谱本来就是首调）");
+await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200);
 // ③ 能撤销 / 重做（这首歌怎么看进撤销）
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
 check((await S()).song.notation === "default" && (await kinds()).split(",").every((k) => k === "staff"), "撤销 = 回到跟着软件、画成五线谱（17-1）");

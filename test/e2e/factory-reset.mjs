@@ -25,7 +25,7 @@ try {
   check(before.ours.some((n) => n.startsWith("moonsinger.")) && before.lsOurs.some((k) => k.endsWith(":storeAttached")), "有足迹：store 的库 + 已进歌库的键", JSON.stringify(before));
   check(before.shared.includes("pwa-models"), "家族共享缓存 pwa-models 在");
   // 设置 → 开发者 → 还原出厂：说明 sheet 取消 = 什么都不动
-  const openFactory = async () => { await p.click("#setBtn"); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card"); await p.click('[data-tab="dev"]'); await p.click('[data-v="factory"]'); await p.waitForSelector('.offer [data-v="ok"]'); };
+  const openFactory = async () => { await p.click("#setBtn"); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".set-panel"); await p.click('[data-tab="dev"]'); await p.click('[data-v="factory"]'); await p.waitForSelector('.offer [data-v="ok"]'); };
   await openFactory();
   const introText = await p.textContent(".offer .offer-msg");
   check(/还没传上去|都传上去了/.test(introText), "说明 sheet 写了传没传上去（dirty.count 口径）", introText.slice(0, 60));

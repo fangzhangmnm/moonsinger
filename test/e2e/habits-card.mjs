@@ -44,15 +44,15 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   check(!(await p.$(".habits-card")), "问过了 = 重新载入不再出");
   check((await rowKind(p)) === "jianpu", "重新载入：习惯还在（照简谱排）");
   // 设置「界面」页：改回「没选」= 软件的默认
-  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card");
-  check(/没选（照软件的默认：五线谱）/.test(await p.$eval('.settings-card', (e) => e.textContent ?? "")) || (await ddValue(p, '[data-set="habit:notation"]')) === "jianpu", "设置「界面」页有「习惯看的谱」那一行");
+  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".set-panel");
+  check(/没选（照软件的默认：五线谱）/.test(await p.$eval('.set-panel', (e) => e.textContent ?? "")) || (await ddValue(p, '[data-set="habit:notation"]')) === "jianpu", "设置「界面」页有「习惯看的谱」那一行");
   await pickOnPage(p, '[data-set="habit:notation"]', "none"); await pickOnPage(p, '[data-set="habit:middleC"]', "none"); await p.waitForTimeout(200);
   const k2 = await kv(p);
   check(k2["habit-notation"] === null && k2["habit-middle-c"] === null && k2["habit-transpose-aid"] === "on", "设置里改回「没选」= 删掉那一个键，别的不动", JSON.stringify(k2));
   check((await rowKind(p)) === "staff", "改回没选：照软件的默认（五线谱）", await rowKind(p));
   await pickOnPage(p, '[data-set="habit:notation"]', "letters"); await p.waitForTimeout(200);
   check((await rowKind(p)) === "jianpu" && (await kv(p))["habit-notation"] === "letters", "设置里选字母谱：马上生效（字母谱是简谱那一种行）");
-  await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
+  await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200);
   await ctx.close(); }
 
 // ── 「以后再说」= 什么都不记、不再问 ──
@@ -67,10 +67,10 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
 // ── 别的面板开着 = 等它走了再出 ──
 { const { ctx, p } = await fresh();
   await p.goto(BASE); await p.waitForSelector("#setBtn");
-  await p.click("#setBtn"); await p.waitForTimeout(100); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card");
+  await p.click("#setBtn"); await p.waitForTimeout(100); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".set-panel");
   await p.waitForTimeout(3000);
   check(!(await p.$(".habits-card")), "设置开着：卡不出来抢");
-  await p.click('.settings-card [data-v="close"]');
+  await p.click('.set-panel [data-panel-btn="close"]');
   check(await p.waitForSelector(".habits-card", { timeout: 4000 }).then(() => true, () => false), "设置关了：卡出来");
   await ctx.close(); }
 
@@ -85,8 +85,8 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   check(a0 === a1, "（前提）同一份谱连着存两次（去掉存的时刻）一样");
   await p.evaluate((pre) => { localStorage.setItem(pre + "habit-notation", "jianpu"); localStorage.setItem(pre + "habit-transpose-aid", "on"); localStorage.setItem(pre + "habit-middle-c", "5"); }, PREFIX);
   // 习惯只在开 app 时读 + 设置里改：这里直接走设置那一行（同一个入口）
-  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card");
-  await pickOnPage(p, '[data-set="habit:notation"]', "jianpu"); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
+  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".set-panel");
+  await pickOnPage(p, '[data-set="habit:notation"]', "jianpu"); await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200);
   check((await rowKind(p)) === "jianpu", "（前提）习惯起作用了：按简谱排");
   check((await bytesB64()) === a0, "习惯换了：存出来的 .mxl 每个条目逐字节一样（只去掉存的时刻）");
   // 锁着的歌
@@ -95,8 +95,8 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   await p.evaluate(async () => window.__moonsinger.openFileHandle(await (await navigator.storage.getDirectory()).getFileHandle("habits.mxl"))); await p.waitForTimeout(500);
   check((await p.evaluate(() => window.__moonsinger.editLock())).state === "locked", "（前提）打开的文件锁着");
   check((await rowKind(p)) === "jianpu", "锁着的歌照样跟着习惯（按简谱排）");
-  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card");
-  await pickOnPage(p, '[data-set="habit:notation"]', "none"); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
+  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".set-panel");
+  await pickOnPage(p, '[data-set="habit:notation"]', "none"); await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200);
   check((await rowKind(p)) === "staff", "锁着时在设置里改习惯：马上跟着变");
   await ctx.close(); }
 

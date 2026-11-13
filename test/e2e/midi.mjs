@@ -39,7 +39,7 @@ check(await p.evaluate(() => { window.__midi.on(48); const hit = document.getEle
 await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForTimeout(250);
 const row = await p.textContent("#midiSt");
 check(row.includes("Fake Piano") && !(await p.$('[data-v="midi:connect"]')), "设置里 MIDI 键盘一行 = 接着、没有「连接」钮", row);
-await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
+await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200);
 
 // 写谱：读当前这条 track 上的音
 const notes = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "note").map((t) => `${t.pitch.step}${t.pitch.alter > 0 ? "#".repeat(t.pitch.alter) : "b".repeat(-t.pitch.alter)}${t.pitch.octave}`); });

@@ -38,7 +38,7 @@ const drag = async (from, dy, steps = 10) => {
 
 // ① 手指按在纸角的小钮上往上推 = 滚谱；钮不触发
 await top(0); await p.waitForTimeout(150);
-const opened = () => p.evaluate(() => document.querySelectorAll(".sheet-panel, .offer, .ctx-menu, .track-card, dialog[open], .modal").length);
+const opened = () => p.evaluate(() => document.querySelectorAll(".sheet-panel, .offer, .wbe-panel, .ctx-menu, .track-card, dialog[open], .modal").length);
 const eye = await at(".ov-paper-chip", "none");
 check(!!eye, "找得到纸角的小钮");
 const s0 = await shown(), t0 = await top(), o0 = await opened();
@@ -58,7 +58,7 @@ const t2 = await top();
 await drag(add2, 400);
 const t3 = await top();
 check(t3 < t2 - 200, "手指按在虚线框上拖 = 滚谱", `${t2} → ${t3}`);
-check(!(await p.$(".ctx-menu, .offer, .track-card, .parts-page")), "拖过的那一下虚线框不触发（没开菜单）");
+check(!(await p.$(".ctx-menu, .offer, .wbe-panel, .track-card, .parts-page")), "拖过的那一下虚线框不触发（没开菜单）");
 
 // ③ 一根手指在眼睛钮上、另一根在谱上，张开 = 捏合缩放
 await top(0); await p.waitForTimeout(200);
@@ -83,11 +83,11 @@ await top(0); await p.waitForTimeout(200);
   await p.keyboard.press("Escape"); await p.waitForTimeout(250); }
 
 // ⑤ 手指轻点别的钮 = 照样开（点完菜单还在，不被这同一下的抬手收掉）
-const sheetBefore = await p.evaluate(() => document.querySelectorAll(".sheet-panel, .offer, .ctx-menu, .track-card, dialog[open], .modal").length);
+const sheetBefore = await p.evaluate(() => document.querySelectorAll(".sheet-panel, .offer, .wbe-panel, .ctx-menu, .track-card, dialog[open], .modal").length);
 const chip = await at(".ov-paper-chip", "none");
 if (chip) {
   await p.touchscreen.tap(chip.x, chip.y); await p.waitForTimeout(400);
-  const opened = await p.evaluate(() => document.querySelectorAll(".sheet-panel, .offer, .ctx-menu, .track-card, dialog[open], .modal").length);
+  const opened = await p.evaluate(() => document.querySelectorAll(".sheet-panel, .offer, .wbe-panel, .ctx-menu, .track-card, dialog[open], .modal").length);
   check(opened > sheetBefore, "手指轻点纸角的小钮 = 纸的设置开着", `${sheetBefore} → ${opened}`);
   await p.keyboard.press("Escape"); await p.waitForTimeout(250);
 }

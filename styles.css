@@ -221,6 +221,9 @@ body.listen-mode .ink-caret { display: none; }
 .offer { position: fixed; inset: 0; z-index: var(--z-sheet); display: flex; align-items: center; justify-content: center; background: rgba(40, 38, 34, .28); padding: 16px; }
 .offer-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; width: min(360px, 100%); box-shadow: 0 8px 28px rgba(0, 0, 0, .14); }
 .wbe-panel { --bg: var(--panel); }   /* 面板外壳（零件库 openPanelShell）的底色 = 白，和设置 / 页面设置一个样子（统筹「v0.17.26 收」第 2 条：在本仓把壳用的变量对过来，不改库）；壳是以后唯一的面板外壳 */
+.set-panel .wbe-panel-card { width: min(520px, 100%); }
+.set-panel .wbe-tabs { margin-bottom: 8px; }
+.wbe-panel-btn:disabled { opacity: .35; cursor: default; }   /* 壳底下的钮灰着（页面设置「全部跟着软件」一项都没选过时；库没给这一条，照本仓 .btn:disabled）*/   /* 页签条下面留的和原来一样（原来 .set-tabs 底下 12px）*/   /* 设置、页面设置搬到壳上（2026-11-13）：宽照原来的 .settings-card，看上去不变 */
 .offer-title { font-weight: 600; margin-bottom: 6px; }
 .offer-msg { color: var(--muted); font-size: 13px; margin-bottom: 14px; overflow-wrap: anywhere; }
 .offer-btns { display: flex; gap: 8px; justify-content: flex-end; }
@@ -263,8 +266,6 @@ body.listen-mode .ink-caret { display: none; }
 /* 设置面板：模型来源 / 导入模型包 / 月读的署名与条款 */
 .settings-card { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; }
 /* 设置分五页（v0.16.80）：页签一排五格（窄屏也不折行）；不是这一页的收起；下拉框占一整行宽、最多 320px */
-.set-tabs { --btn-cell: 3.8em; gap: 4px; margin: 2px 0 12px; }   /* 一排格子 = .btn-row（7-C）：页签的字不折行，放不下 = 整格换到下一行；英文页签名改短了（UI / Theory / Audio / MIDI / Dev） */
-.set-tabs .btn { padding: 2px 4px; font-size: 12px; height: 34px; justify-content: center; }
 .set-page[hidden] { display: none; }
 /* 设置一项一行（v0.16.90，user 11-10「主要还是做一个问号机制…避免大段文字或者大段折叠文字放在settings里面」）：名字 + 「?」在左、控件在右，说明点「?」才展开；
    照 WeebPaint 设置那种一列整宽的行，行间一条细线 */

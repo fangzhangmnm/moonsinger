@@ -19,8 +19,8 @@ const labels = () => p.evaluate(() => [...[...document.querySelectorAll("#score 
 const firstNote = () => p.evaluate(() => { const m = window.__moonsinger, s = m.state(), n = s.song.papers[0].tracks[s.at.part].find((t) => t.kind === "note"), h = m.layout().notes[0]; return { real: n ? `${n.pitch.step}${n.pitch.alter < 0 ? "b" : n.pitch.alter > 0 ? "#" : ""}${n.pitch.octave}` : null, d: h?.d }; });
 const bigAbs = () => p.evaluate(() => document.querySelector(".pad-panel")?.classList.contains("big-abs"));
 const closeAll = async () => { await p.keyboard.press("Escape"); await p.waitForTimeout(120); await p.mouse.click(5, 300); await p.waitForTimeout(120); };
-const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
-const setView = async (v) => { await openSheet(); await pickOnPage(p, '.settings-card [data-pg="inc"]', v === "inc" ? "on" : "off"); await p.waitForTimeout(250); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
+const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".set-panel"); };
+const setView = async (v) => { await openSheet(); await pickOnPage(p, '.set-panel [data-pg="inc"]', v === "inc" ? "on" : "off"); await p.waitForTimeout(250); await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200); };
 
 // ① 专业（默认）：C 调 = 淡「1=C」；键上大字音名
 check((await labels()) === "1=C~", "专业 + C 调：调号上方淡「1=C」", await labels());

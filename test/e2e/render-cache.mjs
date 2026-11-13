@@ -220,7 +220,7 @@ check(/旧版本的引擎渲的/.test(await p.$eval(".ms-player-title", (e) => e
 // 设置里一键清旧：旧的那几条标「旧版本渲的」（版本号在这一组的「?」里，13-2「13 再补」第 3 条），钮上写几条、多大；清完旧的没了、这一版渲的留着
 await p.click(tileOf(id3)); await p.waitForTimeout(800); await later();   // 回到编辑器（设置在三条杠里）
 check(await ageIt(), "再造一条旧的");
-await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card"); await p.click('.set-tabs [data-tab="upkeep"]'); await p.waitForTimeout(150);   // 渲染缓存在「维护」那一页（13-1）
+await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".set-panel"); await p.click('.set-panel [data-tab="upkeep"]'); await p.waitForTimeout(150);   // 渲染缓存在「维护」那一页（13-1）
 const rcRows = async () => { for (let i = 0; i < 40; i++) { const r = await p.$$eval("#rcList .rc-row", (es) => es.map((e) => !!e.querySelector(".rc-core.is-old"))).catch(() => []); if (r.length) return r; await p.waitForTimeout(100); } return []; };
 { const rows = await rcRows(), oldRows = rows.filter(Boolean).length, newRows = rows.length - oldRows, n0 = (await rc()).stats.count;
   const what = await p.$eval('.wbe-row[data-group="renders"] > .wbe-row-note', (e) => e.textContent ?? "").catch(() => "");
@@ -230,7 +230,7 @@ const rcRows = async () => { for (let i = 0; i < 40; i++) { const r = await p.$$
   await p.click('#rcList [data-v="rc:old"]');
   let after = rows; for (let i = 0; i < 40; i++) { after = await rcRows(); if (!after.some(Boolean)) break; await p.waitForTimeout(100); }
   check(!after.some(Boolean) && !(await p.$('#rcList [data-v="rc:old"]')) && (await rc()).stats.count === n0 - oldRows, "点了：旧的都清了、钮没了，这一版渲的留着", `${n0} → ${(await rc()).stats.count}`); }
-await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
+await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200);
 await openGallery();
 { const a = await p.$eval(`${tileOf(id3)} .gallery-tile-action`, (e) => e.className).catch(() => "");
   check(!!a && !/\bready\b/.test(a) && await hasPlay(id), "歌库：删掉的那首回到「还没渲」（点了能渲）；别的照旧有 ▶", a); }

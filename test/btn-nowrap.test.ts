@@ -23,7 +23,6 @@ describe("按钮的字不折行（styles.css）", () => {
   });
   it("竖排列表那一类认得出来（.sheet-choices 是；一排的格子不是）", () => {
     assert(listItem(".sheet-choices .btn"), ".sheet-choices（一行一个、整句）算竖排列表");
-    assert(!listItem(".set-tabs .btn"), ".set-tabs（一排五格）不算竖排列表");
   });
   it("一排按钮 = .btn-row（格子、一样高）；.strip-btns 退役", () => {
     const row = rules.filter((r) => r.sel === ".btn-row");

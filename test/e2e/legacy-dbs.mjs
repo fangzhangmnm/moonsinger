@@ -16,11 +16,12 @@ try {
   check(!n0.some((n) => OLD.includes(n)), "没有老库时：一个老名字都没被建出来", JSON.stringify(n0));
   await c0.close();
   // ① 有老库：造三个老库 + 一个无关的
+  //   在同源、但 app 没跑的那一页上造（清单文件）：原来在 app 的页上造，app 自己开机后的空闲片探删偶尔赶在「数一数」之前把刚造的删掉（机器快慢不同，2026-11-13 第二次单跑也红时查出来的）
   const c1 = await browser.newContext(), p1 = await c1.newPage();
-  await p1.goto(BASE); await p1.waitForFunction(() => !!window.__moonsinger);
+  await p1.goto(new URL("manifest.webmanifest", BASE).href);
   await p1.evaluate(async (old) => { for (const n of [...old, "someone-else-db"]) await new Promise((ok, fail) => { const r = indexedDB.open(n, 1); r.onupgradeneeded = () => r.result.createObjectStore("x"); r.onsuccess = () => { r.result.close(); ok(); }; r.onerror = () => fail(r.error); }); }, OLD);
   check((await names(p1)).filter((n) => OLD.includes(n)).length === 3, "造好了三个老库", JSON.stringify(await names(p1)));
-  await p1.reload(); await p1.waitForFunction(() => !!window.__moonsinger);
+  await p1.goto(BASE); await p1.waitForFunction(() => !!window.__moonsinger);
   await p1.waitForFunction(() => /dropped legacy cache DBs/.test(window.__moonsinger.diagText()), null, { timeout: 15000 }).catch(() => {});
   await p1.waitForTimeout(300);
   const n1 = await names(p1);

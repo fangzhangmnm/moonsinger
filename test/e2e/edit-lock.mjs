@@ -79,8 +79,8 @@ check(await hidden(), "重做：同理");
 
 // ── 这首歌怎么看（谱面分家第三刀：纸的设置「看谱」、谱头面板「分解和弦」= 看法）：锁着切得动、门不闪、文件不写、能撤销 ──
 { const chip = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
-  await p.mouse.click(chip.x, chip.y); await p.waitForSelector(".settings-card");
-  await armFlash(); await pickOnPage(p, '.settings-card [data-pg="inc"]', "on"); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(150);
+  await p.mouse.click(chip.x, chip.y); await p.waitForSelector(".set-panel");
+  await armFlash(); await pickOnPage(p, '.set-panel [data-pg="inc"]', "on"); await p.waitForTimeout(200); await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(150);
   const s = await lk();
   check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === true && !(await flashed()), "锁着在纸的设置里切「按 C 调看」：切了、门不闪");
   check(s.dirtyKind === "looks" && !s.owes, "脏的还是「看法」、没有要存的东西", JSON.stringify(s));
@@ -121,7 +121,7 @@ check(await p.evaluate(() => document.body.dataset.wmode === "notes"), "锁着�
 
 // ── 没解锁就离开：不问、不存；重开 = 存下来的样子，又锁着 ──
 check(await openFile(), "锁着、只动过看法：换开别的不问「丢不丢」"); await p.waitForTimeout(400);
-check((await p.evaluate(() => [...document.querySelectorAll(".offer")].filter((o) => !o.hidden).length)) === 0, "没有弹任何面");
+check((await p.evaluate(() => [...document.querySelectorAll(".offer, .wbe-panel")].filter((o) => !o.hidden).length)) === 0, "没有弹任何面");
 check(!(await hidden()) && (await fileSig()) === sig0 && (await lk()).locked, "重开：那一段没隐藏（文件没动过）、又锁着");
 
 // ── 「接着改」：解到关掉这个文件为止 ──
@@ -159,8 +159,8 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
 // ── 这首歌怎么看走真文件（谱面分家第三刀，统筹审第三刀第 3 条）：锁着切「和弦标级数」= 谱上变了、存不进、重开原样；解了切、存 = 文件里有 chordTags: false，再开还是不标 ──
 { const toFirst = async () => { await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { paper: s.song.papers[0].id, part: s.at.part }, caret: 0, sel: null }); }); await p.waitForTimeout(250); };   // 叠音在第一段；视图只看本段，重开时停在存下的那一段（挪光标锁着也照常）
   const tags = async () => { await toFirst(); return p.$$eval("#score text.chord-tag", (ts) => ts.length); };
-  const chip = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
-  const setTags = async (on) => { await chip(); await pickOnPage(p, '.settings-card [data-pg="ct"]', on ? "on" : "off"); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
+  const chip = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".set-panel"); };
+  const setTags = async (on) => { await chip(); await pickOnPage(p, '.set-panel [data-pg="ct"]', on ? "on" : "off"); await p.waitForTimeout(200); await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200); };
   const fileScore = async () => { const arr = await p.evaluate(async (name) => { const f = await (await (await navigator.storage.getDirectory()).getFileHandle(name)).getFile(); return [...new Uint8Array(await f.arrayBuffer())]; }, FILE);
     const z = unzipSync(new Uint8Array(arr)); return z[".moonsinger/score.json"] ? JSON.parse(strFromU8(z[".moonsinger/score.json"])) : null; };   // 文件字节拿回 node 这边解（不为测试往 app 里加钩子）
   const t0 = await tags(), sigA = await fileSig();
@@ -179,8 +179,8 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
   check((await tags()) === 0 && (await p.evaluate(() => window.__moonsinger.state().song.chordTags)) === false, "再开还是不标"); }
 
 // ── 页面设置「版面」那几样走真文件（7-C：纸张 / 版式 / 小节号 / 歌词排法 = 看法）：锁着都切得动、门不闪、存不进、重开原样；解了切紧凑、存 = 文件里是紧凑 ──
-{ const chip = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
-  const close = async () => { await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
+{ const chip = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".set-panel"); };
+  const close = async () => { await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200); };
   const song = () => p.evaluate(() => { const s = window.__moonsinger.state().song; return { paper: s.paper === "default" ? "default" : s.paper.kind, density: s.density, bn: s.barNumbers === "line" ? "on" : s.barNumbers, lyr: s.lyricFit }; });   // 17-1：纸张和版式是歌顶层的选择，"default" = 跟着软件
   const rowsY = () => p.evaluate(() => window.__moonsinger.layout().systems.map((r) => `${Math.round(r.staffTop)}-${Math.round(r.bottom)}`).join(","));   // 每行谱的上沿 / 下沿（紧凑 = 谱小、行距收）
   const fileXml = async () => { const arr = await p.evaluate(async (name) => { const f = await (await (await navigator.storage.getDirectory()).getFileHandle(name)).getFile(); return [...new Uint8Array(await f.arrayBuffer())]; }, FILE);
@@ -188,11 +188,11 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
   const s0 = await song(), y0 = await rowsY(), sigC = await fileSig();
   check((await lk()).locked && s0.density === "default" && s0.paper === "default" && s0.bn === "default" && s0.lyr === "default", "锁着；版面四样都跟着软件（17-1）", JSON.stringify(s0));
   await chip(); await armFlash();
-  await pickOnPage(p, '.settings-card [data-pg="density"]', "compact"); await p.waitForTimeout(200);
+  await pickOnPage(p, '.set-panel [data-pg="density"]', "compact"); await p.waitForTimeout(200);
   { const d = (await song()).density, y1 = await rowsY(), f = await flashed(); check(d === "compact" && y1 !== y0 && !f, "锁着切「紧凑」：切了、谱上变了、门不闪", `${d} ${y0} → ${y1} flash=${f}`); }
-  await pickOnPage(p, '.settings-card [data-pg="paper"]', "A4"); await p.waitForTimeout(150);
-  await pickOnPage(p, '.settings-card [data-pg="bn"]', "off"); await p.waitForTimeout(150);
-  await pickOnPage(p, '.settings-card [data-pg="lyr"]', "lyrics"); await p.waitForTimeout(150);
+  await pickOnPage(p, '.set-panel [data-pg="paper"]', "A4"); await p.waitForTimeout(150);
+  await pickOnPage(p, '.set-panel [data-pg="bn"]', "off"); await p.waitForTimeout(150);
+  await pickOnPage(p, '.set-panel [data-pg="lyr"]', "lyrics"); await p.waitForTimeout(150);
   const s1 = await song();
   check(s1.paper === "A4" && s1.density === "compact" && s1.bn === "off" && s1.lyr === "lyrics" && !(await flashed()), "锁着切纸张 A4 / 小节号不印 / 按歌词：都切得动（纸张换了版式不跟着变）、门不闪", JSON.stringify(s1));
   await close();
@@ -206,7 +206,7 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
   const s2 = await song();
   check((await lk()).locked && JSON.stringify(s2) === JSON.stringify(s0) && (await rowsY()) === y0 && (await fileSig()) === sigC, "重开 = 文件里的原样（舒适、A5、印小节号、按节奏）", JSON.stringify(s2));
   await p.click('#lockBar [data-v="continue"]'); await p.waitForTimeout(200);
-  await chip(); await pickOnPage(p, '.settings-card [data-pg="density"]', "compact"); await p.waitForTimeout(200); await close();
+  await chip(); await pickOnPage(p, '.set-panel [data-pg="density"]', "compact"); await p.waitForTimeout(200); await close();
   await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(400);
   const xml = await fileXml();
   check(/<staff-distance>50<\/staff-distance>/.test(xml) && (await fileSig()) !== sigC, "解了切「紧凑」、存 = 文件的 score.musicxml 里是紧凑的谱距（50）", (xml.match(/<staff-distance>\d+<\/staff-distance>/) ?? [""])[0]);

@@ -34,7 +34,7 @@ for (const [w, h, label] of [[1100, 900, "宽屏"], [700, 520, "矮窗口"], [36
 // 模态面板照旧：开着设置（.offer）时提示条挪到顶上，不加躲开的位置
 { const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage();
   await p.goto(BASE); await p.waitForTimeout(800);
-  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card");
+  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".set-panel");
   await p.evaluate((t) => window.__moonsinger.notice(t), LONG); await p.waitForTimeout(300);
   const st = await p.$eval("#noticeStack", (e) => ({ dodged: !!e.dataset.dodged, top: Math.round(e.getBoundingClientRect().top) }));
   check(!st.dodged && st.top < 200, "模态面板开着：照旧挪到顶上（不归这里管）", JSON.stringify(st));

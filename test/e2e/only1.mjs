@@ -51,9 +51,9 @@ await pickOnPage(p, '[data-pg="density"]', "compact"); await p.waitForTimeout(20
 check((await ddOptions(p, '[data-pg="paper"]').catch(() => []))[0]?.label === "跟着软件（现在是：A5）", "纸张第一格 = 跟着软件（现在是：A5）");
 await pickOnPage(p, '[data-pg="paper"]', "?follow"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.paper)) === "default", "选「跟着软件」= 纸张写回 default");
-await p.click('[data-v="alldef"]'); await p.waitForTimeout(200);
+await p.click('[data-panel-btn="alldef"]'); await p.waitForTimeout(200);
 check((await p.evaluate(() => { const s = window.__moonsinger.state().song; return ["notation", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"].every((k) => s[k] === "default"); })), "「全部跟着软件」= 选过的都改回 default");
-check(await p.$eval('[data-v="alldef"]', (e) => e.disabled), "都跟着软件了 = 那颗钮灰着");
+check(await p.$eval('[data-panel-btn="alldef"]', (e) => e.disabled), "都跟着软件了 = 那颗钮灰着");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nonly1: ${pass} passed, ${fail} failed`);

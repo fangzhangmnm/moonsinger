@@ -27,7 +27,7 @@ async function run(removed) {
   const sheet = await p.$eval(".offer .offer-card", (e) => e.textContent ?? "").catch(() => "");
   check(/小月相被你删了/.test(sheet) && !!(await p.$('.offer [data-v="libadd:voice"]')), "清单里原因写「小月相被你删了」、有「装回来」", sheet.slice(0, 60));
   await p.click('.offer [data-v="close"]').catch(() => {}); await p.keyboard.press("Escape"); await p.waitForTimeout(150);
-  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card"); await p.click('.set-tabs [data-tab="sound"]'); await p.waitForTimeout(600);
+  await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".set-panel"); await p.click('.set-panel [data-tab="sound"]'); await p.waitForTimeout(600);
   const col = await p.$eval('.wbe-row[data-lib="voice"]', (e) => e.textContent ?? "");
   check(/你删了 · 不会自己下载/.test(col) && /装回来/.test(col) && !/现在下载/.test(col), "设置音源页：「你删了 · 不会自己下载」+「装回来」", col.slice(0, 40));
   check(!errs.length, "没有页面错误", errs.join(" / "));

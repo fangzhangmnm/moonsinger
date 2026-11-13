@@ -15,9 +15,9 @@ const b = await chromium.launch(), p = await (await b.newContext({ viewport: { w
 await p.goto(BASE); await p.waitForTimeout(800);
 const putSound = (sha, bytes) => p.evaluate(async ([sha, bytes]) => { const c = await caches.open("pwa-sounds"); await c.put(`${location.origin}/__pwa-sounds__/${sha}`, new Response(new Uint8Array(bytes), { headers: { "Content-Length": String(bytes.length) } })); }, [sha, bytes]);
 const hasSound = (sha) => p.evaluate(async (sha) => !!(await (await caches.open("pwa-sounds")).match(`${location.origin}/__pwa-sounds__/${sha}`)), sha);
-const openSettings = async (tab) => { await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card"); await p.click(`.set-tabs [data-tab="${tab}"]`); await p.waitForTimeout(400); };
-const closeSettings = async () => { await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
-const visiblePage = () => p.$eval(".settings-card", (c) => [...c.querySelectorAll(".set-page")].find((x) => !x.hidden)?.dataset.page ?? "");
+const openSettings = async (tab) => { await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".set-panel"); await p.click(`.set-panel [data-tab="${tab}"]`); await p.waitForTimeout(400); };
+const closeSettings = async () => { await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200); };
+const visiblePage = () => p.$eval(".set-panel", (c) => [...c.querySelectorAll(".set-page")].find((x) => !x.hidden)?.dataset.page ?? "");
 
 await putSound(SHA, SF2);
 await openSettings("sound");
@@ -38,8 +38,8 @@ check(JSON.stringify(n0) === "[true,false]" && JSON.stringify(n1) === "[false,tr
 let label = ""; for (let i = 0; i < 30 && !/Sine/.test(label); i++) { label = await p.$eval(`.lib-own[data-sha="${SHA}"] .lib-own-name`, (e) => e.textContent ?? "").catch(() => ""); await p.waitForTimeout(100); }
 check(label === "Sine Wave · GeneralUser GS 2.0.3 BETA", "自己加的音色文件：名字 =「预设名 · 音色库名」，从那一块字节里读", label);
 await p.click(`.lib-own[data-sha="${SHA}"] [data-v="lib:del:own:${SHA}"]`); await p.waitForTimeout(200);
-const ask = await p.$eval(".settings-card ~ .ask-layer, .offer .ask-layer", (e) => e.textContent ?? "").catch(() => "");
-check(/删掉这个音色文件/.test(ask) && /找不回来/.test(ask) && !!(await p.$(".settings-card")), "删之前叠在设置上面问一句（设置不关），写明删了找不回来", ask.slice(0, 60));
+const ask = await p.$eval(".set-panel .ask-layer", (e) => e.textContent ?? "").catch(() => "");
+check(/删掉这个音色文件/.test(ask) && /找不回来/.test(ask) && !!(await p.$(".set-panel")), "删之前叠在设置上面问一句（设置不关），写明删了找不回来", ask.slice(0, 60));
 await p.click('.ask-layer [data-ask="no"]'); await p.waitForTimeout(200);
 check(!!(await p.$(`.lib-own[data-sha="${SHA}"]`)) && (await hasSound(SHA)), "「算了」= 那一行还在、缓存里也还在");
 await p.click(`.lib-own[data-sha="${SHA}"] [data-v="lib:del:own:${SHA}"]`); await p.waitForTimeout(200); await p.click('.ask-layer [data-ask="ok"]'); await p.waitForTimeout(400);
@@ -52,7 +52,7 @@ await p.click('.wbe-row[data-group="gs"] [data-v="goto:sound:gs"]'); await p.wai
 check((await visiblePage()) === "sound" && !!(await p.$('.wbe-row[data-lib="gs"].is-target')), "维护页的组名「乐器音色库 ›」= 音源页那一栏");
 
 // ④ 两个词
-const words = await p.$eval(".settings-card", (c) => { const t = (pg) => [...c.querySelectorAll(`.set-page[data-page="${pg}"] button, .set-page[data-page="${pg}"] label.btn`)].map((x) => (x.textContent ?? "").trim()); return { sound: t("sound"), upkeep: t("upkeep") }; });
+const words = await p.$eval(".set-panel", (c) => { const t = (pg) => [...c.querySelectorAll(`.set-page[data-page="${pg}"] button, .set-page[data-page="${pg}"] label.btn`)].map((x) => (x.textContent ?? "").trim()); return { sound: t("sound"), upkeep: t("upkeep") }; });
 const retired = /^(删掉|全清|清空念缓存|放掉内存|清空)$/;
 check(!words.sound.some((w) => /^清/.test(w)) && words.upkeep.every((w) => !/^删/.test(w)) && ![...words.sound, ...words.upkeep].some((w) => retired.test(w)), "音源页只说「删」、维护页只说「清」；那五种旧说法没了", JSON.stringify(words.upkeep));
 await closeSettings();
@@ -71,8 +71,8 @@ for (const sha of fakes) await p.evaluate(async (sha) => (await caches.open("pwa
   await q.addInitScript(() => localStorage.setItem("moonsinger-5b1e7c0a92d34f6e:lang", "en"));
   await q.goto(BASE); await q.waitForTimeout(900);
   const c = await q.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
-  await q.mouse.click(c.x, c.y); await q.waitForSelector(".settings-card"); await q.click('[data-tab="layout"]'); await q.waitForTimeout(400);
-  const bad = await q.$$eval('.settings-card .set-page:not([hidden]) .wbe-row-head', (hs) => hs.flatMap((h) => { const l = h.querySelector(".wbe-row-label")?.getBoundingClientRect(), k = h.querySelector(".wbe-row-ctl")?.getBoundingClientRect(); if (!l || !k) return [];
+  await q.mouse.click(c.x, c.y); await q.waitForSelector(".set-panel"); await q.click('[data-tab="layout"]'); await q.waitForTimeout(400);
+  const bad = await q.$$eval('.set-panel .set-page:not([hidden]) .wbe-row-head', (hs) => hs.flatMap((h) => { const l = h.querySelector(".wbe-row-label")?.getBoundingClientRect(), k = h.querySelector(".wbe-row-ctl")?.getBoundingClientRect(); if (!l || !k) return [];
     const sameLine = k.top < l.bottom - 2 && k.bottom > l.top + 2; return sameLine && l.right > k.left + 1 ? [(h.querySelector(".wbe-row-label")?.textContent ?? "").slice(0, 20)] : []; }));
   check(!bad.length, "英文手机宽：页面设置每一行的名字都没被控件盖住（放不下的控件换到下一行）", bad.join(" | "));
   await q.context().close(); }
