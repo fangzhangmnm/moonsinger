@@ -7,12 +7,12 @@
 //   - 缺那种语言时的次序写死在 conceptLabel 一处：表里 → 那种语言的、没有 = 英文的；按值存的 → 那种语言的 → 百科名里那种语言的（首字母大写）→ 英文的。
 //   - 重名的加号（Piano 1 / Piano 2）也在这里（src/score/roles.ts numberParts）。
 //   - 简写：起了名字 = 名字自己缩；没起 = 现行的表里那种语言的简写（目录只有英文的；表里没有这个概念 = 按值存的）；没有 = 中文 / 日文叫法本身照定宽缩、英文从叫法缩。
-//   运行时只认概念：不比名字、不查目录、不认老预设（老文件进门时已经补成概念，src/format/migrate/index.ts loungeRoleNames）。
+//   运行时只认概念：不比名字、不查目录、不认老预设（第 16 条起老文件照文件读：存着的名字原样显示，没概念的照名字显示）。
 import type { Song } from "../score/song.ts";
 import type { Lang } from "../i18n/strings.ts";
 import type { LoungeRoleV2 } from "./contract.ts";
 import { numberParts } from "../score/roles.ts";
-import { DEFAULT_CONCEPT } from "../gm/default-concept.gen.ts";
+import { _t } from "../i18n/index.ts";
 import { CONCEPT_LABELS, type ConceptLabel } from "../gm/concept-labels.gen.ts";
 import { fitAbbr, shortName } from "../ui/part-colors.ts";
 
@@ -20,8 +20,9 @@ type Concept = NonNullable<LoungeRoleV2["concept"]>;
 /** 休息室里一个角色（只看显示要的几个键；extras.lounge 的值是宽松的 JSON）。 */
 type RoleLook = { name?: unknown; sound?: unknown; concept?: Concept };
 /** 歌里还没有这个角色的快照 = 新建时会得到的那一位（src/format/project.ts defaultRole：没起名字、目录里的人声）。 */
-const NEW_ROLE: RoleLook = { concept: DEFAULT_CONCEPT as Concept, sound: DEFAULT_CONCEPT.ids.musicxml ?? "voice.vocals" };
-const roleLook = (lounge: Record<string, unknown>, role: string): RoleLook => (lounge[role] as RoleLook | undefined) ?? NEW_ROLE;
+/** 歌里没有这个角色的快照（乐手读不到 / 读不懂）= 什么都没有（第 16 条：不再当成新角色的「人声」；新建的歌、新加的声部创建时就写了乐手）。 */
+const NO_ROLE: RoleLook = {};
+const roleLook = (lounge: Record<string, unknown>, role: string): RoleLook => (lounge[role] as RoleLook | undefined) ?? NO_ROLE;
 /** 百科名首字母大写、去掉括号里的（同 src/gm/catalog.ts roleNameOf 的做法）。 */
 const cap = (s: string): string => s.replace(/\s*\([^)]*\)/g, "").trim().replace(/^./, (ch) => ch.toUpperCase());
 
@@ -61,7 +62,7 @@ export interface PartShow { name: string; abbr: string }
 /** 每个声部（和 song.parts 一一对应）显示成什么：名字（重名的带号）+ 谱前的简写。l = 「谱上的字」那一项换成的语言（跟着界面 = 界面语言）。 */
 export function partShow(song: Song, lounge: Record<string, unknown>, l: Lang): PartShow[] {
   const rs = song.parts.map((p) => roleLook(lounge, p.role)), given = song.parts.map((p) => roleGivenName(lounge, p.role));
-  const names = numberParts(rs.map((r, k) => ({ name: given[k] ?? (r.concept ? conceptLabel(r.concept, l) : ""), sound: String(r.sound ?? "") })));
+  const names = numberParts(rs.map((r, k) => ({ name: given[k] ?? (r.concept ? conceptLabel(r.concept, l) : lounge[song.parts[k]!.role] ? "" : _t("（没有乐手）")), sound: String(r.sound ?? "") })));   // 歌里没有这个角色 = 照实写没有乐手（第 16 条）
   return names.map((name, k) => ({ name, abbr: abbrOf(rs[k]!, given[k] !== null, name, l) }));
 }
 /** 只要名字（重名的带号）。 */

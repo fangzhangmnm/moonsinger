@@ -84,13 +84,13 @@ describe("这首歌怎么看：读写", () => {
     eq(songViewOf(again).expressions, false);
     eq(songViewOf(openBytes("sample.mxl", bytesOf("test/fixtures/format/minor/score-7/sample.mxl")).song).expressions, true, "minor 7 写的：没有这个键 = 显示");
   });
-  it("老写法 brokenChords: false（score minor 2–4）读成 \"stacked\"；再存 = 写新键、老键不再写", () => {
+  it("老写法 brokenChords: false（score minor 2–4）：退役的键读的时候不理（第 16 条：不再换成 \"stacked\"）= 自动；再存不写这个老键", () => {
     const st = initState(), part = st.song.parts[0]!.id;
     const old = withScoreJson(save(st.song), (j) => { j.minor = 4; j.parts[0].brokenChords = false; });
     const o = openBytes("x.mxl", old);
-    eq(songViewOf(o.song).chordsOf(part), "stacked");
+    eq(songViewOf(o.song).chordsOf(part), "auto");
     const j = scoreJson(save(o.song));
-    eq(j.parts[0].chords, "stacked"); assert(!("brokenChords" in j.parts[0]), "老键不再写");
+    assert(!("brokenChords" in j.parts[0]), "老键不再写");
   });
   it("不认识的值（更新的版本写的）原样带回，画的时候按没写的意思；写坏了的值（类型不对）当没写", () => {
     const st = initState(), part = st.song.parts[0]!.id;

@@ -344,7 +344,9 @@ export interface ReadPart { id: string; name: string; instrumentName?: string; s
 const DIR_READ = new Set(["octave-shift", "dynamics", "wedge", "metronome", "segno", "coda", "words", "pedal"]);
 /** 认不得、但常见的几种，数的时候说人话（其余 = 「别的方向记号」）。 */
 const DIR_LABEL: Record<string, () => string> = { rehearsal: () => _t("排练记号"), dashes: () => _t("虚线（如渐强渐弱的延续线）"), bracket: () => _t("括线"), "string-mute": () => _t("弱音器记号"), "harp-pedals": () => _t("竖琴踏板图"), damp: () => _t("止音记号"), "damp-all": () => _t("止音记号") };
-export interface ReadScore { title: string; movementTitle: string; paper?: Paper; credits?: string; rights?: string; parts: { info: ReadPart; tokens: Token[] }[]; dropped: Record<string, number> }
+export interface ReadScore { title: string; movementTitle: string; paper?: Paper; credits?: string; rights?: string; parts: { info: ReadPart; tokens: Token[] }[]; dropped: Record<string, number>;
+  /** 第一个声部的谱头这一份文件没写、用了这一版的默认开的（速度 ♩=DEFAULT_BPM / 调号 C 大调 / 拍号 4/4）：别家的谱打开时照实说一句（第 16 条，全表 2-11）。自家文件三样都写。 */
+  unwrittenHead: { tempo: boolean; key: boolean; time: boolean } }
 export interface ReadHints { manualBars?: Record<string, number[]>; unwritten?: string[] }   // 自家文件的 .moonsinger/score.json（这张纸的）；别家文件 = 没有
 
 /** MusicXML → 每个声部一串 token（id 在这份文件里唯一；调用方拼进歌时再错开）。hints 没给（别的软件存的）= 每条小节线都当人插的（编辑器只画人插的小节线）。
@@ -584,7 +586,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     // 大谱表：文件里每个音都写了 <staff>；和「按音高自动」一样的不记（只留手动指定的），单谱表的一律不记
     if (info.staves === 2) { const auto = autoStaffs(tokens, 2); tokens.forEach((t, i) => { if ((t.kind === "note" || t.kind === "rest") && t.staff !== undefined) { const keep = t.kind === "note" ? t.staff !== auto[i] : t.staff !== staffOfTokens(tokens.map((x, j) => (j === i ? { ...x, staff: undefined } : x)) as Token[], 2)[i]; if (!keep) delete t.staff; } }); }
     else for (const t of tokens) if ((t.kind === "note" || t.kind === "rest") && t.staff !== undefined) delete t.staff;
-    return { info, tokens, gotTempo: H.gotTempo };
+    return { info, tokens, gotTempo: H.gotTempo, gotKey: H.gotKey, gotTime: H.gotTime };
   });
   // 速度：只有第一个声部的算数；别的声部没写的，谱头抄第一个的（数据里每条 track 都有三个谱头记号）
   const bpm0 = (parts[0].tokens[2] as { bpm: number }).bpm;
@@ -594,5 +596,6 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
   const paper = readPaper(root);
   const credits = readCredits(root, title);
   const rights = kids(kid(root, "identification"), "rights").map((e) => text(e).trim()).filter(Boolean).join("\n");   // 别家谱可能有几条 <rights>：拼成一段
-  return { title, movementTitle, ...(paper ? { paper } : {}), ...(credits ? { credits } : {}), ...(rights ? { rights } : {}), parts: parts.map(({ info, tokens }) => ({ info, tokens })), dropped };
+  return { title, movementTitle, ...(paper ? { paper } : {}), ...(credits ? { credits } : {}), ...(rights ? { rights } : {}), parts: parts.map(({ info, tokens }) => ({ info, tokens })), dropped,
+    unwrittenHead: { tempo: !parts.some((p) => p.gotTempo), key: !(parts[0]?.gotKey ?? false), time: !(parts[0]?.gotTime ?? false) } };
 }

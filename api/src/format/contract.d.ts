@@ -1,9 +1,9 @@
-/** 这一版能读写的各份文件的版本号（改格式 = 这里 +1 + migrate + 冻结样本；守卫测试盯着）。
+/** 这一版能读写的各份文件的版本号（改格式 = 这里 +1 + 冻结样本；守卫测试盯着。第 16 条起没有升级链：老文件照写的读）。
  *  lounge 2（2026-10-07 深夜，user「现在开始好好做乐器这个数据结构，不要偷懒」）：候选从「月读形状 + 贴字段」改成按引擎分的乐器。
  *  manifest 2 / score 2（2026-10-08，0.5.0 多声部多纸，存法 B）：纸的顺序表 + 声部并集；每张纸一份 MusicXML 正本，score.musicxml 变派生件。
  *  lounge 3（9-2，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「按照SoundFont对齐，然后小月相也应该对齐」，统筹裁定走大版本）：力度 → 响度全体演奏者只有一条
  *  （响度 = 40·log10(力度 ÷ 127)，SoundFont 规范的放法；score/perform.ts velocityDb）。候选按值存的 dynamicsDb（小月相 / 元音版那张「力度字母 → dB」的表）和
- *  articulation.wedgeStepDb 退役：迁移 2→3 只删这两个键、别的一个字不动（migrate/index.ts loungeV2toV3）；新建的候选都按值带 dynamicsVel。为什么是大版本不是小版本（统筹的三条）：
+ *  articulation.wedgeStepDb 退役（当时的迁移 2→3 删这两个键；第 16 条起没有迁移：老文件里带着的读的时候不理，16-4 起小月相 / 元音版的力度表恢复成按值带的 dB 表）；新建的候选都按值带 dynamicsVel。为什么是大版本不是小版本（统筹的三条）：
  *  ① 旧版本拿「有没有 dynamicsVel」当分路的开关（gainSegments 里 vel = !!spec.dynamicsVel）：读到带表的小月相会把她当成按力度敲的，音量曲线里不再有力度水平，
  *     她又不吃力度——她的强弱整个没了。这不是「声音不太一样」，是旧读者把新数据读成了另一个意思。
  *  ② 这次改的是约定本身（力度记号多响），user 的原话是吃书：新约定下存的歌本来就不该让旧版本去放，明确拒开比提示一次之后放错好。
@@ -71,14 +71,10 @@ export type FormatFile = keyof typeof FORMAT;
 /** lounge minor 1（施工单 12-4，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「全部声部里面翻译没有跟，以及好好想一下声部到底要不要自动翻译」→ 统筹提「名字和乐器分开」，user「同意」）：
  *  ① 角色的 name 可以没有 = 没起名字（谱上写乐器的叫法）；有 = 用户起的，原样。只有这一个来源，不另存「起没起」的旗。
  *  ② 概念多两个可选的键：score（谱上写的叫法，按语言）、abbr（谱前的简写）。上场时从目录按值抄。
- *  **老文件（minor 0）进门时判一次**（只在 migrate/index.ts loungeRoleNames 这一处，运行时不再比名字）：
- *    - 有概念：名字（不分大小写）等于 概念的中 / 英 / 日百科名、候选里记的当初上场叫法（castAs.name）、百科英文名首字母大写、冻住的目录表里那个概念的谱上英文叫法 之一 = 没起；
- *      概念缺 score 的补上（en = 冻住的目录表里的叫法 → 百科名首字母大写；zh = 百科中文名；不把判成没起的旧名字留成叫法），缺 abbr 的从冻住的目录表补英文简写。不等 = 起了的名字，原样。
+ *  **老文件（minor 0）照文件读**（第 16 条，2026-11-12，user 定的甲：「我也建议是按照文件显示，照文件显示。如果我觉得烦，我可以手动改」）：存着的名字就是起了的名字、原样显示，
+ *    不再判「是不是软件当年抄的」；没有概念的照名字显示，不认成预设。（12-4 那一版进门时判一次的做法和冻住的预设表一起删了。）
  *  ③ score / abbr 是按值存的副本（文件说得清自己、<part-name> 也要写），**不是显示的依据**：没起名字时显示先查现行的表（src/gm/concept-labels.gen.ts，跟着目录更新重烤），
  *      表里没有这个概念才用按值存的；存的时候按现行的表重写（12-4 改口，统筹 2026-11-12；user「我讨厌历史遗留问题导致的convention需要再记一个」）。
- *    - 没概念：名字（不分大小写）+ 官方 id 等于某个老预设（Vocals / Backing Vocals / Soprano…，冻住的预设表 migrate/legacy-role-names.ts）= 补上那个预设的按值概念、名字变成没起；
- *      没名字（空）= 补上人声那个预设的概念（照以前落到 Vocals）；别的名字 = 起了的，没概念，原样。
- *    - 候选里 castAs.concept 同样补 score / abbr（点回旧候选时套回去）。
  *  旧版本（minor 0）读到没名字的角色 = 显示它默认的 Vocals（照 minor 的规矩提示一次）；没有受影响的老读者（正式版打不开现在的文件，开发版只有最新的在用）。
  *  冻结样本：test/fixtures/format/minor/lounge-0-named/ 和 lounge-0-unnamed/（这一版之前的代码写的，一个会被判成没起、一个是起了名字的）。 */
 export declare const FORMAT_MINOR: Readonly<Record<FormatFile, number>>;
@@ -186,19 +182,6 @@ export interface ScoreExtV2 {
     /** score minor 10（12-4）：谱上的字用哪种语言（"zh" / "en" / 更新的版本写的别的；没写 = 跟着界面，进门时补成 "ui"）。 */
     textLang?: string;
 }
-export interface ManifestV1 {
-    format: "moonsinger";
-    version: 1;
-    app: string;
-    saved: string;
-    files: Record<string, number>;
-    sounds?: {
-        path: string;
-        sha256: string;
-        bytes: number;
-    }[];
-}
-/** 第 1 版的 score.json：一张纸、整首一份 score.musicxml 就是正本。 */
 /** 视图态（推荐稿）。全是可选、只写非默认值；读的一方宽容（不认识的忽略）。 */
 export interface ViewV1 {
     scope?: "all";
@@ -235,31 +218,7 @@ export interface ViewV1 {
         pick?: string;
     };
 }
-export interface ScoreExtV1 {
-    version: 1;
-    parts: {
-        id: string;
-        role: string;
-        mic: string;
-    }[];
-    manualBars: Record<string, number[]>;
-    unwritten: string[];
-}
 /** `.moonsinger/studio.json`：录音房。 */
-/** 录音房 v1（只给迁移对照；migrate/index.ts studioV1toV2）。 */
-export interface StudioV1 {
-    version: 1;
-    mics: {
-        id: string;
-        name: string;
-        gainDb: number;
-        pan: number;
-    }[];
-    master?: {
-        gainDb: number;
-        limiter: boolean;
-    };
-}
 /** 录音房 v2（2026-10-10 刀 4；user「轨还是和乐手是两个概念」）：轨是通用的条——乐手的通道（kind mic，谱上声部 `part.mic` 指着它）、总线（kind bus，没有乐手；混响 / 延迟这类「留在屋里的」）、
  *  以后的素材轨。每条：增益 / 声像 / 效果链 / 发送（推子之后发到哪条总线多少）/ 去哪（"master" 或总线 id）。总轨：增益 / 限幅 / 链。老文件（v1）读进来 = 每个麦克风一条 mic 轨、空链、直通总轨。 */
 export interface StudioTrackV2 {
@@ -292,7 +251,7 @@ export interface LoungeRoleV2 {
     version: 2;
     id: string;
     /** 用户起的名字（谱上原样写、什么语言都不翻）。**没有这个键 = 没起**：谱上写这件乐器的叫法（概念的 score，按「谱上的字」的语言；src/format/part-show.ts 唯一出口）。
-     *  休息室 minor 1（施工单 12-4，2026-11-12）起可以没有；空串进门时当成没有。老文件（minor 0）进门时判一次（migrate/index.ts loungeRoleNames）。 */
+     *  休息室 minor 1（施工单 12-4，2026-11-12）起可以没有。老文件（minor 0）照文件读：存着的就是起了的名字（第 16 条）。 */
     name?: string;
     sound: string;
     active: string;
@@ -470,37 +429,6 @@ export interface FxV2 {
     params: Record<string, number>;
     key?: string;
     note?: string;
-}
-export interface LoungeRoleV1 {
-    version: 1;
-    id: string;
-    name: string;
-    sound: string;
-    active: string;
-    candidates: CandidateV1[];
-}
-export interface CandidateV1 {
-    id: string;
-    name: string;
-    gm: {
-        program: number | null;
-        variant: string | null;
-    };
-    hum?: Hum;
-    calibrationDb: number;
-    chain: unknown[];
-    engines: Record<string, unknown>;
-    source?: {
-        kind: "sf2";
-        embedded: string | null;
-        bank: number;
-        program: number;
-        origin: Sf2Source["origin"];
-        subsetBytes: number;
-        subsetSha256?: string;
-    };
-    credit?: Credit;
-    spec?: Spec;
 }
 /** `.moonsinger/curves.json`（新文件）：曲线 = 真相。按音符 id；时间 = 音里 0–1；数值**绝对**、单位写明（SI 兜底）。 */
 export interface CurvesV1 {

@@ -89,8 +89,8 @@ describe("每一段自己选", () => {
   });
 });
 
-describe("老写法（score minor < 4）读进来搬到每一段，画法不变", () => {
-  it("声部默认谱号 = 没写纸头谱号的每段补一个；一段写了大谱表 = 这个声部每段都是；声部关了自动八度线 = 每段都关", () => {
+describe("老写法（score minor < 4）：声部上的老键不理，每段照它自己的 MusicXML 写的读（第 16 条，2026-11-12）", () => {
+  it("声部上的谱号 F（老写法）不理：没明写 \"auto\" = 每段第一个 <clef> 写什么就是什么；大谱表只有写了 <staves>2 的那一段；声部上的「关自动八度线」不理", () => {
     let st = initState(); st = addPart(st, { id: "P2", role: "r2", mic: "m2" }, st.song.papers[0].id); st = addPaper(st);
     const [a, b] = st.song.papers.map((p) => p.id), P1 = st.song.parts[0].id;
     st = setClefChoice(st, a, "P2", "grand");   // 新写法只在 a 段写 <staves>2
@@ -98,9 +98,9 @@ describe("老写法（score minor < 4）读进来搬到每一段，画法不变"
     sj.minor = 3; sj.parts = sj.parts.map((p: { id: string }) => (p.id === P1 ? { ...p, clef: "F" } : { ...p, autoOttava: false }));
     z[".moonsinger/score.json"] = strToU8(JSON.stringify(sj));
     const back = openBytes("x.mxl", zipSync(z)).song;
-    eq(back.papers.map((p) => headClefOf(p.tracks[P1])).join(" "), "F F", "P1 每段补了纸头低音谱号");
-    eq(back.papers.map((p) => clefChoiceOf(p, "P2")).join(" "), "grand grand", "P2 老写法 = 每段都是大谱表");
-    eq(back.papers.map((p) => p.looks?.P2?.autoOttava).join(" "), "false false", "P2 每段都关了自动八度线");
+    eq(back.papers.map((p) => headClefOf(p.tracks[P1])).join(" "), "G G", "P1：每段 MusicXML 第一个 <clef> 写的是高音 = 纸头高音谱号（声部上的 F 不理）");
+    eq(back.papers.map((p) => clefChoiceOf(p, "P2")).join(" "), "grand auto", "P2：只有写了 <staves>2 的那一段是大谱表");
+    eq(back.papers.map((p) => p.looks?.P2?.autoOttava).join(" "), " ", "P2：声部上的「关自动八度线」不理");
   });
   it("新写法（minor 4）：只有那一段是大谱表", () => {
     let st = initState(); st = addPaper(st); const P = st.song.parts[0].id, [a] = st.song.papers.map((p) => p.id);
@@ -151,11 +151,12 @@ describe("大谱表那一段里的换谱号记号：存了不丢（原来写的�
     eq(toks.filter((t) => t.kind === "clef").map((t) => (t as { clef: string }).clef).join(" "), "F");
     eq(Object.entries(r.dropped).map(([k, n]) => `${k}×${n}`).join(" "), "大谱表下面一行的换谱号×1");
   });
-  it("新写法的歌（minor 4）：就算 score.json 里没有 parts[].clef，文件里第一个 <clef> 也不当成手选的（自动挑了低音谱号的还是自动）", () => {
+  it("score.json 里这个声部没明写 clef \"auto\"：文件里第一个 <clef> 写什么就是什么（第 16 条：「自动」只在明写了的地方算，不猜）", () => {
     const s = one(rep([36, 43, 48, 52, 55, 57, 50, 45], 2)); eq(lookOf(s).clef, "F");
     const z = unzipSync(save(s)), sj = JSON.parse(strFromU8(z[".moonsinger/score.json"]));
     assert(sj.minor >= 4, `新写法（minor ≥ 4），实得 ${sj.minor}`); sj.parts = sj.parts.map(({ clef: _c, ...p }: { clef: string }) => p);
     z[".moonsinger/score.json"] = strToU8(JSON.stringify(sj));
-    eq(clefChoiceOf(openBytes("x.mxl", zipSync(z)).song.papers[0], s.parts[0].id), "auto");
+    eq(clefChoiceOf(openBytes("x.mxl", zipSync(z)).song.papers[0], s.parts[0].id), "F");
+    eq(clefChoiceOf(openBytes("x.mxl", save(s)).song.papers[0], s.parts[0].id), "auto", "明写了 auto（这一版存的都写）= 自动");
   });
 });

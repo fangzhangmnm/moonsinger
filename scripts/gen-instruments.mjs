@@ -113,7 +113,7 @@ export const DEFAULT_CONCEPT: Readonly<NonNullable<LoungeRoleV2["concept"]>> = $
 
 /** 每个概念现行的谱上叫法（zh = 中文名、en = scoreName 没有就百科名首字母大写、ja = 日文名）+ 英文简写，按值烤进源码（施工单 12-4 改口，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；
  *  统筹：「现行的那一份在 app 里：取目录的脚本烤一张随 app 发的表…跟着目录更新重烤」——没起名字的声部显示时先查它，同一个概念老歌新歌一个叫法；
- *  user「我讨厌历史遗留问题导致的convention需要再记一个」）。和冻在 src/format/migrate/legacy-role-names.ts 的那张是两张：那张只给进门判起没起名字。 */
+ *  user「我讨厌历史遗留问题导致的convention需要再记一个」）。（原来还有一张冻在 src/format/migrate/legacy-role-names.ts、给进门判起没起名字用的，第 16 条随升级链删了。） */
 export function renderLabels() {
   const p = join(DST, FILES.concepts); if (!existsSync(p)) return null;
   const cap = (s) => s.replace(/\s*\([^)]*\)/g, "").trim().replace(/^./, (ch) => ch.toUpperCase());

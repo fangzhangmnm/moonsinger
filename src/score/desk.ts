@@ -105,7 +105,7 @@ export function unserializeDesk(json: unknown): Desk {
   if (j.pad && typeof j.pad === "object") {   // 每一项各自宽容：不认识 / 越界 = 那一项默认
     const q = j.pad as Record<string, unknown>;
     if (Number.isInteger(q.fifths) && Math.abs(q.fifths as number) <= 7) { d.pad.fifths = q.fifths as number; d.pad.auto = false; }
-    if (typeof q.scale === "string" && SCALES.some((sc) => sc.id === q.scale)) { d.pad.scale = q.scale; d.pad.auto = false; }   // 只写了调式（旧歌：1=C + 某调式）= 也是手动
+    if (typeof q.scale === "string" && SCALES.some((sc) => sc.id === q.scale)) d.pad.scale = q.scale;   // 调式照写的读；跟谱 / 手动只看有没有写 fifths（第 16 条：不再把「只写了调式」猜成手动）
     if (PAD_UNITS.includes(q.unit as PadUnit)) d.pad.unit = q.unit as PadUnit;
     if (q.tuplet === 3 || q.tuplet === 5 || q.tuplet === 6 || q.tuplet === 7) d.pad.tuplet = q.tuplet;
     if (Number.isInteger(q.low) && (q.low as number) >= 0 && (q.low as number) <= 127) d.pad.low = q.low as number;

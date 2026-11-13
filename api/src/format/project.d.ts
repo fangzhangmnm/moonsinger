@@ -157,6 +157,8 @@ export declare function activeChain(extras: Extras, role: string): FxV2[];
 export declare function newMicId(extras: Extras, song: Song): string;
 /** 给新声部在休息室里建一份默认角色（月读两个候选；名字可给）。 */
 export declare function withNewRole(extras: Extras, role: string, hum: Hum, name?: string, sound?: string): Extras;
+/** 新建的歌：每个声部按模板把乐手明写进休息室（第 16 条，2026-11-12：乐手读不到 = 没人上场，所以新歌在创建那一刻就写下来，不靠读的一侧退路）。 */
+export declare function templateExtras(song: Song): Extras;
 /** 删一个声部之后：它的角色从休息室拿掉（嵌的音源没别人引用 = 一起丢）。 */
 export declare function withoutRole(extras: Extras, role: string): Extras;
 /** 改一个麦克风的增益 / 声像（没有录音房 / 没有这个麦克风 = 先建）。 */
@@ -169,19 +171,17 @@ export interface CandidateInfo {
     name: string;
     engine: Engine;
 }
-/** 角色的候选们（顺序 = 文件里的顺序）。没有角色快照 = 默认的两个月读。 */
+/** 角色的候选们（顺序 = 文件里的顺序）。没有角色快照 = 没有（第 16 条：乐手读不到 ≠ 小月相）。 */
 export declare function candidates(extras: Extras, role: string): CandidateInfo[];
 /** 这个角色里 id 那位候选（整份 json；没有 = null）。 */
 export declare function candidateJson(extras: Extras, role: string, id: string): Json | null;
-/** 上场的候选的 id（没有角色快照 = 默认的 c1）。 */
+/** 上场的候选的 id（没有角色快照 = "" = 没人上场）。 */
 export declare function activeId(extras: Extras, role: string): string;
 /** 现在上场的候选（整份 json）。 */
 export declare function activeCandidate(extras: Extras, role: string): Json | null;
-/** 上场那位（整份 json）；没有角色快照 = 默认角色里上场的（月读）——署名推演要它：新歌没动过「谁来演」的声部也是月读在唱（2026-10-08 by Claude Opus 5.5）。 */
-export declare function activeOrDefaultCandidate(extras: Extras, role: string): Json | null;
 /** 现在上场的候选（乐器）叫什么——只给角色卡里看，不上谱。 */
 export declare function activeCandidateName(extras: Extras, role: string): string | null;
-/** 上场的那位的乐器（按引擎分）；没有角色快照 = 默认的月读完整版。 */
+/** 上场的那位的乐器（按引擎分）；没有角色快照 / 读不懂 = null = 没人上场（第 16 条：不再当成小月相；新建的歌、新加的声部在创建时就写了乐手，见 templateExtras / withNewRole）。 */
 export declare function activeInstrument(extras: Extras, role: string): InstrumentV2 | null;
 /** 哼的字（月读候选共用）：休息室里第一个月读候选的；没有 = 默认「嗯」。 */
 export declare function humOf(extras: Extras): Hum;

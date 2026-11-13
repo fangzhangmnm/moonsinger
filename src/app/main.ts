@@ -56,7 +56,7 @@ import { linkParam, withoutLinkParam, planLink, fetchLink, sniff, fileNameFor } 
 import { createModelSources, MODEL_SOURCE_DEFAULT } from "../sources/models.ts";
 import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
-import { withCastAs, candidateJson, activeCalibrationDb } from "../format/project.ts";
+import { withCastAs, candidateJson, activeCalibrationDb, templateExtras } from "../format/project.ts";
 import type { CandidateV2 } from "../format/contract.ts";
 import { contentFingerprintOf, type LegacyMp3, moveBus, saveMxl, openBytes, emptyExtras, roleSound, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, activePerfSpec, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
@@ -147,7 +147,7 @@ const ranBefore = deviceKvGet("diag-log") !== null;   // 这台设备以前开�
 initBlackBox(APP_VERSION);   // 黑匣子第一个起：之后所有报错 / 面包屑都有地方落（设置里「诊断日志」能分享）
 /** 文档 = 真相 + **改它的唯一入口**（src/app/document.ts，2026-10-16 doc 这一刀）：谱的状态 `D.st`、文件里的其余部分 `D.extras`、撤销栈、「改过没存」的基线、修改锁的第 ②③ 道。
  *  改状态一律 `D.commit()`（下面的 update / updateExtras / updateBoth 只是薄壳）；界面的副作用在 afterState / afterExtras / afterRestore 三个 hook 里（函数声明会提升，这里引用没问题）。 */
-const D = createDocument({ st: initState(), extras: emptyExtras() }, {
+const D = createDocument(((st) => ({ st, extras: templateExtras(st.song) }))(initState()), {
   now: () => performance.now(), normalize: (next) => withStartDyns(next),
   onState: (prev, next, moved) => afterState(prev, next, moved, true), onExtras: (prev, next, locus) => afterExtras(prev, next, locus),
   onRefused: (what) => onLockRefused(what), onRestored: (r, verb, prev) => afterRestore(r, verb, prev), extraDirty: () => refHost.rev(),
@@ -994,6 +994,7 @@ function afterExtras(prev: Extras, next: Extras, locus: Locus): void {
   refreshIssues();   // 换人 = 清单重算（换对了角标自己消）
   pad.render();   // 乐器设置有任何变化都重画一次 pad（重画自己比对，没变 = 不动）：提示音域 / 原速键跟着；谁在弹换了 = 窗口跟过去（v0.16.23：原来只认 lounge 这一种改动，从目录换上、撤销走的不是它 = 提示停在旧乐器上）
   drawInst(); ui.redraw(); updateChrome();   // 歌手名在挂签的下拉里
+  if (prev.lounge !== next.lounge) view.render();   // 谱上的声部名 / × 符头跟着休息室（同撤销那条路；2026-11-12 查到：只改休息室的提交原来不重排谱，清掉名字要等谱动一下才变）
 }
 // 锁着：交给 D（按要翻的那一格问锁：翻的是看法就翻，翻到内容那一格就停、门闪一下；栈空着也由它说）
 function undoNow(): void { if (D.locked()) { D.undo(); return; } if (!D.history.past.length) { info(_t("没有可撤销的")); return; } ui.close(); view.lyrics.commitAndClose(); D.undo(); }
@@ -3034,9 +3035,9 @@ function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean;
   foldTold.gone.clear(); foldTold.added.clear();   // 「改到 / 写上了没显示的记号」每次打开各说一次（7-G）
   ui.close(); closeInstPage();
   H.load(o.home, { stem: o.stem, named: o.named }); coverTouched = false;   // 换家（歌库 → 别处 = 放下 es 的身份；指针 / store 的「谁开着」在 onHome 里）
-  const st0 = initState(song), sd = ensureStartDyns(st0.song, st0.nextId, { reorder: true }), startDyns = sd.added.length, reordered = sd.reordered.length;
+  const st0 = initState(song);   // 开歌不补、不理顺（第 16 条：开文件时不顺手改；人改谱时每张纸开头补力度照旧，见 update()）
   encodedSnap = null;   // 换了一份文档：还在路上的那一轮保存取的快照是上一份的，不许落到这份头上（见 es 的 onSaved）
-  D.load(withStartDyns(st0, { reorder: true }), o.extras);   // 补 + 理顺（同 sd，那份只拿来数几处、说一句）   // 换歌 / 云端覆盖重载 = 另一首的历史；基线 = 打开的样子（v0.10.39：老歌每张纸开头没写力度 = 补上，不标脏、不进 undo，下次存时一起写进去）
+  D.load(st0, o.extras);   // 换歌 / 云端覆盖重载 = 另一首的历史；基线 = 打开的样子
   const d = o.view ? unserializeDesk(o.view) : freshDesk();
   applyDesk(d);
   // 打开 = 上次存时的模式；谱里已经有音 = 键盘先收着，点一下才开（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」「或者默认键盘是关的，点一下才会开。」）。空的新歌照旧开着键盘
@@ -3048,10 +3049,6 @@ function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean;
   onSongSwitch(); sound.allOff(); void prepareBank(); refreshIssues();   // 开歌那一刻清单重算：有事 = 一条 toast + 角标（§2.2½ 出口 ③）   // 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回去
   view.forgetPin(); view.render(); pad.render(); renderTitle(); updateChrome();   // 换歌不钉正在写的那一行（防抖只管同一首歌里写）；挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
   if (D.st.song.parts.some((p) => performerOf(activeInstrument(D.extras, p.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
-  // 开头补力度（v0.10.39；user「每张纸（曲段）开头，对」）和理顺先后（第八刀 8-7，统筹 2026-11-12）是同一趟，一句话说
-  if (startDyns && reordered) info(_t("每张纸开头补了 {startDyns} 个力度记号、理顺了 {reordered} 处记号的先后（以前补的力度排在了渐强渐弱后面，那几个渐强渐弱没起作用，现在起作用了，听起来会变；下次存时一起写进文件）", { startDyns, reordered }));
-  else if (reordered) info(_t("每张纸开头理顺了 {reordered} 处记号的先后（以前补的力度排在了渐强渐弱后面，那几个渐强渐弱没起作用，现在起作用了，听起来会变；下次存时一起写进文件）", { reordered }));
-  else if (startDyns) info(_t("每张纸开头补了 {startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）", { startDyns }));
   schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
 }
 /** 改过没存时先问一句（应用内面板，不用系统弹窗）。 */
@@ -3077,7 +3074,7 @@ function confirmDiscard(what: string): Promise<boolean> {
 async function fileNew(): Promise<void> {
   if (hasStore()) { await newStoreSong(); return; }   // 进过歌库 = 新歌生在歌库里
   if (!(await H.leave(_t("新建")))) return;
-  loadDoc(initState().song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: emptyExtras() });
+  { const song = initState().song; loadDoc(song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: templateExtras(song) }); }   // 新歌 = 按模板把乐手写进去（第 16 条）
   info(_t("新的一首"));
 }
 async function fileOpen(): Promise<void> {
@@ -3622,7 +3619,7 @@ async function newStoreSong(): Promise<void> {
   attachForUser();
   if (!(await H.leave(_t("新建")))) return;
   const folder = gallery?.currentFolder() ?? "";
-  loadDoc(initState().song, { home: { kind: "none", pendingFolder: folder }, stem: defaultStem(), named: false, extras: emptyExtras() });   // 换家 = 放下旧身份（autosave 绝不能把空谱写进上一首）+ last-doc 清空（reload 回歌库）
+  { const song = initState().song; loadDoc(song, { home: { kind: "none", pendingFolder: folder }, stem: defaultStem(), named: false, extras: templateExtras(song) }); }   // 换家 = 放下旧身份（autosave 绝不能把空谱写进上一首）+ last-doc 清空（reload 回歌库）
   info(_t("新的一首（第一笔写下去就进歌库）"));
 }
 /** 把手里这首无地的歌放进歌库（文件名沿用；撞名加 -hex4，不加序号——user 2026-10-08「3 weebpaint写handoff和我们对齐」）。 */
@@ -4000,7 +3997,7 @@ async function signOutFlow(): Promise<void> {
   gallery?.noteStoreChanged();
   if (f) await clearFolderHome().catch((e) => reportError(e, "log"));
   else { try { await auth.signOut(); } catch (e) { reportError(e); } }
-  loadDoc(initState().song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: emptyExtras() });
+  { const song = initState().song; loadDoc(song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: templateExtras(song) }); }   // 新歌 = 按模板把乐手写进去（第 16 条）
   renderTitle(); info(f ? _t("不用「{label}」了：夹里的歌一首没动，再进歌库可以选家", { label: f.label }) : _t("退出了：歌都还在这台设备上，再连上网盘就能接着用"));
 }
 /** 下载备份：先 pushAll 尽力推（在线时最好的备份就是云）；推不上去的（failed = 错误报告面）逐首下载 .mxl。 */

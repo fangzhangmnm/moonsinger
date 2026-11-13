@@ -190,6 +190,11 @@ export declare class Studio {
     /** EQ / 压缩页：这条轨上第一格这种插件，摊在卡片上（没有 = 「＋」）。 */
     private inlineHtml;
     /** 出到 + 发送（歌手轨和路由轨都有；总轨没有）。 */
+    /** 这条轨上断了的引用（第 16 条「断了要看得见」，统筹 2026-11-12：在人会去修它的那一页那一格写清；卡片上只一行「有 N 处断了」）：
+     *  出到 / 发送去的混音轨不在或接成环（判法和录音房同一个 busLinkStates）、被谁压的那条轨不在。page = 去哪一页修。 */
+    private brokenOf;
+    /** 卡片名字下面一行「有 N 处断了」（三种算进同一个数）；点了 = 去第一处所在的页。没有 = 不写。 */
+    private brokenLine;
     private routeHtml;
     private chipsHtml;
     private renderPanel;

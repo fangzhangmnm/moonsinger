@@ -814,14 +814,22 @@ const SPEC_N = 2048;
 const STEREO_N = 1024;
 /** 总线的处理顺序 + 连好 out / sends（v0.10.9）：送出去的排在被送进的前面（拓扑序）；一条连线会接成环 = 断掉它（出到退回总轨、发送不要），
  *  界面上本来就不让这样连（读到手改过的文件才会遇到）。不认识的去处 = 总轨 / 不发。 */
-export function busOrder(specs: readonly BusSpec[], buses: Map<string, Bus>): Bus[] {
-  const edges = new Map<string, string[]>();
+/** 混音轨之间每一条「出到 / 发送」接没接上（纯函数；录音房 busOrder 和混音台的「断了」标法共用这一个判法，界面说的就是出声的样子）：
+ *  按顺序一条条接，去处不是一条混音轨 = missing（出到退回总轨、发送不发）；接上会成环的那一条 = cycle（不接）；"master" 不算一条连线（to = null）。第 16 条「断了要看得见」，2026-11-12。 */
+export type LinkState = "ok" | "missing" | "cycle";
+export function busLinkStates(specs: readonly { id: string; to?: string; sends?: readonly { to: string }[] }[], has: (id: string) => boolean): Map<string, { to: LinkState | null; sends: LinkState[] }> {
+  const edges = new Map<string, string[]>(), out = new Map<string, { to: LinkState | null; sends: LinkState[] }>();
   const reach = (from: string, to: string): boolean => { const seen = new Set<string>(), st = [from]; while (st.length) { const x = st.pop()!; if (x === to) return true; if (seen.has(x)) continue; seen.add(x); st.push(...(edges.get(x) ?? [])); } return false; };
-  const link = (a: string, b: string): boolean => { if (!buses.has(b) || a === b || reach(b, a)) return false; edges.set(a, [...(edges.get(a) ?? []), b]); return true; };
+  const link = (a: string, b: string): LinkState => { if (!has(b)) return "missing"; if (a === b || reach(b, a)) return "cycle"; edges.set(a, [...(edges.get(a) ?? []), b]); return "ok"; };
+  for (const sp of specs) out.set(sp.id, { to: sp.to && sp.to !== "master" ? link(sp.id, sp.to) : null, sends: (sp.sends ?? []).map((sd) => link(sp.id, sd.to)) });
+  return out;
+}
+export function busOrder(specs: readonly BusSpec[], buses: Map<string, Bus>): Bus[] {
+  const states = busLinkStates(specs, (id) => buses.has(id)), edges = new Map<string, string[]>();
   for (const sp of specs) {
-    const b = buses.get(sp.id)!; b.out = null; b.sends = [];
-    if (sp.to && sp.to !== "master" && link(sp.id, sp.to)) b.out = buses.get(sp.to)!;
-    for (const sd of sp.sends ?? []) if (link(sp.id, sd.to)) b.sends.push({ bus: buses.get(sd.to)!, lin: dbToLin(sd.gainDb) });
+    const b = buses.get(sp.id)!, st = states.get(sp.id)!; b.out = null; b.sends = [];
+    if (st.to === "ok") { b.out = buses.get(sp.to!)!; edges.set(sp.id, [...(edges.get(sp.id) ?? []), sp.to!]); }
+    (sp.sends ?? []).forEach((sd, k) => { if (st.sends[k] === "ok") { b.sends.push({ bus: buses.get(sd.to)!, lin: dbToLin(sd.gainDb) }); edges.set(sp.id, [...(edges.get(sp.id) ?? []), sd.to]); } });
   }
   const out: Bus[] = [], done = new Set<string>(), visiting = new Set<string>();
   const visit = (id: string) => { if (done.has(id) || visiting.has(id)) return; visiting.add(id); for (const sp of specs) if ((edges.get(sp.id) ?? []).includes(id)) visit(sp.id); visiting.delete(id); done.add(id); out.push(buses.get(id)!); };

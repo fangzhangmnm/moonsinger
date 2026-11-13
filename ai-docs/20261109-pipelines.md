@@ -80,6 +80,13 @@
 | B5 装 | `editor.adopt(blob, name)` → `adoptStoreBytes(name)` → `openBytes`（解 zip + MusicXML）→ `loadDoc`（`D.load`：栈清空、基线 = 现在；`refHost.apply`；视图态） | **随整首涨** | 没量 |
 | B6 画 | A8 | — | — |
 
+**B5 里 `openBytes` 读的规矩（第 16 条 16-2，as-of v0.17.11 / 2026-11-12，Claude Opus 5.5）**：文件上怎么写就怎么读——
+- 没有升级链（`src/format/migrate/` 删了）：各份 JSON 原样当现行格式读，只认现行有定义的键；缺的数由各处现行默认补（16-4 收进模板）；退役的键不理（不认识的照旧原样带回）。只拒开大版本比 app 新的、小版本更新说一次。
+- 不搬、不猜、不重排：声部上的老谱号 / 自动八度线键不理；纸头谱号 = 声部明写 `clef: "auto"` 才自动，否则每张纸第一个 `<clef>` 写什么就是什么；老写法 `brokenChords` 不理；合租一家不重排；老歌的声部名照文件（user 定的甲）；视图态「只写了调式」不再当手动。
+- 断了的照实标：合租不成立 → `PartDef.hostBroken`（照没合租来画，歌手牌「合租」那一行写清，存的时候照原样写回）；声部没有乐手 / 读不懂 → 没人上场（不再当小月相；四个「不出声」的出口说原因）；混音台出到 / 发送 / 被谁压断了 → 那一页那一格写「断了」、卡片上「有 N 处断了」（判法 = `engine/studio.ts busLinkStates`，和录音房接线同一个）。
+- 别家的谱没写速度 / 调号 / 拍号 → 打开时那一串话里各一句（`headNotice`）。
+- `loadDoc` 开歌不补力度、不理顺先后（人改谱时 A6 的 normalize 照旧补）。新歌 = `templateExtras(song)`：创建那一刻每个声部的乐手按模板写进休息室。
+
 ## 六、还随整个模型涨的点（优化时先看这里）
 
 - A6 normalize（`withStartDyns`）每次 commit 遍历整首。

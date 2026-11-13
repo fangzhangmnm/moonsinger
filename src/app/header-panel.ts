@@ -95,8 +95,10 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
         const tenants = song.parts.some((p) => p.host === me.id), hosts = song.parts.filter((p) => p.id !== me.id && !p.host);
         return `<div class="ctx-sep"></div><div class="ctx-hint hp-sec">${_t("「{name}」的谱（整首都算）", { name: esc(g.partName(partId)) })}</div><div class="hp-grid">` +
           `<span class="hp-k">${_t("分解和弦")}</span>${sel([opt("on", _t("认"), songViewOf(song).chordsOf(partId) === "auto"), opt("off", _t("不认"), songViewOf(song).chordsOf(partId) === "stacked"), opt("fold", _t("认，叠着的折叠成和弦名"), songViewOf(song).chordsOf(partId) === "fold")], 'data-hp="broken"', _t("拆开弹的和弦（一拍 / 半小节 / 一小节里的音凑成一个和弦）要不要标级数；叠在一起的和弦照旧标。「折叠」= 简谱里叠着的和弦写成和弦名（照名字的标准排法还原得回才折，不然照写数字）"))}` +
+          // 文件里写着、但不成立的合租（第 16 条「断了要看得见」，统筹 11-12：在人会去修它的地方写清）：照没有合租来画，这里写原来挂在谁上、那位不在
           (song.parts.length > 1 ? `<span class="hp-k">${_t("合租")}</span>` + (tenants ? `<span class="hp-v hp-note">${_t("有别的声部挂在这一行上（它是主人），不能再去挂别人")}</span>`
-            : sel([opt("", _t("自己一行"), !me.host), ...hosts.map((p) => opt(p.id, _t("挂在「{name}」上", { name: g.partName(p.id) }), me.host === p.id))], 'data-hp="host"', _t("挂在别人的谱线上画（合租：只看个大概，音撞在一起就撞；只画音，不画休止 / 歌词 / 力度；点名字 = 拆开来写）"))) : "") +
+            : sel([opt("", _t("自己一行"), !me.host && !me.hostBroken), ...(me.hostBroken ? [opt(me.hostBroken, _t("{key}（断了）", { key: me.hostBroken }), true)] : []), ...hosts.map((p) => opt(p.id, _t("挂在「{name}」上", { name: g.partName(p.id) }), me.host === p.id))], 'data-hp="host"', _t("挂在别人的谱线上画（合租：只看个大概，音撞在一起就撞；只画音，不画休止 / 歌词 / 力度；点名字 = 拆开来写）"))) : "") +
+          (me.hostBroken ? `<span class="hp-k"></span><span class="hp-v hp-note hp-broken">${esc(_t("断了：文件里写着挂在「{id}」上，这一首里没有这位（或那位自己也挂在别人上）。现在照自己一行画；上面选一个就改掉", { id: me.hostBroken }))}</span>` : "") +
           `</div>`;
       };
       const commit = (next: EditorState): void => { if (next === g.state()) return; g.update(next); spot = headerSpot(track(paperId, partId), spot.a); render(); };

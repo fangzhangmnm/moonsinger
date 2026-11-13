@@ -1865,8 +1865,8 @@ var Studio = class {
 };
 var SPEC_N = 2048;
 var STEREO_N = 1024;
-function busOrder(specs, buses) {
-  const edges = /* @__PURE__ */ new Map();
+function busLinkStates(specs, has) {
+  const edges = /* @__PURE__ */ new Map(), out = /* @__PURE__ */ new Map();
   const reach = (from, to) => {
     const seen = /* @__PURE__ */ new Set(), st = [from];
     while (st.length) {
@@ -1879,16 +1879,30 @@ function busOrder(specs, buses) {
     return false;
   };
   const link = (a, b) => {
-    if (!buses.has(b) || a === b || reach(b, a)) return false;
+    if (!has(b)) return "missing";
+    if (a === b || reach(b, a)) return "cycle";
     edges.set(a, [...edges.get(a) ?? [], b]);
-    return true;
+    return "ok";
   };
+  for (const sp of specs) out.set(sp.id, { to: sp.to && sp.to !== "master" ? link(sp.id, sp.to) : null, sends: (sp.sends ?? []).map((sd) => link(sp.id, sd.to)) });
+  return out;
+}
+function busOrder(specs, buses) {
+  const states = busLinkStates(specs, (id) => buses.has(id)), edges = /* @__PURE__ */ new Map();
   for (const sp of specs) {
-    const b = buses.get(sp.id);
+    const b = buses.get(sp.id), st = states.get(sp.id);
     b.out = null;
     b.sends = [];
-    if (sp.to && sp.to !== "master" && link(sp.id, sp.to)) b.out = buses.get(sp.to);
-    for (const sd of sp.sends ?? []) if (link(sp.id, sd.to)) b.sends.push({ bus: buses.get(sd.to), lin: dbToLin2(sd.gainDb) });
+    if (st.to === "ok") {
+      b.out = buses.get(sp.to);
+      edges.set(sp.id, [...edges.get(sp.id) ?? [], sp.to]);
+    }
+    (sp.sends ?? []).forEach((sd, k) => {
+      if (st.sends[k] === "ok") {
+        b.sends.push({ bus: buses.get(sd.to), lin: dbToLin2(sd.gainDb) });
+        edges.set(sp.id, [...edges.get(sp.id) ?? [], sd.to]);
+      }
+    });
   }
   const out = [], done = /* @__PURE__ */ new Set(), visiting = /* @__PURE__ */ new Set();
   const visit = (id) => {
@@ -1949,4 +1963,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-714d957ac9f7.mjs.map
+//# sourceMappingURL=studio-worklet-b2a10e55331b.mjs.map

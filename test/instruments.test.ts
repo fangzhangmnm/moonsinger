@@ -7,7 +7,6 @@ import { INSTRUMENT_FILES } from "../src/gm/instruments.gen.ts";
 import { loadCatalogFromJson, providersOf, gmKey, groupConcepts, jointOf, roleNameOf, SORT_LABEL, type Catalog, type SortMode } from "../src/gm/catalog.ts";
 import { partShow } from "../src/format/part-show.ts";
 import { initState } from "../src/score/song.ts";
-import { loungeRoleNames } from "../src/format/migrate/index.ts";
 
 describe("挑乐器数据", () => {
   it("instruments.gen.ts 是最新的（不是就跑 node scripts/gen-instruments.mjs）", () => {
@@ -130,10 +129,10 @@ describe("谱上名 / 详细说明 / 简写", () => {
   it("老目录没有谱上名 = 百科英文名去括号、首字母大写", () => {
     eq(roleNameOf({ ...by("北梆子"), scoreName: null }), "Bei bangzi");
   });
-  it("简写（12-4 起按值存在歌里）：老歌里叫谱上名 Flute / 百科名的长笛，进门判成没起、补上目录简写 Fl.；自己起的名字 = 自己缩", () => {
+  it("简写（12-4 起按值存在歌里）：没起名字 = 目录简写 Fl.；起了名字（老歌里存着的也算，第 16 条照文件读）= 名字自己缩，不套目录简写", () => {
     const c = by("长笛"), concept = { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm, hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en } };
-    const abbrOf = (name: string) => { const r = loungeRoleNames({ version: 3, id: "r1", sound: "wind.flutes.flute", active: "c1", candidates: [], name, concept }, 0); return partShow({ ...initState().song, parts: [{ id: "P1", role: "r1", mic: "m1" }] }, { r1: r }, "en")[0]!.abbr; };
-    eq(abbrOf("Flute"), "Fl."); eq(abbrOf("Western concert flute"), "Fl.", "老歌按值存着的百科名照样认");
-    assert(abbrOf("My Flute") !== "Fl.", "自己起的名字不套目录简写");
+    const abbrOf = (name?: string) => partShow({ ...initState().song, parts: [{ id: "P1", role: "r1", mic: "m1" }] }, { r1: { version: 3, id: "r1", sound: "wind.flutes.flute", active: "c1", candidates: [], concept, ...(name ? { name } : {}) } }, "en")[0]!.abbr;
+    eq(abbrOf(), "Fl.");
+    for (const n of ["Flute", "Western concert flute", "My Flute"]) assert(abbrOf(n) !== "Fl.", `${n}：起了的名字不套目录简写`);
   });
 });

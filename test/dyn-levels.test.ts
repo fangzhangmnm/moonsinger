@@ -21,9 +21,9 @@ describe("ppp / fff", () => {
     const sp = activePerfSpec(withNewRole(emptyExtras(), "r", hum), "r");
     eq(sp.dynamicsVel.ppp, 16); eq(sp.dynamicsVel.fff, 126); eq(sp.dynamicsVel.mf, 80);
   });
-  it("旧演奏者（表里没有 ppp / fff）= 按它自己的间隔往外推一档、力度夹在 1–127；没带表 = 标准表原样（不外推）", () => {
+  it("旧演奏者（表里没有 ppp / fff）= 那两档用现行默认表的（第 16 条：不再按它自己的间隔往外推）；没带表 = 标准表原样", () => {
     const sp = activePerfSpec(withTables(withNewRole(emptyExtras(), "r", hum), { pp: 30, p: 50, mp: 64, mf: 80, f: 100, ff: 120 }), "r");
-    eq(sp.dynamicsVel.ppp, 10, "pp 30、p 50 → ppp 10"); eq(sp.dynamicsVel.fff, 127, "ff 120、f 100 → 140 → 夹到 127");
+    eq(sp.dynamicsVel.ppp, 16, "没写 ppp = 默认表的 16"); eq(sp.dynamicsVel.fff, 126, "没写 fff = 默认表的 126"); eq(sp.dynamicsVel.pp, 30, "写了的照写的");
     const none = activePerfSpec(withTables(withNewRole(emptyExtras(), "r", hum), null), "r");
     eq(JSON.stringify(none.dynamicsVel), JSON.stringify({ ppp: 16, pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112, fff: 126 }), "没带 = 标准表");
   });

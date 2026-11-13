@@ -159,7 +159,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); }, XML3);
   await p.waitForTimeout(300);
   const seq = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].slice(3).map((t) => (t.kind === "note" ? "n" : t.kind === "rest" ? "r" : t.kind === "dyn" ? t.value : t.kind)).join(" "); });
-  check(await seq() === "p n n r n", "载入", await seq());
+  check(await seq() === "clef p n n r n", "载入（别家的谱：纸头 <clef> 写什么就是什么 = 一个纸头谱号记号，第 16 条）", await seq());
   await p.evaluate(() => window.__moonsinger.setMode("symbols"));   // v0.9.19：记号只在「符」里点得到 / 拿得起
   const d = await p.$eval("#score text.dyn", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, l: r.x }; });
   const rest = await p.$eval("#score text.rest", (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y }; });
@@ -169,7 +169,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   await p.mouse.move(d.x + (rest.x - head0), d.y, { steps: 8 }); await p.waitForTimeout(100);
   check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "拖着的时候一直亮");
   await p.mouse.up(); await p.waitForTimeout(200);
-  check(await seq() === "mf n n p r n", "拖到休止上 = 从休止起", await seq());
+  check(await seq() === "clef mf n n p r n", "拖到休止上 = 从休止起", await seq());
   check(await p.$$eval("#score .hot", (e) => e.length) === 0, "松手就不亮了");
   // 长按原地（不动）也亮
   const d2 = await p.$eval("#score text.dyn", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });

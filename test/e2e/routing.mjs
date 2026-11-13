@@ -11,7 +11,7 @@ const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
 // 别家谱不自动选角：删掉两个角色的快照 = 按默认的月读（没有角色快照 = 默认月读），唱换成假唱（离线混音要有声）
-await p.evaluate((xml) => { const m = window.__moonsinger, o = m.open("t.musicxml", new TextEncoder().encode(xml)); for (const r of Object.keys(o.extras.lounge)) delete o.extras.lounge[r]; m.load(o); m.singer.sing = async () => ({ samples: new Float32Array(22050 * 3).fill(0.2), sr: 22050 }); }, XML);
+await p.evaluate((xml) => { const m = window.__moonsinger, o = m.open("t.musicxml", new TextEncoder().encode(xml)); const tpl = Object.values(m.extras().lounge)[0]; for (const r of Object.keys(o.extras.lounge)) o.extras.lounge[r] = { ...structuredClone(tpl), id: r }; m.load(o);   /* 每个声部明写一位小月相（新歌模板那一份）；第 16 条起没有「没写 = 小月相」的退路 */ m.singer.sing = async () => ({ samples: new Float32Array(22050 * 3).fill(0.2), sr: 22050 }); }, XML);
 await p.waitForTimeout(300);
 await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(250);
 const ids = await p.evaluate(() => window.__moonsinger.state().song.parts.map((x) => ({ id: x.id, mic: x.mic })));

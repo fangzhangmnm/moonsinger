@@ -8,9 +8,7 @@ const fs = (await import("node:fs" as string)) as {
 };
 import { saveMxl, openBytes, activeInstrument, contentFingerprintOf, FORMAT } from "../src/format/project.ts";
 import { FORMAT_MINOR, FORMAT_PATCH } from "../src/format/contract.ts";
-import { MIGRATIONS } from "../src/format/migrate/index.ts";
-import { roleShowName, roleGivenName } from "../src/format/part-show.ts";
-import { DEFAULT_CONCEPT } from "../src/gm/default-concept.gen.ts";
+import { roleGivenName } from "../src/format/part-show.ts";
 import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong, sampleView, sampleExtras, canonTokens, canonTracks, shapeOf, mergeShape } from "./fixtures/format/sample-song.ts";
 
@@ -81,40 +79,37 @@ describe("持久化守卫", () => {
     const files = unzipSync(saveMxl({ song: o.song, hum: o.hum, extras: o.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: null }));
     eq(JSON.stringify(JSON.parse(strFromU8(files[".moonsinger/score.json"])).futureThing), JSON.stringify({ a: 1 }), "再存还在");
   });
-  it("迁移链完整：MIGRATIONS[kind].length === FORMAT[kind] - 1（升了版本没写迁移 = 红）", () => {
-    for (const k of KINDS) eq(MIGRATIONS[k].length, FORMAT[k] - 1, `${k}：第 1 版升到第 ${FORMAT[k]} 版要 ${FORMAT[k] - 1} 步纯函数（src/format/migrate/index.ts）`);
-  });
   it("当前 FORMAT 有冻结样本（升版本先 node scripts/freeze-format-sample.mjs；旧版目录不删）", () => {
     const tag = `v${Object.values(FORMAT).join("-")}`;
     assert(fs.existsSync(at(tag, "sample.mxl")) && fs.existsSync(at(tag, "expected.json")), `缺 test/fixtures/format/${tag}/。${HOW}`);
   });
-  it("每个冻结样本都能开、读出来和冻结时一样（老文件永远能开；只拒开比 app 新的）", () => {
+  it("冻结样本照写的读（第 16 条，2026-11-12：没有迁移）：第 1 版的两份谱的扩展没有纸的表 = 读不懂、明说；第 2 版起的都能开、谱（纸头谱号以外的 token）和冻结时逐个相同；名字照文件；录音房第 1 版形状的读不出轨", () => {
     const dirs = fs.readdirSync(DIR).filter((d: string) => /^v\d+(-\d+)*$/.test(d));
     assert(dirs.length >= 1, "至少一个冻结样本");
+    // 纸头的谱号不进红线（统筹 2026-11-12）：照文件写的读出来的纸头谱号记号先拿掉再比
+    const isHead = (toks: { kind: string }[], k: number) => toks[k]?.kind === "clef" && !toks.slice(0, k).some((t) => t.kind === "note" || t.kind === "rest" || t.kind === "bar");
+    const noIds = (x: unknown): string => JSON.stringify(x, (k, v) => (k === "id" && typeof v === "number" ? undefined : v));   // token 编号不是内容（读的时候整首重编）
+    const noHeadClef = (song: ReturnType<typeof openBytes>["song"]) => ({ ...song, papers: song.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).map(([id, t]) => [id, t.filter((_, k) => !isHead(t, k))])) })) });
     for (const d of dirs) {
       const exp = JSON.parse(fs.readFileSync(at(d, "expected.json"), "utf8"));
       for (const k of KINDS) assert(Number(exp.versions[k]) <= FORMAT[k], `${d} 的 ${k} 比这一版新？冻结样本不该比 app 新`);
-      const o = openBytes("sample.mxl", new Uint8Array(fs.readFileSync(at(d, "sample.mxl"))));
+      const bytes = new Uint8Array(fs.readFileSync(at(d, "sample.mxl")));
+      if (Number(exp.versions.score) === 1) { let threw = ""; try { openBytes("sample.mxl", bytes); } catch (e) { threw = (e as Error).message; } assert(/读不懂/.test(threw), `${d}：第 1 版 = 读不懂、明说：${threw}`); continue; }
+      const o = openBytes("sample.mxl", bytes), song = noHeadClef(o.song);
       eq(o.notices.length, 0, `${d}：自家样本不该有提示`);
-      eq(JSON.stringify(canonTokens(o.song)), JSON.stringify(exp.tokens), `${d}：tokens（第一张纸第一个声部）`);
-      if (exp.tracks) eq(JSON.stringify(canonTracks(o.song)), JSON.stringify(exp.tracks), `${d}：所有纸 × 声部`);   // 0.5.0 起的样本
+      eq(noIds(canonTokens(song)), noIds(exp.tokens), `${d}：tokens（第一张纸第一个声部）`);
+      if (exp.tracks) eq(noIds(canonTracks(song)), noIds(exp.tracks), `${d}：所有纸 × 声部`);
       if (exp.papers) eq(JSON.stringify(o.song.papers.map((p) => ({ id: p.id, name: p.name }))), JSON.stringify(exp.papers), `${d}：纸`);
       if (exp.parts) eq(JSON.stringify(o.song.parts.map((p) => p.id)), JSON.stringify(exp.parts), `${d}：声部`);
-      else { eq(o.song.papers.length, 1, `${d}：第 1 版文件 = 一张纸`); eq(o.song.parts.length, 1, `${d}：第 1 版文件 = 一个声部`); }
       eq(o.song.title, exp.title, `${d}：歌名`); eq(o.hum, exp.hum, `${d}：哼的字`);
-      // 上场的引擎：第 1 版样本记的是 quality（full / light / none），第 2 版起记 engine
-      const engine = activeInstrument(o.extras, "r1")?.engine ?? "unknown", want = exp.engine ?? ({ full: "tsukuyomi", light: "vowel-sampler", none: "unknown" } as Record<string, string>)[exp.quality];
-      eq(engine, want, `${d}：上场的引擎`);
+      eq(activeInstrument(o.extras, "r1")?.engine ?? "unknown", exp.engine, `${d}：上场的引擎`);
       const role = o.extras.lounge["r1"] as Json;
-      // 角色名（12-4）：老样本存的都是老预设名 Vocals = 进门判成没起、补上目录里人声的概念，显示和新歌一样（现行的表：Voice）；别的名字 = 起了的、原样
-      if (exp.role.name === "Vocals") { eq(roleGivenName(o.extras.lounge, "r1"), null, `${d}：老预设名 Vocals = 没起`); eq(roleShowName(o.extras.lounge, "r1", "en"), DEFAULT_CONCEPT.score!.en, `${d}：显示 = 新歌默认那一位的叫法`); }
-      else eq(roleGivenName(o.extras.lounge, "r1"), exp.role.name, `${d}：角色名`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);
+      eq(roleGivenName(o.extras.lounge, "r1"), exp.role.name, `${d}：角色名照文件（第 16 条，user 定的甲）`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);
       eq(JSON.stringify((role.candidates as Json[]).map((c) => c.id)), JSON.stringify(exp.role.candidates), `${d}：候选 id`);
-      eq(JSON.stringify(((o.extras.studio as Json).tracks as Json[]).filter((t) => t.kind === "mic").map((m) => m.id)), JSON.stringify(exp.mics), `${d}：麦克风 id（v2 起 = tracks 里 kind mic 的）`);
-      // 读进来的都已升到这一版（migrate 链跑过）
-      eq((o.extras.manifest as Json).version, FORMAT.manifest, `${d}：manifest 升到当前版`);
-      eq((o.extras.scoreExt as Json).version, FORMAT.score, `${d}：score 升到当前版`);
-      eq(role.version, FORMAT.lounge, `${d}：lounge 升到当前版`); eq((o.extras.studio as Json).version, FORMAT.studio, `${d}：studio 升到当前版`);
+      const mics = (((o.extras.studio as Json).tracks as Json[] | undefined) ?? []).filter((t) => t.kind === "mic").map((m) => m.id);
+      if (Number(exp.versions.studio) === 1) eq(mics.length, 0, `${d}：录音房第 1 版形状（mics）= 读不出轨，推子 / 声像用默认`);
+      else eq(JSON.stringify(mics), JSON.stringify(exp.mics), `${d}：麦克风 id（tracks 里 kind mic 的）`);
+      for (const k of KINDS) { const j = (k === "manifest" ? o.extras.manifest : k === "score" ? o.extras.scoreExt : k === "studio" ? o.extras.studio : role) as Json; eq(Number(j.version ?? 1), Number(exp.versions[k]), `${d}：${k} 照文件写的版本（不升级）`); }
     }
   });
 });

@@ -4,7 +4,7 @@
 //   src 里没有哪一处在乐手的响度上默认减 6。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { CALIBRATION_DEFAULT_DB } from "../src/format/performance.ts";
-import { saveMxl, openBytes, emptyExtras, withNewRole, withCalibration, activeCalibrationDb, activeId, CANDIDATE_ID, type Extras } from "../src/format/project.ts";
+import { saveMxl, openBytes, emptyExtras, withNewRole, withCalibration, activeCalibrationDb, activeId, templateExtras, type Extras } from "../src/format/project.ts";
 import { performers } from "../src/performers/index.ts";
 import { renderSong, audibleParts, type RenderDeps } from "../src/core/render.ts";
 import { OfflineStudio } from "../src/core/offline-studio.ts";
@@ -28,10 +28,9 @@ describe("乐手响度的默认只有一处（第 14 条）", () => {
     eq(CALIBRATION_DEFAULT_DB, 0);
     for (const p of performers()) for (const lib of [null, "generaluser-gs-2.0.3", "别的库"]) eq(p.defaultCalibrationDb(lib), CALIBRATION_DEFAULT_DB, `${p.name} ${lib}`);
   });
-  it("没写 = 新建写进去的 = 同一个数：新歌没存过时的退路、存出去的文件里明写的，两个一样（只改一个 = 新歌第一次存的那一刻会跳）", () => {
+  it("没写 = 新建写进去的 = 同一个数：新歌按模板写进去的、存出去的文件里明写的、乐手在但没写这个数时用的，都是它（第 16 条起新歌创建时就写了乐手）", () => {
     const song = sampleSong(), role = song.parts[0].role;
-    eq(activeCalibrationDb(emptyExtras(), role), CALIBRATION_DEFAULT_DB, "没有角色快照（新歌没存过）");
-    const bytes = save(song, emptyExtras());   // 声部从没碰过乐手 → 存的时候整份默认写进去
+    const bytes = save(song, templateExtras(song));   // 新歌 = 按模板把乐手写进去
     const w = written(bytes, role); assert(w.length >= 2, `写了两位：${JSON.stringify(w)}`);
     for (const x of w) eq(x, CALIBRATION_DEFAULT_DB, "文件里明写的");
     eq(activeCalibrationDb(openBytes("x.mxl", bytes).extras, role), CALIBRATION_DEFAULT_DB, "存了再开");

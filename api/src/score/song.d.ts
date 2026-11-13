@@ -181,6 +181,9 @@ export interface PartDef {
     mic: string;
     /** 合租（v0.10.24）：挂在哪位（主人）的谱线上画（主人自己不能再是房客）。只管画：轨 / 乐器 / 混音台照旧各是各的（ai-docs/20261010-shared-staff-percussion-design.md §1）。 */
     host?: string;
+    /** 文件里写着、但不成立的合租（主人不在 / 挂自己 / 主人也是房客；第 16 条，2026-11-12）：这一位照没有合租来画（运行时只看 host），名字下面标出来、人去改；
+     *  存的时候照原样写回 host（不悄悄丢）。人在歌手牌里改了合租 = 这一项去掉。 */
+    hostBroken?: string;
     /** 这条轨的和弦选项（谱面分家第三刀，score minor 5；读 / 改只走 src/score/song-view.ts）：没写 = auto（也认拆开弹的）；"stacked" = 只认叠在一起的；"fold" = 折叠成和弦名（第五刀）。
      *  不认识的值（更新的版本写的）原样留着。v0.16.73–第三刀之前的 brokenChords: false 读成 "stacked"（src/format/project.ts）。 */
     chords?: string;

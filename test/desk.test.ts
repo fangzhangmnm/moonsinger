@@ -48,13 +48,13 @@ describe("desk：pad 的状态", () => {
     const d = freshDesk(); d.pad = { ...freshPad(), auto: false, fifths: -3, unit: "quarter" };
     eq(JSON.stringify(serializeDesk(d)), JSON.stringify({ pad: { fifths: -3, unit: "quarter" } }));
   });
-  it("「1=」跟谱 / 手动（v0.16.9）：跟谱 = 不写 1=；手动 1=C 大调也写 fifths: 0；旧歌写了 1= 或调式 = 手动", () => {
+  it("「1=」跟谱 / 手动（v0.16.9）：跟谱 = 不写 1=；手动 1=C 大调也写 fifths: 0；写了 1= = 手动，只写了调式 = 照写的读调式、跟谱（第 16 条：不再猜成手动）", () => {
     const d = freshDesk(); d.pad = { ...freshPad(), fifths: -3 };   // 跟谱时内存里残留的旧值不写
     eq(serializeDesk(d), null);
     d.pad = { ...freshPad(), auto: false };
     eq(JSON.stringify(serializeDesk(d)), JSON.stringify({ pad: { fifths: 0 } }));
     eq(unserializeDesk({ pad: { fifths: 0 } }).pad.auto, false);
-    const old = unserializeDesk({ pad: { scale: "dorian" } }).pad; eq(old.auto, false); eq(old.fifths, 0); eq(old.scale, "dorian");
+    const old = unserializeDesk({ pad: { scale: "dorian" } }).pad; eq(old.auto, true); eq(old.scale, "dorian");
     eq(unserializeDesk({ pad: { unit: "quarter" } }).pad.auto, true);
     eq(unserializeDesk(null).pad.auto, true);
   });

@@ -152,6 +152,9 @@ export type Hum = "la" | "n" | "u" | "o" | "a";
 export interface PartDef { id: string; role: string; mic: string;
   /** 合租（v0.10.24）：挂在哪位（主人）的谱线上画（主人自己不能再是房客）。只管画：轨 / 乐器 / 混音台照旧各是各的（ai-docs/20261010-shared-staff-percussion-design.md §1）。 */
   host?: string;
+  /** 文件里写着、但不成立的合租（主人不在 / 挂自己 / 主人也是房客；第 16 条，2026-11-12）：这一位照没有合租来画（运行时只看 host），名字下面标出来、人去改；
+   *  存的时候照原样写回 host（不悄悄丢）。人在歌手牌里改了合租 = 这一项去掉。 */
+  hostBroken?: string;
   /** 这条轨的和弦选项（谱面分家第三刀，score minor 5；读 / 改只走 src/score/song-view.ts）：没写 = auto（也认拆开弹的）；"stacked" = 只认叠在一起的；"fold" = 折叠成和弦名（第五刀）。
    *  不认识的值（更新的版本写的）原样留着。v0.16.73–第三刀之前的 brokenChords: false 读成 "stacked"（src/format/project.ts）。 */
   chords?: string }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
@@ -1793,12 +1796,13 @@ export function movePart(st: EditorState, partId: string, d: -1 | 1): EditorStat
 /** 合租：partId 挂到 host 的谱线上（host = null = 搬出来自己一行）。主人不能是房客、不能挂自己、有房客的不能再去当房客；挂上 = 排到主人那一家最后（v0.10.24）。 */
 export function setPartHost(st: EditorState, partId: string, host: string | null): EditorState {
   const ps = st.song.parts, me = ps.find((p) => p.id === partId); if (!me) return st;
-  if (host === null) { if (!me.host) return st; const { host: _h, ...rest } = me; void _h; return { ...st, song: { ...st.song, parts: ps.map((p) => (p.id === partId ? rest : p)) } }; }
+  if (host === null) { if (!me.host && !me.hostBroken) return st; const { host: _h, hostBroken: _b, ...rest } = me; void _h; void _b; return { ...st, song: { ...st.song, parts: ps.map((p) => (p.id === partId ? rest : p)) } }; }   // 断了的合租（hostBroken）选「自己一行」= 去掉
   const h = ps.find((p) => p.id === host);
   if (!h || h.id === partId || h.host || ps.some((p) => p.host === partId)) return st;
   const others = ps.filter((p) => p.id !== partId), hi = others.indexOf(h);
   let at = hi + 1; while (at < others.length && others[at].host === host) at++;
-  const parts = familyOrder([...others.slice(0, at), { ...me, host }, ...others.slice(at)]);
+  const { hostBroken: _b, ...me2 } = me; void _b;   // 人重新挂了 = 断了的那一层不要了
+  const parts = familyOrder([...others.slice(0, at), { ...me2, host }, ...others.slice(at)]);
   return { ...st, song: keepSheetTempos(st.song, { ...st.song, parts }) };
 }
 /** 这张纸上加上某个（歌里已有的）声部：一条只有谱头的 track（谱头抄这张纸第一个在场声部的开头）。user 2026-10-08「每个sheet的track数量当然不同」。 */

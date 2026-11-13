@@ -3,21 +3,22 @@
 // created 2026-10-07 by Claude Fable 5.1（user「数据结构你来把关」「碰到格式问题就问你」）；2026-10-07 深夜起契约与编辑器同一个 session 管。
 // 来龙去脉与 user 原话 = ai-docs/20261007-data-contract-draft.md（§3 目录表、§7 未定、§8 谁的字节、§10 音源）。
 //
-// 规矩（CatsUp 立宪，家族持久化向后兼容）：
-//   · 每份文件自带 version；改形状 = FORMAT 里 +1 + src/format/migrate/ 加一条纯函数（第 n 版 → 第 n+1 版）+ 旧版冻结样本留在 test/fixtures/format/。
-//   · 只加可选字段 = 不升版本（WXHW ADR-0012 修订同款「加法」），但写出来的键集合变了 → 守卫测试红，跑 node scripts/freeze-format-sample.mjs 更新形状快照、审 diff。
-//   · 老文件永远能开（读时链式升级），只拒开比 app 新的；不认识的字段 / 文件原样写回。
-//   · 守卫 = test/format-guard.test.ts：形状快照、迁移链完整、冻结样本能开。
+// 规矩（第 16 条起，2026-11-12；家规硬规则 #9、仓说明「文件就是语义：本仓的细则」）：
+//   · 读 = 文件上怎么写就怎么读：只认这一版格式里有定义的键，**没有升级链、不转换、不按版本号分路**；缺的数用现行默认补；退役的键不理。
+//     一个键的意思永远不变，想换意思就换一个新名字的键（不然老文件的那个键会被读成新的意思）。指向别的东西的读不到 = 断了，照实标出来，不顶替。
+//   · 只拒开大版本比 app 新的；小版本更新说一次；不认识的字段 / 文件原样写回。
+//   · 只加可选字段 = 不升版本，但写出来的键集合变了 → 守卫测试红，跑 node scripts/freeze-format-sample.mjs 更新形状快照、审 diff。
+//   · 守卫 = test/format-guard.test.ts：形状快照、写永远只写当前版、冻结样本照写的读（读不懂的明说）。
 //   · 参考窗目录 `.moonsinger/references/`（v0.8，2026-10-08 深夜 Opus 5.5；对齐稿 ai-docs/20261008-reference-window-alignment.md）：
 //     整个目录归 @internal/reference-window（manifest.json 自带版本号和迁移 + 每张卡一个 r<i>.<ext>），这一层零知识、原样进出（project.ts REFERENCES_DIR）；
 //     不列进我们的 manifest、不升 FORMAT；窗的位置在 score.json view.ref（ViewV1 可选字段）。老版本 app 读到 = 当不认识的文件原样写回。
 
-/** 这一版能读写的各份文件的版本号（改格式 = 这里 +1 + migrate + 冻结样本；守卫测试盯着）。
+/** 这一版能读写的各份文件的版本号（改格式 = 这里 +1 + 冻结样本；守卫测试盯着。第 16 条起没有升级链：老文件照写的读）。
  *  lounge 2（2026-10-07 深夜，user「现在开始好好做乐器这个数据结构，不要偷懒」）：候选从「月读形状 + 贴字段」改成按引擎分的乐器。
  *  manifest 2 / score 2（2026-10-08，0.5.0 多声部多纸，存法 B）：纸的顺序表 + 声部并集；每张纸一份 MusicXML 正本，score.musicxml 变派生件。
  *  lounge 3（9-2，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「按照SoundFont对齐，然后小月相也应该对齐」，统筹裁定走大版本）：力度 → 响度全体演奏者只有一条
  *  （响度 = 40·log10(力度 ÷ 127)，SoundFont 规范的放法；score/perform.ts velocityDb）。候选按值存的 dynamicsDb（小月相 / 元音版那张「力度字母 → dB」的表）和
- *  articulation.wedgeStepDb 退役：迁移 2→3 只删这两个键、别的一个字不动（migrate/index.ts loungeV2toV3）；新建的候选都按值带 dynamicsVel。为什么是大版本不是小版本（统筹的三条）：
+ *  articulation.wedgeStepDb 退役（当时的迁移 2→3 删这两个键；第 16 条起没有迁移：老文件里带着的读的时候不理，16-4 起小月相 / 元音版的力度表恢复成按值带的 dB 表）；新建的候选都按值带 dynamicsVel。为什么是大版本不是小版本（统筹的三条）：
  *  ① 旧版本拿「有没有 dynamicsVel」当分路的开关（gainSegments 里 vel = !!spec.dynamicsVel）：读到带表的小月相会把她当成按力度敲的，音量曲线里不再有力度水平，
  *     她又不吃力度——她的强弱整个没了。这不是「声音不太一样」，是旧读者把新数据读成了另一个意思。
  *  ② 这次改的是约定本身（力度记号多响），user 的原话是吃书：新约定下存的歌本来就不该让旧版本去放，明确拒开比提示一次之后放错好。
@@ -80,14 +81,10 @@ export type FormatFile = keyof typeof FORMAT;
 /** lounge minor 1（施工单 12-4，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「全部声部里面翻译没有跟，以及好好想一下声部到底要不要自动翻译」→ 统筹提「名字和乐器分开」，user「同意」）：
  *  ① 角色的 name 可以没有 = 没起名字（谱上写乐器的叫法）；有 = 用户起的，原样。只有这一个来源，不另存「起没起」的旗。
  *  ② 概念多两个可选的键：score（谱上写的叫法，按语言）、abbr（谱前的简写）。上场时从目录按值抄。
- *  **老文件（minor 0）进门时判一次**（只在 migrate/index.ts loungeRoleNames 这一处，运行时不再比名字）：
- *    - 有概念：名字（不分大小写）等于 概念的中 / 英 / 日百科名、候选里记的当初上场叫法（castAs.name）、百科英文名首字母大写、冻住的目录表里那个概念的谱上英文叫法 之一 = 没起；
- *      概念缺 score 的补上（en = 冻住的目录表里的叫法 → 百科名首字母大写；zh = 百科中文名；不把判成没起的旧名字留成叫法），缺 abbr 的从冻住的目录表补英文简写。不等 = 起了的名字，原样。
+ *  **老文件（minor 0）照文件读**（第 16 条，2026-11-12，user 定的甲：「我也建议是按照文件显示，照文件显示。如果我觉得烦，我可以手动改」）：存着的名字就是起了的名字、原样显示，
+ *    不再判「是不是软件当年抄的」；没有概念的照名字显示，不认成预设。（12-4 那一版进门时判一次的做法和冻住的预设表一起删了。）
  *  ③ score / abbr 是按值存的副本（文件说得清自己、<part-name> 也要写），**不是显示的依据**：没起名字时显示先查现行的表（src/gm/concept-labels.gen.ts，跟着目录更新重烤），
  *      表里没有这个概念才用按值存的；存的时候按现行的表重写（12-4 改口，统筹 2026-11-12；user「我讨厌历史遗留问题导致的convention需要再记一个」）。
- *    - 没概念：名字（不分大小写）+ 官方 id 等于某个老预设（Vocals / Backing Vocals / Soprano…，冻住的预设表 migrate/legacy-role-names.ts）= 补上那个预设的按值概念、名字变成没起；
- *      没名字（空）= 补上人声那个预设的概念（照以前落到 Vocals）；别的名字 = 起了的，没概念，原样。
- *    - 候选里 castAs.concept 同样补 score / abbr（点回旧候选时套回去）。
  *  旧版本（minor 0）读到没名字的角色 = 显示它默认的 Vocals（照 minor 的规矩提示一次）；没有受影响的老读者（正式版打不开现在的文件，开发版只有最新的在用）。
  *  冻结样本：test/fixtures/format/minor/lounge-0-named/ 和 lounge-0-unnamed/（这一版之前的代码写的，一个会被判成没起、一个是起了名字的）。 */
 export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 10, lounge: 1, studio: 1 };   // lounge 3（9-2）起小版本从 0 数
@@ -178,9 +175,6 @@ export interface ScoreExtV2 {
   textLang?: string;
 }
 
-// ─── 第 1 版（只给迁移对照；migrate/index.ts）────────────────────────────────────────────
-export interface ManifestV1 { format: "moonsinger"; version: 1; app: string; saved: string; files: Record<string, number>; sounds?: { path: string; sha256: string; bytes: number }[] }
-/** 第 1 版的 score.json：一张纸、整首一份 score.musicxml 就是正本。 */
 /** 视图态（推荐稿）。全是可选、只写非默认值；读的一方宽容（不认识的忽略）。 */
 export interface ViewV1 { scope?: "all"; pageFlow?: true; /** 排法「横卷」（v0.9.35 加，可选、不升版本；Opus 5.5；和 pageFlow 互斥，只写 true）。 */ scroll?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>;
   mp3?: "small";   // mp3 = 导出歌声的音质（只写非默认的「小文件」；2026-10-08 by Claude Opus 5.5，user「音质配置就是应该也跟着吧」）
@@ -192,20 +186,8 @@ export interface ViewV1 { scope?: "all"; pageFlow?: true; /** 排法「横卷」
   /** 2026-11-07 加（可选，不升版本；Claude Opus 5.5）：乐器目录在这首歌里翻到哪（src/score/desk.ts FinderMemo；只写不是默认的）——排序 / 每种排序展开的组 / 滚到哪 / 点开的那件 / 试听的那位。
    *  user 11-07「乐器列表记录滚动位置的话，是每个文件自己记录，不是用户设置」。 */
   finder?: { mode?: string; open?: Record<string, string>; scroll?: number; row?: string; pick?: string } }
-export interface ScoreExtV1 {
-  version: 1;
-  parts: { id: string; role: string; mic: string }[];
-  manualBars: Record<string, number[]>;                   // 声部 id → 哪些小节线是人插的
-  unwritten: string[];
-}
 
 /** `.moonsinger/studio.json`：录音房。 */
-/** 录音房 v1（只给迁移对照；migrate/index.ts studioV1toV2）。 */
-export interface StudioV1 {
-  version: 1;
-  mics: { id: string; name: string; gainDb: number; pan: number }[];   // pan −1…1（写 MusicXML 时 ×90）
-  master?: { gainDb: number; limiter: boolean };   // v0.9.6 加的可选字段
-}
 /** 录音房 v2（2026-10-10 刀 4；user「轨还是和乐手是两个概念」）：轨是通用的条——乐手的通道（kind mic，谱上声部 `part.mic` 指着它）、总线（kind bus，没有乐手；混响 / 延迟这类「留在屋里的」）、
  *  以后的素材轨。每条：增益 / 声像 / 效果链 / 发送（推子之后发到哪条总线多少）/ 去哪（"master" 或总线 id）。总轨：增益 / 限幅 / 链。老文件（v1）读进来 = 每个麦克风一条 mic 轨、空链、直通总轨。 */
 export interface StudioTrackV2 { id: string; kind: "mic" | "bus"; name: string; gainDb: number; pan: number; chain: FxV2[]; sends: { to: string; gainDb: number }[]; to: string;
@@ -230,7 +212,7 @@ export interface LoungeRoleV2 {
   version: 2;
   id: string;                          // "r1"
   /** 用户起的名字（谱上原样写、什么语言都不翻）。**没有这个键 = 没起**：谱上写这件乐器的叫法（概念的 score，按「谱上的字」的语言；src/format/part-show.ts 唯一出口）。
-   *  休息室 minor 1（施工单 12-4，2026-11-12）起可以没有；空串进门时当成没有。老文件（minor 0）进门时判一次（migrate/index.ts loungeRoleNames）。 */
+   *  休息室 minor 1（施工单 12-4，2026-11-12）起可以没有。老文件（minor 0）照文件读：存着的就是起了的名字（第 16 条）。 */
   name?: string;
   sound: string;                       // MusicXML 官方乐器语义 id（<instrument-sound>，src/score/roles.ts）
   active: string;                      // 上场的候选 id（人选的；上不了场 = 不出声、报错、人换，不自动替补）
@@ -312,18 +294,7 @@ export type Spec =
  *  不认识的 = 不出声、原样带着、界面画灰）；params 按 kind 的参数表（量纲 / 公式在那张表里，vault 自描述）；on = false 旁通；key = 压缩器的侧链来源（轨 id）。 */
 export interface FxV2 { id: string; kind: string; on?: boolean; params: Record<string, number>; key?: string; note?: string }
 
-// ─── 休息室 v1（只给迁移对照；migrate/index.ts loungeV1toV2）─────────────────────────────────
-export interface LoungeRoleV1 { version: 1; id: string; name: string; sound: string; active: string; candidates: CandidateV1[] }
-export interface CandidateV1 {
-  id: string; name: string;
-  gm: { program: number | null; variant: string | null };   // variant "tsukuyomi" / "tsukuyomi-vowels" = 月读的两个候选
-  hum?: Hum;                           // 月读的才有
-  calibrationDb: number; chain: unknown[]; engines: Record<string, unknown>;
-  source?: { kind: "sf2"; embedded: string | null; bank: number; program: number; origin: Sf2Source["origin"]; subsetBytes: number; subsetSha256?: string };   // v0.4.0–0.4.2 的 GM 候选
-  credit?: Credit; spec?: Spec;
-}
-
-// ═══ 提案（未写入文件；多轨 / 曲线 / 录音房落地时改 FORMAT + migrate + 冻结样本）══════════════════
+// ═══ 提案（未写入文件；多轨 / 曲线 / 录音房落地时改 FORMAT + 冻结样本）══════════════════
 // user 裁决（2026-10-07，契约草稿 §7.7 / §7.8 / §6¾ / §8）：
 //   ① 曲线是真相：绝对值、SI；谱上的 mp / mf / < > / 跳音 / 重音从曲线算出来写进 MusicXML（低保真可视化 + 备份）；默认演绎不藏在 app，
 //      一个音没画曲线就用候选快照里写明的默认数。

@@ -7,8 +7,6 @@ import { performerOf } from "../src/performers/index.ts";
 import { DYNAMICS_VEL, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
 import { initState, tr, TPQ, DYNS, type Token, type Dyn } from "../src/score/song.ts";
 import { openBytes, activePerfSpec } from "../src/format/project.ts";
-import { FORMAT } from "../src/format/contract.ts";
-import { MIGRATIONS } from "../src/format/migrate/index.ts";
 const nodeMod = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
 const fs = nodeMod("node:fs");
 
@@ -39,12 +37,12 @@ describe("力度 → 响度：全体一条（9-2）", () => {
     const mid = velocityDb((DYNAMICS_VEL.p + DYNAMICS_VEL.f) / 2), dbMid = (velocityDb(DYNAMICS_VEL.p) + velocityDb(DYNAMICS_VEL.f)) / 2;
     assert(Math.abs(mid - dbMid) > 0.5, "两种走法在中点差得出来（不然这条测不出东西）");
   });
-  it("结构：src 里不再有 dynamicsDb / wedgeStepDb / DYNAMICS_DB——只剩迁移（冻结的历史 + 2→3 删键那一步）和契约的历史注释", () => {
+  it("结构：src 里不再有 dynamicsDb / wedgeStepDb / DYNAMICS_DB——只剩契约的历史注释（第 16 条起没有迁移；16-4 起小月相的 dB 表恢复时这一条跟着改）", () => {
     const walk = (d: string): string[] => fs.readdirSync(new URL(`../src/${d}`, import.meta.url), { withFileTypes: true }).flatMap((e: { name: string; isDirectory(): boolean }) => (e.isDirectory() ? walk(`${d}${e.name}/`) : /\.(ts|mjs)$/.test(e.name) ? [`${d}${e.name}`] : []));
     const read = (f: string) => fs.readFileSync(new URL(`../src/${f}`, import.meta.url), "utf8") as string;
     const bad: string[] = [];
     for (const f of walk("")) {
-      if (f === "format/migrate/index.ts" || f === "i18n/strings.ts") continue;   // 迁移是冻结的纯函数（当年的表）；界面字表另有「不用的字」守卫
+      if (f === "i18n/strings.ts") continue;   // 界面字表另有「不用的字」守卫
       const src = read(f), lines = src.split("\n");
       lines.forEach((l, k) => {
         if (!/dynamicsDb|wedgeStepDb|DYNAMICS_DB/.test(l)) return;
@@ -54,21 +52,14 @@ describe("力度 → 响度：全体一条（9-2）", () => {
     }
     assert(!bad.length, `还在用：${bad.join("、")}`);
   });
-  it(`迁移 2→3 只删候选的 dynamicsDb 和 articulation.wedgeStepDb，别的一个字不动；旧的四个大版本样本照样读得出来，读回来没有退役的字段；lounge ${FORMAT.lounge} 的冻结样本写出来就没有`, () => {
-    const v2v3 = MIGRATIONS.lounge[1]!;
-    const before = { id: "r1", name: "x", extra: [1, { y: 2 }], candidates: [{ id: "c1", z: 1, dynamicsDb: { mf: 0 }, dynamicsVel: { mf: 80 }, articulation: { accentDb: 4, wedgeStepDb: 6, wedgeStepVel: 16 } }, { id: "c2", articulation: { accentDb: 4 } }, "怪东西"] };
-    const after = v2v3(JSON.parse(JSON.stringify(before)));
-    eq(JSON.stringify(after), JSON.stringify({ id: "r1", name: "x", extra: [1, { y: 2 }], candidates: [{ id: "c1", z: 1, dynamicsVel: { mf: 80 }, articulation: { accentDb: 4, wedgeStepVel: 16 } }, { id: "c2", articulation: { accentDb: 4 } }, "怪东西"] }), "只删那两个键");
-    eq(FORMAT.lounge, 3); eq(MIGRATIONS.lounge.length, FORMAT.lounge - 1);
-    for (const dir of ["v1-1-1-1", "v1-1-2-1", "v2-2-2-1", "v2-2-2-2", "v2-2-3-2"]) {
+  it("老文件照写的读（第 16 条，没有迁移）：第 2 版的三个样本读得开，候选身上带着的 dynamicsDb / wedgeStepDb 原样留在读进来的休息室里（运行时不读）、力度表照常；第 1 版的两个样本谱的扩展没有纸的表 = 读不懂、明说", () => {
+    for (const dir of ["v2-2-2-1", "v2-2-2-2", "v2-2-3-2"]) {
       const o = openBytes("sample.mxl", new Uint8Array(fs.readFileSync(new URL(`fixtures/format/${dir}/sample.mxl`, import.meta.url))));
-      for (const [role, r] of Object.entries(o.extras.lounge)) {
-        for (const c of (r as { candidates: Record<string, unknown>[] }).candidates) {
-          assert(!("dynamicsDb" in c) && !("wedgeStepDb" in ((c.articulation as object) ?? {})), `${dir} ${role}/${c.id} 读回来还带着退役的字段`);
-        }
-        const sp = activePerfSpec(o.extras, role);
-        assert(DYNS.every((d) => sp.dynamicsVel[d] >= 1 && sp.dynamicsVel[d] <= 127), `${dir} ${role}：力度表`);
-      }
+      for (const role of Object.keys(o.extras.lounge)) { const sp = activePerfSpec(o.extras, role); assert(DYNS.every((d) => sp.dynamicsVel[d] >= 1 && sp.dynamicsVel[d] <= 127), `${dir} ${role}：力度表`); }
+    }
+    for (const dir of ["v1-1-1-1", "v1-1-2-1"]) {
+      let threw = ""; try { openBytes("sample.mxl", new Uint8Array(fs.readFileSync(new URL(`fixtures/format/${dir}/sample.mxl`, import.meta.url)))); } catch (e) { threw = (e as Error).message; }
+      assert(/读不懂/.test(threw), `${dir}：${threw}`);
     }
   });
 });

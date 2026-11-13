@@ -1,14 +1,13 @@
 // 声部显示成什么：唯一出口 src/format/part-show.ts + 老文件进门时判一次（施工单 12-4，2026-11-12；user「全部声部里面翻译没有跟，以及好好想一下声部到底要不要自动翻译」→ 「名字和乐器分开」user「同意」）。
 //   created 2026-11-12 by Claude Opus 5.5（MoonSinger小弟）。
 // 守：① 出口：没起名字 = 乐器的叫法（按传进来的语言，缺了按写死的次序落）；起了 = 原样不翻；重名带号；简写按值（概念里的）/ 名字自己缩，定宽。
-//     ② 进门（老文件 minor 0）：名字等于乐器的任一叫法 = 没起、补上谱上的叫法和简写；叫老预设名又没概念 = 补上冻住的预设概念；别的 = 起了的名字。这一版写的文件不判。
+//     ② 老文件（minor 0）照文件读（第 16 条，user 定的甲「照文件显示」）：存着的名字就是起了的名字、原样显示；没概念的照名字显示。不再判、不再补。
 //     ③ 存：<part-name> 起了 = 名字；没起 = 乐器谱上的叫法，语言只看歌（钉了一种 = 那一种，跟着界面 = 英文）；读回来以休息室为准。新角色 = 没起 + 目录里的人声。
 //     ④ 冻结样本：这一版之前写的两份（一个会被判成没起、一个起了名字的）。
-//     ⑤ 守卫：运行时别处不许拼声部名 / 读角色的 name / import 进门用的冻住的表。
+//     ⑤ 守卫：运行时别处不许拼声部名 / 读角色的 name。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { partShow, partNames, conceptLabel, roleGivenName } from "../src/format/part-show.ts";
-import { loungeRoleNames } from "../src/format/migrate/index.ts";
-import { saveMxl, openBytes, emptyExtras, withRoleName, withRoleConcept, type Extras } from "../src/format/project.ts";
+import { saveMxl, openBytes, emptyExtras, withRoleName, withRoleConcept, templateExtras, type Extras } from "../src/format/project.ts";
 import { DEFAULT_CONCEPT } from "../src/gm/default-concept.gen.ts";
 import { CONCEPT_LABELS } from "../src/gm/concept-labels.gen.ts";
 import { initState, type Song } from "../src/score/song.ts";
@@ -48,37 +47,24 @@ describe("出口：显示成什么（12-4）", () => {
     eq(ab({ r1: role({ name: "Helicopter" }) }, 1, "en"), "Hel.");
     assert(dispWidth(partShow(songWith(1), { r1: role({ name: "Supercalifragilistic Expialidocious Orchestra Hit" }) }, "en")[0]!.abbr) <= ABBR_W, "定宽");
   });
-  it("新角色（歌里还没有快照）= 没起名字、目录里的人声：中文「人声」、英文 Voice / Vo.", () => {
-    eq(partShow(songWith(1), {}, "zh")[0]!.name, "人声");
-    const en = partShow(songWith(1), {}, "en")[0]!; eq(en.name, DEFAULT_CONCEPT.score!.en); eq(en.abbr, "Vo.");
+  it("新歌按模板写了乐手 = 没起名字、目录里的人声：中文「人声」、英文 Voice / Vo.；歌里没有这个角色（乐手读不到）= 照实写「（没有乐手）」，不当成人声（第 16 条）", () => {
+    const x = templateExtras(songWith(1));
+    eq(partShow(songWith(1), x.lounge, "zh")[0]!.name, "人声");
+    const en = partShow(songWith(1), x.lounge, "en")[0]!; eq(en.name, DEFAULT_CONCEPT.score!.en); eq(en.abbr, "Vo.");
+    eq(partShow(songWith(1), {}, "zh")[0]!.name, "（没有乐手）");
   });
 });
 
-describe("进门：老文件判一次（12-4，契约 lounge minor 1）", () => {
-  const door = (o: Record<string, unknown>, minor = 0) => loungeRoleNames(role(o), minor) as { name?: string; concept?: Concept };
-  it("名字等于乐器的任一叫法（不分大小写）= 没起；按值存的叫法从冻住的目录表补，不把旧名字留成叫法（12-4 改口）", () => {
-    for (const n of ["Flute", "flute", "Western concert flute", "长笛"]) {
-      const r = door({ concept: FLUTE_OLD, name: n }); eq(r.name, undefined, n); eq(r.concept?.score?.en, "Flute", n); eq(r.concept?.score?.zh, "长笛", n); eq(r.concept?.abbr?.en, "Fl.", n);
-    }
+describe("老文件照文件读（第 16 条，user 定的甲：「照文件显示」）", () => {
+  const show = (o: Record<string, unknown>) => { const lounge = { r1: role({ id: "r1", ...o }) }; return { given: roleGivenName(lounge, "r1"), zh: partNames(songWith(1), lounge, "zh")[0], en: partNames(songWith(1), lounge, "en")[0] }; };
+  it("名字等于乐器的叫法也照样是起了的名字、原样显示（不再判「软件当年抄的」）；概念缺的叫法 / 简写不补", () => {
+    for (const n of ["Flute", "flute", "Western concert flute", "长笛"]) { const r = show({ concept: FLUTE_OLD, name: n }); eq(r.given, n, n); eq(r.zh, n, n); eq(r.en, n, n); }
   });
-  it("候选里记的当初上场叫法（castAs.name）也算", () => {
-    const r = door({ concept: FLUTE_OLD, name: "Fluuute", candidates: [{ id: "c9", castAs: { name: "Fluuute", sound: null, concept: FLUTE_OLD } }] });
-    eq(r.name, undefined); const ca = (r as unknown as { candidates: { castAs: { concept: Concept } }[] }).candidates[0]!.castAs.concept; eq(ca.score?.en, "Flute", "候选里的概念也补上（冻住的目录表）"); eq(ca.abbr?.en, "Fl.");
+  it("没概念、叫老预设名（Soprano / Vocals）= 照名字显示，不认成预设", () => {
+    const sop = show({ name: "Soprano", sound: "voice.soprano" }); eq(sop.given, "Soprano"); eq(sop.zh, "Soprano");
+    eq(show({ name: "Vocals", sound: "voice.vocals" }).en, "Vocals");
   });
-  it("别的名字 = 起了的名字，原样；概念照样补谱上的叫法", () => {
-    const r = door({ concept: FLUTE_OLD, name: "My Flute" }); eq(r.name, "My Flute"); eq(r.concept?.score?.en, "Flute");
-  });
-  it("没概念、叫老预设名（看官方 id）= 补上冻住的预设概念、没起；没名字 = 人声；别的名字照旧", () => {
-    const sop = door({ name: "Soprano", sound: "voice.soprano" }); eq(sop.name, undefined); eq(conceptLabel(sop.concept!, "zh"), "女高音"); eq(conceptLabel(sop.concept!, "en"), "Soprano");
-    eq(conceptLabel(door({ name: "Bass", sound: "voice.bass" }).concept!, "zh"), "男低音"); eq(conceptLabel(door({ name: "Bass", sound: "pluck.bass" }).concept!, "zh"), "贝斯");
-    eq(conceptLabel(door({ name: "Vocals", sound: "voice.vocals" }).concept!, "en"), DEFAULT_CONCEPT.score!.en, "老预设 Vocals 补的概念是目录里的人声 = 和新歌一样写 Voice（12-4 改口：不为老的留第二套叫法）");
-    eq(conceptLabel(door({ sound: "voice.vocals" }).concept!, "zh"), "人声");
-    const lead = door({ name: "Lead guitar", sound: "pluck.guitar" }); eq(lead.name, "Lead guitar"); eq(lead.concept, undefined);
-  });
-  it("这一版写的文件（minor 1）不判：名字在 = 起了的，哪怕等于乐器的叫法；空串 = 没有", () => {
-    eq(door({ concept: flute, name: "Flute" }, 1).name, "Flute");
-    eq(door({ concept: flute, name: "" }, 1).name, undefined);
-  });
+  it("名字是空串 = 没有名字（照乐器的叫法）", () => { eq(show({ concept: flute, name: "" }).given, null); eq(show({ concept: flute, name: "" }).en, "Flute"); });
 });
 
 describe("存与读（12-4）", () => {
@@ -104,13 +90,13 @@ describe("存与读（12-4）", () => {
 });
 
 describe("同一个概念老歌新歌一个叫法（12-4 改口，统筹守卫）", () => {
-  it("进门的老歌（软件当年抄的旧叫法）和新建的歌（这一版上场）没起名字时叫法逐字相同；改掉现行表里的叫法，两首一起变", () => {
+  it("老歌里存着的名字照文件显示（第 16 条，user 定的甲）；没起名字的新歌跟着现行的表——改掉现行表里的叫法，新歌跟着变、老歌不变", () => {
     const old = openBytes("old.mxl", fs.readFileSync(new URL("test/fixtures/format/minor/lounge-0-unnamed/sample.mxl", ROOT)));
     const fresh = withRoleConcept(emptyExtras(), "r1", { name: "Flute", sound: "wind.flutes.flute", concept: flute }, "n");
     const a = (l: "zh" | "en") => partShow(old.song, old.extras.lounge, l)[0]!, bNew = (l: "zh" | "en") => partShow(songWith(1), fresh.lounge, l)[0]!;
-    for (const l of ["zh", "en"] as const) { eq(a(l).name, bNew(l).name, `名字 ${l}`); eq(a(l).abbr, bNew(l).abbr, `简写 ${l}`); }
-    const row = CONCEPT_LABELS.byWikidata["Q209554"] as { score: { en: string } }, was = row.score.en;
-    try { row.score.en = "Flauto"; eq(a("en").name, "Flauto", "老歌跟着现行的表"); eq(bNew("en").name, "Flauto", "新歌跟着现行的表"); } finally { row.score.en = was; }
+    eq(roleGivenName(old.extras.lounge, "r1"), a("en").name, "老歌显示的就是存着的名字");
+    const row = CONCEPT_LABELS.byWikidata["Q209554"] as { score: { en: string } }, was = row.score.en, oldName = a("en").name;
+    try { row.score.en = "Flauto"; eq(a("en").name, oldName, "老歌不跟着现行的表（名字是文件里写的）"); eq(bNew("en").name, "Flauto", "新歌跟着现行的表"); } finally { row.score.en = was; }
   });
   it("存的时候按值写现行的叫法（不沿用旧的）", () => {
     const old = openBytes("old.mxl", fs.readFileSync(new URL("test/fixtures/format/minor/lounge-0-unnamed/sample.mxl", ROOT)));
@@ -122,14 +108,14 @@ describe("同一个概念老歌新歌一个叫法（12-4 改口，统筹守卫�
 describe("冻结样本：这一版之前写的两份（12-4）", () => {
   const open = (d: string) => openBytes("sample.mxl", fs.readFileSync(new URL(`test/fixtures/format/minor/${d}/sample.mxl`, ROOT)));
   const exp = (d: string) => JSON.parse(fs.readFileSync(new URL(`test/fixtures/format/minor/${d}/expected.json`, ROOT), "utf8")) as { zh: string[]; en: string[]; given: (string | null)[] };
-  for (const d of ["lounge-0-unnamed", "lounge-0-named"]) it(`${d}：进门判完的名字、两种语言显示的叫法`, () => {
+  for (const d of ["lounge-0-unnamed", "lounge-0-named"]) it(`${d}：照文件读出来的名字、两种语言显示的叫法（第 16 条重冻）`, () => {
     const o = open(d), e = exp(d);
     eq(o.song.parts.map((p) => roleGivenName(o.extras.lounge, p.role)).join("|"), e.given.join("|"), "起没起");
     eq(partNames(o.song, o.extras.lounge, "zh").join("|"), e.zh.join("|"), "中文"); eq(partNames(o.song, o.extras.lounge, "en").join("|"), e.en.join("|"), "英文");
   });
 });
 
-describe("守卫：声部名只有一个出口、冻住的表只给进门用（12-4）", () => {
+describe("守卫：声部名只有一个出口（12-4）", () => {
   const files: string[] = [];
   const walk = (u: URL) => { for (const e of fs.readdirSync(u, { withFileTypes: true })) { const v = new URL(e.name + (e.isDirectory() ? "/" : ""), u); if (e.isDirectory()) walk(v); else if (/\.ts$/.test(e.name)) files.push(v.href.slice(ROOT.href.length)); } };
   walk(new URL("src/", ROOT));
@@ -138,13 +124,9 @@ describe("守卫：声部名只有一个出口、冻住的表只给进门用（1
     const bad = files.filter((f) => /\b(roleName|partLabels|presetShowName|localPartName|partAbbr)\s*\(/.test(src(f)));
     eq(bad.join(", "), "");
   });
-  it("读角色的 name（lounge[…].name）只在出口、写入口和进门那几处", () => {
-    const ok = new Set(["src/format/part-show.ts", "src/format/project.ts", "src/format/migrate/index.ts"]);
+  it("读角色的 name（lounge[…].name）只在出口和写入口那几处", () => {
+    const ok = new Set(["src/format/part-show.ts", "src/format/project.ts"]);
     const bad = files.filter((f) => !ok.has(f) && /lounge\[[^\]]+\]\??\.name\b/.test(src(f)));
-    eq(bad.join(", "), "");
-  });
-  it("冻住的进门表（legacy-role-names.ts）只有 migrate/index.ts import", () => {
-    const bad = files.filter((f) => f !== "src/format/migrate/index.ts" && f !== "src/format/migrate/legacy-role-names.ts" && /from\s+["'][^"']*legacy-role-names/.test(src(f)));
     eq(bad.join(", "), "");
   });
 });

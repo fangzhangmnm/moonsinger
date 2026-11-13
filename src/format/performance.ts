@@ -7,7 +7,7 @@ import { APP_VERSION } from "../version.ts";
 import type { Credit, Spec, Dynamic } from "./contract.ts";
 
 // 力度 → 响度只有一条（施工单第 9 节 / 9-2 / 9-4，2026-11-12）：力度记号查力度表（DYNAMICS_VEL，全体演奏者一张）、响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）。
-//   原来小月相 / 元音版那张「力度字母 → dB」的表（每档 6 dB）和「走一档 = 6 dB」退役了；旧文件里按值存的由 lounge 迁移 2→3 删掉（migrate/index.ts）。
+//   原来小月相 / 元音版那张「力度字母 → dB」的表（每档 6 dB）和「走一档 = 6 dB」退役了；第 16 条起没有迁移：旧文件里按值带着的读的时候不理（16-4 起小月相 / 元音版恢复成按值带的 dB 表）。
 /** 演奏法：跳音 / 保持各吃掉时值的多少（0–1）、重音加多少 dB。 */
 export const ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1.0, accentDb: 4 } as const;
 /** 记号怎么解读的其余的数（2026-10-08 Claude Opus 5.5；user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」「先看看记号承重能走多远」）：

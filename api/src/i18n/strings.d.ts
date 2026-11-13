@@ -316,11 +316,17 @@ export declare const S: {
     readonly 自己一行: {
         readonly en: "Own line";
     };
+    readonly "{key}\uFF08\u65AD\u4E86\uFF09": {
+        readonly en: "{key} (broken)";
+    };
     readonly "\u6302\u5728\u300C{name}\u300D\u4E0A": {
         readonly en: "On “{name}”";
     };
     readonly "\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09": {
         readonly en: "Draw on another part's staff (shared: just an overview, colliding notes collide; only notes are drawn, no rests / lyrics / dynamics; tap the name to split it out and write)";
+    };
+    readonly "\u65AD\u4E86\uFF1A\u6587\u4EF6\u91CC\u5199\u7740\u6302\u5728\u300C{id}\u300D\u4E0A\uFF0C\u8FD9\u4E00\u9996\u91CC\u6CA1\u6709\u8FD9\u4F4D\uFF08\u6216\u90A3\u4F4D\u81EA\u5DF1\u4E5F\u6302\u5728\u522B\u4EBA\u4E0A\uFF09\u3002\u73B0\u5728\u7167\u81EA\u5DF1\u4E00\u884C\u753B\uFF1B\u4E0A\u9762\u9009\u4E00\u4E2A\u5C31\u6539\u6389": {
+        readonly en: "Broken: the file says this part shares the staff of “{id}”, but that part is not in this song (or it is itself sharing someone else’s staff). It is drawn on its own row for now; pick one above to change it";
     };
     readonly "\u8FD9\u4E00\u6BB5\u8C03\u53F7\u4E00\u6837\u7684 {n} \u4E2A\u58F0\u90E8\u4E00\u8D77\u6539\u4E86": {
         readonly en: "Changed {n} parts in this section that share this key signature";
@@ -2356,15 +2362,6 @@ export declare const S: {
     readonly "\u627E\u5230\u4E86\uFF1A\u300C{name}\u300D\u80FD\u54CD\u4E86": {
         readonly en: "Found: “{name}” can sound now";
     };
-    readonly "\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\u3001\u7406\u987A\u4E86 {reordered} \u5904\u8BB0\u53F7\u7684\u5148\u540E\uFF08\u4EE5\u524D\u8865\u7684\u529B\u5EA6\u6392\u5728\u4E86\u6E10\u5F3A\u6E10\u5F31\u540E\u9762\uFF0C\u90A3\u51E0\u4E2A\u6E10\u5F3A\u6E10\u5F31\u6CA1\u8D77\u4F5C\u7528\uFF0C\u73B0\u5728\u8D77\u4F5C\u7528\u4E86\uFF0C\u542C\u8D77\u6765\u4F1A\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": {
-        readonly en: "Added {startDyns} dynamics and reordered marks in {reordered} places at sheet starts (an earlier auto-added dynamic had landed after a hairpin, which silenced that hairpin; it works now, so it will sound different; written to the file on the next save)";
-    };
-    readonly "\u6BCF\u5F20\u7EB8\u5F00\u5934\u7406\u987A\u4E86 {reordered} \u5904\u8BB0\u53F7\u7684\u5148\u540E\uFF08\u4EE5\u524D\u8865\u7684\u529B\u5EA6\u6392\u5728\u4E86\u6E10\u5F3A\u6E10\u5F31\u540E\u9762\uFF0C\u90A3\u51E0\u4E2A\u6E10\u5F3A\u6E10\u5F31\u6CA1\u8D77\u4F5C\u7528\uFF0C\u73B0\u5728\u8D77\u4F5C\u7528\u4E86\uFF0C\u542C\u8D77\u6765\u4F1A\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": {
-        readonly en: "Reordered marks in {reordered} places at sheet starts (an earlier auto-added dynamic had landed after a hairpin, which silenced that hairpin; it works now, so it will sound different; written to the file on the next save)";
-    };
-    readonly "\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": {
-        readonly en: "Added {startDyns} dynamics at sheet starts (the ones already in effect there, so it sounds the same; written to the file on the next save)";
-    };
     readonly "\u300C{p}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58": {
         readonly en: "“{p}” has unsaved changes";
     };
@@ -3622,8 +3619,14 @@ export declare const S: {
     readonly "\u300C{rn}\u300D\u54CD\u5EA6\u6821\u51C6 {next} dB": {
         readonly en: "“{rn}” loudness calibration {next} dB";
     };
+    readonly "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u6587\u4EF6\u91CC\u6CA1\u6709": {
+        readonly en: "No one is performing yet: the file has no performer for this part";
+    };
     readonly "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF0C\u8FD9\u4E00\u7248\u8BA4\u4E0D\u51FA\uFF09": {
         readonly en: "Nobody on stage yet (the other software's original instrument isn't recognized by this version)";
+    };
+    readonly "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u8BFB\u4E0D\u61C2": {
+        readonly en: "No one is performing yet: this part’s performer cannot be read";
     };
     readonly "{next}\u3002\u8FD9{p}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": {
         readonly en: "{next}. {p} silent in both playback and export, the rest plays as usual; tap the number on the corner of |▶ for the list, and tap the part name at the front of the score to change “Who performs”.";
@@ -4243,6 +4246,9 @@ export declare const S: {
     readonly 第二段及以后的歌词: {
         readonly en: "Lyrics beyond the first verse";
     };
+    readonly "\uFF08\u6CA1\u6709\u4E50\u624B\uFF09": {
+        readonly en: "(no performer)";
+    };
     readonly "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09": {
         readonly en: "Tsukuyomi-chan Corpus Terms of Use (derived model)";
     };
@@ -4285,6 +4291,15 @@ export declare const S: {
     readonly "{k} {n} \u4E2A": {
         readonly en: "{n} × {k}";
     };
+    readonly "\u8FD9\u4EFD\u8C31\u6CA1\u5199\u901F\u5EA6\uFF0C\u6309 \u2669={bpm} \u5F00\u7684\u3002": {
+        readonly en: "This score has no tempo; opened at ♩={bpm}.";
+    };
+    readonly "\u8FD9\u4EFD\u8C31\u6CA1\u5199\u8C03\u53F7\uFF0C\u6309 C \u5927\u8C03\u5F00\u7684\u3002": {
+        readonly en: "This score has no key signature; opened in C major.";
+    };
+    readonly "\u8FD9\u4EFD\u8C31\u6CA1\u5199\u62CD\u53F7\uFF0C\u6309 4/4 \u5F00\u7684\u3002": {
+        readonly en: "This score has no time signature; opened in 4/4.";
+    };
     readonly "\u8FD9\u4E2A\u6587\u4EF6\u89E3\u4E0D\u5F00\uFF08\u4E0D\u662F\u5B8C\u6574\u7684 .mxl\uFF1F\uFF09\uFF1A{Error}": {
         readonly en: "This file can't be unpacked (not a complete .mxl?): {Error}";
     };
@@ -4311,6 +4326,9 @@ export declare const S: {
     };
     readonly 录音房: {
         readonly en: "The studio";
+    };
+    readonly "\u8C31\u7684\u6269\u5C55\u91CC\u6CA1\u6709\u7EB8\u7684\u8868\uFF0C\u8BFB\u4E0D\u61C2": {
+        readonly en: "The score extension has no list of sheets; cannot read it";
     };
     readonly "\u7EB8\u300C{id}\u300D\u7684\u8C31\uFF08{file}\uFF09\u5728\u5305\u91CC\u627E\u4E0D\u5230": {
         readonly en: "Score of sheet “{id}” ({file}) isn't in the archive";
@@ -6892,6 +6910,9 @@ export declare const S: {
     readonly "\u4E0D\u7528\uFF08\u81EA\u5DF1\u538B\u81EA\u5DF1\uFF09": {
         readonly en: "None (compresses itself)";
     };
+    readonly "\u88AB\u8C01\u538B\uFF1A\u65AD\u4E86\uFF0C\u300C{key}\u300D\u8FD9\u6761\u8F68\u4E0D\u5728\uFF08\u73B0\u5728\u542C\u81EA\u5DF1\uFF09": {
+        readonly en: "Ducked by: broken, track “{key}” is missing (listening to itself for now)";
+    };
     readonly "\u5728\u5168\u91CF\u91CC\u8C03\u8FC7\uFF0C\u4E00\u952E\u8868\u8FBE\u4E0D\u4E86\uFF1A\u4E00\u952E\u5148\u9501\u7740\uFF0C\u514D\u5F97\u4E00\u78B0\u5C31\u76D6\u6389\u3002": {
         readonly en: "Adjusted in Full in a way Simple can't express: Simple stays locked so a touch can't overwrite it.";
     };
@@ -6927,6 +6948,21 @@ export declare const S: {
     };
     readonly 压了: {
         readonly en: "Reduced";
+    };
+    readonly "\u65AD\u4E86\uFF1A\u300C{to}\u300D\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u5728": {
+        readonly en: "Broken: mix track “{to}” is missing";
+    };
+    readonly "\u63A5\u6210\u73AF\u4E86\uFF0C\u6CA1\u63A5\u4E0A": {
+        readonly en: "This makes a loop, so it is not connected";
+    };
+    readonly "\uFF0C\u73B0\u5728\u51FA\u5230\u603B\u8F68": {
+        readonly en: ", going to the master for now";
+    };
+    readonly "\uFF0C\u8FD9\u4E00\u6761\u4E0D\u53D1": {
+        readonly en: ", this send is not sent";
+    };
+    readonly "\u6709 {n} \u5904\u65AD\u4E86": {
+        readonly en: "{n} broken link(s)";
     };
     readonly 出到: {
         readonly en: "Output to";

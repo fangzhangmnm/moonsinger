@@ -116,8 +116,8 @@ describe("打开别的软件存的 MusicXML", () => {
   it("每个声部一串；小节都当人插的；读不了的数出来报给人", () => {
     const o = openBytes("twinkle.musicxml", strToU8(FOREIGN));
     const body = firstTrack(o.song).slice(3).map((t) => t.kind === "note" ? `${t.pitch!.step}${t.pitch!.alter || ""}${t.pitch!.octave}:${t.dur / TPQ}${t.lyric ? `:${t.lyric}` : ""}` : t.kind === "rest" ? `0:${t.dur / TPQ}` : t.kind).join(" ");
-    eq(body, "E4:1:Twin G4:0.5 0:0.5 A-14:2 bar G4:4", "音符（叠音读进来：最高的 E4 当旋律线，C4 在 chord 里）");
-    const first = firstTrack(o.song)[3]; eq(first.kind === "note" && JSON.stringify(first.chord), '[{"step":"C","alter":0,"octave":4}]', "叠音的下面那个音在 chord 里");
+    eq(body, "clef E4:1:Twin G4:0.5 0:0.5 A-14:2 bar G4:4", "音符（叠音读进来：最高的 E4 当旋律线，C4 在 chord 里）；纸头的 <clef> 写什么就是什么 = 一个纸头谱号记号（第 16 条，不猜手选还是自动）");
+    const first = firstTrack(o.song).find((t) => t.kind === "note")!; eq(first.kind === "note" && JSON.stringify(first.chord), '[{"step":"C","alter":0,"octave":4}]', "叠音的下面那个音在 chord 里");
     const tempo = firstTrack(o.song)[2]; eq(tempo.kind === "tempo" && tempo.bpm, 100, "速度进谱头");
     eq(o.song.title, "Twinkle", "歌名"); eq(o.stem, "twinkle", "文件名主干");
     assert(!o.notices.some((n) => n.includes("叠音")), `叠音现在读进来，不再报丢：${o.notices.join(" / ")}`);

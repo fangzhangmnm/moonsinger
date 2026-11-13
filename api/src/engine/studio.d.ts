@@ -447,5 +447,18 @@ export declare class Studio {
 }
 /** 总线的处理顺序 + 连好 out / sends（v0.10.9）：送出去的排在被送进的前面（拓扑序）；一条连线会接成环 = 断掉它（出到退回总轨、发送不要），
  *  界面上本来就不让这样连（读到手改过的文件才会遇到）。不认识的去处 = 总轨 / 不发。 */
+/** 混音轨之间每一条「出到 / 发送」接没接上（纯函数；录音房 busOrder 和混音台的「断了」标法共用这一个判法，界面说的就是出声的样子）：
+ *  按顺序一条条接，去处不是一条混音轨 = missing（出到退回总轨、发送不发）；接上会成环的那一条 = cycle（不接）；"master" 不算一条连线（to = null）。第 16 条「断了要看得见」，2026-11-12。 */
+export type LinkState = "ok" | "missing" | "cycle";
+export declare function busLinkStates(specs: readonly {
+    id: string;
+    to?: string;
+    sends?: readonly {
+        to: string;
+    }[];
+}[], has: (id: string) => boolean): Map<string, {
+    to: LinkState | null;
+    sends: LinkState[];
+}>;
 export declare function busOrder(specs: readonly BusSpec[], buses: Map<string, Bus>): Bus[];
 export {};

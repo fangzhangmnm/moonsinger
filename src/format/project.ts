@@ -12,9 +12,8 @@
 import { _t } from "../i18n/index.ts";
 import { DEFAULT_CONCEPT } from "../gm/default-concept.gen.ts";
 import { partNames, currentLabelOf } from "./part-show.ts";
-import { loungeRoleNames } from "./migrate/index.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
-import { swellOf, withArt, SWELL_ART, type Swell, type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, type PartLook, CLEFS, flattenPart, familyOrder, headClefOf, withLooks, headLen } from "../score/song.ts";
+import { DEFAULT_BPM, swellOf, withArt, SWELL_ART, type Swell, type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, type PartLook, CLEFS, flattenPart, familyOrder, headClefOf, withLooks, headLen } from "../score/song.ts";
 import { resolveSongLooks, displayStates, withAutoOttava, type ResolvedLook } from "../score/clef.ts";
 import { percKindOf } from "../gm/percussion.ts";
 import { songPlayOrder } from "../score/arrange.ts";
@@ -22,7 +21,6 @@ import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartIn
 import { FORMAT, FORMAT_MINOR, FORMAT_PATCH, type FormatFile, type Dynamic, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
 import { FINAL_MP3_ENTRY, contentFingerprint, parseFinalRecord, type FinalRecord, type FingerprintParts } from "./final.ts";
 export { FINAL_MP3_ENTRY, type FinalRecord };
-import { migrate } from "./migrate/index.ts";
 import { badIds, isSafeId, safePartIds, safeView, type IdKind } from "./ids.ts";
 import { sha256HexSync } from "./sha256-sync.ts";
 import { DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, MARK_DEFAULTS, ROLL_HZ_MIN, ROLL_HZ_MAX, SING_MARKS, type SingMark, ARTICULATION, SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS, CALIBRATION_DEFAULT_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
@@ -163,7 +161,8 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   const song = canonicalIds(a.song);
   const lounge: Record<string, Json> = { ...a.extras.lounge };
   for (const part of song.parts) {
-    const role = roleOf(a.extras, part.role, a.hum);
+    if (!a.extras.lounge[part.role]) continue;   // 这个声部没有乐手（读不到 / 读不懂）= 断了：照原样不写，不替它造一位（第 16 条）
+    const role = structuredClone(a.extras.lounge[part.role]);
     for (const c of cands(role)) { const i = instrumentOf(c); if (isVoice(i)) i.hum = a.hum; }   // 哼的字 = 月读候选共用的一个设置
     // 概念里按值存的谱上叫法 / 简写：存的时候写现行的表里的（12-4 改口：文件说得清自己、给别的软件看，但不是显示的依据；不沿用旧的）
     withCurrentLabels(role.concept); for (const c of cands(role)) withCurrentLabels((c.castAs as Json | undefined)?.concept);
@@ -178,8 +177,8 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   //   跟着界面 = 英文（交换格式默认英文）。文件里写的东西不许取决于是哪台设备（统筹 12-4 裁定；守卫 test/part-show.test.ts：两种界面语言存出来逐字节相同）
   const labels = partNames(song, lounge, song.textLang === "zh" || song.textLang === "en" ? song.textLang : "en");
   const infoOf = (part: PartDef, k: number): PartInfo => {
-    const role = lounge[part.role], active = cands(role).find((c) => c.id === role.active), mic = mics.find((m) => m.id === part.mic);
-    return { id: part.id, name: labels[k], instrumentName: String(active?.name ?? _t("小月相")), sound: String(role.sound ?? DEFAULT_SOUND),
+    const role = lounge[part.role] as Json | undefined, active = cands(role).find((c) => c.id === role?.active), mic = mics.find((m) => m.id === part.mic);
+    return { id: part.id, name: labels[k], instrumentName: String(active?.name ?? ""), sound: String(role?.sound ?? DEFAULT_SOUND),
       program: Number((active?.gm as Json | undefined)?.program ?? 55),
       variant: typeof (active?.gm as Json | undefined)?.variant === "string" ? { library: "MoonSinger", name: String((active!.gm as Json).variant) } : undefined,
       pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : undefined };
@@ -188,7 +187,7 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   const files: Record<string, Uint8Array> = {};
   // 谱号（v0.9.28；v0.16.88 按段）：每张纸每个声部开头挑好的谱号写进那张纸的第一个 <clef>（自动的照整首挑好的）；手选的谱号 = 纸头的谱号记号（照旧写成第二个 <clef>）。
   //   手选的大谱表 = 那张纸自己的 <staves>2；自动变出来的大谱表不写进每段的正本（那张纸照单谱表写），只在压平件里照着画——旧版本打开不会把整个声部都变成大谱表。
-  const perc = new Set(song.parts.filter((part) => { const role = lounge[part.role], gm = cands(role).find((c) => c.id === role.active)?.gm as Json | undefined;
+  const perc = new Set(song.parts.filter((part) => { const role = lounge[part.role] as Json | undefined, gm = cands(role).find((c) => c.id === role?.active)?.gm as Json | undefined;
     return !!gm && percKindOf({ bank: Number(gm.bank ?? 0), program: Number(gm.program ?? 0), ...(typeof gm.note === "number" ? { note: gm.note } : {}) }) !== null; }).map((p) => p.id));   // 鼓 / 固定敲一件的不自动变大谱表（和排版同一条规矩）
   const looks = resolveSongLooks(song, perc);
   const lookAt = (paperId: string, partId: string): ResolvedLook | undefined => looks.get(paperId)?.get(partId);
@@ -240,7 +239,7 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   }) }, meta);
   const scoreRest = Object.fromEntries(Object.entries((a.extras.scoreExt ?? {}) as Json).filter(([k]) => !KNOWN_SCORE_KEYS.has(k)));   // 不认识的顶层键原样带回（家族纪律「未知键直通」；papers / parts 是从歌重建的）
   const oldExt = (a.extras.scoreExt ?? {}) as Json, paperExtra = unknownById(oldExt.papers, KNOWN_PAPER_KEYS), partExtra = unknownById(oldExt.parts, KNOWN_PART_KEYS);
-  const scoreExt: Json = { ...scoreRest, ...stampOf("score"), papers: papers.map((e) => ({ ...(paperExtra.get(String(e.id)) ?? {}), ...e })), parts: song.parts.map((p) => ({ ...(partExtra.get(p.id) ?? {}), id: p.id, role: p.role, mic: p.mic, kind: "pitched", clef: "auto", ...(p.host ? { host: p.host } : {}), ...(p.chords !== undefined ? { chords: p.chords } : {}) })),   // chords（score minor 5）：这条轨的和弦选项，只写不是 auto 的（song-view.ts 写的时候就不留 auto）   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
+  const scoreExt: Json = { ...scoreRest, ...stampOf("score"), papers: papers.map((e) => ({ ...(paperExtra.get(String(e.id)) ?? {}), ...e })), parts: song.parts.map((p) => ({ ...(partExtra.get(p.id) ?? {}), id: p.id, role: p.role, mic: p.mic, kind: "pitched", clef: "auto", ...(p.host ?? p.hostBroken ? { host: p.host ?? p.hostBroken } : {}), ...(p.chords !== undefined ? { chords: p.chords } : {}) })),   // chords（score minor 5）：这条轨的和弦选项，只写不是 auto 的（song-view.ts 写的时候就不留 auto）   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
     ...(a.view && Object.keys(a.view).length ? { view: a.view } : {}),   // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
     ...(song.arrangement?.trim() ? { arrangement: song.arrangement } : {}),   // 编排那一行（可选，2026-10-08 深夜）
     ...(song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}),
@@ -375,6 +374,12 @@ export function withNewRole(extras: Extras, role: string, hum: Hum, name?: strin
   const r = defaultRole(hum, role); if (name) r.name = name; if (sound) r.sound = sound;
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
+/** 新建的歌：每个声部按模板把乐手明写进休息室（第 16 条，2026-11-12：乐手读不到 = 没人上场，所以新歌在创建那一刻就写下来，不靠读的一侧退路）。 */
+export function templateExtras(song: Song): Extras {
+  let x = emptyExtras();
+  for (const p of song.parts) x = withNewRole(x, p.role, song.hum ?? "n");
+  return x;
+}
 /** 删一个声部之后：它的角色从休息室拿掉（嵌的音源没别人引用 = 一起丢）。 */
 export function withoutRole(extras: Extras, role: string): Extras {
   const lounge = { ...extras.lounge }; delete lounge[role];
@@ -385,29 +390,23 @@ export function withoutRole(extras: Extras, role: string): Extras {
 export function withMic(extras: Extras, micId: string, patch: { gainDb?: number; pan?: number }): Extras { return withTrack(extras, micId, patch); }
 // ── 候选（谁来演；休息室）────────────────────────────────────────────────────────────────
 export interface CandidateInfo { id: string; name: string; engine: Engine }
-/** 角色的候选们（顺序 = 文件里的顺序）。没有角色快照 = 默认的两个月读。 */
+/** 角色的候选们（顺序 = 文件里的顺序）。没有角色快照 = 没有（第 16 条：乐手读不到 ≠ 小月相）。 */
 export function candidates(extras: Extras, role: string): CandidateInfo[] {
-  return cands(extras.lounge[role] ?? defaultRole("n", role)).map((c) => ({ id: String(c.id), name: String(c.name ?? ""), engine: instrumentOf(c)?.engine ?? "unknown" }));
+  return cands(extras.lounge[role]).map((c) => ({ id: String(c.id), name: String(c.name ?? ""), engine: instrumentOf(c)?.engine ?? "unknown" }));
 }
 /** 这个角色里 id 那位候选（整份 json；没有 = null）。 */
-export function candidateJson(extras: Extras, role: string, id: string): Json | null { return cands(extras.lounge[role] ?? defaultRole("n", role)).find((x) => x.id === id) ?? null; }
-/** 上场的候选的 id（没有角色快照 = 默认的 c1）。 */
-export function activeId(extras: Extras, role: string): string { return String(extras.lounge[role]?.active ?? CANDIDATE_ID.full); }
+export function candidateJson(extras: Extras, role: string, id: string): Json | null { return cands(extras.lounge[role]).find((x) => x.id === id) ?? null; }
+/** 上场的候选的 id（没有角色快照 = "" = 没人上场）。 */
+export function activeId(extras: Extras, role: string): string { return String(extras.lounge[role]?.active ?? ""); }
 /** 现在上场的候选（整份 json）。 */
 export function activeCandidate(extras: Extras, role: string): Json | null {
   const r = extras.lounge[role]; if (!r) return null;
   return cands(r).find((x) => x.id === r.active) ?? null;
 }
-/** 上场那位（整份 json）；没有角色快照 = 默认角色里上场的（月读）——署名推演要它：新歌没动过「谁来演」的声部也是月读在唱（2026-10-08 by Claude Opus 5.5）。 */
-export function activeOrDefaultCandidate(extras: Extras, role: string): Json | null {
-  const r = extras.lounge[role] ?? defaultRole("n", role);
-  return cands(r).find((x) => x.id === r.active) ?? null;
-}
 /** 现在上场的候选（乐器）叫什么——只给角色卡里看，不上谱。 */
-export function activeCandidateName(extras: Extras, role: string): string | null { const c = activeOrDefaultCandidate(extras, role); return c ? String(c.name ?? "") : null; }   // 没有角色快照 = 默认的月读（和 activeInstrument 一致；新歌的歌手牌 / 录音室别写「没人上场」）
-/** 上场的那位的乐器（按引擎分）；没有角色快照 = 默认的月读完整版。 */
+export function activeCandidateName(extras: Extras, role: string): string | null { const c = activeCandidate(extras, role); return c ? String(c.name ?? "") : null; }   // 没有角色快照 = 默认的月读（和 activeInstrument 一致；新歌的歌手牌 / 录音室别写「没人上场」）
+/** 上场的那位的乐器（按引擎分）；没有角色快照 / 读不懂 = null = 没人上场（第 16 条：不再当成小月相；新建的歌、新加的声部在创建时就写了乐手，见 templateExtras / withNewRole）。 */
 export function activeInstrument(extras: Extras, role: string): InstrumentV2 | null {
-  if (!extras.lounge[role]) return { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum: "n" };
   return instrumentOf(activeCandidate(extras, role));
 }
 /** 哼的字（月读候选共用）：休息室里第一个月读候选的；没有 = 默认「嗯」。 */
@@ -622,11 +621,10 @@ export function activePerfSpec(extras: Extras, role: string): { staccatoGate: nu
   accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepVel: number; sfzDb: number; sfzVel: number; sfzSec: number; fpSec: number; swellDb: number; canSwell: boolean; sing: Record<string, SingMark | null>; rollHz: number | null } {
   const c = activeCandidate(extras, role), a = (c?.articulation ?? {}) as Partial<Record<string, number>>;
   const num = (v: unknown, dflt: number) => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
-  // 力度表：pp…ff 没写 = 默认；ppp / fff 没写（v0.9.23 之前的演奏者）= 按这位自己 pp→p / f→ff 的间隔往外推一档（不是拿默认表硬塞，免得和它自己的表不成比例）
+  // 力度表：每一档写了照写的读，没写的那一档 = 现行默认表那一格（第 16 条：不再按这位自己的间隔往外推 ppp / fff——那是猜）
   const ladder = (got: Partial<Record<string, number>>, dflt: Record<Dynamic, number>, clamp: (v: number) => number = (v) => v): Record<Dynamic, number> => {
     const o = {} as Record<Dynamic, number>;
-    for (const k of ["pp", "p", "mp", "mf", "f", "ff"] as const) o[k] = clamp(num(got[k], dflt[k]));
-    o.ppp = clamp(num(got.ppp, o.pp - (o.p - o.pp))); o.fff = clamp(num(got.fff, o.ff + (o.ff - o.f)));
+    for (const k of ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const) o[k] = clamp(num(got[k], dflt[k]));
     return o;
   };
   return { staccatoGate: Math.max(0.05, Math.min(1, num(a.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a.accentDb, ARTICULATION.accentDb), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num(a.gapSec, 0))),
@@ -749,6 +747,11 @@ function refuseBadIds(bad: Partial<Record<IdKind, number>>): void {
   const names = ID_KIND();
   throw new Error(_t("这首歌的文件里有不合规矩的编号（{what}）：多半是被别的工具改过或者文件坏了，没有打开。", { what: l.map(([k, n]) => _t("{k} {n} 个", { k: names[k], n })).join(_t("、")) }));
 }
+/** 别家的谱没写速度 / 调号 / 拍号 = 用这一版的默认开的：照实说一句（第 16 条，全表 2-11；走打开时那一串「要告诉人的话」，不往文件里改——存的时候写的是眼前这一份）。 */
+function headNotice(r: ReadScore, o: Opened): Opened {
+  const u = r.unwrittenHead, what = [u.tempo ? _t("这份谱没写速度，按 ♩={bpm} 开的。", { bpm: DEFAULT_BPM }) : "", u.key ? _t("这份谱没写调号，按 C 大调开的。") : "", u.time ? _t("这份谱没写拍号，按 4/4 开的。") : ""].filter(Boolean);
+  return what.length ? { ...o, notices: [what.join(" "), ...o.notices] } : o;
+}
 /** 一份读进来的 MusicXML → 一张纸（token id 之后在 songFromReads 里统一重编）。 */
 function paperOfRead(id: string, r: ReadScore): PaperSeg {
   const tracks: Record<string, Token[]> = {};
@@ -757,10 +760,12 @@ function paperOfRead(id: string, r: ReadScore): PaperSeg {
 }
 /** 字节 → 歌。认 .mxl（zip）和不压缩的 .musicxml / .xml。读不了 = 抛错（错误文字直接给人看）。 */
 export function openBytes(name: string, bytes: Uint8Array): Opened {
+  // 读 = 文件上怎么写就怎么读（第 16 条，2026-11-12；家规硬规则 #9、仓说明「文件就是语义：本仓的细则」）：只认现行格式里有定义的键，不升级、不搬、不猜、不重排、不按版本号分路；
+  //   缺的数由各处的现行默认补（16-4 收进模板）；退役的 / 不认识的键不理（不认识的原样带回，见 KNOWN_*）；指向别的东西的读不到 = 断了，照实标出来，不顶替。
   const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
   if (!isZip) {   // 不压缩的 MusicXML：只有谱（一张纸，声部照文件里的）
     const r = foreign(readMusicXml(new TextDecoder().decode(bytes)));
-    return finish([r], songFromReads([r], null), emptyExtras(), false, name);
+    return headNotice(r, finish([r], songFromReads([r], null), emptyExtras(), false, name));
   }
   let files: Record<string, Uint8Array>;
   try { files = unzipSync(bytes); } catch (e) { throw new Error(_t("这个文件解不开（不是完整的 .mxl？）：{Error}", { Error: (e as Error).message })); }
@@ -778,7 +783,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   if (!ours) {
     for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
     const r = foreign(readMusicXml(strFromU8(files[main])));
-    return finish([r], songFromReads([r], null), extras, false, name);
+    return headNotice(r, finish([r], songFromReads([r], null), extras, false, name));
   }
   const parse = (p: string): Json => { try { return JSON.parse(strFromU8(files[p])) as Json; } catch { throw new Error(_t("{p} 读不懂（文件坏了？）", { p })); } };
   const manifest = parse(`${DIR}manifest.json`); known.add(`${DIR}manifest.json`);
@@ -792,18 +797,18 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     if (major === FORMAT[kind] && minor > FORMAT_MINOR[kind]) newerMinor.push(what);
   };
   newer(_t("总目录"), manifest, "manifest");
-  extras.manifest = migrate("manifest", manifest);
+  extras.manifest = manifest;
   const rawLounge: Record<string, string> = {};   // 指纹用：文件里的原文（读进来的和写出去的同一份字符串）
   let scoreExt: Json | null = null;
   if (files[`${DIR}score.json`]) {
     const s0 = parse(`${DIR}score.json`); known.add(`${DIR}score.json`); newer(_t("谱的扩展"), s0, "score");
-    scoreExt = migrate("score", s0); extras.scoreExt = scoreExt;
+    scoreExt = s0; extras.scoreExt = scoreExt;
   }
   for (const p of Object.keys(files)) {
     const m = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p);
-    if (m) { const r = parse(p); newer(_t("休息室「{name}」", { name: r.name ?? m[1] }), r, "lounge"); extras.lounge[m[1]] = loungeRoleNames(migrate("lounge", r), Number(r.version ?? 1) === FORMAT.lounge ? Number(r.minor ?? 0) : 0); known.add(p); rawLounge[m[1]] = fpTextOf(r); }   // 角色名进门（12-4）：minor 跟着它那个大版本数，比现在旧的大版本 = 老文件
+    if (m) { const r = parse(p); newer(_t("休息室「{name}」", { name: r.name ?? m[1] }), r, "lounge"); extras.lounge[m[1]] = r; known.add(p); rawLounge[m[1]] = fpTextOf(r); }   // 角色名照文件（第 16 条，user 定的甲：老歌里存着的名字照显示，不判起没起）
   }
-  if (files[`${DIR}studio.json`]) { const s = parse(`${DIR}studio.json`); known.add(`${DIR}studio.json`); newer(_t("录音房"), s, "studio"); extras.studio = migrate("studio", s); }
+  if (files[`${DIR}studio.json`]) { const s = parse(`${DIR}studio.json`); known.add(`${DIR}studio.json`); newer(_t("录音房"), s, "studio"); extras.studio = s; }
   for (const p of Object.keys(files)) if (p.startsWith(SOUNDS) && !p.endsWith("/")) { extras.sounds[p] = files[p]; known.add(p); }   // 嵌的音源字节（整份留着；存档只写还引用着的）
   refuseBadIds(badIds(scoreExt, extras.lounge, extras.studio));   // 读入边界：当编号用的字段都过 ids.ts 那一关，往下的代码（含把编号拼进页面的界面）拿到的都是合规矩的
   // 老文件里带着的那份 mp3（退役的定稿，见 LegacyMp3）：总目录里的记录 + mp3 entry。记录像样 ∧ mp3 在 ∧ 和文件里的内容对得上 = 交给宿主搬进设备缓存；
@@ -821,15 +826,15 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
       : null;
     if (rec && mp3 && mp3.length === rec.mp3.bytes && fp === rec.fingerprint) { legacyRec = rec; legacyBytes = mp3; }
   }
-  // 纸：按 score.json 的顺序表逐张读；第 1 版存的（迁移后 papers = [p1]，文件指向 papers/p1.musicxml）包里没那份 = 读 score.musicxml（文件级迁移在这里做，migrate() 只管 JSON）
-  const list = ((scoreExt?.papers as Json[] | undefined) ?? [{ id: "p1", file: paperFile("p1"), manualBars: {}, unwritten: [] }]);
+  // 纸：按 score.json 的顺序表逐张读（没有这张表 = 读不懂，上面已经说了；第 16 条起第 1 版文件不再拿压平件当一张纸）
+  if (!Array.isArray(scoreExt?.papers)) throw new Error(_t("谱的扩展里没有纸的表，读不懂"));
+  const list = scoreExt!.papers as Json[];
   // score minor < 4 = 谱号 / 大谱表 / 自动八度线还挂在声部上的老写法（v0.16.88 起按段；v0.16.83–87 已经是 minor 3，所以分界在 4）
-  const legacyLooks = Number(scoreExt?.minor ?? 0) < 4;
   const reads: ReadScore[] = [];
   const papers: PaperSeg[] = [];
   list.forEach((p, k) => {
     const file = String(p.file ?? paperFile(String(p.id)));
-    const b = files[file] ?? (k === 0 ? files[main] : undefined);
+    const b = files[file];
     if (!b) throw new Error(_t("纸「{id}」的谱（{file}）在包里找不到", { id: p.id, file }));
     known.add(file);
     const r = readMusicXml(strFromU8(b), { manualBars: (p.manualBars as Record<string, number[]> | undefined) ?? {}, unwritten: (p.unwritten as string[] | undefined) ?? [] });
@@ -839,13 +844,13 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     // papers[].phrases（老歌里的句号，v0.16.86 去掉了）：不读，丢掉——歌词、音一个不动（user 11-10「好，整个去掉」）
     // 这一段关了自动八度线的声部（v0.16.88 起写；更早的歌在 songFromReads 里从声部上搬过来）
     const aoOff = p.autoOttava as Record<string, unknown> | undefined;
-    if (!legacyLooks && aoOff && typeof aoOff === "object") seg.looks = Object.fromEntries(Object.entries(aoOff).filter(([pid, v]) => v === false && seg.tracks[pid]).map(([pid]) => [pid, { autoOttava: false as const }]));
+    if (aoOff && typeof aoOff === "object") seg.looks = Object.fromEntries(Object.entries(aoOff).filter(([pid, v]) => v === false && seg.tracks[pid]).map(([pid]) => [pid, { autoOttava: false as const }]));
     const sw = p.swells as Record<string, Record<string, string>> | undefined;   // 音内的力度起伏：按音的 id 挂回去（认不出的种类不挂）
     if (sw) for (const [pid, m] of Object.entries(sw)) { const toks = seg.tracks[pid]; if (!toks) continue; for (const [id, v] of Object.entries(m)) { if (v !== "<" && v !== ">" && v !== "<>") continue; const k = toks.findIndex((t) => t.kind === "note" && t.id === Number(id)); if (k >= 0) toks[k] = withArt(toks[k] as NoteTok, SWELL_ART[v as Swell], true); } }
     papers.push(seg);
   });
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
-  const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null, legacyLooks);
+  const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null);
   const o = finish(reads, song, pruneSounds(extras), ours, name);
   // 老文件里的 mp3 上面已经按文件原文核过是这份内容的。这一版读进来再写出去的样子可能和原文不一样（音的编号重编：旧版本写的是内存里的编号，这一版起写的是重编过的，见 canonicalIds；老写法搬成新写法：句号去掉、声部上的谱号 / 自动八度线搬到每一段）——
   //   内容没变，只是写法变了。交给宿主的指纹 = 「这一版写出来的样子」的（宿主之后拿 contentFingerprintOf 来对的就是这个）。
@@ -859,46 +864,33 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
 
 /** 读进来的几张纸 → 歌。parts = score.json 的声部并集（没有 = 按纸里出现的声部 P1…）。
  *  token id 统一重编（纸序 × 声部序 × 下标，从 1 起）：全歌唯一、确定；文件里的 id 只在读那份文件时有用（unwritten / 拆段并回）。 */
-function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: Json[] | null = null, legacyLooks = true): Song {
+function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: Json[] | null = null): Song {
   const ps = papers ?? [paperOfRead("p1", reads[0])];
   const seen = new Map<string, PartDef>();
-  const clefFromScore = new Set<string>();   // score.json 里写了 clef 的声部（v0.9.28 起都写：auto = 自动）：不再看 MusicXML 的第一个 <clef>
-  const oldClef = new Map<string, ClefName>(), oldAoOff = new Set<string>();   // 老写法（score minor < 4）：声部上的默认谱号 / 关了自动八度线
+  const autoClef = new Set<string>();   // score.json 里明写了 clef "auto" 的声部 = 纸头谱号自动；别的声部每张纸的第一个 <clef> 写什么就是什么（统筹 2026-11-12 定，不猜当年是手选还是自动）
   for (const p of partList ?? []) {
     const d: PartDef = { id: String(p.id), role: String(p.role ?? `r${seen.size + 1}`), mic: String(p.mic ?? `m${seen.size + 1}`) };
-    if ("clef" in p) { clefFromScore.add(d.id); if (legacyLooks && (CLEFS as readonly unknown[]).includes(p.clef)) oldClef.set(d.id, p.clef as ClefName); }
-    if (legacyLooks && p.autoOttava === false) oldAoOff.add(d.id);   // 这位不要自动八度线（v0.9.37，老写法）
+    if (p.clef === "auto") autoClef.add(d.id);
     if (typeof p.chords === "string" && p.chords && p.chords !== "auto") d.chords = p.chords;   // 这条轨的和弦选项（score minor 5；不认识的值原样留着）
-    else if (p.chords === undefined && p.brokenChords === false) d.chords = "stacked";   // 老写法（v0.16.73–score minor 4）：这位不认分解和弦 = 只认叠在一起的
     if (typeof p.host === "string" && p.host) d.host = p.host;   // 合租（v0.10.24）：下面核一遍
     seen.set(d.id, d);
   }
-  for (const d of seen.values()) { const h = d.host ? seen.get(d.host) : undefined; if (d.host && (!h || h.id === d.id || h.host)) delete d.host; }   // 主人不在 / 挂自己 / 主人也是房客 = 不合租
+  // 合租不成立（主人不在 / 挂自己 / 主人也是房客）：不丢，挪到 hostBroken（照没有合租来画、名字下面标出来、存的时候照原样写回；第 16 条「断了要看得见」）
+  for (const d of seen.values()) { const h = d.host ? seen.get(d.host) : undefined; if (d.host && (!h || h.id === d.id || h.host)) { d.hostBroken = d.host; delete d.host; } }
   for (const p of ps) for (const id of Object.keys(p.tracks)) if (!seen.has(id)) seen.set(id, { id, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
-  // 谱号 / 大谱表 / 自动八度线按段（v0.16.88，user 11-09「收到前面的per sheet而不是跟着歌手」）。读的时候：
-  //   ① 每张纸自己的 <staves>2 = 那一段大谱表；老写法（minor < 4）每张纸都写了 = 这个声部在的每一段都是（和原来画的一样）
-  //   ② 老写法的声部默认谱号 X = 没写纸头谱号的那几段各补一个纸头谱号 X；score.json 没写 clef 的（v0.9.28 以前 / 别家的谱）= 那张纸第一个 <clef> 不是普通高音谱号的，补成那一段的纸头谱号
-  //   ③ 老写法的「这位不要自动八度线」= 它在的每一段都关
-  const grandAt = new Set<string>();   // "纸 id\n声部 id"
-  ps.forEach((seg, k) => { for (const rp of reads[k]?.parts ?? []) if (rp.info.staves === 2 && seg.tracks[rp.info.id]) grandAt.add(`${seg.id}\n${rp.info.id}`); });
-  if (legacyLooks) for (const id of seen.keys()) if (ps.some((seg) => grandAt.has(`${seg.id}\n${id}`))) for (const seg of ps) if (seg.tracks[id]) grandAt.add(`${seg.id}\n${id}`);
+  // 谱号 / 大谱表 / 自动八度线按段（v0.16.88）：每张纸自己的 <staves>2 = 那一段大谱表；纸头谱号见 autoClef；关了自动八度线的段在 papers[].autoOttava（openBytes 读）
   ps.forEach((seg, k) => {
     const lk: Record<string, PartLook> = { ...(seg.looks ?? {}) };
     for (const id of Object.keys(seg.tracks)) {
-      const grand = grandAt.has(`${seg.id}\n${id}`);
-      if (grand) lk[id] = { ...lk[id], grand: true };
-      if (oldAoOff.has(id)) lk[id] = { ...lk[id], autoOttava: false };
-      if (grand) continue;
-      const fileClef = reads[k]?.parts.find((rp) => rp.info.id === id)?.info.clef;
-      // 第一个 <clef> 当成手选的谱号，只对老写法里 score.json 没写 clef 的声部（v0.9.28 以前 / 别家的谱）；新写法（minor ≥ 4）手选的一律是纸头的谱号记号，
-      //   不看 parts[].clef 这个键在不在（它现在只是写给旧版本看的）。
-      const want = oldClef.get(id) ?? (legacyLooks && !clefFromScore.has(id) && fileClef && fileClef !== "G" ? fileClef : undefined);
+      const grand = (reads[k]?.parts ?? []).some((rp) => rp.info.id === id && rp.info.staves === 2);
+      if (grand) { lk[id] = { ...lk[id], grand: true }; continue; }
+      const fileClef = autoClef.has(id) ? undefined : reads[k]?.parts.find((rp) => rp.info.id === id)?.info.clef;
       const toks = seg.tracks[id];
-      if (want && !headClefOf(toks)) { const at = headLen(toks); seg.tracks[id] = [...toks.slice(0, at), { kind: "clef", id: 0, clef: want }, ...toks.slice(at)]; }
+      if (fileClef && !headClefOf(toks)) { const at = headLen(toks); seg.tracks[id] = [...toks.slice(0, at), { kind: "clef", id: 0, clef: fileClef }, ...toks.slice(at)]; }
     }
     const clean = withLooks(seg, lk); if (clean.looks) seg.looks = clean.looks; else delete seg.looks;
   });
-  const parts = familyOrder([...seen.values()]);   // 一家挨在一起（v0.10.36：旧文件里房客可能没挨着主人）
+  const parts = [...seen.values()];   // 文件里的先后（不重排）
   let id = 1;
   const renumbered = ps.map((p) => ({ ...p, tracks: Object.fromEntries(parts.flatMap((part) => (p.tracks[part.id] ? [[part.id, p.tracks[part.id].map((t) => ({ ...t, id: id++ }))]] : []))) }));
   const r0 = reads[0];

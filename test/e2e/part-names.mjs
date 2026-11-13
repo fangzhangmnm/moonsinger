@@ -1,6 +1,8 @@
 // test/e2e/part-names.mjs —— 真浏览器 E2E：声部显示成什么（谱面分家 5½ → 施工单 12-4 重做）。
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟）。12-4（2026-11-12）：名字和乐器分开（user「全部声部里面翻译没有跟，以及好好想一下声部到底要不要自动翻译」→ 统筹提议 → user「同意」）。
-//   守：① 没起名字的声部 = 乐器的叫法，按「谱上的字」那一项的语言（跟着界面 = 界面语言）：中文界面 Flute → 长笛、简写也是中文；英文界面 Flute / Fl.
+//   第 16 条（2026-11-12，user 定的甲「照文件显示」）：老歌里存着的名字照原样显示（两种界面一样）；清掉名字 = 跟着乐器叫。下面 ①④ 在「名字都清掉之后」查。
+//   守：⓪ 老歌 Once 打开 = 存着的名字原样显示（Kick drum 这种当年存下的字也照显示），中英界面一样。
+//       ① 没起名字的声部 = 乐器的叫法，按「谱上的字」那一项的语言（跟着界面 = 界面语言）：中文界面 Flute → 长笛、简写也是中文；英文界面 Flute / Fl.
 //       ② 新歌默认那一位 = 目录里的人声：中文「人声」、英文「Voice」。
 //       ③ 文件里写的东西不许取决于是哪台设备：两种界面下存出去的 .mxl 每一份文件都一样（除了存盘时刻）。
 //       ④ 「谱上的字」钉成和界面相反的语言：谱上、「全部声部」下拉、小卡、混音台卡片四处是同一个叫法。
@@ -21,7 +23,10 @@ const run = async (locale, other) => {
   const fresh = await scoreNames(p);   // 新歌：默认那一位
   await p.evaluate((x) => { const m = window.__moonsinger; m.load(m.open("song.mxl", new Uint8Array(x))); }, bytes);
   await p.waitForTimeout(400);
-  const out = { fresh, lang: await p.evaluate(() => document.documentElement.dataset.lang), names: await scoreNames(p), abbrs: await p.evaluate(() => window.__moonsinger.layout().prims.filter((x) => /part-name abbr/.test(x.cls ?? "")).map((x) => x.s)), bytes: await p.evaluate(() => window.__moonsinger.saveBytes()), errs };
+  const stored = await scoreNames(p);   // ⓪ 照文件显示
+  await p.evaluate(() => { const m = window.__moonsinger, ex = structuredClone(m.extras()); for (const r of Object.values(ex.lounge)) delete r.name; m.commit({ extras: ex }, { locus: { kind: "lounge", label: "test" } }); });   // 人把名字都清掉 = 跟着乐器叫
+  await p.waitForTimeout(400);
+  const out = { fresh, stored, lang: await p.evaluate(() => document.documentElement.dataset.lang), names: await scoreNames(p), abbrs: await p.evaluate(() => window.__moonsinger.layout().prims.filter((x) => /part-name abbr/.test(x.cls ?? "")).map((x) => x.s)), bytes: await p.evaluate(() => window.__moonsinger.saveBytes()), errs };
   // 「谱上的字」钉成另一种语言（走页面设置同一个口子：setTextLang + 看法），四处一起看
   await p.evaluate((l) => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, song: { ...s.song, textLang: l } }); }, other); await p.waitForTimeout(400);
   out.cross = { score: await scoreNames(p), drop: (await ddOptions(p, "#partSel")).map((x) => x.label) };
@@ -33,6 +38,7 @@ const run = async (locale, other) => {
 };
 const zh = await run("zh-CN", "en"), en = await run("en-US", "zh");
 check(zh.lang === "zh" && en.lang === "en", "两种界面语言", `${zh.lang} / ${en.lang}`);
+check(zh.stored.join(" ") === en.stored.join(" ") && /Kick drum/.test(zh.stored.join(" ")) && !zh.stored.includes("长笛"), "老歌照文件显示：存着的名字原样（Kick drum 这种当年存下的字也照显示），中英界面一样（第 16 条，甲）", zh.stored.join(" "));
 check(zh.names.includes("长笛") && zh.names.includes("直笛") && zh.names.includes("小鼓") && !zh.names.includes("Flute"), "中文界面、跟着界面：没起名字的声部写乐器的中文叫法（长笛、直笛、小鼓）", zh.names.join(" "));
 check(en.names.includes("Flute") && en.names.includes("Recorder") && en.names.includes("Bass") && !/Kick/.test(en.names.join(" ")) && !en.names.includes("长笛"), "英文界面：英文叫法 = 目录现行的（老歌和新歌一个叫法：当年抄的 Kick drum 不留，写 Bass Drum（谱上折成两行，第一行 Bass）；12-4 改口）", en.names.join(" "));
 check(zh.abbrs.length > 0 && zh.abbrs.some((x) => /长笛/.test(x)) && !zh.abbrs.includes("Fl."), "中文界面：第二行起的简写也是中文（按定宽缩）", zh.abbrs.join(" "));

@@ -11,6 +11,7 @@ import { dropdownHtml, mountDropdowns } from "./dropdown.ts";
 import { _t } from "../i18n/index.ts";
 import type { FxV2 } from "../format/contract.ts";
 import { eqResponseDb } from "../engine/fx.ts";
+import { busLinkStates, type LinkState } from "../engine/studio.ts";
 import { SPEC_BANDS, bandHz, bandsDb, smoothBands, areaPath, xOfHz } from "./spectrum.ts";
 const SPEC_TICKS = [100, 1000, 10000];
 import { DEFAULT_EQ_ID, PLUGIN_KINDS, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, projectToSimple, viewOfFx, type Params } from "./plugins.ts";
@@ -315,6 +316,12 @@ export class Studio {
     else if (v === "busbypass" && strip) { const b = this.host.buses().find((x) => x.id === strip); if (b) { this.host.setBusBypass(strip, !b.bypass); this.render(); } }
     else if ((v === "partleft" || v === "partright") && strip) { this.host.movePart(strip, v === "partleft" ? -1 : 1); this.render(); }
     else if (v === "delpart" && strip) this.host.deletePart(strip);
+    else if (v === "broken" && strip) {   // 去第一处断了的那一页（被谁压 = 链页、打开那一格）
+      const b = this.brokenOf(strip)[0]; if (!b) return;
+      this.tab = b.page; this.menuOpen = false; this.addFor = null; this.specShown.clear(); this.compHist.clear();
+      if (b.where.startsWith("key:")) this.open = { track: strip, fx: b.where.slice(4) };
+      this.render(); this.host.tabChanged?.(this.tab);
+    }
     else if (v === "perfdb" && strip) this.host.openPerformer(strip);
     else if (v === "limiter") { this.host.toggleLimiter(); this.render(); }
     else if (v === "delbus" && strip) { if (this.open?.track === strip) this.open = null; this.host.removeBus(strip); this.render(); }
@@ -430,7 +437,9 @@ export class Studio {
   private controlsHtml(tg: Target, fx: FxV2, mode: "simple" | "full"): string {
     const bus = this.onBus(tg.track), p = paramsOf(fx), view = viewOfFx(fx, bus), read = view?.read(p) ?? null;
     const keyOpts = fx.kind === "comp" ? this.host.keyTracks(tg.track) : [];
-    const keyRow = keyOpts.length ? row(_t("被谁压"), HINT.key, "", dropdownHtml([{ value: "", label: _t("不用（自己压自己）") }, ...keyOpts.map((x) => ({ value: x.id, label: x.name }))], keyOpts.some((x) => x.id === fx.key) ? fx.key! : "", { attrs: "data-key" })) : "";   // 下拉 = 界面零件库的标准件（7-T）
+    const keyBroken = fx.kind === "comp" && !!fx.key && !keyOpts.some((x) => x.id === fx.key);   // 被谁压的那条轨不在（第 16 条：照写原来的去处 + 断了）
+    const keyRow = keyOpts.length || keyBroken ? row(_t("被谁压"), HINT.key, "", dropdownHtml([{ value: "", label: _t("不用（自己压自己）") }, ...keyOpts.map((x) => ({ value: x.id, label: x.name })), ...(keyBroken ? [{ value: fx.key!, label: _t("{key}（断了）", { key: fx.key! }) }] : [])], keyOpts.some((x) => x.id === fx.key) || keyBroken ? fx.key! : "", { attrs: "data-key" })) +
+      (keyBroken ? `<div class="fx-note strip-broken-note">${esc(_t("被谁压：断了，「{key}」这条轨不在（现在听自己）", { key: fx.key! }))}</div>` : "") : "";   // 下拉 = 界面零件库的标准件（7-T）
     if (mode === "simple" && view) {
       // 在全量里调过（落不到一键公式上）= 一键锁着、旋钮不摆出来（user「没法用一键的时候那些一键的invalid slider可以不显示哈哈」），要改先点「改成最接近的一键」（v0.10.14；user「basic模式下应该有一个project to basic模式的功能，不然的话basic模式会是被锁住，免得不小心override」）
       const fp = freshParams(fx.kind, bus), fresh = view.read(fp) ?? view.project(fp), locked = !read, cur = read ?? {};
@@ -461,10 +470,28 @@ export class Studio {
       `<div class="fx-body">${this.controlsHtml(tg, fx, this.modeOf(tg))}</div></div>`;
   }
   /** 出到 + 发送（歌手轨和路由轨都有；总轨没有）。 */
+  /** 这条轨上断了的引用（第 16 条「断了要看得见」，统筹 2026-11-12：在人会去修它的那一页那一格写清；卡片上只一行「有 N 处断了」）：
+   *  出到 / 发送去的混音轨不在或接成环（判法和录音房同一个 busLinkStates）、被谁压的那条轨不在。page = 去哪一页修。 */
+  private brokenOf(track: string): { page: MixTab; where: string; why: string }[] {
+    const buses = this.host.buses(), isBus = (id: string) => buses.some((b) => b.id === id), out: { page: MixTab; where: string; why: string }[] = [];
+    const why = (st: LinkState, to: string) => (st === "missing" ? _t("断了：「{to}」这条混音轨不在", { to }) : _t("接成环了，没接上"));
+    const onBus = isBus(track), states = onBus ? busLinkStates(buses.map((b) => ({ id: b.id, to: this.host.outTo(b.id), sends: this.host.sends(b.id) })), isBus).get(track) : undefined;
+    const to = this.host.outTo(track), toSt: LinkState | null = states ? states.to : to !== "master" ? (isBus(to) ? "ok" : "missing") : null;
+    if (toSt && toSt !== "ok") out.push({ page: "send", where: "out", why: `${why(toSt, to)}${_t("，现在出到总轨")}` });
+    this.host.sends(track).forEach((sd, k) => { const st: LinkState = states ? states.sends[k] ?? "ok" : isBus(sd.to) ? "ok" : "missing"; if (st !== "ok") out.push({ page: "send", where: `send:${sd.to}`, why: `${why(st, sd.to)}${_t("，这一条不发")}` }); });
+    const keys = new Set(this.host.keyTracks(track).map((x) => x.id));
+    for (const fx of this.host.chain(track)) if (fx.kind === "comp" && fx.key && !keys.has(fx.key)) out.push({ page: "chain", where: `key:${fx.id}`, why: _t("被谁压：断了，「{key}」这条轨不在（现在听自己）", { key: fx.key }) });
+    return out;
+  }
+  /** 卡片名字下面一行「有 N 处断了」（三种算进同一个数）；点了 = 去第一处所在的页。没有 = 不写。 */
+  private brokenLine(track: string): string {
+    const n = this.brokenOf(track).length;
+    return n ? `<button class="btn strip-broken" data-v="broken" title="${esc(this.brokenOf(track).map((b) => b.why).join("；"))}">${_t("有 {n} 处断了", { n })}</button>` : "";
+  }
   private routeHtml(track: string): string {
     const out = this.host.outTo(track), tg = this.host.targets(track), sends = this.host.sends(track), name = (id: string) => esc(this.trackName(id));
     const outSel = row(_t("出到"), HINT.out, "", dropdownHtml([...[{ id: "master", name: _t("总轨") }, ...tg].map((x) => ({ value: x.id, label: x.name })), ...(out !== "master" && !tg.some((x) => x.id === out) ? [{ value: out, label: _t("{out}（接不上）", { out: name(out) }) }] : [])], out, { attrs: "data-out" }), "strip-row");
-    const rows = sends.map((sd) => `<div class="strip-send">${row(_t("发给 {to}", { to: this.trackName(sd.to) }), HINT.send, `<output>${dbText(sd.gainDb)}</output>`, slider({ min: -40, max: 6, step: 0.5, value: sd.gainDb, attrs: `data-send="${esc(sd.to)}"`, def: -12, defText: "−12 dB" }), "strip-row")}<button class="btn" data-v="sendx" data-to="${esc(sd.to)}" title="${_t("不再发给它")}">✕</button></div>`).join("");
+    const rows = sends.map((sd) => `<div class="strip-send">${row(_t("发给 {to}", { to: this.trackName(sd.to) }), HINT.send, `<output>${dbText(sd.gainDb)}</output>`, slider({ min: -40, max: 6, step: 0.5, value: sd.gainDb, attrs: `data-send="${esc(sd.to)}"`, def: -12, defText: "−12 dB" }), "strip-row")}<button class="btn" data-v="sendx" data-to="${esc(sd.to)}" title="${_t("不再发给它")}">✕</button></div>`);
     const free = tg.filter((x) => !sends.some((sd) => sd.to === x.id));
     const add = free.length ? dropdownHtml([{ value: "", label: _t("＋ 发送到…") }, ...free.map((x) => ({ value: x.id, label: x.name }))], "", { cls: "send-add", attrs: "data-sendadd", title: _t("推子之后发一份到一条混音轨（混响 / 延迟这类放在混音轨上，几条轨共用）") }) : (tg.length ? "" : `<div class="fx-dim">${_t("还没有混音轨（顶栏「＋ 混音轨」加）")}</div>`);
     // 出到一条带全湿效果的混音轨 = 原声没了：明说（v0.10.10；user「开了混响结果铃声都哑掉了」）
@@ -474,7 +501,8 @@ export class Studio {
     const shared = !wet && out !== "master" ? this.host.chain(out).find((f) => (f.kind === "reverb" || f.kind === "delay" || f.kind === "chorus") && f.on !== false) : undefined;
     const sharedDry = shared ? paramsOf(shared).dry : 1, dryDb = 20 * Math.log10(Math.max(1e-6, sharedDry));
     const note = shared ? `<div class="fx-note">${_t("出到「{out}」= 整条声音都过它的{kind}：出到它的几条轨{kind2}一样多{dryDb}。想每条轨各自多少：出到总轨、用下面的「发送」，那条混音轨上的{kind3}改成全湿。", { out: name(out), kind: esc(pluginName(shared.kind)), kind2: esc(pluginName(shared.kind)), dryDb: sharedDry < 0.999 ? _t("，原声也被它关小 {dryDb}（推子上看不出来）", { dryDb: dbText(dryDb) }) : "", kind3: esc(pluginName(shared.kind)) })}</div>` : "";
-    return outSel + warn + note + rows + add;
+    const br = this.brokenOf(track), brokenNote = (where: string) => { const b = br.find((x) => x.where === where); return b ? `<div class="fx-note strip-broken-note">${esc(b.why)}</div>` : ""; };
+    return outSel + brokenNote("out") + warn + note + sends.map((sd, k) => rows[k] + brokenNote(`send:${sd.to}`)).join("") + add;
   }
   private chipsHtml(track: string): string {
     const chips = this.slots(track).map(({ fx }) => `<button class="btn fx-chip${this.open?.track === track && this.open.fx === fx.id ? " is-on" : ""}${fx.on === false ? " off" : ""}" data-v="fx" data-fx="${esc(fx.id)}" title="${_t("{kind}：点开调{DEFAULT_EQ_ID}", { kind: esc(pluginName(fx.kind)), DEFAULT_EQ_ID: fx.id === DEFAULT_EQ_ID ? _t("（默认那一格：能关、能换面板，不能删）") : "" })}">${esc(fxSummary(fx, this.onBus(track)))}</button>`).join("");
@@ -569,7 +597,7 @@ export class Studio {
       const name = `<input class="bus-name" value="${esc(b.name)}" title="${_t("名字（点了改）")}" />`;   // 每一页都能改名（v0.16.82，总表第 9 条 ⑥；原来只在基础页）
       // 混音轨也能静音（不能独奏：独奏是挑歌手听；user「哦，混音轨也要mute，（不过可能不能solo了」）——钉在名字右边，同歌手卡
       const ms = `<span class="strip-ms"><button class="btn${b.muted ? " is-on mute" : ""}" data-v="busmute" title="${_t("静音：这条混音轨不出声、也不往下发（发给它的那几位原声照旧）")}">${_t("静")}</button></span>`;
-      return this.card(b.id, ` bus${b.bypass ? " bypassed" : ""}`, `<div class="strip-head">${name}${ms}</div>`, b.bypass ? _t("混音轨 · 旁通中（插件全跳过）") : _t("混音轨"), body);
+      return this.card(b.id, ` bus${b.bypass ? " bypassed" : ""}`, `<div class="strip-head">${name}${ms}</div>${this.brokenLine(b.id)}`, b.bypass ? _t("混音轨 · 旁通中（插件全跳过）") : _t("混音轨"), body);
     }).join("");
     // 歌手：顺序跟谱上的声部（user「歌手卡片的排序还是以五线谱为准」）
     const strips = this.host.strips(), singers = strips.map((s, k) => {
@@ -585,7 +613,7 @@ export class Studio {
       // 静音 / 独奏 钉在名字右边、每一页都在（v0.10.34；原来在基础页卡片最底下，卡片定高 = 要在卡片里滚才看得到；user「混音台基础里面应该有mute和solo，和我们已经有的mute和solo绑定」）——
       //   和谱上歌手名下面的「静 / 独」、歌手牌里的是同一个开关（host.toggleMute / toggleSolo → 视图态）
       const ms = `<span class="strip-ms"><button class="btn${s.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("静音（这位不出声；和谱上声部名下面的「静」是同一个）")}">${_t("静")}</button><button class="btn${s.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("独奏（只听独奏的几位；和谱上的「独」是同一个）")}">${_t("独")}</button></span>`;
-      return this.card(s.id, "", `<div class="strip-head">${nameDiv(s.name)}${ms}</div>`, s.performer, body, s.color);
+      return this.card(s.id, "", `<div class="strip-head">${nameDiv(s.name)}${ms}</div>${this.brokenLine(s.id)}`, s.performer, body, s.color);
     }).join("");
     box.innerHTML = master + busCards + singers; mountDropdowns(box);
     this.watchCards();   // 卡片重画了：重新看哪些在屏幕里

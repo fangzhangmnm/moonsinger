@@ -114,7 +114,10 @@ export function createPerformance(host: PerfHost) {
     return st().song.parts.flatMap((p, k): Issue[] => {
       if (!hasNotes(p.id)) return [];   // 没写音的声部不出声也不丢什么
       const plugin = performerOf(activeInstrument(extras(), p.role)?.engine);
-      if (!plugin) return [{ part: p.id, role: p.role, label: labels[k], kind: "unknown", why: _t("还没有人上场（别的软件原来的乐器，这一版认不出）") }];
+      // 没人上场的三种原因照实说（第 16 条：乐手读不到 ≠ 小月相）：文件里这个声部没有乐手 / 有乐手但读不懂（没有上场那位、或认不出引擎）/ 别的软件原来的乐器
+      if (!plugin) { const r = extras().lounge[p.role], eng = activeInstrument(extras(), p.role)?.engine;
+        const why = !r ? _t("还没有人上场：这个声部的乐手文件里没有") : eng === "unknown" ? _t("还没有人上场（别的软件原来的乐器，这一版认不出）") : _t("还没有人上场：这个声部的乐手读不懂");
+        return [{ part: p.id, role: p.role, label: labels[k], kind: "unknown", why }]; }
       const e = prepErrs.get(p.id);
       return e && e.cand === activeId(extras(), p.role) ? [{ part: p.id, role: p.role, label: labels[k], kind: e.kind, why: e.why }] : [];
     });

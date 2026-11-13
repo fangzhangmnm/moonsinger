@@ -39,21 +39,26 @@ describe("合租：数据", () => {
     eq(ids(movePart(st, c, 1)), ids(st), "房客挪出自家 = 不动");
     eq(ids(removePart(st, a)), `${c},P2`, "删了主人：房客没有 host 了");
   });
-  it("一家挨在一起（v0.10.36）：房客没挨着主人（旧文件 / 以前挪乱的）= 读的时候 / 挪的时候理好", () => {
+  it("一家挨在一起（v0.10.36）：房客没挨着主人（旧文件 / 以前挪乱的）= 读的时候照文件的先后（第 16 条：不重排）；挪的时候一家一起算", () => {
     let st = trio(); st = addPart(st, { id: "P4", role: "r4", mic: "m4" }); const [a, b2, c, d] = st.song.parts.map((p) => p.id);
     const messy = { ...st.song, parts: [st.song.parts[0], st.song.parts[1], st.song.parts[2], { ...st.song.parts[3], host: a }] };   // P4 挂 a，却排在最后
     eq(familyOrder(messy.parts).map((p) => p.id).join(","), `${a},${d},${b2},${c}`);
     const o = openBytes("t.mxl", saveMxl({ song: messy, hum: messy.hum, extras: emptyExtras(), app: "test", date: "2026-10-10T00:00:00Z" }));
-    eq(o.song.parts.map((p) => p.id).join(","), `${a},${d},${b2},${c}`, "读的时候理好");
+    eq(o.song.parts.map((p) => p.id).join(","), `${a},${b2},${c},${d}`, "读的时候照文件的先后");
     eq(movePart({ ...st, song: messy }, c, -1).song.parts.map((p) => p.id).join(","), `${a},${d},${c},${b2}`, "挪的时候一家一起算");
   });
-  it("存进文件再读回来：host 留着；不合规矩的（主人不在）读的时候丢掉", () => {
+  it("存进文件再读回来：host 留着；不合规矩的（主人不在）不丢——读成 hostBroken（照没有合租来画），再存照原样写回；人选「自己一行」= 去掉（第 16 条「断了要看得见」）", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
     const o = openBytes("t.mxl", saveMxl({ song: st.song, hum: st.song.hum, extras: emptyExtras(), app: "test", date: "2026-10-10T00:00:00Z" }));
     eq(o.song.parts.find((p) => p.id === c)?.host, a);
     const bad = { ...st.song, parts: st.song.parts.map((p) => (p.id === c ? { ...p, host: "nobody" } : p)) };
     const o2 = openBytes("t.mxl", saveMxl({ song: bad, hum: bad.hum, extras: emptyExtras(), app: "test", date: "2026-10-10T00:00:00Z" }));
-    eq(o2.song.parts.find((p) => p.id === c)?.host, undefined, "主人不在 = 读的时候丢掉 host");
+    const pc = o2.song.parts.find((p) => p.id === c)!;
+    eq(pc.host, undefined, "主人不在 = 运行时不当合租"); eq(pc.hostBroken, "nobody", "断了的那一层留着");
+    const o3 = openBytes("t.mxl", saveMxl({ song: o2.song, hum: o2.song.hum, extras: emptyExtras(), app: "test", date: "2026-10-10T00:00:00Z" }));
+    eq(o3.song.parts.find((p) => p.id === c)?.hostBroken, "nobody", "再存照原样写回");
+    const cleared = setPartHost({ ...st, song: o2.song }, c, null).song.parts.find((p) => p.id === c)!;
+    eq(cleared.hostBroken, undefined, "人选「自己一行」= 去掉"); eq(cleared.host, undefined);
   });
 });
 
