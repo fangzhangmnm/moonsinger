@@ -3,7 +3,7 @@
 import { _t } from "../i18n/index.ts";
 import { registerPerformer } from "./registry.ts";
 import { activeGm, activeVelocity, activeTranspose, activePerfSpec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, type GmCandidate } from "../format/project.ts";
-import { SOUNDFONT_DEFAULTS } from "../format/performance.ts";
+import { SOUNDFONT_DEFAULTS, CALIBRATION_DEFAULT_DB } from "../format/performance.ts";
 import { velLayersOf, octaveCheckOf, conceptOfIds, octaveDisclosure, GS_LIBRARY_ID } from "../gm/catalog.ts";
 import { sf2VelocityDepths } from "../gm/sf2-subset.ts";
 import { canAlign } from "../gm/sf-key.ts";
@@ -21,11 +21,9 @@ function hitOf(g: GmCandidate | null): { hitSec?: (key: number) => number } {
   const h = pk.info.hitSec ?? 0; return h ? { hitSec: () => h } : {};
 }
 
-/** 每个库新上场的乐器默认的「响度」（dB；9-3，2026-11-12；user「小月相有自己的normalization，normalization应该是乐器自己可以带的。是不同库之间需要调」）。
- *  现在只有一个库：GS = −6（2026-10-08 定的：月读当基准、乐器让一点；user「感觉乐器进来之后好像月读变轻了」）。加第三个库时用量响度的工具给建议，数由人定。
- *  自己拖进来的 .sf2（没有库）= OWN。进歌 by value，以后改这里动不到旧歌。 */
-const LIBRARY_CALIBRATION_DB: Record<string, number> = { [GS_LIBRARY_ID]: -6 };
-const OWN_SF2_CALIBRATION_DB = -6;
+/** 新上场的乐器默认的「响度」按库报（9-3，2026-11-12；user「小月相有自己的normalization，normalization应该是乐器自己可以带的。是不同库之间需要调」）。
+ *  现在每个库（GS、自己拖进来的 .sf2）都是现行的那一个默认 CALIBRATION_DEFAULT_DB（0 = 满音量；第 14 条，2026-11-12 起，原来是 −6）。
+ *  库和库之间要对齐时才在这里按库写非零的数（加第三个库时用量响度的工具给建议，数由人定）。进歌 by value。 */
 
 export const soundfont = registerPerformer({
   guid: "3e8a5c47-9f21-4b6d-a0e2-c7d14f8b9a63", kind: "performer", name: "soundfont", version: 1, label: _t("SoundFont 乐器"),
@@ -35,7 +33,7 @@ export const soundfont = registerPerformer({
   honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio", "roll"],
   pedals: ["sustain"],   // 踏板 11-1：只声明出声真接了的（延音）；持音、弱音的出声是 11-2，接了再加（test/pedal.test.ts「表说认 = 出声真变了」守着）
   connected: false, dynamics: "velocity", grooveCategory: "gm", removable: true,
-  defaultCalibrationDb: (library) => LIBRARY_CALIBRATION_DB[library ?? ""] ?? OWN_SF2_CALIBRATION_DB,   // 9-3：按库报
+  defaultCalibrationDb: () => CALIBRATION_DEFAULT_DB,   // 9-3：按库报；现在每个库都是现行的默认（第 14 条）
   info: ({ extras, role, presetIndex, velCurve }) => {
     const g = activeGm(extras, role), c = g ? velCurve(g.subsetSha256, g.bank, g.program) : null, tr = activeTranspose(extras, role);
     // L（7-N）：写的音高 → 敲的键（同出声的 sfKey：修八度 / 固定原速 / 鼓件）→ 引擎在那个键上实际的；库没载 = 不给（这个声部本来就不出声）

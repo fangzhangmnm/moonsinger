@@ -3,7 +3,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array };
 import { saveMxl, openBytes, emptyExtras, withSf2Candidate, withActive, activeGm, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, CANDIDATE_ID, type Extras } from "../src/format/project.ts";
-import { UNWRITTEN_CALIBRATION_DB, BUILTIN_CALIBRATION_DB } from "../src/format/performance.ts";
+import { CALIBRATION_DEFAULT_DB } from "../src/format/performance.ts";
 import { performerOf } from "../src/performers/index.ts";
 const SF_CAL = performerOf("soundfont")!.defaultCalibrationDb(null);   // 新上场的 SoundFont 乐器默认的响度 = 插件按库报的（9-3）
 import { unzipSync } from "../vendor/fflate/fflate.esm.js";
@@ -87,13 +87,13 @@ describe("音源打包 / 解包（project.ts）", () => {
 });
 
 describe("响度校准（候选 calibrationDb）", () => {
-  it("新的 SoundFont 候选 = 插件按库报的默认（9-3）；新建的小月相 = 内置预设表里她那一格；没写 = 格式的「没写」；数都还是 −6；改了进歌、存 → 开还在", async () => {
+  it("新的 SoundFont 候选 / 新建的小月相 / 没写 = 同一个现行的默认（第 14 条起是 0，一处定义）；改了进歌、存 → 开还在", async () => {
     const { extras } = await twoWeak();
-    eq(SF_CAL, -6, "数不变（9-3）"); eq(performerOf("soundfont")!.defaultCalibrationDb("generaluser-gs-2.0.3"), -6, "GS");
+    eq(SF_CAL, CALIBRATION_DEFAULT_DB, "自己的 .sf2"); eq(performerOf("soundfont")!.defaultCalibrationDb("generaluser-gs-2.0.3"), CALIBRATION_DEFAULT_DB, "GS");
     eq(activeCalibrationDb(extras, "r1"), SF_CAL);
-    const voice = withActive(extras, "r1", CANDIDATE_ID.full, "n"); eq(activeCalibrationDb(voice, "r1"), BUILTIN_CALIBRATION_DB.tsukuyomi, "新建的月读也是 −6（user「月读也得-6db」）");
-    eq(performerOf("tsukuyomi")!.defaultCalibrationDb(null), BUILTIN_CALIBRATION_DB.tsukuyomi, "她的插件报的 = 新建时写进去的");
-    eq(activeCalibrationDb(emptyExtras(), "r9"), UNWRITTEN_CALIBRATION_DB, "没有角色快照 = 「没写」= −6");
+    const voice = withActive(extras, "r1", CANDIDATE_ID.full, "n"); eq(activeCalibrationDb(voice, "r1"), CALIBRATION_DEFAULT_DB, "新建的小月相 = 同一个默认");
+    eq(performerOf("tsukuyomi")!.defaultCalibrationDb(null), CALIBRATION_DEFAULT_DB, "她的插件报的 = 新建时写进去的");
+    eq(activeCalibrationDb(emptyExtras(), "r9"), CALIBRATION_DEFAULT_DB, "没有角色快照 = 「没写」= 同一个默认");
     const ch = withCalibration(extras, "r1", -3.26, "n"); eq(activeCalibrationDb(ch, "r1"), -3.3);
     eq(activeCalibrationDb(ch, "r2"), SF_CAL, "只改这个角色上场的那位");
     eq(activeCalibrationDb(openBytes("x.mxl", save(ch)).extras, "r1"), -3.3);

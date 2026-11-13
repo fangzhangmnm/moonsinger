@@ -47,6 +47,7 @@ import "./sf-velocity.test.ts";
 import "./sf-loudness.test.ts";
 import "./sf-velcurve.test.ts";
 import "./library-calibration.test.ts";
+import "./calibration-default.test.ts";
 import "./loudness-convention.test.ts";
 import "./gm-format.test.ts";
 import "./sounds.test.ts";

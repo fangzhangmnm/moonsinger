@@ -10,6 +10,8 @@ export interface StudioStrip {
     solo: boolean;
     refs: number;
     color?: string;
+    /** 上场那位乐手自己的「响度」（dB，候选的 calibrationDb；乐器页「响度」那一行）：渲染时和推子相加。不是 0 = 推子旁边照实写出来（第 14 条：推子写 0、实际轻 6 dB 是看不见的那一处）。 */
+    performerDb: number;
 }
 export interface StudioHost {
     strips(): StudioStrip[];
@@ -21,6 +23,8 @@ export interface StudioHost {
     close(): void;
     /** 删一位一张纸都不在的歌手（歌手管理；纸上不删）。 */
     deletePart(id: string): void;
+    /** 去这位歌手的乐器页、落在「响度」那一行（推子旁边「乐手 −6 dB」那颗钮）。 */
+    openPerformer(id: string): void;
     /** 总轨（2026-10-10 刀 3）：增益 dB + 母线限幅开关；进歌（studio.json master）。 */
     master(): {
         gainDb: number;

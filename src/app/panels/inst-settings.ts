@@ -4,7 +4,7 @@
 import { dropdownHtml, mountDropdowns } from "../../ui/dropdown.ts";
 import { _t, lang } from "../../i18n/index.ts";
 import { roleSound, activeId, gmCandidates, activeCandidateName, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withSwellDb, withCalibration, GAP_MAX_SEC, SWELL_DB_MIN, SWELL_DB_MAX, type Extras, type Engine } from "../../format/project.ts";
-import { UNWRITTEN_CALIBRATION_DB, ROLL_HZ_MIN, ROLL_HZ_MAX, MARK_DEFAULTS } from "../../format/performance.ts";
+import { CALIBRATION_DEFAULT_DB, ROLL_HZ_MIN, ROLL_HZ_MAX, MARK_DEFAULTS } from "../../format/performance.ts";
 const MARK_DEFAULTS_SWELL = MARK_DEFAULTS.swellDb;
 import { performerOf } from "../../performers/index.ts";
 import type { InspectorCtx } from "../../performers/registry.ts";
@@ -144,10 +144,10 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     for (let k = 0; k < order.length - 1; k++) if (to >= order[k]! && to <= order[k + 1]!) { pos = k + (to - order[k]!) / Math.max(1, order[k + 1]! - order[k]!); break; }
     return _t("滚奏的音上按力度做：mf（{mf}）低 {d} dB ≈ 力度 {to}（约 {n} 档力度）。", { mf: tab.mf, d: D, to, n: Math.max(0, i - pos).toFixed(1) });
   }
-  /** 上场那位所在的库 / 插件报的默认「响度」（9-3）：SoundFont 按候选来自哪个库，别的引擎问自己的插件；没人上场 = 格式里「没写」的值。 */
+  /** 上场那位所在的库 / 插件报的默认「响度」（9-3）：SoundFont 按候选来自哪个库，别的引擎问自己的插件；没人上场 = 现行的默认（和「没写」同一个数）。 */
   function calDefault(role: string): number {
     const aid = activeId(h.extras(), role), g = gmCandidates(h.extras(), role).find((x) => x.id === aid);
-    return performerOf(h.engine())?.defaultCalibrationDb(g?.origin.library ?? null) ?? UNWRITTEN_CALIBRATION_DB;
+    return performerOf(h.engine())?.defaultCalibrationDb(g?.origin.library ?? null) ?? CALIBRATION_DEFAULT_DB;
   }
   /** 插件自报参数行要的上下文（ADR-0004 §2.5）：休息室 / 角色 / 哼的字 / 音乐目录（没载 = null）/ 排版小工具。 */
   function inspectorCtx(role: string): InspectorCtx {
@@ -190,7 +190,9 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
         _t("音内渐强 / 渐弱 / 鼓起的深浅：写的力度是最高点，< 从低 {d} dB 长到写的力度、> 收到低 {d} dB、<> 两头低 {d} dB。{vel}", { d: D, vel: swellVelNote(role, D) })))(activePerfSpec(h.extras(), role).swellDb) : "") +
       ownMain.map(rowOf).join("") +
       // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
-      (plug?.dynamics === "gain" ? ((dp: number) => row(_t("力度记号"), "", _t("力度记号 → 力度 → 响度，和乐器同一条规矩（SoundFont 的放法：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)，满力度 = 0 dB）。这位的力度深度 {dp}（照库里人声类和长笛、小提琴这类拉长音的乐器；规范默认 960）；没有录音层，只变响度：{extras}", { dp, extras: dynTable(activePerfSpec(h.extras(), role), null, (v) => depthCurve(dp)(60, v)) })))(plug.velocityDepth ?? SF2_VEL_DEPTH) : "") +
+      // 按块出声的（小月相）块乘多少照实写在这里，和力度深度一起（第 14 条，2026-11-12：「我们自己放的、界面上看不见的」这一类要清到零）
+      (plug?.dynamics === "gain" ? ((dp: number) => row(_t("力度记号"), "", (plug.chunkGain ? _t("唱出来的每一句先乘 ×{k}（{db} dB）：唱法核心原始输出的补偿，我们按量过的原始峰值（约 0.42）放大到 0.89 定的数。", { k: plug.chunkGain.toFixed(2), db: `+${(20 * Math.log10(plug.chunkGain)).toFixed(1)}` }) : "") +
+        _t("力度记号 → 力度 → 响度，和乐器同一条规矩（SoundFont 的放法：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)，满力度 = 0 dB）。这位的力度深度 {dp}（照库里人声类和长笛、小提琴这类拉长音的乐器；规范默认 960）；没有录音层，只变响度：{extras}", { dp, extras: dynTable(activePerfSpec(h.extras(), role), null, (v) => depthCurve(dp)(60, v)) })))(plug.velocityDepth ?? SF2_VEL_DEPTH) : "") +
       ((plug?.lyrics ?? "none") !== "none" ? row(_t("哼的字"), HUMS.map(([v, l]) => chip(`hum:${v}`, l, hum === v)).join(""), _t("没写歌词的音唱什么（整首歌一个）")) : "") +
       (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("高级：唱法核心的旋钮")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") +
       ownTail.map(rowOf).join("") +

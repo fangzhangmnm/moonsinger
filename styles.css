@@ -612,6 +612,8 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .strip-head .strip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .strip-ms { margin-left: auto; display: flex; gap: 3px; flex: none; }
 .strip .strip-ms .btn { height: 22px; min-width: 24px; padding: 0 5px; font-size: 12px; border-radius: 6px; }
+/* 推子旁边「乐手 −6 dB」：乐手自己的响度不是 0 才有，点了去乐器页那一行（第 14 条） */
+.strip .strip-perfdb { height: 20px; padding: 0 5px; margin-left: 4px; font-size: 11px; border-radius: 6px; color: var(--muted); vertical-align: middle; }
 .strip .strip-ms .btn.mute { background: color-mix(in srgb, var(--danger) 15%, var(--panel)); border-color: var(--danger); color: var(--danger); }
 .strip .strip-ms .btn.solo { background: color-mix(in srgb, var(--accent) 15%, var(--panel)); border-color: var(--accent); color: var(--accent); }
 .strip-who { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

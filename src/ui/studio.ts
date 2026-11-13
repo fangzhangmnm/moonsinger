@@ -18,7 +18,9 @@ import { paramRow, slider, wireParamRows } from "../keyboard/param-row.ts";
 import { stereoShape } from "./scopes.ts";
 import { sideDocked } from "../app/workspace.ts";
 
-export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string }   // color = 类别色（卡片顶边，v0.9.31）   // refs = 在几张纸上（0 = 能删）
+export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string;   // color = 类别色（卡片顶边，v0.9.31）
+  /** 上场那位乐手自己的「响度」（dB，候选的 calibrationDb；乐器页「响度」那一行）：渲染时和推子相加。不是 0 = 推子旁边照实写出来（第 14 条：推子写 0、实际轻 6 dB 是看不见的那一处）。 */
+  performerDb: number }   // refs = 在几张纸上（0 = 能删）
 export interface StudioHost {
   strips(): StudioStrip[];
   setGain(id: string, dB: number): void;
@@ -29,6 +31,8 @@ export interface StudioHost {
   close(): void;
   /** 删一位一张纸都不在的歌手（歌手管理；纸上不删）。 */
   deletePart(id: string): void;
+  /** 去这位歌手的乐器页、落在「响度」那一行（推子旁边「乐手 −6 dB」那颗钮）。 */
+  openPerformer(id: string): void;
   /** 总轨（2026-10-10 刀 3）：增益 dB + 母线限幅开关；进歌（studio.json master）。 */
   master(): { gainDb: number; limiter: boolean };
   setMasterGain(dB: number): void;
@@ -311,6 +315,7 @@ export class Studio {
     else if (v === "busbypass" && strip) { const b = this.host.buses().find((x) => x.id === strip); if (b) { this.host.setBusBypass(strip, !b.bypass); this.render(); } }
     else if ((v === "partleft" || v === "partright") && strip) { this.host.movePart(strip, v === "partleft" ? -1 : 1); this.render(); }
     else if (v === "delpart" && strip) this.host.deletePart(strip);
+    else if (v === "perfdb" && strip) this.host.openPerformer(strip);
     else if (v === "limiter") { this.host.toggleLimiter(); this.render(); }
     else if (v === "delbus" && strip) { if (this.open?.track === strip) this.open = null; this.host.removeBus(strip); this.render(); }
     else if ((v === "busleft" || v === "busright") && strip) { this.host.moveBus(strip, v === "busleft" ? -1 : 1); this.render(); }
@@ -548,7 +553,7 @@ export class Studio {
     this.renderBar();
     const nameDiv = (s: string) => `<div class="strip-name">${esc(s)}</div>`;
     // 发送页每张卡顶上带这条轨自己的增益推子（v0.16.82，总表第 9 条 ⑤：调平衡用；和基础页那根是同一个值）
-    const gainRow = (attrs: string, hint: string, db: number) => row(_t("增益"), hint, `<output>${dbText(db)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: db, attrs, def: 0, defText: "0 dB" }), "strip-row");
+    const gainRow = (attrs: string, hint: string, db: number, extra = "") => row(_t("增益"), hint, `<output>${dbText(db)}</output>${extra}`, slider({ min: -24, max: 12, step: 0.5, value: db, attrs, def: 0, defText: "0 dB" }), "strip-row");
     // 总轨
     const masterBody = tab === "basic" ? row(_t("增益"), HINT.masterGain, `<output>${dbText(m.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") +
         row(_t("限幅"), HINT.limiter, "", `<button class="btn cand${m.limiter ? " is-on" : ""}" data-v="limiter">${m.limiter ? _t("开着") : _t("关着（可能削波）")}</button>`, "strip-row") +
@@ -568,13 +573,15 @@ export class Studio {
     }).join("");
     // 歌手：顺序跟谱上的声部（user「歌手卡片的排序还是以五线谱为准」）
     const strips = this.host.strips(), singers = strips.map((s, k) => {
-      const body = tab === "basic" ? row(_t("增益"), HINT.gain, `<output>${dbText(s.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") +
+      // 乐手自己的响度不是 0 = 推子旁边照实写出来，点它去乐器页那一行（第 14 条，2026-11-12）；是 0 = 不写
+      const perf = s.performerDb ? `<button class="btn strip-perfdb" data-v="perfdb" title="${_t("这位乐手自己的响度（乐器页「响度」那一行），和推子相加：推子 {g}、乐手 {p} = 这条轨一共 {t}。点这里去乐器页改", { g: dbText(s.gainDb), p: dbText(s.performerDb), t: dbText(s.gainDb + s.performerDb) })}">${_t("乐手 {p}", { p: dbText(s.performerDb) })}</button>` : "";
+      const body = tab === "basic" ? row(_t("增益"), HINT.gain, `<output>${dbText(s.gainDb)}</output>${perf}`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") +
           row(_t("声像"), HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: 0, defText: _t("中") }), "strip-row") + RMS_ROW +
           `<div class="btn-row">` +
             `<button class="btn" data-v="partleft" title="${_t("往前挪一位（谱上这个声部也往上挪）")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="partright" title="${_t("往后挪一位（谱上这个声部也往下挪）")}"${k === strips.length - 1 ? " disabled" : ""}>›</button></div>` +
           // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
           (s.refs ? `<div class="strip-refs">${_t("在 {refs} 张纸上", { refs: s.refs })}</div>` : `<div class="strip-refs">${_t("哪张纸上都没有")} <button class="btn cand danger" data-v="delpart" title="${_t("删掉这个声部（它的乐器设置一起删；能撤销）")}">${_t("删掉这个声部")}</button></div>`)
-        : tab === "eq" || tab === "comp" ? this.inlineHtml(s.id, tab) : tab === "send" ? gainRow("data-gain", HINT.gain, s.gainDb) + this.routeHtml(s.id) : this.chipsHtml(s.id);
+        : tab === "eq" || tab === "comp" ? this.inlineHtml(s.id, tab) : tab === "send" ? gainRow("data-gain", HINT.gain, s.gainDb, perf) + this.routeHtml(s.id) : this.chipsHtml(s.id);
       // 静音 / 独奏 钉在名字右边、每一页都在（v0.10.34；原来在基础页卡片最底下，卡片定高 = 要在卡片里滚才看得到；user「混音台基础里面应该有mute和solo，和我们已经有的mute和solo绑定」）——
       //   和谱上歌手名下面的「静 / 独」、歌手牌里的是同一个开关（host.toggleMute / toggleSolo → 视图态）
       const ms = `<span class="strip-ms"><button class="btn${s.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("静音（这位不出声；和谱上声部名下面的「静」是同一个）")}">${_t("静")}</button><button class="btn${s.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("独奏（只听独奏的几位；和谱上的「独」是同一个）")}">${_t("独")}</button></span>`;
