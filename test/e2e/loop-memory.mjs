@@ -24,6 +24,28 @@ const toggleEditorLoop = async (p) => { await p.click("#playBtn", { button: "rig
   check(!(await looping(p)), "重新载入：关着");
   await ctx.close(); }
 
+// ── 自动翻、提前翻（v0.17.42：同一种做法，键 auto-follow / turn-lead）──
+{ const ctx = await b.newContext({ viewport: { width: 1100, height: 900 } }), p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message));
+  const menu = async (v) => { await p.click("#playBtn", { button: "right" }); await p.waitForTimeout(80); if (v) { await p.click(`.ctx-menu [data-v="${v}"]`); await p.waitForTimeout(100); return null; }
+    const st = await p.evaluate(() => ({ follow: document.querySelector('.ctx-menu [data-v="follow"]')?.textContent.startsWith("✓") ?? null, lead: document.querySelector(".ctx-menu .ctx-seg.is-on")?.dataset.v ?? null, turnLead: window.__moonsinger.transport().turnLead }));
+    await p.keyboard.press("Escape"); await p.waitForTimeout(80); return st; };
+  await p.goto(BASE); await p.waitForTimeout(800);
+  let st = await menu(); check(st.follow === true && st.lead === "lead:0.6" && st.turnLead === 0.6, "全新的设备：自动翻开着、提前 0.6 秒（现在的默认）", JSON.stringify(st));
+  await menu("lead:1"); await menu("follow");
+  await p.reload(); await p.waitForTimeout(900);
+  st = await menu(); check(st.follow === false && st.lead === "lead:1" && st.turnLead === 1, "点了「1 s」、关了自动翻 → 重新载入：还是 1 秒、关着", JSON.stringify(st));
+  await menu("lead:0"); await menu("follow");
+  await p.reload(); await p.waitForTimeout(900);
+  st = await menu(); check(st.follow === true && st.lead === "lead:0" && st.turnLead === 0, "点了「不」（0 秒）、开回自动翻 → 重新载入：0 秒、开着（0 不被当成没点过）", JSON.stringify(st));
+  check((await p.evaluate((k) => [localStorage.getItem(k + "auto-follow"), localStorage.getItem(k + "turn-lead")].join(","), PREFIX)) === "1,0", "设备上写的是点的那个值（auto-follow = 1、turn-lead = 0）");
+  await ctx.close(); }
+{ const ctx = await b.newContext({ viewport: { width: 1100, height: 900 } });
+  await ctx.addInitScript((k) => { localStorage.setItem(k + "turn-lead", "2.5"); localStorage.setItem(k + "auto-follow", "yes"); }, PREFIX);
+  const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message));
+  await p.goto(BASE); await p.waitForTimeout(800);
+  check((await p.evaluate(() => window.__moonsinger.transport().turnLead)) === 0.6, "设备上写着菜单上没有的值（2.5 秒、yes）= 不理，照默认 0.6 秒、开着");
+  await ctx.close(); }
+
 // ── 歌库播放条 ──
 const galleryLoop = async (preset) => {
   const ctx = await b.newContext({ viewport: { width: 1100, height: 900 } }); await ctx.addInitScript(FAKE_FSA);

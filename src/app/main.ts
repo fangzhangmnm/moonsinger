@@ -604,6 +604,9 @@ function setLibRemoved(lib: BuiltinLib, on: boolean): void {
 }
 /** 编辑器的「循环」记在这台设备上（user 2026-11-13；统筹「两个循环记在这台设备上」）：不进歌、不进撤销、不标脏；启动时读回来走 setLoop。歌库播放条的另记一个（gallery-host.ts）。 */
 const KV_LOOP_EDITOR = "loop-editor";
+/** 「自动翻」开不开、「提前翻」多少秒，也记在这台设备上（统筹「和两个循环同一种做法」，v0.17.42）：点的那一下写、启动时读回来；没点过 = 现在的样子（开着、0.6 秒）。
+ *  值：auto-follow = "1" / "0"；turn-lead = 秒数（只认菜单上那几档，别的值不理）。 */
+const KV_AUTO_FOLLOW = "auto-follow", KV_TURN_LEAD = "turn-lead";
 /** 这台设备的习惯（施工单第 18 条第三版；src/look/habits.ts）：看什么谱、要不要移调辅助、中央 C 叫 C 几，设备键值里各记各的（habit-notation / habit-transpose-aid / habit-middle-c），
  *  不同步、不进歌。歌里某一项是「跟着软件」时照它；没选 = 软件的默认。读一次记在这里，设置里 / 卡上改了换一份（lookOf 一帧调很多次，不每次读设备）。 */
 let habitCtx: LookContext = { habits: habitsFrom(deviceKvGet) };
@@ -1190,6 +1193,9 @@ const perfApi = createPerformance({
 const { humOpt, resetLatencyLog, refreshIssues, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, renderMixForTest, tickOfCaret, playPause, resumePlay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, onSongSwitch, jumpPlaybackToPaper, previewTrack } = perfApi;
 if (deviceKvGet(KV_LOOP_EDITOR) === "1") setLoop(true);   // 编辑器的「循环」：上次在这台设备上开着 = 开着、|▶ 上的角标跟着亮（新设备、还原出厂 = 关着）
 const BUDGET = perfApi.budget, TURN_LEADS = perfApi.TURN_LEADS;
+{ const f = deviceKvGet(KV_AUTO_FOLLOW), l = deviceKvGet(KV_TURN_LEAD);   // 自动翻、提前翻：上次在这台设备上点的（新设备、还原出厂 = 开着、0.6 秒）
+  if (f === "1" || f === "0") view.autoFollow = f === "1";
+  if (l != null && (TURN_LEADS as readonly number[]).includes(Number(l))) perfApi.turnLead = Number(l); }
 /** 焦点在能打字的框里（文字输入 / 多行）：空格归它。推子（range）、下拉、按钮不算。 */
 function typingIn(t: EventTarget | null): boolean { const el = t as HTMLElement | null; if (!el) return false; if (el.tagName === "TEXTAREA" || el.isContentEditable) return true; return el.tagName === "INPUT" && !["range", "checkbox", "radio", "button"].includes((el as HTMLInputElement).type); }
 /** 混音台上一条轨的 id → studio.json 里那条轨的 id（歌手 = 它的麦克风轨；路由轨 = 自己）。 */
@@ -1278,9 +1284,9 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
     if (v === "resume") resumePlay();
-    else if (v.startsWith("lead:")) { perfApi.turnLead = Number(v.slice(5)); info(perfApi.turnLead ? _t("翻谱提前 {turnLead} 秒", { turnLead: perfApi.turnLead }) : _t("翻谱不提前（换了行才翻）")); }
+    else if (v.startsWith("lead:")) { perfApi.turnLead = Number(v.slice(5)); deviceKvSet(KV_TURN_LEAD, String(perfApi.turnLead)); info(perfApi.turnLead ? _t("翻谱提前 {turnLead} 秒", { turnLead: perfApi.turnLead }) : _t("翻谱不提前（换了行才翻）")); }
     else if (v === "reveal") { if (!view.revealPlayhead()) info(_t("现在没有在放的地方")); }
-    else if (v === "follow") { view.autoFollow = !view.autoFollow; info(view.autoFollow ? _t("自动翻：开") : _t("自动翻：关")); }
+    else if (v === "follow") { view.autoFollow = !view.autoFollow; deviceKvSet(KV_AUTO_FOLLOW, view.autoFollow ? "1" : "0"); info(view.autoFollow ? _t("自动翻：开") : _t("自动翻：关")); }
     else if (v === "loop") { const on = !perfApi.loopOn; setLoop(on); deviceKvSet(KV_LOOP_EDITOR, on ? "1" : null); }   // 点的那一下就记在这台设备上（user 2026-11-13「每次我点了它都不循环就很烦」）；「听接缝」的临时循环不走这里、不记
     else if (v === "head") playFromHead();
     else if (v === "seam") playSeam();
