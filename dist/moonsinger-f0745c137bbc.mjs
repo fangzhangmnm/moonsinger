@@ -3977,6 +3977,8 @@ var S = {
   "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F {name}\uFF09": { en: "Rename local files in your file manager (currently {name})" },
   "\u6587\u4EF6\u540D": { en: "File name" },
   "\u6539\u2026": { en: "Rename\u2026" },
+  "\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u53EA\u80FD\u770B": { en: "This song is locked: view only" },
+  "\u89E3\u9501": { en: "Unlock" },
   "\u540D\u5B57": { en: "Name" },
   "\u6B4C\u540D": { en: "Title" },
   "\u4F5C\u8005\u548C\u8BB8\u53EF": { en: "Author and license" },
@@ -4862,7 +4864,10 @@ var S = {
   "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u6587\u4EF6\u91CC\u6CA1\u6709": { en: "No one is performing yet: the file has no performer for this part" },
   "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF0C\u8FD9\u4E00\u7248\u8BA4\u4E0D\u51FA\uFF09": { en: "Nobody on stage yet (the other software's original instrument isn't recognized by this version)" },
   "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u8BFB\u4E0D\u61C2": { en: "No one is performing yet: this part\u2019s performer cannot be read" },
-  "{next}\u3002\u8FD9{p}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "{next}. {p} silent in both playback and export, the rest plays as usual; tap the number on the corner of |\u25B6 for the list, and tap the part name at the front of the score to change \u201CWho performs\u201D." },
+  "\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u88AB\u4F60\u5220\u4E86\u7684\u5E93\u5728\u6E05\u5355\u91CC\u80FD\u88C5\u56DE\u6765\uFF1B\u522B\u7684\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "Tap the number on the corner of |\u25B6 for the list; a library you deleted can be put back from there. For the others, tap the part name at the front of the score to change \u201CWho performs\u201D." },
+  "\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\uFF0C\u6E05\u5355\u91CC\u80FD\u88C5\u56DE\u6765\u3002": { en: "Tap the number on the corner of |\u25B6; you can put it back from the list." },
+  "\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "Tap the number on the corner of |\u25B6 for the list, and tap the part name at the front of the score to change \u201CWho performs\u201D." },
+  "{next}\u3002\u8FD9{p}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B{what}": { en: "{next}. {p} silent in both playback and export, the rest plays as usual; {what}" },
   "\u73B0\u5728\u7684\u58F0\u90E8\u90FD\u80FD\u51FA\u58F0\u4E86": { en: "All parts can sound now" },
   "\u300C{who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A{failed}": { en: "\u201C{who}\u201D can't sing this line: {failed}" },
   "{who}\uFF1A{pumpQuiet} {left} \u53E5\u2026": { en: "{who}: {pumpQuiet} {left} lines\u2026" },
@@ -4871,8 +4876,9 @@ var S = {
   "\u300C{who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A{msg}": { en: "\u201C{who}\u201D can't sing this line: {msg}" },
   "\u5185\u5B58 / \u8D1F\u8F7D\u5403\u7D27\uFF1A\u5C0F\u6708\u76F8\u6539\u6210\u4E00\u6761\u9053\u5531\uFF08\u6162\u4E00\u70B9\uFF0C\u58F0\u97F3\u4E0D\u53D8\uFF09": { en: "Memory / load is tight: Tsukuyomi-chan now sings on one lane (slower, same sound)" },
   "\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 {p}%\uFF1A\u53EF\u80FD\u7206\u97F3\u3002\u6548\u679C\u94FE / \u58F0\u90E8\u662F\u4F60\u7684\u6DF7\u97F3\uFF0C\u4E0D\u66FF\u4F60\u52A8\uFF1B\u53EF\u4EE5\u5148\u628A\u6CA1\u5728\u542C\u7684\u58F0\u90E8\u9759\u97F3": { en: "The audio thread was {p}% busy in the last 1 s: it may crackle. Effects and parts are your mix, so nothing changes automatically; you could mute parts you aren't listening to" },
-  "\u6CA1\u6709\u51FA\u58F0\uFF1A{issues}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "Nothing sounded: {issues}. Tap the part name at the front of the score to change \u201CWho performs\u201D." },
+  "\u6CA1\u6709\u51FA\u58F0\uFF1A{issues}\u3002{what}": { en: "Nothing sounded: {issues}. {what}" },
   "\u6CA1\u6709\u4F1A\u51FA\u58F0\u7684\u58F0\u90E8": { en: "No parts that can sound" },
+  "\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "Tap the part name at the front of the score to change \u201CWho performs\u201D." },
   "\u5FAA\u73AF {loopFrom} \u79D2": { en: "Loop {loopFrom} s" },
   "{atNow} \u79D2": { en: "{atNow} s" },
   "\u653E\u4E0D\u4E86\uFF1A{Error}": { en: "Can't play: {Error}" },
@@ -6342,7 +6348,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.26-2026-11-13";
+var APP_VERSION = "v0.17.27-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -35124,15 +35130,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick2(() => "singer-worker-5560aca67848.mjs");
+      return pick2(() => "singer-worker-4b1d4b4f3b5a.mjs");
     case "mp3-worker":
       return pick2(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick2(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick2(() => "layout-worker-7d60d0b6d081.mjs");
+      return pick2(() => "layout-worker-2b4775fa7c7c.mjs");
     case "encode-worker":
-      return pick2(() => "encode-worker-3f4c6b2dcd2c.mjs");
+      return pick2(() => "encode-worker-0672706735fb.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -43150,6 +43156,10 @@ function createPerformance(host2) {
     });
   }
   const issuesText = (list2) => list2.map((i10) => `\u300C${i10.label}\u300D\uFF1A${i10.why}`).join("\uFF1B");
+  const issuesWhatNow = (list2) => {
+    const removed = list2.some((i10) => i10.kind === "removed"), other = list2.some((i10) => i10.kind !== "removed");
+    return removed && other ? _t("\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u88AB\u4F60\u5220\u4E86\u7684\u5E93\u5728\u6E05\u5355\u91CC\u80FD\u88C5\u56DE\u6765\uFF1B\u522B\u7684\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002") : removed ? _t("\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\uFF0C\u6E05\u5355\u91CC\u80FD\u88C5\u56DE\u6765\u3002") : _t("\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002");
+  };
   function refreshIssues2() {
     const next2 = computeIssues(), key = JSON.stringify(next2.map((i10) => [i10.part, i10.kind, i10.why]));
     if (key === issuesKey) return;
@@ -43157,7 +43167,7 @@ function createPerformance(host2) {
     issuesKey = key;
     issues = next2;
     host2.ui.onIssues(next2);
-    if (next2.length) showError2(_t("{next}\u3002\u8FD9{p}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002", { next: issuesText(next2), p: next2.length > 1 ? _t("{n} \u6761\u8F68", { n: next2.length }) : _t("\u6761\u8F68") }));
+    if (next2.length) showError2(_t("{next}\u3002\u8FD9{p}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B{what}", { next: issuesText(next2), p: next2.length > 1 ? _t("{n} \u6761\u8F68", { n: next2.length }) : _t("\u6761\u8F68"), what: issuesWhatNow(next2) }));
     else if (had) info2(_t("\u73B0\u5728\u7684\u58F0\u90E8\u90FD\u80FD\u51FA\u58F0\u4E86"));
   }
   let chunkKeysWanted = [];
@@ -43367,7 +43377,7 @@ function createPerformance(host2) {
     }
     refreshIssues2();
     if (!tl2.tracks.length) {
-      showError2(_t("\u6CA1\u6709\u51FA\u58F0\uFF1A{issues}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002", { issues: issuesText(issues) || _t("\u6CA1\u6709\u4F1A\u51FA\u58F0\u7684\u58F0\u90E8") }));
+      showError2(_t("\u6CA1\u6709\u51FA\u58F0\uFF1A{issues}\u3002{what}", { issues: issuesText(issues) || _t("\u6CA1\u6709\u4F1A\u51FA\u58F0\u7684\u58F0\u90E8"), what: issues.some((i10) => i10.kind === "removed") ? issuesWhatNow(issues) : _t("\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002") }));
       return null;
     }
     pruneChunks(tl2);
@@ -59647,9 +59657,8 @@ function initEditLockDoor(d3) {
     drawnFor = key;
     el2.innerHTML = `<span class="lock-bar-what">${iconHtml2("lock")}<span>${_t("\u9501\u7740")}</span></span><button type="button" class="btn primary" data-v="continue" title="${_t("\u89E3\u9501\uFF0C\u63A5\u7740\u6539\u8FD9\u4E00\u9996\u3002\u653E\u7740\u4E00\u5929\u4E0D\u52A8\u4F1A\u81EA\u5DF1\u9501\u4E0A\uFF1B\u968F\u65F6\u80FD\u5728\u4E09\u6761\u6760\u91CC\u300C\u9501\u4E0A\u300D")}">${_t("\u63A5\u7740\u6539")}</button>` + (local ? "" : `<button type="button" class="btn" data-v="version" title="${_t("\u5148\u628A\u73B0\u5728\u7684\u6837\u5B50\u5B58\u4E00\u7248\u7559\u5E95\uFF08\u6536\u5728\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5361\u7247\u4E0B\u9762\uFF09\uFF0C\u518D\u89E3\u9501\u63A5\u7740\u6539")}">${_t("\u5B58\u4E00\u7248\u518D\u6539")}</button>`);
   }
-  el2.addEventListener("click", (e10) => {
-    const v = e10.target.closest("[data-v]")?.dataset.v;
-    if (!v || busy) return;
+  function act(v) {
+    if (busy || !d3.lock.locked()) return;
     if (d3.lock.isLocalFile()) {
       if (v === "continue") d3.lock.unlockLocalFile();
       return;
@@ -59660,6 +59669,10 @@ function initEditLockDoor(d3) {
     void (v === "version" ? d3.saveVersionThenUnlock(id2) : d3.unlock(id2)).catch(() => false).finally(() => {
       busy = false;
     });
+  }
+  el2.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (v) act(v);
   });
   d3.lock.onChange(() => sync());
   d3.lock.onFlash(() => {
@@ -59670,7 +59683,7 @@ function initEditLockDoor(d3) {
     el2.classList.add("flash");
   });
   sync();
-  return { sync };
+  return { sync, continueEdit: () => act("continue") };
 }
 
 // src/app/render-cache-idb.ts
@@ -62429,7 +62442,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, activePerfSpec(D3.extras, curRole())?.sing ?? {});
   },
   state: () => D3.st,
-  cssHash: "42ce92693bf3",
+  cssHash: "188e352b249f",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -63144,13 +63157,15 @@ function openSongPanel(focus) {
     });
     return [...used].map(([k2, v]) => _t("{lib}\uFF08{parts}\uFF09", { lib: k2, parts: v.join("\u3001") })).join(" \xB7 ");
   };
+  let drawnLocked = lock.locked();
   const draw = () => {
     if (coverUrl) URL.revokeObjectURL(coverUrl);
+    const locked = drawnLocked = lock.locked();
     const song = D3.st.song, thumb = D3.extras.thumbnail;
     coverUrl = thumb ? URL.createObjectURL(new Blob([thumb], { type: "image/png" })) : null;
     const file = H2.home.kind === "file" ? `<div class="set-row"><span class="set-note">${esc13(_t("\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F {name}\uFF09", { name: H2.home.handle.name }))}</span></div>` : `<div class="set-row lib-line"><span>${_t("\u6587\u4EF6\u540D")}\uFF1A${esc13(docName())}${SONG_SUFFIX}</span><button class="btn" data-v="rename">${_t("\u6539\u2026")}</button></div>`;
     const sounds = soundsSection(), used = libsUsed(), missing = perfApi.issues();
-    content.innerHTML = settingRowHtml({
+    content.innerHTML = (locked ? `<div class="set-row lock-line"><span class="lock-line-what">${iconHtml2("lock")}<span>${_t("\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u53EA\u80FD\u770B")}</span></span><button class="btn primary" data-v="unlock">${_t("\u89E3\u9501")}</button></div>` : "") + settingRowHtml({
       labelHtml: esc13(_t("\u540D\u5B57")),
       attrs: { "data-sec": "name" },
       belowHtml: `<label class="set-field">${_t("\u6B4C\u540D")}<input id="songTitleIn" type="text" spellcheck="false" autocomplete="off" value="${esc13(song.title ?? "")}" /></label>` + file
@@ -63174,8 +63189,13 @@ function openSongPanel(focus) {
         void setCover(f2).then(draw);
       }
     });
+    if (locked) {
+      for (const el2 of content.querySelectorAll('#songTitleIn, #crIn, #rtIn, #coverIn, [data-r], [data-v="coverOff"], [data-v="pack"], [data-v="unpack"]')) el2.disabled = true;
+      content.querySelector("#coverIn")?.closest("label")?.classList.add("is-disabled");
+    }
   };
   const commitText = () => {
+    if (drawnLocked) return;
     const ti2 = content.querySelector("#songTitleIn"), ta2 = content.querySelector("#crIn"), rt2 = content.querySelector("#rtIn");
     if (!ti2 || !ta2 || !rt2) return;
     let st2 = D3.st;
@@ -63209,9 +63229,12 @@ function openSongPanel(focus) {
       scoreEl.focus();
     }
   });
-  ui2.open({ k: "sheet", close: closeByHost });
+  ui2.open({ k: "sheet", close: closeByHost, redraw: () => {
+    if (lock.locked() !== drawnLocked) draw();
+  } });
   content.addEventListener("click", (e10) => {
     const t10 = e10.target, r10 = t10.closest("[data-r]")?.dataset.r;
+    if (drawnLocked && (r10 !== void 0 || t10.closest('[data-v="coverOff"], [data-v="pack"], [data-v="unpack"]'))) return;
     if (r10 !== void 0) {
       const rt2 = content.querySelector("#rtIn");
       const k2 = Number(r10);
@@ -63221,6 +63244,10 @@ function openSongPanel(focus) {
     }
     const v = t10.closest("[data-v]")?.dataset.v;
     if (!v) return;
+    if (v === "unlock") {
+      lockDoor.continueEdit();
+      return;
+    }
     if (v === "coverOff") {
       commitText();
       updateExtras(withThumbnail(D3.extras, null), { kind: "cover", label: _t("\u53BB\u6389\u5C01\u9762\u56FE") });
@@ -66924,4 +66951,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-d07a99237db9.mjs.map
+//# sourceMappingURL=moonsinger-f0745c137bbc.mjs.map

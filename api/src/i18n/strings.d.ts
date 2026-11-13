@@ -1180,6 +1180,12 @@ export declare const S: {
     readonly "\u6539\u2026": {
         readonly en: "Rename…";
     };
+    readonly "\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u53EA\u80FD\u770B": {
+        readonly en: "This song is locked: view only";
+    };
+    readonly 解锁: {
+        readonly en: "Unlock";
+    };
     readonly 名字: {
         readonly en: "Name";
     };
@@ -3835,8 +3841,17 @@ export declare const S: {
     readonly "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u8BFB\u4E0D\u61C2": {
         readonly en: "No one is performing yet: this part’s performer cannot be read";
     };
-    readonly "{next}\u3002\u8FD9{p}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": {
-        readonly en: "{next}. {p} silent in both playback and export, the rest plays as usual; tap the number on the corner of |▶ for the list, and tap the part name at the front of the score to change “Who performs”.";
+    readonly "\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u88AB\u4F60\u5220\u4E86\u7684\u5E93\u5728\u6E05\u5355\u91CC\u80FD\u88C5\u56DE\u6765\uFF1B\u522B\u7684\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": {
+        readonly en: "Tap the number on the corner of |▶ for the list; a library you deleted can be put back from there. For the others, tap the part name at the front of the score to change “Who performs”.";
+    };
+    readonly "\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\uFF0C\u6E05\u5355\u91CC\u80FD\u88C5\u56DE\u6765\u3002": {
+        readonly en: "Tap the number on the corner of |▶; you can put it back from the list.";
+    };
+    readonly "\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": {
+        readonly en: "Tap the number on the corner of |▶ for the list, and tap the part name at the front of the score to change “Who performs”.";
+    };
+    readonly "{next}\u3002\u8FD9{p}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B{what}": {
+        readonly en: "{next}. {p} silent in both playback and export, the rest plays as usual; {what}";
     };
     readonly 现在的声部都能出声了: {
         readonly en: "All parts can sound now";
@@ -3862,11 +3877,14 @@ export declare const S: {
     readonly "\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 {p}%\uFF1A\u53EF\u80FD\u7206\u97F3\u3002\u6548\u679C\u94FE / \u58F0\u90E8\u662F\u4F60\u7684\u6DF7\u97F3\uFF0C\u4E0D\u66FF\u4F60\u52A8\uFF1B\u53EF\u4EE5\u5148\u628A\u6CA1\u5728\u542C\u7684\u58F0\u90E8\u9759\u97F3": {
         readonly en: "The audio thread was {p}% busy in the last 1 s: it may crackle. Effects and parts are your mix, so nothing changes automatically; you could mute parts you aren't listening to";
     };
-    readonly "\u6CA1\u6709\u51FA\u58F0\uFF1A{issues}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": {
-        readonly en: "Nothing sounded: {issues}. Tap the part name at the front of the score to change “Who performs”.";
+    readonly "\u6CA1\u6709\u51FA\u58F0\uFF1A{issues}\u3002{what}": {
+        readonly en: "Nothing sounded: {issues}. {what}";
     };
     readonly 没有会出声的声部: {
         readonly en: "No parts that can sound";
+    };
+    readonly "\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": {
+        readonly en: "Tap the part name at the front of the score to change “Who performs”.";
     };
     readonly "\u5FAA\u73AF {loopFrom} \u79D2": {
         readonly en: "Loop {loopFrom} s";

@@ -137,12 +137,19 @@ export function createPerformance(host: PerfHost) {
     });
   }
   const issuesText = (list: readonly Issue[]): string => list.map((i) => `「${i.label}」：${i.why}`).join("；");
+  /** 提示条末尾那一句「怎么办」：被你删了的库 = 清单里能装回来；别的 = 换一个「谁来演」（统筹「v0.17.26 收」小的那条）。 */
+  const issuesWhatNow = (list: readonly Issue[]): string => {
+    const removed = list.some((i) => i.kind === "removed"), other = list.some((i) => i.kind !== "removed");
+    return removed && other ? _t("点 |▶ 角上的数字看清单，被你删了的库在清单里能装回来；别的点谱前面的声部名换一个「谁来演」。")
+      : removed ? _t("点 |▶ 角上的数字，清单里能装回来。")
+      : _t("点 |▶ 角上的数字看清单，点谱前面的声部名换一个「谁来演」。");
+  };
   /** 重算清单；**变了**才说一句（user 10-14「一直弹窗很烦」）+ 通知宿主重画角标。开歌 / 换人 / 写了第一个音 / 准备过一次都会来。 */
   function refreshIssues(): void {
     const next = computeIssues(), key = JSON.stringify(next.map((i) => [i.part, i.kind, i.why]));
     if (key === issuesKey) return;
     const had = issues.length; issuesKey = key; issues = next; host.ui.onIssues(next);
-    if (next.length) showError(_t("{next}。这{p}放和导出都不出声，其余照放；点 |▶ 角上的数字看清单，点谱前面的声部名换一个「谁来演」。", { next: issuesText(next), p: next.length > 1 ? _t("{n} 条轨", { n: next.length }) : _t("条轨") }));
+    if (next.length) showError(_t("{next}。这{p}放和导出都不出声，其余照放；{what}", { next: issuesText(next), p: next.length > 1 ? _t("{n} 条轨", { n: next.length }) : _t("条轨"), what: issuesWhatNow(next) }));
     else if (had) info(_t("现在的声部都能出声了"));
   }
   /** 月读的块 = 调度器（src/engine/scheduler.ts）+ 一次一块的泵（刀 2，边算边放；user「第一句好了就开播 嗯」「实时播放的时候…预提前算然后用cache invalid」）：
@@ -293,7 +300,7 @@ export function createPerformance(host: PerfHost) {
     for (const e of errs) prepErrs.set(e.part, e.lib ? { cand: e.cand, kind: "removed", why: e.why, lib: e.lib } : { cand: e.cand, kind: "sound", why: e.why });   // 认种类靠错上带的 lib，不比字
     for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); }
     refreshIssues();
-    if (!tl.tracks.length) { showError(_t("没有出声：{issues}。点谱前面的声部名换一个「谁来演」。", { issues: issuesText(issues) || _t("没有会出声的声部") })); return null; }   // 一个都放不了 = 这一下必须说
+    if (!tl.tracks.length) { showError(_t("没有出声：{issues}。{what}", { issues: issuesText(issues) || _t("没有会出声的声部"), what: issues.some((i) => i.kind === "removed") ? issuesWhatNow(issues) : _t("点谱前面的声部名换一个「谁来演」。") })); return null; }   // 一个都放不了 = 这一下必须说
     pruneChunks(tl);
     if (o.chunks !== false) await awaitAllChunks(tl);
     pushChannels(o.raw);

@@ -23,6 +23,8 @@ export interface EditLockDoorDeps {
 export interface EditLockDoor {
   /** 按现在的锁态和家重画（换歌之后叫：锁态没变但钮的个数可能变了）。 */
   sync(): void;
+  /** 「接着改」= 门上那颗钮的同一个动作。别处一颗「解锁」钮（「这首歌」面板顶上那一行，v0.17.27）点了调它；**只许挂在人的点击上**（test/edit-lock-guard.test.mjs 钉调用点）。 */
+  continueEdit(): void;
 }
 
 export function initEditLockDoor(d: EditLockDoorDeps): EditLockDoor {
@@ -40,14 +42,14 @@ export function initEditLockDoor(d: EditLockDoorDeps): EditLockDoor {
       `<button type="button" class="btn primary" data-v="continue" title="${_t("解锁，接着改这一首。放着一天不动会自己锁上；随时能在三条杠里「锁上」")}">${_t("接着改")}</button>` +
       (local ? "" : `<button type="button" class="btn" data-v="version" title="${_t("先把现在的样子存一版留底（收在歌库里这首歌的卡片下面），再解锁接着改")}">${_t("存一版再改")}</button>`);
   }
-  el.addEventListener("click", (e) => {
-    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
-    if (!v || busy) return;
+  function act(v: string): void {
+    if (busy || !d.lock.locked()) return;
     if (d.lock.isLocalFile()) { if (v === "continue") d.lock.unlockLocalFile(); return; }
     const id = d.activeIdentifier(); if (!id) return;
     busy = true;
     void (v === "version" ? d.saveVersionThenUnlock(id) : d.unlock(id)).catch(() => false).finally(() => { busy = false; });   // 成没成图库库都说过了；解成了 → 库的 watchUnlocks → 锁态变 → 门收掉
-  });
+  }
+  el.addEventListener("click", (e) => { const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (v) act(v); });
   d.lock.onChange(() => sync());
   d.lock.onFlash(() => {
     if (!d.lock.locked()) return;
@@ -55,5 +57,5 @@ export function initEditLockDoor(d: EditLockDoorDeps): EditLockDoor {
     el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");   // 重新触发一次动画
   });
   sync();
-  return { sync };
+  return { sync, continueEdit: () => act("continue") };
 }

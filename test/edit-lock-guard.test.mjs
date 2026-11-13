@@ -28,6 +28,13 @@ describe("修改锁 · 解锁只在人的手势里（调用点名单）", () => 
     const door = code("src/app/edit-lock-door.ts");
     assert(/addEventListener\("click"/.test(door) && !/setTimeout|setInterval|requestAnimationFrame/.test(door), "门里的解锁只挂在点击上，没有定时器");
   });
+  it("门的「接着改」continueEdit（别处的「解锁」钮用）：只有 main.ts「这首歌」面板里点「解锁」那一处（v0.17.27）", () => {
+    eq(users(/\bcontinueEdit\s*\(/).join(","), "src/app/edit-lock-door.ts,src/app/main.ts");
+    const hits = code("src/app/main.ts").split("\n").filter((l) => /\bcontinueEdit\s*\(/.test(l));
+    assert(hits.length === 1 && /v === "unlock"/.test(hits[0]), hits.join("\n"));
+    const main = code("src/app/main.ts"), at = main.indexOf(hits[0]), fn = main.lastIndexOf("function openSongPanel", at), click = main.lastIndexOf('content.addEventListener("click"', at);
+    assert(fn > 0 && click > fn, "只挂在「这首歌」面板的点击上");
+  });
   it("「这个句柄生来解着」keepLocalFileUnlocked：只有 main.ts 接到 home 的 onFileBorn 那一处", () => {
     eq(users(/\bkeepLocalFileUnlocked\s*\(/).join(","), "src/app/edit-lock.ts,src/app/main.ts");
     const hits = code("src/app/main.ts").split("\n").filter((l) => /keepLocalFileUnlocked\s*\(/.test(l));

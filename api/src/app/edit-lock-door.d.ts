@@ -13,5 +13,7 @@ export interface EditLockDoorDeps {
 export interface EditLockDoor {
     /** 按现在的锁态和家重画（换歌之后叫：锁态没变但钮的个数可能变了）。 */
     sync(): void;
+    /** 「接着改」= 门上那颗钮的同一个动作。别处一颗「解锁」钮（「这首歌」面板顶上那一行，v0.17.27）点了调它；**只许挂在人的点击上**（test/edit-lock-guard.test.mjs 钉调用点）。 */
+    continueEdit(): void;
 }
 export declare function initEditLockDoor(d: EditLockDoorDeps): EditLockDoor;

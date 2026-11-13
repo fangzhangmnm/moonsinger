@@ -219,6 +219,7 @@ body.listen-mode .ink-caret { display: none; }
 /* 「好了」面板（导出歌声后：分享 / 下载 / 关；应用内，不用系统弹窗） */
 .offer { position: fixed; inset: 0; z-index: var(--z-sheet); display: flex; align-items: center; justify-content: center; background: rgba(40, 38, 34, .28); padding: 16px; }
 .offer-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; width: min(360px, 100%); box-shadow: 0 8px 28px rgba(0, 0, 0, .14); }
+.wbe-panel { --bg: var(--panel); }   /* 面板外壳（零件库 openPanelShell）的底色 = 白，和设置 / 页面设置一个样子（统筹「v0.17.26 收」第 2 条：在本仓把壳用的变量对过来，不改库）；壳是以后唯一的面板外壳 */
 .offer-title { font-weight: 600; margin-bottom: 6px; }
 .offer-msg { color: var(--muted); font-size: 13px; margin-bottom: 14px; overflow-wrap: anywhere; }
 .offer-btns { display: flex; gap: 8px; justify-content: flex-end; }
@@ -1232,6 +1233,12 @@ button.chord-cand.is-on { box-shadow: 0 0 0 2px var(--accent) inset; }
 @keyframes lock-flash { 0%, 100% { background: var(--bg); } 30% { background: color-mix(in srgb, var(--accent) 24%, var(--bg)); } }
 .lock-bar.flash { animation: lock-flash .5s ease-out 1; }
 @media (prefers-reduced-motion: reduce) { .lock-bar.flash { animation: none; outline: 2px solid var(--accent); outline-offset: -2px; } }
+/* 「这首歌」面板锁着时（v0.17.27；统筹「v0.17.26 收」第 1 条）：顶上一行「这首歌锁着，只能看」+「解锁」；能改的那几样灰着、不收输入（disabled），看的照常 */
+.song-panel .lock-line { justify-content: space-between; gap: 8px; padding: 6px 10px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 8px; background: color-mix(in srgb, var(--muted) 10%, var(--panel)); color: var(--muted); font-size: 14px; }
+.song-panel .lock-line-what { display: inline-flex; align-items: center; gap: 6px; }
+.song-panel .lock-line-what .ico { width: 16px; height: 16px; }
+.song-panel :is(input, textarea):disabled { opacity: .55; cursor: default; -webkit-user-select: none; user-select: none; }
+.song-panel label.btn.is-disabled { opacity: .35; cursor: default; pointer-events: none; }
 body.doc-locked .inst-page .ip-card { pointer-events: none; opacity: .72; }
 body.doc-locked .inst-page .ip-pad { pointer-events: auto; opacity: 1; }
 body.doc-locked .studio :is(.studio-strips, .fx-panel, .mix-menu) :is(input, select, button, textarea) { pointer-events: none; opacity: .55; }

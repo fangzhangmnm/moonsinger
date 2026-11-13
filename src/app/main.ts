@@ -2050,13 +2050,18 @@ function openSongPanel(focus?: "name" | "credits" | "cover" | "sounds"): void {
     });
     return [...used].map(([k, v]) => _t("{lib}（{parts}）", { lib: k, parts: v.join("、") })).join(" · ");
   };
+  /** 画的时候锁着没有（修改锁两层：界面灰、不收输入 + 写入口拒；统筹「v0.17.26 收」第 1 条）。锁着：歌名 / 作者栏 / 许可（含预设）/ 封面的选图和去掉 / 打包解包灰着；
+   *  文件名「改…」（改名不归锁管）、「看清单…」、署名的展开和复制照常。顶上一行 + 「解锁」= 谱上面那扇门的「接着改」。 */
+  let drawnLocked = lock.locked();
   const draw = () => {
     if (coverUrl) URL.revokeObjectURL(coverUrl);
+    const locked = drawnLocked = lock.locked();
     const song = D.st.song, thumb = D.extras.thumbnail; coverUrl = thumb ? URL.createObjectURL(new Blob([thumb as unknown as BlobPart], { type: "image/png" })) : null;
     const file = H.home.kind === "file" ? `<div class="set-row"><span class="set-note">${esc(_t("本机文件的名字在文件管理器里改（现在是 {name}）", { name: H.home.handle.name }))}</span></div>`
       : `<div class="set-row lib-line"><span>${_t("文件名")}：${esc(docName())}${SONG_SUFFIX}</span><button class="btn" data-v="rename">${_t("改…")}</button></div>`;
     const sounds = soundsSection(), used = libsUsed(), missing = perfApi.issues();
     content.innerHTML =
+      (locked ? `<div class="set-row lock-line"><span class="lock-line-what">${iconHtml("lock")}<span>${_t("这首歌锁着，只能看")}</span></span><button class="btn primary" data-v="unlock">${_t("解锁")}</button></div>` : "") +
       settingRowHtml({ labelHtml: esc(_t("名字")), attrs: { "data-sec": "name" },
         belowHtml: `<label class="set-field">${_t("歌名")}<input id="songTitleIn" type="text" spellcheck="false" autocomplete="off" value="${esc(song.title ?? "")}" /></label>` + file }) +
       settingRowHtml({ labelHtml: esc(_t("作者和许可")), attrs: { "data-sec": "credits" },
@@ -2078,9 +2083,14 @@ function openSongPanel(focus?: "name" | "credits" | "cover" | "sounds"): void {
           (sounds || `<div class="offer-msg">${_t("这首歌没用乐器的声音文件（小月相 / 元音版的声音随 app 走，不进歌）。")}</div>`) }) +
       settingRowHtml({ labelHtml: esc(_t("署名")), attrs: { "data-sec": "credit-lines" }, belowHtml: performersBlock(soundingRoles(), _t("这首歌用了谁的声音")) || `<div class="offer-msg">${_t("还没有可署的名")}</div>` });
     content.querySelector<HTMLInputElement>("#coverIn")!.addEventListener("change", (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) { commitText(); void setCover(f).then(draw); } });
+    if (locked) {
+      for (const el of content.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement>('#songTitleIn, #crIn, #rtIn, #coverIn, [data-r], [data-v="coverOff"], [data-v="pack"], [data-v="unpack"]')) el.disabled = true;
+      content.querySelector("#coverIn")?.closest("label")?.classList.add("is-disabled");
+    }
   };
   /** 歌名、作者栏、许可：一起写进去（改了才写；一步撤销）。 */
   const commitText = () => {
+    if (drawnLocked) return;   // 锁着画的：框是灰的、没收过字，不去敲写入口（不然门白闪一下）
     const ti = content.querySelector<HTMLInputElement>("#songTitleIn"), ta = content.querySelector<HTMLTextAreaElement>("#crIn"), rt = content.querySelector<HTMLInputElement>("#rtIn"); if (!ti || !ta || !rt) return;
     let st = D.st;
     if (ti.value !== (st.song.title ?? "")) st = setTitle(st, ti.value);
@@ -2093,11 +2103,13 @@ function openSongPanel(focus?: "name" | "credits" | "cover" | "sounds"): void {
   const closeByHost = () => { commitText(); shell.close(); cleanup(); ui.closed(closeByHost); scoreEl.focus(); };
   const shell = openPanelShell({ title: _t("这首歌"), content, width: "wide", buttons: [{ id: "ok", label: _t("好"), primary: true }], closeId: "ok",
     onClose: () => { commitText(); cleanup(); ui.closed(closeByHost); scoreEl.focus(); } });
-  ui.open({ k: "sheet", close: closeByHost });
+  ui.open({ k: "sheet", close: closeByHost, redraw: () => { if (lock.locked() !== drawnLocked) draw(); } });   // 锁态变了才重画（解了锁 = 都能改；锁上时 lock.onChange 先把面板关了）；别的重画不碰正在打的字
   content.addEventListener("click", (e) => {
     const t = e.target as HTMLElement, r = t.closest<HTMLElement>("[data-r]")?.dataset.r;
+    if (drawnLocked && (r !== undefined || t.closest('[data-v="coverOff"], [data-v="pack"], [data-v="unpack"]'))) return;   // 灰着的那几颗（disabled 本来就不派 click，这里再拦一层）
     if (r !== undefined) { const rt = content.querySelector<HTMLInputElement>("#rtIn")!; const k = Number(r); rt.value = k < 0 ? "" : RIGHTS_PRESETS[k]!.text(new Date().getFullYear()); rt.focus(); return; }
     const v = t.closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
+    if (v === "unlock") { lockDoor.continueEdit(); return; }   // 和谱上面那扇门的「接着改」同一个动作；解了 → lock.onChange → ui.redraw() → 上面那个 redraw 重画
     if (v === "coverOff") { commitText(); updateExtras(withThumbnail(D.extras, null), { kind: "cover", label: _t("去掉封面图") }); info(_t("去掉了封面图")); draw(); }
     else if (v === "rename") { closeByHost(); void renameActive().then(() => openSongPanel("name")); }
     else if (v === "issues") { closeByHost(); openIssuesSheet(); }
