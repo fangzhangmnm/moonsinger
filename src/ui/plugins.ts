@@ -24,12 +24,8 @@ const HOST_PARAMS: Record<string, ParamDef[]> = {
 /** 全量面板：原语参数表的每一个 + 主线程换算的那几个。 */
 export function fullParams(kind: string): ParamDef[] { return [...(HOST_PARAMS[kind] ?? []), ...(FX_KINDS[kind]?.params ?? [])]; }
 export function defaults(kind: string): Params { const p: Params = {}; for (const d of fullParams(kind)) p[d.id] = d.default; return p; }
-/** 一格的参数（缺的补默认）。混响 / 延迟 / 合唱没写「原声」的（v0.10.10 之前插的）= 录音房照旧按 1 − 湿 算，这里也如实显示成 1 − 湿。 */
-export const paramsOf = (fx: FxV2): Params => {
-  const p: Params = { ...defaults(fx.kind), ...fx.params };
-  if ((fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.params.dry === undefined) p.dry = Math.round((1 - p.mix) * 100) / 100;
-  return p;
-};
+/** 一格的参数（缺的补参数表的默认；第 16 条起「原声」没写也是参数表的默认，和录音房同一个意思——原来按 1 − 湿 算）。 */
+export const paramsOf = (fx: FxV2): Params => ({ ...defaults(fx.kind), ...fx.params });
 /** 这一格是不是「全湿」（原声 0、湿 100%：当发送的返回轨用；出到它 = 原声没了）。 */
 export const fullyWet = (fx: FxV2): boolean => (fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.on !== false && paramsOf(fx).dry === 0;
 

@@ -10,7 +10,7 @@ import { subsetSf2, sf2Info } from "../src/gm/sf2-subset.ts";
 const fixture = fs.readFileSync(new URL("./fixtures/sf2/gu-square-castanets.sf2", import.meta.url));
 const sha = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
 const sameBytes = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((v, i) => v === b[i]);
-const save = (extras: Extras) => saveMxl({ song: sampleSong(), hum: "n", extras, app: "test", date: "2026-10-07T00:00:00.000Z" });
+const save = (extras: Extras) => saveMxl({ song: sampleSong(), extras, app: "test", date: "2026-10-07T00:00:00.000Z" });
 const engineOf = (o: { extras: Extras }) => activeInstrument(o.extras, "r1")?.engine ?? "unknown";
 
 async function withSquare(extras = emptyExtras()): Promise<{ extras: Extras; subset: Uint8Array; sha256: string }> {

@@ -12,7 +12,7 @@ import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveCategory, followOf } from "../score/groove.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Hum } from "../format/contract.ts";
-import { activeGm, activeInstrument, activeCalibrationDb, activeVelocity, activePerfSpec, activeTranspose, activeMaster, studioTrack, studioTracks, activeChain, activeId, type Extras, type GmCandidate } from "../format/project.ts";
+import { activeGm, activeInstrument, activeHum, activeCalibrationDb, activeVelocity, activePerfSpec, activeTranspose, activeMaster, studioTrack, studioTracks, activeChain, activeId, type Extras, type GmCandidate } from "../format/project.ts";
 import { performerOf } from "../performers/index.ts";
 import { buildTimeline, LEAD_IN, type Timeline, type PerformerInfo } from "../engine/timeline.ts";
 import { resolveChain } from "../engine/chain.ts";
@@ -51,7 +51,6 @@ export type PartAudible = (partId: string) => { muted: boolean; solo: boolean };
 export interface RenderPlan {
   song: Song;
   extras: Extras;
-  hum: Hum;
   /** 出声的声部（已经按静音 / 独奏筛过；audibleParts 算）。 */
   parts: readonly PartDef[];
   /** 效果全关（A/B，播放用；导出 / 定稿一律 false）。 */
@@ -74,7 +73,7 @@ export function audibleParts(song: Song, pv: PartAudible): PartDef[] {
 export function performerInfoOf(extras: Extras, part: PartDef, banks: BankLookup): PerformerInfo {
   const role = part.role, eng = (activeInstrument(extras, role)?.engine ?? "unknown") as PerformerInfo["engine"], plugin = performerOf(eng), cat = grooveCategory(plugin?.grooveCategory ?? null, activeGm(extras, role));
   const own = plugin ? plugin.info({ extras, role, presetIndex: (s, b, p) => banks.presetIndex(s, b, p), velCurve: (s, b, p) => banks.velCurve(s, b, p) }) : { gm: null, chunk: "phrase" as const };   // 这位自己的那部分（gm / 分段唱 / 着力点）归插件
-  return { engine: eng, plugin, spec: activePerfSpec(extras, role), velocity: activeVelocity(extras, role), transpose: activeTranspose(extras, role), follow: (s) => followOf(s, cat), chain: activeChain(extras, role), ...own };
+  return { engine: eng, hum: activeHum(extras, role), plugin, spec: activePerfSpec(extras, role), velocity: activeVelocity(extras, role), transpose: activeTranspose(extras, role), follow: (s) => followOf(s, cat), chain: activeChain(extras, role), ...own };
 }
 /** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
 export async function prepareParts(parts: readonly PartDef[], extras: Extras, deps: Pick<RenderDeps, "engine" | "sounds">): Promise<PrepareError[]> {
@@ -120,7 +119,7 @@ export function pushMix(engine: RenderEngine, plan: RenderPlan, pv: PartAudible)
 /** 这首歌（出声的声部）的时间线：谁上场 / 分段 / 音符表 / 块清单。纯函数（除了预设下标 / L 曲线要问录音房里的库）。 */
 export function timelineOf(plan: RenderPlan, banks: BankLookup): Timeline {
   const { song } = plan;
-  return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part) => performerInfoOf(plan.extras, part, banks), hum: plan.hum, singOpt: humOpt() });
+  return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part) => performerInfoOf(plan.extras, part, banks), singOpt: humOpt() });
 }
 
 /** 循环按谱绕的那一圈（谱上的秒）：从第一张纸头（编排写了 `[循环段]` 且 withArrangementLoop = 循环段第一张纸的头）到谱的结尾。

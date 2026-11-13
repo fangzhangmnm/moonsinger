@@ -3,7 +3,7 @@
 // 守的是数据：指纹和键的先后 / id / castAs 无关；刚换上 = 没调过、调任何一样 = 调过；换下台删 / 留；旧歌的候选一个都不删；旧版 app 改了设置、asCast 原样留着 = 判成调过；内置的按出厂判。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { emptyExtras, withNewRole, withSf2Candidate, withSwap, withActive, withCastAs, withCandidateCopy, isUntouched, settingsPrint, songPresets, candidates, candidateJson, activeId,
-  withCalibration, withGapSec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, withSingCore, withSingChunk, activeSingCore, activeCalibrationDb, CANDIDATE_ID, saveMxl, openBytes, type Extras } from "../src/format/project.ts";
+  withCalibration, withHum, withGapSec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, withSingCore, withSingChunk, activeSingCore, activeCalibrationDb, CANDIDATE_ID, saveMxl, openBytes, type Extras } from "../src/format/project.ts";
 import { initState } from "../src/score/song.ts";
 import { roleShowName } from "../src/format/part-show.ts";
 
@@ -44,23 +44,24 @@ describe("刚换上 = 没调过；调任何一样 = 调过", () => {
   const ex = cast(base(), "r1", "Flute", 73, { sfx: true }), id = activeId(ex, "r1");
   it("刚换上的那位记了 asCast、判成没调过", () => {
     eq(typeof candidateJson(ex, "r1", id)?.asCast, "string");
-    eq(isUntouched(ex, "r1", id, hum), true);
+    eq(isUntouched(ex, "r1", id), true);
   });
   const tweaks: [string, (e: Extras) => Extras][] = [
     ["响度", (e) => withCalibration(e, "r1", -3, hum)], ["音和音之间", (e) => withGapSec(e, "r1", 0.05, hum)], ["力度", (e) => withVelocity(e, "r1", 0.5, hum)],
     ["修八度", (e) => withTranspose(e, "r1", 12, hum)], ["固定原速", (e) => withSfxFixed(e, "r1", false, hum)], ["音高对齐", (e) => withSfxAlign(e, "r1", true, hum)],
   ];
-  for (const [what, f] of tweaks) it(`调了${what} = 调过`, () => { const t = f(ex); assert(t !== ex, "真改了"); eq(isUntouched(t, "r1", id, hum), false); });
+  for (const [what, f] of tweaks) it(`调了${what} = 调过`, () => { const t = f(ex); assert(t !== ex, "真改了"); eq(isUntouched(t, "r1", id), false); });
   it("小月相的两个旋钮（内置那位：和出厂比）", () => {
     const e0 = base();
-    eq(isUntouched(e0, "r1", CANDIDATE_ID.full, hum), true, "出厂 = 没调过");
-    eq(isUntouched(withSingCore(e0, "r1", "breath", 0.5, hum), "r1", CANDIDATE_ID.full, hum), false, "唱法旋钮");
-    eq(isUntouched(withSingChunk(e0, "r1", "whole", hum), "r1", CANDIDATE_ID.full, hum), false, "分段唱");
-    eq(isUntouched(withCalibration(e0, "r1", -1, hum), "r1", CANDIDATE_ID.full, hum), false, "响度");
+    eq(isUntouched(e0, "r1", CANDIDATE_ID.full), true, "出厂 = 没调过");
+    eq(isUntouched(withSingCore(e0, "r1", "breath", 0.5, hum), "r1", CANDIDATE_ID.full), false, "唱法旋钮");
+    eq(isUntouched(withSingChunk(e0, "r1", "whole", hum), "r1", CANDIDATE_ID.full), false, "分段唱");
+    eq(isUntouched(withCalibration(e0, "r1", -1, hum), "r1", CANDIDATE_ID.full), false, "响度");
   });
-  it("内置那位：换了哼的字、记了 castAs 不算调过", () => {
+  it("内置那位：记了 castAs 不算调过；换了哼的字算调过（第 16 条 16-3 起哼的字是这一位自己的设置）", () => {
     let e0 = base(); e0 = withCastAs(e0, "r1", CANDIDATE_ID.full, concept("Voice"), hum);
-    eq(isUntouched(e0, "r1", CANDIDATE_ID.full, "a"), true);
+    eq(isUntouched(e0, "r1", CANDIDATE_ID.full), true);
+    eq(isUntouched(withHum(e0, "r1", "a"), "r1", CANDIDATE_ID.full), false);
   });
 });
 
@@ -86,7 +87,7 @@ describe("R2 换乐器时下台的那位", () => {
     const b = cast(a, "r1", "Oboe", 68), idO = activeId(b, "r1");
     const c = withSwap(b, "r1", idF, hum);   // 点回调过的 Flute
     eq(activeId(c, "r1"), idF); assert(!candidateJson(c, "r1", idO), "没调过的 Oboe 下台 = 删");
-    eq(isUntouched(c, "r1", idF, hum), false, "Flute 还是调过的");
+    eq(isUntouched(c, "r1", idF), false, "Flute 还是调过的");
   });
   it("没别人引用的嵌入字节一起丢", () => {
     const emb = (ex: Extras, name: string, program: number) => { const prev = activeId(ex, "r1"); let n = withSf2Candidate(ex, "r1", { ...sf(name, program), embed: true }, hum); const id = activeId(n, "r1"); return withSwap(n, "r1", id, hum, { prev, fresh: true, before: ex }); };
@@ -98,7 +99,7 @@ describe("R2 换乐器时下台的那位", () => {
 describe("旧歌 / 旧版 app", () => {
   it("没有 asCast 的候选全部当作调过：换乐器不自动删任何旧东西", () => {
     let a = withSf2Candidate(base(), "r1", sf("Flute", 73), hum);   // 旧版 app 造的：没有 asCast
-    const idF = activeId(a, "r1"); eq(isUntouched(a, "r1", idF, hum), false);
+    const idF = activeId(a, "r1"); eq(isUntouched(a, "r1", idF), false);
     a = cast(a, "r1", "Oboe", 68);
     assert(!!candidateJson(a, "r1", idF), "旧的 Flute 留着");
   });
@@ -107,14 +108,14 @@ describe("旧歌 / 旧版 app", () => {
     const old = structuredClone(a.lounge.r1) as { candidates: { id: string; calibrationDb: number }[] };   // 旧 app 不认 asCast、原样带着，只改了响度
     old.candidates.find((c) => c.id === id)!.calibrationDb = -1;
     const b: Extras = { ...a, lounge: { ...a.lounge, r1: old as never } };
-    eq(isUntouched(b, "r1", id, hum), false);
+    eq(isUntouched(b, "r1", id), false);
   });
   it("存档再打开：没调过照样是没调过", () => {
     const ex = cast(base(), "r1", "Flute", 73), id = activeId(ex, "r1");
     let st = initState(); st = { ...st, song: { ...st.song, parts: [{ ...st.song.parts[0], role: "r1" }] } };
-    const bytes = saveMxl({ song: st.song, hum, extras: ex, app: "t", date: "2026-11-09" });
+    const bytes = saveMxl({ song: st.song, extras: ex, app: "t", date: "2026-11-09" });
     const back = openBytes("x.mxl", bytes);
-    eq(isUntouched(back.extras, "r1", id, hum), true);
+    eq(isUntouched(back.extras, "r1", id), true);
   });
 });
 

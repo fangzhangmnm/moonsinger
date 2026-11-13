@@ -7,7 +7,7 @@ import { saveMxl, openBytes } from "../src/format/project.ts";
 import { sampleSong, sampleExtras, sampleView } from "./fixtures/format/sample-song.ts";
 
 const EVIL = `x" onclick="alert(1)`, EVIL2 = `p1"><img src=x onerror=alert(1)>`;
-const bytes = () => { const song = sampleSong(); return saveMxl({ song, hum: song.hum, extras: sampleExtras(song), app: "t", date: "2026-11-10T00:00:00.000Z", view: sampleView() }); };
+const bytes = () => { const song = sampleSong(); return saveMxl({ song, extras: sampleExtras(song), app: "t", date: "2026-11-10T00:00:00.000Z", view: sampleView() }); };
 type J = Record<string, any>;   // eslint-disable-line @typescript-eslint/no-explicit-any
 /** 把存出来的歌里某一份 JSON 改一下再包回去。 */
 const hack = (path: string, f: (j: J) => void, base: Uint8Array = bytes()): Uint8Array => { const z = unzipSync(base) as Record<string, Uint8Array>; const j = JSON.parse(strFromU8(z[path])) as J; f(j); z[path] = strToU8(JSON.stringify(j)); return zipSync(z); };

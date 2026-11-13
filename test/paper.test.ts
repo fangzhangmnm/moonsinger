@@ -6,7 +6,7 @@ import { emptySong, initState, setPaper, firstTrack } from "../src/score/song.ts
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { writeMusicXml } from "../src/format/musicxml.ts";
 
-const save = (song: ReturnType<typeof emptySong>) => saveMxl({ song, hum: song.hum, extras: emptyExtras(), app: "v0.0.0-test", date: "2026-10-07" });
+const save = (song: ReturnType<typeof emptySong>) => saveMxl({ song, extras: emptyExtras(), app: "v0.0.0-test", date: "2026-10-07" });
 const PART = { id: "P1", name: "主唱", instrumentName: "月读", sound: "voice.vocals", program: 55 };
 const doc = (song: ReturnType<typeof emptySong>) => ({ title: song.title, paper: song.paper, credits: song.credits, parts: [{ info: PART, tokens: firstTrack(song) }] });
 

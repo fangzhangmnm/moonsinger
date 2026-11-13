@@ -112,7 +112,7 @@ describe("谱内反复：存档（MusicXML 原生）/ 简谱文字 / 压平", ()
     const { initState, withTrack, tr } = await import("../src/score/song.ts");
     const st = initState(), toks = [...tr(st).slice(0, 3), ...track("|: A :| B").slice(3)];
     const song = withTrack(st.song, st.at.paper, st.at.part, toks);
-    const bytes = saveMxl({ song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-09" }), files = unzipSync(bytes);
+    const bytes = saveMxl({ song, extras: emptyExtras(), app: "test", date: "2026-10-09" }), files = unzipSync(bytes);
     const o = openBytes("x.mxl", bytes);
     eq(shape(o.song.papers[0].tracks[o.song.parts[0].id]), shape(toks), "正本读回来一样");
     const flat = strFromU8(files["score.musicxml"]);

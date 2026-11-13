@@ -117,7 +117,7 @@ describe("拍子轻重：存档 / 简谱文字", () => {
     const { saveMxl, openBytes, emptyExtras } = await import("../src/format/project.ts");
     const { unzipSync, strFromU8 } = await import("../vendor/fflate/fflate.esm.js");
     const toks = [...head(), gr("march", 0.5), n(), n()], song = one(toks);
-    const bytes = saveMxl({ song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08" }), files = unzipSync(bytes);
+    const bytes = saveMxl({ song, extras: emptyExtras(), app: "test", date: "2026-10-08" }), files = unzipSync(bytes);
     const o = openBytes("x.mxl", bytes), back = o.song.papers[0].tracks[o.song.parts[0].id].filter((t) => t.kind === "groove");
     eq(JSON.stringify(back.map((t) => [(t as { style: string }).style, (t as { amount?: number }).amount])), JSON.stringify([["march", 0.5]]));
     eq(o.notices.length, 0);

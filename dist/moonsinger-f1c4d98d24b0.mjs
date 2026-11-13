@@ -3510,12 +3510,12 @@ var S = {
   "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4": { en: "Broken chords: read" },
   "\u5206\u89E3\u548C\u5F26\uFF1A\u4E0D\u8BA4": { en: "Broken chords: ignored" },
   "\u4E50\u8C31": { en: "Score" },
+  "\u8FD9\u9996\u6B4C\u6709 {n} \u5904\u7EB8\u5F00\u5934\u6CA1\u5199\u529B\u5EA6\uFF1A\u8FD9\u4E00\u4E0B\u6539\u8C31\u65F6\u8865\u4E0A\u4E86\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\u90A3\u4E2A\uFF08\u542C\u8D77\u6765\u4E0D\u53D8\uFF09\uFF0C\u5B58\u7684\u65F6\u5019\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6": { en: "{n} sheet start(s) in this song had no dynamic: this edit filled in the one already in effect there (sounds the same); it goes into the file when you save" },
   "\u300C{name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7": { en: "\u201C{name}\u201D was changed elsewhere" },
   "\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002": { en: "Another program changed this file since it was opened or last saved. Overwriting will lose those changes." },
   "\u8986\u76D6": { en: "Overwrite" },
   "\u5B58\u6210 .mxl": { en: "Save as .mxl" },
   "{name} \xB7 {size}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002": { en: "{name} \xB7 {size}. Download it or share it to Files; open it later from the menu." },
-  "\u8FD9\u9996\u6B4C\u91CC\u539F\u6765\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{size}\uFF09\u4E0D\u518D\u5B58\u8FDB\u6B4C\u91CC\u4E86\uFF1A\u5B83\u5DF2\u7ECF\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u7167\u6837\u80FD\u542C\u3001\u80FD\u518D\u5BFC\u51FA\u3002": { en: "The mp3 that used to be stored inside this song ({size}) is no longer saved into the song file. It is remembered on this device, so you can still play it from the library and export it again." },
   "\u8FDE\u7EBF": { en: "Slur" },
   "\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77": { en: "Swell up / swell" },
   "\u97F3\u5185\u6E10\u5F31": { en: "Swell down" },
@@ -4183,6 +4183,7 @@ var S = {
   "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09": { en: "This version can't sound it (the other software's original instrument)" },
   "\u300C{name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C{name2}\u300D\uFF08sha256 {p}\u2026 \u2260 {p2}\u2026\uFF09": { en: "\u201C{name}\u201D isn't the \u201C{name2}\u201D recorded in the song (sha256 {p}\u2026 \u2260 {p2}\u2026)" },
   "\u627E\u5230\u4E86\uFF1A\u300C{name}\u300D\u80FD\u54CD\u4E86": { en: "Found: \u201C{name}\u201D can sound now" },
+  "\u54FC\u7684\u5B57": { en: "Hum syllable" },
   "\u300C{p}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58": { en: "\u201C{p}\u201D has unsaved changes" },
   "{what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002": { en: "{what} will discard these changes." },
   "\u5148\u5B58": { en: "Save first" },
@@ -4580,8 +4581,7 @@ var S = {
   "\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}": { en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}" },
   "\u5531\u51FA\u6765\u7684\u6BCF\u4E00\u53E5\u5148\u4E58 \xD7{k}\uFF08{db} dB\uFF09\uFF1A\u5531\u6CD5\u6838\u5FC3\u539F\u59CB\u8F93\u51FA\u7684\u8865\u507F\uFF0C\u6211\u4EEC\u6309\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\uFF08\u7EA6 0.42\uFF09\u653E\u5927\u5230 0.89 \u5B9A\u7684\u6570\u3002": { en: "Each sung phrase is first multiplied by \xD7{k} ({db} dB): compensation for the singing core's raw output, a number we set by scaling the measured raw peak (about 0.42) up to 0.89." },
   "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u7684\u653E\u6CD5\uFF1A\u54CD\u5EA6 = \u6DF1\u5EA6 \xF7 960 \xD7 40\xB7log10(\u529B\u5EA6 \xF7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\u3002\u8FD9\u4F4D\u7684\u529B\u5EA6\u6DF1\u5EA6 {dp}\uFF08\u7167\u5E93\u91CC\u4EBA\u58F0\u7C7B\u548C\u957F\u7B1B\u3001\u5C0F\u63D0\u7434\u8FD9\u7C7B\u62C9\u957F\u97F3\u7684\u4E50\u5668\uFF1B\u89C4\u8303\u9ED8\u8BA4 960\uFF09\uFF1B\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}": { en: "Dynamic mark \u2192 velocity \u2192 loudness, by the same rule as the instruments (the SoundFont way: loudness = depth \xF7 960 \xD7 40\xB7log10(velocity \xF7 127), full velocity = 0 dB). This performer's velocity depth is {dp} (like the library's voices and sustained instruments such as flute and violin; the SoundFont default is 960); no recorded layers, only loudness changes: {extras}" },
-  "\u54FC\u7684\u5B57": { en: "Hum syllable" },
-  "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09": { en: "What notes without lyrics sing (one for the whole song)" },
+  "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u8FD9\u4E00\u4F4D\u7684\uFF09": { en: "What notes without lyrics are sung as (this performer\u2019s own)" },
   "\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE": { en: "Advanced: singing core knobs" },
   "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D": { en: "This version can't sound it (the other software's original instrument): pick another \u201CWho performs\u201D" },
   "\u56DE\u5230\u8C31\uFF08Esc\uFF09": { en: "Back to the score (Esc)" },
@@ -4735,7 +4735,7 @@ var S = {
   "\u62D0\u70B9": { en: "Knee" },
   "\u8865\u507F": { en: "Makeup" },
   "\u5EF6\u8FDF": { en: "Delay" },
-  "y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = 1 \u2212 mix\uFF0Cv0.10.10 \u524D\u7684\u5199\u6CD5\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002": { en: "y[n] = x[n]\xB7dry + d[n]\xB7mix (no dry = 1 \u2212 mix, the pre-v0.10.10 form), d[n] = x[n - D] + fb \xB7 LP(d[n - D]), LP = one-pole low-pass dampHz. D = timeMs (up to 2 s)." },
+  "y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = \u53C2\u6570\u8868\u7684\u9ED8\u8BA4 1\uFF0C\u7B2C 16 \u6761\u8D77\uFF1B\u539F\u6765\u6CA1\u5199 = 1 \u2212 mix\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002": { en: "y[n] = x[n]\xB7dry + d[n]\xB7mix (dry not written = the parameter table default 1, from item 16 on; it used to be 1 \u2212 mix), d[n] = x[n - D] + fb \xB7 LP(d[n - D]), LP = one-pole low-pass at dampHz. D = timeMs (at most 2 s)." },
   "\u65F6\u95F4": { en: "Time" },
   "\u53CD\u9988": { en: "Feedback" },
   "\u6E7F": { en: "Wet" },
@@ -4841,6 +4841,7 @@ var S = {
   "\u8C31\u7684\u6269\u5C55\u91CC\u6CA1\u6709\u7EB8\u7684\u8868\uFF0C\u8BFB\u4E0D\u61C2": { en: "The score extension has no list of sheets; cannot read it" },
   "\u7EB8\u300C{id}\u300D\u7684\u8C31\uFF08{file}\uFF09\u5728\u5305\u91CC\u627E\u4E0D\u5230": { en: "Score of sheet \u201C{id}\u201D ({file}) isn't in the archive" },
   "\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u53EA\u662F\u90A3\u4E9B\u4E1C\u897F\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\uFF0C\u5728\u8FD9\u4E00\u7248\u91CC\u5B58\u4E00\u6B21\uFF0C\u5176\u4E2D\u4E00\u90E8\u5206\u4F1A\u4E22\u3002\u60F3\u539F\u6837\u7559\u7740\uFF0C\u5148\u66F4\u65B0 app \u518D\u6539\u3002": { en: "This song was saved by a newer MoonSinger ({p} has things this version doesn\u2019t know): you can still open, edit and save it, but this version can\u2019t show those things, and saving it here will lose some of them. To keep them as they are, update the app before editing." },
+  "\u8FD9\u9996\u6B4C\u7684\u6DF7\u97F3\u53F0\u90A3\u4E00\u4EFD\u8BFB\u4E0D\u61C2\uFF1A\u6BCF\u6761\u8F68\u7684\u63A8\u5B50\u3001\u58F0\u50CF\u6309\u9ED8\u8BA4\u5F00\u7684\uFF08\u603B\u8F68\u7167\u6587\u4EF6\u91CC\u5199\u7684\uFF09\u3002\u5B58\u4E00\u6B21\u5C31\u6309\u73B0\u5728\u7684\u6837\u5B50\u5199\u8FDB\u6587\u4EF6\u3002": { en: "This song\u2019s mixer part cannot be read: each track\u2019s fader and pan opened at their defaults (the master as written in the file). Saving once writes the current state into the file." },
   "\u58F0\u90E8\u300C{name}\u300D\u548C\u522B\u7684\u58F0\u90E8\u5171\u7528\u4E00\u4EFD\u4E50\u5668\u8BBE\u7F6E\uFF1B\u6BCF\u4E2A\u58F0\u90E8\u6709\u81EA\u5DF1\u7684\u4E50\u5668\uFF0C\u6240\u4EE5\u62C6\u6210\u4E86\u4E24\u4EFD\uFF08\u4E50\u5668\u548C\u8BBE\u7F6E\u90FD\u7167\u6284\uFF09\u3002": { en: "Part \u201C{name}\u201D shared its instrument settings with another part; every part has its own instrument, so they were split into two copies (instrument and settings copied)." },
   "\u8FD9\u4EFD\u8C31\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u4E0D\u652F\u6301\u7684\u4E1C\u897F\uFF0C\u6CA1\u6709\u8BFB\u8FDB\u6765\uFF1A{k}\u3002\u5B58\u7684\u65F6\u5019\u5B83\u4EEC\u4E0D\u4F1A\u5728\u65B0\u6587\u4EF6\u91CC\u2014\u2014\u8981\u7559\u539F\u6837\uFF0C\u8BF7\u300C\u53E6\u5B58\u4E3A\u300D\u65B0\u6587\u4EF6\u3002": { en: "This score has things this version doesn't support, which weren't read: {k}. They won't be in a new file when saving \u2014 to keep them, save as a new file." },
   "{k} {n} \u5904": { en: "{k} at {n} places" },
@@ -4897,9 +4898,6 @@ var S = {
   "\u6E32\u67D3\u7F13\u5B58\u91CC\u8FD8\u6CA1\u6709\u8FD9\u9996\uFF1A\u70B9\u5B83\u5C01\u9762\u4E0A\u7684\u94AE\u6E32\u67D3\uFF0C\u6216\u8005\u6253\u5F00\u5B83\u7528\u4E09\u6761\u6760\u91CC\u7684\u300C\u6E32\u67D3\u5230\u7F13\u5B58\u300D\u3002": { en: "This song isn\u2019t in the render cache yet: tap the button on its cover to render it, or open it and use \u201CRender to cache\u201D in the \u2630 menu." },
   "\u53D6\u300C{stem}\u300D\u7684\u58F0\u97F3\u2026": { en: "Getting the audio for \u201C{stem}\u201D\u2026" },
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D": { en: "Remembered on this device" },
-  "mp3 \u6CA1\u53D6\u5230\uFF08{blob}\uFF09": { en: "Couldn't get the mp3 ({blob})" },
-  "\u7A7A": { en: "empty" },
-  "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": { en: "The mp3 stored inside the song" },
   "\u6CA1\u80FD\u81EA\u5DF1\u5F00\u59CB\u653E\uFF1A\u70B9\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u7684 \u25B6": { en: "Couldn't start playing by itself: tap \u25B6 on the bottom player bar" },
   "\u6B4C\u5E93\u8FD8\u6CA1\u63A5\u4E0A\uFF0C\u5EFA\u4E0D\u4E86\u6587\u4EF6\u5939": { en: "The library isn't connected yet, so folders can't be created" },
   "\u65B0\u5EFA\u6587\u4EF6\u5939": { en: "New folder" },
@@ -6061,7 +6059,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.11-2026-11-12";
+var APP_VERSION = "v0.17.12-2026-11-12";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -6599,7 +6597,7 @@ function headTokens(m2 = {}, id0 = 1) {
 var FIRST_PART = "P1";
 var FIRST_PAPER = "p1";
 function emptySong(m2 = {}) {
-  return { hum: "n", textLang: "ui", parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m2) } }] };
+  return { textLang: "ui", parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m2) } }] };
 }
 function initInput() {
   return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", inputAuto: true };
@@ -8187,9 +8185,6 @@ function setDur(st2, i10, dur) {
   nt2[i10] = { ...t10, dur };
   return next(st2, nt2);
 }
-function setHum(st2, hum) {
-  return { ...st2, song: { ...st2.song, hum } };
-}
 function setPaper(st2, kind) {
   const song = { ...st2.song }, cur = st2.song.paper ?? paperOf(DEFAULT_PAPER), density = densityOf(cur);
   if (kind === DEFAULT_PAPER && density === "cozy" && cur.staffMm === void 0) delete song.paper;
@@ -8322,9 +8317,9 @@ function removePart(st2, partId) {
   const at3 = st2.at.part === partId ? { paper: st2.at.paper, part: song.parts[0].id } : st2.at;
   return setFocus({ ...st2, song }, at3.paper, at3.part, st2.at.part === partId ? void 0 : st2.caret);
 }
-function ensureStartDyns(song, nextId, o10 = {}) {
+function ensureStartDyns(song, nextId) {
   let id2 = nextId;
-  const added = [], reordered = [], last = /* @__PURE__ */ new Map();
+  const added = [], last = /* @__PURE__ */ new Map();
   const papers = song.papers.map((pp) => {
     let tracks = pp.tracks, changed2 = false;
     for (const part2 of song.parts) {
@@ -8342,25 +8337,7 @@ function ensureStartDyns(song, nextId, o10 = {}) {
           break;
         }
       }
-      if (has2 && o10.reorder) {
-        let f2 = -1;
-        for (let i10 = headLen(t10); i10 < t10.length; i10++) if (t10[i10].kind === "note") {
-          f2 = i10;
-          break;
-        }
-        if (f2 >= 0) {
-          let a10 = f2;
-          while (a10 > headLen(t10) && isPhraseMark(t10[a10 - 1])) a10--;
-          const run2 = t10.slice(a10, f2), dyns = run2.filter((k2) => k2.kind === "dyn"), rest = run2.filter((k2) => k2.kind !== "dyn");
-          const sorted = [...dyns, ...rest];
-          if (dyns.length && sorted.some((k2, j2) => k2 !== run2[j2])) {
-            t10 = [...t10.slice(0, a10), ...sorted, ...t10.slice(f2)];
-            tracks = { ...tracks, [part2.id]: t10 };
-            changed2 = true;
-            reordered.push({ paper: pp.id, part: part2.id, index: a10 });
-          }
-        }
-      } else if (first >= 0) {
+      if (first >= 0) {
         let at3 = first;
         while (at3 > headLen(t10) && isPhraseMark(t10[at3 - 1])) at3--;
         tracks = { ...tracks, [part2.id]: [...t10.slice(0, at3), { kind: "dyn", id: id2++, value: last.get(part2.id) ?? "mf" }, ...t10.slice(at3)] };
@@ -8378,7 +8355,7 @@ function ensureStartDyns(song, nextId, o10 = {}) {
     }
     return changed2 ? { ...pp, tracks } : pp;
   });
-  return added.length || reordered.length ? { song: { ...song, papers }, nextId: id2, added, reordered } : { song, nextId, added, reordered };
+  return added.length ? { song: { ...song, papers }, nextId: id2, added } : { song, nextId, added };
 }
 function familyOrder(parts) {
   const ids = new Set(parts.map((p2) => p2.id)), out = [];
@@ -34761,15 +34738,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-d237b32a00fb.mjs");
+      return pick(() => "singer-worker-33c9f20e4747.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
-      return pick(() => "studio-worklet-b2a10e55331b.mjs");
+      return pick(() => "studio-worklet-b2906629e203.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-414bdd505dbd.mjs");
+      return pick(() => "layout-worker-bfb6c565b8ad.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-5a4e099fbbcc.mjs");
+      return pick(() => "encode-worker-45507c60f979.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35485,9 +35462,9 @@ var Singer = class {
     });
   }
   /** 只唱一个字（按键试听，刀 3）：不排队、直接给这一句自己的道（排在整句后面 = 迟到的音更烦；worker 在段界之间就会插进来）；念缓存命中时几毫秒。 */
-  singOnly(s10, only, extra = {}) {
+  singOnly(s10, only2, extra = {}) {
     return this.singOnce(this.laneFor(s10), s10, () => {
-    }, { ...extra, only, raw: true });
+    }, { ...extra, only: only2, raw: true });
   }
   /** 全 app 共用的 AudioContext（必须在用户手势里先调过一次，iPad 才放声）。 */
   unlock() {
@@ -36650,6 +36627,64 @@ function abbrOf(r10, named, label, l10) {
 // src/format/project.ts
 init_fflate_esm();
 
+// src/score/pedal.ts
+function sustainSpans(tokens, tempoMap, bounds = [0]) {
+  const tl2 = timeline(tokens, tempoMap), spans2 = [];
+  const starts = [.../* @__PURE__ */ new Set([0, ...bounds])].sort((a10, b3) => a10 - b3);
+  for (let k2 = 0; k2 < starts.length; k2++) {
+    const a10 = starts[k2], b3 = k2 + 1 < starts.length ? starts[k2 + 1] : tokens.length;
+    const timed2 = tl2.filter((x2) => x2.index >= a10 && x2.index < b3);
+    if (!timed2.length) continue;
+    const end = timed2[timed2.length - 1].t1;
+    const at3 = (i10) => timed2.find((x2) => x2.index > i10)?.t0 ?? end;
+    let cur = null;
+    for (let i10 = a10; i10 < b3; i10++) {
+      const t10 = tokens[i10];
+      if (t10.kind !== "pedal" || t10.which !== "sustain") continue;
+      const s10 = at3(i10);
+      if (t10.act === "down") {
+        if (!cur) cur = { down: s10, up: end, changes: [] };
+      } else if (t10.act === "up") {
+        if (cur) {
+          cur.up = s10;
+          spans2.push(cur);
+          cur = null;
+        }
+      } else if (cur) {
+        if (s10 > cur.down) cur.changes.push(s10);
+      } else cur = { down: s10, up: end, changes: [] };
+    }
+    if (cur) spans2.push(cur);
+  }
+  return spans2;
+}
+function holdBySustain(notes, spans2) {
+  if (!spans2.length) return notes.slice();
+  const out = notes.map((n10) => {
+    const sp2 = spans2.find((s10) => s10.down < n10.t1 - 1e-9 && n10.t1 < s10.up - 1e-9);
+    if (!sp2) return n10;
+    const rel = Math.min(sp2.up, ...sp2.changes.filter((c10) => c10 >= n10.t1 - 1e-9));
+    return rel > n10.t1 + 1e-9 ? { ...n10, t1: rel, w1: n10.t1 } : n10;
+  });
+  const byMidi = /* @__PURE__ */ new Map();
+  out.forEach((n10, i10) => {
+    const l10 = byMidi.get(n10.midi) ?? [];
+    l10.push(i10);
+    byMidi.set(n10.midi, l10);
+  });
+  for (const idx of byMidi.values()) for (const i10 of idx) {
+    const n10 = out[i10];
+    if (n10.w1 === void 0) continue;
+    let cut = n10.t1;
+    for (const j2 of idx) {
+      const m2 = out[j2];
+      if (j2 !== i10 && m2.t0 >= n10.w1 - 1e-9 && m2.t0 < cut) cut = m2.t0;
+    }
+    if (cut < n10.t1) out[i10] = cut > n10.w1 + 1e-9 ? { ...n10, t1: cut } : (({ w1: _w, ...rest }) => ({ ...rest, t1: n10.w1 }))(n10);
+  }
+  return out;
+}
+
 // src/score/lang.ts
 var KANA2 = /[぀-ヿㇰ-ㇿｦ-ﾟ]/;
 var HAN2 = /\p{Script=Han}/u;
@@ -36684,6 +36719,841 @@ function keepOnlyOverrides(tokens, read) {
     else delete t10.lang;
     prev = got2 ?? auto;
   });
+}
+
+// src/gm/sf-key.ts
+function sfKey(written, inst, transpose = 0) {
+  if (inst.note !== void 0) return inst.note;
+  const s10 = inst.sfx, w2 = written + transpose;
+  const k2 = s10?.align && s10.midi !== void 0 && s10.centsPerKey ? Math.round(s10.key + (w2 - s10.midi) * 100 / s10.centsPerKey) : w2;
+  return Math.max(0, Math.min(127, k2));
+}
+var canAlign = (s10) => !!s10 && s10.midi !== void 0 && !!s10.centsPerKey;
+
+// src/engine/timeline.ts
+var LEAD_IN = 0.5;
+var SUNG_TAIL = 0.6;
+var PRE_ROLL = 0.1;
+function sungPlan(tokens, tempoMap, bounds, mode, hum) {
+  const ranges = singChunks(tokens, tempoMap, mode === "sheet" ? bounds : [], mode);
+  const own = ranges.map(([a10, b3]) => {
+    const text2 = tokens.slice(a10, b3).flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
+    return text2 ? scriptLang(text2) : null;
+  });
+  let prev = own.find((l10) => l10) ?? songLangOf(tokens, hum);
+  const langs = own.map((l10) => prev = l10 ?? prev);
+  const at3 = new Array(tokens.length).fill(langs[0] ?? prev);
+  ranges.forEach(([a10, b3], k2) => {
+    for (let i10 = a10; i10 < tokens.length && (i10 < b3 || !ranges[k2 + 1]); i10++) at3[i10] = langs[k2];
+  });
+  return { ranges, langs, at: at3 };
+}
+function sungLangsOf(song, order, partId, mode, hum) {
+  const map = timeMapOf(song, order), flat = flattenPart(song, partId, { order }), fl2 = sungPlan(flat.tokens, map, flat.starts.map((s10) => s10.index), mode, hum).at;
+  const out = new Map(flat.tokens.map((t10, i10) => [t10.id, fl2[i10]]));
+  for (const paper of song.papers) {
+    const toks = paper.tracks[partId];
+    if (!toks || !toks.some((t10) => !out.has(t10.id))) continue;
+    const own = sungPlan(toks, void 0, [], mode, hum).at;
+    toks.forEach((t10, i10) => {
+      if (!out.has(t10.id)) out.set(t10.id, own[i10]);
+    });
+  }
+  return out;
+}
+function songLangOf(tokens, hum) {
+  const ls2 = tokens.flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
+  if (/[A-Za-z]/.test(ls2) && !/[\p{Script=Han}぀-ヿ]/u.test(ls2)) return "en";
+  if (!ls2 && (hum === "la" || hum === "u")) return "zh";
+  return /\p{Script=Han}/u.test(ls2) && !/[぀-ヿ]/.test(ls2) ? "zh" : "ja";
+}
+function lightNotes(tokens, tempoMap, poly = false, marks, velOf, rollVel) {
+  const notes = [];
+  let open2 = /* @__PURE__ */ new Map();
+  for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, tempoMap)) {
+    if (tok.kind !== "note") continue;
+    const ps = poly && tok.pitch ? allPitches(tok) : [effectivePitch(tokens, index)];
+    const nextOpen = /* @__PURE__ */ new Map();
+    const arp = poly && ps.length > 1 && (tok.art ?? []).includes("arpeggio") && !tok.tie ? Math.min(marks?.arpeggioSec ?? 0.035, (t12 - t02) * 0.5 / (ps.length - 1)) : 0;
+    const rank = arp ? new Map([...ps].map((q2) => midiOf(q2)).sort((a10, b3) => a10 - b3).map((m2, k2) => [m2, k2])) : null;
+    for (const p2 of ps) {
+      const midi2 = midiOf(p2), prev = tok.tie ? open2.get(midi2) : void 0;
+      if (prev) {
+        prev.t1 = prev.roll ? t12 : marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12;
+        prev.segs?.push({ index, t0: t02, t1: t12 });
+        nextOpen.set(midi2, prev);
+        continue;
+      }
+      const roll = !!marks?.rollHz && (tok.art ?? []).includes("roll");
+      const n10 = { midi: midi2, t0: rank ? t02 - (ps.length - 1 - (rank.get(midi2) ?? 0)) * arp : t02, t1: roll ? t12 : marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {}, ...roll ? { roll: true, segs: [{ index, t0: t02, t1: t12 }] } : {} };
+      notes.push(n10);
+      nextOpen.set(midi2, n10);
+    }
+    open2 = nextOpen;
+  }
+  const out = [];
+  for (const n10 of notes) {
+    if (!n10.roll || !marks?.rollHz) {
+      const { segs: _s, roll: _r, ...rest } = n10;
+      out.push(rest);
+      continue;
+    }
+    const hz = Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, marks.rollHz(n10.midi))), len = n10.t1 - n10.t0, k2 = Math.max(1, Math.round(len * hz)), d3 = len / k2, segs = n10.segs ?? [];
+    const hits = [];
+    for (let i10 = 0; i10 < k2; i10++) {
+      const t10 = n10.t0 + i10 * d3, seg = [...segs].reverse().find((g3) => g3.t0 <= t10 + 1e-9) ?? segs[0];
+      const v = rollVel && seg ? rollVel({ index: seg.index, t: t10, seg, first: segs[0].index, isFirst: i10 === 0, fr: len > 0 ? i10 / k2 : 0 }) : n10.vel;
+      hits.push({ midi: n10.midi, t0: t10, t1: n10.t0 + (i10 + 1) * d3, ...v !== void 0 ? { vel: v } : {} });
+    }
+    out.push(...hits);
+  }
+  return out.sort((a10, b3) => a10.t0 - b3.t0);
+}
+var HUM_KANA = { la: "\u3089", n: "\u3093", u: "\u3046", o: "\u304A", a: "\u3042" };
+function buildTimeline(inp) {
+  const { song, order } = inp;
+  const map = timeMapOf(song, order), gmap = grooveMapOf(song, order);
+  const flats = /* @__PURE__ */ new Map();
+  const flat = (partId) => {
+    let f2 = flats.get(partId);
+    if (!f2) {
+      f2 = flattenPart(song, partId, { order });
+      flats.set(partId, f2);
+    }
+    return f2;
+  };
+  const tracks = [], chunks2 = [], unplayable = [];
+  let total = 0, from = 0, to2 = 0;
+  for (const part2 of inp.parts) {
+    const { tokens, starts } = flat(part2.id), bounds = starts.map((s10) => s10.index), tl2 = timeline(tokens, map);
+    if (tl2.length) total = Math.max(total, tl2[tl2.length - 1].t1);
+    const info2 = inp.info(part2);
+    if (!info2.plugin) {
+      unplayable.push({ part: part2.id, why: _t("\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A") });
+      continue;
+    }
+    const groove = grooveWeights(tokens, bounds, gmap, info2.follow);
+    const byVel = info2.plugin.dynamics === "velocity";
+    const curve = byVel ? info2.velDb ?? (() => null) : depthCurve(info2.plugin.velocityDepth);
+    const rolls = info2.plugin.honors.includes("roll");
+    const gain = gainSegments(tokens, map, info2.spec, bounds, groove, byVel, curve, rolls);
+    if (info2.plugin.sound === "chunks") {
+      const plan = sungPlan(tokens, map, bounds, info2.chunk, info2.hum);
+      const noteAt = (a10) => tl2.find((x2) => x2.index >= a10 && x2.tok.kind === "note")?.t0 ?? 0;
+      const clips = { id: part2.id, kind: "clips", clips: [], gain, ...info2.chain?.length ? { chain: info2.chain } : {} };
+      for (const [k2, [a10, b3]] of plan.ranges.entries()) {
+        const lang2 = plan.langs[k2], te3 = /* @__PURE__ */ new Map(), score = toLabScore(tokens, info2.hum, lang2, map, info2.spec.sing, [a10, b3], te3);
+        if (!score.SCORE.length) continue;
+        const entryOf = /* @__PURE__ */ new Map();
+        for (const [i10, e10] of te3) entryOf.set(tokens[i10].id, e10);
+        const first = noteAt(a10), last = tl2.filter((x2) => x2.index >= a10 && x2.index < b3 && x2.tok.kind === "note").reduce((m2, x2) => Math.max(m2, x2.t1), first);
+        const opt2 = { ...inp.singOpt, ...info2.singOpt ?? {} };
+        const key = JSON.stringify(["tsukuyomi-chunk", score, opt2]), t02 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
+        clips.clips.push({ key, t0: t02, dur, gain: info2.plugin.chunkGain ?? 1, end: last });
+        chunks2.push({ part: part2.id, key, score, lang: lang2, opt: opt2, t0: t02, dur, end: last, entryOf });
+        from = Math.min(from, t02);
+        to2 = Math.max(to2, t02 + dur);
+      }
+      tracks.push(clips);
+      continue;
+    }
+    const vels = byVel ? noteVelocities(tokens, map, info2.spec, info2.velocity, bounds, groove) : null;
+    const percKey = (m2) => info2.gm?.note !== void 0 ? info2.gm.note : info2.hitSec ? m2 : null;
+    const rollHz = info2.plugin.honors.includes("roll") ? (m2) => info2.spec.rollHz ?? rollDefaultHz(percKey(m2)) : void 0;
+    const rollVel = rollHz && byVel ? rollHitVelocity(tokens, map, info2.spec, info2.velocity, bounds, groove, curve) : void 0;
+    const notes0 = lightNotes(tokens, map, info2.plugin.poly, { ...lightMarks(info2.spec), ...rollHz ? { rollHz } : {} }, (i10) => vels?.get(i10) ?? info2.velocity, rollVel);
+    const notes = info2.plugin.pedals?.includes("sustain") ? holdBySustain(notes0, sustainSpans(tokens, map, bounds)) : notes0;
+    const built = info2.plugin.track?.({ id: part2.id, notes, gain, ...info2.chain?.length ? { chain: info2.chain } : {}, hum: info2.hum, info: info2 });
+    if (!built) {
+      unplayable.push({ part: part2.id, why: _t("\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0", { label: info2.plugin.label }) });
+      continue;
+    }
+    if ("unplayable" in built) {
+      unplayable.push({ part: part2.id, why: built.unplayable });
+      continue;
+    }
+    if (built.from !== void 0) from = Math.min(from, built.from);
+    tracks.push(built.track);
+  }
+  to2 = Math.max(to2, total);
+  const ref = inp.parts[0] ?? song.parts[0];
+  const papers = [];
+  if (ref) {
+    const { tokens, starts } = flat(ref.id), tl2 = timeline(tokens, map);
+    const secAt = (index) => tl2.find((x2) => x2.index >= index)?.t0 ?? (tl2.length ? tl2[tl2.length - 1].t1 : 0);
+    const tickAt = (index) => tl2.find((x2) => x2.index >= index)?.start ?? (tl2.length ? tl2[tl2.length - 1].start + tl2[tl2.length - 1].tok.dur : 0);
+    starts.forEach((s10, k2) => {
+      const nextIndex = starts[k2 + 1]?.index ?? tokens.length;
+      papers.push({ paper: s10.paper, tick0: tickAt(s10.index), t0: secAt(s10.index), t1: secAt(nextIndex) });
+    });
+    if (papers.length && tl2.length) papers[papers.length - 1].t1 = tl2[tl2.length - 1].t1;
+  }
+  const secondsOfToken = (partId, tokenId) => {
+    const f2 = flats.get(partId) ?? flat(partId), tl2 = timeline(f2.tokens, map);
+    const i10 = f2.tokens.findIndex((t10) => t10.id === tokenId);
+    if (i10 < 0) return null;
+    return tl2.find((x2) => x2.index >= i10)?.t0 ?? (tl2.length ? tl2[tl2.length - 1].t1 : null);
+  };
+  const segsOf2 = (paperId) => {
+    const pp = song.papers.find((x2) => x2.id === paperId), owner = pp ? tempoOwner(song, pp) : null;
+    return pp && owner ? playSegments(pp.tracks[owner], paperTicks(pp)) : null;
+  };
+  const locate = (sec) => {
+    if (!ref) return null;
+    const { tokens } = flat(ref.id), tl2 = timeline(tokens, map);
+    const e10 = tl2.find((x2) => sec >= x2.t0 && sec < x2.t1) ?? (sec >= 0 && tl2.length && sec < tl2[tl2.length - 1].t1 + 1e-9 ? tl2[tl2.length - 1] : null);
+    if (!e10) return null;
+    const tick = e10.start + (sec - e10.t0) / Math.max(1e-9, e10.t1 - e10.t0) * e10.tok.dur;
+    let span2 = papers[0];
+    for (const p2 of papers) if (p2.tick0 <= tick + 1e-9) span2 = p2;
+    if (!span2) return null;
+    let inPaper = tick - span2.tick0;
+    const segs = segsOf2(span2.paper.id);
+    if (segs) {
+      let cum = 0;
+      for (const s10 of segs) {
+        const len = s10.t1 - s10.t0;
+        if (inPaper < cum + len) {
+          inPaper = s10.t0 + (inPaper - cum);
+          break;
+        }
+        cum += len;
+      }
+    }
+    return { paperId: span2.paper.id, tick: Math.max(0, Math.floor(inPaper)) };
+  };
+  const secondsAt = (paperId, tick, near2) => {
+    if (!ref) return null;
+    const { tokens } = flat(ref.id), tl2 = timeline(tokens, map);
+    let best = null;
+    for (const span2 of papers) {
+      if (span2.paper.id !== paperId) continue;
+      const segs = segsOf2(span2.paper.id);
+      const cands3 = [];
+      if (segs) {
+        let cum = 0;
+        for (const sg2 of segs) {
+          if (tick >= sg2.t0 && tick < sg2.t1) cands3.push(span2.tick0 + cum + (tick - sg2.t0));
+          cum += sg2.t1 - sg2.t0;
+        }
+      } else cands3.push(span2.tick0 + tick);
+      for (const T3 of cands3) {
+        const e10 = tl2.find((x2) => T3 >= x2.start && T3 < x2.start + x2.tok.dur);
+        if (!e10) continue;
+        const sec = e10.t0 + (T3 - e10.start) / Math.max(1e-9, e10.tok.dur) * (e10.t1 - e10.t0);
+        if (best === null || Math.abs(sec - near2) < Math.abs(best - near2)) best = sec;
+      }
+    }
+    return best;
+  };
+  return { tracks, range: { from, to: to2 }, total, chunks: chunks2, papers, unplayable, secondsOfToken, locate, secondsAt };
+}
+
+// src/engine/fx.ts
+var clamp = (v, lo2, hi) => v < lo2 ? lo2 : v > hi ? hi : v;
+var dbToLin = (dB) => 10 ** (dB / 20);
+var Biquad = class {
+  b0 = 1;
+  b1 = 0;
+  b2 = 0;
+  a1 = 0;
+  a2 = 0;
+  z1 = 0;
+  z2 = 0;
+  // 直接 II 型转置
+  set(type, f2, Q2, gainDb, sr2) {
+    f2 = clamp(f2, 10, sr2 * 0.45);
+    Q2 = clamp(Q2, 0.1, 20);
+    const w2 = 2 * Math.PI * f2 / sr2, cs2 = Math.cos(w2), sn2 = Math.sin(w2), A2 = 10 ** (gainDb / 40), alpha = sn2 / (2 * Q2);
+    let b0 = 1, b1 = 0, b22 = 0, a02 = 1, a12 = 0, a22 = 0;
+    switch (type) {
+      case "lp":
+        b0 = (1 - cs2) / 2;
+        b1 = 1 - cs2;
+        b22 = (1 - cs2) / 2;
+        a02 = 1 + alpha;
+        a12 = -2 * cs2;
+        a22 = 1 - alpha;
+        break;
+      case "hp":
+        b0 = (1 + cs2) / 2;
+        b1 = -(1 + cs2);
+        b22 = (1 + cs2) / 2;
+        a02 = 1 + alpha;
+        a12 = -2 * cs2;
+        a22 = 1 - alpha;
+        break;
+      case "peak":
+        b0 = 1 + alpha * A2;
+        b1 = -2 * cs2;
+        b22 = 1 - alpha * A2;
+        a02 = 1 + alpha / A2;
+        a12 = -2 * cs2;
+        a22 = 1 - alpha / A2;
+        break;
+      case "lowshelf": {
+        const s10 = 2 * Math.sqrt(A2) * alpha;
+        b0 = A2 * (A2 + 1 - (A2 - 1) * cs2 + s10);
+        b1 = 2 * A2 * (A2 - 1 - (A2 + 1) * cs2);
+        b22 = A2 * (A2 + 1 - (A2 - 1) * cs2 - s10);
+        a02 = A2 + 1 + (A2 - 1) * cs2 + s10;
+        a12 = -2 * (A2 - 1 + (A2 + 1) * cs2);
+        a22 = A2 + 1 + (A2 - 1) * cs2 - s10;
+        break;
+      }
+      case "highshelf": {
+        const s10 = 2 * Math.sqrt(A2) * alpha;
+        b0 = A2 * (A2 + 1 + (A2 - 1) * cs2 + s10);
+        b1 = -2 * A2 * (A2 - 1 + (A2 + 1) * cs2);
+        b22 = A2 * (A2 + 1 + (A2 - 1) * cs2 - s10);
+        a02 = A2 + 1 - (A2 - 1) * cs2 + s10;
+        a12 = 2 * (A2 - 1 - (A2 + 1) * cs2);
+        a22 = A2 + 1 - (A2 - 1) * cs2 - s10;
+        break;
+      }
+    }
+    this.b0 = b0 / a02;
+    this.b1 = b1 / a02;
+    this.b2 = b22 / a02;
+    this.a1 = a12 / a02;
+    this.a2 = a22 / a02;
+  }
+  bypass() {
+    this.b0 = 1;
+    this.b1 = 0;
+    this.b2 = 0;
+    this.a1 = 0;
+    this.a2 = 0;
+  }
+  process(x2, n10) {
+    const { b0, b1, b2: b22, a1: a12, a2: a22 } = this;
+    let z1 = this.z1, z2 = this.z2;
+    for (let i10 = 0; i10 < n10; i10++) {
+      const v = x2[i10], y2 = b0 * v + z1;
+      z1 = b1 * v - a12 * y2 + z2;
+      z2 = b22 * v - a22 * y2;
+      x2[i10] = y2;
+    }
+    this.z1 = z1;
+    this.z2 = z2;
+  }
+};
+var EQ = {
+  kind: "eq",
+  name: _t("\u5747\u8861"),
+  formula: _t("\u6BCF\u6BB5\u4E00\u4E2A\u53CC\u4E8C\u9636 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)\uFF0C\u7CFB\u6570\u6309 RBJ Audio EQ Cookbook\uFF08hp / lp Q = 0.707\uFF1B\u67B6\u5B50 Q = 0.707\uFF1B\u5CF0 Q \u53EF\u8C03\uFF09\u3002hpHz / lpHz = 0 \u5173\u3002"),
+  params: [
+    { id: "hpHz", unit: "Hz", min: 0, max: 2e3, default: 0, label: _t("\u4F4E\u5207") },
+    { id: "lpHz", unit: "Hz", min: 0, max: 2e4, default: 0, label: _t("\u9AD8\u5207") },
+    { id: "lowDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u4F4E\u67B6") },
+    { id: "lowHz", unit: "Hz", min: 40, max: 1e3, default: 200, label: _t("\u4F4E\u67B6\u9891\u7387") },
+    { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u4E2D\u5CF0") },
+    { id: "midHz", unit: "Hz", min: 100, max: 1e4, default: 1500, label: _t("\u4E2D\u5CF0\u9891\u7387") },
+    { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: _t("\u4E2D\u5CF0\u5BBD") },
+    { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u9AD8\u67B6") },
+    { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, default: 5e3, label: _t("\u9AD8\u67B6\u9891\u7387") }
+  ]
+};
+function eqSections(p2) {
+  const g3 = (k2) => p2[k2] ?? EQ.params.find((d3) => d3.id === k2).default;
+  return [
+    [g3("hpHz") > 0, "hp", g3("hpHz"), 0.707, 0],
+    [g3("lpHz") > 0, "lp", g3("lpHz"), 0.707, 0],
+    [g3("lowDb") !== 0, "lowshelf", g3("lowHz"), 0.707, g3("lowDb")],
+    [g3("midDb") !== 0, "peak", g3("midHz"), g3("midQ"), g3("midDb")],
+    [g3("highDb") !== 0, "highshelf", g3("highHz"), 0.707, g3("highDb")]
+  ];
+}
+function eqResponseDb(p2, sr2, freqs) {
+  const bq = eqSections(p2).filter(([on2]) => on2).map(([, type, f2, q2, db]) => {
+    const b3 = new Biquad();
+    b3.set(type, f2, q2, db, sr2);
+    return b3;
+  });
+  return freqs.map((f2) => {
+    const w2 = 2 * Math.PI * f2 / sr2, c12 = Math.cos(w2), s12 = Math.sin(w2), c22 = Math.cos(2 * w2), s23 = Math.sin(2 * w2);
+    let mag = 1;
+    for (const b3 of bq) {
+      const nr2 = b3.b0 + b3.b1 * c12 + b3.b2 * c22, ni2 = -(b3.b1 * s12 + b3.b2 * s23), dr = 1 + b3.a1 * c12 + b3.a2 * c22, di = -(b3.a1 * s12 + b3.a2 * s23);
+      mag *= Math.sqrt((nr2 * nr2 + ni2 * ni2) / (dr * dr + di * di));
+    }
+    return 20 * Math.log10(Math.max(1e-9, mag));
+  });
+}
+var Eq = class {
+  kind = "eq";
+  on = true;
+  sec = Array.from({ length: 5 }, () => [new Biquad(), new Biquad()]);
+  use = [false, false, false, false, false];
+  id;
+  sr;
+  constructor(id2, sr2, p2) {
+    this.id = id2;
+    this.sr = sr2;
+    this.setParams(p2);
+  }
+  // 不用参数属性：Node 的 strip-only TS 不认
+  setParams(p2) {
+    const defs = eqSections(p2);
+    defs.forEach(([on2, type, f2, q2, db], k2) => {
+      this.use[k2] = on2;
+      for (const b3 of this.sec[k2]) if (on2) b3.set(type, f2, q2, db, this.sr);
+      else b3.bypass();
+    });
+  }
+  process(L2, R2, n10) {
+    if (!this.on) return;
+    for (let k2 = 0; k2 < 5; k2++) {
+      if (!this.use[k2]) continue;
+      this.sec[k2][0].process(L2, n10);
+      if (R2) this.sec[k2][1].process(R2, n10);
+    }
+  }
+};
+var COMP = {
+  kind: "comp",
+  name: _t("\u538B\u7F29"),
+  formula: _t("\u5305\u7EDC e[n] = max(|x|, e[n-1]\xB7r) \u8D77\uFF08attack\uFF09\u843D\uFF08release\uFF09\u5404\u4E00\u4E2A\u65F6\u95F4\u5E38\u6570\uFF1B\u8D85\u8FC7 threshold \u7684\u90E8\u5206\u6309 ratio \u538B\uFF08kneeDb \u5185\u8F6F\u62D0\u70B9\uFF1Ag = -(x - T + K/2)^2 \xB7 (1 - 1/R) / (2K)\uFF09\uFF1B\u589E\u76CA = 10^(g/20) \xD7 10^(makeup/20)\u3002key \u7ED9\u4E86 = \u542C\u522B\u7684\u8F68\uFF08\u4FA7\u94FE\uFF09\uFF0C\u4E0D\u7ED9 = \u542C\u81EA\u5DF1\u3002"),
+  params: [
+    { id: "thresholdDb", unit: "dB", min: -60, max: 0, default: -18, label: _t("\u9608\u503C") },
+    { id: "ratio", unit: "ratio", min: 1, max: 20, default: 3, label: _t("\u6BD4\u4F8B") },
+    { id: "attackMs", unit: "ms", min: 0.1, max: 200, default: 10, label: _t("\u8D77") },
+    { id: "releaseMs", unit: "ms", min: 5, max: 2e3, default: 120, label: _t("\u843D") },
+    { id: "kneeDb", unit: "dB", min: 0, max: 24, default: 6, label: _t("\u62D0\u70B9") },
+    { id: "makeupDb", unit: "dB", min: -12, max: 24, default: 0, label: _t("\u8865\u507F") }
+  ]
+};
+var Comp = class {
+  kind = "comp";
+  on = true;
+  env = 0;
+  aAtt = 0;
+  aRel = 0;
+  T = -18;
+  R = 3;
+  K = 6;
+  makeup = 1;
+  gainReductionDb = 0;
+  // 表用（最近一块压了多少）
+  inPeak = 0;
+  outPeak = 0;
+  // 表用（最近一块进 / 出的峰值，线性；压缩页的波形图，v0.10.21）
+  id;
+  sr;
+  constructor(id2, sr2, p2) {
+    this.id = id2;
+    this.sr = sr2;
+    this.setParams(p2);
+  }
+  setParams(p2) {
+    const g3 = (k2) => p2[k2] ?? COMP.params.find((d3) => d3.id === k2).default;
+    this.T = g3("thresholdDb");
+    this.R = Math.max(1, g3("ratio"));
+    this.K = Math.max(0, g3("kneeDb"));
+    this.makeup = dbToLin(g3("makeupDb"));
+    this.aAtt = Math.exp(-1 / (Math.max(1e-4, g3("attackMs") / 1e3) * this.sr));
+    this.aRel = Math.exp(-1 / (Math.max(1e-3, g3("releaseMs") / 1e3) * this.sr));
+  }
+  gainDb(levelDb) {
+    const { T: T3, R: R2, K: K4 } = this, over = levelDb - T3;
+    if (K4 > 0 && over > -K4 / 2 && over < K4 / 2) {
+      const t10 = over + K4 / 2;
+      return -(t10 * t10 * (1 - 1 / R2)) / (2 * K4);
+    }
+    return over <= 0 ? 0 : -over * (1 - 1 / R2);
+  }
+  process(L2, R2, n10, key) {
+    if (!this.on) return;
+    let env2 = this.env, minG = 0, pin = 0, pout = 0;
+    for (let i10 = 0; i10 < n10; i10++) {
+      const a10 = Math.max(Math.abs(L2[i10]), R2 ? Math.abs(R2[i10]) : 0), k2 = key ? Math.abs(key[i10]) : a10;
+      env2 = k2 > env2 ? k2 + (env2 - k2) * this.aAtt : k2 + (env2 - k2) * this.aRel;
+      const lvl = env2 > 1e-7 ? 20 * Math.log10(env2) : -140, gdb = this.gainDb(lvl), g3 = dbToLin(gdb) * this.makeup;
+      if (gdb < minG) minG = gdb;
+      if (a10 > pin) pin = a10;
+      if (a10 * g3 > pout) pout = a10 * g3;
+      L2[i10] *= g3;
+      if (R2) R2[i10] *= g3;
+    }
+    this.env = env2;
+    this.gainReductionDb = minG;
+    this.inPeak = pin;
+    this.outPeak = pout;
+  }
+};
+var DELAY = {
+  kind: "delay",
+  name: _t("\u5EF6\u8FDF"),
+  formula: _t("y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = \u53C2\u6570\u8868\u7684\u9ED8\u8BA4 1\uFF0C\u7B2C 16 \u6761\u8D77\uFF1B\u539F\u6765\u6CA1\u5199 = 1 \u2212 mix\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002"),
+  params: [
+    { id: "timeMs", unit: "ms", min: 1, max: 2e3, default: 375, label: _t("\u65F6\u95F4") },
+    { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: _t("\u53CD\u9988") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") },
+    { id: "dampHz", unit: "Hz", min: 500, max: 2e4, default: 6e3, label: _t("\u53CD\u9988\u9AD8\u5207") }
+  ]
+};
+var Delay = class {
+  kind = "delay";
+  on = true;
+  bufL;
+  bufR;
+  wr = 0;
+  D = 1;
+  fb = 0.35;
+  mix = 0.3;
+  dry = 0.7;
+  lpK = 0.5;
+  lpL = 0;
+  lpR = 0;
+  id;
+  sr;
+  constructor(id2, sr2, p2) {
+    this.id = id2;
+    this.sr = sr2;
+    const max2 = Math.ceil(2 * sr2) + 1;
+    this.bufL = new Float32Array(max2);
+    this.bufR = new Float32Array(max2);
+    this.setParams(p2);
+  }
+  setParams(p2) {
+    const g3 = (k2) => p2[k2] ?? DELAY.params.find((d3) => d3.id === k2).default;
+    this.D = clamp(Math.round(g3("timeMs") / 1e3 * this.sr), 1, this.bufL.length - 1);
+    this.fb = clamp(g3("feedback"), 0, 0.95);
+    this.mix = clamp(g3("mix"), 0, 1);
+    this.dry = clamp(g3("dry"), 0, 1);
+    this.lpK = 1 - Math.exp(-2 * Math.PI * clamp(g3("dampHz"), 100, this.sr * 0.45) / this.sr);
+  }
+  process(L2, R2, n10) {
+    if (!this.on) return;
+    const len = this.bufL.length, D4 = this.D, fb = this.fb, mix = this.mix, dry = this.dry, k2 = this.lpK;
+    for (let i10 = 0; i10 < n10; i10++) {
+      const rd2 = (this.wr - D4 + len) % len;
+      const dl = this.bufL[rd2];
+      this.lpL += (dl - this.lpL) * k2;
+      this.bufL[this.wr] = L2[i10] + this.lpL * fb;
+      L2[i10] = L2[i10] * dry + dl * mix;
+      if (R2) {
+        const dr = this.bufR[rd2];
+        this.lpR += (dr - this.lpR) * k2;
+        this.bufR[this.wr] = R2[i10] + this.lpR * fb;
+        R2[i10] = R2[i10] * dry + dr * mix;
+      }
+      this.wr = (this.wr + 1) % len;
+    }
+  }
+};
+var REVERB = {
+  kind: "reverb",
+  name: _t("\u6DF7\u54CD"),
+  formula: _t("Freeverb\uFF1A8 \u6761\u4F4E\u901A\u53CD\u9988\u68B3\u72B6\uFF08\u957F\u5EA6 1116\u20261617 @44.1k\uFF0C\u6309\u91C7\u6837\u7387\u7F29\u653E\uFF1B\u53CD\u9988 = 0.7 + 0.28\xB7room\uFF0C\u4F4E\u901A = damp\uFF09\u5E76\u8054\uFF0C\u518D\u4E32 4 \u6761\u5168\u901A\uFF08g = 0.5\uFF09\uFF1B\u53F3\u8FB9\u5404\u957F 23 \u4E2A\u91C7\u6837\uFF1B\u524D\u9762\u4E00\u6BB5 preDelayMs \u7EAF\u5EF6\u8FDF\uFF1By = x\xB7(1-mix) + wet\xB7mix\u3002"),
+  params: [
+    { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u623F\u95F4\u5927\u5C0F") },
+    { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u9AD8\u9891\u5438\u6536") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") },
+    { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: _t("\u9884\u5EF6\u8FDF") },
+    { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u5BBD\u5EA6") }
+  ],
+  stereoOnly: true
+};
+var COMBS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617];
+var ALLPASS = [556, 441, 341, 225];
+var SPREAD = 23;
+var Comb = class {
+  buf;
+  idx = 0;
+  store = 0;
+  constructor(n10) {
+    this.buf = new Float32Array(n10);
+  }
+  tick(x2, fb, damp) {
+    const out = this.buf[this.idx];
+    this.store = out * (1 - damp) + this.store * damp;
+    this.buf[this.idx] = x2 + this.store * fb;
+    this.idx = (this.idx + 1) % this.buf.length;
+    return out;
+  }
+};
+var Allpass = class {
+  buf;
+  idx = 0;
+  constructor(n10) {
+    this.buf = new Float32Array(n10);
+  }
+  tick(x2) {
+    const b3 = this.buf[this.idx], out = -x2 + b3;
+    this.buf[this.idx] = x2 + b3 * 0.5;
+    this.idx = (this.idx + 1) % this.buf.length;
+    return out;
+  }
+};
+var Reverb = class {
+  kind = "reverb";
+  on = true;
+  cL;
+  cR;
+  aL;
+  aR;
+  pre;
+  preW = 0;
+  preD = 0;
+  fb = 0.84;
+  damp = 0.5;
+  mix = 0.3;
+  dry = 0.7;
+  width = 1;
+  id;
+  sr;
+  constructor(id2, sr2, p2) {
+    this.id = id2;
+    this.sr = sr2;
+    const s10 = sr2 / 44100, len = (n10) => Math.max(2, Math.round(n10 * s10));
+    this.cL = COMBS.map((n10) => new Comb(len(n10)));
+    this.cR = COMBS.map((n10) => new Comb(len(n10 + SPREAD)));
+    this.aL = ALLPASS.map((n10) => new Allpass(len(n10)));
+    this.aR = ALLPASS.map((n10) => new Allpass(len(n10 + SPREAD)));
+    this.pre = new Float32Array(Math.ceil(0.2 * sr2) + 1);
+    this.setParams(p2);
+  }
+  setParams(p2) {
+    const g3 = (k2) => p2[k2] ?? REVERB.params.find((d3) => d3.id === k2).default;
+    this.fb = 0.7 + 0.28 * clamp(g3("room"), 0, 1);
+    this.damp = clamp(g3("damp"), 0, 1) * 0.4;
+    this.mix = clamp(g3("mix"), 0, 1);
+    this.dry = clamp(g3("dry"), 0, 1);
+    this.width = clamp(g3("width"), 0, 1);
+    this.preD = clamp(Math.round(g3("preDelayMs") / 1e3 * this.sr), 0, this.pre.length - 1);
+  }
+  process(L2, R2, n10) {
+    if (!this.on) return;
+    const Rr = R2 ?? L2, mix = this.mix, dry = this.dry, w1 = (1 + this.width) / 2, w2 = (1 - this.width) / 2, plen = this.pre.length;
+    for (let i10 = 0; i10 < n10; i10++) {
+      const inp = (L2[i10] + Rr[i10]) * 0.015;
+      this.pre[this.preW] = inp;
+      const x2 = this.pre[(this.preW - this.preD + plen) % plen];
+      this.preW = (this.preW + 1) % plen;
+      let oL2 = 0, oR2 = 0;
+      for (let c10 = 0; c10 < 8; c10++) {
+        oL2 += this.cL[c10].tick(x2, this.fb, this.damp);
+        oR2 += this.cR[c10].tick(x2, this.fb, this.damp);
+      }
+      for (let a10 = 0; a10 < 4; a10++) {
+        oL2 = this.aL[a10].tick(oL2);
+        oR2 = this.aR[a10].tick(oR2);
+      }
+      const wl = oL2 * w1 + oR2 * w2, wr = oR2 * w1 + oL2 * w2;
+      L2[i10] = L2[i10] * dry + wl * mix;
+      if (R2) R2[i10] = R2[i10] * dry + wr * mix;
+    }
+  }
+};
+var CHORUS = {
+  kind: "chorus",
+  name: _t("\u5408\u5531"),
+  formula: _t("v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7(1-mix) + mix \xB7 \u03A3_k d_k / v\u3002"),
+  params: [
+    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: _t("\u51E0\u6761") },
+    { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: _t("\u5EF6\u8FDF") },
+    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: _t("\u6296\u52A8\u6DF1\u5EA6") },
+    { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: _t("\u6296\u52A8\u5FEB\u6162") },
+    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: _t("\u5DE6\u53F3\u94FA\u5F00") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") }
+  ]
+};
+var Chorus = class {
+  kind = "chorus";
+  on = true;
+  id;
+  sr;
+  buf;
+  wr = 0;
+  phase = 0;
+  voices = 3;
+  delay = 0;
+  depth = 0;
+  rate = 0.6;
+  spread = 0.8;
+  mix = 0.5;
+  dry = 0.5;
+  constructor(id2, sr2, p2) {
+    this.id = id2;
+    this.sr = sr2;
+    this.buf = new Float32Array(Math.ceil(0.06 * sr2) + 2);
+    this.setParams(p2);
+  }
+  setParams(p2) {
+    const g3 = (k2) => p2[k2] ?? CHORUS.params.find((d3) => d3.id === k2).default;
+    this.voices = clamp(Math.round(g3("voices")), 1, 4);
+    this.delay = clamp(g3("delayMs"), 5, 40) / 1e3 * this.sr;
+    this.depth = clamp(g3("depthMs"), 0, 10) / 1e3 * this.sr;
+    this.rate = clamp(g3("rateHz"), 0.05, 5);
+    this.spread = clamp(g3("spread"), 0, 1);
+    this.mix = clamp(g3("mix"), 0, 1);
+    this.dry = clamp(g3("dry"), 0, 1);
+  }
+  process(L2, R2, n10) {
+    if (!this.on) return;
+    const len = this.buf.length, v = this.voices, mix = this.mix, dry = this.dry, dphi = 2 * Math.PI * this.rate / this.sr;
+    for (let i10 = 0; i10 < n10; i10++) {
+      const x2 = R2 ? (L2[i10] + R2[i10]) * 0.5 : L2[i10];
+      this.buf[this.wr] = x2;
+      let wl = 0, wr = 0;
+      for (let k2 = 0; k2 < v; k2++) {
+        const d3 = this.delay + this.depth * Math.sin(this.phase + 2 * Math.PI * k2 / v), rp2 = this.wr - d3, ri2 = Math.floor(rp2), f2 = rp2 - ri2;
+        const a10 = this.buf[(ri2 % len + len) % len], b3 = this.buf[((ri2 + 1) % len + len) % len], y2 = (a10 * (1 - f2) + b3 * f2) / v;
+        const pan = v === 1 ? 0 : this.spread * (2 * k2 / (v - 1) - 1), gl = Math.cos((pan + 1) * Math.PI / 4) * Math.SQRT2, gr = Math.sin((pan + 1) * Math.PI / 4) * Math.SQRT2;
+        wl += y2 * gl;
+        wr += y2 * gr;
+      }
+      this.phase += dphi;
+      if (this.phase > 2 * Math.PI) this.phase -= 2 * Math.PI;
+      this.wr = (this.wr + 1) % len;
+      L2[i10] = L2[i10] * dry + wl * mix;
+      if (R2) R2[i10] = R2[i10] * dry + wr * mix;
+    }
+  }
+};
+var GAIN = { kind: "gain", name: _t("\u589E\u76CA"), formula: "y = x \xB7 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, default: 0, label: _t("\u589E\u76CA") }] };
+var Gain = class {
+  kind = "gain";
+  on = true;
+  g = 1;
+  id;
+  constructor(id2, _sr, p2) {
+    this.id = id2;
+    this.setParams(p2);
+  }
+  setParams(p2) {
+    this.g = dbToLin(clamp(p2.dB ?? 0, -60, 24));
+  }
+  process(L2, R2, n10) {
+    if (!this.on || this.g === 1) return;
+    for (let i10 = 0; i10 < n10; i10++) {
+      L2[i10] *= this.g;
+      if (R2) R2[i10] *= this.g;
+    }
+  }
+};
+var FX_KINDS = { eq: EQ, comp: COMP, delay: DELAY, reverb: REVERB, chorus: CHORUS, gain: GAIN };
+function createFx(spec, sr2) {
+  const p2 = Object.fromEntries(Object.entries(spec.params ?? {}).filter(([, v]) => typeof v === "number" && Number.isFinite(v)));
+  let fx = null;
+  switch (spec.kind) {
+    case "eq":
+      fx = new Eq(spec.id, sr2, p2);
+      break;
+    case "comp":
+      fx = new Comp(spec.id, sr2, p2);
+      break;
+    case "delay":
+      fx = new Delay(spec.id, sr2, p2);
+      break;
+    case "reverb":
+      fx = new Reverb(spec.id, sr2, p2);
+      break;
+    case "chorus":
+      fx = new Chorus(spec.id, sr2, p2);
+      break;
+    case "gain":
+      fx = new Gain(spec.id, sr2, p2);
+      break;
+  }
+  if (fx) fx.on = spec.on !== false;
+  return fx;
+}
+function buildChain(specs, prev, sr2) {
+  const out = [];
+  for (const s10 of specs) {
+    const had = prev.find((f2) => f2.id === s10.id && f2.kind === s10.kind);
+    if (had) {
+      had.setParams(Object.fromEntries(Object.entries(s10.params ?? {}).filter(([, v]) => typeof v === "number")));
+      had.on = s10.on !== false;
+      out.push(had);
+      continue;
+    }
+    const fx = createFx(s10, sr2);
+    if (fx) out.push(fx);
+  }
+  return out;
+}
+
+// src/score/desk.ts
+var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
+var freshPad = () => ({ auto: true, fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
+var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
+var FINDER_MODES = ["year", "style", "family", "hs"];
+var freshFinderMemo = () => ({ mode: "year", open: {}, scroll: 0, row: null, pick: "" });
+function serializeFinderMemo(m2) {
+  return { mode: m2.mode, open: { ...m2.open }, scroll: Math.round(m2.scroll), row: m2.row, pick: m2.pick };
+}
+function unserializeFinderMemo(json) {
+  const m2 = freshFinderMemo();
+  if (!json || typeof json !== "object") return m2;
+  const j2 = json;
+  if (FINDER_MODES.includes(j2.mode)) m2.mode = j2.mode;
+  if (j2.open && typeof j2.open === "object") {
+    for (const [k2, v] of Object.entries(j2.open)) if (FINDER_MODES.includes(k2) && typeof v === "string") m2.open[k2] = v;
+  }
+  if (typeof j2.scroll === "number" && Number.isFinite(j2.scroll) && j2.scroll > 0) m2.scroll = j2.scroll;
+  if (typeof j2.row === "string" && j2.row) m2.row = j2.row;
+  if (typeof j2.pick === "string") m2.pick = j2.pick;
+  return m2;
+}
+var freshDesk = () => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, mode: "notes", finder: freshFinderMemo() });
+function serializeDesk(d3) {
+  const parts = {};
+  for (const [id2, p2] of Object.entries(d3.parts)) parts[id2] = { hidden: p2.hidden, only: p2.only, muted: p2.muted, solo: p2.solo };
+  const pd = d3.pad;
+  return {
+    scope: d3.scope,
+    pageFlow: d3.pageFlow && !d3.scroll,
+    scroll: d3.scroll,
+    paper: d3.paper,
+    parts,
+    mp3: d3.mp3,
+    pad: { auto: pd.auto, fifths: pd.fifths, scale: pd.scale, unit: pd.unit, tuplet: pd.tuplet, low: pd.low },
+    ref: d3.ref ? { open: d3.ref.open, left: d3.ref.left, top: d3.ref.top, width: d3.ref.width, height: d3.ref.height } : null,
+    mode: d3.mode,
+    finder: serializeFinderMemo(d3.finder)
+  };
+}
+function unserializeDesk(json) {
+  const d3 = freshDesk();
+  if (!json || typeof json !== "object") return d3;
+  const j2 = json;
+  if (j2.scope === "all") d3.scope = "all";
+  if (j2.pageFlow === true) d3.pageFlow = true;
+  if (j2.scroll === true) {
+    d3.scroll = true;
+    d3.pageFlow = false;
+  }
+  if (j2.mp3 === "small") d3.mp3 = "small";
+  if (j2.mode === "lyrics" || j2.mode === "symbols" || j2.mode === "listen") d3.mode = j2.mode;
+  if (typeof j2.paper === "string" && j2.paper) d3.paper = j2.paper;
+  if (j2.parts && typeof j2.parts === "object") {
+    for (const [id2, v] of Object.entries(j2.parts)) {
+      if (!v || typeof v !== "object") continue;
+      const p2 = v;
+      d3.parts[id2] = { hidden: p2.hidden === true, only: p2.only === true, muted: p2.muted === true, solo: p2.solo === true };
+    }
+  }
+  if (j2.pad && typeof j2.pad === "object") {
+    const q2 = j2.pad;
+    if (Number.isInteger(q2.fifths) && Math.abs(q2.fifths) <= 7) d3.pad.fifths = q2.fifths;
+    if (q2.auto === false) d3.pad.auto = false;
+    if (typeof q2.scale === "string" && SCALES.some((sc2) => sc2.id === q2.scale)) d3.pad.scale = q2.scale;
+    if (PAD_UNITS.includes(q2.unit)) d3.pad.unit = q2.unit;
+    if (q2.tuplet === 3 || q2.tuplet === 5 || q2.tuplet === 6 || q2.tuplet === 7) d3.pad.tuplet = q2.tuplet;
+    if (Number.isInteger(q2.low) && q2.low >= 0 && q2.low <= 127) d3.pad.low = q2.low;
+  }
+  if (j2.ref && typeof j2.ref === "object") {
+    const r10 = j2.ref, n10 = (v) => typeof v === "number" && Number.isFinite(v);
+    if (n10(r10.left) && n10(r10.top) && n10(r10.width) && n10(r10.height)) d3.ref = { open: r10.open === true, left: r10.left, top: r10.top, width: r10.width, height: r10.height };
+  }
+  if (j2.finder) d3.finder = unserializeFinderMemo(j2.finder);
+  return d3;
 }
 
 // src/format/xml.ts
@@ -36886,7 +37756,7 @@ var ottavaXml = (shift, open2, auto = false) => {
   if (!shift) return stop;
   return stop + `<direction placement="${shift > 0 ? "above" : "below"}"><direction-type><octave-shift type="${shift > 0 ? "down" : "up"}" size="${shift === 2 ? 15 : 8}"${id2()}/></direction-type></direction>`;
 };
-function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
+function partMeasures(toks, breaks, first, clef = "G", staves = 1, sung) {
   const staffs = staffOfTokens(toks, staves);
   const head = headLen(toks);
   const H3 = { fifths: DEFAULT_KEY, minor: false, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
@@ -36900,7 +37770,7 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       H3.beatType = t10.beatType;
     } else if (t10.kind === "tempo") H3.bpm = t10.bpm;
   }
-  const langs = syllableLangs(toks);
+  const langs = sung ?? syllableLangs(toks);
   const measures = [];
   let cur = [], ticks = 0, len = measureLen(H3.beats, H3.beatType);
   let ending = null;
@@ -37110,7 +37980,7 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
 function writeMusicXml(doc, meta) {
   const paper = doc.paper ?? paperOf(DEFAULT_PAPER);
   autoSeq = 0;
-  const built = doc.parts.map((p2, k2) => ({ p: p2, ...partMeasures(p2.tokens, p2.breaks, k2 === 0, p2.info.clef ?? "G", p2.info.staves === 2 ? 2 : 1) }));
+  const built = doc.parts.map((p2, k2) => ({ p: p2, ...partMeasures(p2.tokens, p2.breaks, k2 === 0, p2.info.clef ?? "G", p2.info.staves === 2 ? 2 : 1, p2.langs) }));
   const nMeas = Math.max(0, ...built.map((b3) => b3.measures.length));
   const manualBars = {}, unwritten = [];
   const bodies = built.map((b3) => {
@@ -37545,7 +38415,7 @@ function readMusicXml(xml, hints) {
 
 // src/format/contract.ts
 var FORMAT = { manifest: 2, score: 2, lounge: 3, studio: 2 };
-var FORMAT_MINOR = { manifest: 1, score: 10, lounge: 1, studio: 1 };
+var FORMAT_MINOR = { manifest: 1, score: 11, lounge: 2, studio: 2 };
 var FORMAT_PATCH = { manifest: 1, score: 1, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
@@ -37678,21 +38548,6 @@ function contentFingerprint(p2) {
   const thumbnail = p2.thumbnail ? sha256HexSync(p2.thumbnail) : null;
   return sha256TextSync(JSON.stringify({ v: 2, papers, scoreExt: scoreExtNoView(p2.scoreExt), lounge, studio: studio2, sounds: [...p2.sounds].sort(), thumbnail }));
 }
-function parseFinalRecord(v) {
-  if (!v || typeof v !== "object") return null;
-  const r10 = v, mp3 = r10.mp3, core2 = r10.core;
-  if (typeof r10.at !== "string" || typeof r10.rev !== "number" || typeof r10.fingerprint !== "string" || !mp3 || typeof mp3.path !== "string" || typeof mp3.bytes !== "number" || typeof mp3.sha256 !== "string") return null;
-  return {
-    at: r10.at,
-    rev: r10.rev,
-    app: String(r10.app ?? ""),
-    fingerprint: r10.fingerprint,
-    core: { version: String(core2?.version ?? ""), hash: String(core2?.hash ?? "") },
-    mp3: { path: mp3.path, bytes: mp3.bytes, sha256: mp3.sha256, secs: Number(mp3.secs ?? 0), sr: Number(mp3.sr ?? 0), kbps: Number(mp3.kbps ?? 0), stereo: mp3.stereo !== false },
-    parts: Array.isArray(r10.parts) ? r10.parts.map(String) : [],
-    ...Array.isArray(r10.issues) ? { issues: r10.issues.map((i10) => ({ part: String(i10.part), why: String(i10.why) })) } : {}
-  };
-}
 
 // src/format/ids.ts
 var SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
@@ -37780,6 +38635,37 @@ var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 var withThumbnail = (extras, png) => ({ ...extras, thumbnail: png });
 var CANDIDATE_ID = { full: "c1", light: "c2" };
 var common = (calibrationDb) => ({ calibrationDb, chain: [], dynamicsVel: { ...DYNAMICS_VEL }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });
+function completeCandidate(c02) {
+  const c10 = { ...c02 }, eng = instrumentOf(c10)?.engine;
+  if (eng !== "tsukuyomi" && eng !== "vowel-sampler" && eng !== "soundfont") return c10;
+  const a10 = { ...c10.articulation ?? {} };
+  const fill2 = (k2, v) => {
+    if (!(k2 in a10)) a10[k2] = v;
+  };
+  fill2("staccatoGate", ARTICULATION.staccatoGate);
+  fill2("tenutoGate", ARTICULATION.tenutoGate);
+  fill2("accentDb", ARTICULATION.accentDb);
+  fill2("gapSec", 0);
+  fill2("marcatoDb", MARCATO_DB);
+  fill2("accentVel", ACCENT_VEL);
+  fill2("marcatoVel", MARCATO_VEL);
+  for (const [k2, v] of Object.entries(MARK_DEFAULTS)) fill2(k2, v);
+  fill2("canSwell", true);
+  fill2("rollHz", null);
+  c10.articulation = a10;
+  c10.dynamicsVel = { ...DYNAMICS_VEL, ...c10.dynamicsVel ?? {} };
+  if (!("calibrationDb" in c10)) c10.calibrationDb = CALIBRATION_DEFAULT_DB;
+  if (!Array.isArray(c10.chain)) c10.chain = [];
+  if (!("transpose" in c10)) c10.transpose = 0;
+  if (eng === "tsukuyomi") {
+    c10.sing = { ...SING_MARKS, ...c10.sing ?? {} };
+    c10.defaults = { ...TSUKUYOMI_DEFAULTS, ...c10.defaults ?? {} };
+    const i10 = c10.instrument;
+    if (i10.chunk !== "sheet" && i10.chunk !== "whole" && i10.chunk !== "phrase") c10.instrument = { ...i10, chunk: "phrase" };
+  }
+  if (eng === "soundfont") c10.defaults = { ...SOUNDFONT_DEFAULTS, ...c10.defaults ?? {} };
+  return c10;
+}
 function withCurrentLabels(c10) {
   if (!c10 || typeof c10 !== "object" || !c10.ids || typeof c10.ids !== "object") return;
   const cur = currentLabelOf(c10);
@@ -37819,8 +38705,46 @@ var fpTextOf = (o10) => {
   return JSON.stringify(rest, null, 2) + "\n";
 };
 var KNOWN_SCORE_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort", "notation", "chordTags", "viewInC", "middleC", "expressions", "textLang"]);
-var KNOWN_PAPER_KEYS = /* @__PURE__ */ new Set(["id", "file", "manualBars", "unwritten", "swells", "hidden", "autoOttava", "phrases"]);
-var KNOWN_PART_KEYS = /* @__PURE__ */ new Set(["id", "role", "mic", "kind", "clef", "autoOttava", "host", "brokenChords", "chords"]);
+var KNOWN_PAPER_KEYS = /* @__PURE__ */ new Set(["id", "file", "manualBars", "unwritten", "swells", "hidden", "autoOttava"]);
+var KNOWN_PART_KEYS = /* @__PURE__ */ new Set(["id", "role", "mic", "kind", "clef", "host", "chords"]);
+var ROLE_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "id", "name", "sound", "active", "candidates", "concept"]);
+var CAND_KEYS = /* @__PURE__ */ new Set(["id", "name", "castAs", "asCast", "instrument", "gm", "calibrationDb", "transpose", "defaults", "dynamicsVel", "dynamicsDb", "articulation", "sing", "chain", "credit", "spec", "engines"]);
+var ART_KEYS = /* @__PURE__ */ new Set([
+  "staccatoGate",
+  "tenutoGate",
+  "accentDb",
+  "gapSec",
+  "marcatoDb",
+  "accentVel",
+  "marcatoVel",
+  "accentSec",
+  "breathSec",
+  "breathShare",
+  "gapShare",
+  "wedgeStepVel",
+  "wedgeStepDb",
+  "sfzDb",
+  "sfzVel",
+  "sfzSec",
+  "fpSec",
+  "swellDb",
+  "canSwell",
+  "stressDb",
+  "stressVel",
+  "unstressDb",
+  "unstressVel",
+  "ghostDb",
+  "ghostVel",
+  "arpeggioSec",
+  "rollHz"
+]);
+var STUDIO_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "tracks", "master"]);
+var TRACK_KEYS = /* @__PURE__ */ new Set(["id", "kind", "name", "gainDb", "pan", "chain", "sends", "to", "bypass"]);
+var FX_KEYS = /* @__PURE__ */ new Set(["id", "kind", "on", "params", "key", "note"]);
+var MASTER_KEYS = /* @__PURE__ */ new Set(["gainDb", "limiter", "chain"]);
+var MANIFEST_KEYS = /* @__PURE__ */ new Set(["format", "version", "minor", "patch", "app", "saved", "files", "derived", "sounds", "core"]);
+var newerThanMe = (j2, k2) => !!j2 && typeof j2 === "object" && Number(j2.version ?? 1) === FORMAT[k2] && Number(j2.minor ?? 0) > FORMAT_MINOR[k2];
+var only = (o10, keys, newer) => newer ? o10 : Object.fromEntries(Object.entries(o10).filter(([k2]) => keys.has(k2)));
 var unknownById = (list2, known) => {
   const out = /* @__PURE__ */ new Map();
   if (Array.isArray(list2)) for (const e10 of list2) {
@@ -37868,9 +38792,16 @@ function buildEntries(a10) {
   for (const part2 of song.parts) {
     if (!a10.extras.lounge[part2.role]) continue;
     const role = structuredClone(a10.extras.lounge[part2.role]);
-    for (const c10 of cands(role)) {
-      const i10 = instrumentOf(c10);
-      if (isVoice(i10)) i10.hum = a10.hum;
+    if (Array.isArray(role.candidates)) role.candidates = role.candidates.map((c10) => c10 && typeof c10 === "object" ? completeCandidate(c10) : c10);
+    {
+      const nw2 = newerThanMe(role, "lounge");
+      for (const k2 of Object.keys(role)) if (!nw2 && !ROLE_KEYS.has(k2)) delete role[k2];
+      if (Array.isArray(role.candidates)) role.candidates = role.candidates.map((c10) => {
+        if (!c10 || typeof c10 !== "object") return c10;
+        const o10 = only(c10, CAND_KEYS, nw2);
+        if (o10.articulation && typeof o10.articulation === "object") o10.articulation = only(o10.articulation, ART_KEYS, nw2);
+        return o10;
+      });
     }
     withCurrentLabels(role.concept);
     for (const c10 of cands(role)) withCurrentLabels(c10.castAs?.concept);
@@ -37879,8 +38810,15 @@ function buildEntries(a10) {
   const studio2 = structuredClone(a10.extras.studio ?? emptyStudio());
   const tracks = (studio2.tracks ?? []).slice();
   for (const part2 of song.parts) if (!tracks.some((m2) => m2.id === part2.mic)) tracks.push(micTrack(part2.mic, _t("\u9EA6\u514B\u98CE {t}", { t: tracks.filter((t10) => t10.kind === "mic").length + 1 })));
-  studio2.tracks = tracks;
-  if (!studio2.master) studio2.master = { gainDb: 0, limiter: true, chain: [] };
+  const fullFx = (f2) => {
+    const def = FX_KINDS[String(f2.kind)];
+    return def ? { ...f2, on: f2.on !== false, params: { ...Object.fromEntries(def.params.map((d3) => [d3.id, d3.default])), ...f2.params ?? {} } } : f2;
+  };
+  const studioNewer = newerThanMe(a10.extras.studio, "studio"), fx2 = (f2) => only(fullFx(f2), FX_KEYS, studioNewer);
+  studio2.tracks = tracks.map((t10) => only({ ...t10, ...normTrack(t10), chain: (t10.chain ?? []).map(fx2) }, TRACK_KEYS, studioNewer));
+  const m0 = studio2.master ?? {}, mm = activeMaster({ ...a10.extras, studio: { master: m0 } });
+  studio2.master = only({ ...m0, gainDb: mm.gainDb, limiter: mm.limiter, chain: mm.chain.map(fx2) }, MASTER_KEYS, studioNewer);
+  for (const k2 of Object.keys(studio2)) if (!studioNewer && !STUDIO_KEYS.has(k2)) delete studio2[k2];
   const mics = tracks.filter((t10) => t10.kind === "mic");
   const labels = partNames(song, lounge, song.textLang === "zh" || song.textLang === "en" ? song.textLang : "en");
   const infoOf = (part2, k2) => {
@@ -37913,8 +38851,17 @@ function buildEntries(a10) {
     if (l10.grand === "explicit") return { staves: 2 };
     return l10.clef !== "G" ? { clef: l10.clef } : {};
   };
+  const order = songPlayOrder(song), sung = new Map(song.parts.map((part2) => [part2.id, sungLangsOf(song, order, part2.id, activeSingChunk(a10.extras, part2.role), activeHum(a10.extras, part2.role))]));
+  const langsOf = (partId, toks) => {
+    const m2 = sung.get(partId);
+    return m2 ? toks.map((t10) => t10.kind === "note" ? m2.get(t10.id) ?? null : null) : void 0;
+  };
   const papers = song.papers.map((p2) => {
-    const parts = song.parts.flatMap((part2, k2) => p2.tracks[part2.id] ? [{ info: { ...infos[k2], ...clefInfo(p2.id, part2) }, tokens: autoOtt(p2.id, part2) ? withAutoOttava(p2.tracks[part2.id], lookAt(p2.id, part2.id)?.clef ?? "G") : p2.tracks[part2.id] }] : []);
+    const parts = song.parts.flatMap((part2, k2) => {
+      if (!p2.tracks[part2.id]) return [];
+      const tokens = autoOtt(p2.id, part2) ? withAutoOttava(p2.tracks[part2.id], lookAt(p2.id, part2.id)?.clef ?? "G") : p2.tracks[part2.id];
+      return [{ info: { ...infos[k2], ...clefInfo(p2.id, part2) }, tokens, langs: langsOf(part2.id, tokens) }];
+    });
     const w2 = writeMusicXml({ title: song.title, movementTitle: p2.name || void 0, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
     files[paperFile(p2.id)] = strToU8(w2.xml);
     const swells = {};
@@ -37922,8 +38869,8 @@ function buildEntries(a10) {
       const sw2 = swellOf(t10);
       if (sw2) (swells[pid] ??= {})[String(t10.id)] = sw2;
     }
-    const aoOff = Object.entries(p2.looks ?? {}).filter(([pid, l10]) => l10.autoOttava === false && p2.tracks[pid]).map(([pid]) => [pid, false]);
-    return { id: p2.id, file: paperFile(p2.id), manualBars: w2.manualBars, unwritten: w2.unwritten, ...Object.keys(swells).length ? { swells } : {}, ...p2.hidden ? { hidden: true } : {}, ...aoOff.length ? { autoOttava: Object.fromEntries(aoOff) } : {} };
+    const ao2 = Object.fromEntries(Object.keys(p2.tracks).map((pid) => [pid, p2.looks?.[pid]?.autoOttava !== false]));
+    return { id: p2.id, file: paperFile(p2.id), manualBars: w2.manualBars, unwritten: w2.unwritten, swells, hidden: !!p2.hidden, autoOttava: ao2 };
   });
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part2, k2) => {
     const f2 = flattenPart(song, part2.id, { tempo: k2 === 0, order: songPlayOrder(song) });
@@ -37959,30 +38906,30 @@ function buildEntries(a10) {
         }
       }
     }
-    return { info: { ...infos[k2], ...two ? { staves: 2 } : first && first !== "G" ? { clef: first } : {} }, tokens: toks, breaks: new Map(starts.slice(1).map((s10) => [s10.index, s10.paper.name])) };
+    return { info: { ...infos[k2], ...two ? { staves: 2 } : first && first !== "G" ? { clef: first } : {} }, tokens: toks, langs: langsOf(part2.id, toks), breaks: new Map(starts.slice(1).map((s10) => [s10.index, s10.paper.name])) };
   }) }, meta);
-  const scoreRest = Object.fromEntries(Object.entries(a10.extras.scoreExt ?? {}).filter(([k2]) => !KNOWN_SCORE_KEYS.has(k2)));
-  const oldExt = a10.extras.scoreExt ?? {}, paperExtra = unknownById(oldExt.papers, KNOWN_PAPER_KEYS), partExtra = unknownById(oldExt.parts, KNOWN_PART_KEYS);
+  const scoreNewer = newerThanMe(a10.extras.scoreExt, "score");
+  const scoreRest = scoreNewer ? Object.fromEntries(Object.entries(a10.extras.scoreExt ?? {}).filter(([k2]) => !KNOWN_SCORE_KEYS.has(k2))) : {};
+  const oldExt = a10.extras.scoreExt ?? {}, paperExtra = scoreNewer ? unknownById(oldExt.papers, KNOWN_PAPER_KEYS) : /* @__PURE__ */ new Map(), partExtra = scoreNewer ? unknownById(oldExt.parts, KNOWN_PART_KEYS) : /* @__PURE__ */ new Map();
   const scoreExt = {
     ...scoreRest,
     ...stampOf("score"),
     papers: papers.map((e10) => ({ ...paperExtra.get(String(e10.id)) ?? {}, ...e10 })),
-    parts: song.parts.map((p2) => ({ ...partExtra.get(p2.id) ?? {}, id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched", clef: "auto", ...p2.host ?? p2.hostBroken ? { host: p2.host ?? p2.hostBroken } : {}, ...p2.chords !== void 0 ? { chords: p2.chords } : {} })),
-    // chords（score minor 5）：这条轨的和弦选项，只写不是 auto 的（song-view.ts 写的时候就不留 auto）   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
-    ...a10.view && Object.keys(a10.view).length ? { view: a10.view } : {},
-    // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
-    ...song.arrangement?.trim() ? { arrangement: song.arrangement } : {},
-    // 编排那一行（可选，2026-10-08 深夜）
-    ...song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {},
-    ...song.barNumbers === "off" ? { barNumbers: "off" } : {},
-    ...song.spacing === "tight" ? { spacing: "tight" } : {},
-    // 这首歌怎么看（score minor 5，谱面分家第三刀；src/score/song-view.ts）：只写不是「没写的意思」的值，不认识的谱种原样写回
-    ...typeof song.notation === "string" && song.notation ? { notation: song.notation } : {},
-    ...song.chordTags === false ? { chordTags: false } : {},
-    ...song.viewInC === true ? { viewInC: true } : {},
-    ...typeof song.middleC === "number" && song.middleC !== 4 ? { middleC: song.middleC } : {},
-    ...song.expressions === false ? { expressions: false } : {},
-    ...song.textLang !== "ui" ? { textLang: song.textLang } : {}
+    parts: song.parts.map((p2) => ({ ...partExtra.get(p2.id) ?? {}, id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched", clef: "auto", host: p2.host ?? p2.hostBroken ?? null, chords: p2.chords ?? "auto" })),
+    // chords（score minor 5）：这条轨的和弦选项；auto 也写（第 16 条 16-3）   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
+    // 每一项都明写（第 16 条 16-3，2026-11-12：不靠「只写不是默认的」省字——省掉的那个默认就是程序里的隐藏约定）。默认那一档有自己的名字（rhythm / line / normal / staff / ui…），读的一侧照旧认
+    view: a10.view ?? serializeDesk(freshDesk()),
+    // 视图态（desk）：存时顺手捞进来；没给（无头存 / 副本）= 新的那一份
+    arrangement: song.arrangement ?? "",
+    lyricFit: song.lyricFit === "lyrics" ? "lyrics" : "rhythm",
+    barNumbers: song.barNumbers === "off" ? "off" : "line",
+    spacing: song.spacing === "tight" ? "tight" : "normal",
+    notation: typeof song.notation === "string" && song.notation ? song.notation : "staff",
+    chordTags: song.chordTags !== false,
+    viewInC: song.viewInC === true,
+    middleC: typeof song.middleC === "number" ? song.middleC : 4,
+    expressions: song.expressions !== false,
+    textLang: song.textLang
   };
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a10.extras.sounds).filter(([p2]) => referenced.has(p2)).sort(([x2], [y2]) => x2 < y2 ? -1 : 1);
@@ -37997,7 +38944,7 @@ function buildEntries(a10) {
     thumbnail: a10.extras.thumbnail
   };
   const fingerprint = contentFingerprint(fpParts);
-  const { final: _f2, finalRev: _r, core: _c, ...manifestRest } = a10.extras.manifest ?? {};
+  const { final: _f2, finalRev: _r, core: _c, ...manifestRest0 } = a10.extras.manifest ?? {}, manifestNewer = newerThanMe(a10.extras.manifest, "manifest"), manifestRest = only(manifestRest0, MANIFEST_KEYS, manifestNewer);
   const manifest = {
     ...manifestRest,
     format: "moonsinger",
@@ -38038,7 +38985,8 @@ function buildEntries(a10) {
     if (!path.startsWith(REFERENCES_DIR)) throw new Error(_t("\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 {REFERENCES_DIR} \u4E0B\uFF1A{path}", { REFERENCES_DIR, path }));
     out[path] = bytes;
   }
-  for (const [path, bytes] of Object.entries(a10.extras.unknown)) if (!(path in out) && path !== THUMBNAIL_ENTRY && path !== FINAL_MP3_ENTRY) out[path] = bytes;
+  const keepUnknownEntries = !a10.extras.manifest || manifestNewer;
+  for (const [path, bytes] of Object.entries(a10.extras.unknown)) if (keepUnknownEntries && !(path in out) && path !== THUMBNAIL_ENTRY && path !== FINAL_MP3_ENTRY) out[path] = bytes;
   out[`${DIR}manifest.json`] = json(manifest);
   if (a10.extras.thumbnail) out[THUMBNAIL_ENTRY] = a10.extras.thumbnail;
   return { out, fingerprint };
@@ -38144,7 +39092,7 @@ function withNewRole(extras, role, hum, name, sound2) {
 }
 function templateExtras(song) {
   let x2 = emptyExtras();
-  for (const p2 of song.parts) x2 = withNewRole(x2, p2.role, song.hum ?? "n");
+  for (const p2 of song.parts) x2 = withNewRole(x2, p2.role, "n");
   return x2;
 }
 function withoutRole(extras, role) {
@@ -38173,12 +39121,17 @@ function activeCandidateName(extras, role) {
 function activeInstrument(extras, role) {
   return instrumentOf(activeCandidate(extras, role));
 }
-function humOf(extras) {
-  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands(r10)) {
-    const i10 = instrumentOf(c10);
-    if (isVoice(i10)) return i10.hum;
-  }
-  return "n";
+function activeHum(extras, role) {
+  const i10 = activeInstrument(extras, role);
+  return isVoice(i10) ? i10.hum : "n";
+}
+function withHum(extras, role, hum) {
+  const r10 = extras.lounge[role];
+  if (!r10) return extras;
+  const nr2 = structuredClone(r10), c10 = cands(nr2).find((x2) => x2.id === nr2.active), i10 = instrumentOf(c10);
+  if (!isVoice(i10)) return extras;
+  i10.hum = hum;
+  return { ...extras, lounge: { ...extras.lounge, [role]: nr2 } };
 }
 function withActive(extras, role, id2, hum) {
   const r10 = roleOf(extras, role, hum);
@@ -38192,18 +39145,15 @@ var stableJson = (v) => {
   return JSON.stringify(v) ?? "null";
 };
 function settingsPrint(c10) {
-  const { id: _i, castAs: _c, asCast: _a2, ...rest } = c10;
+  const { id: _i, castAs: _c, asCast: _a2, ...rest } = completeCandidate(c10);
   return sha256HexSync(new TextEncoder().encode(stableJson(rest))).slice(0, 16);
 }
-var builtinPrint = (c10) => {
-  const i10 = instrumentOf(c10);
-  return settingsPrint({ ...c10, name: null, ...isVoice(i10) ? { instrument: { ...i10, hum: null } } : {} });
-};
-function isUntouched(extras, role, id2, hum) {
+var builtinPrint = (c10) => settingsPrint({ ...c10, name: null });
+function isUntouched(extras, role, id2) {
   const c10 = candidateJson(extras, role, id2);
   if (!c10) return false;
   if (isBuiltinId(id2)) {
-    const f2 = cands(defaultRole(hum, role)).find((x2) => x2.id === id2);
+    const f2 = cands(defaultRole("n", role)).find((x2) => x2.id === id2);
     return !!f2 && builtinPrint(c10) === builtinPrint(f2);
   }
   return typeof c10.asCast === "string" && c10.asCast === settingsPrint(c10);
@@ -38216,7 +39166,7 @@ function withSwap(extras, role, nextActive, hum, o10 = {}) {
     r10.candidates = cands(r10).map((c10) => c10.id === nextActive ? { ...c10, asCast: settingsPrint(c10) } : c10);
     next2 = { ...next2, lounge: { ...next2.lounge, [role]: r10 } };
   }
-  if (prev !== nextActive && !isBuiltinId(prev) && isUntouched(judge, role, prev, hum)) {
+  if (prev !== nextActive && !isBuiltinId(prev) && isUntouched(judge, role, prev)) {
     const r10 = roleOf(next2, role, hum);
     r10.candidates = cands(r10).filter((c10) => c10.id !== prev);
     next2 = pruneSounds({ ...next2, lounge: { ...next2.lounge, [role]: r10 } });
@@ -38243,7 +39193,7 @@ function songPresets(extras, parts, role, hum) {
   const here = parts.find((x2) => x2.role === role)?.label ?? "";
   for (const c10 of cands(extras.lounge[role] ?? defaultRole(hum, role))) {
     const id2 = String(c10.id), on2 = id2 === act;
-    if (!on2 && isUntouched(extras, role, id2, hum)) continue;
+    if (!on2 && isUntouched(extras, role, id2)) continue;
     seen.add(printOf(c10));
     out.push({ role, id: id2, name: String(c10.name ?? ""), on: on2, here: true, from: here, removable: !on2 && !isBuiltinId(id2) });
   }
@@ -38253,7 +39203,7 @@ function songPresets(extras, parts, role, hum) {
     done2.add(p2.role);
     for (const c10 of cands(extras.lounge[p2.role])) {
       const id2 = String(c10.id);
-      if (isUntouched(extras, p2.role, id2, hum)) continue;
+      if (isUntouched(extras, p2.role, id2)) continue;
       const k2 = printOf(c10);
       if (seen.has(k2)) continue;
       seen.add(k2);
@@ -38342,14 +39292,14 @@ function withPacked(extras, have) {
   }
   return packed.size ? { extras: { ...extras, lounge, sounds }, packed: [...packed], missing: [...missing] } : { extras, packed: [], missing: [...missing] };
 }
-function withUnpacked(extras, only) {
+function withUnpacked(extras, only2) {
   const lounge = {}, removed = /* @__PURE__ */ new Map();
   let changed2 = false;
   for (const [id2, r02] of Object.entries(extras.lounge)) {
     const r10 = structuredClone(r02);
     for (const c10 of cands(r10)) {
       const i10 = instrumentOf(c10);
-      if (i10?.engine !== "soundfont" || !i10.source.embedded || only && !only(i10.source.subsetSha256)) continue;
+      if (i10?.engine !== "soundfont" || !i10.source.embedded || only2 && !only2(i10.source.subsetSha256)) continue;
       const b3 = extras.sounds[i10.source.embedded];
       if (b3) removed.set(i10.source.subsetSha256, b3);
       i10.source.embedded = null;
@@ -38594,23 +39544,7 @@ function openBytes(name, bytes) {
     known.add(p2);
   }
   refuseBadIds(badIds(scoreExt, extras.lounge, extras.studio));
-  let legacyRec = null, legacyBytes = null;
   if (files[FINAL_MP3_ENTRY]) known.add(FINAL_MP3_ENTRY);
-  if (manifest.final !== void 0) {
-    const rec = parseFinalRecord(manifest.final), mp3 = rec ? files[rec.mp3.path] : void 0;
-    if (rec && rec.mp3.path !== FINAL_MP3_ENTRY) known.add(rec.mp3.path);
-    const paperList = scoreExt?.papers ?? [];
-    const papersRaw = {};
-    for (const p2 of paperList) {
-      const f2 = String(p2.file ?? paperFile(String(p2.id)));
-      if (files[f2]) papersRaw[String(p2.id)] = strFromU8(files[f2]);
-    }
-    const fp = rec && files[`${DIR}score.json`] && files[`${DIR}studio.json`] ? contentFingerprint({ papers: papersRaw, scoreExt: fpTextOf(parse2(`${DIR}score.json`)), lounge: rawLounge, studio: fpTextOf(parse2(`${DIR}studio.json`)), sounds: Object.keys(extras.sounds), thumbnail: files[THUMBNAIL_ENTRY] ?? null }) : null;
-    if (rec && mp3 && mp3.length === rec.mp3.bytes && fp === rec.fingerprint) {
-      legacyRec = rec;
-      legacyBytes = mp3;
-    }
-  }
   if (!Array.isArray(scoreExt?.papers)) throw new Error(_t("\u8C31\u7684\u6269\u5C55\u91CC\u6CA1\u6709\u7EB8\u7684\u8868\uFF0C\u8BFB\u4E0D\u61C2"));
   const list2 = scoreExt.papers;
   const reads = [];
@@ -38642,19 +39576,9 @@ function openBytes(name, bytes) {
   for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
   const song = songFromReads(reads, papers, scoreExt?.parts ?? null);
   const o10 = finish(reads, song, pruneSounds(extras), ours, name);
-  const legacyMp3 = legacyRec && legacyBytes ? {
-    bytes: legacyBytes,
-    fingerprint: buildEntries({ song: o10.song, hum: o10.hum, extras: o10.extras, app: "", date: "" }).fingerprint,
-    secs: legacyRec.mp3.secs,
-    kbps: legacyRec.mp3.kbps,
-    stereo: legacyRec.mp3.stereo,
-    parts: legacyRec.parts,
-    app: legacyRec.app,
-    core: legacyRec.core,
-    rev: legacyRec.rev
-  } : void 0;
   const advice = newerMinor.length ? [_t("\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u53EA\u662F\u90A3\u4E9B\u4E1C\u897F\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\uFF0C\u5728\u8FD9\u4E00\u7248\u91CC\u5B58\u4E00\u6B21\uFF0C\u5176\u4E2D\u4E00\u90E8\u5206\u4F1A\u4E22\u3002\u60F3\u539F\u6837\u7559\u7740\uFF0C\u5148\u66F4\u65B0 app \u518D\u6539\u3002", { p: newerMinor.join("\u3001") })] : [];
-  return { ...o10, references, advice, ...legacyMp3 ? { legacyMp3 } : {} };
+  if (extras.studio && !Array.isArray(extras.studio.tracks)) o10.notices.push(_t("\u8FD9\u9996\u6B4C\u7684\u6DF7\u97F3\u53F0\u90A3\u4E00\u4EFD\u8BFB\u4E0D\u61C2\uFF1A\u6BCF\u6761\u8F68\u7684\u63A8\u5B50\u3001\u58F0\u50CF\u6309\u9ED8\u8BA4\u5F00\u7684\uFF08\u603B\u8F68\u7167\u6587\u4EF6\u91CC\u5199\u7684\uFF09\u3002\u5B58\u4E00\u6B21\u5C31\u6309\u73B0\u5728\u7684\u6837\u5B50\u5199\u8FDB\u6587\u4EF6\u3002"));
+  return { ...o10, references, advice };
 }
 function songFromReads(reads, papers, partList = null) {
   const ps = papers ?? [paperOfRead("p1", reads[0])];
@@ -38698,7 +39622,7 @@ function songFromReads(reads, papers, partList = null) {
   let id2 = 1;
   const renumbered = ps.map((p2) => ({ ...p2, tracks: Object.fromEntries(parts.flatMap((part2) => p2.tracks[part2.id] ? [[part2.id, p2.tracks[part2.id].map((t10) => ({ ...t10, id: id2++ }))]] : [])) }));
   const r02 = reads[0];
-  return { ...r02.title ? { title: r02.title } : {}, ...r02.paper ? { paper: r02.paper } : {}, ...r02.credits ? { credits: r02.credits } : {}, ...r02.rights ? { rights: r02.rights } : {}, hum: "n", textLang: "ui", parts, papers: renumbered };
+  return { ...r02.title ? { title: r02.title } : {}, ...r02.paper ? { paper: r02.paper } : {}, ...r02.credits ? { credits: r02.credits } : {}, ...r02.rights ? { rights: r02.rights } : {}, textLang: "ui", parts, papers: renumbered };
 }
 function finish(reads, song0, extras, ours, name) {
   const notices = [];
@@ -38745,9 +39669,8 @@ function finish(reads, song0, extras, ours, name) {
     if (gm && gm.path && !gm.bytes) notices.push(_t("\u300C{name}\u300D\u7684\u58F0\u97F3\uFF08{path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u4E00\u8D77\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C{name2}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002", { name: gm.name, path: gm.path, name2: role.name ?? "" }));
   }
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
-  const hum = humOf(extras);
   const arr = extras.scoreExt?.arrangement;
-  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}, ...extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}, ...extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" } : {}, ...extras.scoreExt?.spacing === "tight" ? { spacing: "tight" } : {}, ...songViewFields(extras.scoreExt) }, stem, hum, extras, ours, notices, view: safeView(extras.scoreExt?.view ?? null), references: {}, advice: [] };
+  return { song: { ...song0, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}, ...extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}, ...extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" } : {}, ...extras.scoreExt?.spacing === "tight" ? { spacing: "tight" } : {}, ...songViewFields(extras.scoreExt) }, stem, extras, ours, notices, view: safeView(extras.scoreExt?.view ?? null), references: {}, advice: [] };
 }
 
 // src/format/credits.ts
@@ -38890,539 +39813,6 @@ var Tsf = class {
     out.set(new Float32Array(this.ex.memory.buffer, this.outPtr, n10), offset);
   }
 };
-
-// src/engine/fx.ts
-var clamp = (v, lo2, hi) => v < lo2 ? lo2 : v > hi ? hi : v;
-var dbToLin = (dB) => 10 ** (dB / 20);
-var Biquad = class {
-  b0 = 1;
-  b1 = 0;
-  b2 = 0;
-  a1 = 0;
-  a2 = 0;
-  z1 = 0;
-  z2 = 0;
-  // 直接 II 型转置
-  set(type, f2, Q2, gainDb, sr2) {
-    f2 = clamp(f2, 10, sr2 * 0.45);
-    Q2 = clamp(Q2, 0.1, 20);
-    const w2 = 2 * Math.PI * f2 / sr2, cs2 = Math.cos(w2), sn2 = Math.sin(w2), A2 = 10 ** (gainDb / 40), alpha = sn2 / (2 * Q2);
-    let b0 = 1, b1 = 0, b22 = 0, a02 = 1, a12 = 0, a22 = 0;
-    switch (type) {
-      case "lp":
-        b0 = (1 - cs2) / 2;
-        b1 = 1 - cs2;
-        b22 = (1 - cs2) / 2;
-        a02 = 1 + alpha;
-        a12 = -2 * cs2;
-        a22 = 1 - alpha;
-        break;
-      case "hp":
-        b0 = (1 + cs2) / 2;
-        b1 = -(1 + cs2);
-        b22 = (1 + cs2) / 2;
-        a02 = 1 + alpha;
-        a12 = -2 * cs2;
-        a22 = 1 - alpha;
-        break;
-      case "peak":
-        b0 = 1 + alpha * A2;
-        b1 = -2 * cs2;
-        b22 = 1 - alpha * A2;
-        a02 = 1 + alpha / A2;
-        a12 = -2 * cs2;
-        a22 = 1 - alpha / A2;
-        break;
-      case "lowshelf": {
-        const s10 = 2 * Math.sqrt(A2) * alpha;
-        b0 = A2 * (A2 + 1 - (A2 - 1) * cs2 + s10);
-        b1 = 2 * A2 * (A2 - 1 - (A2 + 1) * cs2);
-        b22 = A2 * (A2 + 1 - (A2 - 1) * cs2 - s10);
-        a02 = A2 + 1 + (A2 - 1) * cs2 + s10;
-        a12 = -2 * (A2 - 1 + (A2 + 1) * cs2);
-        a22 = A2 + 1 + (A2 - 1) * cs2 - s10;
-        break;
-      }
-      case "highshelf": {
-        const s10 = 2 * Math.sqrt(A2) * alpha;
-        b0 = A2 * (A2 + 1 + (A2 - 1) * cs2 + s10);
-        b1 = -2 * A2 * (A2 - 1 + (A2 + 1) * cs2);
-        b22 = A2 * (A2 + 1 + (A2 - 1) * cs2 - s10);
-        a02 = A2 + 1 - (A2 - 1) * cs2 + s10;
-        a12 = 2 * (A2 - 1 - (A2 + 1) * cs2);
-        a22 = A2 + 1 - (A2 - 1) * cs2 - s10;
-        break;
-      }
-    }
-    this.b0 = b0 / a02;
-    this.b1 = b1 / a02;
-    this.b2 = b22 / a02;
-    this.a1 = a12 / a02;
-    this.a2 = a22 / a02;
-  }
-  bypass() {
-    this.b0 = 1;
-    this.b1 = 0;
-    this.b2 = 0;
-    this.a1 = 0;
-    this.a2 = 0;
-  }
-  process(x2, n10) {
-    const { b0, b1, b2: b22, a1: a12, a2: a22 } = this;
-    let z1 = this.z1, z2 = this.z2;
-    for (let i10 = 0; i10 < n10; i10++) {
-      const v = x2[i10], y2 = b0 * v + z1;
-      z1 = b1 * v - a12 * y2 + z2;
-      z2 = b22 * v - a22 * y2;
-      x2[i10] = y2;
-    }
-    this.z1 = z1;
-    this.z2 = z2;
-  }
-};
-var EQ = {
-  kind: "eq",
-  name: _t("\u5747\u8861"),
-  formula: _t("\u6BCF\u6BB5\u4E00\u4E2A\u53CC\u4E8C\u9636 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)\uFF0C\u7CFB\u6570\u6309 RBJ Audio EQ Cookbook\uFF08hp / lp Q = 0.707\uFF1B\u67B6\u5B50 Q = 0.707\uFF1B\u5CF0 Q \u53EF\u8C03\uFF09\u3002hpHz / lpHz = 0 \u5173\u3002"),
-  params: [
-    { id: "hpHz", unit: "Hz", min: 0, max: 2e3, default: 0, label: _t("\u4F4E\u5207") },
-    { id: "lpHz", unit: "Hz", min: 0, max: 2e4, default: 0, label: _t("\u9AD8\u5207") },
-    { id: "lowDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u4F4E\u67B6") },
-    { id: "lowHz", unit: "Hz", min: 40, max: 1e3, default: 200, label: _t("\u4F4E\u67B6\u9891\u7387") },
-    { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u4E2D\u5CF0") },
-    { id: "midHz", unit: "Hz", min: 100, max: 1e4, default: 1500, label: _t("\u4E2D\u5CF0\u9891\u7387") },
-    { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: _t("\u4E2D\u5CF0\u5BBD") },
-    { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u9AD8\u67B6") },
-    { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, default: 5e3, label: _t("\u9AD8\u67B6\u9891\u7387") }
-  ]
-};
-function eqSections(p2) {
-  const g3 = (k2) => p2[k2] ?? EQ.params.find((d3) => d3.id === k2).default;
-  return [
-    [g3("hpHz") > 0, "hp", g3("hpHz"), 0.707, 0],
-    [g3("lpHz") > 0, "lp", g3("lpHz"), 0.707, 0],
-    [g3("lowDb") !== 0, "lowshelf", g3("lowHz"), 0.707, g3("lowDb")],
-    [g3("midDb") !== 0, "peak", g3("midHz"), g3("midQ"), g3("midDb")],
-    [g3("highDb") !== 0, "highshelf", g3("highHz"), 0.707, g3("highDb")]
-  ];
-}
-function eqResponseDb(p2, sr2, freqs) {
-  const bq = eqSections(p2).filter(([on2]) => on2).map(([, type, f2, q2, db]) => {
-    const b3 = new Biquad();
-    b3.set(type, f2, q2, db, sr2);
-    return b3;
-  });
-  return freqs.map((f2) => {
-    const w2 = 2 * Math.PI * f2 / sr2, c12 = Math.cos(w2), s12 = Math.sin(w2), c22 = Math.cos(2 * w2), s23 = Math.sin(2 * w2);
-    let mag = 1;
-    for (const b3 of bq) {
-      const nr2 = b3.b0 + b3.b1 * c12 + b3.b2 * c22, ni2 = -(b3.b1 * s12 + b3.b2 * s23), dr = 1 + b3.a1 * c12 + b3.a2 * c22, di = -(b3.a1 * s12 + b3.a2 * s23);
-      mag *= Math.sqrt((nr2 * nr2 + ni2 * ni2) / (dr * dr + di * di));
-    }
-    return 20 * Math.log10(Math.max(1e-9, mag));
-  });
-}
-var Eq = class {
-  kind = "eq";
-  on = true;
-  sec = Array.from({ length: 5 }, () => [new Biquad(), new Biquad()]);
-  use = [false, false, false, false, false];
-  id;
-  sr;
-  constructor(id2, sr2, p2) {
-    this.id = id2;
-    this.sr = sr2;
-    this.setParams(p2);
-  }
-  // 不用参数属性：Node 的 strip-only TS 不认
-  setParams(p2) {
-    const defs = eqSections(p2);
-    defs.forEach(([on2, type, f2, q2, db], k2) => {
-      this.use[k2] = on2;
-      for (const b3 of this.sec[k2]) if (on2) b3.set(type, f2, q2, db, this.sr);
-      else b3.bypass();
-    });
-  }
-  process(L2, R2, n10) {
-    if (!this.on) return;
-    for (let k2 = 0; k2 < 5; k2++) {
-      if (!this.use[k2]) continue;
-      this.sec[k2][0].process(L2, n10);
-      if (R2) this.sec[k2][1].process(R2, n10);
-    }
-  }
-};
-var COMP = {
-  kind: "comp",
-  name: _t("\u538B\u7F29"),
-  formula: _t("\u5305\u7EDC e[n] = max(|x|, e[n-1]\xB7r) \u8D77\uFF08attack\uFF09\u843D\uFF08release\uFF09\u5404\u4E00\u4E2A\u65F6\u95F4\u5E38\u6570\uFF1B\u8D85\u8FC7 threshold \u7684\u90E8\u5206\u6309 ratio \u538B\uFF08kneeDb \u5185\u8F6F\u62D0\u70B9\uFF1Ag = -(x - T + K/2)^2 \xB7 (1 - 1/R) / (2K)\uFF09\uFF1B\u589E\u76CA = 10^(g/20) \xD7 10^(makeup/20)\u3002key \u7ED9\u4E86 = \u542C\u522B\u7684\u8F68\uFF08\u4FA7\u94FE\uFF09\uFF0C\u4E0D\u7ED9 = \u542C\u81EA\u5DF1\u3002"),
-  params: [
-    { id: "thresholdDb", unit: "dB", min: -60, max: 0, default: -18, label: _t("\u9608\u503C") },
-    { id: "ratio", unit: "ratio", min: 1, max: 20, default: 3, label: _t("\u6BD4\u4F8B") },
-    { id: "attackMs", unit: "ms", min: 0.1, max: 200, default: 10, label: _t("\u8D77") },
-    { id: "releaseMs", unit: "ms", min: 5, max: 2e3, default: 120, label: _t("\u843D") },
-    { id: "kneeDb", unit: "dB", min: 0, max: 24, default: 6, label: _t("\u62D0\u70B9") },
-    { id: "makeupDb", unit: "dB", min: -12, max: 24, default: 0, label: _t("\u8865\u507F") }
-  ]
-};
-var Comp = class {
-  kind = "comp";
-  on = true;
-  env = 0;
-  aAtt = 0;
-  aRel = 0;
-  T = -18;
-  R = 3;
-  K = 6;
-  makeup = 1;
-  gainReductionDb = 0;
-  // 表用（最近一块压了多少）
-  inPeak = 0;
-  outPeak = 0;
-  // 表用（最近一块进 / 出的峰值，线性；压缩页的波形图，v0.10.21）
-  id;
-  sr;
-  constructor(id2, sr2, p2) {
-    this.id = id2;
-    this.sr = sr2;
-    this.setParams(p2);
-  }
-  setParams(p2) {
-    const g3 = (k2) => p2[k2] ?? COMP.params.find((d3) => d3.id === k2).default;
-    this.T = g3("thresholdDb");
-    this.R = Math.max(1, g3("ratio"));
-    this.K = Math.max(0, g3("kneeDb"));
-    this.makeup = dbToLin(g3("makeupDb"));
-    this.aAtt = Math.exp(-1 / (Math.max(1e-4, g3("attackMs") / 1e3) * this.sr));
-    this.aRel = Math.exp(-1 / (Math.max(1e-3, g3("releaseMs") / 1e3) * this.sr));
-  }
-  gainDb(levelDb) {
-    const { T: T3, R: R2, K: K4 } = this, over = levelDb - T3;
-    if (K4 > 0 && over > -K4 / 2 && over < K4 / 2) {
-      const t10 = over + K4 / 2;
-      return -(t10 * t10 * (1 - 1 / R2)) / (2 * K4);
-    }
-    return over <= 0 ? 0 : -over * (1 - 1 / R2);
-  }
-  process(L2, R2, n10, key) {
-    if (!this.on) return;
-    let env2 = this.env, minG = 0, pin = 0, pout = 0;
-    for (let i10 = 0; i10 < n10; i10++) {
-      const a10 = Math.max(Math.abs(L2[i10]), R2 ? Math.abs(R2[i10]) : 0), k2 = key ? Math.abs(key[i10]) : a10;
-      env2 = k2 > env2 ? k2 + (env2 - k2) * this.aAtt : k2 + (env2 - k2) * this.aRel;
-      const lvl = env2 > 1e-7 ? 20 * Math.log10(env2) : -140, gdb = this.gainDb(lvl), g3 = dbToLin(gdb) * this.makeup;
-      if (gdb < minG) minG = gdb;
-      if (a10 > pin) pin = a10;
-      if (a10 * g3 > pout) pout = a10 * g3;
-      L2[i10] *= g3;
-      if (R2) R2[i10] *= g3;
-    }
-    this.env = env2;
-    this.gainReductionDb = minG;
-    this.inPeak = pin;
-    this.outPeak = pout;
-  }
-};
-var DELAY = {
-  kind: "delay",
-  name: _t("\u5EF6\u8FDF"),
-  formula: _t("y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = 1 \u2212 mix\uFF0Cv0.10.10 \u524D\u7684\u5199\u6CD5\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002"),
-  params: [
-    { id: "timeMs", unit: "ms", min: 1, max: 2e3, default: 375, label: _t("\u65F6\u95F4") },
-    { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: _t("\u53CD\u9988") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("\u6E7F") },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") },
-    { id: "dampHz", unit: "Hz", min: 500, max: 2e4, default: 6e3, label: _t("\u53CD\u9988\u9AD8\u5207") }
-  ]
-};
-var Delay = class {
-  kind = "delay";
-  on = true;
-  bufL;
-  bufR;
-  wr = 0;
-  D = 1;
-  fb = 0.35;
-  mix = 0.3;
-  dry = 0.7;
-  lpK = 0.5;
-  lpL = 0;
-  lpR = 0;
-  id;
-  sr;
-  constructor(id2, sr2, p2) {
-    this.id = id2;
-    this.sr = sr2;
-    const max2 = Math.ceil(2 * sr2) + 1;
-    this.bufL = new Float32Array(max2);
-    this.bufR = new Float32Array(max2);
-    this.setParams(p2);
-  }
-  setParams(p2) {
-    const g3 = (k2) => p2[k2] ?? DELAY.params.find((d3) => d3.id === k2).default;
-    this.D = clamp(Math.round(g3("timeMs") / 1e3 * this.sr), 1, this.bufL.length - 1);
-    this.fb = clamp(g3("feedback"), 0, 0.95);
-    this.mix = clamp(g3("mix"), 0, 1);
-    this.dry = dryOf(p2, this.mix);
-    this.lpK = 1 - Math.exp(-2 * Math.PI * clamp(g3("dampHz"), 100, this.sr * 0.45) / this.sr);
-  }
-  process(L2, R2, n10) {
-    if (!this.on) return;
-    const len = this.bufL.length, D4 = this.D, fb = this.fb, mix = this.mix, dry = this.dry, k2 = this.lpK;
-    for (let i10 = 0; i10 < n10; i10++) {
-      const rd2 = (this.wr - D4 + len) % len;
-      const dl = this.bufL[rd2];
-      this.lpL += (dl - this.lpL) * k2;
-      this.bufL[this.wr] = L2[i10] + this.lpL * fb;
-      L2[i10] = L2[i10] * dry + dl * mix;
-      if (R2) {
-        const dr = this.bufR[rd2];
-        this.lpR += (dr - this.lpR) * k2;
-        this.bufR[this.wr] = R2[i10] + this.lpR * fb;
-        R2[i10] = R2[i10] * dry + dr * mix;
-      }
-      this.wr = (this.wr + 1) % len;
-    }
-  }
-};
-var REVERB = {
-  kind: "reverb",
-  name: _t("\u6DF7\u54CD"),
-  formula: _t("Freeverb\uFF1A8 \u6761\u4F4E\u901A\u53CD\u9988\u68B3\u72B6\uFF08\u957F\u5EA6 1116\u20261617 @44.1k\uFF0C\u6309\u91C7\u6837\u7387\u7F29\u653E\uFF1B\u53CD\u9988 = 0.7 + 0.28\xB7room\uFF0C\u4F4E\u901A = damp\uFF09\u5E76\u8054\uFF0C\u518D\u4E32 4 \u6761\u5168\u901A\uFF08g = 0.5\uFF09\uFF1B\u53F3\u8FB9\u5404\u957F 23 \u4E2A\u91C7\u6837\uFF1B\u524D\u9762\u4E00\u6BB5 preDelayMs \u7EAF\u5EF6\u8FDF\uFF1By = x\xB7(1-mix) + wet\xB7mix\u3002"),
-  params: [
-    { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u623F\u95F4\u5927\u5C0F") },
-    { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u9AD8\u9891\u5438\u6536") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("\u6E7F") },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") },
-    { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: _t("\u9884\u5EF6\u8FDF") },
-    { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u5BBD\u5EA6") }
-  ],
-  stereoOnly: true
-};
-var COMBS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617];
-var ALLPASS = [556, 441, 341, 225];
-var SPREAD = 23;
-var Comb = class {
-  buf;
-  idx = 0;
-  store = 0;
-  constructor(n10) {
-    this.buf = new Float32Array(n10);
-  }
-  tick(x2, fb, damp) {
-    const out = this.buf[this.idx];
-    this.store = out * (1 - damp) + this.store * damp;
-    this.buf[this.idx] = x2 + this.store * fb;
-    this.idx = (this.idx + 1) % this.buf.length;
-    return out;
-  }
-};
-var Allpass = class {
-  buf;
-  idx = 0;
-  constructor(n10) {
-    this.buf = new Float32Array(n10);
-  }
-  tick(x2) {
-    const b3 = this.buf[this.idx], out = -x2 + b3;
-    this.buf[this.idx] = x2 + b3 * 0.5;
-    this.idx = (this.idx + 1) % this.buf.length;
-    return out;
-  }
-};
-var Reverb = class {
-  kind = "reverb";
-  on = true;
-  cL;
-  cR;
-  aL;
-  aR;
-  pre;
-  preW = 0;
-  preD = 0;
-  fb = 0.84;
-  damp = 0.5;
-  mix = 0.3;
-  dry = 0.7;
-  width = 1;
-  id;
-  sr;
-  constructor(id2, sr2, p2) {
-    this.id = id2;
-    this.sr = sr2;
-    const s10 = sr2 / 44100, len = (n10) => Math.max(2, Math.round(n10 * s10));
-    this.cL = COMBS.map((n10) => new Comb(len(n10)));
-    this.cR = COMBS.map((n10) => new Comb(len(n10 + SPREAD)));
-    this.aL = ALLPASS.map((n10) => new Allpass(len(n10)));
-    this.aR = ALLPASS.map((n10) => new Allpass(len(n10 + SPREAD)));
-    this.pre = new Float32Array(Math.ceil(0.2 * sr2) + 1);
-    this.setParams(p2);
-  }
-  setParams(p2) {
-    const g3 = (k2) => p2[k2] ?? REVERB.params.find((d3) => d3.id === k2).default;
-    this.fb = 0.7 + 0.28 * clamp(g3("room"), 0, 1);
-    this.damp = clamp(g3("damp"), 0, 1) * 0.4;
-    this.mix = clamp(g3("mix"), 0, 1);
-    this.dry = dryOf(p2, this.mix);
-    this.width = clamp(g3("width"), 0, 1);
-    this.preD = clamp(Math.round(g3("preDelayMs") / 1e3 * this.sr), 0, this.pre.length - 1);
-  }
-  process(L2, R2, n10) {
-    if (!this.on) return;
-    const Rr = R2 ?? L2, mix = this.mix, dry = this.dry, w1 = (1 + this.width) / 2, w2 = (1 - this.width) / 2, plen = this.pre.length;
-    for (let i10 = 0; i10 < n10; i10++) {
-      const inp = (L2[i10] + Rr[i10]) * 0.015;
-      this.pre[this.preW] = inp;
-      const x2 = this.pre[(this.preW - this.preD + plen) % plen];
-      this.preW = (this.preW + 1) % plen;
-      let oL2 = 0, oR2 = 0;
-      for (let c10 = 0; c10 < 8; c10++) {
-        oL2 += this.cL[c10].tick(x2, this.fb, this.damp);
-        oR2 += this.cR[c10].tick(x2, this.fb, this.damp);
-      }
-      for (let a10 = 0; a10 < 4; a10++) {
-        oL2 = this.aL[a10].tick(oL2);
-        oR2 = this.aR[a10].tick(oR2);
-      }
-      const wl = oL2 * w1 + oR2 * w2, wr = oR2 * w1 + oL2 * w2;
-      L2[i10] = L2[i10] * dry + wl * mix;
-      if (R2) R2[i10] = R2[i10] * dry + wr * mix;
-    }
-  }
-};
-var CHORUS = {
-  kind: "chorus",
-  name: _t("\u5408\u5531"),
-  formula: _t("v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7(1-mix) + mix \xB7 \u03A3_k d_k / v\u3002"),
-  params: [
-    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: _t("\u51E0\u6761") },
-    { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: _t("\u5EF6\u8FDF") },
-    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: _t("\u6296\u52A8\u6DF1\u5EA6") },
-    { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: _t("\u6296\u52A8\u5FEB\u6162") },
-    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: _t("\u5DE6\u53F3\u94FA\u5F00") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u6E7F") },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") }
-  ]
-};
-var Chorus = class {
-  kind = "chorus";
-  on = true;
-  id;
-  sr;
-  buf;
-  wr = 0;
-  phase = 0;
-  voices = 3;
-  delay = 0;
-  depth = 0;
-  rate = 0.6;
-  spread = 0.8;
-  mix = 0.5;
-  dry = 0.5;
-  constructor(id2, sr2, p2) {
-    this.id = id2;
-    this.sr = sr2;
-    this.buf = new Float32Array(Math.ceil(0.06 * sr2) + 2);
-    this.setParams(p2);
-  }
-  setParams(p2) {
-    const g3 = (k2) => p2[k2] ?? CHORUS.params.find((d3) => d3.id === k2).default;
-    this.voices = clamp(Math.round(g3("voices")), 1, 4);
-    this.delay = clamp(g3("delayMs"), 5, 40) / 1e3 * this.sr;
-    this.depth = clamp(g3("depthMs"), 0, 10) / 1e3 * this.sr;
-    this.rate = clamp(g3("rateHz"), 0.05, 5);
-    this.spread = clamp(g3("spread"), 0, 1);
-    this.mix = clamp(g3("mix"), 0, 1);
-    this.dry = dryOf(p2, this.mix);
-  }
-  process(L2, R2, n10) {
-    if (!this.on) return;
-    const len = this.buf.length, v = this.voices, mix = this.mix, dry = this.dry, dphi = 2 * Math.PI * this.rate / this.sr;
-    for (let i10 = 0; i10 < n10; i10++) {
-      const x2 = R2 ? (L2[i10] + R2[i10]) * 0.5 : L2[i10];
-      this.buf[this.wr] = x2;
-      let wl = 0, wr = 0;
-      for (let k2 = 0; k2 < v; k2++) {
-        const d3 = this.delay + this.depth * Math.sin(this.phase + 2 * Math.PI * k2 / v), rp2 = this.wr - d3, ri2 = Math.floor(rp2), f2 = rp2 - ri2;
-        const a10 = this.buf[(ri2 % len + len) % len], b3 = this.buf[((ri2 + 1) % len + len) % len], y2 = (a10 * (1 - f2) + b3 * f2) / v;
-        const pan = v === 1 ? 0 : this.spread * (2 * k2 / (v - 1) - 1), gl = Math.cos((pan + 1) * Math.PI / 4) * Math.SQRT2, gr = Math.sin((pan + 1) * Math.PI / 4) * Math.SQRT2;
-        wl += y2 * gl;
-        wr += y2 * gr;
-      }
-      this.phase += dphi;
-      if (this.phase > 2 * Math.PI) this.phase -= 2 * Math.PI;
-      this.wr = (this.wr + 1) % len;
-      L2[i10] = L2[i10] * dry + wl * mix;
-      if (R2) R2[i10] = R2[i10] * dry + wr * mix;
-    }
-  }
-};
-var GAIN = { kind: "gain", name: _t("\u589E\u76CA"), formula: "y = x \xB7 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, default: 0, label: _t("\u589E\u76CA") }] };
-var Gain = class {
-  kind = "gain";
-  on = true;
-  g = 1;
-  id;
-  constructor(id2, _sr, p2) {
-    this.id = id2;
-    this.setParams(p2);
-  }
-  setParams(p2) {
-    this.g = dbToLin(clamp(p2.dB ?? 0, -60, 24));
-  }
-  process(L2, R2, n10) {
-    if (!this.on || this.g === 1) return;
-    for (let i10 = 0; i10 < n10; i10++) {
-      L2[i10] *= this.g;
-      if (R2) R2[i10] *= this.g;
-    }
-  }
-};
-function dryOf(p2, mix) {
-  return p2.dry === void 0 || !Number.isFinite(p2.dry) ? 1 - mix : clamp(p2.dry, 0, 1);
-}
-var FX_KINDS = { eq: EQ, comp: COMP, delay: DELAY, reverb: REVERB, chorus: CHORUS, gain: GAIN };
-function createFx(spec, sr2) {
-  const p2 = Object.fromEntries(Object.entries(spec.params ?? {}).filter(([, v]) => typeof v === "number" && Number.isFinite(v)));
-  let fx = null;
-  switch (spec.kind) {
-    case "eq":
-      fx = new Eq(spec.id, sr2, p2);
-      break;
-    case "comp":
-      fx = new Comp(spec.id, sr2, p2);
-      break;
-    case "delay":
-      fx = new Delay(spec.id, sr2, p2);
-      break;
-    case "reverb":
-      fx = new Reverb(spec.id, sr2, p2);
-      break;
-    case "chorus":
-      fx = new Chorus(spec.id, sr2, p2);
-      break;
-    case "gain":
-      fx = new Gain(spec.id, sr2, p2);
-      break;
-  }
-  if (fx) fx.on = spec.on !== false;
-  return fx;
-}
-function buildChain(specs, prev, sr2) {
-  const out = [];
-  for (const s10 of specs) {
-    const had = prev.find((f2) => f2.id === s10.id && f2.kind === s10.kind);
-    if (had) {
-      had.setParams(Object.fromEntries(Object.entries(s10.params ?? {}).filter(([, v]) => typeof v === "number")));
-      had.on = s10.on !== false;
-      out.push(had);
-      continue;
-    }
-    const fx = createFx(s10, sr2);
-    if (fx) out.push(fx);
-  }
-  return out;
-}
 
 // src/engine/studio.ts
 var BLOCK = 128;
@@ -41183,279 +41573,6 @@ var tsukuyomi = registerPerformer({
   }
 });
 
-// src/score/pedal.ts
-function sustainSpans(tokens, tempoMap, bounds = [0]) {
-  const tl2 = timeline(tokens, tempoMap), spans2 = [];
-  const starts = [.../* @__PURE__ */ new Set([0, ...bounds])].sort((a10, b3) => a10 - b3);
-  for (let k2 = 0; k2 < starts.length; k2++) {
-    const a10 = starts[k2], b3 = k2 + 1 < starts.length ? starts[k2 + 1] : tokens.length;
-    const timed2 = tl2.filter((x2) => x2.index >= a10 && x2.index < b3);
-    if (!timed2.length) continue;
-    const end = timed2[timed2.length - 1].t1;
-    const at3 = (i10) => timed2.find((x2) => x2.index > i10)?.t0 ?? end;
-    let cur = null;
-    for (let i10 = a10; i10 < b3; i10++) {
-      const t10 = tokens[i10];
-      if (t10.kind !== "pedal" || t10.which !== "sustain") continue;
-      const s10 = at3(i10);
-      if (t10.act === "down") {
-        if (!cur) cur = { down: s10, up: end, changes: [] };
-      } else if (t10.act === "up") {
-        if (cur) {
-          cur.up = s10;
-          spans2.push(cur);
-          cur = null;
-        }
-      } else if (cur) {
-        if (s10 > cur.down) cur.changes.push(s10);
-      } else cur = { down: s10, up: end, changes: [] };
-    }
-    if (cur) spans2.push(cur);
-  }
-  return spans2;
-}
-function holdBySustain(notes, spans2) {
-  if (!spans2.length) return notes.slice();
-  const out = notes.map((n10) => {
-    const sp2 = spans2.find((s10) => s10.down < n10.t1 - 1e-9 && n10.t1 < s10.up - 1e-9);
-    if (!sp2) return n10;
-    const rel = Math.min(sp2.up, ...sp2.changes.filter((c10) => c10 >= n10.t1 - 1e-9));
-    return rel > n10.t1 + 1e-9 ? { ...n10, t1: rel, w1: n10.t1 } : n10;
-  });
-  const byMidi = /* @__PURE__ */ new Map();
-  out.forEach((n10, i10) => {
-    const l10 = byMidi.get(n10.midi) ?? [];
-    l10.push(i10);
-    byMidi.set(n10.midi, l10);
-  });
-  for (const idx of byMidi.values()) for (const i10 of idx) {
-    const n10 = out[i10];
-    if (n10.w1 === void 0) continue;
-    let cut = n10.t1;
-    for (const j2 of idx) {
-      const m2 = out[j2];
-      if (j2 !== i10 && m2.t0 >= n10.w1 - 1e-9 && m2.t0 < cut) cut = m2.t0;
-    }
-    if (cut < n10.t1) out[i10] = cut > n10.w1 + 1e-9 ? { ...n10, t1: cut } : (({ w1: _w, ...rest }) => ({ ...rest, t1: n10.w1 }))(n10);
-  }
-  return out;
-}
-
-// src/gm/sf-key.ts
-function sfKey(written, inst, transpose = 0) {
-  if (inst.note !== void 0) return inst.note;
-  const s10 = inst.sfx, w2 = written + transpose;
-  const k2 = s10?.align && s10.midi !== void 0 && s10.centsPerKey ? Math.round(s10.key + (w2 - s10.midi) * 100 / s10.centsPerKey) : w2;
-  return Math.max(0, Math.min(127, k2));
-}
-var canAlign = (s10) => !!s10 && s10.midi !== void 0 && !!s10.centsPerKey;
-
-// src/engine/timeline.ts
-var LEAD_IN = 0.5;
-var SUNG_TAIL = 0.6;
-var PRE_ROLL = 0.1;
-function sungPlan(tokens, tempoMap, bounds, mode, hum) {
-  const ranges = singChunks(tokens, tempoMap, mode === "sheet" ? bounds : [], mode);
-  const own = ranges.map(([a10, b3]) => {
-    const text2 = tokens.slice(a10, b3).flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
-    return text2 ? scriptLang(text2) : null;
-  });
-  let prev = own.find((l10) => l10) ?? songLangOf(tokens, hum);
-  const langs = own.map((l10) => prev = l10 ?? prev);
-  const at3 = new Array(tokens.length).fill(langs[0] ?? prev);
-  ranges.forEach(([a10, b3], k2) => {
-    for (let i10 = a10; i10 < tokens.length && (i10 < b3 || !ranges[k2 + 1]); i10++) at3[i10] = langs[k2];
-  });
-  return { ranges, langs, at: at3 };
-}
-function songLangOf(tokens, hum) {
-  const ls2 = tokens.flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
-  if (/[A-Za-z]/.test(ls2) && !/[\p{Script=Han}぀-ヿ]/u.test(ls2)) return "en";
-  if (!ls2 && (hum === "la" || hum === "u")) return "zh";
-  return /\p{Script=Han}/u.test(ls2) && !/[぀-ヿ]/.test(ls2) ? "zh" : "ja";
-}
-function lightNotes(tokens, tempoMap, poly = false, marks, velOf, rollVel) {
-  const notes = [];
-  let open2 = /* @__PURE__ */ new Map();
-  for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, tempoMap)) {
-    if (tok.kind !== "note") continue;
-    const ps = poly && tok.pitch ? allPitches(tok) : [effectivePitch(tokens, index)];
-    const nextOpen = /* @__PURE__ */ new Map();
-    const arp = poly && ps.length > 1 && (tok.art ?? []).includes("arpeggio") && !tok.tie ? Math.min(marks?.arpeggioSec ?? 0.035, (t12 - t02) * 0.5 / (ps.length - 1)) : 0;
-    const rank = arp ? new Map([...ps].map((q2) => midiOf(q2)).sort((a10, b3) => a10 - b3).map((m2, k2) => [m2, k2])) : null;
-    for (const p2 of ps) {
-      const midi2 = midiOf(p2), prev = tok.tie ? open2.get(midi2) : void 0;
-      if (prev) {
-        prev.t1 = prev.roll ? t12 : marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12;
-        prev.segs?.push({ index, t0: t02, t1: t12 });
-        nextOpen.set(midi2, prev);
-        continue;
-      }
-      const roll = !!marks?.rollHz && (tok.art ?? []).includes("roll");
-      const n10 = { midi: midi2, t0: rank ? t02 - (ps.length - 1 - (rank.get(midi2) ?? 0)) * arp : t02, t1: roll ? t12 : marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {}, ...roll ? { roll: true, segs: [{ index, t0: t02, t1: t12 }] } : {} };
-      notes.push(n10);
-      nextOpen.set(midi2, n10);
-    }
-    open2 = nextOpen;
-  }
-  const out = [];
-  for (const n10 of notes) {
-    if (!n10.roll || !marks?.rollHz) {
-      const { segs: _s, roll: _r, ...rest } = n10;
-      out.push(rest);
-      continue;
-    }
-    const hz = Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, marks.rollHz(n10.midi))), len = n10.t1 - n10.t0, k2 = Math.max(1, Math.round(len * hz)), d3 = len / k2, segs = n10.segs ?? [];
-    const hits = [];
-    for (let i10 = 0; i10 < k2; i10++) {
-      const t10 = n10.t0 + i10 * d3, seg = [...segs].reverse().find((g3) => g3.t0 <= t10 + 1e-9) ?? segs[0];
-      const v = rollVel && seg ? rollVel({ index: seg.index, t: t10, seg, first: segs[0].index, isFirst: i10 === 0, fr: len > 0 ? i10 / k2 : 0 }) : n10.vel;
-      hits.push({ midi: n10.midi, t0: t10, t1: n10.t0 + (i10 + 1) * d3, ...v !== void 0 ? { vel: v } : {} });
-    }
-    out.push(...hits);
-  }
-  return out.sort((a10, b3) => a10.t0 - b3.t0);
-}
-var HUM_KANA = { la: "\u3089", n: "\u3093", u: "\u3046", o: "\u304A", a: "\u3042" };
-function buildTimeline(inp) {
-  const { song, order, hum } = inp;
-  const map = timeMapOf(song, order), gmap = grooveMapOf(song, order);
-  const flats = /* @__PURE__ */ new Map();
-  const flat = (partId) => {
-    let f2 = flats.get(partId);
-    if (!f2) {
-      f2 = flattenPart(song, partId, { order });
-      flats.set(partId, f2);
-    }
-    return f2;
-  };
-  const tracks = [], chunks2 = [], unplayable = [];
-  let total = 0, from = 0, to2 = 0;
-  for (const part2 of inp.parts) {
-    const { tokens, starts } = flat(part2.id), bounds = starts.map((s10) => s10.index), tl2 = timeline(tokens, map);
-    if (tl2.length) total = Math.max(total, tl2[tl2.length - 1].t1);
-    const info2 = inp.info(part2);
-    if (!info2.plugin) {
-      unplayable.push({ part: part2.id, why: _t("\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A") });
-      continue;
-    }
-    const groove = grooveWeights(tokens, bounds, gmap, info2.follow);
-    const byVel = info2.plugin.dynamics === "velocity";
-    const curve = byVel ? info2.velDb ?? (() => null) : depthCurve(info2.plugin.velocityDepth);
-    const rolls = info2.plugin.honors.includes("roll");
-    const gain = gainSegments(tokens, map, info2.spec, bounds, groove, byVel, curve, rolls);
-    if (info2.plugin.sound === "chunks") {
-      const plan = sungPlan(tokens, map, bounds, info2.chunk, hum);
-      const noteAt = (a10) => tl2.find((x2) => x2.index >= a10 && x2.tok.kind === "note")?.t0 ?? 0;
-      const clips = { id: part2.id, kind: "clips", clips: [], gain, ...info2.chain?.length ? { chain: info2.chain } : {} };
-      for (const [k2, [a10, b3]] of plan.ranges.entries()) {
-        const lang2 = plan.langs[k2], te3 = /* @__PURE__ */ new Map(), score = toLabScore(tokens, hum, lang2, map, info2.spec.sing, [a10, b3], te3);
-        if (!score.SCORE.length) continue;
-        const entryOf = /* @__PURE__ */ new Map();
-        for (const [i10, e10] of te3) entryOf.set(tokens[i10].id, e10);
-        const first = noteAt(a10), last = tl2.filter((x2) => x2.index >= a10 && x2.index < b3 && x2.tok.kind === "note").reduce((m2, x2) => Math.max(m2, x2.t1), first);
-        const opt2 = { ...inp.singOpt, ...info2.singOpt ?? {} };
-        const key = JSON.stringify(["tsukuyomi-chunk", score, opt2]), t02 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
-        clips.clips.push({ key, t0: t02, dur, gain: info2.plugin.chunkGain ?? 1, end: last });
-        chunks2.push({ part: part2.id, key, score, lang: lang2, opt: opt2, t0: t02, dur, end: last, entryOf });
-        from = Math.min(from, t02);
-        to2 = Math.max(to2, t02 + dur);
-      }
-      tracks.push(clips);
-      continue;
-    }
-    const vels = byVel ? noteVelocities(tokens, map, info2.spec, info2.velocity, bounds, groove) : null;
-    const percKey = (m2) => info2.gm?.note !== void 0 ? info2.gm.note : info2.hitSec ? m2 : null;
-    const rollHz = info2.plugin.honors.includes("roll") ? (m2) => info2.spec.rollHz ?? rollDefaultHz(percKey(m2)) : void 0;
-    const rollVel = rollHz && byVel ? rollHitVelocity(tokens, map, info2.spec, info2.velocity, bounds, groove, curve) : void 0;
-    const notes0 = lightNotes(tokens, map, info2.plugin.poly, { ...lightMarks(info2.spec), ...rollHz ? { rollHz } : {} }, (i10) => vels?.get(i10) ?? info2.velocity, rollVel);
-    const notes = info2.plugin.pedals?.includes("sustain") ? holdBySustain(notes0, sustainSpans(tokens, map, bounds)) : notes0;
-    const built = info2.plugin.track?.({ id: part2.id, notes, gain, ...info2.chain?.length ? { chain: info2.chain } : {}, hum, info: info2 });
-    if (!built) {
-      unplayable.push({ part: part2.id, why: _t("\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0", { label: info2.plugin.label }) });
-      continue;
-    }
-    if ("unplayable" in built) {
-      unplayable.push({ part: part2.id, why: built.unplayable });
-      continue;
-    }
-    if (built.from !== void 0) from = Math.min(from, built.from);
-    tracks.push(built.track);
-  }
-  to2 = Math.max(to2, total);
-  const ref = inp.parts[0] ?? song.parts[0];
-  const papers = [];
-  if (ref) {
-    const { tokens, starts } = flat(ref.id), tl2 = timeline(tokens, map);
-    const secAt = (index) => tl2.find((x2) => x2.index >= index)?.t0 ?? (tl2.length ? tl2[tl2.length - 1].t1 : 0);
-    const tickAt = (index) => tl2.find((x2) => x2.index >= index)?.start ?? (tl2.length ? tl2[tl2.length - 1].start + tl2[tl2.length - 1].tok.dur : 0);
-    starts.forEach((s10, k2) => {
-      const nextIndex = starts[k2 + 1]?.index ?? tokens.length;
-      papers.push({ paper: s10.paper, tick0: tickAt(s10.index), t0: secAt(s10.index), t1: secAt(nextIndex) });
-    });
-    if (papers.length && tl2.length) papers[papers.length - 1].t1 = tl2[tl2.length - 1].t1;
-  }
-  const secondsOfToken = (partId, tokenId) => {
-    const f2 = flats.get(partId) ?? flat(partId), tl2 = timeline(f2.tokens, map);
-    const i10 = f2.tokens.findIndex((t10) => t10.id === tokenId);
-    if (i10 < 0) return null;
-    return tl2.find((x2) => x2.index >= i10)?.t0 ?? (tl2.length ? tl2[tl2.length - 1].t1 : null);
-  };
-  const segsOf2 = (paperId) => {
-    const pp = song.papers.find((x2) => x2.id === paperId), owner = pp ? tempoOwner(song, pp) : null;
-    return pp && owner ? playSegments(pp.tracks[owner], paperTicks(pp)) : null;
-  };
-  const locate = (sec) => {
-    if (!ref) return null;
-    const { tokens } = flat(ref.id), tl2 = timeline(tokens, map);
-    const e10 = tl2.find((x2) => sec >= x2.t0 && sec < x2.t1) ?? (sec >= 0 && tl2.length && sec < tl2[tl2.length - 1].t1 + 1e-9 ? tl2[tl2.length - 1] : null);
-    if (!e10) return null;
-    const tick = e10.start + (sec - e10.t0) / Math.max(1e-9, e10.t1 - e10.t0) * e10.tok.dur;
-    let span2 = papers[0];
-    for (const p2 of papers) if (p2.tick0 <= tick + 1e-9) span2 = p2;
-    if (!span2) return null;
-    let inPaper = tick - span2.tick0;
-    const segs = segsOf2(span2.paper.id);
-    if (segs) {
-      let cum = 0;
-      for (const s10 of segs) {
-        const len = s10.t1 - s10.t0;
-        if (inPaper < cum + len) {
-          inPaper = s10.t0 + (inPaper - cum);
-          break;
-        }
-        cum += len;
-      }
-    }
-    return { paperId: span2.paper.id, tick: Math.max(0, Math.floor(inPaper)) };
-  };
-  const secondsAt = (paperId, tick, near2) => {
-    if (!ref) return null;
-    const { tokens } = flat(ref.id), tl2 = timeline(tokens, map);
-    let best = null;
-    for (const span2 of papers) {
-      if (span2.paper.id !== paperId) continue;
-      const segs = segsOf2(span2.paper.id);
-      const cands3 = [];
-      if (segs) {
-        let cum = 0;
-        for (const sg2 of segs) {
-          if (tick >= sg2.t0 && tick < sg2.t1) cands3.push(span2.tick0 + cum + (tick - sg2.t0));
-          cum += sg2.t1 - sg2.t0;
-        }
-      } else cands3.push(span2.tick0 + tick);
-      for (const T3 of cands3) {
-        const e10 = tl2.find((x2) => T3 >= x2.start && T3 < x2.start + x2.tok.dur);
-        if (!e10) continue;
-        const sec = e10.t0 + (T3 - e10.start) / Math.max(1e-9, e10.tok.dur) * (e10.t1 - e10.t0);
-        if (best === null || Math.abs(sec - near2) < Math.abs(best - near2)) best = sec;
-      }
-    }
-    return best;
-  };
-  return { tracks, range: { from, to: to2 }, total, chunks: chunks2, papers, unplayable, secondsOfToken, locate, secondsAt };
-}
-
 // src/performers/vowel-sampler.ts
 var vowelSampler = registerPerformer({
   guid: "b9d4e7a2-51c6-4f0b-8e3d-7a9c2f6b1d58",
@@ -41876,7 +41993,7 @@ function audibleParts(song, pv2) {
 function performerInfoOf(extras, part2, banks) {
   const role = part2.role, eng = activeInstrument(extras, role)?.engine ?? "unknown", plugin = performerOf(eng), cat2 = grooveCategory(plugin?.grooveCategory ?? null, activeGm(extras, role));
   const own = plugin ? plugin.info({ extras, role, presetIndex: (s10, b3, p2) => banks.presetIndex(s10, b3, p2), velCurve: (s10, b3, p2) => banks.velCurve(s10, b3, p2) }) : { gm: null, chunk: "phrase" };
-  return { engine: eng, plugin, spec: activePerfSpec(extras, role), velocity: activeVelocity(extras, role), transpose: activeTranspose(extras, role), follow: (s10) => followOf(s10, cat2), chain: activeChain(extras, role), ...own };
+  return { engine: eng, hum: activeHum(extras, role), plugin, spec: activePerfSpec(extras, role), velocity: activeVelocity(extras, role), transpose: activeTranspose(extras, role), follow: (s10) => followOf(s10, cat2), chain: activeChain(extras, role), ...own };
 }
 async function prepareParts(parts, extras, deps) {
   const errs = [];
@@ -41930,7 +42047,7 @@ function pushMix(engine2, plan, pv2) {
 }
 function timelineOf(plan, banks) {
   const { song } = plan;
-  return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part2) => performerInfoOf(plan.extras, part2, banks), hum: plan.hum, singOpt: humOpt() });
+  return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part2) => performerInfoOf(plan.extras, part2, banks), singOpt: humOpt() });
 }
 function loopSpanOf(song, tl2, withArrangementLoop = true) {
   let from = tl2.papers[0]?.t0 ?? 0;
@@ -42116,7 +42233,7 @@ function createPerformance(host2) {
   const audibleParts3 = () => audibleParts(st2().song, pv2);
   const micOf3 = (part2) => micOf(extras(), part2);
   const channelOf3 = (part2) => channelOf(extras(), part2);
-  const planOf = (song, parts, raw = mixBypass) => ({ song, extras: extras(), hum: st2().song.hum, parts, mixBypass: raw, busMuted: host2.busMuted() });
+  const planOf = (song, parts, raw = mixBypass) => ({ song, extras: extras(), parts, mixBypass: raw, busMuted: host2.busMuted() });
   const deps = { engine: engine2, sounds: { resolveGmBytes, ensureVowels: ensureVowels2 }, sing: (tl2) => awaitAllChunks(tl2) };
   let mixBypass = false;
   function pushChannels2(raw = mixBypass) {
@@ -42963,109 +43080,6 @@ function loadVowelTable() {
     throw e10;
   });
   return loading;
-}
-
-// src/score/desk.ts
-var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
-var freshPad = () => ({ auto: true, fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
-var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
-var FINDER_MODES = ["year", "style", "family", "hs"];
-var freshFinderMemo = () => ({ mode: "year", open: {}, scroll: 0, row: null, pick: "" });
-function serializeFinderMemo(m2) {
-  const o10 = {};
-  if (m2.mode !== "year") o10.mode = m2.mode;
-  if (Object.keys(m2.open).length) o10.open = { ...m2.open };
-  if (m2.scroll > 0) o10.scroll = Math.round(m2.scroll);
-  if (m2.row) o10.row = m2.row;
-  if (m2.pick) o10.pick = m2.pick;
-  return Object.keys(o10).length ? o10 : null;
-}
-function unserializeFinderMemo(json) {
-  const m2 = freshFinderMemo();
-  if (!json || typeof json !== "object") return m2;
-  const j2 = json;
-  if (FINDER_MODES.includes(j2.mode)) m2.mode = j2.mode;
-  if (j2.open && typeof j2.open === "object") {
-    for (const [k2, v] of Object.entries(j2.open)) if (FINDER_MODES.includes(k2) && typeof v === "string") m2.open[k2] = v;
-  }
-  if (typeof j2.scroll === "number" && Number.isFinite(j2.scroll) && j2.scroll > 0) m2.scroll = j2.scroll;
-  if (typeof j2.row === "string" && j2.row) m2.row = j2.row;
-  if (typeof j2.pick === "string") m2.pick = j2.pick;
-  return m2;
-}
-var freshDesk = () => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, mode: "notes", finder: freshFinderMemo() });
-function serializeDesk(d3) {
-  const out = {};
-  if (d3.scope === "all") out.scope = "all";
-  if (d3.mp3 === "small") out.mp3 = "small";
-  if (d3.mode !== "notes") out.mode = d3.mode;
-  if (d3.scroll) out.scroll = true;
-  else if (d3.pageFlow) out.pageFlow = true;
-  if (d3.paper) out.paper = d3.paper;
-  const parts = {};
-  for (const [id2, p2] of Object.entries(d3.parts)) {
-    const v = {};
-    if (p2.hidden) v.hidden = true;
-    if (p2.only) v.only = true;
-    if (p2.muted) v.muted = true;
-    if (p2.solo) v.solo = true;
-    if (Object.keys(v).length) parts[id2] = v;
-  }
-  if (Object.keys(parts).length) out.parts = parts;
-  const pd = d3.pad, def = freshPad(), pj = {};
-  if (!pd.auto) {
-    pj.fifths = pd.fifths;
-    if (pd.scale !== def.scale) pj.scale = pd.scale;
-  }
-  if (pd.unit !== def.unit) pj.unit = pd.unit;
-  if (pd.tuplet) pj.tuplet = pd.tuplet;
-  if (pd.low !== null) pj.low = pd.low;
-  if (Object.keys(pj).length) out.pad = pj;
-  if (d3.ref) {
-    const { open: open2, left, top, width, height } = d3.ref;
-    out.ref = { ...open2 ? { open: true } : {}, left, top, width, height };
-  }
-  const fm = serializeFinderMemo(d3.finder);
-  if (fm) out.finder = fm;
-  return Object.keys(out).length ? out : null;
-}
-function unserializeDesk(json) {
-  const d3 = freshDesk();
-  if (!json || typeof json !== "object") return d3;
-  const j2 = json;
-  if (j2.scope === "all") d3.scope = "all";
-  if (j2.pageFlow === true) d3.pageFlow = true;
-  if (j2.scroll === true) {
-    d3.scroll = true;
-    d3.pageFlow = false;
-  }
-  if (j2.mp3 === "small") d3.mp3 = "small";
-  if (j2.mode === "lyrics" || j2.mode === "symbols" || j2.mode === "listen") d3.mode = j2.mode;
-  if (typeof j2.paper === "string" && j2.paper) d3.paper = j2.paper;
-  if (j2.parts && typeof j2.parts === "object") {
-    for (const [id2, v] of Object.entries(j2.parts)) {
-      if (!v || typeof v !== "object") continue;
-      const p2 = v;
-      d3.parts[id2] = { hidden: p2.hidden === true, only: p2.only === true, muted: p2.muted === true, solo: p2.solo === true };
-    }
-  }
-  if (j2.pad && typeof j2.pad === "object") {
-    const q2 = j2.pad;
-    if (Number.isInteger(q2.fifths) && Math.abs(q2.fifths) <= 7) {
-      d3.pad.fifths = q2.fifths;
-      d3.pad.auto = false;
-    }
-    if (typeof q2.scale === "string" && SCALES.some((sc2) => sc2.id === q2.scale)) d3.pad.scale = q2.scale;
-    if (PAD_UNITS.includes(q2.unit)) d3.pad.unit = q2.unit;
-    if (q2.tuplet === 3 || q2.tuplet === 5 || q2.tuplet === 6 || q2.tuplet === 7) d3.pad.tuplet = q2.tuplet;
-    if (Number.isInteger(q2.low) && q2.low >= 0 && q2.low <= 127) d3.pad.low = q2.low;
-  }
-  if (j2.ref && typeof j2.ref === "object") {
-    const r10 = j2.ref, n10 = (v) => typeof v === "number" && Number.isFinite(v);
-    if (n10(r10.left) && n10(r10.top) && n10(r10.width) && n10(r10.height)) d3.ref = { open: r10.open === true, left: r10.left, top: r10.top, width: r10.width, height: r10.height };
-  }
-  if (j2.finder) d3.finder = unserializeFinderMemo(j2.finder);
-  return d3;
 }
 
 // src/ui/finder.ts
@@ -43923,11 +43937,11 @@ function createInstSettings(el2, h2) {
     return performerOf(h2.engine())?.defaultCalibrationDb(g3?.origin.library ?? null) ?? CALIBRATION_DEFAULT_DB;
   }
   function inspectorCtx(role) {
-    return { extras: h2.extras(), role, hum: h2.song().hum, roleLabel: h2.roleLabel(role), catalog: h2.catalog(), esc: esc7, chip, dynTable: (layers, L2) => dynTable(activePerfSpec(h2.extras(), role), layers, L2), bankBytes: (sha) => h2.bankBytes(sha), velCurve: (sha, bank, program) => curveOf2(sha, bank, program) };
+    return { extras: h2.extras(), role, hum: activeHum(h2.extras(), role), roleLabel: h2.roleLabel(role), catalog: h2.catalog(), esc: esc7, chip, dynTable: (layers, L2) => dynTable(activePerfSpec(h2.extras(), role), layers, L2), bankBytes: (sha) => h2.bankBytes(sha), velCurve: (sha, bank, program) => curveOf2(sha, bank, program) };
   }
   function draw() {
     if (!h2.shown()) return;
-    const eng = h2.engine(), hum = h2.song().hum, role = h2.role(), rn2 = h2.roleLabel(role), rs2 = roleSound(h2.extras(), role), aid = activeId(h2.extras(), role);
+    const eng = h2.engine(), role = h2.role(), hum = activeHum(h2.extras(), role), rn2 = h2.roleLabel(role), rs2 = roleSound(h2.extras(), role), aid = activeId(h2.extras(), role);
     const gms = new Map(gmCandidates(h2.extras(), role).map((g3) => [g3.id, g3])), active = gms.get(aid), who = activeCandidateName(h2.extras(), role) ?? _t("\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09");
     const status = !active ? "" : active.bytes ? `<div class="cand-status">${_t("\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08{n}\uFF09{library}", { n: sizeText2(active.bytes.length), library: active.origin.library ? _t("\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 {name}", { name: esc7(active.origin.name) }) : _t("\uFF0C\u6765\u81EA {name}", { name: esc7(active.origin.name) }) })}</div>` : active.path ? `<div class="cand-status">${_t("\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")}</div>` : ((found) => `<div class="cand-status">${_t("\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C{name}\u300D\u627E\uFF08{found}\uFF09", { name: esc7(active.origin.name), found: found ? _t("\u672C\u6B21\u5DF2\u627E\u5230") : _t("\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6") })}${found ? "" : `<button class="btn" data-v="find:${esc7(active.id)}">${_t("\u627E\u6587\u4EF6\u2026")}</button>`}</div>`)(h2.sessionHas(active.subsetSha256));
     const labels = h2.labels(), onPaper = new Set(Object.keys(h2.song().papers.find((p2) => p2.id === h2.at().paper)?.tracks ?? {}));
@@ -43959,7 +43973,7 @@ function createInstSettings(el2, h2) {
       _t("\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}", { d: D4, vel: swellVelNote(role, D4) })
     ))(activePerfSpec(h2.extras(), role).swellDb) : "") + ownMain.map(rowOf).join("") + // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
     // 按块出声的（小月相）块乘多少照实写在这里，和力度深度一起（第 14 条，2026-11-12：「我们自己放的、界面上看不见的」这一类要清到零）
-    (plug?.dynamics === "gain" ? ((dp) => row2(_t("\u529B\u5EA6\u8BB0\u53F7"), "", (plug.chunkGain ? _t("\u5531\u51FA\u6765\u7684\u6BCF\u4E00\u53E5\u5148\u4E58 \xD7{k}\uFF08{db} dB\uFF09\uFF1A\u5531\u6CD5\u6838\u5FC3\u539F\u59CB\u8F93\u51FA\u7684\u8865\u507F\uFF0C\u6211\u4EEC\u6309\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\uFF08\u7EA6 0.42\uFF09\u653E\u5927\u5230 0.89 \u5B9A\u7684\u6570\u3002", { k: plug.chunkGain.toFixed(2), db: `+${(20 * Math.log10(plug.chunkGain)).toFixed(1)}` }) : "") + _t("\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u7684\u653E\u6CD5\uFF1A\u54CD\u5EA6 = \u6DF1\u5EA6 \xF7 960 \xD7 40\xB7log10(\u529B\u5EA6 \xF7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\u3002\u8FD9\u4F4D\u7684\u529B\u5EA6\u6DF1\u5EA6 {dp}\uFF08\u7167\u5E93\u91CC\u4EBA\u58F0\u7C7B\u548C\u957F\u7B1B\u3001\u5C0F\u63D0\u7434\u8FD9\u7C7B\u62C9\u957F\u97F3\u7684\u4E50\u5668\uFF1B\u89C4\u8303\u9ED8\u8BA4 960\uFF09\uFF1B\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}", { dp, extras: dynTable(activePerfSpec(h2.extras(), role), null, (v) => depthCurve(dp)(60, v)) })))(plug.velocityDepth ?? SF2_VEL_DEPTH) : "") + ((plug?.lyrics ?? "none") !== "none" ? row2(_t("\u54FC\u7684\u5B57"), HUMS.map(([v, l10]) => chip(`hum:${v}`, l10, hum === v)).join(""), _t("\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09")) : "") + (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") + ownTail.map(rowOf).join("") + (!plug ? row2("", "", _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")) : "");
+    (plug?.dynamics === "gain" ? ((dp) => row2(_t("\u529B\u5EA6\u8BB0\u53F7"), "", (plug.chunkGain ? _t("\u5531\u51FA\u6765\u7684\u6BCF\u4E00\u53E5\u5148\u4E58 \xD7{k}\uFF08{db} dB\uFF09\uFF1A\u5531\u6CD5\u6838\u5FC3\u539F\u59CB\u8F93\u51FA\u7684\u8865\u507F\uFF0C\u6211\u4EEC\u6309\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\uFF08\u7EA6 0.42\uFF09\u653E\u5927\u5230 0.89 \u5B9A\u7684\u6570\u3002", { k: plug.chunkGain.toFixed(2), db: `+${(20 * Math.log10(plug.chunkGain)).toFixed(1)}` }) : "") + _t("\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u7684\u653E\u6CD5\uFF1A\u54CD\u5EA6 = \u6DF1\u5EA6 \xF7 960 \xD7 40\xB7log10(\u529B\u5EA6 \xF7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\u3002\u8FD9\u4F4D\u7684\u529B\u5EA6\u6DF1\u5EA6 {dp}\uFF08\u7167\u5E93\u91CC\u4EBA\u58F0\u7C7B\u548C\u957F\u7B1B\u3001\u5C0F\u63D0\u7434\u8FD9\u7C7B\u62C9\u957F\u97F3\u7684\u4E50\u5668\uFF1B\u89C4\u8303\u9ED8\u8BA4 960\uFF09\uFF1B\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}", { dp, extras: dynTable(activePerfSpec(h2.extras(), role), null, (v) => depthCurve(dp)(60, v)) })))(plug.velocityDepth ?? SF2_VEL_DEPTH) : "") + ((plug?.lyrics ?? "none") !== "none" ? row2(_t("\u54FC\u7684\u5B57"), HUMS.map(([v, l10]) => chip(`hum:${v}`, l10, hum === v)).join(""), _t("\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u8FD9\u4E00\u4F4D\u7684\uFF09")) : "") + (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") + ownTail.map(rowOf).join("") + (!plug ? row2("", "", _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")) : "");
     const keepScroll = el2.querySelector(".ip-body")?.scrollTop ?? 0;
     el2.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="ip-title">${_t("\u4E50\u5668")}</span>` + (parts.length > 1 ? dropdownHtml(parts.map((x2) => ({ value: x2.p.id, label: x2.label })), h2.at().part, { cls: "ip-part", title: _t("\u6362\u4E00\u4E2A\u58F0\u90E8") }) : `<span class="ip-part-one">${esc7(parts[0]?.label ?? rn2)}</span>`) + // 下拉 = 界面零件库的标准件（7-T）
     `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${h2.padHidden() ? "" : " is-on"}" data-v="pad" title="${_t("\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card ip-who"><h3>${_t("\u53F0\u4E0A")}<small>${_t("\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31")}</small></h3><div class="ip-who-row"><b>${esc7(activeCandidateName(h2.extras(), role) ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</b>${status}</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="${_t("\u4E50\u5668\u76EE\u5F55\uFF1A\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u91CC\u7528\u8FC7\u7684\uFF0C\u4E0B\u9762\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF\u6D4F\u89C8\uFF1B\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u9009\u597D\u5C31\u6362\u4E0A")}">${_t("\u6362\u4E50\u5668\u2026")}</button></div></section><section class="ip-card ip-how"><h3>${_t("{who} \u600E\u4E48\u6F14", { who: esc7(who) })}<small>${_t("\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5")}</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section><div class="ip-what">${_t("\u8C31\u4E0A\u5199\u300C{rn}\u300D", { rn: esc7(rn2) })} \xB7 MusicXML <code>${esc7(rs2)}</code> \xB7 ${_t("\u6539\u540D\u5728\u58F0\u90E8\u7BA1\u7406")}${roleDetail(role)}</div></div></div>`;
@@ -43976,7 +43990,7 @@ function createInstSettings(el2, h2) {
   el2.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
-    const role = h2.role(), rn2 = h2.roleLabel(role), hum = h2.song().hum;
+    const role = h2.role(), rn2 = h2.roleLabel(role), hum = activeHum(h2.extras(), role);
     if (v === "back") {
       h2.back();
       return;
@@ -44117,11 +44131,7 @@ function defaults(kind) {
   for (const d3 of fullParams(kind)) p2[d3.id] = d3.default;
   return p2;
 }
-var paramsOf = (fx) => {
-  const p2 = { ...defaults(fx.kind), ...fx.params };
-  if ((fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.params.dry === void 0) p2.dry = Math.round((1 - p2.mix) * 100) / 100;
-  return p2;
-};
+var paramsOf = (fx) => ({ ...defaults(fx.kind), ...fx.params });
 var fullyWet = (fx) => (fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.on !== false && paramsOf(fx).dry === 0;
 var near = (a10, b3, e10 = 1e-3) => Math.abs(a10 - b3) <= e10;
 var r12 = (x2) => Math.round(x2 * 10) / 10;
@@ -45263,7 +45273,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "896c9ee3183a9635" : "dev";
+var CORE_HASH = true ? "6b00e1238e31be60" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -53174,8 +53184,7 @@ var FACTS_DB = CACHE_DBS.facts;
 var factsOf = (v) => {
   const o10 = v;
   if (!o10 || typeof o10 !== "object") return null;
-  const f2 = o10.final && typeof o10.final.rev === "number" ? { rev: o10.final.rev, secs: Number(o10.final.secs ?? 0) } : void 0;
-  return { ...typeof o10.stamp === "string" ? { stamp: o10.stamp } : {}, ...f2 ? { final: f2 } : {} };
+  return typeof o10.stamp === "string" ? { stamp: o10.stamp } : {};
 };
 var THUMB_DB = CACHE_DBS.thumbs;
 var TEXT = {
@@ -53274,7 +53283,7 @@ function initGalleryHost(d3) {
       // 事实（0.8.0）：尾读总目录 → 这个文件的戳 + 里面还带不带 mp3；null = 读到了、但没有总目录（别的软件的谱，进缓存）；抛 = 够不着（不缓存，下次再问）
       facts: { kinds: ["song"], dbName: FACTS_DB, galleryId: storeKey, fetch: async (id2, source) => {
         const m2 = await peekManifest(id2, source);
-        return m2 ? { stamp: m2.stamp, ...m2.final ? { final: { rev: m2.final.rev, secs: m2.final.mp3.secs } } : {} } : null;
+        return m2 ? { stamp: m2.stamp } : null;
       } }
     },
     tile: { aspect: 1 },
@@ -53288,14 +53297,7 @@ function initGalleryHost(d3) {
   let gallery2 = null;
   async function peekManifest(id2, source = "local") {
     const b3 = await zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: MANIFEST_ENTRY, source });
-    if (!b3) return null;
-    const text2 = await b3.text();
-    let final = null;
-    try {
-      final = parseFinalRecord(JSON.parse(text2).final);
-    } catch {
-    }
-    return { stamp: stampOf2(text2), final };
+    return b3 ? { stamp: stampOf2(await b3.text()) } : null;
   }
   function staleText(src) {
     return src.stale && src.old ? _t("\u6E32\u67D3\u7F13\u5B58\u91CC\u90A3\u4E00\u904D\u662F\u6539\u4E4B\u524D\u3001\u7528\u65E7\u7248\u672C\u7684\u5F15\u64CE\uFF08\u6E32\u67D3\u6838\u5FC3 {v}\uFF09\u6E32\u7684\uFF1A\u7167\u6837\u80FD\u542C\uFF1B\u64AD\u653E\u6761\u4E0A\u300C\u91CD\u65B0\u6E32\u67D3\u300D\u6309\u73B0\u5728\u7684\u6837\u5B50\u3001\u7528\u73B0\u5728\u7684\u5F15\u64CE\u91CD\u6E32", { v: src.core }) : src.old ? _t("\u6E32\u67D3\u7F13\u5B58\u91CC\u90A3\u4E00\u904D\u662F\u65E7\u7248\u672C\u7684\u5F15\u64CE\uFF08\u6E32\u67D3\u6838\u5FC3 {v}\uFF09\u6E32\u7684\uFF1A\u7167\u6837\u80FD\u542C\uFF1B\u64AD\u653E\u6761\u4E0A\u300C\u91CD\u65B0\u6E32\u67D3\u300D\u7528\u73B0\u5728\u7684\u5F15\u64CE\u91CD\u6E32", { v: src.core }) : _t("\u6E32\u67D3\u7F13\u5B58\u91CC\u90A3\u4E00\u904D\u662F\u6539\u4E4B\u524D\u6E32\u7684\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09");
@@ -53303,7 +53305,7 @@ function initGalleryHost(d3) {
   function soundOf(id2, f2) {
     const link2 = d3.renders.linkOf(storeKey(), id2);
     if (link2 && f2?.stamp) return { k: "device", key: link2.key, secs: link2.meta.secs, stale: link2.stamp !== f2.stamp, old: renderedByOldCore(link2.meta, coreInfo()), core: link2.meta.core?.version ?? "?", loop: link2.meta.loop ?? null };
-    return f2?.final ? { k: "embedded", secs: f2.final.secs } : null;
+    return null;
   }
   const playerEl = document.createElement("div");
   playerEl.className = "ms-player";
@@ -53358,18 +53360,8 @@ function initGalleryHost(d3) {
     const stem = identifiers.parse(id2)?.stem ?? id2;
     try {
       const got2 = await withBusy(_t("\u53D6\u300C{stem}\u300D\u7684\u58F0\u97F3\u2026", { stem }), async () => {
-        if (src.k === "device") {
-          const r11 = await d3.renders.take(src.key);
-          return r11 ? { blob: new Blob([r11.bytes], { type: "audio/mpeg" }), album: _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D") } : null;
-        }
-        const m2 = await peekManifest(id2);
-        if (!m2?.final) {
-          void gallery2?.facts?.invalidate(id2);
-          return null;
-        }
-        const blob = await zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: m2.final.mp3.path, source: "local" });
-        if (!blob || blob.size !== m2.final.mp3.bytes) throw new Error(_t("mp3 \u6CA1\u53D6\u5230\uFF08{blob}\uFF09", { blob: blob ? `${blob.size} \u2260 ${m2.final.mp3.bytes}` : _t("\u7A7A") }));
-        return { blob: new Blob([blob], { type: "audio/mpeg" }), album: _t("\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3") };
+        const r11 = await d3.renders.take(src.key);
+        return r11 ? { blob: new Blob([r11.bytes], { type: "audio/mpeg" }), album: _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D") } : null;
       });
       if (!got2) {
         status(NO_SOUND());
@@ -58888,6 +58880,13 @@ applyDocumentLang();
 document.getElementById("score")?.setAttribute("aria-label", _t("\u4E50\u8C31"));
 var ranBefore = deviceKvGet("diag-log") !== null;
 initBlackBox(APP_VERSION);
+var startDynsMissing = 0;
+var startDynsTold = true;
+function noteStartDynsFilled(_n) {
+  if (startDynsTold || !startDynsMissing) return;
+  startDynsTold = true;
+  info(_t("\u8FD9\u9996\u6B4C\u6709 {n} \u5904\u7EB8\u5F00\u5934\u6CA1\u5199\u529B\u5EA6\uFF1A\u8FD9\u4E00\u4E0B\u6539\u8C31\u65F6\u8865\u4E0A\u4E86\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\u90A3\u4E2A\uFF08\u542C\u8D77\u6765\u4E0D\u53D8\uFF09\uFF0C\u5B58\u7684\u65F6\u5019\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6", { n: startDynsMissing }));
+}
 var D3 = createDocument(((st2) => ({ st: st2, extras: templateExtras(st2.song) }))(initState()), {
   now: () => performance.now(),
   normalize: (next2) => withStartDyns(next2),
@@ -58996,23 +58995,6 @@ async function relinkAfterSave(name, fingerprint) {
   if (!stamp2) return;
   if (await renders.link(home, name, m2.key, stamp2)) gallery?.invalidateFacts(name);
 }
-var legacyMp3Note = null;
-async function adoptLegacyMp3(l10, title, galleryId) {
-  try {
-    await renders.ready();
-    const quality = Object.keys(MP3_QUALITY).find((q2) => MP3_QUALITY[q2].kbps === l10.kbps && MP3_QUALITY[q2].stereo === l10.stereo) ?? `legacy-${l10.kbps}${l10.stereo ? "s" : "m"}`;
-    const key = renders.keyOf({ fingerprint: l10.fingerprint, quality, parts: l10.parts, title });
-    const meta = renders.find(key) ?? await renders.put({ fingerprint: l10.fingerprint, quality, parts: l10.parts, roles: D3.st.song.parts.filter((p2) => l10.parts.includes(p2.id)).map((p2) => p2.role), secs: l10.secs, kbps: l10.kbps, stereo: l10.stereo, title, app: l10.app, core: l10.core }, l10.bytes);
-    if (galleryId) {
-      const stamp2 = await fileStamp(galleryId);
-      if (stamp2 && await renders.link(homeKey(), galleryId, meta.key, stamp2)) gallery?.invalidateFacts(galleryId);
-    }
-    legacyMp3Note = _t("\u8FD9\u9996\u6B4C\u91CC\u539F\u6765\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{size}\uFF09\u4E0D\u518D\u5B58\u8FDB\u6B4C\u91CC\u4E86\uFF1A\u5B83\u5DF2\u7ECF\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u7167\u6837\u80FD\u542C\u3001\u80FD\u518D\u5BFC\u51FA\u3002", { size: sizeText3(l10.bytes.length) });
-    diagNote("render-cache", `legacy mp3 adopted (${l10.bytes.length} B, rev ${l10.rev})`);
-  } catch (e10) {
-    reportError(e10, "log");
-  }
-}
 var curPart = () => D3.st.song.parts.find((p2) => p2.id === D3.st.at.part) ?? D3.st.song.parts[0];
 var ignoredFor = (role) => {
   const sp2 = activePerfSpec(D3.extras, role);
@@ -59051,8 +59033,8 @@ function showPart(id2) {
   afterViewChange();
 }
 var isShown = (id2) => {
-  const only = D3.st.song.parts.some((p2) => pv(p2.id).only);
-  return only ? pv(id2).only : !pv(id2).hidden;
+  const only2 = D3.st.song.parts.some((p2) => pv(p2.id).only);
+  return only2 ? pv(id2).only : !pv(id2).hidden;
 };
 var docName = () => H2.name();
 var $2 = (id2) => document.getElementById(id2);
@@ -59249,7 +59231,7 @@ var topSelsSig = "";
 function renderTopSels() {
   const ps = $2("paperSel"), qs = $2("partSel");
   if (!ps || !qs) return;
-  const labels = labelsNow(), only = D3.st.song.parts.filter((p2) => pv(p2.id).only);
+  const labels = labelsNow(), only2 = D3.st.song.parts.filter((p2) => pv(p2.id).only);
   const paperOpts = [["all", _t("\u5168\u90E8\u66F2\u6BB5")], ...D3.st.song.papers.map((p2, k2) => [p2.id, `${p2.name || _t("\u7B2C {p} \u6BB5", { p: k2 + 1 })}${p2.hidden ? _t("\uFF08\u9690\u85CF\uFF09") : ""}`])];
   const partOpts = [["all", _t("\u5168\u90E8\u58F0\u90E8")], ...D3.st.song.parts.map((p2, k2) => [p2.id, labels[k2] ?? p2.id])];
   const sig = JSON.stringify([paperOpts, partOpts]);
@@ -59259,7 +59241,7 @@ function renderTopSels() {
     setDropdown(qs, { items: partOpts.map(([value, label]) => ({ value, label })) });
   }
   setDropdown(ps, { value: viewScope === "all" ? "all" : D3.st.at.paper });
-  setDropdown(qs, { value: only.length === 1 ? only[0].id : "all" });
+  setDropdown(qs, { value: only2.length === 1 ? only2[0].id : "all" });
   ps.hidden = D3.st.song.papers.length < 2;
   qs.hidden = D3.st.song.parts.length < 2;
 }
@@ -59425,7 +59407,7 @@ function dynAtCursor(role) {
   return { vel: Math.max(1, Math.min(127, vel)) / 127, dB };
 }
 function auditionTarget() {
-  const kana = HUM_KANA[D3.st.song.hum ?? "n"];
+  const kana = HUM_KANA[activeHum(D3.extras, curRole())];
   if (finder.isOpen) {
     if (auditionMute) return null;
     const a10 = audition;
@@ -60029,9 +60011,10 @@ function update(next2, gesture) {
   const c10 = D3.commit({ st: next2 }, { gesture });
   if (fixed && c10.ok) info(_t("\u8FD9\u4E00\u6BB5\u5B9A\u6210\u4E86\u5927\u8C31\u8868\uFF08\u624B\u52A8\u5206\u7684\u4E0A\u4E0B\u884C\u8981\u5B58\u5F97\u4E0B\uFF09\uFF1B\u60F3\u56DE\u5230\u81EA\u52A8\uFF0C\u70B9\u884C\u9996\u8C31\u53F7\u9009\u300C\u81EA\u52A8\u300D"));
 }
-function withStartDyns(s10, o10 = {}) {
-  const r10 = ensureStartDyns(s10.song, s10.nextId, o10);
-  if (!r10.added.length && !r10.reordered.length) return s10;
+function withStartDyns(s10) {
+  const r10 = ensureStartDyns(s10.song, s10.nextId);
+  if (!r10.added.length) return s10;
+  noteStartDynsFilled(r10.added.length);
   let caret = s10.caret, sel2 = s10.sel;
   for (const a10 of r10.added) if (a10.paper === s10.at.paper && a10.part === s10.at.part) {
     if (a10.index <= caret) caret++;
@@ -60990,7 +60973,7 @@ window.__moonsinger = {
   studioTracks: () => studioTracks(D3.extras),
   labScore: () => {
     const { tokens, map } = curFlat();
-    return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
+    return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map);
   },
   state: () => D3.st,
   cssHash: "3fe35b9b8d71",
@@ -61015,7 +60998,7 @@ window.__moonsinger = {
   },
   setChunk: (v) => {
     const role = D3.st.song.parts.find((x2) => x2.id === D3.st.at.part)?.role;
-    if (role) updateExtras(withSingChunk(D3.extras, role, v, D3.st.song.hum), { kind: "lounge", label: _t("\u5206\u6BB5\u5531\uFF1A{v}", { v }) });
+    if (role) updateExtras(withSingChunk(D3.extras, role, v, activeHum(D3.extras, role)), { kind: "lounge", label: _t("\u5206\u6BB5\u5531\uFF1A{v}", { v }) });
   },
   openHeader: (part2) => headerPanel.open(D3.st.at.paper, part2, 0, { x: innerWidth / 2, y: 120 }),
   // 谱头面板（E2E；v0.16.21 起小卡里没有「谱怎么画」，点谱号开）
@@ -61275,7 +61258,7 @@ async function playHeadWith(p2) {
   let track, label;
   if (p2.kind === "voice") {
     await ensureVowels();
-    track = { id: "audition", kind: "vowel", kana: HUM_KANA[D3.st.song.hum ?? "n"], notes: notes.map((n10) => ({ t0: n10.t0, t1: Math.min(n10.t1, 8), key: n10.midi, vel: 1, preset: 0 })), gain: null };
+    track = { id: "audition", kind: "vowel", kana: HUM_KANA[activeHum(D3.extras, curRole())], notes: notes.map((n10) => ({ t0: n10.t0, t1: Math.min(n10.t1, 8), key: n10.midi, vel: 1, preset: 0 })), gain: null };
     label = _t("\u5C0F\u6708\u76F8\uFF08\u54FC\uFF09");
   } else {
     if (audition?.from !== pickFrom(p2)) await setAudition(p2);
@@ -61298,7 +61281,7 @@ function newPartState(np2) {
     const pp = st2.song.papers.find((x2) => x2.id === np2.paper && x2.tracks[id2]) ?? st2.song.papers.find((x2) => x2.tracks[id2]);
     if (pp) st2 = setFocus(st2, pp.id, id2);
   }
-  return { st: st2, extras: withNewRole(D3.extras, role, D3.st.song.hum), role };
+  return { st: st2, extras: withNewRole(D3.extras, role, "n"), role };
 }
 async function castPick(p2) {
   if (finderPlayOnly()) return;
@@ -61306,7 +61289,7 @@ async function castPick(p2) {
     await castOwn(p2);
     return;
   }
-  const cat2 = await loadCatalog(), c10 = p2.concept, hum = D3.st.song.hum;
+  const cat2 = await loadCatalog(), c10 = p2.concept, hum = activeHum(D3.extras, curRole());
   catNow = cat2;
   if (p2.kind === "gs") {
     if (audition?.from !== pickFrom(p2)) await setAudition(p2);
@@ -61360,7 +61343,7 @@ async function castOwn(p2) {
   if (!f2) return;
   if (audition?.from !== pickFrom(p2)) await setAudition(p2);
   if (audition?.from !== pickFrom(p2)) return;
-  const { subset, sha256 } = audition, inf = sf2Info(f2.bytes), hum = D3.st.song.hum;
+  const { subset, sha256 } = audition, inf = sf2Info(f2.bytes), hum = activeHum(D3.extras, curRole());
   const fileSha256 = f2.fileSha256 ??= await sha256Hex3(f2.bytes);
   const np2 = newPartPending, base2 = np2 ? newPartState(np2) : { st: D3.st, extras: D3.extras, role: curRole() }, role = base2.role, prev = activeId(base2.extras, role);
   const made = withSf2Candidate(base2.extras, role, {
@@ -61409,14 +61392,14 @@ var finder = new Finder($2("stage"), {
   used: () => {
     if (newPartPending) return [];
     const labels = labelsNow(), parts = D3.st.song.parts.map((p2, k2) => ({ role: p2.role, label: labels[k2] })), cat2 = catalogNow ?? catNow;
-    return songPresets(D3.extras, parts, curRole(), D3.st.song.hum).map((e10) => {
+    return songPresets(D3.extras, parts, curRole(), activeHum(D3.extras, curRole())).map((e10) => {
       const c10 = candidateJson(D3.extras, e10.role, e10.id), eng = performerOf(String(c10?.instrument?.engine ?? "unknown"));
       const wd = c10?.castAs?.concept?.ids?.wikidata, icon = wd && cat2 ? cat2.byId.get(wd)?.icon?.id : void 0;
       return { ...e10, name: !eng ? _t("{name}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09", { name: e10.name }) : e10.name, removable: e10.removable && (eng?.removable ?? true), ...icon ? { icon } : {} };
     });
   },
   copyPreset: (role, id2) => {
-    const to2 = curRole(), next2 = withCandidateCopy(D3.extras, role, id2, to2, D3.st.song.hum);
+    const to2 = curRole(), next2 = withCandidateCopy(D3.extras, role, id2, to2, activeHum(D3.extras, to2));
     if (next2 === D3.extras) return;
     const who = activeCandidateName(next2, to2) ?? id2, from = labelsNow()[D3.st.song.parts.findIndex((p2) => p2.role === role)] ?? "";
     const label = role === to2 ? _t("\u300C{rn}\u300D\u590D\u5236\u4E86\u4E00\u4EFD\uFF1A{who}", { rn: roleLabel(to2, next2), who }) : _t("\u300C{rn}\u300D\u62F7\u6765\u4E86\u300C{from}\u300D\u7684\uFF1A{who}", { rn: roleLabel(to2, next2), from, who });
@@ -61685,9 +61668,9 @@ function castAsOf(extras, role, id2) {
   return concept ? castArgs(cat2, concept) : null;
 }
 function setActive(id2) {
-  let next2 = withSwap(D3.extras, curRole(), id2, D3.st.song.hum);
+  let next2 = withSwap(D3.extras, curRole(), id2, activeHum(D3.extras, curRole()));
   const ca2 = castAsOf(next2, curRole(), id2);
-  if (ca2) next2 = withRoleConcept(next2, curRole(), ca2, D3.st.song.hum);
+  if (ca2) next2 = withRoleConcept(next2, curRole(), ca2, activeHum(D3.extras, curRole()));
   updateExtras(next2, { kind: "lounge", label: _t("\u300C{next}\u300D\u6362\u4EBA\uFF1A{next2}", { next: roleLabel(curRole(), next2), next2: activeCandidateName(next2, curRole()) ?? id2 }) });
   sound.allOff();
   void prepareBank();
@@ -61846,15 +61829,14 @@ var lyricMuteVal = /* @__PURE__ */ new Map();
 function lyricMutes() {
   if (lyricMuteKey[0] === D3.st.song && lyricMuteKey[1] === D3.extras) return lyricMuteVal;
   const out = /* @__PURE__ */ new Map();
-  const order = songPlayOrder(D3.st.song), map = timeMapOf(D3.st.song, order);
+  const order = songPlayOrder(D3.st.song);
   for (const p2 of D3.st.song.parts) {
     const eng = activeInstrument(D3.extras, p2.role)?.engine ?? null, mode = activeSingChunk(D3.extras, p2.role), m2 = /* @__PURE__ */ new Map();
-    const flat = flattenPart(D3.st.song, p2.id, { order }), fl2 = sungPlan(flat.tokens, map, flat.starts.map((s10) => s10.index), mode, D3.st.song.hum).at, byId = new Map(flat.tokens.map((t10, i10) => [t10.id, fl2[i10]]));
+    const byId = sungLangsOf(D3.st.song, order, p2.id, mode, activeHum(D3.extras, p2.role));
     for (const paper of D3.st.song.papers) {
       const toks = paper.tracks[p2.id];
       if (!toks) continue;
-      const own = toks.some((t10) => !byId.has(t10.id)) ? sungPlan(toks, void 0, [], mode, D3.st.song.hum).at : null;
-      for (const [i10, x2] of lyricIssues(toks, performerOf(eng)?.lyrics ?? null, (i11) => byId.get(toks[i11].id) ?? own[i11])) m2.set(toks[i10].id, x2);
+      for (const [i10, x2] of lyricIssues(toks, performerOf(eng)?.lyrics ?? null, (i11) => byId.get(toks[i11].id))) m2.set(toks[i10].id, x2);
     }
     out.set(p2.id, m2);
   }
@@ -61876,7 +61858,7 @@ var readRetryAt = 0;
 function readPlanOf(tokId, part2) {
   if (!readPlans || readPlans.song !== D3.st.song || readPlans.part !== part2.id) readPlans = { song: D3.st.song, part: part2.id };
   for (const scope of ["view", "segment"]) {
-    const chunks2 = readPlans[scope] ??= ((song) => buildTimeline({ song, order: songPlayOrder(song), parts: [part2], info: performerInfo, hum: D3.st.song.hum, singOpt: humOpt2() }).chunks)(songIn(scope));
+    const chunks2 = readPlans[scope] ??= ((song) => buildTimeline({ song, order: songPlayOrder(song), parts: [part2], info: performerInfo, singOpt: humOpt2() }).chunks)(songIn(scope));
     const plan = chunks2.find((c10) => c10.entryOf.has(tokId));
     if (plan) return plan;
   }
@@ -62140,7 +62122,7 @@ function openPartsManager(ctx2) {
       return;
     }
     const label = n10 ? _t("\u89D2\u8272\u6539\u540D\uFF1A{n}", { n: n10 }) : _t("\u540D\u5B57\u6E05\u6389\u4E86\uFF1A\u8DDF\u7740\u4E50\u5668\u5199\u300C{inst}\u300D", { inst: roleInstrumentLabel(D3.extras.lounge, p2.role, scoreTextLang()) });
-    updateExtras(withRoleName(D3.extras, p2.role, n10, D3.st.song.hum), { kind: "lounge", label });
+    updateExtras(withRoleName(D3.extras, p2.role, n10, activeHum(D3.extras, p2.role)), { kind: "lounge", label });
     renderTitle();
     view.render();
     draw();
@@ -63174,7 +63156,11 @@ var instPage = createInstSettings(instEl, {
   sessionHas: (sha) => sources.session.has(sha),
   bankBytes: (sha) => sources.session.get(sha),
   commit: (next2, label, gesture) => updateExtras(next2, { kind: "lounge", label }, gesture),
-  setHum: (hm) => update(setHum(D3.st, hm)),
+  setHum: (hm) => {
+    const role = curRole();
+    updateExtras(withHum(D3.extras, role, hm), { kind: "lounge", label: _t("\u54FC\u7684\u5B57") });
+  },
+  /* 这一位的（第 16 条 16-3：只在乐手身上） */
   setPart: (id2) => {
     update(setFocus(D3.st, D3.st.at.paper, id2));
     sound.allOff();
@@ -63236,7 +63222,6 @@ function loadDoc(song, o10) {
 }
 function loadDocInner(song, o10) {
   if (impro) setImpro(false);
-  legacyMp3Note = null;
   foldTold.gone.clear();
   foldTold.added.clear();
   ui2.close();
@@ -63244,6 +63229,8 @@ function loadDocInner(song, o10) {
   H2.load(o10.home, { stem: o10.stem, named: o10.named });
   coverTouched = false;
   const st0 = initState(song);
+  startDynsMissing = ensureStartDyns(st0.song, st0.nextId).added.length;
+  startDynsTold = false;
   encodedSnap = null;
   D3.load(st0, o10.extras);
   const d3 = o10.view ? unserializeDesk(o10.view) : freshDesk();
@@ -63319,7 +63306,6 @@ function openPicked(picked, from) {
   try {
     const o10 = openBytes(picked.name, picked.bytes), own = o10.ours && !o10.notices.length;
     loadDoc(o10.song, { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
-    if (o10.legacyMp3) void adoptLegacyMp3(o10.legacyMp3, o10.song.title || docName(), null);
     if (o10.notices.length) showError(o10.notices.join(" "));
     if (o10.advice.length) info(o10.advice.join(" "));
     else info(from ? _t("\u4ECE {host} \u6253\u5F00\u4E86 {name}\uFF1A\u8FD9\u662F\u4E00\u4EFD\u62F7\u8D1D\uFF0C\u60F3\u7559\u4E0B\u6765\u5C31\u6309\u300C\u5B58\u300D\u3002", { host: from, name: picked.name }) : _t("\u6253\u5F00\u4E86 {name}", { name: picked.name }));
@@ -63369,7 +63355,7 @@ async function openFromLink(raw) {
 var extrasForSave = (base2 = D3.extras) => base2.thumbnail ? withThumbnail(base2, coverWithBlurb(base2.thumbnail, (D3.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base2;
 var encoder = createEncoder(() => threadUrls("encode-worker")[0] ?? null, (why2) => diagNote("encode", why2));
 var bytesNow = (extras, song = D3.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
-var saveArgs = (extras, song = D3.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
+var saveArgs = (extras, song = D3.st.song) => ({ view: serializeDesk(deskNow()), song, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mxlFile = (name, extras, song) => new File([bytesNow(extras, song)], name, { type: "application/vnd.recordare.musicxml" });
 var sizeText3 = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
 var LOCKED_DIRTY = () => _t("\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u6709\u6539\u52A8\u6CA1\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\uFF1A\u6539\u52A8\u8FD8\u5728\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u4E4B\u540E\u518D\u5B58\u3002");
@@ -63386,10 +63372,6 @@ async function fileSave() {
         return;
       case "written":
         info(_t("\u5B58\u597D\u4E86\uFF1A{name}", { name: r10.name }));
-        if (legacyMp3Note) {
-          info(legacyMp3Note);
-          legacyMp3Note = null;
-        }
         return;
       case "locked":
         if (D3.dirtyKind() === "content") showError(LOCKED_DIRTY());
@@ -63930,10 +63912,6 @@ var es2 = createEditorSession({
       }
       renderTitle();
       void relinkAfterSave(name, encodedFp);
-      if (cur && legacyMp3Note) {
-        info(legacyMp3Note);
-        legacyMp3Note = null;
-      }
     }
   },
   isZip: true,
@@ -63975,7 +63953,6 @@ setInterval(() => {
 function adoptStoreBytes(id2, bytes) {
   const o10 = openBytes(id2, bytes);
   loadDoc(o10.song, { home: { kind: "gallery", identifier: id2 }, stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
-  if (o10.legacyMp3) void adoptLegacyMp3(o10.legacyMp3, o10.song.title || docName(), id2);
   if (o10.notices.length) showError(o10.notices.join(" "));
   if (o10.advice.length) info(o10.advice.join(" "));
 }
@@ -65443,4 +65420,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f494d9b3c005.mjs.map
+//# sourceMappingURL=moonsinger-f1c4d98d24b0.mjs.map

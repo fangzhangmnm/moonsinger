@@ -12,7 +12,7 @@ import { subsetSf2 } from "../src/gm/sf2-subset.ts";
 
 const fixture = fs.readFileSync(new URL("./fixtures/sf2/gu-square-castanets.sf2", import.meta.url));
 const sha = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
-const save = (extras: Extras) => saveMxl({ song: sampleSong(), hum: "n", extras, app: "test", date: "2026-10-08T00:00:00.000Z" });
+const save = (extras: Extras) => saveMxl({ song: sampleSong(), extras, app: "test", date: "2026-10-08T00:00:00.000Z" });
 const sources = (ex: Extras) => JSON.stringify(Object.values(ex.lounge).flatMap((r) => (r.candidates as { instrument: { engine: string; source?: { subsetSha256: string; origin: unknown; subsetBytes: number } } }[]).filter((c) => c.instrument.engine === "soundfont").map((c) => [c.instrument.source!.subsetSha256, c.instrument.source!.origin, c.instrument.source!.subsetBytes])));
 
 async function twoWeak(): Promise<{ extras: Extras; a: { subset: Uint8Array; sha256: string }; b: { subset: Uint8Array; sha256: string } }> {

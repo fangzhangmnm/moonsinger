@@ -16,7 +16,7 @@ const fs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8A
 
 type Json = Record<string, unknown>;
 const cands = (ex: Extras, role: string) => ((ex.lounge[role] as Json | undefined)?.candidates ?? []) as Json[];
-const save = (song: ReturnType<typeof sampleSong>, extras: Extras) => saveMxl({ song, hum: "n", extras, app: "test", date: "2026-11-12T00:00:00.000Z" });
+const save = (song: ReturnType<typeof sampleSong>, extras: Extras) => saveMxl({ song, extras, app: "test", date: "2026-11-12T00:00:00.000Z" });
 /** 存出去的文件里，这个角色每位候选写着的响度（读原文，不经过 activeCalibrationDb）。 */
 const written = (bytes: Uint8Array, role: string): unknown[] => {
   const z = unzipSync(bytes), f = z[`.moonsinger/lounge/${role}.json`]; if (!f) return [];
@@ -67,8 +67,8 @@ describe("乐手响度的默认只有一处（第 14 条）", () => {
     };
     const deps = (): RenderDeps => { const engine = new OfflineStudio(wasm); let v = false;
       return { engine, sounds: { resolveGmBytes: async (g: GmCandidate) => { if (!g.bytes) throw new Error("test: not embedded"); return g.bytes; }, ensureVowels: async () => { if (!v) { engine.vowels(vowels()); v = true; } } }, sing: async () => { /* 样本里没有慢引擎 */ } } as unknown as RenderDeps; };
-    const song = sampleSong(), hum = song.hum ?? "n", minus6 = withCalibration(sampleExtras(song), "r1", -6, hum);
-    const only = (extras: Extras) => ({ song, extras, hum: song.hum, parts: audibleParts(song, (id) => ({ muted: id !== "P1", solo: false })) });
+    const song = sampleSong(), hum = "n", minus6 = withCalibration(sampleExtras(song), "r1", -6, hum);
+    const only = (extras: Extras) => ({ song, extras, hum: "n", parts: audibleParts(song, (id) => ({ muted: id !== "P1", solo: false })) });
     const unwritten = structuredClone(minus6); for (const c of cands(unwritten, "r1")) delete c.calibrationDb;
     const zero = withCalibration(minus6, "r1", 0, hum);
     const [a, b, z] = [await renderSong(only(minus6), deps(), { sr: 22050 }), await renderSong(only(unwritten), deps(), { sr: 22050 }), await renderSong(only(zero), deps(), { sr: 22050 })];

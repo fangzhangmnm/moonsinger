@@ -31,7 +31,8 @@ export interface PartInfo {
   pan?: number;             // −90…90
 }
 /** 一条声部：谁 + 一串 token；breaks = 从哪些 token 下标起是新的一页（压平件的纸界：token 下标 → 曲段名，第一个声部写排练记号）。 */
-export interface PartXml { info: PartInfo; tokens: Token[]; breaks?: Map<number, string> }
+/** langs = 每个 token 唱的时候按哪种语言（和 tokens 一一对应；写每个音节的 xml:lang 用它，第 16 条 16-3：写文件和唱同一条规矩）；不给 = 按逐音节的规矩（lang.ts syllableLangs）。 */
+export interface PartXml { info: PartInfo; tokens: Token[]; breaks?: Map<number, string>; langs?: readonly (string | null)[] }
 /** padMeasures = 各声部小节数不等时补整小节休止（给别的软件看的压平件要；自家正本不补——读回来会多出休止）。 */
 export interface ScoreXml { title?: string; movementTitle?: string; paper?: Paper; credits?: string; rights?: string; parts: PartXml[]; padMeasures?: boolean }   // rights = 这首歌自己的许可（<identification><rights>）
 export interface WriteMeta { software: string; date: string }
@@ -160,12 +161,12 @@ const ottavaXml = (shift: number, open: number, auto = false): string => {
   if (!shift) return stop;
   return stop + `<direction placement="${shift > 0 ? "above" : "below"}"><direction-type><octave-shift type="${shift > 0 ? "down" : "up"}" size="${shift === 2 ? 15 : 8}"${id()}/></direction-type></direction>`;
 };
-function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, first: boolean, clef: ClefName = "G", staves: 1 | 2 = 1): { measures: { body: string[]; manual: boolean }[]; unwritten: string[]; lastLen: number } {
+function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, first: boolean, clef: ClefName = "G", staves: 1 | 2 = 1, sung?: readonly (string | null)[]): { measures: { body: string[]; manual: boolean }[]; unwritten: string[]; lastLen: number } {
   const staffs = staffOfTokens(toks, staves);
   const head = headLen(toks);
   const H = { fifths: DEFAULT_KEY, minor: false, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
   for (let i = 0; i < head; i++) { const t = toks[i]; if (t.kind === "key") { H.fifths = t.fifths; H.minor = t.mode === "minor"; } else if (t.kind === "time") { H.beats = t.beats; H.beatType = t.beatType; } else if (t.kind === "tempo") H.bpm = t.bpm; }
-  const langs = syllableLangs(toks);
+  const langs = sung ?? syllableLangs(toks);
   const measures: { body: string[]; manual: boolean }[] = [];
   let cur: string[] = [], ticks = 0, len = measureLen(H.beats, H.beatType);
   // 房子：开着的那一个（number 属性）；它后面有没有 :| 收（没有 = 最后一个房子，到这小节尾 discontinue）
@@ -314,7 +315,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
 export function writeMusicXml(doc: ScoreXml, meta: WriteMeta): Written {
   const paper = doc.paper ?? paperOf(DEFAULT_PAPER);
   autoSeq = 0;   // 自动八度线的 id 在这一份文件里唯一
-  const built = doc.parts.map((p, k) => ({ p, ...partMeasures(p.tokens, p.breaks, k === 0, p.info.clef ?? "G", p.info.staves === 2 ? 2 : 1) }));
+  const built = doc.parts.map((p, k) => ({ p, ...partMeasures(p.tokens, p.breaks, k === 0, p.info.clef ?? "G", p.info.staves === 2 ? 2 : 1, p.langs) }));
   const nMeas = Math.max(0, ...built.map((b) => b.measures.length));
   const manualBars: Record<string, number[]> = {}, unwritten: string[] = [];
   const bodies = built.map((b) => {

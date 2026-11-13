@@ -13,14 +13,14 @@ const r = (dur = TPQ): Token => ({ kind: "rest", id: nid++, dur });
 const head = (t: Token[]) => t.slice(0, 3);   // 调号 / 拍号 / 速度
 const Q = 60 / DEFAULT_BPM;   // 一个四分音符几秒
 const spec = activePerfSpec(emptyExtras(), "r");
-const info = (engine: PerformerInfo["engine"]): PerformerInfo => ({ engine, plugin: performerOf(engine), spec, velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0 });
+const info = (engine: PerformerInfo["engine"]): PerformerInfo => ({ engine, hum: "n", plugin: performerOf(engine), spec, velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0 });
 const two = (a: Token[], b: Token[]): { song: Song; parts: PartDef[] } => {
   let st: EditorState = initState(); st = addPaper(st);
   const [p1, p2] = st.song.papers, pid = st.song.parts[0].id;
   const papers: PaperSeg[] = [{ ...p1, tracks: { [pid]: [...head(p1.tracks[pid]), ...a] } }, { ...p2, tracks: { [pid]: [...head(p2.tracks[pid]), ...b] } }];
   return { song: { ...st.song, papers }, parts: st.song.parts };
 };
-const build = (s: { song: Song; parts: PartDef[] }, engine: PerformerInfo["engine"]) => buildTimeline({ song: s.song, order: s.song.papers.map((p) => p.id), parts: s.parts, info: () => info(engine), hum: "n", singOpt: { leadIn: LEAD_IN } });
+const build = (s: { song: Song; parts: PartDef[] }, engine: PerformerInfo["engine"]) => buildTimeline({ song: s.song, order: s.song.papers.map((p) => p.id), parts: s.parts, info: () => info(engine), singOpt: { leadIn: LEAD_IN } });
 
 describe("时间线：月读的块", () => {
   it("一句跨两张纸不切（纸界没有休止）；中间有 ≥0.25 s 的休止才切", () => {
@@ -41,7 +41,7 @@ describe("时间线：月读的块", () => {
   });
   it("一整首 = 一块", () => {
     const s = two([n("C", "か"), r()], [n("E", "し")]);
-    const t = buildTimeline({ song: s.song, order: s.song.papers.map((p) => p.id), parts: s.parts, info: () => ({ ...info("tsukuyomi"), chunk: "whole" }), hum: "n", singOpt: {} });
+    const t = buildTimeline({ song: s.song, order: s.song.papers.map((p) => p.id), parts: s.parts, info: () => ({ ...info("tsukuyomi"), chunk: "whole" }), singOpt: {} });
     eq(t.chunks.length, 1);
   });
 });
@@ -73,7 +73,7 @@ describe("时间线：乐器 / 光标 / 纸", () => {
     st = addPart(st, { id: "P2", role: "r2", mic: "m2" });   // 当前 = 第二张
     const [p1, p2] = st.song.papers;
     const song: Song = { ...st.song, papers: [{ ...p1, tracks: { P1: [...head(p1.tracks.P1), n("C"), n("D")] } }, { ...p2, tracks: { P1: [...head(p2.tracks.P1), n("E")], P2: [...head(p2.tracks.P1), n("G")] } }] };
-    const t = buildTimeline({ song, order: song.papers.map((p) => p.id), parts: st.song.parts, info: () => info("soundfont"), hum: "n", singOpt: {} });
+    const t = buildTimeline({ song, order: song.papers.map((p) => p.id), parts: st.song.parts, info: () => info("soundfont"), singOpt: {} });
     const p2t = t.tracks.find((x) => x.id === "P2")!; assert(p2t.kind === "sf"); if (p2t.kind !== "sf") return;
     assert(Math.abs(p2t.notes[0].t0 - 2 * Q) < 1e-9, "P2 的音从第二张纸起");
   });
@@ -119,7 +119,7 @@ describe("时间线：滚奏的每一下（7-N）", () => {
   const roll = (extra: Token[], art: string[]) => { const st0 = initState(), pid = st0.song.parts[0].id, p1 = st0.song.papers[0];
     const toks = [...head(p1.tracks[pid]), ...extra, { kind: "note", id: nid++, pitch: { step: "D", alter: 0, octave: 2 }, dur: 4 * TPQ, lyric: null, art } as Token, { kind: "dyn", id: nid++, value: "f" } as Token, n("D")];
     const song = { ...st0.song, papers: [{ ...p1, tracks: { [pid]: toks } }] };
-    const t = buildTimeline({ song, order: [p1.id], parts: st0.song.parts, info: () => ({ ...info("soundfont"), spec: { ...spec, rollHz: 8 }, velDb: depthCurve(800) }), hum: "n", singOpt: {} });
+    const t = buildTimeline({ song, order: [p1.id], parts: st0.song.parts, info: () => ({ ...info("soundfont"), spec: { ...spec, rollHz: 8 }, velDb: depthCurve(800) }), singOpt: {} });
     return (t.tracks[0] as unknown as { notes: { t0: number; vel?: number }[] }).notes.filter((x) => x.t0 < 4 * Q - 1e-6).map((x) => Math.round((x.vel ?? 0) * 127));
   };
   it("渐强盖在滚奏上 = 每一下的力度一路往上；没写 = 每一下一样", () => {

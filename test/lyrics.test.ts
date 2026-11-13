@@ -4,7 +4,6 @@ import { splitSyllables, applyLyricLine } from "../src/score/lyrics.ts";
 import { initState, writeDegree, setCaret, writeBar, extend, TPQ, type NoteTok, tr, firstTrack } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
-import { setHum } from "../src/score/song.ts";
 const H = 3;   // 谱头三个记号
 
 describe("lyrics", () => {
@@ -40,18 +39,16 @@ describe("lyrics", () => {
     st = applyLyricLine(st, "あいう"); st = setCaret(st, H + 1); st = applyLyricLine(st, "か");
     eq(tr(st).map((t) => (t as NoteTok).lyric).join(""), "あかう");
   });
-  it("哼的字：没歌词的音按这首歌的设置唱（默认嗯），日语 / 中文各换各的字", () => {
+  it("哼的字：没歌词的音按这一位乐手的设置唱（第 16 条 16-3 起只在乐手身上；默认嗯），日语 / 中文各换各的字", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near");
-    eq(toLabScore(tr(st), st.song.hum, "ja").SCORE.map((e) => e.kana).join(""), "んん");
-    st = setHum(st, "la"); eq(toLabScore(tr(st), st.song.hum, "ja").SCORE.map((e) => e.kana).join(""), "らら");
-    st = setHum(st, "n");
-    eq(toLabScore(tr(st), st.song.hum, "ja").SCORE.map((e) => e.kana).join(""), "んん");
-    eq(toLabScore(tr(st), st.song.hum, "zh").SCORE.map((e) => e.kana).join(""), "嗯嗯");
-    st = setHum(st, "o"); eq(toLabScore(tr(st), st.song.hum, "ja").SCORE.map((e) => e.kana).join(""), "おお"); eq(toLabScore(tr(st), st.song.hum, "zh").SCORE.map((e) => e.kana).join(""), "哦哦");
+    eq(toLabScore(tr(st), "n", "ja").SCORE.map((e) => e.kana).join(""), "んん");
+    eq(toLabScore(tr(st), "la", "ja").SCORE.map((e) => e.kana).join(""), "らら");
+    eq(toLabScore(tr(st), "n", "zh").SCORE.map((e) => e.kana).join(""), "嗯嗯");
+    eq(toLabScore(tr(st), "o", "ja").SCORE.map((e) => e.kana).join(""), "おお"); eq(toLabScore(tr(st), "o", "zh").SCORE.map((e) => e.kana).join(""), "哦哦");
   });
   it("哼的字在给核心的乐谱里带 hum 标记（核心的哼参数只管这些），有歌词的不带", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near"); st = applyLyricLine(st, "あ");
-    eq(JSON.stringify(toLabScore(tr(st), st.song.hum, "ja").SCORE.map((e) => e.hum ?? false)), "[false,true]");
+    eq(JSON.stringify(toLabScore(tr(st), "n", "ja").SCORE.map((e) => e.hum ?? false)), "[false,true]");
   });
   it("连音线连着的音（tie）不吃歌词", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeBar(st); st = extend(st); st = writeDegree(st, 2, "near");
@@ -80,9 +77,9 @@ describe("一个音上几个字（+）", () => {
     let st = _init();
     st = _wp(st, { step: "C", alter: 0, octave: 4 });
     st = _dist(st, tr(st).length - 1, _split("だ+ん")).st;
-    const sc = _lab(tr(st), st.song.hum, "ja");
+    const sc = _lab(tr(st), "n", "ja");
     eq(sc.SCORE.map((e) => `${e.kana}:${e.notes[0][1]}`).join(" "), `だ:${tr(st)[tr(st).length - 1].kind === "note" ? (tr(st)[tr(st).length - 1] as { dur: number }).dur / (_Q / 2) / 2 : 0} ん:${(tr(st)[tr(st).length - 1] as { dur: number }).dur / (_Q / 2) / 2}`);
-    const bytes = _save({ song: st.song, hum: st.song.hum, extras: _ex(), app: "t", date: "d" });
+    const bytes = _save({ song: st.song, extras: _ex(), app: "t", date: "d" });
     const o = _open("x.mxl", bytes);
     eq((firstTrack(o.song)[firstTrack(o.song).length - 1] as { lyric: string }).lyric, `だ${ELISION}ん`);
   });

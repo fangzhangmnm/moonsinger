@@ -15,7 +15,7 @@ const nn = (m: number, chord: number[] = []): Token => ({ kind: "note", id: id++
 const head = () => tr(initState()).slice(0, 3);
 const one = (midis: (number | number[])[]): Song => { const st = initState(); return { ...st.song, papers: [{ ...st.song.papers[0], tracks: { [st.song.parts[0].id]: [...head(), ...midis.map((m) => (Array.isArray(m) ? nn(m[0], m.slice(1)) : nn(m)))] } }] }; };
 const lookOf = (s: Song, paper = s.papers[0].id, part = s.parts[0].id) => resolveSongLooks(s).get(paper)!.get(part)!;
-const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-11-10T00:00:00.000Z" });
+const save = (s: Song) => saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-11-10T00:00:00.000Z" });
 const rep = <T,>(xs: T[], n: number): T[] => Array.from({ length: n }, () => xs).flat();
 
 describe("自动什么时候变大谱表（设计稿第一节的例子表）", () => {
@@ -109,13 +109,21 @@ describe("老写法（score minor < 4）：声部上的老键不理，每段照�
   });
 });
 
-describe("score.json 每段 / 每个声部条目里不认识的键：按 id 原样带回（设计稿第五节）", () => {
-  it("更新的版本在 papers[0] / parts[0] 里写了这一版不认识的键 → 打开再存还在；退役的 phrases 不带回", () => {
+describe("score.json 每段 / 每个声部条目里不认识的键：更新的版本写的按 id 原样带回；同一版本的不写（第 16 条 16-3）", () => {
+  const roundTrip = (bump: number) => {
     const st = initState(), bytes = save(st.song), z = unzipSync(bytes), sj = JSON.parse(strFromU8(z[".moonsinger/score.json"]));
-    sj.papers[0].futureThing = { a: 1 }; sj.papers[0].phrases = { [st.song.parts[0].id]: [1] }; sj.parts[0].futureVoice = "x";
+    sj.minor = (sj.minor ?? 0) + bump; sj.papers[0].futureThing = { a: 1 }; sj.papers[0].phrases = { [st.song.parts[0].id]: [1] }; sj.parts[0].futureVoice = "x";
     z[".moonsinger/score.json"] = strToU8(JSON.stringify(sj));
-    const o = openBytes("x.mxl", zipSync(z)), again = JSON.parse(strFromU8(unzipSync(saveMxl({ song: o.song, hum: o.song.hum, extras: o.extras, app: "t", date: "2026-11-10T00:00:00.000Z" }))[".moonsinger/score.json"]));
-    eq(JSON.stringify(again.papers[0].futureThing), JSON.stringify({ a: 1 })); eq(again.parts[0].futureVoice, "x"); eq(again.papers[0].phrases, undefined);
+    const o = openBytes("x.mxl", zipSync(z));
+    return JSON.parse(strFromU8(unzipSync(saveMxl({ song: o.song, extras: o.extras, app: "t", date: "2026-11-10T00:00:00.000Z" }))[".moonsinger/score.json"]));
+  };
+  it("更新的版本（小版本更大）在 papers[0] / parts[0] 里写了这一版不认识的键 → 打开再存还在（退役的 phrases 在更新的版本里也算不认识的，一样原样带回）", () => {
+    const again = roundTrip(1);
+    eq(JSON.stringify(again.papers[0].futureThing), JSON.stringify({ a: 1 })); eq(again.parts[0].futureVoice, "x"); eq(JSON.stringify(again.papers[0].phrases), JSON.stringify({ P1: [1] }));
+  });
+  it("同一版本的文件里不认识的键 = 现行格式里没有定义 = 存的时候不写", () => {
+    const again = roundTrip(0);
+    eq(again.papers[0].futureThing, undefined); eq(again.parts[0].futureVoice, undefined); eq(again.papers[0].phrases, undefined);
   });
 });
 

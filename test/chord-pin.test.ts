@@ -14,7 +14,7 @@ const nn = (m: number, chord: number[] = [], extra: Partial<NoteTok> = {}): Toke
 const head = () => { const t = tr(initState()); return t.slice(0, headLen(t)); };
 const labels = (toks: Token[]) => harmonyTags(th, { tokens: toks }).map((x) => th.label(x.read)).join(" ");
 const songOf = (body: Token[]) => { const st = initState(); const p = st.song.papers[0]; return { ...st, song: { ...st.song, papers: [{ ...p, tracks: { [st.song.parts[0].id]: [...head(), ...body] } }] } }; };
-const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-11-10T00:00:00.000Z" });
+const save = (s: Song) => saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-11-10T00:00:00.000Z" });
 
 describe("挑读法：照写的标", () => {
   it("C E G A 自动 = I6；挑 Am7/C（候选里有）= vi7/1，不灰", () => {

@@ -12,7 +12,7 @@ import { spellMidi, keyText } from "../src/score/pitch.ts";
 
 let id = 9100;
 const nn = (m: number, chord: number[] = []): Token => ({ kind: "note", id: id++, pitch: spellMidi(m, 0), ...(chord.length ? { chord: chord.map((x) => spellMidi(x, 0)) } : {}), dur: TPQ, lyric: null }) as Token;
-const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-11-10T00:00:00.000Z" });
+const save = (s: Song) => saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-11-10T00:00:00.000Z" });
 const firstKey = (t: Token[]): KeyTok => t.find((x) => x.kind === "key") as KeyTok;
 const paperOf = (s: Song) => s.papers[0].id, partOf = (s: Song) => s.parts[0].id;
 /** 这条 track 开头一处切成小调。 */

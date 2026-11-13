@@ -350,7 +350,7 @@ var Comp = class {
 var DELAY = {
   kind: "delay",
   name: _t("\u5EF6\u8FDF"),
-  formula: _t("y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = 1 \u2212 mix\uFF0Cv0.10.10 \u524D\u7684\u5199\u6CD5\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002"),
+  formula: _t("y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = \u53C2\u6570\u8868\u7684\u9ED8\u8BA4 1\uFF0C\u7B2C 16 \u6761\u8D77\uFF1B\u539F\u6765\u6CA1\u5199 = 1 \u2212 mix\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002"),
   params: [
     { id: "timeMs", unit: "ms", min: 1, max: 2e3, default: 375, label: _t("\u65F6\u95F4") },
     { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: _t("\u53CD\u9988") },
@@ -387,7 +387,7 @@ var Delay = class {
     this.D = clamp(Math.round(g("timeMs") / 1e3 * this.sr), 1, this.bufL.length - 1);
     this.fb = clamp(g("feedback"), 0, 0.95);
     this.mix = clamp(g("mix"), 0, 1);
-    this.dry = dryOf(p, this.mix);
+    this.dry = clamp(g("dry"), 0, 1);
     this.lpK = 1 - Math.exp(-2 * Math.PI * clamp(g("dampHz"), 100, this.sr * 0.45) / this.sr);
   }
   process(L, R, n) {
@@ -487,7 +487,7 @@ var Reverb = class {
     this.fb = 0.7 + 0.28 * clamp(g("room"), 0, 1);
     this.damp = clamp(g("damp"), 0, 1) * 0.4;
     this.mix = clamp(g("mix"), 0, 1);
-    this.dry = dryOf(p, this.mix);
+    this.dry = clamp(g("dry"), 0, 1);
     this.width = clamp(g("width"), 0, 1);
     this.preD = clamp(Math.round(g("preDelayMs") / 1e3 * this.sr), 0, this.pre.length - 1);
   }
@@ -557,7 +557,7 @@ var Chorus = class {
     this.rate = clamp(g("rateHz"), 0.05, 5);
     this.spread = clamp(g("spread"), 0, 1);
     this.mix = clamp(g("mix"), 0, 1);
-    this.dry = dryOf(p, this.mix);
+    this.dry = clamp(g("dry"), 0, 1);
   }
   process(L, R, n) {
     if (!this.on) return;
@@ -602,9 +602,6 @@ var Gain = class {
     }
   }
 };
-function dryOf(p, mix) {
-  return p.dry === void 0 || !Number.isFinite(p.dry) ? 1 - mix : clamp(p.dry, 0, 1);
-}
 function createFx(spec, sr) {
   const p = Object.fromEntries(Object.entries(spec.params ?? {}).filter(([, v]) => typeof v === "number" && Number.isFinite(v)));
   let fx = null;
@@ -1963,4 +1960,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-b2a10e55331b.mjs.map
+//# sourceMappingURL=studio-worklet-b2906629e203.mjs.map

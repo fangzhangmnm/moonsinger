@@ -109,21 +109,21 @@ describe("刀 3：三首样张 × 六种视图，同一行的符头不叠", () =
 });
 
 describe("刀 3：音距字段（v0.16.43 起不再起作用、音距跟版式；文件里有就原样带着）", () => {
-  it("紧写进 score.json、读回来一样；正常不写；v0.16.33 写过的 denseShort: \"off\" 读成正常、存的时候丢掉", async () => {
+  it("紧写进 score.json、读回来一样；正常写 normal（第 16 条 16-3）；v0.16.33 写过的 denseShort: \"off\" 读成正常、存的时候丢掉", async () => {
     const { saveMxl, openBytes, emptyExtras } = await import("../src/format/project.ts");
     const { emptySong } = await import("../src/score/song.ts");
     const { unzipSync, zipSync, strFromU8, strToU8 } = await import("../vendor/fflate/fflate.esm.js" as string) as typeof import("../vendor/fflate/fflate.esm.js");
-    const save = (song: Song) => saveMxl({ song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-11-09" });
+    const save = (song: Song) => saveMxl({ song, extras: emptyExtras(), app: "test", date: "2026-11-09" });
     for (const sp of ["tight", undefined] as const) {
       const bytes = save({ ...emptySong(), ...(sp ? { spacing: sp } : {}) } as Song), files = unzipSync(bytes), score = JSON.parse(strFromU8(files[".moonsinger/score.json"]!));
-      assert(score.spacing === sp && !("denseShort" in score), `写：${sp} → ${JSON.stringify(score.spacing)}`);
+      assert(score.spacing === (sp ?? "normal") && !("denseShort" in score), `写：${sp} → ${JSON.stringify(score.spacing)}`);
       assert(openBytes("x.mxl", bytes).song.spacing === sp, `读：${sp}`);
     }
     const files = unzipSync(save(emptySong())), score = JSON.parse(strFromU8(files[".moonsinger/score.json"]!));
     files[".moonsinger/score.json"] = strToU8(JSON.stringify({ ...score, denseShort: "off" }));
     const old = openBytes("x.mxl", zipSync(files));
     eq(old.song.spacing, undefined, "旧字段读成正常");
-    const again = JSON.parse(strFromU8(unzipSync(saveMxl({ song: old.song, hum: "n", extras: old.extras, app: "test", date: "2026-11-09" }))[".moonsinger/score.json"]!));
+    const again = JSON.parse(strFromU8(unzipSync(saveMxl({ song: old.song, extras: old.extras, app: "test", date: "2026-11-09" }))[".moonsinger/score.json"]!));
     assert(!("denseShort" in again), "再存一次旧字段就没了（认识的键，不当成不认识的原样带回）");
   });
 });

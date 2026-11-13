@@ -30,22 +30,15 @@ describe("每张纸开头强制写明力度", () => {
     eq(ensureStartDyns(s2, 50).added.length, 0, "补完再过一遍 = 不动");
   });
 });
-describe("补在哪、理顺（第八刀 8-7，统筹 2026-11-12）：同一个音前面力度在渐强渐弱 / 风格前面", () => {
+describe("补在哪（第八刀 8-7，统筹 2026-11-12）：同一个音前面力度在渐强渐弱 / 风格前面", () => {
   const pidOf = (s: Song) => s.parts[0].id;
   it("第一个音前面有渐强渐弱 / 风格：补的力度插在这一串的最前面", () => {
     const s = song([[hp(), n(), n(), d("f"), n()], [gr(), hp("dim"), n()]]), out = ensureStartDyns(s, 100), pid = pidOf(s);
     eq(body(out.song.papers[0].tracks[pid]), "mf hairpin n n f n");
     eq(body(out.song.papers[1].tracks[pid]), "f groove hairpin n");
-    eq(out.reordered.length, 0);
   });
-  it("存成反顺序的（v0.10.39 起补出来的「渐强渐弱、力度、音」）：打开歌时理成「力度、渐强渐弱、音」，报出来；只理第一个音前面那一串，别处不碰；改谱时不理", () => {
-    const s = song([[hp(), d("p"), n(), n(), hp(), d("f"), n()], [gr(), hp(), d("mp"), n()]]), out = ensureStartDyns(s, 100, { reorder: true }), pid = pidOf(s);
-    eq(body(out.song.papers[0].tracks[pid]), "p hairpin n n hairpin f n", "后面那个「渐强渐弱、f」不动");
-    eq(body(out.song.papers[1].tracks[pid]), "mp groove hairpin n", "风格和渐强渐弱的先后不变");
-    eq(out.reordered.length, 2); eq(out.added.length, 0); eq(out.nextId, 100, "理顺不发新 id");
-    eq(ensureStartDyns(out.song, 100, { reorder: true }).reordered.length, 0, "理过再过一遍 = 不动");
-    eq(ensureStartDyns(s, 100).song, s, "改谱的时候（不带 reorder）不理顺：别的记号的先后原样");
-    const ok = song([[d("p"), hp(), n()]]); eq(ensureStartDyns(ok, 1, { reorder: true }).song, ok, "顺序本来就对 = 原样（同一个对象）");
+  it("有力度的纸不动：反顺序（「渐强渐弱、力度、音」）也照原样留着（第 16 条：开歌时的「理顺」删了，人自己挪）", () => {
+    const s = song([[hp(), d("p"), n(), n()]]); eq(ensureStartDyns(s, 100).song, s, "原样（同一个对象）");
   });
   it("出声：反顺序时那个渐强渐弱不起作用（它和终点之间一个音都没有）；理顺之后从这个力度渐强到下一个", () => {
     const T = { ppp: 1, pp: 2, p: 3, mp: 4, mf: 5, f: 6, ff: 7, fff: 8 } as const;

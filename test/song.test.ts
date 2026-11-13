@@ -129,7 +129,7 @@ describe("song（记号：调号 / 拍号 / 速度都是 token）", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeMark(st, { kind: "tempo", bpm: 180 }).st; st = writeDegree(st, 2, "near");
     const tl = timeline(tr(st)), near = (a: number, b: number) => Math.abs(a - b) < 1e-9;
     eq(near(tl[0].t1, 60 / 90 / 2), true); eq(near(tl[1].t1 - tl[1].t0, 60 / 180 / 2), true);
-    const lab = toLabScore(tr(st), st.song.hum); eq(lab.TEMPO_QUARTER, 90); eq(JSON.stringify(lab.SCORE.map((e) => e.notes[0][1])), "[1,0.5]");
+    const lab = toLabScore(tr(st), "n"); eq(lab.TEMPO_QUARTER, 90); eq(JSON.stringify(lab.SCORE.map((e) => e.notes[0][1])), "[1,0.5]");
   });
   it("小节对账跟着拍号记号走", () => {
     let st = initState(); st = writeMark(st, { kind: "time", beats: 3, beatType: 4 }).st;   // 改谱头

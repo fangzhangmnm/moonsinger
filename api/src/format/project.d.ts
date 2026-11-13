@@ -26,27 +26,6 @@ export interface Extras {
     thumbnail: Uint8Array | null;
 }
 export declare const emptyExtras: () => Extras;
-/** 老文件里带着的那份 mp3（v0.12.18–v0.16.96 的「定稿」把渲好的 mp3 存进歌里：总目录 `manifest.final` + `.moonsinger/final.mp3`）。
- *  定稿 2026-11-10 退役（v0.16.97；user 11-07 定「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**永远不再往歌里写这两样**；
- *  读到老文件里有 = 原样交给宿主（搬进这台设备的渲染缓存，src/app/render-cache.ts），不进 Extras、不写回。记录不像样 / mp3 不在 / 和内容对不上 = 没有这一项（不报错、不拒开）。 */
-export interface LegacyMp3 {
-    /** 带标签的 mp3 字节（当时发行的那一份）。 */
-    bytes: Uint8Array;
-    /** 出声内容的指纹，**按这一版写出来的样子**算的（和 contentFingerprintOf 对得上；老写法搬成新写法指纹会变，内容没变）。 */
-    fingerprint: string;
-    secs: number;
-    kbps: number;
-    stereo: boolean;
-    /** 进了这份 mp3 的声部 id。 */
-    parts: string[];
-    /** 渲的时候的 app 版本 / 渲染核心 / 那首歌的第几版定稿。 */
-    app: string;
-    core: {
-        version: string;
-        hash: string;
-    };
-    rev: number;
-}
 export declare const THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 /** 换封面（null = 去掉）。 */
 export declare const withThumbnail: (extras: Extras, png: Uint8Array | null) => Extras;
@@ -59,7 +38,6 @@ export declare const CANDIDATE_ID: {
 export type Engine = InstrumentV2["engine"];
 export interface SaveArgs {
     song: Song;
-    hum: Hum;
     extras: Extras;
     app: string;
     date: string;
@@ -90,14 +68,12 @@ export declare function canonicalIds(song: Song): Song;
 export interface Opened {
     song: Song;
     stem: string;
-    hum: Hum;
     extras: Extras;
     ours: boolean;
     notices: string[];
     view: Record<string, unknown> | null;
     references: Record<string, Uint8Array>; /** 「更新版本写的（minor）」那一句（最多一条）：宿主 info 一次，不是报错、不拦。 */
-    advice: string[]; /** 老文件里带着的那份 mp3（退役的定稿）：有 = 宿主搬进这台设备的渲染缓存；这一版起不再写回文件。 */
-    legacyMp3?: LegacyMp3;
+    advice: string[];
 }
 /** 这个角色是什么（MusicXML 官方 <instrument-sound> id；user「角色名可以和xml的乐器 功能语义对齐，用最官方的正规的」）。还没有角色快照 = 新角色的。 */
 export declare function roleSound(extras: Extras, role: string): string;
@@ -183,14 +159,17 @@ export declare function activeCandidate(extras: Extras, role: string): Json | nu
 export declare function activeCandidateName(extras: Extras, role: string): string | null;
 /** 上场的那位的乐器（按引擎分）；没有角色快照 / 读不懂 = null = 没人上场（第 16 条：不再当成小月相；新建的歌、新加的声部在创建时就写了乐手，见 templateExtras / withNewRole）。 */
 export declare function activeInstrument(extras: Extras, role: string): InstrumentV2 | null;
-/** 哼的字（月读候选共用）：休息室里第一个月读候选的；没有 = 默认「嗯」。 */
-export declare function humOf(extras: Extras): Hum;
+/** 这一位乐手的哼的字（没写歌词的音唱什么）：只存在乐手身上、每位各自的（第 16 条 16-3，2026-11-12；user「哼的字存歌手，是没有输入的默认」）。
+ *  上场那位不是小月相 / 元音版、或者没人上场 = "n"（用不上）。原来是「整首歌一个」：读的时候取第一位会唱的、存的时候抄给每一位。 */
+export declare function activeHum(extras: Extras, role: string): Hum;
+/** 改上场那位的哼的字（不是会唱的 = 不动）。 */
+export declare function withHum(extras: Extras, role: string, hum: Hum): Extras;
 /** 换上场的候选（人选的；不自动）。 */
 export declare function withActive(extras: Extras, role: string, id: string, hum: Hum): Extras;
 /** R1：设置指纹 = 去掉 id / castAs / asCast 三个键之后的 sha256 前 16 位。名字、出声的那一件、响度、移调、每一张表、效果链、署名，连同以后才有的不认识的键，全在里面。 */
 export declare function settingsPrint(c: Json): string;
 /** 这一位换上台以后没调过？内置两位 = 和出厂那一位一样；别的 = asCast 还等于现在的指纹（没有 asCast = 旧歌 / 旧版 app 造的 = 当作调过）。没有这一位 = false。 */
-export declare function isUntouched(extras: Extras, role: string, id: string, hum: Hum): boolean;
+export declare function isUntouched(extras: Extras, role: string, id: string): boolean;
 /** R2 + R3：换上台。下台的那位没调过、又不是内置的 = 同一次提交里删掉（连同没别人引用的嵌入字节）；fresh = 新造的这位记下 asCast（内置的不记）。
  *  prev = 换之前台上的是谁（新造候选的函数会顺手把台上换掉，所以由调用方在造之前记下）；默认 = 现在台上的。三条换上台的路（目录选 / 点预设 / 自己的 .sf2）都走这里。 */
 export declare function withSwap(extras: Extras, role: string, nextActive: string, hum: Hum, o?: {

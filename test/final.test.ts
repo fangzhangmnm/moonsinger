@@ -10,7 +10,7 @@ import { unzipSync, strFromU8, strToU8, zipSync } from "../vendor/fflate/fflate.
 import { sampleSong, sampleExtras, sampleView } from "./fixtures/format/sample-song.ts";
 const nodeCrypto = (await import("node:crypto" as string)) as { createHash(a: string): { update(b: Uint8Array | string): { digest(e: "hex"): string } } };
 
-const ARGS = (song = sampleSong(), extras = sampleExtras(song)) => ({ song, hum: song.hum, extras, app: "test", date: "2026-10-16T01:02:03.000Z", view: sampleView() });
+const ARGS = (song = sampleSong(), extras = sampleExtras(song)) => ({ song, extras, app: "test", date: "2026-10-16T01:02:03.000Z", view: sampleView() });
 const record = (fingerprint: string, mp3: Uint8Array, rev = 1): FinalRecord => ({ at: "2026-10-16T00:00:00.000Z", rev, app: "test", core: { version: "0.1.0", hash: "abc" }, fingerprint,
   mp3: { path: FINAL_MP3_ENTRY, bytes: mp3.length, sha256: nodeCrypto.createHash("sha256").update(mp3).digest("hex"), secs: 1, sr: 44100, kbps: 128, stereo: true }, parts: ["P1"] });
 const MP3 = new Uint8Array(1000).map((_, i) => (i * 7) & 0xff);
@@ -34,7 +34,7 @@ describe("出声内容的指纹", () => {
     const a = ARGS(), fp1 = contentFingerprintOf(a), fp2 = contentFingerprintOf({ ...a, date: "2027-01-01T00:00:00.000Z", app: "other" });
     eq(fp1, fp2, "日期 / app 版本不进指纹");
     const o = openBytes("s.mxl", saveMxl(a));
-    eq(contentFingerprintOf({ song: o.song, hum: o.hum, extras: o.extras, app: "x", date: "x", view: o.view }), fp1, "开了再存");
+    eq(contentFingerprintOf({ song: o.song, extras: o.extras, app: "x", date: "x", view: o.view }), fp1, "开了再存");
   });
   it("写出来的谱只看内容、不看内存里音的编号：编号打乱了指纹不变；按编号挂的两张表（音内起伏 / 还没写音高）跟着对得上（2026-11-10）", () => {
     // 内存里的编号是按这次打开里先写谁后写谁发的，重开一次就整首重编——不重编着写，同样的内容存两次、中间重开过 = 两个指纹，设备上记着的声音认不出「内容没变」
@@ -54,7 +54,7 @@ describe("出声内容的指纹", () => {
     const want = marked.papers[0].tracks[pid], at = (ts: typeof want, f: (t: (typeof want)[number]) => boolean) => ts.map((t, i) => (f(t) ? i : -1)).filter((i) => i >= 0).join(",");
     eq(at(back, (t) => !!swellOf(t)), at(want, (t) => !!swellOf(t)), "带音内起伏的还是那几个位置"); eq(at(back, (t) => t.kind === "note" && !t.pitch), at(want, (t) => t.kind === "note" && !t.pitch), "没写音高的还是那几个位置");
     assert(canonicalIds(o.song) === o.song, "读进来的编号就是写的时候编的那一套（已经是了 = 原样返回）");
-    eq(contentFingerprintOf({ song: o.song, hum: o.hum, extras: o.extras, app: "x", date: "x", view: o.view }), contentFingerprintOf(A), "开了再存，指纹还是它");
+    eq(contentFingerprintOf({ song: o.song, extras: o.extras, app: "x", date: "x", view: o.view }), contentFingerprintOf(A), "开了再存，指纹还是它");
     assert(scrambled.papers[0].tracks[pid][0].id === 90000 - toks[0].id * 7, "内存里的歌没被动过");
   });
   it("全冻：只有视图态不进指纹；歌名 / 作者栏 / 许可 / 封面 / 音 / 休息室 / 录音房变了都变（user 10-16「都冻同意，封面当然进」）", () => {
@@ -67,8 +67,8 @@ describe("出声内容的指纹", () => {
     const toks = a.song.papers[0].tracks.P1, i = toks.findIndex((t) => t.kind === "note");
     const song2 = { ...a.song, papers: a.song.papers.map((p, k) => (k ? p : { ...p, tracks: { ...p.tracks, P1: toks.map((t, j) => (j === i ? { ...t, pitch: { step: "B", alter: 0, octave: 5 } } : t)) } })) };
     assert(contentFingerprintOf({ ...a, song: song2 as typeof a.song }) !== fp, "改了一个音");
-    assert(contentFingerprintOf({ ...a, extras: withCalibration(a.extras, "r1", 2, a.hum) }) !== fp, "改了响度校准");
-    assert(contentFingerprintOf({ ...a, extras: withRoleName(a.extras, "r1", "别人", a.hum) }) !== fp, "改了角色名（锁着）");
+    assert(contentFingerprintOf({ ...a, extras: withCalibration(a.extras, "r1", 2, "n") }) !== fp, "改了响度校准");
+    assert(contentFingerprintOf({ ...a, extras: withRoleName(a.extras, "r1", "别人", "n") }) !== fp, "改了角色名（锁着）");
   });
   it("contentFingerprint 对原料的键顺序 / 排序不敏感", () => {
     const base = { papers: { p2: "<b/>", p1: "<a/>" }, scoreExt: `{"version":2,"view":{"scope":"all"},"papers":[]}`, lounge: { r2: "{}", r1: "{\"a\":1}" }, studio: "{\"tracks\":[]}", sounds: ["b", "a"], thumbnail: null };
@@ -91,47 +91,18 @@ describe("老文件里带着的那份 mp3（退役的定稿）", () => {
     mf.final = record(fp, MP3, rev); mf.finalRev = rev; z[".moonsinger/manifest.json"] = strToU8(JSON.stringify(mf, null, 2) + "\n"); z[FINAL_MP3_ENTRY] = MP3;
     return zipSync(z);
   };
-  const resave = (o: ReturnType<typeof openBytes>) => saveMxl({ song: o.song, hum: o.hum, extras: o.extras, app: "test", date: "2026-11-10T00:00:00.000Z", view: o.view ?? undefined });
-  it("读得开：mp3 和它的参数交给宿主（legacyMp3），歌本身照常，不报任何话", () => {
+  const resave = (o: ReturnType<typeof openBytes>) => saveMxl({ song: o.song, extras: o.extras, app: "test", date: "2026-11-10T00:00:00.000Z", view: o.view ?? undefined });
+  it("读得开：那份 mp3 和它的记录都不读（第 16 条 16-3，user「MP3 也不要」）——不交给宿主、不进「不认识的文件」，歌本身照常，不报任何话", () => {
     const o = openBytes("x.mxl", oldFile());
     eq(o.notices.length, 0, o.notices.join(" | ")); assert(o.ours, "还是自家的文件");
-    const l = o.legacyMp3; assert(!!l, "有 legacyMp3");
-    eq(JSON.stringify([...l!.bytes]), JSON.stringify([...MP3]), "字节原样"); eq(l!.rev, 3); eq(l!.kbps, 128); eq(l!.stereo, true); eq(l!.secs, 1); eq(l!.parts.join(), "P1"); eq(l!.core.hash, "abc");
+    assert(!("legacyMp3" in o), "不交给宿主");
     for (const k of ["final", "finalMp3", "finalRev"]) assert(!(k in o.extras), `Extras 里不再有 ${k}`);
     assert(!Object.keys(o.extras.unknown).includes(FINAL_MP3_ENTRY), "mp3 不进「不认识的文件」（不然会原样写回去）");
   });
-  it("再存：歌文件里不再有那份 mp3，总目录里不再有 final / finalRev（user 11-10「以后统一不存mp3，旧的也删掉」）；别的原样", () => {
+  it("再存：歌文件里不再有那份 mp3，总目录里不再有 final / finalRev（user 11-10「以后统一不存mp3，旧的也删掉」）", () => {
     const o = openBytes("x.mxl", oldFile()), z = unzipSync(resave(o)), m = JSON.parse(strFromU8(z[".moonsinger/manifest.json"]));
     eq(z[FINAL_MP3_ENTRY], undefined, "entry 没了"); eq(m.final, undefined); eq(m.finalRev, undefined);
-    const o2 = openBytes("x.mxl", zipSync(z as Record<string, Uint8Array>));
-    eq(o2.legacyMp3, undefined); eq(o2.notices.length, 0);
-    eq(contentFingerprintOf({ song: o2.song, hum: o2.hum, extras: o2.extras, app: "x", date: "x" }), o.legacyMp3!.fingerprint, "内容没变：交给宿主的指纹 = 存下去之后的指纹（设备上记着的那份还认得这首歌）");
-  });
-  it("交给宿主的指纹按这一版写出来的样子算：老写法（句号、声部上的谱号）、音的编号重编过的，都对得上 contentFingerprintOf", () => {
-    const cases: [string, Uint8Array][] = [
-      ["老写法", oldFile((sj) => { sj.minor = 3; const papers = sj.papers as Record<string, unknown>[], parts = sj.parts as Record<string, unknown>[]; papers[0].phrases = { [String(parts[0].id)]: [1] }; delete papers[0].autoOttava; parts[0].clef = "F"; parts[0].autoOttava = false; })],
-      ["编号", oldFile(() => {}, (xml) => xml.replace(/ id="n(\d+)(-\d+)?"/g, (_m, n: string, t: string | undefined) => ` id="n${Number(n) + 900}${t ?? ""}"`))],
-    ];
-    for (const [what, bytes] of cases) {
-      const o = openBytes("x.mxl", bytes); assert(!!o.legacyMp3, `${what}：认得这份 mp3`);
-      eq(o.legacyMp3!.fingerprint, contentFingerprintOf({ song: o.song, hum: o.hum, extras: o.extras, app: "x", date: "x", view: o.view ?? undefined }), what);
-    }
-  });
-  it("对不上的不认、也不吵：定稿后被别的东西改过 / mp3 丢了 / 记录读不懂 = 没有 legacyMp3，照常打开，mp3 不带着走", () => {
-    const files = unzipSync(oldFile()) as Record<string, Uint8Array>;
-    const rezip = (patch: (f: Record<string, Uint8Array>) => void) => { const f = { ...files }; patch(f); return zipSync(f); };
-    const cases: [string, Uint8Array][] = [
-      ["内容被改过", rezip((f) => { const k = Object.keys(f).find((x) => /papers\/.*\.musicxml$/.test(x))!; f[k] = strToU8(strFromU8(f[k]).replace("<step>C</step>", "<step>D</step>")); })],
-      ["mp3 丢了", rezip((f) => { delete f[FINAL_MP3_ENTRY]; })],
-      ["记录读不懂", rezip((f) => { const m = JSON.parse(strFromU8(f[".moonsinger/manifest.json"])); m.final = { nonsense: 1 }; f[".moonsinger/manifest.json"] = strToU8(JSON.stringify(m)); })],
-    ];
-    for (const [what, bytes] of cases) {
-      const o = openBytes("x.mxl", bytes);
-      eq(o.legacyMp3, undefined, what); eq(o.notices.length, 0, `${what}：不报话（${o.notices.join(" | ")}）`);
-      assert(!Object.keys(o.extras.unknown).includes(FINAL_MP3_ENTRY), `${what}：mp3 不进 unknown`);
-      eq(unzipSync(resave(o))[FINAL_MP3_ENTRY], undefined, `${what}：再存也不带`);
-    }
-    eq(parseFinalRecord({ nonsense: 1 }), null);
+    eq(openBytes("x.mxl", zipSync(z as Record<string, Uint8Array>)).notices.length, 0);
   });
   it("这一版存的歌：总目录里没有 final / finalRev、zip 里没有 mp3；Extras 的空壳里也没有这三样", () => {
     const files = unzipSync(saveMxl(ARGS())), m = JSON.parse(strFromU8(files[".moonsinger/manifest.json"]));

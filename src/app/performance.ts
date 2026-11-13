@@ -89,7 +89,7 @@ export function createPerformance(host: PerfHost) {
   /** 这条通道 = 麦克风增益 + 上场那位的响度校准。 */
   const channelOf = (part: PartDef): { gainDb: number; pan: number } => channelOfCore(extras(), part);
   /** 这次打开里的渲染计划（核心认的形状）：歌 / 休息室 / 哼 / 出声的声部 / 效果全关 / 静音的混音轨。 */
-  const planOf = (song: Song, parts: readonly PartDef[], raw = mixBypass): RenderPlan => ({ song, extras: extras(), hum: st().song.hum, parts, mixBypass: raw, busMuted: host.busMuted() });
+  const planOf = (song: Song, parts: readonly PartDef[], raw = mixBypass): RenderPlan => ({ song, extras: extras(), parts, mixBypass: raw, busMuted: host.busMuted() });
   /** 核心要的注入：录音房 = 这个 app 的 StudioClient；音源 / 元音表 = 宿主的来源；块 = 这里的泵（awaitAllChunks）。 */
   const deps: RenderDeps = { engine, sounds: { resolveGmBytes, ensureVowels }, sing: (tl) => awaitAllChunks(tl) };
   /** 效果全关（A/B，这次打开里有效、换歌复位；v0.10.18，user「混音台加一个暂时禁用所有魔法的toggle，不过fade和pan要不要留？（就是给你回到musescore/谱子本身用的，以及听差别）」）：

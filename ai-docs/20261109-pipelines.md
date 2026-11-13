@@ -69,6 +69,13 @@
 | C6 推 | tryPush 时推 OneDrive（Graph；分块上传）；超时 问一句 30 s / 一块 2 min / 取一段 1 min / 整份 15 min（v0.16.51 起开） | 随字节 + 网 | 到点按没传成算，下次再推 |
 | C7 收尾 | 对代数：还是同一首才清脏 / 清欠推；`onSaved(name)` 只记给还开着的那首；选了「云端覆盖本地」= 同队里重载；`relinkAfterSave(name, 指纹)`：设备上记着这份内容的声音 = 按新的文件戳重新挂名，没有 = 摘名（一次尾读本机那份的总目录） | 常数 | — |
 
+**C4 里 `saveMxl` 写的规矩（第 16 条 16-3，as-of v0.17.12 / 2026-11-12，Claude Opus 5.5）**：
+- 每个键都明写，等于默认也写（原来 19 处「等于默认就不写」取消）：score.json 的歌级键（arrangement / lyricFit / barNumbers / spacing / notation / chordTags / viewInC / middleC / expressions / textLang）、每张纸的 hidden / autoOttava / swells、每个声部的 clef / host / chords、视图态（desk 每一项、pad 的 auto、乐器目录翻到哪）；休息室每位乐手按 `completeCandidate` 把缺的数按现行默认写全（只补缺的：演奏法每个键、力度表八档、响度、链、移调、小月相的唱法旋钮和分段、SoundFont 的力度旋钮）；混音台每条轨、每个效果的开关和参数表里的每一个参数、总轨。
+- 只写现行格式里有定义的键（`ROLE_KEYS / CAND_KEYS / ART_KEYS / STUDIO_KEYS / TRACK_KEYS / FX_KEYS / MASTER_KEYS / MANIFEST_KEYS`、`KNOWN_SCORE_KEYS / KNOWN_PAPER_KEYS / KNOWN_PART_KEYS`）；那一份比这一版新（同一个大版本、小版本更大）= 不认识的原样带回（包里不认识的文件同理，看总目录）。版本记号照「写永远只写当前拍」写这一版的。退役的不写：老文件里的 mp3、phrases、声部上的 autoOttava / brokenChords。效果参数这一层不按参数表筛（主线程参数 hpAuto / syncBeats 不在引擎的参数表里）。
+- 哼的字只在乐手身上（`instrument.hum`）；歌上不再有一份、存的时候不再互相抄。
+- 歌词每个音节的 `xml:lang` = 唱的那一段的语言（`engine/timeline.ts sungLangsOf`，和唱同一个 `sungPlan`）。
+- 加了新键 / 新值的那几份小版本 +1（`contract.ts FORMAT_MINOR`：manifest 1、score 11、lounge 2、studio 2）。
+
 ## 五、B：开一首歌 / 换歌
 
 | 步 | 干什么 | 碰多少 | 数字 |
@@ -81,8 +88,8 @@
 | B6 画 | A8 | — | — |
 
 **B5 里 `openBytes` 读的规矩（第 16 条 16-2，as-of v0.17.11 / 2026-11-12，Claude Opus 5.5）**：文件上怎么写就怎么读——
-- 没有升级链（`src/format/migrate/` 删了）：各份 JSON 原样当现行格式读，只认现行有定义的键；缺的数由各处现行默认补（16-4 收进模板）；退役的键不理（不认识的照旧原样带回）。只拒开大版本比 app 新的、小版本更新说一次。
-- 不搬、不猜、不重排：声部上的老谱号 / 自动八度线键不理；纸头谱号 = 声部明写 `clef: "auto"` 才自动，否则每张纸第一个 `<clef>` 写什么就是什么；老写法 `brokenChords` 不理；合租一家不重排；老歌的声部名照文件（user 定的甲）；视图态「只写了调式」不再当手动。
+- 没有升级链（`src/format/migrate/` 删了）：各份 JSON 原样当现行格式读，只认现行有定义的键；缺的数由各处现行默认补（16-4 收进模板）；退役的键不理（不认识的：那一份比这一版新才原样带回，见 C4）。只拒开大版本比 app 新的、小版本更新说一次。
+- 不搬、不猜、不重排：声部上的老谱号 / 自动八度线键不理；纸头谱号 = 声部明写 `clef: "auto"` 才自动，否则每张纸第一个 `<clef>` 写什么就是什么；老写法 `brokenChords` 不理；合租一家不重排；老歌的声部名照文件（user 定的甲）；视图态 pad 的「1=」跟谱 / 手动只看 `auto`（老写法只写了 `fifths` 不再猜成手动，16-3）；效果的「原声」没写 = 参数表默认（`dryOf` 的「1 − 湿」删了，16-3）。
 - 断了的照实标：合租不成立 → `PartDef.hostBroken`（照没合租来画，歌手牌「合租」那一行写清，存的时候照原样写回）；声部没有乐手 / 读不懂 → 没人上场（不再当小月相；四个「不出声」的出口说原因）；混音台出到 / 发送 / 被谁压断了 → 那一页那一格写「断了」、卡片上「有 N 处断了」（判法 = `engine/studio.ts busLinkStates`，和录音房接线同一个）。
 - 别家的谱没写速度 / 调号 / 拍号 → 打开时那一串话里各一句（`headNotice`）。
 - `loadDoc` 开歌不补力度、不理顺先后（人改谱时 A6 的 normalize 照旧补）。新歌 = `templateExtras(song)`：创建那一刻每个声部的乐手按模板写进休息室。

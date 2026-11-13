@@ -1,6 +1,6 @@
 // 谱上的字用哪种语言（施工单 12-4；user「页面设置是不是也应该有一个语言，影响打印？还是打印的时候自己调语言？think critically about it」，统筹定 = 歌里一项）。
 //   created 2026-11-12 by Claude Opus 5.5（MoonSinger小弟）。
-// 守：① 进门那一处定没写的意思（兼容老文件的规矩）：老文件 / 别家的谱 / 新歌 = "ui"（跟着界面），歌里永远有值；写了的原样留着、不认识的写回去；跟着界面不写进 score.json。
+// 守：① 进门那一处定没写的意思（兼容老文件的规矩）：老文件 / 别家的谱 / 新歌 = "ui"（跟着界面），歌里永远有值；写了的原样留着、不认识的写回去；跟着界面写 "ui"（第 16 条 16-3 起每样都写）。
 //     ② 排版：印出来的字（「编排」、换气后面的「吸 / 深吸」）按这一项；不印的提示照旧按界面语言（opts.locale）。跟着界面 = 和原来一模一样。
 //     ③ 修改锁：改这一项算「看法」（songLook 的核验认它；顺手动了别的 = 不认）。
 import { describe, it, eq, assert } from "./runner.mjs";
@@ -16,7 +16,7 @@ import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.
 const fs = (await import("node:fs" as string)) as { readFileSync(p: URL): Uint8Array };
 const ROOT = new URL("../", import.meta.url);
 const bytesOf = (rel: string) => new Uint8Array(fs.readFileSync(new URL(rel, ROOT)));
-const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-11-12T00:00:00.000Z" });
+const save = (s: Song) => saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-11-12T00:00:00.000Z" });
 const scoreJson = (b: Uint8Array) => JSON.parse(strFromU8(unzipSync(b)[".moonsinger/score.json"]!));
 const withScoreJson = (b: Uint8Array, f: (j: Record<string, any>) => void): Uint8Array => { const z = unzipSync(b), j = JSON.parse(strFromU8(z[".moonsinger/score.json"]!)); f(j); z[".moonsinger/score.json"] = strToU8(JSON.stringify(j)); return zipSync(z); };
 
@@ -30,9 +30,9 @@ describe("谱上的字：进门那一处定没写的意思（12-4）", () => {
     const o = openBytes("sample.mxl", bytesOf("test/fixtures/format/minor/score-10/sample.mxl"));
     eq(o.song.textLang, "en"); eq(songViewOf(o.song).textLang, "en");
   });
-  it("跟着界面不写进 score.json；写了一种语言 = 原样写、原样读回", () => {
+  it("跟着界面也明写 \"ui\"（第 16 条 16-3）；写了一种语言 = 原样写、原样读回", () => {
     const s = emptySong();
-    eq("textLang" in scoreJson(save(s)), false, "跟着界面 = 不写");
+    eq(scoreJson(save(s)).textLang, "ui", "跟着界面 = 写 ui");
     const b = save({ ...s, textLang: "zh" });
     eq(scoreJson(b).textLang, "zh"); eq(openBytes("x.mxl", b).song.textLang, "zh");
   });

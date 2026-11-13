@@ -211,7 +211,6 @@ export interface Song {
    *  不认识的（更新的版本写的）原样留着、写回去，画的时候当跟着界面。只管软件自己生成、印出来的字（声部名是目录 / 预设里的乐器名时、简谱鼓的图例、「编排」、出声的换气「吸 / 深吸」）；
    *  歌词、歌名、作者栏、自己起的声部名不动。**必填**：没写的意思在进门那一处定一次（src/format/project.ts songViewFields：没写 = "ui"），新歌明着写 "ui"；运行时永远有值。读 / 改只走 src/score/song-view.ts。 */
   textLang: string;
-  hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
   papers: PaperSeg[];    // 纸（曲段）的顺序表
 }
@@ -265,11 +264,11 @@ export function headTokens(m: { fifths?: number; minor?: boolean; beats?: number
 export const FIRST_PART = "P1", FIRST_PAPER = "p1";
 /** 新歌：一张纸、一个声部（P1 → 角色 r1 → 麦克风 m1），哼的字默认「嗯」（user 2026-10-07「月读不是有啦嗯哦吗，默认嗯」）。 */
 export function emptySong(m: { fifths?: number; beats?: number; beatType?: number; bpm?: number } = {}): Song {
-  return { hum: "n", textLang: "ui", parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m) } }] };   // 谱上的字：新歌明着写「跟着界面」（12-4）
+  return { textLang: "ui", parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m) } }] };   // 谱上的字：新歌明着写「跟着界面」（12-4）
 }
 /** 单 track 的歌（测试 / 读别家单声部谱时顺手用）。 */
 export function songOf(tokens: Token[], rest: Partial<Omit<Song, "parts" | "papers">> = {}): Song {
-  return { hum: "n", textLang: "ui", ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
+  return { textLang: "ui", ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
 }
 export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", inputAuto: true }; }
 /** 整首歌最大的 token id（新 id 从它后面编；所有纸、所有声部一起算，id 全歌唯一）。 */
@@ -1615,7 +1614,6 @@ export function setDur(st: EditorState, i: number, dur: number): EditorState {
   const nt = tr(st).slice(); nt[i] = { ...t, dur };
   return next(st, nt);
 }
-export function setHum(st: EditorState, hum: Hum): EditorState { return { ...st, song: { ...st.song, hum } }; }
 /** 改歌名（空 = 不填）。 */
 /** 换纸（整首歌一个）：A5 = 默认，存成「没有」。**换纸只换纸**：版式和别家文件里写的谱高（staffMm）原样带着走——谱高只在选版式时才换（setDensity；
  *  统筹 2026-11-12 裁定，施工单 7-C 记录：原来新建纸会丢掉 staffMm = 换纸顺手改了谱的大小）。 */
@@ -1741,26 +1739,17 @@ export function removePart(st: EditorState, partId: string): EditorState {
  *  每位歌手在每张纸上第一个音之前没有力度记号 = 在第一个音前面补一个——**补的是这里本来就生效的那个**（这位在前一张纸（歌里的顺序）最后一个力度；最前面 = mf，同播放的默认），听起来不变。
  *  **补在哪**（第八刀 8-7，统筹 2026-11-12 定）：第一个音前面紧挨着的那一串曲级记号（渐强渐弱、渐到、风格、力度）的最前面——同一个音前面力度在渐强渐弱前面（挪记号那条老规矩）。
  *  v0.10.39 起补在了第一个音紧前面：那一串里本来有渐强渐弱时就成了「渐强渐弱、力度、音」，渐强渐弱和它的终点（补的力度）之间一个音都没有 = 出声上不起作用，谱上发夹从力度字底下起。
- *  **理顺**：那一串里力度排在别的记号后面 = 把力度挪到这一串最前面（别的先后不变）；只理第一个音前面这一串，别处不碰。这种反顺序只可能是上面那一步自己造出来的（界面上挪记号永远把力度放前面），理它不算改人写的东西。
- *  返回补了哪几处 + 理顺了哪几处（纸 / 歌手 / 下标）。纯函数：main 在每次改谱（update）和打开歌时过一遍；**理顺只在打开歌时**（o.reorder，统筹定「读进来时理过来」）——
+ *  返回补了哪几处（纸 / 歌手 / 下标）。纯函数：main 在每次改谱（update，document 的 normalize）时过一遍；**开歌时不补也不理顺**（第 16 条 16-2 / 16-3：开文件时不顺手改；原来开歌时还会把排在渐强渐弱后面的力度挪到前面，那一支删了）——
  *  改谱的时候不动别的记号的先后（光标前放风格记号再开它的小菜单，靠的就是刚放的那个在原处；E2E groove 抓到的）。 */
-export function ensureStartDyns(song: Song, nextId: number, o: { reorder?: boolean } = {}): { song: Song; nextId: number; added: { paper: string; part: string; index: number }[]; reordered: { paper: string; part: string; index: number }[] } {
-  let id = nextId; const added: { paper: string; part: string; index: number }[] = [], reordered: { paper: string; part: string; index: number }[] = [], last = new Map<string, Dyn>();
+export function ensureStartDyns(song: Song, nextId: number): { song: Song; nextId: number; added: { paper: string; part: string; index: number }[] } {
+  let id = nextId; const added: { paper: string; part: string; index: number }[] = [], last = new Map<string, Dyn>();
   const papers = song.papers.map((pp) => {
     let tracks = pp.tracks, changed = false;
     for (const part of song.parts) {
       let t = tracks[part.id]; if (!t) continue;
       let first = -1, has = false;
       for (let i = headLen(t); i < t.length; i++) { const k = t[i]; if (k.kind === "dyn") { has = true; break; } if (k.kind === "note") { first = i; break; } }
-      if (has && o.reorder) {   // 已经有力度（打开歌时）：第一个音前面那一串里力度不在最前 = 理顺
-        let f = -1; for (let i = headLen(t); i < t.length; i++) if (t[i].kind === "note") { f = i; break; }
-        if (f >= 0) {
-          let a = f; while (a > headLen(t) && isPhraseMark(t[a - 1])) a--;
-          const run = t.slice(a, f), dyns = run.filter((k) => k.kind === "dyn"), rest = run.filter((k) => k.kind !== "dyn");
-          const sorted = [...dyns, ...rest];
-          if (dyns.length && sorted.some((k, j) => k !== run[j])) { t = [...t.slice(0, a), ...sorted, ...t.slice(f)]; tracks = { ...tracks, [part.id]: t }; changed = true; reordered.push({ paper: pp.id, part: part.id, index: a }); }
-        }
-      } else if (first >= 0) {
+      if (first >= 0) {   // 有力度的那一串 first 是 -1（循环在力度那儿停了）
         let at = first; while (at > headLen(t) && isPhraseMark(t[at - 1])) at--;   // 这一串的最前面（挂在后面那个音上的记号，isPhraseMark）
         tracks = { ...tracks, [part.id]: [...t.slice(0, at), { kind: "dyn", id: id++, value: last.get(part.id) ?? "mf" } as Token, ...t.slice(at)] };
         changed = true; added.push({ paper: pp.id, part: part.id, index: at });
@@ -1769,7 +1758,7 @@ export function ensureStartDyns(song: Song, nextId: number, o: { reorder?: boole
     }
     return changed ? { ...pp, tracks } : pp;
   });
-  return added.length || reordered.length ? { song: { ...song, papers }, nextId: id, added, reordered } : { song, nextId, added, reordered };
+  return added.length ? { song: { ...song, papers }, nextId: id, added } : { song, nextId, added };
 }
 /** 一家挨在一起（v0.10.36）：每位主人后面紧跟它的房客（房客之间、各家之间原来的先后不变）。读档 / 挪 / 挂的时候都理一遍——
  *  以前房客没挨着主人时「挪」把它当成单独一块越挪越散，混音台卡片跟着乱序（user「卡片排序在有合租的时候有问题会乱序，可能合租的时候没有正确排好序」）。 */

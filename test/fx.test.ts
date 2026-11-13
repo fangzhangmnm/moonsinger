@@ -39,7 +39,7 @@ describe("效果原语", () => {
     const x = new Float32Array(SR); x[0] = 1;
     const y = run(d, x), D = Math.round(0.375 * SR);
     assert(Math.abs(y[D] - 0.5) < 0.02 && Math.abs(y[2 * D] - 0.25) < 0.03, `回声 ${y[D].toFixed(3)} / ${y[2 * D].toFixed(3)}`);
-    assert(Math.abs(y[0] - 0.5) < 1e-6, "干 ×(1-mix)");
+    assert(Math.abs(y[0] - 1) < 1e-6, "原声没写 = 参数表默认 1（第 16 条 16-3：没有「1 − 湿」）");
     eq(peak(run(createFx({ id: "d", kind: "delay", params: { timeMs: 375, mix: 0 } }, SR), x)), 1);
   });
   it("混响：脉冲之后有尾巴（0.5 s 处还有声、1.5 s 后衰减）；同样输入逐样本相同", () => {

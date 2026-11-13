@@ -9,7 +9,7 @@ import { sfKey } from "../src/gm/sf-key.ts";
 
 const fixture = fs.readFileSync(new URL("./fixtures/sf2/gu-square-castanets.sf2", import.meta.url));
 const sha = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
-const save = (extras: Extras) => saveMxl({ song: sampleSong(), hum: "n", extras, app: "test", date: "2026-10-08T00:00:00.000Z" });
+const save = (extras: Extras) => saveMxl({ song: sampleSong(), extras, app: "test", date: "2026-10-08T00:00:00.000Z" });
 const PHONE = { key: 64, midi: 96, centsPerKey: 50 };
 
 /** r1 = 「音效」（拿方波的字节冒充：这里只测设置的读写，不测声音），按上场时的默认 = 固定原速；r2 = 普通乐器。 */

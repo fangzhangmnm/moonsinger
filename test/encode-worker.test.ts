@@ -4,7 +4,7 @@ import { runEncodeJob } from "../src/format/encode-worker.ts";
 import { saveMxl, openBytes, contentFingerprintOf, type SaveArgs } from "../src/format/project.ts";
 import { sampleSong, sampleExtras } from "./fixtures/format/sample-song.ts";
 
-const args = (): SaveArgs => { const song = sampleSong(); return { song, hum: song.hum, extras: sampleExtras(song), app: "test", date: "2026-10-21T00:00:00.000Z", view: null, references: { ".moonsinger/references/a.txt": new TextEncoder().encode("hi") } }; };
+const args = (): SaveArgs => { const song = sampleSong(); return { song, extras: sampleExtras(song), app: "test", date: "2026-10-21T00:00:00.000Z", view: null, references: { ".moonsinger/references/a.txt": new TextEncoder().encode("hi") } }; };
 const notes = (b: Uint8Array) => openBytes("x.mxl", b).song.papers[0].tracks[openBytes("x.mxl", b).song.parts[0].id].filter((t) => t.kind === "note").length;
 
 describe("存档编码进 worker", () => {

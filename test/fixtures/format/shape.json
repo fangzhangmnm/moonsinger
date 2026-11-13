@@ -44,6 +44,7 @@
       "papers": [
         {
           "autoOttava": {
+            "P1": "boolean",
             "P2": "boolean"
           },
           "file": "string",
@@ -71,7 +72,7 @@
         {
           "chords": "string",
           "clef": "string",
-          "host": "string",
+          "host": "null|string",
           "id": "string",
           "kind": "string",
           "mic": "string",
@@ -136,6 +137,7 @@
             "arpeggioSec": "number",
             "breathSec": "number",
             "breathShare": "number",
+            "canSwell": "boolean",
             "fpSec": "number",
             "gapSec": "number",
             "gapShare": "number",
@@ -143,6 +145,7 @@
             "ghostVel": "number",
             "marcatoDb": "number",
             "marcatoVel": "number",
+            "rollHz": "null",
             "sfzDb": "number",
             "sfzSec": "number",
             "sfzVel": "number",
@@ -333,6 +336,7 @@
           {
             "id": "string",
             "kind": "string",
+            "on": "boolean",
             "params": {
               "dB": "number"
             }
@@ -357,13 +361,17 @@
                 "attackMs": "number",
                 "damp": "number",
                 "dry": "number",
+                "kneeDb": "number",
                 "makeupDb": "number",
+                "mix": "number",
+                "preDelayMs": "number",
                 "predelayMs": "number",
                 "ratio": "number",
                 "releaseMs": "number",
                 "room": "number",
                 "thresholdDb": "number",
-                "wet": "number"
+                "wet": "number",
+                "width": "number"
               }
             }
           ],

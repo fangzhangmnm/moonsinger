@@ -79,9 +79,9 @@ describe("物理量纲 + 原声（v0.10.10）", () => {
     assert(Math.abs(dampKHz(1) - 7.0) < 0.1, `吸收开满 = 约 7 kHz 起衰减：${dampKHz(1)}`); eq(dampKHz(0), Infinity);
     assert(Math.abs(linDb(dbLin(-12)) + 12) < 1e-9); eq(linDb(0), -60); eq(dbLin(-60), 0);
   });
-  it("插在歌手轨上的混响 / 延迟 / 合唱：原声 100% 不动，旋钮只加湿；旧数据（没写原声）如实显示成 1 − 湿", () => {
+  it("插在歌手轨上的混响 / 延迟 / 合唱：原声 100% 不动，旋钮只加湿；没写原声 = 参数表默认 100%（第 16 条 16-3：「1 − 湿」删了，和录音房同一个读法）", () => {
     for (const k of ["reverb", "delay", "chorus"]) eq(freshParams(k).dry, 1, `${k} 原声 100%`);
-    eq(paramsOf({ id: "r", kind: "reverb", params: { mix: 0.3 } }).dry, 0.7, "旧数据：录音房按 1 − 湿 算，这里也这么显示");
+    eq(paramsOf({ id: "r", kind: "reverb", params: { mix: 0.3 } }).dry, 1, "没写原声 = 参数表默认 1");
   });
   it("全量面板：每个参数都有一句解释；百分比只留给本来就是比例的（宽度 / 铺开）", () => {
     for (const k of PLUGIN_KINDS) for (const d of fullParams(k)) { assert(!!PARAM_HINT[`${k}.${d.id}`], `${k}.${d.id} 没有解释`); const v = paramView(k, d); if (v.fmt(d.default).endsWith("%")) assert(["reverb.width", "chorus.spread"].includes(`${k}.${d.id}`), `${k}.${d.id} 还在用百分比`); }

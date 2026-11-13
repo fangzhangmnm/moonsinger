@@ -3,7 +3,7 @@
 //   审计风险 2「主程序里一张一张手糊的面板」）。宿主给一组访问器 + 动作，页面自己管画和点击；行为和搬之前一样。各段的来历见段内注释（原注释照搬）。
 import { dropdownHtml, mountDropdowns } from "../../ui/dropdown.ts";
 import { _t, lang } from "../../i18n/index.ts";
-import { roleSound, activeId, gmCandidates, activeCandidateName, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withSwellDb, withCalibration, GAP_MAX_SEC, SWELL_DB_MIN, SWELL_DB_MAX, type Extras, type Engine } from "../../format/project.ts";
+import { roleSound, activeHum, activeId, gmCandidates, activeCandidateName, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withSwellDb, withCalibration, GAP_MAX_SEC, SWELL_DB_MIN, SWELL_DB_MAX, type Extras, type Engine } from "../../format/project.ts";
 import { CALIBRATION_DEFAULT_DB, ROLL_HZ_MIN, ROLL_HZ_MAX, MARK_DEFAULTS } from "../../format/performance.ts";
 const MARK_DEFAULTS_SWELL = MARK_DEFAULTS.swellDb;
 import { performerOf } from "../../performers/index.ts";
@@ -151,11 +151,11 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
   }
   /** 插件自报参数行要的上下文（ADR-0004 §2.5）：休息室 / 角色 / 哼的字 / 音乐目录（没载 = null）/ 排版小工具。 */
   function inspectorCtx(role: string): InspectorCtx {
-    return { extras: h.extras(), role, hum: h.song().hum, roleLabel: h.roleLabel(role), catalog: h.catalog(), esc, chip, dynTable: (layers, L) => dynTable(activePerfSpec(h.extras(), role), layers, L), bankBytes: (sha) => h.bankBytes(sha), velCurve: (sha, bank, program) => curveOf(sha, bank, program) };
+    return { extras: h.extras(), role, hum: activeHum(h.extras(), role), roleLabel: h.roleLabel(role), catalog: h.catalog(), esc, chip, dynTable: (layers, L) => dynTable(activePerfSpec(h.extras(), role), layers, L), bankBytes: (sha) => h.bankBytes(sha), velCurve: (sha, bank, program) => curveOf(sha, bank, program) };
   }
   function draw(): void {
     if (!h.shown()) return;
-    const eng = h.engine(), hum = h.song().hum, role = h.role(), rn = h.roleLabel(role), rs = roleSound(h.extras(), role), aid = activeId(h.extras(), role);
+    const eng = h.engine(), role = h.role(), hum = activeHum(h.extras(), role), rn = h.roleLabel(role), rs = roleSound(h.extras(), role), aid = activeId(h.extras(), role);
     const gms = new Map(gmCandidates(h.extras(), role).map((g) => [g.id, g])), active = gms.get(aid), who = activeCandidateName(h.extras(), role) ?? _t("（没人上场）");
     const status = !active ? "" : active.bytes ? `<div class="cand-status">${_t("声音嵌在歌里（{n}）{library}", { n: sizeText(active.bytes.length), library: active.origin.library ? _t("，来自家族音源库的 {name}", { name: esc(active.origin.name) }) : _t("，来自 {name}", { name: esc(active.origin.name) }) })}</div>`
       : active.path ? `<div class="cand-status">${_t("声音没随这首歌带来，所以没人上场——换一个「谁来演」")}</div>`
@@ -193,7 +193,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       // 按块出声的（小月相）块乘多少照实写在这里，和力度深度一起（第 14 条，2026-11-12：「我们自己放的、界面上看不见的」这一类要清到零）
       (plug?.dynamics === "gain" ? ((dp: number) => row(_t("力度记号"), "", (plug.chunkGain ? _t("唱出来的每一句先乘 ×{k}（{db} dB）：唱法核心原始输出的补偿，我们按量过的原始峰值（约 0.42）放大到 0.89 定的数。", { k: plug.chunkGain.toFixed(2), db: `+${(20 * Math.log10(plug.chunkGain)).toFixed(1)}` }) : "") +
         _t("力度记号 → 力度 → 响度，和乐器同一条规矩（SoundFont 的放法：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)，满力度 = 0 dB）。这位的力度深度 {dp}（照库里人声类和长笛、小提琴这类拉长音的乐器；规范默认 960）；没有录音层，只变响度：{extras}", { dp, extras: dynTable(activePerfSpec(h.extras(), role), null, (v) => depthCurve(dp)(60, v)) })))(plug.velocityDepth ?? SF2_VEL_DEPTH) : "") +
-      ((plug?.lyrics ?? "none") !== "none" ? row(_t("哼的字"), HUMS.map(([v, l]) => chip(`hum:${v}`, l, hum === v)).join(""), _t("没写歌词的音唱什么（整首歌一个）")) : "") +
+      ((plug?.lyrics ?? "none") !== "none" ? row(_t("哼的字"), HUMS.map(([v, l]) => chip(`hum:${v}`, l, hum === v)).join(""), _t("没写歌词的音唱什么（这一位的）")) : "") +
       (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("高级：唱法核心的旋钮")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") +
       ownTail.map(rowOf).join("") +
       (!plug ? row("", "", _t("这一版出不了声（别的软件原来的乐器）：换一个「谁来演」")) : "");
@@ -221,7 +221,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
 
   el.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
-    const role = h.role(), rn = h.roleLabel(role), hum = h.song().hum;
+    const role = h.role(), rn = h.roleLabel(role), hum = activeHum(h.extras(), role);
     if (v === "back") { h.back(); return; }
     if (v === "pad") { h.togglePad(); draw(); return; }
     if (v === "finder") { h.openFinder(); return; }

@@ -343,6 +343,9 @@ export declare const S: {
     readonly 乐谱: {
         readonly en: "Score";
     };
+    readonly "\u8FD9\u9996\u6B4C\u6709 {n} \u5904\u7EB8\u5F00\u5934\u6CA1\u5199\u529B\u5EA6\uFF1A\u8FD9\u4E00\u4E0B\u6539\u8C31\u65F6\u8865\u4E0A\u4E86\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\u90A3\u4E2A\uFF08\u542C\u8D77\u6765\u4E0D\u53D8\uFF09\uFF0C\u5B58\u7684\u65F6\u5019\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6": {
+        readonly en: "{n} sheet start(s) in this song had no dynamic: this edit filled in the one already in effect there (sounds the same); it goes into the file when you save";
+    };
     readonly "\u300C{name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7": {
         readonly en: "“{name}” was changed elsewhere";
     };
@@ -357,9 +360,6 @@ export declare const S: {
     };
     readonly "{name} \u00B7 {size}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002": {
         readonly en: "{name} · {size}. Download it or share it to Files; open it later from the menu.";
-    };
-    readonly "\u8FD9\u9996\u6B4C\u91CC\u539F\u6765\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{size}\uFF09\u4E0D\u518D\u5B58\u8FDB\u6B4C\u91CC\u4E86\uFF1A\u5B83\u5DF2\u7ECF\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u7167\u6837\u80FD\u542C\u3001\u80FD\u518D\u5BFC\u51FA\u3002": {
-        readonly en: "The mp3 that used to be stored inside this song ({size}) is no longer saved into the song file. It is remembered on this device, so you can still play it from the library and export it again.";
     };
     readonly 连线: {
         readonly en: "Slur";
@@ -2362,6 +2362,9 @@ export declare const S: {
     readonly "\u627E\u5230\u4E86\uFF1A\u300C{name}\u300D\u80FD\u54CD\u4E86": {
         readonly en: "Found: “{name}” can sound now";
     };
+    readonly 哼的字: {
+        readonly en: "Hum syllable";
+    };
     readonly "\u300C{p}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58": {
         readonly en: "“{p}” has unsaved changes";
     };
@@ -3553,11 +3556,8 @@ export declare const S: {
     readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u7684\u653E\u6CD5\uFF1A\u54CD\u5EA6 = \u6DF1\u5EA6 \u00F7 960 \u00D7 40\u00B7log10(\u529B\u5EA6 \u00F7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\u3002\u8FD9\u4F4D\u7684\u529B\u5EA6\u6DF1\u5EA6 {dp}\uFF08\u7167\u5E93\u91CC\u4EBA\u58F0\u7C7B\u548C\u957F\u7B1B\u3001\u5C0F\u63D0\u7434\u8FD9\u7C7B\u62C9\u957F\u97F3\u7684\u4E50\u5668\uFF1B\u89C4\u8303\u9ED8\u8BA4 960\uFF09\uFF1B\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}": {
         readonly en: "Dynamic mark → velocity → loudness, by the same rule as the instruments (the SoundFont way: loudness = depth ÷ 960 × 40·log10(velocity ÷ 127), full velocity = 0 dB). This performer's velocity depth is {dp} (like the library's voices and sustained instruments such as flute and violin; the SoundFont default is 960); no recorded layers, only loudness changes: {extras}";
     };
-    readonly 哼的字: {
-        readonly en: "Hum syllable";
-    };
-    readonly "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09": {
-        readonly en: "What notes without lyrics sing (one for the whole song)";
+    readonly "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u8FD9\u4E00\u4F4D\u7684\uFF09": {
+        readonly en: "What notes without lyrics are sung as (this performer’s own)";
     };
     readonly "\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE": {
         readonly en: "Advanced: singing core knobs";
@@ -4018,8 +4018,8 @@ export declare const S: {
     readonly 延迟: {
         readonly en: "Delay";
     };
-    readonly "y[n] = x[n]\u00B7dry + d[n]\u00B7mix\uFF08dry \u6CA1\u5199 = 1 \u2212 mix\uFF0Cv0.10.10 \u524D\u7684\u5199\u6CD5\uFF09\uFF0Cd[n] = x[n - D] + fb \u00B7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002": {
-        readonly en: "y[n] = x[n]·dry + d[n]·mix (no dry = 1 − mix, the pre-v0.10.10 form), d[n] = x[n - D] + fb · LP(d[n - D]), LP = one-pole low-pass dampHz. D = timeMs (up to 2 s).";
+    readonly "y[n] = x[n]\u00B7dry + d[n]\u00B7mix\uFF08dry \u6CA1\u5199 = \u53C2\u6570\u8868\u7684\u9ED8\u8BA4 1\uFF0C\u7B2C 16 \u6761\u8D77\uFF1B\u539F\u6765\u6CA1\u5199 = 1 \u2212 mix\uFF09\uFF0Cd[n] = x[n - D] + fb \u00B7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002": {
+        readonly en: "y[n] = x[n]·dry + d[n]·mix (dry not written = the parameter table default 1, from item 16 on; it used to be 1 − mix), d[n] = x[n - D] + fb · LP(d[n - D]), LP = one-pole low-pass at dampHz. D = timeMs (at most 2 s).";
     };
     readonly 时间: {
         readonly en: "Time";
@@ -4336,6 +4336,9 @@ export declare const S: {
     readonly "\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u53EA\u662F\u90A3\u4E9B\u4E1C\u897F\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\uFF0C\u5728\u8FD9\u4E00\u7248\u91CC\u5B58\u4E00\u6B21\uFF0C\u5176\u4E2D\u4E00\u90E8\u5206\u4F1A\u4E22\u3002\u60F3\u539F\u6837\u7559\u7740\uFF0C\u5148\u66F4\u65B0 app \u518D\u6539\u3002": {
         readonly en: "This song was saved by a newer MoonSinger ({p} has things this version doesn’t know): you can still open, edit and save it, but this version can’t show those things, and saving it here will lose some of them. To keep them as they are, update the app before editing.";
     };
+    readonly "\u8FD9\u9996\u6B4C\u7684\u6DF7\u97F3\u53F0\u90A3\u4E00\u4EFD\u8BFB\u4E0D\u61C2\uFF1A\u6BCF\u6761\u8F68\u7684\u63A8\u5B50\u3001\u58F0\u50CF\u6309\u9ED8\u8BA4\u5F00\u7684\uFF08\u603B\u8F68\u7167\u6587\u4EF6\u91CC\u5199\u7684\uFF09\u3002\u5B58\u4E00\u6B21\u5C31\u6309\u73B0\u5728\u7684\u6837\u5B50\u5199\u8FDB\u6587\u4EF6\u3002": {
+        readonly en: "This song’s mixer part cannot be read: each track’s fader and pan opened at their defaults (the master as written in the file). Saving once writes the current state into the file.";
+    };
     readonly "\u58F0\u90E8\u300C{name}\u300D\u548C\u522B\u7684\u58F0\u90E8\u5171\u7528\u4E00\u4EFD\u4E50\u5668\u8BBE\u7F6E\uFF1B\u6BCF\u4E2A\u58F0\u90E8\u6709\u81EA\u5DF1\u7684\u4E50\u5668\uFF0C\u6240\u4EE5\u62C6\u6210\u4E86\u4E24\u4EFD\uFF08\u4E50\u5668\u548C\u8BBE\u7F6E\u90FD\u7167\u6284\uFF09\u3002": {
         readonly en: "Part “{name}” shared its instrument settings with another part; every part has its own instrument, so they were split into two copies (instrument and settings copied).";
     };
@@ -4503,15 +4506,6 @@ export declare const S: {
     };
     readonly 这台设备上记着的那一遍: {
         readonly en: "Remembered on this device";
-    };
-    readonly "mp3 \u6CA1\u53D6\u5230\uFF08{blob}\uFF09": {
-        readonly en: "Couldn't get the mp3 ({blob})";
-    };
-    readonly 空: {
-        readonly en: "empty";
-    };
-    readonly "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": {
-        readonly en: "The mp3 stored inside the song";
     };
     readonly "\u6CA1\u80FD\u81EA\u5DF1\u5F00\u59CB\u653E\uFF1A\u70B9\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u7684 \u25B6": {
         readonly en: "Couldn't start playing by itself: tap ▶ on the bottom player bar";

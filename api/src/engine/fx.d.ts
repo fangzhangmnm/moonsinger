@@ -24,6 +24,8 @@ export interface FxInstance {
 }
 /** EQ 在这些频率上的响应（dB；混音台 EQ 页卡片背景上那条曲线，v0.10.11）：同录音房的双二阶系数，|H(e^{jω})| 连乘。 */
 export declare function eqResponseDb(p: Record<string, number>, sr: number, freqs: readonly number[]): number[];
+/** 原声留多少（混响 / 延迟 / 合唱；v0.10.10，user「开了混响结果铃声都哑掉了…标准插件怎么做的？反正fl studio是没有这个问题的」）：
+ *  标准插件原声和湿声是两个旋钮（原声默认 100%，加效果不削原声；当发送的返回轨才把原声关掉）。没写 dry = 参数表的默认（第 16 条起；原来是 1 − mix，同一个键两种「没写」）。 */
 export declare const FX_KINDS: Record<string, FxKindDef>;
 /** 按 FxV2 建实例；不认识的 kind = null（不出声、原样带着）。 */
 export declare function createFx(spec: FxV2, sr: number): FxInstance | null;

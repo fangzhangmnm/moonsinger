@@ -13,7 +13,6 @@ import { requireStore, auth, hasStore, isSignedIn, homeOnline, folderHome } from
 import { currentPolicy } from "./deployment-policy.ts";
 import { cloudOffHtml, SITE_TEXT } from "./app/site-hint.ts";
 import { THUMBNAIL_ENTRY } from "./format/project.ts";
-import { parseFinalRecord, type FinalRecord } from "./format/final.ts";
 import { identifiers } from "./identifiers.ts";
 import { openConfirmSheet, openInputSheet, openChoiceSheet, withBusy } from "./ui/sheets.ts";
 import { iconHtml } from "./ui/icon.ts";
@@ -66,15 +65,13 @@ const THUMB_PEEK_BYTES = 128 * 1024;
 /** 封面上的 ▶（user 2026-10-13「gallery可以试听mp3不用开app」；2026-11-10 定稿退役后换了货源，user「以后统一不存mp3」「本地歌缓存？最好能有锁屏播放？这样我可以听歌」）：
  *  声音 = **这台设备上记着的那一遍**（src/app/render-cache.ts：在歌里导出 / 分享过一次就记着）。歌库不打开歌，靠「文件戳」认：总目录 `.moonsinger/manifest.json` 排在封面前面 = 同一个尾窗里，
  *  它的文本的哈希（stampOf）每存一次都变；卡片的「事实」里带着这个戳（图库包 0.8.0 `policy.facts`，按身份 + 字节版本缓存进 IDB，全删可再生），和挂名时记的戳一样 = 这份声音就是这个文件的 → 画 ▶。
- *  老文件里还带着 mp3 的（退役的定稿：总目录里有 `final`、zip 里有 `.moonsinger/final.mp3`）照旧能听：按 entry 名尾读那一份（本地 = Blob.slice，云端 = byte-range，不整份下载）；这首歌下次存的时候它就不在文件里了。 */
+ *  老文件里还带着的 mp3（退役的定稿）不读、不放（第 16 条 16-3，user「MP3 也不要」）：能放的只有设备上记着的那一遍。 */
 const FACTS_DB = CACHE_DBS.facts;   // 2026-11-03 起带 GUID（原 moonsinger-facts；老库空闲时探到就删，factory-reset.ts dropLegacyCacheDbs）
-/** 卡片的事实（我们这边的形状；包不认识它）：stamp = 这个文件的戳；final = 文件里还带着一份 mp3（老文件）。读不到总目录（别的软件的谱）= null。
- *  老版本缓存下来的事实没有 stamp（那时只记定稿）：照样认它的 final；要认设备上记着的声音得等这首歌的事实重取（挂名的那一下宿主会作废它）。 */
-type SongFacts = { stamp?: string; final?: { rev: number; secs: number } } | null;
+/** 卡片的事实（我们这边的形状；包不认识它）：stamp = 这个文件的戳。读不到总目录（别的软件的谱）= null。 */
+type SongFacts = { stamp?: string } | null;
 const factsOf = (v: unknown): SongFacts => {
-  const o = v as { stamp?: unknown; final?: { rev?: unknown; secs?: unknown } } | null; if (!o || typeof o !== "object") return null;
-  const f = o.final && typeof o.final.rev === "number" ? { rev: o.final.rev, secs: Number(o.final.secs ?? 0) } : undefined;
-  return { ...(typeof o.stamp === "string" ? { stamp: o.stamp } : {}), ...(f ? { final: f } : {}) };
+  const o = v as { stamp?: unknown } | null; if (!o || typeof o !== "object") return null;
+  return typeof o.stamp === "string" ? { stamp: o.stamp } : {};
 };
 const THUMB_DB = CACHE_DBS.thumbs;   // 2026-11-03 起带 GUID（原 moonsinger-thumbs）
 // 包内 zh 默认是 WeebPaint 口吻；会露面的几条换成歌库口吻（其余沿用）。key 必须是包的 GalleryTextKey（类型守着）。
@@ -172,7 +169,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
       // 缩略图：fetch = store getPeek 按身份尾读（source 必填：cloud 绝不落回本地）。null = 到达了但没有（进缓存、显示底色）；抛 = 够不着（不缓存）。
       thumbs: { kinds: ["song"], dbName: THUMB_DB, galleryId: storeKey, fetch: (id, source) => zipFile(id).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: THUMBNAIL_ENTRY, source }) },
       // 事实（0.8.0）：尾读总目录 → 这个文件的戳 + 里面还带不带 mp3；null = 读到了、但没有总目录（别的软件的谱，进缓存）；抛 = 够不着（不缓存，下次再问）
-      facts: { kinds: ["song"], dbName: FACTS_DB, galleryId: storeKey, fetch: async (id, source) => { const m = await peekManifest(id, source); return m ? { stamp: m.stamp, ...(m.final ? { final: { rev: m.final.rev, secs: m.final.mp3.secs } } : {}) } : null; } },
+      facts: { kinds: ["song"], dbName: FACTS_DB, galleryId: storeKey, fetch: async (id, source) => { const m = await peekManifest(id, source); return m ? { stamp: m.stamp } : null; } },
     },
     tile: { aspect: 1 },   // 唱片封面 = 方图（user 2026-10-08「我们这个应该是唱片封面，是矩形的」）
     folderMemory: { get: () => deviceKvGet(KV_FOLDER) ?? "", set: (p) => deviceKvSet(KV_FOLDER, p || null) },
@@ -182,26 +179,23 @@ export function initGalleryHost(d: GalleryHostDeps) {
     text: { lang: lang(), t: (key) => TEXT[key] },
   };
   let gallery: Gallery | null = null;
-  /** 这首的总目录（尾读一次；source 同缩略图：本地优先 / 只看云端）：文件戳 + 老文件里那份 mp3 的记录（没有 = null）。没有总目录 = null；云端不可达 = 抛 → 包不记，下次再问。 */
-  async function peekManifest(id: string, source: "local" | "cloud" = "local"): Promise<{ stamp: string; final: FinalRecord | null } | null> {
+  /** 这首的总目录（尾读一次；source 同缩略图：本地优先 / 只看云端）：文件戳。没有总目录 = null；云端不可达 = 抛 → 包不记，下次再问。 */
+  async function peekManifest(id: string, source: "local" | "cloud" = "local"): Promise<{ stamp: string } | null> {
     const b = await zipFile(id).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: MANIFEST_ENTRY, source });
-    if (!b) return null;
-    const text = await b.text();
-    let final: FinalRecord | null = null;
-    try { final = parseFinalRecord((JSON.parse(text) as { final?: unknown }).final); } catch { /* 总目录读不懂：只有戳 */ }
-    return { stamp: stampOf(text), final };
+    return b ? { stamp: stampOf(await b.text()) } : null;
   }
+
   /** 「旧」那一小标的说明（7-S）：之后改过 / 旧版本的引擎渲的 / 两样都有。 */
   function staleText(src: DeviceSound): string {
     return src.stale && src.old ? _t("渲染缓存里那一遍是改之前、用旧版本的引擎（渲染核心 {v}）渲的：照样能听；播放条上「重新渲染」按现在的样子、用现在的引擎重渲", { v: src.core })
       : src.old ? _t("渲染缓存里那一遍是旧版本的引擎（渲染核心 {v}）渲的：照样能听；播放条上「重新渲染」用现在的引擎重渲", { v: src.core })
       : _t("渲染缓存里那一遍是改之前渲的（之后改过）");
   }
-  /** 这张卡现在有什么声音可听：这台设备上记着的那一遍（挂名的戳 = 这个文件此刻的戳）优先；否则文件里还带着的那份（老文件）；都没有 = null。 */
-  function soundOf(id: string, f: SongFacts): DeviceSound | { k: "embedded"; secs: number } | null {
+  /** 这张卡现在有什么声音可听：这台设备上记着的那一遍（挂名的戳 = 这个文件此刻的戳）；没有 = null。 */
+  function soundOf(id: string, f: SongFacts): DeviceSound | null {
     const link = d.renders.linkOf(storeKey(), id);
     if (link && f?.stamp) return { k: "device", key: link.key, secs: link.meta.secs, stale: link.stamp !== f.stamp, old: renderedByOldCore(link.meta, coreInfo()), core: link.meta.core?.version ?? "?", loop: link.meta.loop ?? null };   // old = 旧版本的渲染核心渲的（7-S）   // loop = 循环那一圈（2026-11-11 起渲的才有）   // 戳对不上 = 文件之后改过（v0.16.101：标「旧」、照样能听；之前是当没有）
-    return f?.final ? { k: "embedded", secs: f.final.secs } : null;
+    return null;
   }
   // ── 迷你播放条（歌库底边）：|▶ 从头放、▶ / ⏸、歌名、时间、循环、✕。出声 = src/app/song-player.ts（<audio> + 系统媒体控件：主屏 PWA 锁屏照放，锁屏 / 控制中心 / 耳机键能控）──
   //   user 2026-10-16「至少在gallery侧能做到锁屏播放吗（可以选择是否loop）」「歌库里面可以设置循环与否」：循环 = 播放条上的开关，这次打开有效，锁屏下照样绕回开头。
@@ -249,15 +243,8 @@ export function initGalleryHost(d: GalleryHostDeps) {
     const stem = identifiers.parse(id)?.stem ?? id;
     try {
       const got = await withBusy(_t("取「{stem}」的声音…", { stem }), async (): Promise<{ blob: Blob; album: string } | null> => {
-        if (src.k === "device") {
-          const r = await d.renders.take(src.key);   // 字节没了（被清过）= 这条作废，卡片上的 ▶ 跟着收掉
-          return r ? { blob: new Blob([r.bytes as unknown as BlobPart], { type: "audio/mpeg" }), album: _t("这台设备上记着的那一遍") } : null;
-        }
-        const m = await peekManifest(id);
-        if (!m?.final) { void gallery?.facts?.invalidate(id); return null; }   // 事实过期了（那份 mp3 已经不在文件里）：清掉让包重问
-        const blob = await zipFile(id).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: m.final.mp3.path, source: "local" });
-        if (!blob || blob.size !== m.final.mp3.bytes) throw new Error(_t("mp3 没取到（{blob}）", { blob: blob ? `${blob.size} ≠ ${m.final.mp3.bytes}` : _t("空") }));
-        return { blob: new Blob([blob], { type: "audio/mpeg" }), album: _t("歌里带着的那份 mp3") };
+        const r = await d.renders.take(src.key);   // 字节没了（被清过）= 这条作废，卡片上的 ▶ 跟着收掉
+        return r ? { blob: new Blob([r.bytes as unknown as BlobPart], { type: "audio/mpeg" }), album: _t("这台设备上记着的那一遍") } : null;
       });
       if (!got) { status(NO_SOUND()); return; }
       const cover = (await gallery?.thumbs?.read(id).catch(() => null))?.blob ?? null;   // 锁屏上的图 = 歌库缓存着的封面（没有 = app 图标）

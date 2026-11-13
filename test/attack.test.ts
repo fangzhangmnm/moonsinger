@@ -64,7 +64,7 @@ describe("音内的起伏（< / > / <>）", () => {
     const { toggleSwell, writeDegree } = await import("../src/score/song.ts");
     let st = initState(); for (const d of [1, 2, 3]) st = writeDegree(st, d, "near");
     st = toggleSwell(st, "<>")!;
-    const o = openBytes("x.mxl", saveMxl({ song: st.song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08" }));
+    const o = openBytes("x.mxl", saveMxl({ song: st.song, extras: emptyExtras(), app: "test", date: "2026-10-08" }));
     const back = o.song.papers[0].tracks[o.song.parts[0].id].filter((t) => t.kind === "note") as NoteTok[];
     eq(JSON.stringify(back.map((t) => swellOf(t) ?? null)), `[null,null,"<>"]`);
   });

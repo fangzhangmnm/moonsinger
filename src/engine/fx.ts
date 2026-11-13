@@ -127,7 +127,7 @@ class Comp implements FxInstance {
 }
 
 // ── 延迟（反馈里一个低通，立体声同长）─────────────────────────────────────────────────────────────────────────────
-const DELAY: FxKindDef = { kind: "delay", name: _t("延迟"), formula: _t("y[n] = x[n]·dry + d[n]·mix（dry 没写 = 1 − mix，v0.10.10 前的写法），d[n] = x[n - D] + fb · LP(d[n - D])，LP = 一阶低通 dampHz。D = timeMs（最长 2 s）。"),
+const DELAY: FxKindDef = { kind: "delay", name: _t("延迟"), formula: _t("y[n] = x[n]·dry + d[n]·mix（dry 没写 = 参数表的默认 1，第 16 条起；原来没写 = 1 − mix），d[n] = x[n - D] + fb · LP(d[n - D])，LP = 一阶低通 dampHz。D = timeMs（最长 2 s）。"),
   params: [
     { id: "timeMs", unit: "ms", min: 1, max: 2000, default: 375, label: _t("时间") }, { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: _t("反馈") },
     { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("原声") }, { id: "dampHz", unit: "Hz", min: 500, max: 20000, default: 6000, label: _t("反馈高切") },
@@ -139,7 +139,7 @@ class Delay implements FxInstance {
   constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; const max = Math.ceil(2 * sr) + 1; this.bufL = new Float32Array(max); this.bufR = new Float32Array(max); this.setParams(p); }
   setParams(p: Record<string, number>): void {
     const g = (k: string) => p[k] ?? DELAY.params.find((d) => d.id === k)!.default;
-    this.D = clamp(Math.round((g("timeMs") / 1000) * this.sr), 1, this.bufL.length - 1); this.fb = clamp(g("feedback"), 0, 0.95); this.mix = clamp(g("mix"), 0, 1); this.dry = dryOf(p, this.mix);
+    this.D = clamp(Math.round((g("timeMs") / 1000) * this.sr), 1, this.bufL.length - 1); this.fb = clamp(g("feedback"), 0, 0.95); this.mix = clamp(g("mix"), 0, 1); this.dry = clamp(g("dry"), 0, 1);
     this.lpK = 1 - Math.exp((-2 * Math.PI * clamp(g("dampHz"), 100, this.sr * 0.45)) / this.sr);
   }
   process(L: Float32Array, R: Float32Array | null, n: number): void {
@@ -180,7 +180,7 @@ class Reverb implements FxInstance {
   }
   setParams(p: Record<string, number>): void {
     const g = (k: string) => p[k] ?? REVERB.params.find((d) => d.id === k)!.default;
-    this.fb = 0.7 + 0.28 * clamp(g("room"), 0, 1); this.damp = clamp(g("damp"), 0, 1) * 0.4; this.mix = clamp(g("mix"), 0, 1); this.dry = dryOf(p, this.mix); this.width = clamp(g("width"), 0, 1);
+    this.fb = 0.7 + 0.28 * clamp(g("room"), 0, 1); this.damp = clamp(g("damp"), 0, 1) * 0.4; this.mix = clamp(g("mix"), 0, 1); this.dry = clamp(g("dry"), 0, 1); this.width = clamp(g("width"), 0, 1);
     this.preD = clamp(Math.round((g("preDelayMs") / 1000) * this.sr), 0, this.pre.length - 1);
   }
   process(L: Float32Array, R: Float32Array | null, n: number): void {
@@ -214,7 +214,7 @@ class Chorus implements FxInstance {
   setParams(p: Record<string, number>): void {
     const g = (k: string) => p[k] ?? CHORUS.params.find((d) => d.id === k)!.default;
     this.voices = clamp(Math.round(g("voices")), 1, 4); this.delay = (clamp(g("delayMs"), 5, 40) / 1000) * this.sr; this.depth = (clamp(g("depthMs"), 0, 10) / 1000) * this.sr;
-    this.rate = clamp(g("rateHz"), 0.05, 5); this.spread = clamp(g("spread"), 0, 1); this.mix = clamp(g("mix"), 0, 1); this.dry = dryOf(p, this.mix);
+    this.rate = clamp(g("rateHz"), 0.05, 5); this.spread = clamp(g("spread"), 0, 1); this.mix = clamp(g("mix"), 0, 1); this.dry = clamp(g("dry"), 0, 1);
   }
   process(L: Float32Array, R: Float32Array | null, n: number): void {
     if (!this.on) return;
@@ -247,8 +247,7 @@ class Gain implements FxInstance {
 }
 
 /** 原声留多少（混响 / 延迟 / 合唱；v0.10.10，user「开了混响结果铃声都哑掉了…标准插件怎么做的？反正fl studio是没有这个问题的」）：
- *  标准插件原声和湿声是两个旋钮（原声默认 100%，加效果不削原声；当发送的返回轨才把原声关掉）。没写 dry = 原来的交叉混合 1 − mix（旧歌逐样本不变）。 */
-function dryOf(p: Record<string, number>, mix: number): number { return p.dry === undefined || !Number.isFinite(p.dry) ? 1 - mix : clamp(p.dry, 0, 1); }
+ *  标准插件原声和湿声是两个旋钮（原声默认 100%，加效果不削原声；当发送的返回轨才把原声关掉）。没写 dry = 参数表的默认（第 16 条起；原来是 1 − mix，同一个键两种「没写」）。 */
 export const FX_KINDS: Record<string, FxKindDef> = { eq: EQ, comp: COMP, delay: DELAY, reverb: REVERB, chorus: CHORUS, gain: GAIN };
 /** 按 FxV2 建实例；不认识的 kind = null（不出声、原样带着）。 */
 export function createFx(spec: FxV2, sr: number): FxInstance | null {

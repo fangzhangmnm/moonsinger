@@ -31,6 +31,8 @@ export type Engine = "tsukuyomi" | "vowel-sampler" | "soundfont" | "unknown";
 export interface PerformerInfo {
   /** 引擎名（= 插件英文名；诊断 / 记号解读表 perform.ts 用）。 */
   engine: Engine;
+  /** 这一位的哼的字（没写歌词的音唱什么；第 16 条 16-3 起只存在乐手身上、每位各自的）。 */
+  hum: Hum;
   /** 上场那位的插件；null = 还没有人上场（认不出的引擎也算；ADR-0004）。出声方式 / 叠音 / 唱不唱字都问它。 */
   plugin: PerformerPlugin | null;
   spec: PerfSpec & { gapSec: number; sing: Record<string, SingMark | null> };
@@ -58,7 +60,6 @@ export interface TimelineInput {
   /** 出声的声部（静音 / 独奏已经筛过）。 */
   parts: PartDef[];
   info: (part: PartDef) => PerformerInfo;
-  hum: Hum;
   /** 月读核心的哼的参数（main.ts humOpt）；进内容键。 */
   singOpt: Record<string, unknown>;
 }
@@ -98,6 +99,18 @@ export function sungPlan(tokens: Token[], tempoMap: TempoMap | undefined, bounds
   const at: SingLang[] = new Array(tokens.length).fill(langs[0] ?? prev);
   ranges.forEach(([a, b], k) => { for (let i = a; i < tokens.length && (i < b || !ranges[k + 1]); i++) at[i] = langs[k]; });
   return { ranges, langs, at };
+}
+/** 一个声部每个音唱的时候按哪种语言（token id → 语言）：和唱的时候同一份 sungPlan（按编排压平 + 速度表 + 这位的分段唱）；编排没点到 / 隐藏的纸压不进来 = 那张纸自己算
+ *  （没速度表，段界只差在卡着 0.25 s 的休止上）。画灰（main.ts lyricMutes）和写文件的 xml:lang（project.ts，第 16 条 16-3）都问这一处，不各算各的。 */
+export function sungLangsOf(song: Song, order: readonly string[], partId: string, mode: SingChunkMode, hum: Hum): Map<number, SingLang> {
+  const map = timeMapOf(song, order), flat = flattenPart(song, partId, { order }), fl = sungPlan(flat.tokens, map, flat.starts.map((s) => s.index), mode, hum).at;
+  const out = new Map<number, SingLang>(flat.tokens.map((t, i) => [t.id, fl[i]!]));
+  for (const paper of song.papers) {
+    const toks = paper.tracks[partId]; if (!toks || !toks.some((t) => !out.has(t.id))) continue;
+    const own = sungPlan(toks, undefined, [], mode, hum).at;
+    toks.forEach((t, i) => { if (!out.has(t.id)) out.set(t.id, own[i]!); });
+  }
+  return out;
 }
 
 /** 整条声部只有一种语言时它是哪种（sungPlan 的兜底：整条没写歌词时哼什么；debug 面板的整首唱谱）：歌词里有汉字、没有假名 → 中；有字母、没假名汉字 → 英；其余按日语。 */
@@ -156,7 +169,7 @@ export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, ma
 export const HUM_KANA: Record<Hum, string> = { la: "ら", n: "ん", u: "う", o: "お", a: "あ" };
 
 export function buildTimeline(inp: TimelineInput): Timeline {
-  const { song, order, hum } = inp;
+  const { song, order } = inp;
   const map = timeMapOf(song, order), gmap = grooveMapOf(song, order);   // 时间表 = 速度 + 摇摆（v0.9.36：三种演奏者同一个扭曲）
   const flats = new Map<string, { tokens: Token[]; starts: { index: number; paper: PaperSeg }[] }>();
   const flat = (partId: string) => { let f = flats.get(partId); if (!f) { f = flattenPart(song, partId, { order }); flats.set(partId, f); } return f; };
@@ -174,11 +187,11 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const rolls = info.plugin.honors.includes("roll");
     const gain: GainSeg[] | null = gainSegments(tokens, map, info.spec, bounds, groove, byVel, curve, rolls);
     if (info.plugin.sound === "chunks") {   // 慢引擎：按句出块（谁唱由 worker 按插件定；现在只有小月相）
-      const plan = sungPlan(tokens, map, bounds, info.chunk, hum);   // 段 + 每段的语言（画灰也走它）
+      const plan = sungPlan(tokens, map, bounds, info.chunk, info.hum);   // 段 + 每段的语言（画灰也走它）
       const noteAt = (a: number) => tl.find((x) => x.index >= a && x.tok.kind === "note")?.t0 ?? 0;
       const clips: TrackSpec & { kind: "clips" } = { id: part.id, kind: "clips", clips: [], gain, ...(info.chain?.length ? { chain: info.chain } : {}) };
       for (const [k, [a, b]] of plan.ranges.entries()) {
-        const lang = plan.langs[k], te = new Map<number, number>(), score = toLabScore(tokens, hum, lang, map, info.spec.sing, [a, b], te);
+        const lang = plan.langs[k], te = new Map<number, number>(), score = toLabScore(tokens, info.hum, lang, map, info.spec.sing, [a, b], te);
         if (!score.SCORE.length) continue;
         const entryOf = new Map<number, number>(); for (const [i, e] of te) entryOf.set(tokens[i].id, e);
         const first = noteAt(a), last = tl.filter((x) => x.index >= a && x.index < b && x.tok.kind === "note").reduce((m, x) => Math.max(m, x.t1), first);
@@ -200,7 +213,7 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     // 踏板（11-1）：键按多久 = 谱上的延音踏板 → 照写的时值（score/pedal.ts）。这位不认踏板 = 照写的（记号画灰、明说）
     const notes = info.plugin.pedals?.includes("sustain") ? holdBySustain(notes0, sustainSpans(tokens, map, bounds)) : notes0;
     // 快引擎：音符表 → 这位的轨，怎么拼归插件（元音版 / SoundFont 的键 / 着力点都在它自己那里；ADR-0004）
-    const built = info.plugin.track?.({ id: part.id, notes, gain, ...(info.chain?.length ? { chain: info.chain } : {}), hum, info });
+    const built = info.plugin.track?.({ id: part.id, notes, gain, ...(info.chain?.length ? { chain: info.chain } : {}), hum: info.hum, info });
     if (!built) { unplayable.push({ part: part.id, why: _t("「{label}」不会按音符表出声", { label: info.plugin.label }) }); continue; }
     if ("unplayable" in built) { unplayable.push({ part: part.id, why: built.unplayable }); continue; }
     if (built.from !== undefined) from = Math.min(from, built.from);   // 着力点提前了的音：比第一个音还早 = 时间线从那儿起（同月读的辅音提前）

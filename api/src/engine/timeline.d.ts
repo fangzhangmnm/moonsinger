@@ -18,6 +18,8 @@ export type Engine = "tsukuyomi" | "vowel-sampler" | "soundfont" | "unknown";
 export interface PerformerInfo {
     /** 引擎名（= 插件英文名；诊断 / 记号解读表 perform.ts 用）。 */
     engine: Engine;
+    /** 这一位的哼的字（没写歌词的音唱什么；第 16 条 16-3 起只存在乐手身上、每位各自的）。 */
+    hum: Hum;
     /** 上场那位的插件；null = 还没有人上场（认不出的引擎也算；ADR-0004）。出声方式 / 叠音 / 唱不唱字都问它。 */
     plugin: PerformerPlugin | null;
     spec: PerfSpec & {
@@ -53,7 +55,6 @@ export interface TimelineInput {
     /** 出声的声部（静音 / 独奏已经筛过）。 */
     parts: PartDef[];
     info: (part: PartDef) => PerformerInfo;
-    hum: Hum;
     /** 月读核心的哼的参数（main.ts humOpt）；进内容键。 */
     singOpt: Record<string, unknown>;
 }
@@ -113,6 +114,9 @@ export interface SungPlan {
     at: SingLang[];
 }
 export declare function sungPlan(tokens: Token[], tempoMap: TempoMap | undefined, bounds: readonly number[], mode: SingChunkMode, hum: Hum): SungPlan;
+/** 一个声部每个音唱的时候按哪种语言（token id → 语言）：和唱的时候同一份 sungPlan（按编排压平 + 速度表 + 这位的分段唱）；编排没点到 / 隐藏的纸压不进来 = 那张纸自己算
+ *  （没速度表，段界只差在卡着 0.25 s 的休止上）。画灰（main.ts lyricMutes）和写文件的 xml:lang（project.ts，第 16 条 16-3）都问这一处，不各算各的。 */
+export declare function sungLangsOf(song: Song, order: readonly string[], partId: string, mode: SingChunkMode, hum: Hum): Map<number, SingLang>;
 /** 整条声部只有一种语言时它是哪种（sungPlan 的兜底：整条没写歌词时哼什么；debug 面板的整首唱谱）：歌词里有汉字、没有假名 → 中；有字母、没假名汉字 → 英；其余按日语。 */
 export declare function songLangOf(tokens: readonly Token[], hum: Hum): SingLang;
 /** 滚奏一下的力度（7-N）：perform.ts rollHitVelocity 给的那个函数。 */

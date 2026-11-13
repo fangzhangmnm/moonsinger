@@ -34,7 +34,7 @@ describe("叠音", () => {
     st = toggleChordPitch(st, 3, P("E", 4)); st = toggleChordPitch(st, 3, P("G", 4));
     const toks = tr(st).slice();
     const song = { ...st.song, papers: [{ ...st.song.papers[0], tracks: { P1: toks } }] };
-    const bytes0 = saveMxl({ song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08T00:00:00Z" });
+    const bytes0 = saveMxl({ song, extras: emptyExtras(), app: "test", date: "2026-10-08T00:00:00Z" });
     // 老版本存的：score.json papers[0].phrases = 第一个音后面一个句号
     const z = unzipSync(bytes0), sj = JSON.parse(strFromU8(z[".moonsinger/score.json"])); sj.papers[0].phrases = { P1: [toks[3].id] };
     z[".moonsinger/score.json"] = strToU8(JSON.stringify(sj));

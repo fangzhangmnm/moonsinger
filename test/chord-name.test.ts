@@ -222,7 +222,7 @@ describe("声部开关：不认分解和弦", () => {
     const st = initState(), off = setPartChords(st, st.at.part, "stacked");
     eq(setPartChords(st, st.at.part, "auto"), st, "本来就开 = 不变");
     eq(off.song.parts[0].chords, "stacked"); eq(setPartChords(off, st.at.part, "auto").song.parts[0].chords, undefined, "再开 = 不写");
-    const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-11-09T00:00:00.000Z" });
+    const save = (s: Song) => saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-11-09T00:00:00.000Z" });
     eq(songViewOf(openBytes("x.mxl", save(off.song)).song).chordsOf(st.at.part), "stacked");
     eq(openBytes("x.mxl", save(st.song)).song.parts[0].chords, undefined);
   });

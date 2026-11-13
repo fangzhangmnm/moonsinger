@@ -59,12 +59,12 @@ describe("编排：存、放、导出", () => {
     const { saveMxl, openBytes, emptyExtras } = await import("../src/format/project.ts");
     const { unzipSync, strFromU8 } = await import("../vendor/fflate/fflate.esm.js");
     const st = setArrangement(await two(), "B [A]");
-    const bytes = saveMxl({ song: st.song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08" });
+    const bytes = saveMxl({ song: st.song, extras: emptyExtras(), app: "test", date: "2026-10-08" });
     eq(openBytes("x.mxl", bytes).song.arrangement, "B [A]");
     const flat = strFromU8(unzipSync(bytes)["score.musicxml"]);
     eq([...flat.matchAll(/<step>([A-G])</g)].map((m) => m[1]).join(" "), "D E C", "B 的两个音在前，A 的在后");
     eq([...flat.matchAll(/<rehearsal[^>]*>([^<]*)</g)].map((m) => m[1]).join(" "), "A", "第二段起写排练记号 = 曲段名");
-    eq("arrangement" in openBytes("x.mxl", saveMxl({ song: (await two()).song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08" })).song, false, "没写 = 不落字段");
+    eq("arrangement" in openBytes("x.mxl", saveMxl({ song: (await two()).song, extras: emptyExtras(), app: "test", date: "2026-10-08" })).song, false, "没写 = 不落字段");
   });
 });
 

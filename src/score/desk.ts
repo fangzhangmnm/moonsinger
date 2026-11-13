@@ -11,8 +11,7 @@ import { SCALES } from "./scales.ts";
 export type PadUnit = "32nd" | "16th" | "eighth" | "quarter" | "half" | "whole";
 export const PAD_UNITS: readonly PadUnit[] = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 /** pad 的状态。low = 音域窗口最低那个键的 MIDI（换个行数 / 键位的设备也落在差不多的音域）；null = 默认那一档。 */
-/** auto = 「1=」跟谱（v0.16.9；新歌默认）。文件里不另加字段：写了 fifths / scale = 手动（手动 1=C 大调也写 fifths: 0），都没写 = 跟谱——
- *  v0.16.8 及以前存的歌里写着 1= / 调式的 = 当时拨过 = 手动；没写的 = 当时是 1=C 大调、现在跟谱（新歌的谱头本来就是 C）。 */
+/** auto = 「1=」跟谱（v0.16.9；新歌默认）。第 16 条起文件里明写 auto（原来靠有没有写 fifths 来判、没写 = 跟谱）；没写 auto = 跟谱。 */
 export interface PadDesk { auto: boolean; fifths: number; scale: string; unit: PadUnit; tuplet: 0 | 3 | 5 | 6 | 7; low: number | null }
 export const freshPad = (): PadDesk => ({ auto: true, fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });   // 同 song.ts initInput（八分 = DEFAULT_UNIT）
 export interface PartViewState { hidden: boolean; only: boolean; muted: boolean; solo: boolean }
@@ -22,23 +21,17 @@ export const freshPartView = (): PartViewState => ({ hidden: false, only: false,
 export interface RefPanelDesk { open: boolean; left: number; top: number; width: number; height: number }
 /** pdf = 乐谱 PDF 的字体（导出面板里选的；同 mp3 音质跟着这首歌走、不标脏；2026-10-09 Opus 5.5，user「字体可以选普通的和那个拼音可爱的」）。 */
 /** scroll = 排法「横卷」（v0.9.35；一行无限往右；和 pageFlow 互斥，两个都写着 = 横卷说了算）。 */
-/** mode = 打开时进哪个模式（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」）：存的时候记下当时的模式，默认「音」不写。 */
+/** mode = 打开时进哪个模式（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」）：存的时候记下当时的模式（第 16 条起默认「音」也写）。 */
 /** 乐器目录翻到哪（v0.16.6，user 11-07「乐器列表记录滚动位置的话，是每个文件自己记录，不是用户设置…即兴的滚动归 App 记，然后文件内的滚动归文件记」）：
  *  mode = 排序；open = 每种排序展开的那一组；scroll = 列表滚到哪（px）；row = 点开的那一件（「组::概念」）；pick = 试听台上的那一位。
  *  在歌里打开的 = 这首歌的视图态（下面 Desk.finder，存时顺手带、不标脏、不进撤销）；从歌库「即兴」打开的 = 设备上的一个键（main.ts KV_FINDER_IMPRO）。 */
 export interface FinderMemo { mode: string; open: Record<string, string>; scroll: number; row: string | null; pick: string }
 export const FINDER_MODES = ["year", "style", "family", "hs"] as const;
 export const freshFinderMemo = (): FinderMemo => ({ mode: "year", open: {}, scroll: 0, row: null, pick: "" });
-/** 文件 / 设备里的形状（只写不是默认的；全默认 = 不写）。 */
-export interface FinderMemoJson { mode?: string; open?: Record<string, string>; scroll?: number; row?: string; pick?: string }
-export function serializeFinderMemo(m: FinderMemo): FinderMemoJson | null {
-  const o: FinderMemoJson = {};
-  if (m.mode !== "year") o.mode = m.mode;
-  if (Object.keys(m.open).length) o.open = { ...m.open };
-  if (m.scroll > 0) o.scroll = Math.round(m.scroll);
-  if (m.row) o.row = m.row;
-  if (m.pick) o.pick = m.pick;
-  return Object.keys(o).length ? o : null;
+/** 文件里的形状：每一项都明写（第 16 条 16-3，2026-11-12：不靠「只写不是默认的」省字）。 */
+export interface FinderMemoJson { mode: string; open: Record<string, string>; scroll: number; row: string | null; pick: string }
+export function serializeFinderMemo(m: FinderMemo): FinderMemoJson {
+  return { mode: m.mode, open: { ...m.open }, scroll: Math.round(m.scroll), row: m.row, pick: m.pick };
 }
 /** 宽容：不认识的排序 / 不是字符串 / 不是有限的数 = 那一项默认。 */
 export function unserializeFinderMemo(json: unknown): FinderMemo {
@@ -55,33 +48,17 @@ export function unserializeFinderMemo(json: unknown): FinderMemo {
 export interface Desk { scope: "all" | "segment"; pageFlow: boolean; scroll: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk; ref: RefPanelDesk | null; mode: "notes" | "lyrics" | "symbols" | "listen"; finder: FinderMemo }
 export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, mode: "notes", finder: freshFinderMemo() });
 
-/** 文件里的形状（只写非默认值；全默认 = 不写这个字段）。 */
-export interface DeskJson { scope?: "all"; pageFlow?: true; scroll?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson; ref?: { open?: true; left: number; top: number; width: number; height: number }; mode?: "lyrics" | "symbols" | "listen"; finder?: FinderMemoJson }
-/** pad 在文件里的形状：只写不是默认的；全默认 = 不写。 */
-export interface PadJson { fifths?: number; scale?: string; unit?: PadUnit; tuplet?: 3 | 5 | 6 | 7; low?: number }
-export function serializeDesk(d: Desk): DeskJson | null {
-  const out: DeskJson = {};
-  if (d.scope === "all") out.scope = "all";
-  if (d.mp3 === "small") out.mp3 = "small";
-  if (d.mode !== "notes") out.mode = d.mode;
-  if (d.scroll) out.scroll = true; else if (d.pageFlow) out.pageFlow = true;
-  if (d.paper) out.paper = d.paper;
-  const parts: NonNullable<DeskJson["parts"]> = {};
-  for (const [id, p] of Object.entries(d.parts)) {
-    const v: { hidden?: true; only?: true; muted?: true; solo?: true } = {};
-    if (p.hidden) v.hidden = true; if (p.only) v.only = true; if (p.muted) v.muted = true; if (p.solo) v.solo = true;
-    if (Object.keys(v).length) parts[id] = v;
-  }
-  if (Object.keys(parts).length) out.parts = parts;
-  const pd = d.pad, def = freshPad(), pj: PadJson = {};
-  if (!pd.auto) { pj.fifths = pd.fifths; if (pd.scale !== def.scale) pj.scale = pd.scale; }   // 手动 = 一定写 fifths（跟谱 = 都不写）
-  if (pd.unit !== def.unit) pj.unit = pd.unit;
-  if (pd.tuplet) pj.tuplet = pd.tuplet;
-  if (pd.low !== null) pj.low = pd.low;
-  if (Object.keys(pj).length) out.pad = pj;
-  if (d.ref) { const { open, left, top, width, height } = d.ref; out.ref = { ...(open ? { open: true as const } : {}), left, top, width, height }; }
-  const fm = serializeFinderMemo(d.finder); if (fm) out.finder = fm;
-  return Object.keys(out).length ? out : null;
+/** 文件里的形状：每一项都明写（第 16 条 16-3，2026-11-12）。读的时候各项各自宽容：不认识 / 越界 = 那一项默认。 */
+export interface DeskJson { scope: "all" | "segment"; pageFlow: boolean; scroll: boolean; paper: string | null; parts: Record<string, { hidden: boolean; only: boolean; muted: boolean; solo: boolean }>; mp3: "standard" | "small"; pad: PadJson; ref: { open: boolean; left: number; top: number; width: number; height: number } | null; mode: Desk["mode"]; finder: FinderMemoJson }
+/** pad 在文件里的形状：每一项都明写；跟谱 / 手动 = auto（第 16 条：原来靠有没有写 fifths 来判，一个键带了两个意思）。 */
+export interface PadJson { auto: boolean; fifths: number; scale: string; unit: PadUnit; tuplet: 0 | 3 | 5 | 6 | 7; low: number | null }
+export function serializeDesk(d: Desk): DeskJson {
+  const parts: DeskJson["parts"] = {};
+  for (const [id, p] of Object.entries(d.parts)) parts[id] = { hidden: p.hidden, only: p.only, muted: p.muted, solo: p.solo };
+  const pd = d.pad;
+  return { scope: d.scope, pageFlow: d.pageFlow && !d.scroll, scroll: d.scroll, paper: d.paper, parts, mp3: d.mp3,
+    pad: { auto: pd.auto, fifths: pd.fifths, scale: pd.scale, unit: pd.unit, tuplet: pd.tuplet, low: pd.low },
+    ref: d.ref ? { open: d.ref.open, left: d.ref.left, top: d.ref.top, width: d.ref.width, height: d.ref.height } : null, mode: d.mode, finder: serializeFinderMemo(d.finder) };
 }
 /** 读文件里的（宽容：不是对象 / 字段不认识 = 当默认；别家 / 更新版写的多余字段不管）。 */
 export function unserializeDesk(json: unknown): Desk {
@@ -104,8 +81,9 @@ export function unserializeDesk(json: unknown): Desk {
   }
   if (j.pad && typeof j.pad === "object") {   // 每一项各自宽容：不认识 / 越界 = 那一项默认
     const q = j.pad as Record<string, unknown>;
-    if (Number.isInteger(q.fifths) && Math.abs(q.fifths as number) <= 7) { d.pad.fifths = q.fifths as number; d.pad.auto = false; }
-    if (typeof q.scale === "string" && SCALES.some((sc) => sc.id === q.scale)) d.pad.scale = q.scale;   // 调式照写的读；跟谱 / 手动只看有没有写 fifths（第 16 条：不再把「只写了调式」猜成手动）
+    if (Number.isInteger(q.fifths) && Math.abs(q.fifths as number) <= 7) d.pad.fifths = q.fifths as number;
+    if (q.auto === false) d.pad.auto = false;   // 跟谱 / 手动只看 auto（第 16 条：没写 = 默认跟谱；不再拿有没有写 fifths 来判）
+    if (typeof q.scale === "string" && SCALES.some((sc) => sc.id === q.scale)) d.pad.scale = q.scale;   // 调式照写的读
     if (PAD_UNITS.includes(q.unit as PadUnit)) d.pad.unit = q.unit as PadUnit;
     if (q.tuplet === 3 || q.tuplet === 5 || q.tuplet === 6 || q.tuplet === 7) d.pad.tuplet = q.tuplet;
     if (Number.isInteger(q.low) && (q.low as number) >= 0 && (q.low as number) <= 127) d.pad.low = q.low as number;

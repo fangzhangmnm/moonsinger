@@ -20,7 +20,7 @@ describe("声部上下挪", () => {
   });
   it("存 → 开：顺序留着", () => {
     const m = movePart(movePart(st, "P3", -1), "P3", -1);
-    const o = openBytes("x.mxl", saveMxl({ song: m.song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08T00:00:00.000Z" }));
+    const o = openBytes("x.mxl", saveMxl({ song: m.song, extras: emptyExtras(), app: "test", date: "2026-10-08T00:00:00.000Z" }));
     eq(o.song.parts.map((p) => p.id).join(","), "P3,P1,P2");
   });
 });

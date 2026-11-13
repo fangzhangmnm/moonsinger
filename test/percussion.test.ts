@@ -122,8 +122,8 @@ describe("鼓谱：着力点", () => {
     const pid = st.song.parts[0].id, pp = st.song.papers[0];
     const songX: Song = { ...st.song, papers: [{ ...pp, tracks: { [pid]: [...pp.tracks[pid].slice(0, headLen(pp.tracks[pid])), key(60), key(60)] } }, ...st.song.papers.slice(1)] };
     const spec = activePerfSpec(emptyExtras(), "r"), Q = 60 / DEFAULT_BPM;
-    const info = (hit?: (k: number) => number): PerformerInfo => ({ engine: "soundfont", plugin: performerOf("soundfont"), spec, velocity: 0.8, transpose: 0, gm: { sha: "S", presetIndex: 3, note: 60 }, chunk: "phrase", follow: () => 0, ...(hit ? { hitSec: hit } : {}) });
-    const b = (i: PerformerInfo) => buildTimeline({ song: songX, order: songX.papers.map((p) => p.id), parts: songX.parts as PartDef[], info: () => i, hum: "n", singOpt: { leadIn: LEAD_IN } });
+    const info = (hit?: (k: number) => number): PerformerInfo => ({ engine: "soundfont", hum: "n", plugin: performerOf("soundfont"), spec, velocity: 0.8, transpose: 0, gm: { sha: "S", presetIndex: 3, note: 60 }, chunk: "phrase", follow: () => 0, ...(hit ? { hitSec: hit } : {}) });
+    const b = (i: PerformerInfo) => buildTimeline({ song: songX, order: songX.papers.map((p) => p.id), parts: songX.parts as PartDef[], info: () => i, singOpt: { leadIn: LEAD_IN } });
     const plain = b(info()), rev = b(info(() => REV.hitSec!));
     const n0 = plain.tracks[0].kind === "sf" ? plain.tracks[0].notes : [], n1 = rev.tracks[0].kind === "sf" ? rev.tracks[0].notes : [];
     assert(Math.abs(n0[1].t0 - Q) < 1e-9, "不挪：第二拍");

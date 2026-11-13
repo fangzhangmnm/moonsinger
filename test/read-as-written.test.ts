@@ -13,14 +13,14 @@ describe("乐手读不到 ≠ 小月相", () => {
   it("歌里没有这个声部的乐手 = 没人上场（不是小月相）；存的时候不替它造一位", () => {
     const song = initState().song, role = song.parts[0]!.role;
     eq(activeInstrument(emptyExtras(), role), null); eq(activeId(emptyExtras(), role), ""); eq(candidates(emptyExtras(), role).length, 0);
-    const files = unzipSync(saveMxl({ song, hum: "n", extras: emptyExtras(), app: "t", date: "2026-11-12T00:00:00.000Z" }));
+    const files = unzipSync(saveMxl({ song, extras: emptyExtras(), app: "t", date: "2026-11-12T00:00:00.000Z" }));
     assert(!Object.keys(files).some((p) => p.startsWith(".moonsinger/lounge/")), "没有乐手的声部存的时候不写休息室");
-    eq(activeInstrument(openBytes("x.mxl", saveMxl({ song, hum: "n", extras: emptyExtras(), app: "t", date: "2026-11-12T00:00:00.000Z" })).extras, role), null, "读回来还是没人上场");
+    eq(activeInstrument(openBytes("x.mxl", saveMxl({ song, extras: emptyExtras(), app: "t", date: "2026-11-12T00:00:00.000Z" })).extras, role), null, "读回来还是没人上场");
   });
   it("新歌按模板把乐手写进去：每个声部都有、上场的是小月相；存了再开一样", () => {
     const song = initState().song, x: Extras = templateExtras(song), role = song.parts[0]!.role;
     eq(activeInstrument(x, role)?.engine, "tsukuyomi");
-    eq(activeInstrument(openBytes("x.mxl", saveMxl({ song, hum: "n", extras: x, app: "t", date: "2026-11-12T00:00:00.000Z" })).extras, role)?.engine, "tsukuyomi");
+    eq(activeInstrument(openBytes("x.mxl", saveMxl({ song, extras: x, app: "t", date: "2026-11-12T00:00:00.000Z" })).extras, role)?.engine, "tsukuyomi");
   });
 });
 
@@ -54,6 +54,7 @@ describe("结构：没有升级链；开歌时不补不理顺", () => {
   });
   it("开歌（main.ts loadDocInner）不补力度、不理顺先后：只有人改谱时补（document 的 normalize）", () => {
     const src = fs.readFileSync(new URL("src/app/main.ts", ROOT), "utf8"), i = src.indexOf("function loadDocInner("), body = src.slice(i, src.indexOf("\n}\n", i));
-    assert(i > 0 && !/ensureStartDyns|withStartDyns/.test(body.replace(/\/\/.*$/gm, "")), "loadDocInner 里又补力度了");
+    const code = body.replace(/\/\/.*$/gm, "");
+    assert(i > 0 && !/withStartDyns/.test(code) && /D\.load\(st0,/.test(code), "loadDocInner 里又补力度了（只许数：ensureStartDyns(...).added.length）");
   });
 });

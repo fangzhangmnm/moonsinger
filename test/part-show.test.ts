@@ -70,7 +70,7 @@ describe("老文件照文件读（第 16 条，user 定的甲：「照文件显�
 describe("存与读（12-4）", () => {
   const extras = (): Extras => ({ ...emptyExtras(), lounge: { r1: role({ id: "r1", concept: flute, sound: "wind.flutes.flute" }) as never } });
   const partNameIn = (b: Uint8Array) => /<part-name>([^<]*)<\/part-name>/.exec(strFromU8(unzipSync(b)["score.musicxml"]!))?.[1];
-  const save = (song: Song, x: Extras) => saveMxl({ song, hum: song.hum, extras: x, app: "t", date: "2026-11-12T00:00:00.000Z" });
+  const save = (song: Song, x: Extras) => saveMxl({ song, extras: x, app: "t", date: "2026-11-12T00:00:00.000Z" });
   it("<part-name>：没起 + 跟着界面 = 英文叫法；钉了中文 = 中文；起了 = 名字", () => {
     const song = songWith(1);
     eq(partNameIn(save(song, extras())), "Flute");
@@ -100,7 +100,7 @@ describe("同一个概念老歌新歌一个叫法（12-4 改口，统筹守卫�
   });
   it("存的时候按值写现行的叫法（不沿用旧的）", () => {
     const old = openBytes("old.mxl", fs.readFileSync(new URL("test/fixtures/format/minor/lounge-0-unnamed/sample.mxl", ROOT)));
-    const back = openBytes("x.mxl", saveMxl({ song: old.song, hum: old.hum, extras: old.extras, app: "t", date: "2026-11-12T00:00:00.000Z" }));
+    const back = openBytes("x.mxl", saveMxl({ song: old.song, extras: old.extras, app: "t", date: "2026-11-12T00:00:00.000Z" }));
     const c = (back.extras.lounge.r1 as { concept: Concept }).concept; eq(c.score?.en, CONCEPT_LABELS.byWikidata["Q209554"]!.score.en); eq(c.abbr?.en, "Fl.");
   });
 });

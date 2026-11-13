@@ -16,10 +16,12 @@ export interface PartInfo {
     pan?: number;
 }
 /** 一条声部：谁 + 一串 token；breaks = 从哪些 token 下标起是新的一页（压平件的纸界：token 下标 → 曲段名，第一个声部写排练记号）。 */
+/** langs = 每个 token 唱的时候按哪种语言（和 tokens 一一对应；写每个音节的 xml:lang 用它，第 16 条 16-3：写文件和唱同一条规矩）；不给 = 按逐音节的规矩（lang.ts syllableLangs）。 */
 export interface PartXml {
     info: PartInfo;
     tokens: Token[];
     breaks?: Map<number, string>;
+    langs?: readonly (string | null)[];
 }
 /** padMeasures = 各声部小节数不等时补整小节休止（给别的软件看的压平件要；自家正本不补——读回来会多出休止）。 */
 export interface ScoreXml {

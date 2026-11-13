@@ -6,7 +6,7 @@ const fs = (await import("node:fs" as string)) as {
   readFileSync(u: URL, enc: "utf8"): string; readFileSync(u: URL): Uint8Array;
   readdirSync(u: URL): string[]; existsSync(u: URL): boolean;
 };
-import { saveMxl, openBytes, activeInstrument, contentFingerprintOf, FORMAT } from "../src/format/project.ts";
+import { saveMxl, openBytes, activeInstrument, activeHum, contentFingerprintOf, FORMAT } from "../src/format/project.ts";
 import { FORMAT_MINOR, FORMAT_PATCH } from "../src/format/contract.ts";
 import { roleGivenName } from "../src/format/part-show.ts";
 import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
@@ -19,7 +19,7 @@ type Json = Record<string, unknown>;
 const KINDS = ["manifest", "score", "lounge", "studio"] as const;
 function writeNow(): Record<(typeof KINDS)[number], Json> & { loungeAll: Json[] } {
   const song = sampleSong();
-  const files = unzipSync(saveMxl({ song, hum: song.hum, extras: sampleExtras(song), app: "guard", date: "2026-10-07T00:00:00.000Z", view: sampleView() }));   // 2026-10-13：样本的休息室 / 录音房把可选字段都摆上（F-18）
+  const files = unzipSync(saveMxl({ song, extras: sampleExtras(song), app: "guard", date: "2026-10-07T00:00:00.000Z", view: sampleView() }));   // 2026-10-13：样本的休息室 / 录音房把可选字段都摆上（F-18）
   const json = (p: string): Json => JSON.parse(strFromU8(files[p]));
   return { manifest: json(".moonsinger/manifest.json"), score: json(".moonsinger/score.json"), lounge: json(".moonsinger/lounge/r1.json"), studio: json(".moonsinger/studio.json"),
     loungeAll: Object.keys(files).filter((p) => /^\.moonsinger\/lounge\/r\d+\.json$/.test(p)).sort().map(json) };   // 2026-10-13：形状看所有角色的并集（第二位的乐器概念 / SoundFont 演奏者在 r2）
@@ -60,24 +60,26 @@ describe("持久化守卫", () => {
     try { openBytes("x.mxl", sampleWith(".moonsinger/manifest.json", (j) => ({ ...j, version: FORMAT.manifest + 1 }))); } catch (e) { threw = (e as Error).message; }
     assert(/更新版本/.test(threw), `major 更新 = 拒开：${threw}`);
     // 再存：写出去的拍子是自己的（不是读进来的更高 minor）
-    const files = unzipSync(saveMxl({ song: o1.song, hum: o1.hum, extras: o1.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: null }));
+    const files = unzipSync(saveMxl({ song: o1.song, extras: o1.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: null }));
     eq(JSON.parse(strFromU8(files[".moonsinger/score.json"])).minor, FORMAT_MINOR.score, "写永远只写当前拍");
   });
   it("定稿的指纹不看 minor / patch（升 minor 之后再存，定稿的歌不能被判成「内容变了」）；老样本读进来的指纹 = 这一版重新写出去的指纹", () => {
     const song = sampleSong(), extras = sampleExtras(song);
-    const base = { song, hum: song.hum, extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: sampleView() };
+    const base = { song, hum: "n", extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: sampleView() };
     const fp0 = contentFingerprintOf(base);
     const bumped = { ...extras, scoreExt: { ...((extras.scoreExt ?? {}) as Json), minor: 9, patch: 9 }, studio: { ...((extras.studio ?? {}) as Json), minor: 3 }, lounge: Object.fromEntries(Object.entries(extras.lounge).map(([k, r]) => [k, { ...r, patch: 5 }])) };
     eq(contentFingerprintOf({ ...base, extras: bumped as typeof extras }), fp0, "拍子变了指纹不变");
     // 读进来再写出去：指纹相同（读侧按去掉拍子的文本算，写侧同一把尺）
     const o = openBytes("x.mxl", saveMxl(base));
-    eq(contentFingerprintOf({ song: o.song, hum: o.hum, extras: o.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: o.view }), fp0, "读写往返指纹不变");
+    eq(contentFingerprintOf({ song: o.song, extras: o.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: o.view }), fp0, "读写往返指纹不变");
   });
-  it("score.json 不认识的顶层键原样带回（未知键直通）", () => {
-    const o = openBytes("x.mxl", sampleWith(".moonsinger/score.json", (j) => ({ ...j, futureThing: { a: 1 } })));
-    eq(o.advice.length, 0, "只是多了个键、拍子没变 = 不提示");
-    const files = unzipSync(saveMxl({ song: o.song, hum: o.hum, extras: o.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: null }));
-    eq(JSON.stringify(JSON.parse(strFromU8(files[".moonsinger/score.json"])).futureThing), JSON.stringify({ a: 1 }), "再存还在");
+  it("score.json 不认识的顶层键：更新的版本（小版本更大）写的原样带回；同一版本的不写（第 16 条 16-3：现行格式里没有定义的不写）", () => {
+    const resave = (o: ReturnType<typeof openBytes>) => JSON.parse(strFromU8(unzipSync(saveMxl({ song: o.song, extras: o.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: null }))[".moonsinger/score.json"]));
+    const same = openBytes("x.mxl", sampleWith(".moonsinger/score.json", (j) => ({ ...j, futureThing: { a: 1 } })));
+    eq(same.advice.length, 0, "只是多了个键、拍子没变 = 不提示");
+    eq(resave(same).futureThing, undefined, "同一版本：不写");
+    const newer = openBytes("x.mxl", sampleWith(".moonsinger/score.json", (j) => ({ ...j, minor: FORMAT_MINOR.score + 1, futureThing: { a: 1 } })));
+    eq(JSON.stringify(resave(newer).futureThing), JSON.stringify({ a: 1 }), "更新的版本：再存还在");
   });
   it("当前 FORMAT 有冻结样本（升版本先 node scripts/freeze-format-sample.mjs；旧版目录不删）", () => {
     const tag = `v${Object.values(FORMAT).join("-")}`;
@@ -96,12 +98,13 @@ describe("持久化守卫", () => {
       const bytes = new Uint8Array(fs.readFileSync(at(d, "sample.mxl")));
       if (Number(exp.versions.score) === 1) { let threw = ""; try { openBytes("sample.mxl", bytes); } catch (e) { threw = (e as Error).message; } assert(/读不懂/.test(threw), `${d}：第 1 版 = 读不懂、明说：${threw}`); continue; }
       const o = openBytes("sample.mxl", bytes), song = noHeadClef(o.song);
-      eq(o.notices.length, 0, `${d}：自家样本不该有提示`);
+      const studioV1 = Number(exp.versions.studio) === 1;   // 录音房第 1 版形状 = 读不出轨，打开时说一句（统筹 2026-11-12）
+      eq(o.notices.length, studioV1 ? 1 : 0, `${d}：提示 ${JSON.stringify(o.notices)}`); if (studioV1) assert(/混音台/.test(o.notices[0]!), `${d}：混音台那一句`);
       eq(noIds(canonTokens(song)), noIds(exp.tokens), `${d}：tokens（第一张纸第一个声部）`);
       if (exp.tracks) eq(noIds(canonTracks(song)), noIds(exp.tracks), `${d}：所有纸 × 声部`);
       if (exp.papers) eq(JSON.stringify(o.song.papers.map((p) => ({ id: p.id, name: p.name }))), JSON.stringify(exp.papers), `${d}：纸`);
       if (exp.parts) eq(JSON.stringify(o.song.parts.map((p) => p.id)), JSON.stringify(exp.parts), `${d}：声部`);
-      eq(o.song.title, exp.title, `${d}：歌名`); eq(o.hum, exp.hum, `${d}：哼的字`);
+      eq(o.song.title, exp.title, `${d}：歌名`); eq(activeHum(o.extras, "r1"), exp.hum, `${d}：哼的字（只读乐手身上的，第 16 条 16-3）`);
       eq(activeInstrument(o.extras, "r1")?.engine ?? "unknown", exp.engine, `${d}：上场的引擎`);
       const role = o.extras.lounge["r1"] as Json;
       eq(roleGivenName(o.extras.lounge, "r1"), exp.role.name, `${d}：角色名照文件（第 16 条，user 定的甲）`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);

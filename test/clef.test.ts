@@ -123,11 +123,11 @@ describe("MusicXML 往返", () => {
 describe(".mxl 往返：自动 / 写明的谱号", () => {
   const song = (clef?: "F" | "G") => { const st = stOf([...head(), n("E", 2), n("G", 2), n("C", 3)]); return (clef ? setClefChoice(st, st.at.paper, st.at.part, clef) : st).song; };
   it("自动挑成低音的声部：存 → 开还是自动（MusicXML 里写的是挑好的低音，score.json 记着 auto）", () => {
-    const s = song(), o = openBytes("x.mxl", saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" }));
+    const s = song(), o = openBytes("x.mxl", saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" }));
     eq(clefChoiceOf(o.song.papers[0], o.song.parts[0].id), "auto");
     eq(resolveSongClefs(o.song).get(o.song.papers[0].id)?.get(o.song.parts[0].id), "F");
   });
   it("写明高音 / 低音：存 → 开原样", () => {
-    for (const c of ["G", "F"] as const) { const s = song(c), o = openBytes("x.mxl", saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" })); eq(clefChoiceOf(o.song.papers[0], o.song.parts[0].id), c); }
+    for (const c of ["G", "F"] as const) { const s = song(c), o = openBytes("x.mxl", saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" })); eq(clefChoiceOf(o.song.papers[0], o.song.parts[0].id), c); }
   });
 });

@@ -3,7 +3,7 @@
 //   user 11-09「完全不应该保管理 MP 三」「软件在设备上记着不就行了？」；11-10「对，以后统一不存mp3，旧的也删掉」「本地歌缓存？最好能有锁屏播放？这样我可以听歌」。
 //   ① 导出一次 = 记在设备上、挂到这首歌名下；内容没变再导出 = 直接拿（不重唱）；歌文件里没有 mp3
 //   ② 歌库：没记着的没有 ▶；记着的有 ▶、点了放（播放条 / 循环 / 从头放 / 停）；歌改了 = ▶ 收掉；改回去 = 又认得
-//   ③ 老文件（旧版本定稿过、里面带着 mp3）：歌库里照旧有 ▶；打开 = 那份 mp3 搬进设备缓存；解锁、改、存 = 文件里不再带它，说一句
+//   ③ 老文件（旧版本定稿过、里面带着 mp3）：第 16 条 16-3 起那份 mp3 不读不带（现行格式里没有定义）——歌库里没有 ▶、打开不搬进设备缓存；解锁、改、存 = 文件里不再有它
 // 真 app + 真库 + 真 IndexedDB；家 = 文件夹（假 FSA = OPFS 子目录）；小月相在测试里 = 静音块（同 transport.mjs）。跑：npm run build → npm run serve（8710）→ node test/e2e/render-cache.mjs
 import { chromium } from "./pw.mjs";
 import { FAKE_FSA, pickFolderFromEntry, folderBytes, folderFiles, seedFolderFile } from "./fake-fsa.mjs";
@@ -172,12 +172,11 @@ const OLD = "20200101-老定稿.mxl", MP3 = new Uint8Array(4000).map((_, i) => (
   await seedFolderFile(p, OLD, [...zipSync(out, { level: 0 })]); }
 await p.click('#galleryFull [data-v="refresh"]'); await p.waitForTimeout(900);
 check(!!(await p.waitForSelector(tileOf(OLD), { timeout: 8000 }).catch(() => null)), "歌库里出现了那首老歌");
-check(await hasPlay(OLD), "老文件：封面上照旧有 ▶（文件里还带着 mp3）");
-check(/歌里带着的那份 mp3/.test(await p.$eval(`${tileOf(OLD)} .gallery-tile-action`, (e) => e.getAttribute("title") ?? e.getAttribute("aria-label") ?? "")), "▶ 的提示说的是歌里带着的那份");
+check(!(await hasPlay(OLD)), "老文件：文件里带着的 mp3 不读（第 16 条 16-3）= 设备上没记着 = 封面上没有 ▶");
 const before = (await rc()).stats.count;
 await p.click(tileOf(OLD)); await p.waitForTimeout(1200); await later();
-{ const r = await rcUntil((x) => x.stats.count === before + 1 && !!x.link), lk = await p.evaluate(() => window.__moonsinger.editLock());
-  check(r.stats.count === before + 1 && !!r.link && r.link.identifier === OLD, "打开它：那份 mp3 搬进了设备缓存、挂在它名下", JSON.stringify({ n: r.stats.count, link: r.link && r.link.identifier }));
+{ const r = await rc(), lk = await p.evaluate(() => window.__moonsinger.editLock());
+  check(r.stats.count === before && !r.link, "打开它：那份 mp3 不搬进设备缓存、不挂名", JSON.stringify({ n: r.stats.count, link: r.link && r.link.identifier }));
   check(lk.locked && !lk.dirty, "别处来的老歌：打开是锁着的，没有任何改动", JSON.stringify(lk));
   check((await entriesOf(OLD)).includes(".moonsinger/final.mp3"), "锁着、没存过：文件原样（mp3 还在里面）");
   const d = await p.evaluate(() => { const x = document.getElementById("lockBar"); return x && !x.hidden ? [...x.querySelectorAll("button")].map((y) => y.textContent) : null; });
@@ -185,14 +184,11 @@ await p.click(tileOf(OLD)); await p.waitForTimeout(1200); await later();
 await p.click('#lockBar [data-v="continue"]'); await p.waitForTimeout(500);
 check((await p.evaluate(() => window.__moonsinger.editLock().state)) === "unlocked", "点「接着改」= 解了");
 await p.evaluate(() => window.__moonsinger.run({ k: "degree", degree: 4, dir: "near" }));
-// 那句话是存下去的那一下说的、过几秒自己收：先等到它（机器忙的时候后面几步做完它已经收了）
-let said = ""; for (let i = 0; i < 100 && !/不再存进歌里/.test(said); i++) { said = await p.$$eval(".notice-stack [data-notice-id]", (es) => es.map((e) => e.textContent ?? "").join(" | ")); if (!/不再存进歌里/.test(said)) await p.waitForTimeout(100); }
 await saved(); await p.waitForTimeout(300);
 await p.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await saved(); await p.waitForTimeout(400);   // 按「存」：写进文件夹（自动保存只落本机）
 { const names = await entriesOf(OLD), mf = strFromU8(unzipSync(await folderBytes(p, OLD))[".moonsinger/manifest.json"]);
   check(!names.includes(".moonsinger/final.mp3") && !/"final"|"finalRev"/.test(mf), "解锁、改了、存下去：文件里不再有那份 mp3，总目录里没有 final / finalRev", names.join(" "));
-  check(/不再存进歌里/.test(said), "存掉它的那一下说了一句", said.slice(0, 120));
-  check((await rc()).stats.count === before + 1, "设备上那份还在（清了能重来，但没清）"); }
+  check((await rc()).stats.count === before, "设备上的份数没变（那份 mp3 从没读进来）"); }
 check(Object.keys(await folderFiles(p)).every((f) => !/\.mp3$/.test(f)), "文件夹里没有多出任何 mp3 文件");
 
 // ── 7-S（2026-11-12；user「以及加一个删旧渲染缓存和删缓存的功能」）：旧版本的引擎渲的 = 标出来、照样能听、播放条上重渲；设置里一键删旧（不自动删）──

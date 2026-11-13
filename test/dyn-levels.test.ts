@@ -16,7 +16,7 @@ const withTables = (ex: Extras, vel: Record<string, number> | null): Extras => {
   return walk(ex) as Extras;
 };
 describe("ppp / fff", () => {
-  const hum = initState().song.hum;
+  const hum = "n";
   it("新演奏者（小月相也是，9-2）：表里 by value 有 ppp 16 / fff 126（MuseScore 的经典值）", () => {
     const sp = activePerfSpec(withNewRole(emptyExtras(), "r", hum), "r");
     eq(sp.dynamicsVel.ppp, 16); eq(sp.dynamicsVel.fff, 126); eq(sp.dynamicsVel.mf, 80);

@@ -31,7 +31,7 @@ describe("读别家的谱：认不得的方向记号按种类数出来（踏板 
     eq(Object.keys(r.dropped).length, 0, JSON.stringify(r.dropped));
   });
   it("自家文件（用全的测试歌）存了再读：一样都不报「没有读进来」", () => {
-    const song = asFrozen(fullSong()), o = openBytes("t.mxl", saveMxl({ song, hum: song.hum, extras: sampleExtras(song), app: "test", date: "2026-11-12T00:00:00.000Z" }));
+    const song = asFrozen(fullSong()), o = openBytes("t.mxl", saveMxl({ song, extras: sampleExtras(song), app: "test", date: "2026-11-12T00:00:00.000Z" }));
     assert(!o.notices.some((n) => n.includes("没有读进来")), o.notices.join(" | "));
   });
 });

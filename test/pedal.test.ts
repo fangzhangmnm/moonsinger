@@ -23,7 +23,7 @@ const n = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", dur = TPQ, octave = 4)
 const ped = (act: PedalTok["act"], which: PedalTok["which"] = "sustain"): Token => ({ kind: "pedal", id: nid++, which, act });
 const Q = 60 / DEFAULT_BPM;
 const spec = activePerfSpec(emptyExtras(), "r");
-const info = (engine: PerformerInfo["engine"]): PerformerInfo => ({ engine, plugin: performerOf(engine), spec, velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0 });
+const info = (engine: PerformerInfo["engine"]): PerformerInfo => ({ engine, hum: "n", plugin: performerOf(engine), spec, velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0 });
 const two = (a: Token[], b: Token[]): { song: Song; parts: PartDef[] } => {
   let st: EditorState = initState(); st = addPaper(st);
   const [p1, p2] = st.song.papers, pid = st.song.parts[0]!.id;
@@ -31,7 +31,7 @@ const two = (a: Token[], b: Token[]): { song: Song; parts: PartDef[] } => {
   return { song: { ...st.song, papers }, parts: st.song.parts };
 };
 const notesOf = (s: { song: Song; parts: PartDef[] }, engine: PerformerInfo["engine"]) => {
-  const t = buildTimeline({ song: s.song, order: s.song.papers.map((p) => p.id), parts: s.parts, info: () => info(engine), hum: "n", singOpt: { leadIn: LEAD_IN } });
+  const t = buildTimeline({ song: s.song, order: s.song.papers.map((p) => p.id), parts: s.parts, info: () => info(engine), singOpt: { leadIn: LEAD_IN } });
   return (t.tracks[0] as { notes: { t0: number; t1: number; key?: number; w1?: number }[] }).notes;
 };
 const near = (a: number, b: number) => Math.abs(a - b) < 1e-6;
@@ -186,11 +186,11 @@ describe("踏板 · 输入（11-1 第四步）", () => {
     eq(tk(moveMark(s, 3, 3 + 3).st), "C D v E");
     eq(tk(symBackspace(st0([n("C"), ped("down"), n("D")]))), "C D");
   });
-  it("挂在后面那个音上的记号一处定义（isPhraseMark 含踏板）：复制带上第一个音身上的踏板、打开时纸头那一串力度挪到最前、詞先填空音跳过踏板", () => {
+  it("挂在后面那个音上的记号一处定义（isPhraseMark 含踏板）：复制带上第一个音身上的踏板、纸头补的力度插在那一串最前面、詞先填空音跳过踏板", () => {
     const s = { ...st0([n("C"), ped("down"), n("D"), n("E")]), sel: { from: 5, to: 7 } };
     eq(clipFrom(s), 4, "选区从 D 起 = 带上 D 前面的踏板");
-    const s2 = st0([{ kind: "groove", id: nid++, style: "pop" } as Token, { kind: "dyn", id: nid++, value: "mp" } as Token, ped("down"), n("C")]);
-    const o = ensureStartDyns(s2.song, 99500, { reorder: true }), pid = s2.song.parts[0]!.id;
+    const s2 = st0([{ kind: "groove", id: nid++, style: "pop" } as Token, ped("down"), n("C")]);
+    const o = ensureStartDyns(s2.song, 99500), pid = s2.song.parts[0]!.id;
     eq(o.song.papers[0]!.tracks[pid]!.slice(3).map((t) => t.kind).join(" "), "dyn groove pedal note");
   });
 });

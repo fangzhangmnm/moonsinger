@@ -87,7 +87,14 @@ export type FormatFile = keyof typeof FORMAT;
  *      表里没有这个概念才用按值存的；存的时候按现行的表重写（12-4 改口，统筹 2026-11-12；user「我讨厌历史遗留问题导致的convention需要再记一个」）。
  *  旧版本（minor 0）读到没名字的角色 = 显示它默认的 Vocals（照 minor 的规矩提示一次）；没有受影响的老读者（正式版打不开现在的文件，开发版只有最新的在用）。
  *  冻结样本：test/fixtures/format/minor/lounge-0-named/ 和 lounge-0-unnamed/（这一版之前的代码写的，一个会被判成没起、一个是起了名字的）。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 10, lounge: 1, studio: 1 };   // lounge 3（9-2）起小版本从 0 数
+/** 第 16 条 16-3（2026-11-12 Claude Opus 5.5（MoonSinger小弟））：存的时候每个键都明写、版本不比自己新只写有定义的键。加了新合法值 / 新键的三份各升一个小版本：
+ *  score 11：默认那一档有名字、都写——lyricFit "rhythm"、barNumbers "line"、spacing "normal"、notation "staff"、chordTags true、viewInC false、middleC 4、expressions true、
+ *    textLang "ui"、arrangement ""；papers[].hidden false、papers[].autoOttava 每个在场的声部 true / false、swells {}；parts[].chords "auto"、host null；view 每一项都写（pad 多一个 auto）。
+ *  lounge 2：哼的字只在乐手身上（不再整首一个、不再存的时候抄给每一位）；乐手缺的数存的时候按现行默认写全；dynamicsDb / articulation.wedgeStepDb 算有定义的键（照写照读，16-4 再定）；
+ *    articulation.rollHz 可以是 null（= 按乐器）、canSwell 明写。
+ *  studio 2：轨的 bypass、效果的 on 明写；效果参数表里每个参数都写；「原声」dry 没写 = 参数表的默认（原来 = 1 − 湿）。
+ *  旧读者（小版本更小）照小版本的规矩：能开能改能存、提示一次。 */
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 11, lounge: 2, studio: 2 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */

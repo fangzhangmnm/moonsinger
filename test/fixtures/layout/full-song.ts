@@ -97,7 +97,7 @@ export function fullSong(): Song {
   for (const x of pedals) (x as { id: number }).id = id++;
 
   return asOpened({   // app 打开之后的样子（每张纸开头补力度，第八刀 8-7）
-    title: "排版分家守卫歌", hum: "u", textLang: "ui", credits: "词曲：守卫\n编：小弟", arrangement: "A B (A)×2 Z", paper: paperOf("A5"),
+    title: "排版分家守卫歌", textLang: "ui", credits: "词曲：守卫\n编：小弟", arrangement: "A B (A)×2 Z", paper: paperOf("A5"),
     parts: [
       { id: "V", role: "r1", mic: "m1" }, { id: "P", role: "r2", mic: "m2" }, { id: "B", role: "r3", mic: "m3" }, { id: "K", role: "r4", mic: "m4" },
       { id: "X", role: "r5", mic: "m5" }, { id: "Y", role: "r6", mic: "m6", host: "X" },
@@ -134,7 +134,7 @@ export function edgeSongs(): { name: string; song: Song; hide?: string[]; width?
   const t = (x: Record<string, unknown>) => ({ ...x, id: id++ }) as unknown as Token;
   const head = (fifths = 0, beats = 4, beatType = 4) => [t({ kind: "key", fifths }), t({ kind: "time", beats, beatType }), t({ kind: "tempo", bpm: 100 })];
   const n = (pitch: ReturnType<typeof p> | null, dur: number, more: Record<string, unknown> = {}) => t({ kind: "note", pitch, dur, lyric: null, ...more });
-  const base = (parts: string[], papers: Song["papers"]): Song => ({ hum: "u", paper: paperOf("A5"), parts: parts.map((id, k) => ({ id, role: `r${k}`, mic: `m${k}` })), papers } as Song);
+  const base = (parts: string[], papers: Song["papers"]): Song => ({ textLang: "ui", paper: paperOf("A5"), parts: parts.map((id, k) => ({ id, role: `r${k}`, mic: `m${k}` })), papers } as Song);
   return [
     // 一张纸上一个声部都没有；一张纸上唯一的声部隐藏着；一张正常的
     { name: "empty-papers", hide: ["H"], song: base(["A", "H"], [

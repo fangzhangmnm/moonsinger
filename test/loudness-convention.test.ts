@@ -37,7 +37,7 @@ describe("力度 → 响度：全体一条（9-2）", () => {
     const mid = velocityDb((DYNAMICS_VEL.p + DYNAMICS_VEL.f) / 2), dbMid = (velocityDb(DYNAMICS_VEL.p) + velocityDb(DYNAMICS_VEL.f)) / 2;
     assert(Math.abs(mid - dbMid) > 0.5, "两种走法在中点差得出来（不然这条测不出东西）");
   });
-  it("结构：src 里不再有 dynamicsDb / wedgeStepDb / DYNAMICS_DB——只剩契约的历史注释（第 16 条起没有迁移；16-4 起小月相的 dB 表恢复时这一条跟着改）", () => {
+  it("结构：src 里不再有 dynamicsDb / wedgeStepDb / DYNAMICS_DB——只剩契约的历史注释和存档的「有定义的键」表（第 16 条起没有迁移；16-3 起老乐手身上写着的照写出去；16-4 起小月相的 dB 表恢复时这一条跟着改）", () => {
     const walk = (d: string): string[] => fs.readdirSync(new URL(`../src/${d}`, import.meta.url), { withFileTypes: true }).flatMap((e: { name: string; isDirectory(): boolean }) => (e.isDirectory() ? walk(`${d}${e.name}/`) : /\.(ts|mjs)$/.test(e.name) ? [`${d}${e.name}`] : []));
     const read = (f: string) => fs.readFileSync(new URL(`../src/${f}`, import.meta.url), "utf8") as string;
     const bad: string[] = [];
@@ -47,7 +47,8 @@ describe("力度 → 响度：全体一条（9-2）", () => {
       lines.forEach((l, k) => {
         if (!/dynamicsDb|wedgeStepDb|DYNAMICS_DB/.test(l)) return;
         const comment = /^\s*(\/\/|\*|\/\*\*)/.test(l) || /\/\/.*(dynamicsDb|wedgeStepDb|DYNAMICS_DB)/.test(l) || /\/\*[^*]*(dynamicsDb|wedgeStepDb)[^*]*\*\//.test(l);
-        if (!comment) bad.push(`${f}:${k + 1}`);
+        const keyList = f === "format/project.ts" && /^const (CAND|ART)_KEYS = new Set\(/.test(l);   // 16-3（统筹）：存的时候「有定义的键」表里有它们 = 老乐手身上写着的照写出去；运行时不读
+        if (!comment && !keyList) bad.push(`${f}:${k + 1}`);
       });
     }
     assert(!bad.length, `还在用：${bad.join("、")}`);

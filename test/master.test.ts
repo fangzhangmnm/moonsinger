@@ -13,7 +13,7 @@ describe("总轨", () => {
   });
   it("存进 .mxl 再读回来：总轨还在", () => {
     const st = initState(), x = withMaster(emptyExtras(), { gainDb: -6, limiter: false });
-    const bytes = saveMxl({ song: st.song, hum: "n", extras: x, app: "test", date: "2026-10-10" }), back = openBytes("t.mxl", bytes);
+    const bytes = saveMxl({ song: st.song, extras: x, app: "test", date: "2026-10-10" }), back = openBytes("t.mxl", bytes);
     const m = activeMaster(back.extras); eq(m.gainDb, -6); eq(m.limiter, false);
   });
 });

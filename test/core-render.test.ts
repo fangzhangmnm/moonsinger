@@ -25,7 +25,7 @@ const sum = (a: Float32Array) => { let s = 0; for (let i = 0; i < a.length; i++)
 describe("无头渲染核心", () => {
   it("冻结样本在 node 里整首渲出来：元音版 + 嵌进歌的 SoundFont 都出声、两次逐样本相同", async () => {
     const song = sampleSong(), extras = sampleExtras(song);
-    const plan = { song, extras, hum: song.hum, parts: audibleParts(song, () => ({ muted: false, solo: false })) };
+    const plan = { song, extras, hum: "n", parts: audibleParts(song, () => ({ muted: false, solo: false })) };
     const r1 = await renderSong(plan, deps(), { sr: 22050 }), r2 = await renderSong(plan, deps(), { sr: 22050 });
     eq(r1.errors.length, 0, JSON.stringify(r1.errors));
     eq(r1.timeline.unplayable.length, 0, JSON.stringify(r1.timeline.unplayable));
@@ -45,12 +45,12 @@ describe("无头渲染核心", () => {
     eq(audibleParts(song, (id) => ({ muted: id === "P1", solo: false })).map((p) => p.id).join(","), "P2");
     eq(audibleParts(song, (id) => ({ muted: false, solo: id === "P1" })).map((p) => p.id).join(","), "P1");
     let threw = "";
-    try { await renderSong({ song, extras, hum: song.hum, parts: [] }, deps()); } catch (e) { threw = (e as Error).message; }
+    try { await renderSong({ song, extras, parts: [] }, deps()); } catch (e) { threw = (e as Error).message; }
     assert(/没有出声/.test(threw), threw);
   });
   it("效果全关只清插件格和发送，推子 / 声像 / 出到留着", () => {
     const song = sampleSong(), extras = sampleExtras(song), pv = () => ({ muted: false, solo: false });
-    const on = mixParamsOf({ song, extras, hum: song.hum, parts: song.parts }, pv), off = mixParamsOf({ song, extras, hum: song.hum, parts: song.parts, mixBypass: true }, pv);
+    const on = mixParamsOf({ song, extras, parts: song.parts }, pv), off = mixParamsOf({ song, extras, parts: song.parts, mixBypass: true }, pv);
     const m1 = on.channels.find((c) => c.id === "P1")!.p, m1off = off.channels.find((c) => c.id === "P1")!.p;
     assert((m1.chain?.length ?? 0) > 0 || (m1.sends?.length ?? 0) > 0, "样本的 m1 有链 / 发送");
     eq(m1off.chain?.length ?? 0, 0); eq(m1off.sends?.length ?? 0, 0); eq(m1off.gainDb, m1.gainDb); eq(m1off.to, m1.to);
@@ -59,10 +59,10 @@ describe("无头渲染核心", () => {
   it("准备：找不到声音 = 那个声部报错、时间线照算其余", async () => {
     const song = sampleSong(), extras = sampleExtras(song), d = deps();
     d.sounds.resolveGmBytes = async () => { throw new Error("找不到"); };
-    const ex2 = withActive(extras, "r2", "c3", song.hum);   // r2 上场的 SoundFont（嵌进歌的；resolveGmBytes 先看 g.bytes——这里被我们的假实现挡了）
+    const ex2 = withActive(extras, "r2", "c3", "n");   // r2 上场的 SoundFont（嵌进歌的；resolveGmBytes 先看 g.bytes——这里被我们的假实现挡了）
     const errs = await prepareParts(song.parts, ex2, d);
     assert(errs.some((e) => e.part === "P2" && /找不到/.test(e.why)), JSON.stringify(errs));
-    const tl = timelineOf({ song, extras: ex2, hum: song.hum, parts: song.parts }, { presetIndex: () => -1, velCurve: () => null });
+    const tl = timelineOf({ song, extras: ex2, parts: song.parts }, { presetIndex: () => -1, velCurve: () => null });
     assert(tl.tracks.some((t) => t.id === "P1"), "P1（元音版）照样出声");
   });
 });

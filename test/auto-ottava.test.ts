@@ -36,7 +36,7 @@ describe("自动八度线", () => {
 });
 
 const song1 = (toks: Token[], off = false): Song => { const s = initState().song; return { ...s, papers: [{ ...s.papers[0], tracks: { [s.parts[0].id]: toks }, ...(off ? { looks: { [s.parts[0].id]: { autoOttava: false as const } } } : {}) }] }; };   // v0.16.88：关自动八度线按段
-const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" });
+const save = (s: Song) => saveMxl({ song: s, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" });
 describe("自动八度线：存", () => {
   it("写出去带 ms-auto id（别的软件照样画）；读回来不变成手写记号", () => {
     const s = song1([...head(), ...pad(6), n("A6"), n("B6"), n("C7"), n("E5")]);

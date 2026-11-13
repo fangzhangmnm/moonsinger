@@ -9,7 +9,7 @@ export declare const pluginName: (kind: string) => string;
 /** 全量面板：原语参数表的每一个 + 主线程换算的那几个。 */
 export declare function fullParams(kind: string): ParamDef[];
 export declare function defaults(kind: string): Params;
-/** 一格的参数（缺的补默认）。混响 / 延迟 / 合唱没写「原声」的（v0.10.10 之前插的）= 录音房照旧按 1 − 湿 算，这里也如实显示成 1 − 湿。 */
+/** 一格的参数（缺的补参数表的默认；第 16 条起「原声」没写也是参数表的默认，和录音房同一个意思——原来按 1 − 湿 算）。 */
 export declare const paramsOf: (fx: FxV2) => Params;
 /** 这一格是不是「全湿」（原声 0、湿 100%：当发送的返回轨用；出到它 = 原声没了）。 */
 export declare const fullyWet: (fx: FxV2) => boolean;

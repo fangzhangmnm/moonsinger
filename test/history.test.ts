@@ -40,7 +40,7 @@ describe("history（undo / redo）", () => {
   it("extras 也在同一条栈里：改角色名 → 撤 → 名字回来、谱没动；重做带回同一个 locus", () => {
     let h = emptyHistory(); const st = initState(); let ex = emptyExtras();
     const role = st.song.parts[0].role;
-    const ex2 = withRoleName(ex, role, "二胡", st.song.hum);
+    const ex2 = withRoleName(ex, role, "二胡", "n");
     h = record(h, st, ex, null, 1, { kind: "lounge", label: "角色改名：二胡" }); ex = ex2;
     const r = undo(h, st, ex)!; eq(r.extras.lounge[role]?.name ?? undefined, undefined, "撤回去：名字字段没了（原来就没建角色）"); eq(r.st.song, st.song, "谱原样（同一个引用）"); eq(r.locus.label, "角色改名：二胡");
     const r2 = redo(r.h, r.st, r.extras)!; eq(r2.extras.lounge[role]?.name, "二胡", "重做回来"); eq(r2.locus.label, "角色改名：二胡", "重做的 toast 还是这句话");

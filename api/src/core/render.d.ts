@@ -1,7 +1,6 @@
 import type { VelCurve } from "../gm/sf2-subset.ts";
 import type { BankLookup } from "../performers/registry.ts";
 import { type Song, type PartDef } from "../score/song.ts";
-import type { Hum } from "../format/contract.ts";
 import { type Extras, type GmCandidate } from "../format/project.ts";
 import { type Timeline, type PerformerInfo } from "../engine/timeline.ts";
 import type { TimelineMsg, ChannelParams, BusSpec, MasterParams } from "../engine/studio.ts";
@@ -49,7 +48,6 @@ export type PartAudible = (partId: string) => {
 export interface RenderPlan {
     song: Song;
     extras: Extras;
-    hum: Hum;
     /** 出声的声部（已经按静音 / 独奏筛过；audibleParts 算）。 */
     parts: readonly PartDef[];
     /** 效果全关（A/B，播放用；导出 / 定稿一律 false）。 */

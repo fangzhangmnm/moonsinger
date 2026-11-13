@@ -249,7 +249,6 @@ export interface Song {
      *  不认识的（更新的版本写的）原样留着、写回去，画的时候当跟着界面。只管软件自己生成、印出来的字（声部名是目录 / 预设里的乐器名时、简谱鼓的图例、「编排」、出声的换气「吸 / 深吸」）；
      *  歌词、歌名、作者栏、自己起的声部名不动。**必填**：没写的意思在进门那一处定一次（src/format/project.ts songViewFields：没写 = "ui"），新歌明着写 "ui"；运行时永远有值。读 / 改只走 src/score/song-view.ts。 */
     textLang: string;
-    hum: Hum;
     parts: PartDef[];
     papers: PaperSeg[];
 }
@@ -690,7 +689,6 @@ export declare function selectToEdge(st: EditorState, d: -1 | 1): EditorState;
 export declare function escape(st: EditorState): EditorState;
 export declare function setNote(st: EditorState, i: number, patch: Partial<Pick<NoteTok, "pitch" | "dur" | "lyric" | "hyph">>): EditorState;
 export declare function setDur(st: EditorState, i: number, dur: number): EditorState;
-export declare function setHum(st: EditorState, hum: Hum): EditorState;
 /** 改歌名（空 = 不填）。 */
 /** 换纸（整首歌一个）：A5 = 默认，存成「没有」。**换纸只换纸**：版式和别家文件里写的谱高（staffMm）原样带着走——谱高只在选版式时才换（setDensity；
  *  统筹 2026-11-12 裁定，施工单 7-C 记录：原来新建纸会丢掉 staffMm = 换纸顺手改了谱的大小）。 */
@@ -727,20 +725,12 @@ export declare function removePart(st: EditorState, partId: string): EditorState
  *  每位歌手在每张纸上第一个音之前没有力度记号 = 在第一个音前面补一个——**补的是这里本来就生效的那个**（这位在前一张纸（歌里的顺序）最后一个力度；最前面 = mf，同播放的默认），听起来不变。
  *  **补在哪**（第八刀 8-7，统筹 2026-11-12 定）：第一个音前面紧挨着的那一串曲级记号（渐强渐弱、渐到、风格、力度）的最前面——同一个音前面力度在渐强渐弱前面（挪记号那条老规矩）。
  *  v0.10.39 起补在了第一个音紧前面：那一串里本来有渐强渐弱时就成了「渐强渐弱、力度、音」，渐强渐弱和它的终点（补的力度）之间一个音都没有 = 出声上不起作用，谱上发夹从力度字底下起。
- *  **理顺**：那一串里力度排在别的记号后面 = 把力度挪到这一串最前面（别的先后不变）；只理第一个音前面这一串，别处不碰。这种反顺序只可能是上面那一步自己造出来的（界面上挪记号永远把力度放前面），理它不算改人写的东西。
- *  返回补了哪几处 + 理顺了哪几处（纸 / 歌手 / 下标）。纯函数：main 在每次改谱（update）和打开歌时过一遍；**理顺只在打开歌时**（o.reorder，统筹定「读进来时理过来」）——
+ *  返回补了哪几处（纸 / 歌手 / 下标）。纯函数：main 在每次改谱（update，document 的 normalize）时过一遍；**开歌时不补也不理顺**（第 16 条 16-2 / 16-3：开文件时不顺手改；原来开歌时还会把排在渐强渐弱后面的力度挪到前面，那一支删了）——
  *  改谱的时候不动别的记号的先后（光标前放风格记号再开它的小菜单，靠的就是刚放的那个在原处；E2E groove 抓到的）。 */
-export declare function ensureStartDyns(song: Song, nextId: number, o?: {
-    reorder?: boolean;
-}): {
+export declare function ensureStartDyns(song: Song, nextId: number): {
     song: Song;
     nextId: number;
     added: {
-        paper: string;
-        part: string;
-        index: number;
-    }[];
-    reordered: {
         paper: string;
         part: string;
         index: number;

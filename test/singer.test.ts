@@ -77,7 +77,7 @@ describe("跨纸按歌手接 + 速度不丢", () => {
     assert(m.some((x) => x.tick === 3 * TPQ && x.bpm === 60), JSON.stringify(m));
   });
   it("压平件（score.musicxml）：第一个声部带着第二张纸中途的变速", () => {
-    const song = song3(), files = unzipSync(saveMxl({ song, hum: song.hum, extras: emptyExtras(), app: "t", date: "2026-10-08T00:00:00.000Z" }));
+    const song = song3(), files = unzipSync(saveMxl({ song, extras: emptyExtras(), app: "t", date: "2026-10-08T00:00:00.000Z" }));
     const flat = strFromU8(files["score.musicxml"]), p1 = flat.slice(flat.indexOf('<part id="P1"'), flat.indexOf('<part id="P2"'));
     assert(/<sound tempo="60"/.test(p1), "P1 里有 tempo 60");
   });
@@ -86,8 +86,8 @@ describe("跨纸按歌手接 + 速度不丢", () => {
 describe("读到两个声部共用一位歌手 = 拆成两位", () => {
   it("后面那个拿到一份照抄的角色；什么都不丢；说一声", () => {
     let st = initState(); st = addPart(st, { id: "P2", role: "r1", mic: "m1" });
-    const song = st.song, extras = withNewRole(emptyExtras(), "r1", song.hum, "月读");
-    const o = openBytes("x.mxl", saveMxl({ song, hum: song.hum, extras, app: "t", date: "2026-10-08T00:00:00.000Z" }));
+    const song = st.song, extras = withNewRole(emptyExtras(), "r1", "n", "月读");
+    const o = openBytes("x.mxl", saveMxl({ song, extras, app: "t", date: "2026-10-08T00:00:00.000Z" }));
     const roles = o.song.parts.map((p) => p.role);
     eq(new Set(roles).size, 2, roles.join(",")); eq(o.song.parts[0].role, "r1");
     eq(JSON.stringify(o.extras.lounge[roles[1]]), JSON.stringify(o.extras.lounge.r1), "谁来演、怎么演照抄");

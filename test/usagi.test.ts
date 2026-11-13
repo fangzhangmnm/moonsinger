@@ -28,7 +28,7 @@ describe("うさぎ（验收预演）", () => {
       4-46 | 7670 | 4446 | 7670 |
       6711 | 78669 43 | 643- | 432- | 3---`);
     st = applyLyricLine(st, "うさぎうさぎ、なにみてはねる、じゅうごやおつきさま、みてはーーねる");
-    const ours = toLabScore(tr(st), st.song.hum, "ja");
+    const ours = toLabScore(tr(st), "n", "ja");
     eq(JSON.stringify(ours.SCORE), JSON.stringify(lab.SCORE), "SCORE");
     eq(ours.TEXT, lab.TEXT, "TEXT");
     eq(ours.TEMPO_QUARTER, lab.TEMPO_QUARTER, "TEMPO");
