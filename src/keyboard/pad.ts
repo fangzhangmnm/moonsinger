@@ -42,18 +42,23 @@ import { wheelSteps } from "./wheel.ts";
 /** 提示音域：谁在弹（宿主说）+ 她 / 它的音域（MIDI，含两端）。null = 不画提示。 */
 export type HintRange = { lo: number; hi: number; who: string; title?: string; /** 「现在谁在弹」的身份（宿主给；变了 = 窗口跟过去一次）。 */ key?: string } | null;   // title = 键上的提示字（没有 = 「谁的音域里」）
 /** 一个音键（调式梯子上第 k 级）长什么样：简谱数字（含 ♯♭）、八度点（正 = 上面几个、负 = 下面几个）、绝对名、MIDI（只拿来比「按着的」和音域提示）。 */
-export interface PadCell { deg: string; oct: number; abs: string; midi: number; /** 这一格是「1」（宿主说了算）：键顶上一道短横，像电脑键盘 F / J 上的小凸起（v0.16.10，user 11-07「形状上面挑」）。 */ tonic?: boolean }
+/** 键上的一行字（第 19 条：宿主算好、键盘只画）：一个名字（「E♭4」「C♯4」，宿主写好的字），或一个级数（数字 + 高低点 + 前面的临时升降号）。
+ *  键盘不知道这是什么谱、换没换调、名字是实际的还是照谱上画的——这些都在宿主那一处（src/app/pad-music.ts keyFaces）。 */
+export type KeyFace = { name: string } | { deg: string; oct: number; acc?: string };
+/** 一个音键：大字一行、小字一行（谁大谁小、写什么由宿主定）。 */
+export interface KeyFaces { big: KeyFace; small: KeyFace }
+export interface PadCell extends KeyFaces { midi: number; /** 这一格是「1」（宿主说了算）：键顶上一道短横，像电脑键盘 F / J 上的小凸起（v0.16.10，user 11-07「形状上面挑」）。 */ tonic?: boolean }
 /** 音乐知识（宿主注入，src/app/pad-music.ts）：方法都读「现在」的调 / 调式，pad 不缓存；sig() 变了 = 网格重建。以后的和弦键盘 = 另一个 PadMusic。 */
 export interface PadMusic {
   sig(): string;
   cell(k: number): PadCell;
-  /** 第 k 级临时升 / 降 a 之后的绝对名（音键小字）。 */
-  altered(k: number, a: number): string;
+  /** 第 k 级临时升 / 降 a 之后键上两行写什么（升降滑的时候、电脑键盘挂着 ♯ / ♭ 时；规矩同 cell：宿主一处算）。 */
+  altered(k: number, a: number): KeyFaces;
   /** 网格的锚点（第几级）：绝对 = 中央 C 那一行（或它上面第一个调式音）；首调 = 主音。 */
   anchor(layout: "absolute" | "movable"): number;
   /** 「1=」旋钮：每一档的字（大的在上）+ 现在是第几档 + 旋钮上的人话名（提示用）+ 挂在旋钮角上的小标（宿主算好的字和说明；没有 = 不挂。
    *  v0.16.9：手动拨的「1=」和谱上这里的调号不一样时挂「手动」——什么时候挂、挂什么字全归宿主，键盘只画）。 */
-  keyChoices(): { items: string[]; index: number; name: string; tag?: { text: string; title: string } };
+  keyChoices(): { items: string[]; index: number; name: string; tags?: readonly { text: string; title: string }[] };
   /** 「1=」点开的两列滚轮：调 / 调式（拨了一列，键盘重读一遍、把另一列挪到宿主给的现值）。 */
   keyDrum(): { keys: { items: string[]; index: number }; scales: { items: string[]; index: number } };
   /** 「⋯」里插记号钮上的现值：调号（人话调名）/ 拍号 / 速度。 */
@@ -90,7 +95,13 @@ const SWIPE = 20;       // px：音键上下滑过这么远才算升 / 降
 /** 升降键的四种，上面的更升（滑着换：往上 = 更升）；键上的字（Bravura：𝄫 ♭ · ♯ 𝄪）；音键上的小字。 */
 const ACC_ORDER: AccSel[] = [2, 1, -1, -2];
 const ACC_GLYPH = ["\uE264", "\uE260", "", "\uE262", "\uE263"];
-const ACC_TEXT = ["♭♭", "♭", "", "♯", "♯♯"];
+/** 一行键上的字（KeyFace → HTML；字由宿主给，这里只排版：名字 = 一串字，级数 = 高低点 + 升降号 + 数字）。 */
+const faceHtml = (f: KeyFace): string => ("name" in f ? `<span class="kf-nm">${escHtml(f.name)}</span>`
+  : `<span class="kf-dg">${octDots(Math.max(0, f.oct))}<span class="num"><span class="acc">${escHtml(f.acc ?? "")}</span>${escHtml(f.deg)}</span>${octDots(Math.max(0, -f.oct))}</span>`);
+/** 一行键上的字的纯文本（音域旋钮写最低、最高两个键的大字用）。 */
+const faceText = (f: KeyFace): string => ("name" in f ? f.name : `${f.acc ?? ""}${f.deg}`);
+const escHtml = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+const facesHtml = (c: KeyFaces): string => `<span class="kf kf-big">${faceHtml(c.big)}</span><span class="kf kf-small">${faceHtml(c.small)}</span>`;
 const STEP = 28;        // px：旋钮上滑这么远 = 窗里滚一整格（一次最多一格，过半格就算）
 const MOVE = 6;         // px：按下旋钮挪过这么远才算「滑」；没挪就松手 = 点（展开滚轮）
 const STACK = 150;      // px：「1=」旋钮比这窄 = 调和调式名分两行写
@@ -172,7 +183,6 @@ export class Pad {
   setSymbols(on: boolean): void { if (this.symWanted === on) return; this.symWanted = on; this.render(); }
   /** 键上大字写什么（v0.16.10，设备上的看谱方式；user 11-07「专业模式是大写是绝对，小写是相对，然后这个助残模式是大写是相对，小写是绝对」「键盘的键位不能动」）：
    *  abs = 大字音名、小字级数；deg = 大字级数、小字音名。只换字的大小，键的位置一个不动。 */
-  setBigLabel(big: "abs" | "deg"): void { this.el.classList.toggle("big-abs", big === "abs"); }
   /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
   private symPage: SymPage = "art"; private symBuilt: SymPage | null = null;
   /** 「渐到」先点它、再点一个力度 = 这个力度从上一个力度记号渐变过来（2026-10-08 深夜，user「渐到 做」）。Shift 逻辑（2026-10-09，user「然后软键盘到时候加一个toggle渐进到的标签，这样可以快速键盘输入」）：
@@ -200,13 +210,13 @@ export class Pad {
   /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
   private spanText(shift: number, rows: number): string {
     const lo = this.baseAt(shift, rows), hi = lo + rows * this.cols - 1, m = this.host.music;
-    return `${m.cell(lo).abs}–${m.cell(hi).abs}`;
+    return `${faceText(m.cell(lo).big)}–${faceText(m.cell(hi).big)}`;   // 最低、最高两个键的大字（第 19 条：K4 跟着键上的大字）
   }
   /** 同上，画在旋钮 / 滚轮里：放得下就一行「F3–G5」；太窄就两行，下面那行是低的那头（user「也许上下两个吧，下面是lower bound」）。 */
   private spanHtml(shift: number, rows: number, narrow: boolean): string {
     if (!narrow) return this.spanText(shift, rows);
     const lo = this.baseAt(shift, rows), hi = lo + rows * this.cols - 1, m = this.host.music;
-    return `<span class="rg"><span>${m.cell(hi).abs}</span><span>${m.cell(lo).abs}</span></span>`;
+    return `<span class="rg"><span>${faceText(m.cell(hi).big)}</span><span>${faceText(m.cell(lo).big)}</span></span>`;
   }
   /** 音域旋钮窄到一行写不下（手机 / 桌面的窄 pad）。 */
   private rangeNarrow(): boolean { const b = this.el.querySelector<HTMLElement>(".k-range"); return !!b && b.clientWidth < NARROW; }
@@ -347,7 +357,7 @@ export class Pad {
       `<button class="btn knob k-more" data-knob="more" title="${_t("更多：布局、插记号")}"><span class="kl">⋯</span></button>` :
       `<button class="btn knob k-range" data-knob="range" title="${_t("音域（这块 pad 从哪个音到哪个音）：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-unit" data-knob="unit" title="${_t("长短基线：按住上下滑 / 点开选（含连音）")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
-      `<button class="btn knob k-key" data-knob="key" title="${_t("1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）")}"><span class="kl"></span><span class="kh">⇅</span><em class="k-tag" hidden></em></button>` +
+      `<button class="btn knob k-key" data-knob="key" title="${_t("1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）")}"><span class="kl"></span><span class="kh">⇅</span><span class="k-tags" hidden></span></button>` +
       `<button class="btn kb-switch" data-kbswitch="1" title="${_t("换成符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号）——谱上音和记号本来就一起改，这里只换键盘")}" aria-label="${_t("符")}">${iconHtml("notes-symbols")}</button>` +
       `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("弹：音键只响不写（快捷键 `）；再点回到写")}" aria-label="${_t("弹")}">${iconHtml("unplugged")}</button>` +
       `<button class="btn hide-pad" data-hide="1" title="${_t("收起键盘（点五线谱再弹出来）")}" aria-label="${_t("收起")}">${iconHtml("keyboard-collapse")}</button>` +
@@ -508,7 +518,7 @@ export class Pad {
         const inRange = !!hr && m >= hr.lo && m <= hr.hi;
         this.keys.set(k, c);
         cells.push(`<button class="pad-key${inRange ? " hint" : ""}${c.tonic ? " tonic" : ""}" data-k="${k}" data-midi="${c.midi}" title="${inRange ? hr.title ?? _t("{who}的音域里", { who: hr.who }) : ""}">` +
-          `<span class="deg">${octDots(Math.max(0, c.oct))}<span class="num"><span class="acc"></span>${c.deg}</span>${octDots(Math.max(0, -c.oct))}</span><span class="abs">${c.abs}</span></button>`);
+          `${facesHtml(c)}</button>`);
       }
     }
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
@@ -570,10 +580,10 @@ export class Pad {
     }
     const k = q(".k-key .kl");
     if (k) {
-      const kc = this.host.music.keyChoices(), kb = k.parentElement!, tg = kb.querySelector<HTMLElement>(".k-tag");
+      const kc = this.host.music.keyChoices(), kb = k.parentElement!, tg = kb.querySelector<HTMLElement>(".k-tags");
       k.innerHTML = kc.items[kc.index]; kb.classList.toggle("stack", kb.clientWidth < STACK);
-      kb.title = _t("{name}：按住上下滑换调 / 点开选调和调式", { name: kc.name }) + (kc.tag ? `\n${kc.tag.title}` : "");
-      if (tg) { tg.hidden = !kc.tag; tg.textContent = kc.tag?.text ?? ""; }
+      kb.title = _t("{name}：按住上下滑换调 / 点开选调和调式", { name: kc.name }) + (kc.tags ?? []).map((x) => `\n${x.title}`).join("");
+      if (tg) { const t = kc.tags ?? []; tg.hidden = !t.length; tg.innerHTML = t.map((x) => `<em class="k-tag">${escHtml(x.text)}</em>`).join(""); }   // 角上的小标：「手动」「键上按 C 调写」（字和什么时候挂归宿主）
     }
     const u = q(".k-unit .kl");
     if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[v.unit]}</span>${v.tuplet ? `<sup>${v.tuplet}</sup>` : ""}`; u.parentElement!.title = _t("长短基线：{p}{tuplet}——按住上下滑 / 点开选", { p: UNIT_NAME[v.unit], tuplet: v.tuplet ? _t("（{tuplet} 连音）", { tuplet: v.tuplet }) : "" }); }   // 长短旋钮 = 接下来写的长短（有选区也一样：替换模式按它吃；整组改时值在选区菜单里）
@@ -583,8 +593,8 @@ export class Pad {
     // 电脑键盘挂着 ♯ / ♭（Shift）：音键显示升 / 降之后的样子；手指正在滑的那个键显示它自己的
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => {
       const k = Number(b.dataset.k), sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : v.acc;
-      b.querySelector(".acc")!.textContent = ACC_TEXT[a + 2];
-      b.querySelector(".abs")!.textContent = a ? this.host.music.altered(k, a) : this.keys.get(k)!.abs;
+      const html = facesHtml(a ? this.host.music.altered(k, a) : this.keys.get(k)!);   // 升降滑 / 挂着 ♯ ♭：两行一起换成宿主给的（第 19 条 K3）
+      if (b.dataset.faces !== html) { b.dataset.faces = html; b.querySelectorAll(".kf").forEach((x) => x.remove()); b.insertAdjacentHTML("beforeend", html); }
       b.classList.toggle("swiping", !!sw && sw.alt !== 0);
     });
     this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!v.acc);

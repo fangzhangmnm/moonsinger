@@ -49,6 +49,8 @@ export declare const notationName: (id: NotationId) => string;
 export declare const NOTATION_NOTE: Record<NotationId, (middleC: number) => string>;
 /** 「中央 C 叫」的选项上写什么（页面设置、设置「界面」页、第一次打开的卡同一份）。 */
 export declare const middleCLabel: (n: number) => string;
+/** 「移调辅助」是什么（一句；设置「界面」页、页面设置、「初始设置」卡同一份）。后半句 = 第 19 条第 7 点的披露之一：键上的字也按 C 调写。 */
+export declare const TRANSPOSE_AID_NOTE: () => string;
 /** 「中央 C 叫」是什么（一句；三处同一份）。 */
 export declare const MIDDLE_C_NOTE: () => string;
 export declare function defaultText(key: LookKey, ctx?: LookContext): string;

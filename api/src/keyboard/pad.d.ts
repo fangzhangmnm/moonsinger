@@ -8,10 +8,21 @@ export type HintRange = {
     key?: string;
 } | null;
 /** 一个音键（调式梯子上第 k 级）长什么样：简谱数字（含 ♯♭）、八度点（正 = 上面几个、负 = 下面几个）、绝对名、MIDI（只拿来比「按着的」和音域提示）。 */
-export interface PadCell {
+/** 键上的一行字（第 19 条：宿主算好、键盘只画）：一个名字（「E♭4」「C♯4」，宿主写好的字），或一个级数（数字 + 高低点 + 前面的临时升降号）。
+ *  键盘不知道这是什么谱、换没换调、名字是实际的还是照谱上画的——这些都在宿主那一处（src/app/pad-music.ts keyFaces）。 */
+export type KeyFace = {
+    name: string;
+} | {
     deg: string;
     oct: number;
-    abs: string;
+    acc?: string;
+};
+/** 一个音键：大字一行、小字一行（谁大谁小、写什么由宿主定）。 */
+export interface KeyFaces {
+    big: KeyFace;
+    small: KeyFace;
+}
+export interface PadCell extends KeyFaces {
     midi: number; /** 这一格是「1」（宿主说了算）：键顶上一道短横，像电脑键盘 F / J 上的小凸起（v0.16.10，user 11-07「形状上面挑」）。 */
     tonic?: boolean;
 }
@@ -19,8 +30,8 @@ export interface PadCell {
 export interface PadMusic {
     sig(): string;
     cell(k: number): PadCell;
-    /** 第 k 级临时升 / 降 a 之后的绝对名（音键小字）。 */
-    altered(k: number, a: number): string;
+    /** 第 k 级临时升 / 降 a 之后键上两行写什么（升降滑的时候、电脑键盘挂着 ♯ / ♭ 时；规矩同 cell：宿主一处算）。 */
+    altered(k: number, a: number): KeyFaces;
     /** 网格的锚点（第几级）：绝对 = 中央 C 那一行（或它上面第一个调式音）；首调 = 主音。 */
     anchor(layout: "absolute" | "movable"): number;
     /** 「1=」旋钮：每一档的字（大的在上）+ 现在是第几档 + 旋钮上的人话名（提示用）+ 挂在旋钮角上的小标（宿主算好的字和说明；没有 = 不挂。
@@ -29,10 +40,10 @@ export interface PadMusic {
         items: string[];
         index: number;
         name: string;
-        tag?: {
+        tags?: readonly {
             text: string;
             title: string;
-        };
+        }[];
     };
     /** 「1=」点开的两列滚轮：调 / 调式（拨了一列，键盘重读一遍、把另一列挪到宿主给的现值）。 */
     keyDrum(): {
@@ -123,7 +134,6 @@ export declare class Pad {
     setSymbols(on: boolean): void;
     /** 键上大字写什么（v0.16.10，设备上的看谱方式；user 11-07「专业模式是大写是绝对，小写是相对，然后这个助残模式是大写是相对，小写是绝对」「键盘的键位不能动」）：
      *  abs = 大字音名、小字级数；deg = 大字级数、小字音名。只换字的大小，键的位置一个不动。 */
-    setBigLabel(big: "abs" | "deg"): void;
     /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
     private symPage;
     private symBuilt;

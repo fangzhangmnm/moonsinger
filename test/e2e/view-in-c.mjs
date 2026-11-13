@@ -17,14 +17,18 @@ await p.goto(BASE); await p.waitForTimeout(800);
 // 「1=X」：印的在 svg（text.key-label）；专业模式 C 调的淡「1=C」在谱面上面那一层（.ov-key-hint，刀 1）——两样合起来比，提示带「~」
 const labels = () => p.evaluate(() => [...[...document.querySelectorAll("#score text.key-label")].map((t) => t.textContent), ...[...document.querySelectorAll("#score .score-overlay .ov-key-hint")].map((t) => `${t.textContent}~`)].join(" "));
 const firstNote = () => p.evaluate(() => { const m = window.__moonsinger, s = m.state(), n = s.song.papers[0].tracks[s.at.part].find((t) => t.kind === "note"), h = m.layout().notes[0]; return { real: n ? `${n.pitch.step}${n.pitch.alter < 0 ? "b" : n.pitch.alter > 0 ? "#" : ""}${n.pitch.octave}` : null, d: h?.d }; });
-const bigAbs = () => p.evaluate(() => document.querySelector(".pad-panel")?.classList.contains("big-abs"));
+// 键上两行（第 19 条：宿主算好、键盘只画）：「1」那颗键（data-k 0）的大字 / 小字；音域旋钮 = 最低、最高两个键的大字；「1=」角上的小标
+const faces = () => p.evaluate(() => { const k = document.querySelector('.pad-key[data-k="0"]'); return { big: k?.querySelector(".kf-big")?.textContent?.trim() ?? "", small: k?.querySelector(".kf-small")?.textContent?.trim() ?? "" }; });
+const rangeOk = () => p.evaluate(() => { const ks = [...document.querySelectorAll(".pad-key[data-k]")].sort((a, b) => Number(a.dataset.k) - Number(b.dataset.k)), big = (k) => k.querySelector(".kf-big")?.textContent?.trim();
+  const r = (document.querySelector('[data-knob="range"] .kl')?.textContent ?? "").replace(/\s+/g, ""); return { r, ok: r.includes(big(ks[0])) && r.includes(big(ks[ks.length - 1])) }; });
+const keyTags = () => p.$$eval('[data-knob="key"] .k-tag', (ts) => ts.map((t) => t.textContent).join(","));
 const closeAll = async () => { await p.keyboard.press("Escape"); await p.waitForTimeout(120); await p.mouse.click(5, 300); await p.waitForTimeout(120); };
 const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".set-panel"); };
 const setView = async (v) => { await openSheet(); await pickOnPage(p, '.set-panel [data-pg="inc"]', v === "inc" ? "on" : "off"); await p.waitForTimeout(250); await p.click('.set-panel [data-panel-btn="close"]'); await p.waitForTimeout(200); };
 
 // ① 专业（默认）：C 调 = 淡「1=C」；键上大字音名
 check((await labels()) === "1=C~", "专业 + C 调：调号上方淡「1=C」", await labels());
-check((await bigAbs()) === true, "专业：键上大字写音名");
+check(JSON.stringify(await faces()) === JSON.stringify({ big: "C4", small: "1" }), "专业：键上大字写音名、小字写级数", JSON.stringify(await faces()));
 const hint = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-key-hint")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
 await p.mouse.click(hint.x, hint.y); await p.waitForTimeout(250);
 check(await p.evaluate(() => !!document.querySelector(".ctx-menu.header-panel")), "点「1=C」= 谱头面板");
@@ -40,7 +44,9 @@ await setView("inc");
 const n1 = await firstNote();
 check((await labels()) === "1=F", "按 C 调看：调号上方写「1=F」（不是淡的）", await labels());
 check(n1.real === "F3" && n1.d === 21, "音画在 C3 的位置（d = 21，往下四度），谱里还是 F3", JSON.stringify(n1));
-check((await bigAbs()) === false, "键上大字写级数");
+check(JSON.stringify(await faces()) === JSON.stringify({ big: "C3", small: "F3" }), "按 C 调看：「1」那颗键大字 = 谱上画成的 C3、小字 = 实际的 F3（第 19 条）", JSON.stringify(await faces()));
+const rg = await rangeOk(); check(rg.ok, "音域旋钮 = 最低、最高两个键的大字（换到 C 调的名字）", rg.r);
+check((await keyTags()) === "键上按 C 调写", "「1=」角上挂「键上按 C 调写」", await keyTags());
 check((await p.$$eval("#score text.clef", (t) => t.map((x) => x.textContent).join(""))) === clefPro, "谱号照实际的调挑（换个看法谱号不跳）");
 check((await p.evaluate(() => document.querySelector('.pad-key[data-k="0"]')?.classList.contains("tonic"))) === true, "「1」那颗键顶上有短横");
 
@@ -55,14 +61,14 @@ await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
 // ④ 跟着歌走：写进歌里、能撤销（撤销 = 回到专业，键上大字跟着换）；设备上不再记
 check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === true, "写进歌里（viewInC: true）");
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
-check((await bigAbs()) === true && !(await labels()).includes("1=F"), "撤销 = 回到专业（键上大字音名、没有「1=F」）", await labels());
+check((await faces()).big === "F3" && !(await labels()).includes("1=F") && (await keyTags()) === "", "撤销 = 回到专业（键上大字实际音名 F3、没有「1=F」、没有那个小标）", await labels());
 await p.keyboard.press("Control+Shift+z"); await p.waitForTimeout(250);
-check((await bigAbs()) === false && (await labels()) === "1=F", "重做 = 又按 C 调看", await labels());
+check((await faces()).big === "C3" && (await labels()) === "1=F", "重做 = 又按 C 调看（键上大字 C3）", await labels());
 check(!(await p.evaluate(() => { try { return Object.keys(localStorage).some((k) => k.endsWith(":view-in-c")); } catch { return false; } })), "设备上不再记（没有写 view-in-c 这个键）");
 
 // ⑤ 切回专业 = 照实际画
 await setView("pro");
-check((await bigAbs()) === true, "切回专业：键上大字音名");
+check(JSON.stringify(await faces()) === JSON.stringify({ big: "F3", small: "1" }), "切回专业：键上大字实际音名、小字级数", JSON.stringify(await faces()));
 check(!(await labels()).includes("1=F"), "切回专业：没有「1=F」（调号照画）", await labels());
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();

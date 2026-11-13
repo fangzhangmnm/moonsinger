@@ -89,7 +89,7 @@ import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf
 import { partShow, partNameOf, roleNameIn, roleGivenName, roleInstrumentLabel, type PartShow } from "../format/part-show.ts";   // 声部显示成什么：唯一出口（12-4）
 import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES } from "../score/paper.ts";
 import { paperSizeText } from "../look/paper.ts";
-import { lookOf, notationName, NOTATION_NOTE, middleCLabel, MIDDLE_C_NOTE, trackLookOf, followDefault, allDefault, chosenCount, defaultText, customStaffMm, marginRow, type LookKey, type LookContext, type LookDefaults, type HabitKey, type Habits, HABIT_KEYS } from "../look/index.ts";
+import { lookOf, notationName, NOTATION_NOTE, middleCLabel, MIDDLE_C_NOTE, TRANSPOSE_AID_NOTE, trackLookOf, followDefault, allDefault, chosenCount, defaultText, customStaffMm, marginRow, type LookKey, type LookContext, type LookDefaults, type HabitKey, type Habits, HABIT_KEYS } from "../look/index.ts";
 import { habitsFrom, HABIT_CODEC, HABIT_DEVICE_KEY, HABITS_ASKED_KEY } from "../look/habits.ts";
 import { openHabitsCard, type HabitsCard, type HabitRows } from "./panels/habits-card.ts";   // 这台设备的习惯（第 18 条）   // 「现在怎么画」和「跟着软件」只问这一处（第 17 条）
 import * as docFile from "./doc-file.ts";
@@ -712,7 +712,7 @@ function writeAndLocate(write: (s: EditorState) => EditorState, gesture?: string
 }
 
 let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消旧的（不然会掐掉新音）
-/** 看谱方式「按 C 调看」（v0.16.10）：谱换到 C 调画、每个调号上方写「1=原来的调」、键上大字写级数。user 11-07「我需要一个残疾人模式…显示的时候…帮我转到 C 大调上面，然后…写一个一等于 F」
+/** 看谱方式「按 C 调看」（v0.16.10）：谱换到 C 调画、每个调号上方写「1=原来的调」；键上大字写谱上画成的名字（第 19 条，原来写级数）。user 11-07「我需要一个残疾人模式…显示的时候…帮我转到 C 大调上面，然后…写一个一等于 F」
  *  「设计里面专门开一个就是 Accessibility 辅助模式的框，这是第一个可选项」「键盘的键位不能动」。
  *  和弦标级数（v0.16.11）：叠音的和弦上方写级数（src/theory/）。user 11-07「我根本看不懂我自己摸的和弦，摸出来是几级和弦，我脑袋根本转不过来」「和弦上标级数…写个深模块…就你自己写」。
  *  谱面分家第三刀（2026-11-11）起这两样是**这首歌的**设置（score.json；读 / 改只走 src/score/song-view.ts，改走 setSongLook = 修改锁的「看法」）。
@@ -913,7 +913,7 @@ function plugNudge(why: NoWrite): void {
 }
 const padHost = createPadHost(padEl, {
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
-  state: () => D.st, middleC: () => lookOf(D.st.song, lookCtx()).middleC, update: (n, gesture) => { if (inputGate.may(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
+  state: () => D.st, middleC: () => lookOf(D.st.song, lookCtx()).middleC, inC: () => inCAtCursor(), update: (n, gesture) => { if (inputGate.may(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
   monoRejected: () => { if (monoHinted) return; monoHinted = true; info(_t("「{who}」一次只出一个音：几乎同时按下的第二个键没写。要写和弦，给这个声部换钢琴这类乐器", { who: activeCandidateName(D.extras, curRole()) ?? roleLabel(curRole()) })); },   // 同一次打开只说一次（v0.16.35）   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
   sound: { down: (p, id) => sound.down(p, id), up: (id) => sound.up(id) }, soundTok, soundAfterWrite,
   onTouch: (ts) => feel.touch(ts),
@@ -934,10 +934,11 @@ const padHost = createPadHost(padEl, {
   showPad: (on) => showPad(on),
 });
 const pad = padHost.pad;
-/** 键上的大字跟着这首歌怎么看走：按 C 调看 = 级数，不按 = 音名（换歌 / 切 / 撤销都在 paintNow 里对一次）。 */
-let shownInC = lookOf(D.st.song, lookCtx()).inCActive;
-pad.setBigLabel(shownInC ? "deg" : "abs");
-function syncSongLook(): void { const inC = lookOf(D.st.song, lookCtx()).inCActive; if (inC === shownInC) return; shownInC = inC; pad.setBigLabel(inC ? "deg" : "abs"); ghostSync(); }
+/** 移调辅助在光标这个声部上起不起作用（第 19 条）：这首歌按 C 调看（五线谱、开着）而且光标那个声部不是打击乐的行（打击乐的行排版不换，键上也不换）。 */
+function inCAtCursor(): boolean { return lookOf(D.st.song, lookCtx()).inCActive && !notationOfRole(curRole()).perc; }
+/** 键上的字跟着这首歌怎么看走（换歌 / 切 / 撤销 / 光标走过转调都在 paintNow 里对一次）：「这个键写什么」在 pad-music keyFaces，键盘的 sig 变了就重写；鬼音符跟着换。 */
+let shownInC = inCAtCursor();
+function syncSongLook(): void { const inC = inCAtCursor(); if (inC === shownInC) return; shownInC = inC; pad.render(); ghostSync(); }
 /** 设备上的习惯变了（第 18 条）：画的地方都跟着——谱面（排版缓存的键里有习惯）、键上的大字 / 鬼音符、键上的音名、开着的面板（页面设置的「跟着软件（现在是：X）」）。 */
 function afterHabits(): void { view.render(); syncSongLook(); pad.render(); ui.redraw(); }
 
@@ -1475,7 +1476,7 @@ function askOver(host: HTMLElement, title: string, msg: string, okLabel: string,
 function habitRowHtml(k: HabitKey, h: Habits): string {
   const NONE = "none", none: [string, string] = [NONE, _t("没选（照软件的默认：{x}）", { x: defaultText(k, {}) })];
   if (k === "notation") return setItem(_t("习惯看的谱"), setSel("habit:notation", [none, ...NOTATIONS.map((id): [string, string] => [id, notationName(id)])], h.notation ?? NONE), _t("新歌和没单独选过的歌照它显示；每首歌在页面设置里能单独换。"));
-  if (k === "viewInC") return setItem(_t("移调辅助"), setSel("habit:viewInC", [none, ["off", _t("不用（照写的调）")], ["on", _t("按 C 调看")]], h.viewInC === undefined ? NONE : h.viewInC ? "on" : "off"), _t("调号多的时候把谱换到 C 调来画，只改显示、声音不变；看五线谱时起作用。"));
+  if (k === "viewInC") return setItem(_t("移调辅助"), setSel("habit:viewInC", [none, ["off", _t("不用（照写的调）")], ["on", _t("按 C 调看")]], h.viewInC === undefined ? NONE : h.viewInC ? "on" : "off"), TRANSPOSE_AID_NOTE());
   return setItem(_t("中央 C 叫"), setSel("habit:middleC", [none, ...MIDDLE_C_NAMES.map((n): [string, string] => [String(n), middleCLabel(n)])], h.middleC === undefined ? NONE : String(h.middleC)), MIDDLE_C_NOTE());
 }
 /** 设置「界面」页：「初始设置」那一行（打开那张卡）+ 每样习惯一行。 */
@@ -2238,7 +2239,7 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
       //   叫「移调辅助」（user 11-12「我记得我们一开始定的语义是辅助功能啊…这几个看谱里面…主要就都是一些辅助功能」，统筹定名）
       setItem(_t("移调辅助"), sel("inc", [fol("viewInC"), ["off", _t("不用（照写的调）")], ["on", _t("按 C 调看")]], cur("viewInC", look.viewInC ? "on" : "off"), movable),
         (movable ? (MOVABLE_DO[look.notation] ? _t("简谱本来就是首调（1 = 这个调的主音），用不上「移调辅助」；存着的选择不动，切回五线谱照旧。") : _t("字母谱写的是实际的音名，用不上「移调辅助」；存着的选择不动，切回五线谱照旧。"))
-          : defs([[_t("不用（照写的调）"), _t("按实际的调画谱，键上大字写音名")], [_t("按 C 调看"), _t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")]])) + IN_SONG) +
+          : defs([[_t("不用（照写的调）"), _t("按实际的调画谱，键上大字写音名")], [_t("按 C 调看"), _t("谱换到 C 调画、每个调号上方写「1=原来的调」；键上的大字也按 C 调写（谱上画成的名字），小字是实际的音；键的位置不动")]])) + IN_SONG) +
       // 中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；第 18 条起一直在——它管所有写成「字母 + 八度数字」的地方，统筹 b149a4d9 第 4 点）
       setItem(_t("中央 C 叫"), sel("mc", [fol("middleC"), ...MIDDLE_C_NAMES.map((n) => [String(n), middleCLabel(n)] as const)], cur("middleC", String(look.middleC))), MIDDLE_C_NOTE() + IN_SONG) +
       setItem(_t("和弦辅助"), sel("ct", [fol("chordTags"), ["on", _t("标级数")], ["off", _t("不标")]], cur("chordTags", look.chordTags ? "on" : "off")), _t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选") + IN_SONG) +

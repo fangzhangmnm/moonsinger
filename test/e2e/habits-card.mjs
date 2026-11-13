@@ -46,7 +46,7 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   const k1 = await kv(p);
   check(k1["habits-asked"] === "1" && k1["habit-notation"] === "jianpu" && k1["habit-transpose-aid"] === "on" && k1["habit-middle-c"] === "3", "「好」= 选了的记进设备、记「问过了」", JSON.stringify(k1));
   check((await rowKind(p)) === "jianpu", "新歌（谱种「跟着软件」）马上按简谱排", await rowKind(p));
-  check(await p.$eval('.pad-key[data-midi="60"] .abs', (e) => e.textContent === "C3").catch(() => false), "键上的字照中央 C 的叫法：中央 C 写 C3");
+  check(await p.$eval('.pad-key[data-midi="60"] .kf-big', (e) => e.textContent === "C3").catch(() => false), "键上的字照中央 C 的叫法：中央 C 写 C3");
   await p.reload(); await p.waitForTimeout(3000);
   check(!(await p.$(".habits-card")), "问过了 = 重新载入不再出");
   check((await rowKind(p)) === "jianpu", "重新载入：习惯还在（照简谱排）");

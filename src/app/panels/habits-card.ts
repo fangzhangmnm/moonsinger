@@ -17,7 +17,7 @@ import { escapeHtml as esc } from "../../ui/md-lite.ts";
 import { type RawMeasure } from "../../render/text/index.ts";
 import { NOTATIONS, type NotationId } from "../../score/song-view.ts";
 import { previewSvg, PREVIEW_W, PREVIEW_H } from "./habits-preview.ts";
-import { notationName, type Habits, type HabitKey } from "../../look/index.ts";
+import { notationName, TRANSPOSE_AID_NOTE, type Habits, type HabitKey } from "../../look/index.ts";
 import { stripLayout } from "./strip-layout.ts";
 
 /** 第三行起的小下拉（中央 C 叫…）：宿主出的行（和设置「界面」页同一个函数）+ 装好下拉 / 「?」+ 读回选了什么。 */
@@ -57,7 +57,7 @@ export function openHabitsCard(d: HabitsCardDeps): HabitsCard {
       `<div class="hab-foot">${esc(_t("字母谱：玩 tracker 的可以先用这个，不完全一样。钢琴卷帘、录音还没做，做好了会加在这里。"))}</div></section>` +
     `<section class="hab-q" data-q="viewInC"><div class="hab-title">${esc(_t("移调辅助"))}</div>` +
       `<div class="hab-pair"><button type="button" class="btn hab-btn" data-h="viewInC" data-v="off" aria-pressed="false">${esc(_t("不用"))}</button><button type="button" class="btn hab-btn" data-h="viewInC" data-v="on" aria-pressed="false">${esc(_t("按 C 调看"))}</button></div>` +
-      `<div class="hab-note">${esc(_t("调号多的时候把谱换到 C 调来画，只改显示、声音不变；看五线谱时起作用。"))}</div></section>` +
+      `<div class="hab-note">${esc(TRANSPOSE_AID_NOTE())}</div></section>` +
     `<section class="hab-small">${d.rows.html(d.current)}</section>`;
   const valueOf = (h: string, v: string): string | boolean => (h === "viewInC" ? v === "on" : v);
   const sync = (reveal: boolean) => {

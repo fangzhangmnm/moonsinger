@@ -174,20 +174,24 @@ body.listen-mode .ink-caret { display: none; }
 .pad-grid { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); grid-auto-rows: var(--key-h); column-gap: var(--kg); row-gap: var(--kgv); }
 .pad-key { border: 0; border-radius: 7px; background: #fff; box-shadow: 0 1px 0 rgba(42, 42, 42, .28); display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 2px; cursor: pointer; touch-action: none; padding: 0; min-width: 0; }
-.pad-key .deg { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 21px; font-weight: 600; line-height: 1; }
-.pad-panel[data-form="tablet"] .pad-key .deg { font-size: 23px; gap: 3px; }
+/* 键上两行字（第 19 条：写什么由宿主 pad-music keyFaces 一处定，键盘只画）：.kf-big 在上、.kf-small 在下；每一行是名字（.kf-nm）或级数（.kf-dg：数字 + 高低点）。
+   大小照原来的两种样子：大字的名字 19 / 21 px、大字的级数 21 / 23 px；小字的名字 10 px、小字的级数 11 px（点也小一号） */
+.pad-key .kf { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.pad-key .kf-dg { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.pad-key .kf-big .kf-nm { font-size: 19px; font-weight: 600; color: var(--ink); }
+.pad-key .kf-big .kf-dg { font-size: 21px; font-weight: 600; }
+.pad-panel[data-form="tablet"] .pad-key .kf-big .kf-nm { font-size: 21px; }
+.pad-panel[data-form="tablet"] .pad-key .kf-big .kf-dg { font-size: 23px; gap: 3px; }
+.pad-key .kf-small { color: var(--muted); }
+.pad-key .kf-small .kf-nm { font-size: 10px; }
+.pad-key .kf-small .kf-dg { font-size: 11px; font-weight: 400; gap: 1px; }
 /* 简谱八度点：真的小圆点，上方 = 高八度、下方 = 低八度，多个横排（占位固定高，有没有点数字都不跳） */
 .pad-key .jp-dots { display: flex; gap: 2px; height: 4px; }
 .pad-key .jp-dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
 .pad-panel[data-form="tablet"] .pad-key .jp-dots { height: 5px; gap: 3px; }
 .pad-panel[data-form="tablet"] .pad-key .jp-dots i { width: 5px; height: 5px; }
-.pad-key .abs { font-size: 10px; color: var(--muted); }
-/* 键上大字写什么（v0.16.10，设置「看谱方式」）：专业 = 大字音名、小字级数（.big-abs）；辅助 = 大字级数、小字音名（原来的样子）。只换字号，键不动 */
-.pad-panel.big-abs .pad-key .abs { order: -1; font-size: 19px; font-weight: 600; color: var(--ink); line-height: 1; }
-.pad-panel.big-abs .pad-key .deg { font-size: 11px; font-weight: 400; gap: 1px; color: var(--muted); }
-.pad-panel.big-abs .pad-key .jp-dots { height: 3px; gap: 1px; }
-.pad-panel.big-abs .pad-key .jp-dots i { width: 3px; height: 3px; }
-.pad-panel[data-form="tablet"].big-abs .pad-key .abs { font-size: 21px; }
+.pad-key .kf-small .jp-dots { height: 3px; gap: 1px; }
+.pad-key .kf-small .jp-dots i { width: 3px; height: 3px; }
 /* 「1」：贴着键上沿一道横条（形状，不用颜色——颜色已经给高亮用了；像电脑键盘 F / J 上的小凸起） */
 .pad-key.tonic { position: relative; }
 .pad-key.tonic::before { content: ""; position: absolute; top: 0; left: 22%; right: 22%; height: 3px; border-radius: 0 0 3px 3px; background: currentColor; opacity: .4; }   /* 贴着键的上沿（八度点在下面一点，不挤） */

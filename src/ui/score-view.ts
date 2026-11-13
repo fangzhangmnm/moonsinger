@@ -25,7 +25,7 @@ import { CONT_MARGIN, REFLOW_MARGIN } from "../look/frame.ts";   // 连续 / 按
 import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, moveMarkToEnd, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, keySpell, type Pitch } from "../score/pitch.ts";
-import { toC, stepsToC, trackInC } from "../score/view-in-c.ts";
+import { drawnPitch, stepsToC, trackInC } from "../score/view-in-c.ts";
 import { lookOf, type LookContext } from "../look/index.ts";   // 「现在怎么画」只问这一处（第 17 条）
 import type { HarmonyRead } from "../theory/index.ts";
 import { textStyleCss } from "../render/text/index.ts";
@@ -509,7 +509,7 @@ export class ScoreView {
     const inC = lookOf(this.host.get().song, this.lookCtx()).inCActive, shownToks = inC ? trackInC(toks) : toks;   // 按 C 调看（起作用时）：鬼音符也换到 C、按显示出来的谱算升降号
     // 打击乐的行没有调（7-R，统筹定的规矩）：写的音高 = 敲哪个鼓，鬼音符不画升降号（「是不是打击乐的行」= 宿主给的声部视图 perc，全 app 只在宿主那一处判断）
     const perc = !!this.host.look.parts().find((p) => p.id === st.at.part)?.perc;
-    const notes = this.ghostP.map((p0): GhostNote => { const p = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths); return { p, shown: perc ? null : shownAccAt(shownToks, at, p), shift, fifths: inC ? 0 : fifths }; });
+    const notes = this.ghostP.map((p0): GhostNote => { const p = inC ? drawnPitch(p0, fifths) : keySpell(p0, fifths); return { p, shown: perc ? null : shownAccAt(shownToks, at, p), shift, fifths: inC ? 0 : fifths }; });
     g.innerHTML = geo(row).ghost(L.systems[row]!, x, notes, half, atCaret);   // 鬼音符长什么样 = 这一行的几何
     if (!g.isConnected) this.ink.appendChild(g);
   }

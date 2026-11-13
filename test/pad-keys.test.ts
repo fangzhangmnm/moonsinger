@@ -34,6 +34,15 @@ describe("pad 按键 → 动作（翻译层）", () => {
       assert(!/from "\.\.\/(score|app|engine|singer|gm|format|performers)\//.test(src), `src/keyboard/${f}.ts import 了 src/score|app|engine|…（键盘不懂音乐，音乐知识走 PadMusic 注入）`);
     }
   });
+  it("键上写什么只有宿主一处算（第 19 条，统筹 a6be57e4）：pad.ts 里不认谱种 / 移调辅助、没有大字写什么的开关；pad-music 里音名只在 keyFaces 里出", () => {
+    const code = (f: string) => fs.readFileSync(new URL(f, import.meta.url), "utf8").replace(/(^|\s)\/\*[\s\S]*?\*\//g, "$1").split("\n").map((l: string) => l.replace(/(^|\s)\/\/.*$/, "")).join("\n");
+    const pad = code("../src/keyboard/pad.ts");
+    assert(!/\b(inC|viewInC|inCActive|notation|jianpu|letters|setBigLabel|big-abs)\b/.test(pad), "pad.ts 认了谱种 / 移调辅助 / 大字开关");
+    const music = code("../src/app/pad-music.ts"), i = music.indexOf("export function keyFaces("), j = music.indexOf("\n}\n", i);
+    assert(i > 0 && j > i, "pad-music.ts 里要有 keyFaces");
+    const outside = music.slice(0, i) + music.slice(j);
+    assert(!/\bnoteName\(|\btoC\(/.test(outside), "pad-music.ts 里 keyFaces 之外不许自己写音名 / 换到 C（cell / altered / 音域旋钮都从 keyFaces 来）");
+  });
   it("按键写的是哪种记号（画灰 / 「不认」按它查）", () => {
     eq(markOfKey("art:staccato"), "staccato"); eq(markOfKey("art:breath"), "breath"); eq(markOfKey("slur"), "slur");
     eq(markOfKey("swell:>"), "swellFade"); eq(markOfKey("swell:<"), "swellGrow"); eq(markOfKey("swell:<>"), "swellGrow"); eq(markOfKey("inhale:soft"), "inhale");

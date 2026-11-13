@@ -15,7 +15,7 @@ const toks = () => p.evaluate(() => { const s = window.__moonsinger.state(); ret
 const sel = () => p.evaluate(() => window.__moonsinger.state().sel);
 const stackOn = () => p.evaluate(() => document.querySelector(".pad-panel [data-stack]").classList.contains("lock"));
 const bsText = () => p.evaluate(() => document.querySelector('.pad-panel [data-cmd="backspace"]').textContent);
-const inChord = () => p.$$eval(".pad-panel .pad-key.in-chord .abs", (bs) => bs.map((b) => b.textContent).sort().join(","));   // 叠亮着：和弦里已有的音描一圈（v0.16.5，user 11-07「stack模式已经有的键能高亮吗」）
+const inChord = () => p.$$eval(".pad-panel .pad-key.in-chord .kf-big", (bs) => bs.map((b) => b.textContent).sort().join(","));   // 叠亮着：和弦里已有的音描一圈（v0.16.5，user 11-07「stack模式已经有的键能高亮吗」）
 const stk = () => p.dispatchEvent(".pad-panel [data-stack]", "pointerdown", { pointerId: 1, isPrimary: true, button: 0 });
 // 光标放到 C 后面（第一个音后面）
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), t = s.song.papers[0].tracks[s.at.part], i = t.findIndex((x) => x.kind === "note"); m.set({ ...s, sel: null, caret: i + 1 }); });

@@ -10,6 +10,8 @@ export interface PadGlue {
     state(): EditorState;
     /** 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字照它写。 */
     middleC(): number;
+    /** 移调辅助在光标这个声部上起不起作用（第 19 条：起作用 = 键上大字照谱上换到 C 调画成的名字写；宿主判，键盘不知道）。 */
+    inC(): boolean;
     /** gesture = 撤销并步的名字（同一个名字、挨得近的几下并成一步撤销；单声乐器「后按的算数」用）。 */
     update(next: EditorState, gesture?: string): void;
     /** 写一个音并回刚写的下标（-1 = 没写成）。 */

@@ -123,6 +123,8 @@ export const NOTATION_NOTE: Record<NotationId, (middleC: number) => string> = {
 };
 /** 「中央 C 叫」的选项上写什么（页面设置、设置「界面」页、第一次打开的卡同一份）。 */
 export const middleCLabel = (n: number): string => (n === 4 ? _t("C{n}（国际通用）", { n }) : `C${n}`);
+/** 「移调辅助」是什么（一句；设置「界面」页、页面设置、「初始设置」卡同一份）。后半句 = 第 19 条第 7 点的披露之一：键上的字也按 C 调写。 */
+export const TRANSPOSE_AID_NOTE = (): string => _t("调号多的时候把谱换到 C 调来画，只改显示、声音不变；看五线谱时起作用。键上的大字也按 C 调写，小字是实际的音。");
 /** 「中央 C 叫」是什么（一句；三处同一份）。 */
 export const MIDDLE_C_NOTE = (): string => _t("八度的数字从哪儿数：字母谱、简谱谱头、键上的字、音域旋钮都照它写。只改叫法，文件里、声音里的八度不变。");
 export function defaultText(key: LookKey, ctx: LookContext = {}): string {   // X 跟着这台设备的习惯（第 18 条）

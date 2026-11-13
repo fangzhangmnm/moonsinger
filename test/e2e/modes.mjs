@@ -80,7 +80,7 @@ await p.mouse.move(knob.x + knob.width / 2, knob.y + knob.height / 2); await p.m
 const unit1 = await p.evaluate(() => window.__moonsinger.state().input.unit);
 check(unit1 !== unit0, "滚轮拨「长短」旋钮", `${unit0} → ${unit1}`);
 // 滚轮在音键上 = 挪一排（和音域旋钮一样；v0.10.23，user「鼠标滚轮可以滚动音符键盘以及其他键盘的row」）
-{ const lab = () => p.$$eval(".pad-key[data-k] .abs", (es) => es.map((e) => e.textContent).join(","));
+{ const lab = () => p.$$eval(".pad-key[data-k] .kf-big", (es) => es.map((e) => e.textContent).join(","));
   const r0 = await lab(), g = await p.locator(".pad-grid").boundingBox();
   await p.mouse.move(g.x + g.width / 2, g.y + g.height / 2); await p.mouse.wheel(0, 100); await p.waitForTimeout(150);
   const r1 = await lab(); await p.mouse.wheel(0, -100); await p.waitForTimeout(150); const r2 = await lab();

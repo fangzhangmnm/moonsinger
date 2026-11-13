@@ -23,6 +23,8 @@ export async function ddOptions(p, sel) {
 export async function closeList(p) {
   const open = () => p.evaluate(() => [...document.querySelectorAll(".popup-menu")].some((m) => !m.classList.contains("hidden") && m.getBoundingClientRect().width > 0));
   //   按一下就等它真收了再看要不要再按（收的那几帧还在版面里）：多按的一下没有列表可收 = 落到面板外壳上、把整张面板关了（2026-11-13 设置 / 页面设置搬到壳上之后撞上；人连按两下 Esc 本来就是先收列表再关面板）
+  //   第一下之前也等一会：库的列表开了之后 setTimeout(0) 才挂键盘监听，赶在它前面的 Esc 列表收不到、落到面板外壳上把整张面板关了（2026-11-13 机器忙时 only1 撞上；人手按不了这么快）
+  if (await open()) await p.waitForTimeout(50);
   for (let i = 0; i < 5 && (await open()); i++) {
     await p.keyboard.press("Escape");
     for (let k = 0; k < 8 && (await open()); k++) await p.waitForTimeout(40 + 20 * i);

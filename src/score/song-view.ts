@@ -37,7 +37,7 @@ export interface SongView {
   readonly notation: NotationId;
   /** 叠音的和弦上方写级数（乐理模块 src/theory/）。 */
   readonly chordTags: boolean;
-  /** 按 C 调看（辅助）：谱换到 C 调画、每个调号上方写「1=原来的调」、键上大字写级数；拖音高 / 鬼音符按显示的换回实际的。= 存着的值（设置面板亮哪个钮）。 */
+  /** 按 C 调看（辅助）：谱换到 C 调画、每个调号上方写「1=原来的调」、键上大字写谱上画成的名字（第 19 条；原来写级数）；拖音高 / 鬼音符按显示的换回实际的。= 存着的值（设置面板亮哪个钮）。 */
   readonly viewInC: boolean;
   /** 按 C 调看此刻起不起作用 = 存着开 ∧ 这种谱上起作用（IN_C_APPLIES：简谱本来就是首调、字母谱写的是实际的音名：开关变灰、存着的值不动；施工单第三节「4」、7-B）。排版、谱面、键上的大字都看这个。 */
   readonly inCActive: boolean;
