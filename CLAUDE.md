@@ -549,7 +549,7 @@ user 2026-10-08「真的需要做store了…要不要硬着头皮进store」「�
 
 | 文件 | 碰什么 | 为什么 |
 |---|---|---|
-| `src/device-kv.ts` | localStorage（前缀 `moonsinger-5b1e7c0a92d34f6e:`） | device 层标量：lang / storeAttached / gallery-folder / last-scene / last-doc / diag-log / midi-chip-hidden（v0.13.3）/ zoom（谱面缩放的物理倍数，v0.14.8；user 2026-10-21「缩放跨会话记住，按设备存」批） |
+| `src/device-kv.ts` | localStorage（前缀 `moonsinger-5b1e7c0a92d34f6e:`） | device 层标量：lang / storeAttached / gallery-folder / last-scene / last-doc / diag-log / midi-chip-hidden（v0.13.3）/ zoom（谱面缩放的物理倍数，v0.14.8；user 2026-10-21「缩放跨会话记住，按设备存」批）/ lib-removed-voice、lib-removed-gs（自带的库「你删了」的记号：有它就不自己下载，v0.17.25；统筹 2026-11-13 定的记法，已报 user）/ loop-editor、loop-gallery（编辑器和歌库播放条的「循环」，v0.17.26；user 2026-11-13「你图库里的循环和编辑器里的循环能记忆一下吗」） |
 | `src/app/pwa-shell.ts` | Cache Storage | 清缓存只清自己前缀 `moonsinger-` 的壳缓存 |
 | `src/gm/sound-cache.ts` | Cache Storage `pwa-sounds` | 音源整包按 sha256 留着离线能用（user 2026-10-07 批）；2026-10-08 起也存**子集**（自己的 .sf2 加进来时 / 解包时留的，同样按 sha256、取出来核过；设置里逐条能删，认得出是哪首歌的哪件——Opus 5.5 加，没另问 user，形状同一种）；`navigator.storage.estimate` 只读显示 |
 | `service-worker.js` | Cache Storage `moonsinger-<hash>` | app 壳 |
