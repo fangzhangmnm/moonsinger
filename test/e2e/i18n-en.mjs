@@ -50,7 +50,7 @@ const note = (where, res) => {
   for (const t of res.overflow) { const k = t.replace(/ \[.*/, ""); if (!seenOver.has(k)) seenOver.set(k, `${where}: ${t}`); }
 };
 
-const MUST_REACH = ["写音", "词", "听 · 基础", "☰", "导出", "声音与署名", "封面", "设置 ui", "设置 a11y", "设置 sound", "设置 midi", "设置 dev",
+const MUST_REACH = ["写音", "词", "听 · 基础", "☰", "导出", "声音与署名", "封面", "设置 ui", "设置 sound", "设置 input", "设置 upkeep", "设置 about", "设置 dev",
   "这一段的菜单", "谱头面板", "声部小卡", "乐器目录", "乐器页", "声部管理", "选区条", "选区菜单", "歌库 / 选家"];
 const cardBad = [];
 for (const [size, w, h] of SIZES) {

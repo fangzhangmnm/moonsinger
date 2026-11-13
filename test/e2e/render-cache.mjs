@@ -223,7 +223,7 @@ check(/旧版本的引擎渲的/.test(await p.$eval(".ms-player-title", (e) => e
 // 设置里一键删旧：每条标「这一版渲的 / 旧版本渲的」，钮上写几条、多大；删完旧的没了、这一版渲的留着
 await p.click(tileOf(id3)); await p.waitForTimeout(800); await later();   // 回到编辑器（设置在三条杠里）
 check(await ageIt(), "再造一条旧的");
-await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card"); await p.click('.set-tabs [data-tab="sound"]'); await p.waitForTimeout(150);   // 渲染缓存在「音源与缓存」那一页
+await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card"); await p.click('.set-tabs [data-tab="upkeep"]'); await p.waitForTimeout(150);   // 渲染缓存在「维护」那一页（13-1）
 const rcText = async () => { for (let i = 0; i < 40; i++) { const t = await p.$eval("#rcList", (e) => e.textContent ?? "").catch(() => ""); if (t && t !== "…") return t; await p.waitForTimeout(100); } return ""; };
 { const t = await rcText(), oldRows = (t.match(/旧版本渲的（渲染核心/g) ?? []).length, newRows = (t.match(/这一版渲的/g) ?? []).length, n0 = (await rc()).stats.count;
   const btn = await p.$eval('#rcList [data-v="rc:old"]', (e) => e.textContent ?? "").catch(() => "");

@@ -814,14 +814,38 @@ export declare const S: {
     readonly "\u754C\u9762##\u9875\u7B7E": {
         readonly en: "UI";
     };
-    readonly "\u4E50\u7406\u52A9\u624B##\u9875\u7B7E": {
-        readonly en: "Theory";
+    readonly "\u754C\u9762\uFF1A\u8FD9\u4E2A\u8F6F\u4EF6\u957F\u4EC0\u4E48\u6837\u3001\u8BF4\u4EC0\u4E48\u8BED\u8A00": {
+        readonly en: "UI: how this app looks and which language it speaks";
     };
-    readonly "\u97F3\u6E90\u4E0E\u7F13\u5B58##\u9875\u7B7E": {
-        readonly en: "Audio";
+    readonly "\u97F3\u6E90##\u9875\u7B7E": {
+        readonly en: "Sounds";
+    };
+    readonly "\u97F3\u6E90\uFF1A\u88C5\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u58F0\u97F3": {
+        readonly en: "Sounds: the voices and instruments installed on this device";
+    };
+    readonly "\u8F93\u5165##\u9875\u7B7E": {
+        readonly en: "Input";
+    };
+    readonly "\u8F93\u5165\uFF1A\u63A5\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u952E\u76D8": {
+        readonly en: "Input: keyboards connected to this device";
+    };
+    readonly "\u7EF4\u62A4##\u9875\u7B7E": {
+        readonly en: "Upkeep";
+    };
+    readonly "\u7EF4\u62A4\uFF1A\u6E05\u7406\u7A7A\u95F4\u3001\u51FA\u6BDB\u75C5\u65F6\u4FEE\u4E00\u4E0B\u3001\u628A\u65E5\u5FD7\u53D1\u7ED9\u5F00\u53D1\u8005": {
+        readonly en: "Upkeep: free up space, fix things when they go wrong, send logs to the developer";
+    };
+    readonly "\u5173\u4E8E##\u9875\u7B7E": {
+        readonly en: "About";
+    };
+    readonly "\u5173\u4E8E\uFF1A\u7248\u672C\u3001\u8F6F\u4EF6\u81EA\u5DF1\u7528\u5230\u7684\u522B\u4EBA\u7684\u4E1C\u897F": {
+        readonly en: "About: version, and other people’s work this app uses";
     };
     readonly "\u5F00\u53D1\u8005##\u9875\u7B7E": {
         readonly en: "Dev";
+    };
+    readonly "\u5F00\u53D1\u8005\uFF1A\u8BD5\u9A8C\u5F00\u5173\u3001\u8FD8\u539F\u51FA\u5382": {
+        readonly en: "Dev: experimental switches, factory reset";
     };
     readonly 这是什么: {
         readonly en: "What's this";
@@ -831,21 +855,6 @@ export declare const S: {
     };
     readonly 跟系统: {
         readonly en: "System";
-    };
-    readonly 版权与署名: {
-        readonly en: "Credits and licenses";
-    };
-    readonly "\u770B\u2026": {
-        readonly en: "View…";
-    };
-    readonly "\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B": {
-        readonly en: "Tsukuyomi-chan's credit and terms of use, plus the authors and licenses of the instrument catalog icons, all in one page";
-    };
-    readonly "\u79FB\u8C03\u8F85\u52A9\u3001\u548C\u5F26\u8F85\u52A9": {
-        readonly en: "Transposition aid, chord aid";
-    };
-    readonly "\u642C\u5230\u4E86\u9875\u9762\u8BBE\u7F6E\u91CC\uFF08\u8C31\u53F3\u4E0A\u89D2\u90A3\u9897\u94AE \u2192\u300C\u770B\u8C31\u300D\uFF09\uFF1A\u73B0\u5728\u8DDF\u7740\u6BCF\u9996\u6B4C\u8D70\u3001\u5B58\u5728\u6B4C\u91CC\uFF0C\u4EE5\u524D\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8C03\u8FC7\u7684\u4E0D\u5E26\u8FC7\u53BB\u3002": {
-        readonly en: "Moved to Page settings (the button at the top right of the score → Reading): they now belong to each song and are saved in it; what you set on this device before does not carry over.";
     };
     readonly 模型来源: {
         readonly en: "Model source";
@@ -876,6 +885,18 @@ export declare const S: {
     };
     readonly "\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6": {
         readonly en: "Kept on this device, works offline; songs carry their own sound, this is only the shelf";
+    };
+    readonly 小月相的署名与使用条款: {
+        readonly en: "Tsukuyomi-chan's credit and terms of use";
+    };
+    readonly "\u770B\u2026": {
+        readonly en: "View…";
+    };
+    readonly "MIDI \u952E\u76D8": {
+        readonly en: "MIDI keyboard";
+    };
+    readonly 连接: {
+        readonly en: "Connect";
     };
     readonly 渲染缓存: {
         readonly en: "Render cache";
@@ -913,15 +934,6 @@ export declare const S: {
     readonly "\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\u3002\u5C0F\u6708\u76F8\u5F15\u64CE\u7684\u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB": {
         readonly en: "The parts we can measure; over budget it drops chunks first, then reduces parallelism, then restarts the engine when idle, and says so here / in the status bar. Tsukuyomi-chan's engine memory only grows; restarting is the only way to give it back";
     };
-    readonly 小月相的署名与使用条款: {
-        readonly en: "Tsukuyomi-chan's credit and terms of use";
-    };
-    readonly "MIDI \u952E\u76D8": {
-        readonly en: "MIDI keyboard";
-    };
-    readonly 连接: {
-        readonly en: "Connect";
-    };
     readonly 诊断日志: {
         readonly en: "Diagnostic log";
     };
@@ -939,6 +951,21 @@ export declare const S: {
     };
     readonly 清空: {
         readonly en: "Clear";
+    };
+    readonly 清缓存重启: {
+        readonly en: "Clear cache and restart";
+    };
+    readonly "\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220": {
+        readonly en: "For when you're stuck on an old version: unregisters this app's offline cache and reopens. Downloaded Tsukuyomi-chan model packs stay";
+    };
+    readonly 版本: {
+        readonly en: "Version";
+    };
+    readonly 版权与署名: {
+        readonly en: "Credits and licenses";
+    };
+    readonly "\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B": {
+        readonly en: "Tsukuyomi-chan's credit and terms of use, plus the authors and licenses of the instrument catalog icons, all in one page";
     };
     readonly 按键手感的数字: {
         readonly en: "Key-feel numbers";
@@ -960,12 +987,6 @@ export declare const S: {
     };
     readonly 检查更新: {
         readonly en: "Check for updates";
-    };
-    readonly "\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220": {
-        readonly en: "For when you're stuck on an old version: unregisters this app's offline cache and reopens. Downloaded Tsukuyomi-chan model packs stay";
-    };
-    readonly 清缓存重启: {
-        readonly en: "Clear cache and restart";
     };
     readonly "{BUDGET} \u5C0F\u6708\u76F8 {parallelism} \u6761\u9053\uFF08\u8BBE\u5907\u9884\u7B97 {lanes}\uFF09\u3002{p}": {
         readonly en: "{BUDGET} Tsukuyomi-chan {parallelism} lanes (device budget {lanes}). {p}";
@@ -1530,6 +1551,12 @@ export declare const S: {
     };
     readonly 页面设置: {
         readonly en: "Page settings";
+    };
+    readonly "\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B": {
+        readonly en: "View: how this page looks on screen";
+    };
+    readonly "\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6": {
+        readonly en: "Page: paper and note density";
     };
     readonly "\u4E2D\u592E C \u53EB C{n}": {
         readonly en: "Middle C = C{n}";

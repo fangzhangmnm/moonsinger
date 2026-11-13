@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-81 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+85 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -12,7 +12,7 @@
 <svg width="24" height="24"><use href="#pencil"/></svg>
 ```
 
-> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`notes-symbols`、`lyrics-bubble`、`unplugged`、`visibility-only`、`volume-mute`、`volume-solo`、`keyboard-collapse`、`mixer-collapse`、`jianpu-staff`、`instrument-swap`、`album`、`music-library`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
+> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`notes-symbols`、`lyrics-bubble`、`unplugged`、`visibility-only`、`volume-mute`、`volume-solo`、`keyboard-collapse`、`mixer-collapse`、`jianpu-staff`、`instrument-swap`、`album`、`music-library`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`、`info`
 > 见库 `index.html` 的「待过目」栏；过目后进库/打回归库 session。
 
 
@@ -151,3 +151,12 @@
 | `archive-box` | 归档箱:顶盖条 + 箱体 + 中间把手横线(与 collection 同形, 均出自 lucide:archive) |
 | `settings` 👁待过目 | 设置:齿轮=内圆+外圆+8 根短齿(圆帽)；家族里 sliders 是「调整」别撞【WebXiaoHeiWu 抽屉底栏「设置」入口；fable 自画未过目】 |
 | `more` | 溢出菜单:横向三点(原 ⋯ 字符跨平台字形不一) |
+| `theme` | 主题日月同辉:细月牙(大圆挖近等大圆) + 八芒太阳嵌在缺口里, 光芒是与太阳脱开的短线。日月直径比 1.00, 分离角 -30°, 分离距离 1.05 倍月半径;太阳用遮罩描边留白从月牙上抠出白边 |
+| `keyboard` | 键盘:圆点加大收紧+空格上移不压框(与 shortcut 不同语义) |
+| `info` 👁待过目 | 信息:圆(同 help 的圆)+ 小写 i —— 上面一个实心圆点、下面一根竖杠；和 help(圆圈问号:弯钩在上、点在下)一眼分得开:点在上、杠在下【MoonSinger 纸右上角「这首歌」钮(页面设置钮左边;开「这首歌」面板:名字、作者和许可、封面、声音、署名)+ 设置面板「关于」页签(同一枚,统筹 2026-11-12 定:一枚图标表示一类东西,两处说的是同一类事、页签带字);Claude Opus 5.5(MoonSinger小弟)画,无头浏览器渲过 16 / 24 / 32 / 96 px 亮底暗底、和 help 并排看过;未过目】 |
+
+## misc
+
+| name | 说明 |
+|------|------|
+| `chip` | 芯片:方块+四面各三根引脚+中心核 |

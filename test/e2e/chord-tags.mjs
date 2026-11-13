@@ -41,9 +41,9 @@ check((await p.evaluate(() => document.querySelectorAll(".ctx-menu.chord-info .c
 await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(150);
 await setChord("off");
 check(!(await p.evaluate(() => { try { return Object.keys(localStorage).some((k) => k.endsWith(":chord-tags")); } catch { return false; } })), "设备上不再记（没有写 chord-tags 这个键）");
-await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card"); await p.click('[data-tab="a11y"]'); await p.waitForTimeout(100);
-const a11y = await p.evaluate(() => ({ select: !!document.querySelector('.settings-card [data-set="chord"], .settings-card [data-set="view"]'), text: document.querySelector('.settings-card [data-page="a11y"]')?.textContent ?? "" }));
-check(!a11y.select && /页面设置/.test(a11y.text), "设置「乐理助手」里没有开关了，只剩一行说搬到页面设置里（7-C 起叫页面设置）", JSON.stringify(a11y).slice(0, 160));
+await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card"); await p.waitForTimeout(100);
+const a11y = await p.evaluate(() => ({ select: !!document.querySelector('.settings-card [data-set="chord"], .settings-card [data-set="view"]'), page: !!document.querySelector('.settings-card [data-page="a11y"]') }));
+check(!a11y.select && !a11y.page, "设置里没有移调 / 和弦的开关，也没有「乐理助手」那一页了（7-C 搬到页面设置；13-1 起那一页删掉）", JSON.stringify(a11y));
 await p.click('.settings-card [data-v="close"]').catch(() => {}); await p.keyboard.press("Escape");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();

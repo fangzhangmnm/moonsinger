@@ -46,7 +46,7 @@ import { SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS } from "../format/performance.ts
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
 import { createPackStore } from "@internal/model-packs";
-import { showNotice, closeNotice, configureFloors } from "@internal/workbench-elements";
+import { showNotice, closeNotice, configureFloors, createTabStrip, type TabSpec } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT } from "../gm/sounds.gen.ts";
@@ -1341,26 +1341,37 @@ function setSongLook(next: EditorState, label: string): void { if (next !== D.st
 function setPageLook(next: EditorState, locus: { kind: "paperSize" | "density" | "barNumbers" | "lyricFit"; label: string }): void { if (next !== D.st) D.commit({ st: next }, { locus }); }
 
 /** 设置分五页（v0.16.80，总表第 10 条：界面 / 辅助功能 / 音源与缓存 / MIDI / 开发者）；记住这次运行里上次看的那页。 */
-type SetPage = "ui" | "a11y" | "sound" | "midi" | "dev";
+/** 设置分六页（施工单 13-1，user 2026-11-12「用单一职责的思想好好想一下，也许可以拆页面和分拣」→ 统筹的分法；规矩：每一页只回答一个问题，设置只管这台设备上的软件）。 */
+type SetPage = "ui" | "sound" | "input" | "upkeep" | "about" | "dev";
 let settingsPage: SetPage = "ui";
-const SET_PAGES = (): [SetPage, string][] => [["ui", _t("界面##页签")], ["a11y", _t("乐理助手##页签")], ["sound", _t("音源与缓存##页签")], ["midi", "MIDI"], ["dev", _t("开发者##页签")]];   // 页签用短名字（英文一格放得下，7-C）
+//   页签 = 界面零件库的页签条（13-0，user「设置的页签换成 WeebPaint 和 CatsUp 那种」）：一格 ≤ 3 个汉字 / 6 个字母，永远一排；超过 6 页先找统筹。
+//   图标（统筹 2026-11-12 定）：一枚图标表示一类东西；「关于」和纸上的「这首歌」同一枚 info（页签带字）。
+const SET_PAGES = (): TabSpec<SetPage>[] => [
+  { id: "ui", label: _t("界面##页签"), icon: "theme", title: _t("界面：这个软件长什么样、说什么语言") },
+  { id: "sound", label: _t("音源##页签"), icon: "volume", title: _t("音源：装在这台设备上的声音") },
+  { id: "input", label: _t("输入##页签"), icon: "keyboard", title: _t("输入：接在这台设备上的键盘") },
+  { id: "upkeep", label: _t("维护##页签"), icon: "wrench", title: _t("维护：清理空间、出毛病时修一下、把日志发给开发者") },
+  { id: "about", label: _t("关于##页签"), icon: "info", title: _t("关于：版本、软件自己用到的别人的东西") },
+  { id: "dev", label: _t("开发者##页签"), icon: "chip", title: _t("开发者：试验开关、还原出厂") },
+];
 // 设置那一套「一项一行」（v0.16.90，user 11-10「主要还是做一个问号机制…避免大段文字或者大段折叠文字放在settings里面」）：短名字 + 控件，长说明进「?」（点了这一行下面展开；
 //   同乐器参数那一套 .row-lab .q / .row-help）。设置面板和页面设置（7-C）共用这一套：页签 + 一页一页 + 一项一行。
 const setQ = (help: string) => (help ? `<button class="q" type="button" data-q aria-label="${_t("这是什么")}">?</button>` : "");
 const setItem = (label: string, ctl: string, help = "", body = "", attrs = "") =>
   `<div class="set-item"${attrs}><div class="set-head"><span class="row-lab">${label}${setQ(help)}</span>${ctl ? `<span class="set-ctl">${ctl}</span>` : ""}</div>${help ? `<div class="row-help">${help}</div>` : ""}${body}</div>`;
-/** 页签那一排（一排格子，.btn-row：字不折行，7-R / 7-C）。 */
-const setTabsHtml = (pages: readonly (readonly [string, string])[]): string => `<div class="set-tabs btn-row">${pages.map(([k, label]) => `<button class="btn chip" data-tab="${k}">${esc(label)}</button>`).join("")}</div>`;
+/** 页签条的位子（13-0：页签条本身是界面零件库的 createTabStrip，wireSetPages 放进来）。 */
+const setTabsHtml = (): string => `<div class="set-tabs" data-tabs-slot></div>`;
 /** 只露 pg 那一页、它的页签亮着；页签点了换页；「?」点了 = 这一行下面展开说明（iPad 没有悬停）。回 showPage。 */
-function wireSetPages(box: HTMLElement, onPage: (pg: string) => void): (pg: string) => void {
-  const showPage = (pg: string): void => {
+function wireSetPages<P extends string>(box: HTMLElement, tabs: readonly TabSpec<P>[], start: P, onPage: (pg: P) => void): (pg: P) => void {
+  const strip = createTabStrip<P>({ tabs, current: start, onPick: (id) => showPage(id) });
+  const showPage = (pg: P): void => {
+    const slot = box.querySelector<HTMLElement>("[data-tabs-slot]"); if (slot && !slot.contains(strip.el)) slot.append(strip.el);   // 页面设置整张重画（innerHTML）后放回去
     box.querySelectorAll<HTMLElement>(".set-page").forEach((el) => { el.hidden = el.dataset.page !== pg; });
     fitWide(box);   // 这一页露出来了：字放不下的控件跟着字变宽（英文界面）
-    box.querySelectorAll<HTMLElement>("[data-tab]").forEach((b) => b.classList.toggle("is-on", b.dataset.tab === pg));
+    strip.set(pg);
     onPage(pg);
   };
   box.addEventListener("click", (e) => {
-    const t = (e.target as HTMLElement).closest<HTMLElement>("[data-tab]"); if (t) { showPage(t.dataset.tab!); return; }
     const qb = (e.target as HTMLElement).closest<HTMLElement>("[data-q]"); if (qb) qb.closest(".set-item")?.classList.toggle("show-help");
   });
   return showPage;
@@ -1386,13 +1397,9 @@ function openSettings(): void {
   const item = setItem;
   const look = (v: string, label: string) => `<button class="btn" data-v="${v}">${label}</button>`;
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("设置")}</div>` +
-    setTabsHtml(SET_PAGES()) +
+    setTabsHtml() +
     `<div class="set-page" data-page="ui">` +
       item(LANG_LABEL, setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", " data-i18n-skip") +
-      item(_t("版权与署名"), look("doc:top", _t("看…")), _t("小月相的署名与使用条款、乐器目录图标的作者与许可，合在一篇里看")) +
-    `</div>` +
-    `<div class="set-page" data-page="a11y">` +
-      item(_t("移调辅助、和弦辅助"), "", "", `<div class="offer-msg">${_t("搬到了页面设置里（谱右上角那颗钮 →「看谱」）：现在跟着每首歌走、存在歌里，以前在这台设备上调过的不带过去。")}</div>`) +
     `</div>` +
     `<div class="set-page" data-page="sound">` +
       item(_t("模型来源"), "", _t("先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。") + (inFolder ? `<br>${FOLDER_TEXT.models}` : ""),
@@ -1403,31 +1410,40 @@ function openSettings(): void {
           : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入")}<input id="impIn" type="file" multiple hidden /></label>`,
         _t("选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"), `<pre id="packSt" class="set-packs">…</pre>`) +
       item(_t("音源库缓存"), "", _t("留在设备上，没网也能用；歌自己带声音，这里只是货架"), `<div id="sndCache" class="set-packs">…</div>`) +
+      item(_t("小月相的署名与使用条款"), look("doc:tsukuyomi", _t("看…"))) +
+    `</div>` +
+    `<div class="set-page" data-page="input">` +
+      item(_t("MIDI 键盘"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("连接")}</button>` : ""}`) +
+    `</div>` +
+    // 维护（13-1）：清理空间、出毛病时修一下、把日志发给开发者——这一页上的每颗钮按下去都不会让任何一首歌少东西（13 补）
+    `<div class="set-page" data-page="upkeep">` +
       item(_t("渲染缓存"), look("rc:clear", _t("全清")), _t("导出或「渲染到缓存」时放进来的整首歌声，歌库封面上的 ▶ 靠它；只在这台设备上、不同步，最多 {n} 首，满了丢最久没听的；删了只是要重渲", { n: RENDER_KEEP }), `<div id="rcList" class="set-packs">…</div>`) +
       item(_t("小月相的念缓存"), look("sp:clear", _t("清空念缓存")), _t("设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念"), `<div id="spCache" class="set-packs">…</div>`) +
       // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
       item(_t("重启声音"), look("audio:revive", _t("重启声音")), _t("声音不对劲的时候按一下（按键有延迟、没有声音）：把通向扬声器的那一段换成新的，排着没播完的声音一起丢掉。正在响的声音会断一下")) +
       item(_t("引擎负载与内存"), `<button class="btn" data-v="eng:restart" title="${_t("小月相引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念")}">${_t("重开小月相引擎")}</button>`,
         _t("能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说。小月相引擎的内存只涨不落，只有重开才还回去"), `<div id="engRes" class="set-packs">…</div>`) +
-      item(_t("小月相的署名与使用条款"), look("doc:tsukuyomi", _t("看…"))) +
-    `</div>` +
-    `<div class="set-page" data-page="midi">` +
-      item(_t("MIDI 键盘"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("连接")}</button>` : ""}`) +
-    `</div>` +
-    // 开发者页（家族规矩 2½：诊断日志 + 「还原出厂设置…」住这里；「检查更新 / 清缓存重启」留在普通那一行）
-    `<div class="set-page" data-page="dev">` +
       item(_t("诊断日志"), look("diag:view", _t("看…")), _t("黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备"),
         `<pre id="diagTxt" hidden>${esc(diagText())}</pre><div class="set-row">${look("diag:copy", _t("复制"))}${look("diag:download", _t("下载 .txt"))}${canShareDiag() ? look("diag:share", _t("分享…")) : ""}${look("diag:clear", _t("清空"))}</div>`) +
+      item(_t("清缓存重启"), `<button class="btn" data-v="reset">${_t("清缓存重启")}</button>`, _t("卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删")) +
+    `</div>` +
+    // 关于（13-1）：版本、软件自己用到的别人的东西（小月相的署名在「音源」页它那一项）
+    `<div class="set-page" data-page="about">` +
+      item(_t("版本"), `<span class="set-ver">${APP_VERSION}</span>`) +
+      item(_t("版权与署名"), look("doc:top", _t("看…")), _t("小月相的署名与使用条款、乐器目录图标的作者与许可，合在一篇里看")) +
+    `</div>` +
+    // 开发者页（家族规矩 2½：「还原出厂设置…」住这里）
+    `<div class="set-page" data-page="dev">` +
       item(_t("按键手感的数字"), setSel("feel", [["off", _t("关")], ["on", _t("开")]], feelAlways ? "on" : "off"), _t("查延迟用：打开 = 按键时在键盘上面露一行数字；关着 = 不显示（晚了也不弹，只记进诊断日志）")) +
       (IS_IOS ? item(_t("声音的起法（试验）"), setSel("primer", [["off", _t("关")], ["on", _t("开")]], primerOn() ? "on" : "off"), _t("开 = 第一次点屏幕先起一个不出声的垫脚把声音硬件叫醒，再起真正出声的那一个；关 = 以前的起法。改了要重开 app 才看得出")) : "") +
       item(_t("还原出厂设置"), `<button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button>`, _t("这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在「音源与缓存」的模型包里逐个删")) +
     `</div>` +
-    `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("检查更新")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("检查更新")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删")}">${_t("清缓存重启")}</button></div>` +
+    `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("检查更新")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("检查更新")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
   document.body.append(box);
   // 五页：点页签换页（这次运行里记住）；下拉框改了马上生效（语言 = 存 + 重载）
   mountDropdowns(box);   // 设置里的下拉（setSel）
-  wireSetPages(box, (pg) => { settingsPage = pg as SetPage; })(settingsPage);
+  wireSetPages<SetPage>(box, SET_PAGES(), settingsPage, (pg) => { settingsPage = pg; })(settingsPage);
   box.addEventListener("change", (e) => {
     const el = e.target as HTMLButtonElement, k = el.dataset.set; if (!k) return;
     if (k === "lang") { saveLang(el.value === "auto" ? null : (el.value as Lang)); location.reload(); }
@@ -2037,13 +2053,13 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
       // 谱上的字用哪种语言（施工单 12-4；user「页面设置是不是也应该有一个语言，影响打印？」）：这首歌的，走修改锁的「看法」（同小节号、音符密度）
       setItem(_t("谱上的字"), sel("tl", textLangItems(), look.textLang), TEXT_LANG_HELP() + IN_SONG);
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("页面设置")}</div>` +
-      setTabsHtml([["look", _t("看谱")], ["layout", _t("版面")]]) +
+      setTabsHtml() +
       `<div class="set-page" data-page="look">${lookPage}</div><div class="set-page" data-page="layout">${layoutPage}</div>` +
       `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
     mountDropdowns(box);
     showPage(page);
   };
-  const showPage = wireSetPages(box, (pg) => { page = pg as typeof page; });
+  const showPage = wireSetPages<"look" | "layout">(box, [{ id: "look", label: _t("看谱"), icon: "visibility-show", title: _t("看谱：这张纸在屏幕上怎么看") }, { id: "layout", label: _t("版面"), icon: "file", title: _t("版面：纸张和音符密度") }], page, (pg) => { page = pg; });
   draw();
   document.body.append(box);
   if (focus === "expr") {   // 落在那一项：高亮一下、滚到它、焦点放在它的下拉上（「演奏法和表情：不显示」的淡提示点进来的）

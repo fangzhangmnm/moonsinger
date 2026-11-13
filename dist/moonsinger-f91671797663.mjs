@@ -3181,6 +3181,100 @@ function mountSelectField(el2, opts) {
   };
 }
 
+// node_modules/@internal/workbench-elements/dist/tab-strip.js
+function createTabStrip(opts) {
+  let tabs = [...opts.tabs], cur = opts.current;
+  const el2 = document.createElement("div");
+  el2.className = "wbe-tabs";
+  el2.setAttribute("role", "tablist");
+  let btns = [];
+  const paint = () => {
+    for (const b3 of btns) {
+      const on2 = b3.dataset.tab === cur;
+      b3.setAttribute("aria-selected", String(on2));
+      b3.setAttribute("tabindex", on2 ? "0" : "-1");
+      b3.classList.toggle("on", on2);
+    }
+  };
+  const build = () => {
+    for (const b3 of btns)
+      b3.remove();
+    btns = [];
+    for (const t10 of tabs) {
+      const b3 = document.createElement("button");
+      b3.type = "button";
+      b3.className = "wbe-tab";
+      b3.setAttribute("role", "tab");
+      b3.dataset.tab = t10.id;
+      const full = t10.title ?? t10.label;
+      b3.setAttribute("title", full);
+      b3.setAttribute("aria-label", full);
+      if (t10.icon) {
+        const i10 = document.createElement("span");
+        i10.className = "wbe-tab-icon";
+        i10.innerHTML = iconHtml(t10.icon);
+        b3.appendChild(i10);
+      }
+      const s10 = document.createElement("span");
+      s10.className = "wbe-tab-label";
+      s10.textContent = t10.label;
+      b3.appendChild(s10);
+      el2.appendChild(b3);
+      btns.push(b3);
+    }
+    paint();
+  };
+  const pick = (id2, focus) => {
+    if (id2 === cur)
+      return;
+    cur = id2;
+    paint();
+    if (focus)
+      btns.find((b3) => b3.dataset.tab === id2)?.focus();
+    opts.onPick(id2);
+  };
+  const onClick = (e10) => {
+    const t10 = e10.target, b3 = btns.find((x2) => x2 === t10 || x2.contains(t10));
+    if (!b3)
+      return;
+    pick(b3.dataset.tab, false);
+  };
+  const onKey = (e10) => {
+    const i10 = tabs.findIndex((t10) => t10.id === cur);
+    if (i10 < 0 || !tabs.length)
+      return;
+    const j2 = e10.key === "ArrowRight" ? (i10 + 1) % tabs.length : e10.key === "ArrowLeft" ? (i10 - 1 + tabs.length) % tabs.length : e10.key === "Home" ? 0 : e10.key === "End" ? tabs.length - 1 : -1;
+    if (j2 < 0)
+      return;
+    e10.preventDefault();
+    e10.stopPropagation();
+    pick(tabs[j2].id, true);
+  };
+  el2.addEventListener("click", onClick);
+  el2.addEventListener("keydown", onKey);
+  build();
+  return {
+    el: el2,
+    set(id2) {
+      if (tabs.some((t10) => t10.id === id2)) {
+        cur = id2;
+        paint();
+      }
+    },
+    update(next2, current2) {
+      tabs = [...next2];
+      const want = current2 ?? cur;
+      cur = tabs.some((t10) => t10.id === want) ? want : tabs[0]?.id ?? want;
+      build();
+    },
+    dispose() {
+      el2.removeEventListener("click", onClick);
+      el2.removeEventListener("keydown", onKey);
+      el2.remove();
+    }
+  };
+}
+
 // src/ui/dropdown.ts
 var esc = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
 var STATE = /* @__PURE__ */ new WeakMap();
@@ -3573,17 +3667,20 @@ var S = {
   "\u6539\u56DE\u81EA\u52A8\uFF08\u8FD9\u51E0\u4E2A\u97F3\u8BA4\u4E0D\u51FA\u548C\u5F26 = \u4E0D\u6807\uFF09": { en: "Back to automatic (these notes don't read as a chord = no label)" },
   "\u70B9\u4E00\u4E2A = \u7528\u5B83\uFF08\u8BB0\u8FDB\u8FD9\u4E2A\u97F3\uFF0C\u80FD\u64A4\u9500\uFF09": { en: "Tap one = use it (stored on this note; undo works)" },
   "\u754C\u9762##\u9875\u7B7E": { en: "UI" },
-  "\u4E50\u7406\u52A9\u624B##\u9875\u7B7E": { en: "Theory" },
-  "\u97F3\u6E90\u4E0E\u7F13\u5B58##\u9875\u7B7E": { en: "Audio" },
+  "\u754C\u9762\uFF1A\u8FD9\u4E2A\u8F6F\u4EF6\u957F\u4EC0\u4E48\u6837\u3001\u8BF4\u4EC0\u4E48\u8BED\u8A00": { en: "UI: how this app looks and which language it speaks" },
+  "\u97F3\u6E90##\u9875\u7B7E": { en: "Sounds" },
+  "\u97F3\u6E90\uFF1A\u88C5\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u58F0\u97F3": { en: "Sounds: the voices and instruments installed on this device" },
+  "\u8F93\u5165##\u9875\u7B7E": { en: "Input" },
+  "\u8F93\u5165\uFF1A\u63A5\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u952E\u76D8": { en: "Input: keyboards connected to this device" },
+  "\u7EF4\u62A4##\u9875\u7B7E": { en: "Upkeep" },
+  "\u7EF4\u62A4\uFF1A\u6E05\u7406\u7A7A\u95F4\u3001\u51FA\u6BDB\u75C5\u65F6\u4FEE\u4E00\u4E0B\u3001\u628A\u65E5\u5FD7\u53D1\u7ED9\u5F00\u53D1\u8005": { en: "Upkeep: free up space, fix things when they go wrong, send logs to the developer" },
+  "\u5173\u4E8E##\u9875\u7B7E": { en: "About" },
+  "\u5173\u4E8E\uFF1A\u7248\u672C\u3001\u8F6F\u4EF6\u81EA\u5DF1\u7528\u5230\u7684\u522B\u4EBA\u7684\u4E1C\u897F": { en: "About: version, and other people\u2019s work this app uses" },
   "\u5F00\u53D1\u8005##\u9875\u7B7E": { en: "Dev" },
+  "\u5F00\u53D1\u8005\uFF1A\u8BD5\u9A8C\u5F00\u5173\u3001\u8FD8\u539F\u51FA\u5382": { en: "Dev: experimental switches, factory reset" },
   "\u8FD9\u662F\u4EC0\u4E48": { en: "What's this" },
   "\u8BBE\u7F6E": { en: "Settings" },
   "\u8DDF\u7CFB\u7EDF": { en: "System" },
-  "\u7248\u6743\u4E0E\u7F72\u540D": { en: "Credits and licenses" },
-  "\u770B\u2026": { en: "View\u2026" },
-  "\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B": { en: "Tsukuyomi-chan's credit and terms of use, plus the authors and licenses of the instrument catalog icons, all in one page" },
-  "\u79FB\u8C03\u8F85\u52A9\u3001\u548C\u5F26\u8F85\u52A9": { en: "Transposition aid, chord aid" },
-  "\u642C\u5230\u4E86\u9875\u9762\u8BBE\u7F6E\u91CC\uFF08\u8C31\u53F3\u4E0A\u89D2\u90A3\u9897\u94AE \u2192\u300C\u770B\u8C31\u300D\uFF09\uFF1A\u73B0\u5728\u8DDF\u7740\u6BCF\u9996\u6B4C\u8D70\u3001\u5B58\u5728\u6B4C\u91CC\uFF0C\u4EE5\u524D\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8C03\u8FC7\u7684\u4E0D\u5E26\u8FC7\u53BB\u3002": { en: "Moved to Page settings (the button at the top right of the score \u2192 Reading): they now belong to each song and are saved in it; what you set on this device before does not carry over." },
   "\u6A21\u578B\u6765\u6E90": { en: "Model source" },
   "\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002": { en: "Looks first for <code>pwa-models/</code> on this site (if you host your own server, copy the model repo there), then uses what's entered here. Only for this session." },
   "\u97F3\u6E90\u5E93\u6765\u6E90": { en: "Sound library source" },
@@ -3594,6 +3691,10 @@ var S = {
   "\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6": { en: "Choose the pack's chunk files (chunk-000 \u2026, names don't matter), or one file with the whole pack joined" },
   "\u97F3\u6E90\u5E93\u7F13\u5B58": { en: "Sound library cache" },
   "\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6": { en: "Kept on this device, works offline; songs carry their own sound, this is only the shelf" },
+  "\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E": { en: "Tsukuyomi-chan's credit and terms of use" },
+  "\u770B\u2026": { en: "View\u2026" },
+  "MIDI \u952E\u76D8": { en: "MIDI keyboard" },
+  "\u8FDE\u63A5": { en: "Connect" },
   "\u6E32\u67D3\u7F13\u5B58": { en: "Render cache" },
   "\u5168\u6E05": { en: "Clear all" },
   "\u5BFC\u51FA\u6216\u300C\u6E32\u67D3\u5230\u7F13\u5B58\u300D\u65F6\u653E\u8FDB\u6765\u7684\u6574\u9996\u6B4C\u58F0\uFF0C\u6B4C\u5E93\u5C01\u9762\u4E0A\u7684 \u25B6 \u9760\u5B83\uFF1B\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3001\u4E0D\u540C\u6B65\uFF0C\u6700\u591A {n} \u9996\uFF0C\u6EE1\u4E86\u4E22\u6700\u4E45\u6CA1\u542C\u7684\uFF1B\u5220\u4E86\u53EA\u662F\u8981\u91CD\u6E32": { en: "Whole songs rendered when you export or use \u201CRender to cache\u201D; the \u25B6 on library covers plays them. Only on this device, never synced, at most {n} songs (the least recently played goes first); deleting only means rendering again" },
@@ -3606,15 +3707,17 @@ var S = {
   "\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5": { en: "Tsukuyomi-chan's engine WASM memory only grows; only a restart returns it. Spoken lines will need re-speaking" },
   "\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE": { en: "Restart Tsukuyomi-chan's engine" },
   "\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\u3002\u5C0F\u6708\u76F8\u5F15\u64CE\u7684\u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB": { en: "The parts we can measure; over budget it drops chunks first, then reduces parallelism, then restarts the engine when idle, and says so here / in the status bar. Tsukuyomi-chan's engine memory only grows; restarting is the only way to give it back" },
-  "\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E": { en: "Tsukuyomi-chan's credit and terms of use" },
-  "MIDI \u952E\u76D8": { en: "MIDI keyboard" },
-  "\u8FDE\u63A5": { en: "Connect" },
   "\u8BCA\u65AD\u65E5\u5FD7": { en: "Diagnostic log" },
   "\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907": { en: "Black box: send this to the developer if something breaks; never uploaded, it only leaves the device when you tap Copy / Share" },
   "\u590D\u5236": { en: "Copy" },
   "\u4E0B\u8F7D .txt": { en: "Download .txt" },
   "\u5206\u4EAB\u2026": { en: "Share\u2026" },
   "\u6E05\u7A7A": { en: "Clear" },
+  "\u6E05\u7F13\u5B58\u91CD\u542F": { en: "Clear cache and restart" },
+  "\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220": { en: "For when you're stuck on an old version: unregisters this app's offline cache and reopens. Downloaded Tsukuyomi-chan model packs stay" },
+  "\u7248\u672C": { en: "Version" },
+  "\u7248\u6743\u4E0E\u7F72\u540D": { en: "Credits and licenses" },
+  "\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B": { en: "Tsukuyomi-chan's credit and terms of use, plus the authors and licenses of the instrument catalog icons, all in one page" },
   "\u6309\u952E\u624B\u611F\u7684\u6570\u5B57": { en: "Key-feel numbers" },
   "\u67E5\u5EF6\u8FDF\u7528\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09": { en: "For chasing latency: on = a line of numbers appears above the keys while you play; off = never shown, even when keys are late (it only goes into the diagnostic log)" },
   "\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09": { en: "How audio starts (experiment)" },
@@ -3622,8 +3725,6 @@ var S = {
   "\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026": { en: "Factory reset\u2026" },
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u7684\u6A21\u578B\u5305\u91CC\u9010\u4E2A\u5220": { en: "Wipes all of MoonSinger's local data on this device back to a fresh install: local library copies, speech cache, cover cache, settings, diagnostic log and offline shell; songs in the cloud and local files aren't touched; Tsukuyomi-chan's model packs are shared with other apps on this site and aren't touched \u2014 delete them one by one under model packs in Settings \u203A Audio" },
   "\u68C0\u67E5\u66F4\u65B0": { en: "Check for updates" },
-  "\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220": { en: "For when you're stuck on an old version: unregisters this app's offline cache and reopens. Downloaded Tsukuyomi-chan model packs stay" },
-  "\u6E05\u7F13\u5B58\u91CD\u542F": { en: "Clear cache and restart" },
   "{BUDGET} \u5C0F\u6708\u76F8 {parallelism} \u6761\u9053\uFF08\u8BBE\u5907\u9884\u7B97 {lanes}\uFF09\u3002{p}": { en: "{BUDGET} Tsukuyomi-chan {parallelism} lanes (device budget {lanes}). {p}" },
   "\u58F0\u97F3\u7684\u8F93\u51FA\u5EF6\u8FDF\uFF08\u6D4F\u89C8\u5668\u62A5\u7684\uFF09{lat} ms\u3002": { en: "Audio output latency (as reported by the browser): {lat} ms." },
   "{bytes} / \u9884\u7B97 {budget}\uFF0C{entries} \u6761": { en: "{bytes} / budget {budget}, {entries} entries" },
@@ -3812,6 +3913,8 @@ var S = {
   "\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09": { en: "Long words push notes apart (the traditional engraving rule)" },
   "\u8C31\u4E0A\u7684\u5B57": { en: "Text on the score" },
   "\u9875\u9762\u8BBE\u7F6E": { en: "Page settings" },
+  "\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B": { en: "View: how this page looks on screen" },
+  "\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6": { en: "Page: paper and note density" },
   "\u4E2D\u592E C \u53EB C{n}": { en: "Middle C = C{n}" },
   "\u663E\u793A\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Show articulations & dynamics" },
   "\u4E0D\u663E\u793A\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Hide articulations & dynamics" },
@@ -5942,7 +6045,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.7-2026-11-12";
+var APP_VERSION = "v0.17.8-2026-11-12";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -34642,15 +34745,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-d36f30c10674.mjs");
+      return pick(() => "singer-worker-f59d064afd95.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-714d957ac9f7.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-222b3ee04e7d.mjs");
+      return pick(() => "layout-worker-d5615600bdeb.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-08f3897e8abe.mjs");
+      return pick(() => "encode-worker-de755c77a1e4.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -60870,25 +60973,30 @@ function setPageLook(next2, locus) {
   if (next2 !== D3.st) D3.commit({ st: next2 }, { locus });
 }
 var settingsPage = "ui";
-var SET_PAGES = () => [["ui", _t("\u754C\u9762##\u9875\u7B7E")], ["a11y", _t("\u4E50\u7406\u52A9\u624B##\u9875\u7B7E")], ["sound", _t("\u97F3\u6E90\u4E0E\u7F13\u5B58##\u9875\u7B7E")], ["midi", "MIDI"], ["dev", _t("\u5F00\u53D1\u8005##\u9875\u7B7E")]];
+var SET_PAGES = () => [
+  { id: "ui", label: _t("\u754C\u9762##\u9875\u7B7E"), icon: "theme", title: _t("\u754C\u9762\uFF1A\u8FD9\u4E2A\u8F6F\u4EF6\u957F\u4EC0\u4E48\u6837\u3001\u8BF4\u4EC0\u4E48\u8BED\u8A00") },
+  { id: "sound", label: _t("\u97F3\u6E90##\u9875\u7B7E"), icon: "volume", title: _t("\u97F3\u6E90\uFF1A\u88C5\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u58F0\u97F3") },
+  { id: "input", label: _t("\u8F93\u5165##\u9875\u7B7E"), icon: "keyboard", title: _t("\u8F93\u5165\uFF1A\u63A5\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u952E\u76D8") },
+  { id: "upkeep", label: _t("\u7EF4\u62A4##\u9875\u7B7E"), icon: "wrench", title: _t("\u7EF4\u62A4\uFF1A\u6E05\u7406\u7A7A\u95F4\u3001\u51FA\u6BDB\u75C5\u65F6\u4FEE\u4E00\u4E0B\u3001\u628A\u65E5\u5FD7\u53D1\u7ED9\u5F00\u53D1\u8005") },
+  { id: "about", label: _t("\u5173\u4E8E##\u9875\u7B7E"), icon: "info", title: _t("\u5173\u4E8E\uFF1A\u7248\u672C\u3001\u8F6F\u4EF6\u81EA\u5DF1\u7528\u5230\u7684\u522B\u4EBA\u7684\u4E1C\u897F") },
+  { id: "dev", label: _t("\u5F00\u53D1\u8005##\u9875\u7B7E"), icon: "chip", title: _t("\u5F00\u53D1\u8005\uFF1A\u8BD5\u9A8C\u5F00\u5173\u3001\u8FD8\u539F\u51FA\u5382") }
+];
 var setQ = (help) => help ? `<button class="q" type="button" data-q aria-label="${_t("\u8FD9\u662F\u4EC0\u4E48")}">?</button>` : "";
 var setItem = (label, ctl, help = "", body2 = "", attrs = "") => `<div class="set-item"${attrs}><div class="set-head"><span class="row-lab">${label}${setQ(help)}</span>${ctl ? `<span class="set-ctl">${ctl}</span>` : ""}</div>${help ? `<div class="row-help">${help}</div>` : ""}${body2}</div>`;
-var setTabsHtml = (pages) => `<div class="set-tabs btn-row">${pages.map(([k2, label]) => `<button class="btn chip" data-tab="${k2}">${esc12(label)}</button>`).join("")}</div>`;
-function wireSetPages(box, onPage) {
+var setTabsHtml = () => `<div class="set-tabs" data-tabs-slot></div>`;
+function wireSetPages(box, tabs, start, onPage) {
+  const strip = createTabStrip({ tabs, current: start, onPick: (id2) => showPage(id2) });
   const showPage = (pg) => {
+    const slot = box.querySelector("[data-tabs-slot]");
+    if (slot && !slot.contains(strip.el)) slot.append(strip.el);
     box.querySelectorAll(".set-page").forEach((el2) => {
       el2.hidden = el2.dataset.page !== pg;
     });
     fitWide(box);
-    box.querySelectorAll("[data-tab]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.tab === pg));
+    strip.set(pg);
     onPage(pg);
   };
   box.addEventListener("click", (e10) => {
-    const t10 = e10.target.closest("[data-tab]");
-    if (t10) {
-      showPage(t10.dataset.tab);
-      return;
-    }
     const qb = e10.target.closest("[data-q]");
     if (qb) qb.closest(".set-item")?.classList.toggle("show-help");
   });
@@ -60913,7 +61021,7 @@ function openSettings() {
   box.className = "offer";
   const item = setItem;
   const look = (v, label) => `<button class="btn" data-v="${v}">${label}</button>`;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div>` + setTabsHtml(SET_PAGES()) + `<div class="set-page" data-page="ui">` + item(LANG_LABEL, setSel("lang", [["auto", _t("\u8DDF\u7CFB\u7EDF")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", " data-i18n-skip") + item(_t("\u7248\u6743\u4E0E\u7F72\u540D"), look("doc:top", _t("\u770B\u2026")), _t("\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B")) + `</div><div class="set-page" data-page="a11y">` + item(_t("\u79FB\u8C03\u8F85\u52A9\u3001\u548C\u5F26\u8F85\u52A9"), "", "", `<div class="offer-msg">${_t("\u642C\u5230\u4E86\u9875\u9762\u8BBE\u7F6E\u91CC\uFF08\u8C31\u53F3\u4E0A\u89D2\u90A3\u9897\u94AE \u2192\u300C\u770B\u8C31\u300D\uFF09\uFF1A\u73B0\u5728\u8DDF\u7740\u6BCF\u9996\u6B4C\u8D70\u3001\u5B58\u5728\u6B4C\u91CC\uFF0C\u4EE5\u524D\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8C03\u8FC7\u7684\u4E0D\u5E26\u8FC7\u53BB\u3002")}</div>`) + `</div><div class="set-page" data-page="sound">` + item(
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div>` + setTabsHtml() + `<div class="set-page" data-page="ui">` + item(LANG_LABEL, setSel("lang", [["auto", _t("\u8DDF\u7CFB\u7EDF")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", " data-i18n-skip") + `</div><div class="set-page" data-page="sound">` + item(
     _t("\u6A21\u578B\u6765\u6E90"),
     "",
     _t("\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002") + (inFolder2 ? `<br>${FOLDER_TEXT.models}` : ""),
@@ -60928,21 +61036,21 @@ function openSettings() {
     inFolder2 ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165")}</span><input id="impIn" type="file" multiple hidden disabled />` : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165")}<input id="impIn" type="file" multiple hidden /></label>`,
     _t("\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"),
     `<pre id="packSt" class="set-packs">\u2026</pre>`
-  ) + item(_t("\u97F3\u6E90\u5E93\u7F13\u5B58"), "", _t("\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6"), `<div id="sndCache" class="set-packs">\u2026</div>`) + item(_t("\u6E32\u67D3\u7F13\u5B58"), look("rc:clear", _t("\u5168\u6E05")), _t("\u5BFC\u51FA\u6216\u300C\u6E32\u67D3\u5230\u7F13\u5B58\u300D\u65F6\u653E\u8FDB\u6765\u7684\u6574\u9996\u6B4C\u58F0\uFF0C\u6B4C\u5E93\u5C01\u9762\u4E0A\u7684 \u25B6 \u9760\u5B83\uFF1B\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3001\u4E0D\u540C\u6B65\uFF0C\u6700\u591A {n} \u9996\uFF0C\u6EE1\u4E86\u4E22\u6700\u4E45\u6CA1\u542C\u7684\uFF1B\u5220\u4E86\u53EA\u662F\u8981\u91CD\u6E32", { n: RENDER_KEEP }), `<div id="rcList" class="set-packs">\u2026</div>`) + item(_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58"), look("sp:clear", _t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")), _t("\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5"), `<div id="spCache" class="set-packs">\u2026</div>`) + // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
+  ) + item(_t("\u97F3\u6E90\u5E93\u7F13\u5B58"), "", _t("\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6"), `<div id="sndCache" class="set-packs">\u2026</div>`) + item(_t("\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"), look("doc:tsukuyomi", _t("\u770B\u2026"))) + `</div><div class="set-page" data-page="input">` + item(_t("MIDI \u952E\u76D8"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}`) + `</div><div class="set-page" data-page="upkeep">` + item(_t("\u6E32\u67D3\u7F13\u5B58"), look("rc:clear", _t("\u5168\u6E05")), _t("\u5BFC\u51FA\u6216\u300C\u6E32\u67D3\u5230\u7F13\u5B58\u300D\u65F6\u653E\u8FDB\u6765\u7684\u6574\u9996\u6B4C\u58F0\uFF0C\u6B4C\u5E93\u5C01\u9762\u4E0A\u7684 \u25B6 \u9760\u5B83\uFF1B\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3001\u4E0D\u540C\u6B65\uFF0C\u6700\u591A {n} \u9996\uFF0C\u6EE1\u4E86\u4E22\u6700\u4E45\u6CA1\u542C\u7684\uFF1B\u5220\u4E86\u53EA\u662F\u8981\u91CD\u6E32", { n: RENDER_KEEP }), `<div id="rcList" class="set-packs">\u2026</div>`) + item(_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58"), look("sp:clear", _t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")), _t("\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5"), `<div id="spCache" class="set-packs">\u2026</div>`) + // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
   item(_t("\u91CD\u542F\u58F0\u97F3"), look("audio:revive", _t("\u91CD\u542F\u58F0\u97F3")), _t("\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B")) + item(
     _t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58"),
     `<button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button>`,
     _t("\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\u3002\u5C0F\u6708\u76F8\u5F15\u64CE\u7684\u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB"),
     `<div id="engRes" class="set-packs">\u2026</div>`
-  ) + item(_t("\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"), look("doc:tsukuyomi", _t("\u770B\u2026"))) + `</div><div class="set-page" data-page="midi">` + item(_t("MIDI \u952E\u76D8"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}`) + `</div><div class="set-page" data-page="dev">` + item(
+  ) + item(
     _t("\u8BCA\u65AD\u65E5\u5FD7"),
     look("diag:view", _t("\u770B\u2026")),
     _t("\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907"),
     `<pre id="diagTxt" hidden>${esc12(diagText())}</pre><div class="set-row">${look("diag:copy", _t("\u590D\u5236"))}${look("diag:download", _t("\u4E0B\u8F7D .txt"))}${canShareDiag() ? look("diag:share", _t("\u5206\u4EAB\u2026")) : ""}${look("diag:clear", _t("\u6E05\u7A7A"))}</div>`
-  ) + item(_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57"), setSel("feel", [["off", _t("\u5173")], ["on", _t("\u5F00")]], feelAlways ? "on" : "off"), _t("\u67E5\u5EF6\u8FDF\u7528\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")) + (IS_IOS ? item(_t("\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09"), setSel("primer", [["off", _t("\u5173")], ["on", _t("\u5F00")]], primerOn() ? "on" : "off"), _t("\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA")) : "") + item(_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E"), `<button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u7684\u6A21\u578B\u5305\u91CC\u9010\u4E2A\u5220")) + `</div><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+  ) + item(_t("\u6E05\u7F13\u5B58\u91CD\u542F"), `<button class="btn" data-v="reset">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button>`, _t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")) + `</div><div class="set-page" data-page="about">` + item(_t("\u7248\u672C"), `<span class="set-ver">${APP_VERSION}</span>`) + item(_t("\u7248\u6743\u4E0E\u7F72\u540D"), look("doc:top", _t("\u770B\u2026")), _t("\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B")) + `</div><div class="set-page" data-page="dev">` + item(_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57"), setSel("feel", [["off", _t("\u5173")], ["on", _t("\u5F00")]], feelAlways ? "on" : "off"), _t("\u67E5\u5EF6\u8FDF\u7528\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")) + (IS_IOS ? item(_t("\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09"), setSel("primer", [["off", _t("\u5173")], ["on", _t("\u5F00")]], primerOn() ? "on" : "off"), _t("\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA")) : "") + item(_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E"), `<button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u7684\u6A21\u578B\u5305\u91CC\u9010\u4E2A\u5220")) + `</div><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   mountDropdowns(box);
-  wireSetPages(box, (pg) => {
+  wireSetPages(box, SET_PAGES(), settingsPage, (pg) => {
     settingsPage = pg;
   })(settingsPage);
   box.addEventListener("change", (e10) => {
@@ -62013,11 +62121,11 @@ function openPaperSheet(focus) {
       defs([[_t("\u6309\u8282\u594F"), _t("\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070")], [_t("\u6309\u6B4C\u8BCD"), _t("\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09")]]) + IN_SONG
     ) + // 谱上的字用哪种语言（施工单 12-4；user「页面设置是不是也应该有一个语言，影响打印？」）：这首歌的，走修改锁的「看法」（同小节号、音符密度）
     setItem(_t("\u8C31\u4E0A\u7684\u5B57"), sel2("tl", textLangItems(), look.textLang), TEXT_LANG_HELP() + IN_SONG);
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u9875\u9762\u8BBE\u7F6E")}</div>` + setTabsHtml([["look", _t("\u770B\u8C31")], ["layout", _t("\u7248\u9762")]]) + `<div class="set-page" data-page="look">${lookPage}</div><div class="set-page" data-page="layout">${layoutPage}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u9875\u9762\u8BBE\u7F6E")}</div>` + setTabsHtml() + `<div class="set-page" data-page="look">${lookPage}</div><div class="set-page" data-page="layout">${layoutPage}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
     mountDropdowns(box);
     showPage(page);
   };
-  const showPage = wireSetPages(box, (pg) => {
+  const showPage = wireSetPages(box, [{ id: "look", label: _t("\u770B\u8C31"), icon: "visibility-show", title: _t("\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B") }, { id: "layout", label: _t("\u7248\u9762"), icon: "file", title: _t("\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6") }], page, (pg) => {
     page = pg;
   });
   draw();
@@ -65670,4 +65778,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-d4ee214a7ee7.mjs.map
+//# sourceMappingURL=moonsinger-f91671797663.mjs.map
