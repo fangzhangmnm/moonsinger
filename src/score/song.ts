@@ -158,8 +158,9 @@ export interface PartDef { id: string; role: string; mic: string;
   /** 文件里写着、但不成立的合租（主人不在 / 挂自己 / 主人也是房客；第 16 条，2026-11-12）：这一位照没有合租来画（运行时只看 host），名字下面标出来、人去改；
    *  存的时候照原样写回 host（不悄悄丢）。人在歌手牌里改了合租 = 这一项去掉。 */
   hostBroken?: string;
-  /** 这条轨的和弦选项（谱面分家第三刀，score minor 5；读 / 改只走 src/score/song-view.ts）：没写 = auto（也认拆开弹的）；"stacked" = 只认叠在一起的；"fold" = 折叠成和弦名（第五刀）。
-   *  不认识的值（更新的版本写的）原样留着。v0.16.73–第三刀之前的 brokenChords: false 读成 "stacked"（src/format/project.ts）。 */
+  /** 这条轨的和弦选项（谱面分家第三刀，score minor 5；读 / 改只走 src/score/song-view.ts）：没写 = auto（也认拆开弹的）；"stacked" = 只认叠在一起的。
+   *  读文件（src/format/project.ts）：这两档以外的值，文件比这一版新 = 原样留着、存的时候照写；不比这一版新 = 读成 auto（2026-11-13 退役的第三档就走这一条）。
+   *  老键 brokenChords 读的时候不理。 */
   chords?: string }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
 /** 谱号：高音 / 高音下加 8（吉他、男高音：实际低八度）/ 上加 8 / 上加 15（钟琴）/ 低音 / 低音下加 8（低音提琴、贝斯）。中音谱号不做（user「中音这个冷门没人用吧」）。 */
 export type ClefName = "G" | "G8vb" | "G8va" | "G15ma" | "F" | "F8vb";

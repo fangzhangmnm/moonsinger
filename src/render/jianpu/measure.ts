@@ -8,7 +8,7 @@ import { type ColumnKind } from "../frame/columns.ts";
 import { SLOT, LEFT_CLEAR } from "../../look/order.ts";
 import type { ColEntry } from "../frame/arrange.ts";
 import type { Unit, Chunk } from "../frame/units.ts";
-import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, lettersOf, glyphWOf } from "./chunk.ts";
+import { type JianpuTrack, type JianpuMode, type JianpuAux, lettersOf, glyphWOf } from "./chunk.ts";
 import { noteCell } from "./note-cell.ts";
 import { keyParts, keyLayout } from "./keytext.ts";
 export type { JianpuTrack, JianpuMode, JianpuAux } from "./chunk.ts";
@@ -40,9 +40,9 @@ export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits"
     if (u.pad) return [];   // 补齐的淡色小节不画、不参加间距（同五线谱）
     // 量 = 画（第八刀 8-2）：和 draw.ts 用同一个盒子（note-cell.ts），往左 = 盒子左边伸出对齐线多远（升降号、琶音），往右 = 这一列至少多宽 + 盒子比第一个字形多出来的（横线、×、附点、换气）
     const nc = noteCell({ u, q, mode, ...(aux ? { aux } : {}), fifths, base: 0, step: null }), b = nc.cell.box(), gw = nc.glyphW;
-    const fd = mode === "digits" ? foldOf(u, aux) : undefined, lt = lettersOf(q, u, mode, aux);
+    const lt = lettersOf(q, u, mode, aux);
     // 往左 = 墨伸到占位的左边（x0）外面多远（升降号、琶音）；没伸出去 = 占位的左边（8-7：墨和占位宽分开——数字的墨窄不让列变窄，同样时值的一串数字再挤也等距）
-    const left = -Math.min(b.x0, nc.x0) * k, right = Math.max(0, (core(u, fd || (lt && gw > DIGIT_W) ? gw : 0) + 0.1 + Math.max(0, b.x1 - (nc.x0 + gw))) * k - SP_DEFAULTS.pad);   // 顶杆 = 前一个的右伸 + 后一个的左伸 + 缝
+    const left = -Math.min(b.x0, nc.x0) * k, right = Math.max(0, (core(u, lt && gw > DIGIT_W ? gw : 0) + 0.1 + Math.max(0, b.x1 - (nc.x0 + gw))) * k - SP_DEFAULTS.pad);   // 顶杆 = 前一个的右伸 + 后一个的左伸 + 缝
     inkL.set(u, Math.max(0, left));
     const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks, inkR: b.x1 * k, ...(nc.leftGap !== undefined ? { clear: LEFT_CLEAR * nc.leftGap * k } : {}) }];   // 左边挂了东西：前一个音的墨到它 ≥ 它离自己的音的 4 倍（统筹定的规矩，框架的顶杆管）
     const cx = (0.1 + gw / 2) * k;

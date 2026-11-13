@@ -67,7 +67,7 @@ export function sampleSong(): Song {
     rights: "CC0", lyricFit: "lyrics", barNumbers: "off",
     notation: "letters", chordTags: false, chordTagStyle: "root", viewInC: true, middleC: 3,   // score minor 14 起样本标根音；score minor 6（7-B）起样本用字母谱、中央 C 叫 C3（minor 5 那份冻的是简谱）
     expressions: false,   // score minor 8（7-G）起：演奏法和表情不显示
-    parts: [{ id: "P1", role: "r1", mic: "m1", chords: "stacked" }, { id: "P2", role: "r2", mic: "m2", host: "P1", chords: "fold" }],
+    parts: [{ id: "P1", role: "r1", mic: "m1", chords: "stacked" }, { id: "P2", role: "r2", mic: "m2", host: "P1" }],
     papers: [{ id: "p1", name: "", tracks: { P1: p1P1, P2: p1P2 }, looks: { P2: { autoOttava: false } } }, { id: "p2", name: "副歌", tracks: { P1: p2P1 }, hidden: true }],   // v0.16.88：不要自动八度线按段
     grooves: { pop: grooveDataOf(grooveStyle("pop")!) } };   // app 写风格记号那一刻抄进来的（16-4 D）
 }

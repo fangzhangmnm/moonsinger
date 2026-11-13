@@ -4,18 +4,14 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave, type Prim } from "../src/render/engrave.ts";
 import { createTextMeasure, textStyleOf } from "../src/render/text/index.ts";
 import { initState, TPQ, type Song, type Token } from "../src/score/song.ts";
-import { setNotation, setPartChords, setMiddleC } from "../src/score/song-view.ts";
+import { setNotation, setMiddleC } from "../src/score/song-view.ts";
 import { GEOMETRY, DRAWERS } from "../src/render/notations.ts";
 import { SIGNS } from "../src/render/signs.ts";
 import { harmonyTheory } from "../src/theory/index.ts";
 import { rangeBase, fewestDotsBase } from "../src/score/degree.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
-import { CHORD_CH_EM, GLYPH_INK, DIGIT_EM as G_DIGIT_EM, DIGIT_H as G_DIGIT_H } from "../src/render/jianpu/glyphs.ts";
-import { parseTtf } from "../src/export/ttf.ts";
+import { GLYPH_INK, DIGIT_EM as G_DIGIT_EM, DIGIT_H as G_DIGIT_H } from "../src/render/jianpu/glyphs.ts";
 import { isPrinted } from "../src/export/score-pdf.ts";
-// node 的内置模块照 pdf-wysiwyg.test.ts 的取法（类型检查不带 node 的类型）
-const nodeMod = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
-const fs = nodeMod("node:fs"), zlib = nodeMod("node:zlib");
 import { FULL_VIEWS } from "./fixtures/layout/full.ts";
 
 const P = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", octave = 4, alter = 0) => ({ step, alter, octave });
@@ -164,26 +160,6 @@ describe("简谱数字行", () => {
     eq(key(Lj), key(Ls), "两种谱一家每一刻的读法、挂在谁身上、画在哪一行都一样");
     assert(fam(Ls).every((t) => Ls.systems[t.system]!.part === "Y"), "都画在这一家最下面那一位（Y）那一行；X 自己不标");
   });
-  it("叠着的和弦折叠成和弦名（第五刀 5-4，UX 稿第 7 节）：这条轨选了「折叠」= 还原得回的写成和弦名、按名字的宽占位；有歧义 = 右下角小三角（编辑器里，点它 = 候选）；还原不回 = 照写数字", () => {
-    const e = TPQ / 2, body = [n(P("G"), e, { chord: [P("E"), P("C")] }), n(P("A"), e, { chord: [P("G"), P("E"), P("C")] }), n(P("E", 5), e, { chord: [P("G"), P("C")] }), n(P("C"), e)];   // 八分：间距由宽决定（四分的弹簧够长，名字放得下就不挪）
-    const foldOn = (s: Song): Song => setPartChords({ ...initState(), song: s }, initState().at.part, "fold").song;
-    const on = lay(body, foldOn), off = lay(body);
-    const names = (L: typeof on.L) => L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-chord/.test(p.cls ?? "")).map((p) => p.s);
-    eq(names(on.L).join(" "), "C C6", "C E G = C；C E G A = C6（默认：根音是最低音的）");
-    eq(names(off.L).length, 0, "没选「折叠」= 不折");
-    eq(digits(on.L.prims).filter((d) => d !== "1").length + digits(on.L.prims).filter((d) => d === "1").length, 4, "开放排法那个和弦（C G E）还原不回 = 照写三个数字 + 最后一个单音 1");
-    const amb = on.L.prims.filter((p) => p.t === "path" && /jp-chord-amb/.test(p.cls ?? ""));
-    eq(amb.length, 1, "C6 有歧义（Am7/C 也还原得回）= 一个小三角"); assert(/(^|\s)ann(\s|$)/.test(amb[0]!.cls ?? ""), "小三角只在编辑器里（不印）");
-    const iC6 = on.toks.findIndex((t) => t.kind === "note" && (t.chord?.length ?? 0) === 3);
-    assert(on.L.chordTags.some((h) => h.index === iC6 && h.w < 20), "小三角有点击框（指着那个音，开候选）");
-    const xs = (L: typeof on.L) => L.notes.map((h) => h.x);
-    assert(xs(on.L)[2]! - xs(on.L)[1]! > xs(off.L)[2]! - xs(off.L)[1]! + 1e-6, `和弦名按名字的宽占位（C6 比一个数字宽 = 后面的音往右）：${xs(on.L)[2]! - xs(on.L)[1]!} vs ${xs(off.L)[2]! - xs(off.L)[1]!}`);
-    const arp = lay([n(P("G"), TPQ, { chord: [P("E"), P("C")], art: ["arpeggio"] })], foldOn).L;
-    assert(arp.prims.some((p) => p.t === "text" && /jp-chord/.test(p.cls ?? "")) && arp.prims.some((p) => p.t === "path" && /arpeggio/.test(p.cls ?? "")), "折成名字的和弦上的琶音照画（不静默丢掉）");
-    // 名字的宽表里 ♭ ♯ = PDF 那款字（思源黑体）的前进宽（统筹看样张 ⑨：照实际的字形量一次进表，不现场量）
-    const font = parseTtf(new Uint8Array(zlib.gunzipSync(fs.readFileSync(new URL("../vendor/fonts/sans.ttf.gz", import.meta.url)))));
-    for (const ch of ["♭", "♯"]) eq(CHORD_CH_EM[ch], font.advance(font.glyphId(ch.codePointAt(0)!)) / font.unitsPerEm, `和弦名宽表里的 ${ch} = 字体里的前进宽`);
-  });
   it("八度基准按乐器音域（第五刀 5-4，UX 稿第 3 节）：宿主给了音域 = 按音域；没给 = 写的音「点最少」；按音域要三个点以上 = 极端，退回点最少；基准写成「1=C₄」的八度数字（7-Q，取代字母上下的点）", () => {
     eq(rangeBase(57, 76, 0), 0, "人声 A3–E5 在 C 调 = 0");
     eq(rangeBase(28, 55, 0), -2, "低音 E1–G3 = 低两组");
@@ -205,16 +181,16 @@ describe("简谱数字行", () => {
     assert(L.prims.some((p) => p.t === "glyph" && /jp-key-acc/.test(p.cls ?? "") && p.ch === "\u{E260}"), "谱头的 ♭ 是 Bravura 的字形");
     assert(L.prims.some((p) => p.t === "text" && /jp-key-oct/.test(p.cls ?? "")), "谱头写了八度数字");
   });
-  it("一小节里等距（第五刀 5-4 ⑦；UX 稿第 8 节验收）：扬琴的和弦折成名字 + 琶音让位之后，同一页上手鼓那一声部同一小节里相邻八分的间距相等（几种行宽都是）", () => {
+  it("一小节里等距（第五刀 5-4 ⑦；UX 稿第 8 节验收）：扬琴的叠音 + 琶音让位之后，同一页上手鼓那一声部同一小节里相邻八分的间距相等（几种行宽都是）", () => {   // 2026-11-13「折叠成和弦名」退役：原来扬琴折成名字，现在照叠着的画
     const st0 = initState(), paper = st0.song.papers[0]!, p0 = st0.song.parts[0]!, head = paper.tracks[p0.id]!.slice(0, 3);
     let id = 3000; const ids = (ts: Omit<Token, "id">[]) => ts.map((t) => ({ ...t, id: id++ }) as Token);
     const bar = [n(P("A"), TPQ, { chord: [P("E"), P("C")], art: ["arpeggio"] }), n(P("G"), TPQ, { chord: [P("E"), P("C")] }), n(P("B"), TPQ, { chord: [P("G"), P("D"), P("G", 3)], art: ["arpeggio"] }), n(P("F"), TPQ, { chord: [P("D"), P("A", 3)] })];
     const song0: Song = { ...st0.song, parts: [p0, { ...p0, id: "BG", role: "rBG", mic: "mBG" }], papers: [{ ...paper, tracks: { [p0.id]: [...head, ...ids([...bar, ...bar, ...bar, ...bar])], BG: [...head, ...ids(Array.from({ length: 32 }, () => n(P("C", 2), TPQ / 2)))] } }] };
-    const song = setPartChords({ ...st0, song: setNotation({ ...st0, song: song0 }, "jianpu").song }, p0.id, "fold").song;
+    const song = setNotation({ ...st0, song: song0 }, "jianpu").song;
     let bars = 0;
     for (const width of [900, 600, 450]) {
       const L = engrave(song, { width, sp: 10, locale: "zh", at: { paper: paper.id, part: p0.id }, parts: [{ id: p0.id, name: "Yq", first: true }, { id: "BG", name: "Bongo", perc: { kind: "kit" } }], measure: createTextMeasure((x: string) => x.length * 8), autoBars: true });
-      assert(L.prims.some((p) => p.t === "text" && /jp-chord/.test(p.cls ?? "")) && L.prims.some((p) => p.t === "path" && /arpeggio/.test(p.cls ?? "")), "扬琴折成了名字、有琶音（比较器不是空的）");
+      assert(L.prims.some((p) => p.t === "path" && /arpeggio/.test(p.cls ?? "")), "扬琴有琶音（比较器不是空的）");
       const bg = new Set(L.systems.map((r, i) => (r.part === "BG" ? i : -1)).filter((i) => i >= 0)), hits = L.notes.filter((h) => bg.has(h.system)).sort((a, b) => a.system - b.system || a.x - b.x);
       for (let b = 0; b * 8 < hits.length; b++) {
         const hb = hits.slice(b * 8, b * 8 + 8); if (hb.length < 8 || hb.some((h) => h.system !== hb[0]!.system)) continue;

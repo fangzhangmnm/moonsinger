@@ -9,14 +9,14 @@
     "viewInC": true,
     "chords": {
       "P1": "stacked",
-      "P2": "fold"
+      "P2": "auto"
     }
   },
   "raw": {
     "notation": "jianpu",
     "parts": {
       "P1": "stacked",
-      "P2": "fold"
+      "P2": null
     }
   }
 }

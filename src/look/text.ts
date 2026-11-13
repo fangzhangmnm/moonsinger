@@ -61,7 +61,6 @@ export const TEXT_STYLES = {
   // 简谱数字行（谱面分家第四刀；字号在图元上、宽高查 render/jianpu/glyphs.ts，不现场量）：数字一律不分粗细（UX 稿第 5 节）；谱头「1=C 4/4」和中途换调的字
   "jp-digit": s("sans", 2.5, "staff"), "jp-acc": s("sans", 1.3, "staff"), "jp-letter-sup": s("sans", 1.75, "staff", smallWeight(1.75 / JP_MAIN_EM)), "jp-letter-sub": s("sans", 1.75, "staff", smallWeight(1.75 / JP_MAIN_EM)),   // 字母谱的角标（7-L）：半粗，学小字号专用字形的思路——缩小了笔画不跟着变细；字号在图元上（字母的 SCRIPT_K 倍） "jp-head": s("sans", TEMPO_EM, "staff"),   // 谱头「1=C 3/4」：常规粗细（第五刀起照样张；字号在图元上 = 0.773 个数字字号）
   // 叠着的和弦折成的和弦名（第五刀 5-4）：窄字 = 正文字体横向压（图元的 sx），宽查 render/jianpu/glyphs.ts
-  "jp-chord": s("sans", 2.0, "staff"),
   // 数字行连音的小数字（8-3；7-P 小字补粗：字号 1.1 = 主字的 0.44 倍 → 算出来的粗细）
   "jp-tuplet": s("sans", 1.1, "staff", smallWeight(1.1 / JP_MAIN_EM)),
   // 简谱数字行上的力度（pp…ff、sfz、fp）：和数字同一款字、常规粗细、斜体，约数字的 0.8（user 11-11「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）

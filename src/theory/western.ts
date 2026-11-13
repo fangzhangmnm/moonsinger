@@ -15,7 +15,7 @@
 import { type Pitch, STEPS, midiOf, stepIndex, tonicStepIndex, keyAlter } from "../score/pitch.ts";
 import { WHOLE, beatTicks } from "../score/song.ts";
 import { _t } from "../i18n/index.ts";
-import type { HarmonyTheory, HarmonyGuess, HarmonyRead, HarmonyTag, BarInput, ReadOpts, ChordFold } from "./index.ts";
+import type { HarmonyTheory, HarmonyGuess, HarmonyRead, HarmonyTag, BarInput, ReadOpts } from "./index.ts";
 import type { ChordPin } from "../score/song.ts";
 
 interface Tpl { id: string; iv: number[]; opt?: number[]; /** 缺三度（大小分不出来）：大写小写按调里这个根音上面的三度（v0.16.13，user 11-07 截图：A E G 没标）。 */ no3?: boolean; minor: boolean; /** 罗马数字后面写的（小写的已经说了小三度，不再写 m）。 */ rs: string; /** 和弦名（根音字母后面写的，点开看候选用）。 */ sym: string }
@@ -195,40 +195,6 @@ const pinOf = (guess: HarmonyGuess): ChordPin => {
   return { root: { step: g.root.step, alter: g.root.alter }, kind: g.tpl, ...(pc(g.bass) !== pc(g.root) ? { bass: { step: g.bass.step, alter: g.bass.alter } } : {}) };
 };
 
-// ── 折成和弦名（谱面分家第五刀 5-4；UX 稿第 7 节）：能还原就折——照这个名字的标准排法（最低音起、其余一个八度内依次往上、不重复）还原得回这几个音（连拼法）才折。
-//   名字多对一没关系（C6 和 Am7/C 还原的是同一组音）= 默认按认的先后（根音是最低音的优先），几个都还原得回 = 有歧义（右下角小三角）。created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟）
-/** 从根音数几个半音 → 隔几个字母（拼法）：默认表 + 几种和弦自己的（增五度 = 升五、减七 = 降降七、♯9 = 升二）。 */
-const STEPS_OF_IV: readonly number[] = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6];
-const STEPS_OVERRIDE: Readonly<Record<string, Readonly<Record<number, number>>>> = { aug: { 8: 4 }, aug7: { 8: 4 }, dim7: { 9: 6 }, "7s9": { 3: 1 } };
-const NAT_PC = [0, 2, 4, 5, 7, 9, 11];
-const pcOfSpelled = (x: { step: Pitch["step"]; alter: number }): number => (((NAT_PC[stepIndex(x.step)]! + x.alter) % 12) + 12) % 12;
-/** 这个读法的标准排法（最低音 = 读法里的最低音，八度 = bassOctave；其余各一个、在它上面一个八度之内从低到高）；拼不出来 = null。 */
-export function voicingOf(g: ChordGuess, bassOctave: number): Pitch[] | null {
-  const t = g.tpl === "5" ? { iv: [0, 7], opt: [] as number[] } : TPLS.find((x) => x.id === g.tpl); if (!t) return null;
-  const tones: { step: Pitch["step"]; alter: number }[] = [];
-  for (const iv of [...t.iv, ...(t.opt ?? [])]) {
-    const li = (stepIndex(g.root.step) + (STEPS_OVERRIDE[g.tpl]?.[iv] ?? STEPS_OF_IV[iv]!)) % 7, target = (pc(g.root) + iv) % 12;
-    const alter = ((((target - NAT_PC[li]!) % 12) + 18) % 12) - 6; if (Math.abs(alter) > 2) return null;
-    tones.push({ step: STEPS[li]!, alter });
-  }
-  const bpc = pc(g.bass), b = tones.find((x) => pcOfSpelled(x) === bpc); if (!b) return null;
-  const bass: Pitch = { ...b, octave: bassOctave }, bm = midiOf(bass);
-  const above = tones.filter((x) => pcOfSpelled(x) !== bpc).map((x) => { let p: Pitch = { ...x, octave: bassOctave - 1 }; while (midiOf(p) <= bm) p = { ...p, octave: p.octave + 1 }; return p; });
-  return [bass, ...above.sort((x, y) => midiOf(x) - midiOf(y))];
-}
-function foldChord(pitches: readonly Pitch[], at: { fifths: number; minor: boolean }, pin: ChordPin | undefined): ChordFold | null {
-  if (pitches.length < 2) return null;
-  const auto = readChord(pitches, at.fifths, at.minor ? "la" : "do"); if (!auto) return null;
-  const ps = [...pitches].sort((x, y) => midiOf(x) - midiOf(y)), lo = ps[0]!;
-  const restores = (g: ChordGuess) => { const v = voicingOf(g, lo.octave); return !!v && v.length === ps.length && v.every((p, i) => p.step === ps[i]!.step && p.alter === ps[i]!.alter && p.octave === ps[i]!.octave); };
-  const ok = (auto.all as ChordGuess[]).filter(restores); if (!ok.length) return null;
-  const ambiguous = new Set(ok.map((g) => g.name)).size > 1;
-  if (pin) {   // 人挑的：还原得回 = 按它折；还原不回 = 不折（照画数字，级数照挑的标）
-    const rd = pinRead(pin, at, auto); if (!rd || !restores(rd.best as ChordGuess)) return null;
-    return { name: rd.best.name, bass: lo, ambiguous, read: rd };
-  }
-  return { name: ok[0]!.name, bass: lo, ambiguous, read: auto };
-}
 /** 分解和弦认得出的那几类（完整的三和弦 / 七和弦 / 挂留；加音、省音的不认——旋律里随便几个音凑出来的 add9 之类太多）。 */
 const BROKEN_OK = new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
 type Tag = HarmonyTag<ChordRead>;
@@ -297,7 +263,6 @@ export const western: HarmonyTheory = {
   rootLabel: rootChordLabel,
   pinRead,
   pinOf,
-  fold: foldChord,
   howTo: () => _t("怎么认的：凑得成完整和弦的优先（不省音）→ 最低音当根音的优先 → 根音在这个调里的优先 → 简单的优先。打平的两个都写在谱上。"),
   explain: (guess) => {
     const g = guess as ChordGuess;

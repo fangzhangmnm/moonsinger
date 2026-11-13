@@ -21,7 +21,7 @@ import { songPlayOrder } from "../score/arrange.ts";
 import { sungLangsOf } from "../engine/timeline.ts";
 import { FX_KINDS } from "../engine/fx.ts";
 import { withGrooveData } from "../score/groove.ts";
-import { TEXT_LANGS } from "../score/song-view.ts";
+import { TEXT_LANGS, CHORDS_MODES } from "../score/song-view.ts";
 import { lookOf, trackLookOf, lookFromFile } from "../look/index.ts";
 import type { ReadPaper } from "../score/paper.ts";   // 「现在怎么画」、每张纸每个声部那几样、读文件时这几项怎么认：只问这一处（第 17 条 17-1）
 import { HOST_PARAMS, writeResolved, lowestMidiOf, songBpm } from "../engine/chain.ts";
@@ -1049,7 +1049,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     papers.push(seg);
   });
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
-  const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null);
+  const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null, newerThanMe(scoreExt, "score"));
   const studioUnreadable = !!extras.studio && !Array.isArray((extras.studio as Json).tracks);   // 门口补之前看（补完就有轨表了）
   const o = finish(reads, song, pruneSounds(extras), ours, name);
   const advice = newerMinor.length ? [_t("这首歌是更新版本的 MoonSinger 存的（{p}里有这一版还没有的东西）：照样能开能改能存，只是那些东西这一版看不到，在这一版里存一次，其中一部分会丢。想原样留着，先更新 app 再改。", { p: newerMinor.join("、") })] : [];
@@ -1060,14 +1060,15 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
 
 /** 读进来的几张纸 → 歌。parts = score.json 的声部并集（没有 = 按纸里出现的声部 P1…）。
  *  token id 统一重编（纸序 × 声部序 × 下标，从 1 起）：全歌唯一、确定；文件里的 id 只在读那份文件时有用（unwritten / 拆段并回）。 */
-function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: Json[] | null = null): Song {
+function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: Json[] | null = null, newer = false): Song {
   const ps = papers ?? [paperOfRead("p1", reads[0])];
   const seen = new Map<string, PartDef>();
   const autoClef = new Set<string>();   // score.json 里明写了 clef "auto" 的声部 = 纸头谱号自动；别的声部每张纸的第一个 <clef> 写什么就是什么（统筹 2026-11-12 定，不猜当年是手选还是自动）
   for (const p of partList ?? []) {
     const d: PartDef = { id: String(p.id), role: String(p.role ?? `r${seen.size + 1}`), mic: String(p.mic ?? `m${seen.size + 1}`) };
     if (p.clef === "auto") autoClef.add(d.id);
-    if (typeof p.chords === "string" && p.chords && p.chords !== "auto") d.chords = p.chords;   // 这条轨的和弦选项（score minor 5；不认识的值原样留着）
+    // 这条轨的和弦选项（score minor 5）：认得的照读；不认得的值——文件比这一版新 = 原样留着、存的时候照写，不比这一版新 = 读成 auto、存的时候写 auto、不说（文件纪律第四节「值读不懂」那一行）
+    if (typeof p.chords === "string" && p.chords && p.chords !== "auto" && ((CHORDS_MODES as readonly string[]).includes(p.chords) || newer)) d.chords = p.chords;
     if (typeof p.host === "string" && p.host) d.host = p.host;   // 合租（v0.10.24）：下面核一遍
     seen.set(d.id, d);
   }

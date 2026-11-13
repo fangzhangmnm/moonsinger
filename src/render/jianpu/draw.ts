@@ -21,7 +21,7 @@ import { MARGIN, NAME_MAX } from "../../look/frame.ts";
 import { caretStops } from "../frame/carets.ts";
 import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
-import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf, glyphWOf } from "./chunk.ts";
+import { type JianpuTrack, type JianpuMode, type JianpuAux, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf, glyphWOf } from "./chunk.ts";
 import { midTextW } from "./measure.ts";
 import { headTextW } from "./glyphs.ts";
 import { noteCell, tailW, coreBottom, rowGlyphSpan, UL_DROP } from "./note-cell.ts";
@@ -30,7 +30,7 @@ import { layoutHead } from "../frame/rowhead.ts";
 import type { Part } from "../frame/cell.ts";
 import { scalePrim } from "../skyline.ts";
 import { chordTextPrims } from "../chord-text.ts";   // 和弦标的字 + 升降号字形（v0.17.34）
-import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_GAP, UL_W, DASH_PITCH, BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, DIGIT_H, KIT_CHAR, JP_BODY, HEAD_EM, MARK_GAP, MARK_GAP2, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, MARCATO_EM, UNSTRESS_EM, CHORD_H, chordNameW, dotPath } from "./glyphs.ts";
+import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_GAP, UL_W, DASH_PITCH, BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, DIGIT_H, KIT_CHAR, JP_BODY, HEAD_EM, MARK_GAP, MARK_GAP2, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, MARCATO_EM, UNSTRESS_EM, dotPath } from "./glyphs.ts";
 
 
 /** 框架交给数字行的东西（是五线谱那一份的子集：不要纵向 ↔ 音高的几何）。 */
@@ -248,7 +248,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       if (u.kind !== "chunk" || u.pad) continue;   // 补齐的淡色小节不画（同五线谱 v0.10.19）；力度 / 渐强渐弱 = 下面 layDynamics 一起摆
       // 一个音 / 休止 = 一个盒子（第八刀 8-2，note-cell.ts）：量和画用同一个；这里只把它放大成 px、放到位，再登记点击框 / 歌词位 / 弧线要的上下沿 / 挂件
       const row = rowOf(u.system, r, 0), tok = tokOf(u), T = tok !== undefined ? { tok } : {};
-      const fd = mode === "digits" ? foldOf(u, c.aux[r]) : undefined, lt = lettersOf(q, u, mode, c.aux[r]), n = extraGlyphs(u), contDash = isContDash(u);
+      const lt = lettersOf(q, u, mode, c.aux[r]), n = extraGlyphs(u), contDash = isContDash(u);
       // 横线 / 一拍一个 0：每个字形占一拍的宽——按排完版之后这个音实际占到下一列（下一个音 / 小节线 / 行尾）的宽平分，扣掉后面的附点、换气（统筹看 5-6 样张）
       const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
       const nc = noteCell({ u, q, mode, ...(c.aux[r] ? { aux: c.aux[r] } : {}), fifths, base, ...(underlines(u) ? { ulY: ulTop.get(ulKey(u))! } : {}), step: n ? Math.max(DASH_PITCH, (span / jk - tailW(u)) / (n + 1)) : null, limit: span / jk, ...(tok !== undefined ? { tok } : {}), artCls });
@@ -263,12 +263,6 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W), d: NaN });
         if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - Q(0.6), mx1: x0 + Q(DIGIT_W) + Q(0.4), lyric: u.lyric, tok, cls: "ghost", mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!(tokens[u.index] as NoteTok | undefined)?.hyph });
       } else if (u.note && u.pitch) {
-        if (fd?.ambiguous && !contDash) {   // 和弦名有歧义 = 小三角（编辑器里，点它 = 候选）：不印的提示（8-5）——不占宽、最后贴、只躲不推：先试名字右下，再右上、正下（统筹定的先后）
-          const nw = Q(chordNameW(fd.name)), tx0 = x0 + nw + Q(0.05), ty = Y(row, BASE_Y), a = Q(0.45), rd = fd.read, ui = u.index, first = u.j === 0;
-          c.hint(row, { part: { ink: { x0: 0, x1: a, y0: -a, y1: 0 }, prims: [{ ...T, t: "path", d: `M0,0L${a},0L${a},${-a}Z`, cls: "jp-chord-amb ann" }] },
-            tries: [{ x: tx0, y: ty }, { x: tx0, y: Y(row, BASE_Y - CHORD_H) + a }, { x: x0 + nw / 2 - a / 2, y: ty + a + Q(0.35) }],
-            onPlace: (hx2, hy) => { if (first) chordTagsOut.push({ x: hx2 - Q(0.2), y: hy - a - Q(0.3), w: a + Q(0.5), h: a + Q(0.6), read: rd, system: row, index: ui }); } });
-        }
         if (u.j === 0) for (const m of nc.members) if (m.i > 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, m.yb - DIGIT_H / 2), w: Q(DIGIT_W) });   // 叠在一起的别的音：各自一块点击区（指着同一个音 token）
         if (!contDash) {
           arcAt.set(u, { row, cx, top: nc.top! });
@@ -291,7 +285,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         if (u.j === 0 && u.index >= 0) rests.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W) });
       }
       const nUL = underlines(u);
-      if (nUL) { const uh = fd || lt ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W; ul.push({ row, x0: cx - Q(uh), x1: cx + Q(uh), level: nUL, group: ulKey(u), y0: ulTop.get(ulKey(u))!, tok, ch: u }); }   // 样张：每个数字下面 ±0.45 个数字宽（附点不带）
+      if (nUL) { const uh = lt ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W; ul.push({ row, x0: cx - Q(uh), x1: cx + Q(uh), level: nUL, group: ulKey(u), y0: ulTop.get(ulKey(u))!, tok, ch: u }); }   // 样张：每个数字下面 ±0.45 个数字宽（附点不带）
     }
     // 连音的组（UX 稿第 4 节）：同一比例连着的一串凑满就收一组；每组都标（原样从下面挪上来：下划线画之前要知道哪儿断开）
     const tups: { run: Chunk[]; num: string }[] = [];

@@ -9,11 +9,11 @@ import { cell, type Cell, type Part, type Ink } from "../frame/cell.ts";
 import { toDegree } from "../../score/degree.ts";
 import { midiOf } from "../../score/pitch.ts";
 import { percOf } from "../../gm/percussion.ts";
-import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf } from "./chunk.ts";
+import { type JianpuTrack, type JianpuMode, type JianpuAux, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf } from "./chunk.ts";
 import { PLACE, gapOf, groupOf, type PlaceId } from "./place.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_STEP, ACC_EM, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_R, AUG_Y,
   BREATH_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, LOW_DOT_UNDER, GHOST_K,
-  STACC_W, STACC_H, TEN_L, TEN_W, BREATH_EM, BREATH_Y, CHORD_EM, CHORD_SX, CHORD_H, chordNameW, chordBassCx, stackBases, dotPath, DOT_GAP,
+  STACC_W, STACC_H, TEN_L, TEN_W, BREATH_EM, BREATH_Y, stackBases, dotPath, DOT_GAP,
   ACC_GLYPH_EM, ACC_RISE, ACC_SEP, accGlyphs, accGlyphsOfText, accRunW, supAccEm, accStroke, glyphInk, textInkRun } from "./glyphs.ts";
 
 export interface NoteCellIn {
@@ -77,7 +77,7 @@ function accRun(gs: readonly { ch: string; box: readonly number[]; dom: number }
 
 export function noteCell(a: NoteCellIn): NoteCellOut {
   const { u, q, mode, aux } = a, T = T0(a.tok), art = a.artCls ?? ((x: string, b = "art") => b || x);
-  const fd = mode === "digits" ? foldOf(u, aux) : undefined, nameW = fd ? chordNameW(fd.name) : 0, lt = lettersOf(q, u, mode, aux), glyphW = fd ? nameW : lt ? lt.w : DIGIT_W;   // 和弦名的歧义小三角不占宽（不印的提示，8-5）
+  const lt = lettersOf(q, u, mode, aux), glyphW = lt ? lt.w : DIGIT_W;
   const x0 = 0.1, cx = x0 + glyphW / 2, n = extraGlyphs(u), contDash = isContDash(u), small = u.art.includes("ghost"), gk = small ? GHOST_K : 1;
   const letters = q.letters !== undefined && mode === "digits", xHead = mode === "digits" && !!q.p.xHead, kit = q.p.perc?.kind === "kit";
   const nUL = underlines(u);
@@ -106,7 +106,7 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
   if (u.note && (u.ghost || !u.pitch)) {   // 没写音高的音：灰色「x」+ 长音横线（施工单第五节先顶上的写法）
     head.core(contDash ? dashPart(cx) : digitPart(cx, BASE_Y, "x", "jp-digit ghost", 1));
   } else if (u.note && u.pitch) {
-    const ps = fd ? [fd.bass] : u.pitches.length > 1 ? u.pitches : [u.pitch], accs = fd ? [] : accsOf(u);
+    const ps = u.pitches.length > 1 ? u.pitches : [u.pitch], accs = accsOf(u);
     const dg = ps.map((pp) => toDegree(pp, letters ? 0 : a.fifths)), dotsOf = dg.map((d) => (mode === "x" || letters ? 0 : d.shift - a.base));
     const order = ps.map((_, i) => ps.length - 1 - i);   // 从最低的起
     const bases = letters ? order.map((_, k) => BASE_Y - k * (DIGIT_H + SUB_DROP + SUP_RISE + CHORD_GAP)) : stackBases(order.map((i) => dotsOf[i]!));
@@ -114,17 +114,7 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
     const hiDots = dotsOf[0]!, lowDots = dotsOf[order[0]!]!;
     const mute = (i: number) => (i > 0 && !!q.p.mono ? " chord-mute" : "");   // 单声乐器的声部：下面的音灰掉（同五线谱）
     if (contDash) head.core(dashPart(cx));
-    else if (fd) {   // 和弦名（UX 稿第 7 节）：窄字、左边对齐这一列；八度点标在最低音那个字母上下
-      head.core(part(textInk(x0, x0 + nameW, BASE_Y - CHORD_H, BASE_Y), [{ ...T, t: "text", x: x0, y: BASE_Y, s: fd.name, cls: "jp-chord", size: CHORD_EM, sx: CHORD_SX, anchor: "start" }]));
-      const bd = dotsOf[0]!, bx = x0 + chordBassCx(fd.name);
-      const dots = (sign: 1 | -1): Part => { const ps2: Prim[] = []; for (let j = 0; j < Math.abs(bd); j++) ps2.push({ ...T, t: "path", d: dotPath(bx, -sign * (DOT_R + j * DOT_STEP), DOT_R), cls: "jp-dot" }); return part({ x0: bx - DOT_R, x1: bx + DOT_R, y0: sign > 0 ? -(2 * DOT_R + (Math.abs(bd) - 1) * DOT_STEP) : 0, y1: sign > 0 ? 0 : 2 * DOT_R + (Math.abs(bd) - 1) * DOT_STEP }, ps2); };
-      if (hasArp(u)) {   // 琶音照画（折成名字也不静默丢掉）：名字左边一条竖的波浪线，名字那么高
-        const yTop = BASE_Y - CHORD_H - 0.2, yBot = BASE_Y + 0.2; stick("arpeggio", arpPart(yTop, yBot, T, art("arpeggio", "arpeggio jp-arp")), { cross: 0 });
-      }
-      if (bd > 0) stick("dotHigh", dots(1), { cross: 0 });
-      if (bd < 0) stick("dotLow", dots(-1), { cross: 0 });
-      members = [{ i: 0, yb: BASE_Y }];
-    } else if (mode === "x" && kit) {   // 整套鼓：每一下按五线鼓谱的符头种类换字；同时敲的几件按五线鼓谱上的高低叠；幽灵音 = 小一号
+    else if (mode === "x" && kit) {   // 整套鼓：每一下按五线鼓谱的符头种类换字；同时敲的几件按五线鼓谱上的高低叠；幽灵音 = 小一号
       const hits = ps.map((pp, i) => ({ i, pi: percOf(128, 0, midiOf(pp)) })).sort((p1, p2) => (p2.pi?.line ?? 4) - (p1.pi?.line ?? 4) || p2.i - p1.i);
       hits.forEach(({ i, pi }, k) => {
         const yb = bases[k]! - DIGIT_H * 0.12, sz = DIGIT_EM * KIT_EM * gk, ch = KIT_CHAR[pi?.head ?? "normal"] ?? "●";

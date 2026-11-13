@@ -39,7 +39,7 @@ import { DRAWERS, NOTATIONS, type RowKind, type FoldFamily, type StaffTrack, typ
 import type { LyricPart, LyricSpot } from "./frame/lyric-spots.ts";
 import { INK_UP_TO, type LaneKind } from "./frame/lanes.ts";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "./frame/arrange.ts";
-import { harmonyTheory, paperHarmony, type PlacedTag, type ChordFold } from "../theory/index.ts";
+import { harmonyTheory, paperHarmony, type PlacedTag } from "../theory/index.ts";
 import { foldExpressions, foldedCount } from "./expressions.ts";
 
 /** tok = 这个图元属于哪个 token（id）：写字头 / 选区 / 强调色不进排版，score-view 按 data-tok 在 DOM 上开关 class（W-17 第 1 刀，2026-10-15）。 */
@@ -443,19 +443,12 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     //   横向间距（刀 3，2026-11-09 Claude Opus 5.5；算法 = src/render/spacing.ts）：一列到下一列多远 = 这一刻正在响的音里最短的那个该占的宽；同一行前后两样东西真会撞才顶开；
     //   一行排满只拉 / 压弹簧（小节线、调号这些固定宽的不拉）。对齐线 = 列的 x；符头画在 x + 0.35，临时记号挂在左边、进前一列的空。
     const kScale = (k: RowKind) => ROW_PARAMS[k][density].scale;   // 行里的尺寸比例（这种行自己的字形 / 偏移统一乘它）
-    // 叠着的和弦折成和弦名（第五刀 5-4；预处理，和谱种无关，用不用归画法）：这条轨的和弦选项是「折叠」时，每个叠音的音问乐理模块折不折得了（能还原才折）
-    const foldsOf = (q: StaffTrack, i: number): ReadonlyMap<number, ChordFold> | null => {
-      const th = harmonyTheory(); if (q.vrt || rowHost[i]! >= 0 || q.p.perc || songLook.chordsOf(q.p.id) !== "fold" || !th.fold) return null;   // 叠着的折叠成和弦名也是认和弦：打击乐的行不折（7-O）
-      const folds = new Map<number, ChordFold>(); let at = { fifths: DEFAULT_KEY, minor: false };
-      q.tokens.forEach((t, k) => { if (t.kind === "key") at = { fifths: t.fifths, minor: t.mode === "minor" }; else if (t.kind === "note" && t.pitch && t.chord?.length) { const f = th.fold!([t.pitch, ...t.chord], at, t.harm); if (f) folds.set(k, f); } });
-      return folds.size ? folds : null;
-    };
     // 数字行上「吸 / 深吸」那行小字：按界面语言、用这一页的尺子量好，量和画拿同一份（第八刀守卫 2）
     const labelOf = (text: string, k: number): RowLabel => ({ text, size: tx("breath-label") / P(k), w: mw("breath-label", text) / k });
-    const aux: TrackAux[] = per0.map((q, i) => {
-      const folds = foldsOf(q, i), k = kScale(kinds[i]!);
+    const aux: TrackAux[] = per0.map((_q, i) => {
+      const k = kScale(kinds[i]!);
       const labels = kinds[i] === "staff" ? null : { inhale: { soft: labelOf(_tIn(textLang, "吸##记号"), k), big: labelOf(_tIn(textLang, "深吸##记号"), k) } };
-      return { ...(folds ? { folds } : {}), ...(labels ? { labels } : {}) };
+      return labels ? { labels } : {};
     });
     const measured = per0.map((q, i) => DRAWERS[kinds[i]!].measure(q, kScale(kinds[i]!), aux[i]));
     const atracks: ArrangeTrack<Unit>[] = per0.map((_q, pi) => ({ entries: measured[pi]!.entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));   // 声部 2 画在主人那一行 = 和主人一个道基数

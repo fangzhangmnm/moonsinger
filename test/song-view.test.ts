@@ -105,6 +105,24 @@ describe("这首歌怎么看：读写", () => {
     eq(JSON.stringify(viewOf(bad.song)), JSON.stringify({ notation: "staff", chordTags: true, viewInC: false, chords: "auto" }));
     const jb = scoreJson(save(bad.song)); eq(`${jb.notation},${jb.chordTags},${jb.viewInC}`, "default,default,default", "写坏的读成跟着软件、存时写 default");
   });
+  // 2026-11-13「折叠成和弦名」那一档退役（user「同意」；施工单第 19 条退役那一节第 2、4 点）：读文件的那一条规矩（文件纪律第四节「值读不懂」），不留退役的名单
+  it("每条轨的和弦选项写着不认识的值、文件不比这一版新 = 打开照「认」（auto）画，存出来是现行的写法（auto）；不说（例子 = 退役的 fold）", () => {
+    const st = initState(), part = st.song.parts[0]!.id;
+    const o = openBytes("x.mxl", withScoreJson(save(st.song), (j) => { j.parts[0].chords = "fold"; }));
+    eq(lookOf(o.song).chordsOf(part), "auto", "照认画");
+    assert(!("chords" in o.song.parts[0]!), "内存里 = 没写（auto）");
+    eq(o.notices.length, 0, "不说");
+    eq(scoreJson(save(o.song)).parts[0].chords, "auto", "存出来是现行的写法");
+  });
+  it("冻结样本 score minor 5–14 每一份：声部的和弦选项读出来和 expected.json 记的一样（P2 写着退役的 fold = 读成 auto，2026-11-13 改记）；样本字节没动", () => {
+    for (let m = 5; m <= FORMAT_MINOR.score; m++) {
+      const d = `test/fixtures/format/minor/score-${m}`, exp = JSON.parse(fs.readFileSync(new URL(`${d}/expected.json`, ROOT), "utf8"));
+      const b = bytesOf(`${d}/sample.mxl`), o = openBytes("sample.mxl", b), v = lookOf(o.song);
+      eq(JSON.stringify(Object.fromEntries(o.song.parts.map((p) => [p.id, v.chordsOf(p.id)]))), JSON.stringify(exp.songView.chords), `${d}：画的时候`);
+      eq(JSON.stringify(Object.fromEntries(o.song.parts.map((p) => [p.id, p.chords ?? null]))), JSON.stringify(exp.raw.parts), `${d}：读进来的原值`);
+      assert(scoreJson(b).parts.some((p: Record<string, unknown>) => p.chords === "fold"), `${d}：样本里还是写着 fold（字节没动）`);
+    }
+  });
   it("冻结样本 score minor 6（7-B 字母谱）：notation = letters、中央 C 叫 C3 读得出来；再存一遍还一样；按 C 调看存着开、在字母谱下不起作用", () => {
     const exp = JSON.parse(fs.readFileSync(new URL("test/fixtures/format/minor/score-6/expected.json", ROOT), "utf8"));
     const b = bytesOf("test/fixtures/format/minor/score-6/sample.mxl"), o = openBytes("sample.mxl", b), v = lookOf(o.song);

@@ -11,7 +11,7 @@
     "textLang": "en",
     "chords": {
       "P1": "stacked",
-      "P2": "fold"
+      "P2": "auto"
     }
   },
   "raw": {
@@ -19,7 +19,7 @@
     "textLang": "en",
     "parts": {
       "P1": "stacked",
-      "P2": "fold"
+      "P2": null
     }
   }
 }
