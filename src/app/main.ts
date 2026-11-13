@@ -2938,8 +2938,9 @@ const PEDAL_ACT_LABEL: Record<PedalKind, Record<PedalTok["act"], string>> = {
   sostenuto: { down: _t("踩下（留住这一刻按着的音）"), up: _t("抬起（放开留住的音）"), change: _t("换踏板（先放开，再留住这一刻按着的音）") },   // 持音只放开它留住的那几个（统筹审 11-2：「止音」说大了）
   soft: { down: _t("踩下（弹得轻一点）"), up: _t("抬起（回到原来的轻重）"), change: _t("换踏板（对弱音没有意思：照旧踩着）") },
 };
-/** 菜单里给写的动作：只有延音有「换踏板」；持音 / 弱音的换踏板只会从别家谱读进来（照读、照画；点它的小菜单里亮着、能改能删，不给新写）。 */
-const PEDAL_ACTS: Record<PedalKind, readonly PedalTok["act"][]> = { sustain: ["down", "up", "change"], sostenuto: ["down", "up"], soft: ["down", "up"] };
+/** 菜单里给写的动作：延音、持音有「换踏板」（持音的 = 杂事版 v0.17.42，统筹：按住一个低音、上面弹分解和弦，一个低音一个记号；没踩时写 = 踩下）；
+ *  弱音的换踏板没有意思、只会从别家谱读进来（照读、照画；点它的小菜单里亮着、能改能删，不给新写）。 */
+const PEDAL_ACTS: Record<PedalKind, readonly PedalTok["act"][]> = { sustain: ["down", "up", "change"], sostenuto: ["down", "up", "change"], soft: ["down", "up"] };
 const PEDAL_NAME: Record<PedalKind, string> = { sustain: _t("延音踏板"), sostenuto: _t("持音踏板"), soft: _t("弱音踏板") };
 /** 台上这位不认这种踏板 → 一句话；没人上场 = 不说（同演奏法）。 */
 function pedalIgnoredWhy(which: PedalKind): string | null {

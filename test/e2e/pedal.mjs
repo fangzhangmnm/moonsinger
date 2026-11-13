@@ -64,7 +64,7 @@ check((await shape()) === "C v D E ^ F", "选区开头踩下、结尾抬起", aw
 await caretAfter("C"); await openMenu(); await pick("sostenuto:act:down"); await openMenu(); await pick("soft:act:down");
 check((await p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "pedal" && t.which !== "sustain").map((t) => `${t.which}:${t.act}`).join(","); })) === "sostenuto:down,soft:down", "持音、弱音各写了一个踩下");
 await caretAfter("E"); vs = await openMenu();
-check(vs.includes("sostenuto:act:up") && !vs.includes("sostenuto:act:change") && vs.includes("soft:act:up") && !vs.includes("soft:act:change"), "持音 / 弱音踩着：只有「抬起」，不给写「换踏板」", vs.join(","));
+check(vs.includes("sostenuto:act:up") && vs.includes("sostenuto:act:change") && vs.includes("soft:act:up") && !vs.includes("soft:act:change"), "持音踩着：「抬起」「换踏板」都能写（v0.17.42）；弱音踩着：只有「抬起」，不给写「换踏板」", vs.join(","));
 await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 // 台上这位不认（新歌默认小月相）= 谱上画灰
 const grey = await p.$$eval("#score .pedal", (es) => es.every((e) => e.classList.contains("art-mute")));

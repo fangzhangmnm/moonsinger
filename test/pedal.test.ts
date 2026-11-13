@@ -74,6 +74,20 @@ describe("踏板 · 键按多久（规矩一、二、三、七）", () => {
     const both = notesOf(two([ped("down", "sostenuto"), n("C"), ped("down"), n("D"), ped("up", "sostenuto"), n("E"), ped("up"), n("F")], []), "soundfont");
     assert(near(both[0]!.t1, 3 * Q), `C 被持音留到第 2 拍抬起、落在延音踩着的一段里 = 到延音抬起（第 3 拍），实得 ${both[0]!.t1 / Q} 拍`);
   });
+  // 杂事版 v0.17.42（统筹「持音踏板能写换踏板」）：按住一个低音、上面弹分解和弦，一个低音一个持音的「换踏板」
+  it("持音的换踏板：连着三个低音各写一个——每个低音留到下一个换踏板那一刻（最后一个到纸尾），上面的音照写的松；第一组多插一个音（后面的低音都晚半拍）= 三个记号的意思跟着走", () => {
+    const E = TPQ / 2, grp = (bass: "C" | "F" | "G", extra = 0): Token[] => [ped("change", "sostenuto"), n(bass, E, 3), n("E", E), n("G", E), n("C", E, 5), ...Array.from({ length: extra }, () => n("E", E))];
+    for (const extra of [0, 1]) {
+      const ns = notesOf(two([...grp("C", extra), ...grp("F"), ...grp("G")], []), "soundfont");
+      const bassAt = [0, 4 + extra, 8 + extra], half = Q / 2, b0 = bassAt.map((i) => ns[i]!.t0);
+      assert(near(b0[1]!, (2 + extra / 2) * Q) && near(b0[2]!, (4 + extra / 2) * Q), `（前提）低音二、三落在第 ${b0[1]! / Q}、${b0[2]! / Q} 拍`);
+      assert(near(ns[bassAt[0]!]!.t1, b0[1]!), `低音一留到低音二那一刻（第一个记号没踩时写 = 踩下）：多插 ${extra} 个，实得 ${ns[bassAt[0]!]!.t1 / Q} 拍`);
+      assert(near(ns[bassAt[1]!]!.t1, b0[2]!), `低音二留到低音三那一刻：多插 ${extra} 个，实得 ${ns[bassAt[1]!]!.t1 / Q} 拍`);
+      const end = ns[ns.length - 1]!.t0 + half;
+      assert(near(ns[bassAt[2]!]!.t1, end), `低音三（最后一个）留到纸尾：多插 ${extra} 个，实得 ${ns[bassAt[2]!]!.t1 / Q} 拍、纸尾 ${end / Q} 拍`);
+      ns.forEach((x, i) => { if (!bassAt.includes(i)) assert(near(x.t1 - x.t0, half), `上面的音照写的松（第 ${i} 个：${(x.t1 - x.t0) / Q} 拍）`); });
+    }
+  });
   it("弱音：踩着期间起的音力度加这位的 softVel（−16）、时值不动；抬起那一刻起的不算；按音量走的（元音版）不认 = 照写的", () => {
     const ns = notesOf(two([n("C"), ped("down", "soft"), n("D"), n("E"), ped("up", "soft"), n("F")], []), "soundfont");
     const plain = notesOf(two([n("C"), n("D"), n("E"), n("F")], []), "soundfont");
