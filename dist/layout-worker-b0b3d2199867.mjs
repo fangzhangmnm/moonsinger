@@ -1417,8 +1417,10 @@ var S = {
   "\uFF08\u771F\u4EBA\u6E10\u5F31\u4F1A\u53D8\u865A\u3001\u53D8\u6697\uFF0C\u8FD9\u4E2A\u8FD8\u6CA1\u6709\uFF09": { en: " (a real singer's diminuendo gets airier and darker; not modeled yet)" },
   "\u529B\u5EA6\u600E\u4E48\u53D8": { en: "How dynamics change" },
   "\u529B\u5EA6\u8868\uFF1A{string}": { en: "Dynamics table: {string}" },
+  "dB \u8868\uFF1A{string}": { en: "dB table: {string}" },
   "\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9": { en: "Crescendo / diminuendo with no endpoint" },
   "\u8D70\u4E00\u6863 = \u529B\u5EA6 {wedgeStepVel}": { en: "One step = velocity {wedgeStepVel}" },
+  "\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863": { en: "Goes to the next step in the table" },
   "\u5E7D\u7075\u97F3": { en: "Ghost note" },
   "\u529B\u5EA6 {ghostVel}": { en: "Velocity {ghostVel}" },
   "\u6574\u4E2A\u97F3 {ghostDb}": { en: "Whole note {ghostDb}" },
@@ -1502,7 +1504,7 @@ var S = {
   "\u56DE\u5230\u9ED8\u8BA4 {d} dB": { en: "Back to default {d} dB" },
   "\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}": { en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}" },
   "\u5531\u51FA\u6765\u7684\u6BCF\u4E00\u53E5\u5148\u4E58 \xD7{k}\uFF08{db} dB\uFF09\uFF1A\u5531\u6CD5\u6838\u5FC3\u539F\u59CB\u8F93\u51FA\u7684\u8865\u507F\uFF0C\u6211\u4EEC\u6309\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\uFF08\u7EA6 0.42\uFF09\u653E\u5927\u5230 0.89 \u5B9A\u7684\u6570\u3002": { en: "Each sung phrase is first multiplied by \xD7{k} ({db} dB): compensation for the singing core's raw output, a number we set by scaling the measured raw peak (about 0.42) up to 0.89." },
-  "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u7684\u653E\u6CD5\uFF1A\u54CD\u5EA6 = \u6DF1\u5EA6 \xF7 960 \xD7 40\xB7log10(\u529B\u5EA6 \xF7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\u3002\u8FD9\u4F4D\u7684\u529B\u5EA6\u6DF1\u5EA6 {dp}\uFF08\u7167\u5E93\u91CC\u4EBA\u58F0\u7C7B\u548C\u957F\u7B1B\u3001\u5C0F\u63D0\u7434\u8FD9\u7C7B\u62C9\u957F\u97F3\u7684\u4E50\u5668\uFF1B\u89C4\u8303\u9ED8\u8BA4 960\uFF09\uFF1B\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}": { en: "Dynamic mark \u2192 velocity \u2192 loudness, by the same rule as the instruments (the SoundFont way: loudness = depth \xF7 960 \xD7 40\xB7log10(velocity \xF7 127), full velocity = 0 dB). This performer's velocity depth is {dp} (like the library's voices and sustained instruments such as flute and violin; the SoundFont default is 960); no recorded layers, only loudness changes: {extras}" },
+  "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": { en: "Dynamic markings \u2192 loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers \u2014 only loudness changes: {table}" },
   "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u8FD9\u4E00\u4F4D\u7684\uFF09": { en: "What notes without lyrics are sung as (this performer\u2019s own)" },
   "\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE": { en: "Advanced: singing core knobs" },
   "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D": { en: "This version can't sound it (the other software's original instrument): pick another \u201CWho performs\u201D" },
@@ -2839,6 +2841,7 @@ function swellOf(t) {
   return t.art.includes("swellUp") ? "<" : t.art.includes("swellDown") ? ">" : t.art.includes("swellBoth") ? "<>" : void 0;
 }
 var DYNS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
+var DEFAULT_DYN = "mf";
 var PEDAL_KINDS = ["sustain", "sostenuto", "soft"];
 var CLEFS = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
 var SPLIT_MIDI = 60;
@@ -6259,6 +6262,7 @@ var TSUKUYOMI_CREDIT = {
 var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
 
 // src/score/perform.ts
+var DEFAULT_DYN_KEY = DEFAULT_DYN;
 function hairpinEnd(tokens, i, bounds) {
   const pe = paperEndOf(i, tokens.length, bounds);
   for (let j = i + 1; j < pe; j++) {
@@ -6288,34 +6292,46 @@ function dynLevels(tokens, map, table, def, step, bounds) {
     }
     return 0;
   };
-  let cur = def, ramp = null;
+  let cur = def, curDyn = DEFAULT_DYN_KEY, ramp = null;
   const lvl = (t) => ramp ? ramp.from + (ramp.to - ramp.from) * Math.max(0, Math.min(1, ramp.T1 > ramp.T0 ? (t - ramp.T0) / (ramp.T1 - ramp.T0) : 1)) : cur;
   for (let i = 0; i < tokens.length; i++) {
     if (ramp && i >= ramp.end) {
       cur = ramp.to;
+      curDyn = ramp.toDyn;
       ramp = null;
     }
     const t = tokens[i];
     if (t.kind === "dyn") {
-      if (!ramp) cur = table[t.value];
+      if (!ramp) {
+        cur = table[t.value];
+        curDyn = t.value;
+      }
       const pe = paperEndOf(i, tokens.length, bounds), j = ramp ? -1 : rampTarget(tokens, i, pe), start = j >= 0 ? onsetFrom(i + 1, j) : null;
-      if (j >= 0 && start) ramp = { from: cur, to: table[tokens[j].value], T0: start.t0, T1: onsetFrom(j, pe)?.t0 ?? endBefore(j), end: j };
+      if (j >= 0 && start) {
+        const v = tokens[j].value;
+        ramp = { from: cur, to: table[v], toDyn: v, T0: start.t0, T1: onsetFrom(j, pe)?.t0 ?? endBefore(j), end: j };
+      }
       continue;
     }
     if (t.kind === "hairpin") {
       const e = hairpinEnd(tokens, i, bounds), start = onsetFrom(i + 1, e.at);
       if (!start) continue;
-      const endVal = e.kind === "dyn" ? table[tokens[e.at].value] : null, oneStep = Math.max(lo, Math.min(hi, cur + (t.dir === "cresc" ? step : -step)));
+      const endDyn = e.kind === "dyn" ? tokens[e.at].value : null, endVal = endDyn ? table[endDyn] : null;
+      const stepDyn = step === "table" ? DYNS[Math.max(0, Math.min(DYNS.length - 1, DYNS.indexOf(curDyn) + (t.dir === "cresc" ? 1 : -1)))] : curDyn;
+      const oneStep = step === "table" ? table[stepDyn] : Math.max(lo, Math.min(hi, cur + (t.dir === "cresc" ? step : -step)));
       const agrees = endVal !== null && (t.dir === "cresc" ? endVal > cur : endVal < cur);
-      const to = agrees ? endVal : oneStep;
+      const to = agrees ? endVal : oneStep, toDyn = agrees ? endDyn : stepDyn;
       const T1 = e.kind === "end" ? endBefore(e.at) : onsetFrom(e.at, paperEndOf(i, tokens.length, bounds))?.t0 ?? endBefore(e.at);
-      ramp = { from: cur, to, T0: start.t0, T1, end: e.at };
+      ramp = { from: cur, to, toDyn, T0: start.t0, T1, end: e.at };
       continue;
     }
     const x = at2.get(i);
     if (!x) continue;
     out.set(i, { at0: lvl(x.t0), at1: lvl(x.t1) });
-    if (t.kind === "note" && !ramp && artOf(t).includes("fp")) cur = table.p;
+    if (t.kind === "note" && !ramp && artOf(t).includes("fp")) {
+      cur = table.p;
+      curDyn = "p";
+    }
   }
   return out;
 }
@@ -9657,4 +9673,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-c703de0919e6.mjs.map
+//# sourceMappingURL=layout-worker-b0b3d2199867.mjs.map

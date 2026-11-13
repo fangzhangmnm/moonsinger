@@ -4,7 +4,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, tr, toggleHairpin, setHairpinTarget, TPQ, type Token, type EditorState } from "../src/score/song.ts";
 import { dynLevels, noteVelocities, gainSegments, hairpinEnd } from "../src/score/perform.ts";
-import { DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
+import { DYNAMICS_VEL, DYNAMICS_DB, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { toJianpu, fromJianpu } from "../src/score/clipboard.ts";
 import { apply } from "../src/score/commands.ts";
@@ -19,7 +19,7 @@ const note = () => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, oct
 /** 谱头（调 / 拍 / 速度 90）+ items（"n" = 一个四分音符，别的 = 原样的记号）。 */
 const line = (items: (Token | "n")[]): Token[] => [...tr(initState()).slice(0, 3), ...items.map((x) => (x === "n" ? note() : x))];
 const notes = (toks: Token[]) => toks.flatMap((t, i) => (t.kind === "note" ? [i] : []));
-const sv = { staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, dynamicsVel: { ...DYNAMICS_VEL }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL };
+const sv = { staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, dynamicsVel: { ...DYNAMICS_VEL }, dynamicsDb: { ...DYNAMICS_DB }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL };
 
 describe("渐强渐弱：编辑（记号）", () => {
   it("放在光标前那个音上（从这个音起；2026-10-08 user「做」）；再点同方向 = 去掉；反方向 = 换；光标还在那个音后面", () => {

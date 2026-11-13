@@ -114,12 +114,12 @@ describe("时间线：歌开头的琶音", () => {
 
 // 7-N（2026-11-12 Claude Opus 5.5（MoonSinger小弟））：时间线这一层的接线——按力度敲的、认滚奏的演奏者（真的 SoundFont 插件），滚奏的每一下拿到当时的力度；
 //   表说认（滚奏、音内渐强在滚奏上）= 出声真变。L 这里用深度 800 的曲线（velDb；真库的那一份在 test/sf-velcurve.test.ts 拿引擎核）。
-import { depthCurve } from "../src/score/perform.ts";
+import { sf2Curve } from "./fixtures/vel-curve.ts";
 describe("时间线：滚奏的每一下（7-N）", () => {
   const roll = (extra: Token[], art: string[]) => { const st0 = initState(), pid = st0.song.parts[0].id, p1 = st0.song.papers[0];
     const toks = [...head(p1.tracks[pid]), ...extra, { kind: "note", id: nid++, pitch: { step: "D", alter: 0, octave: 2 }, dur: 4 * TPQ, lyric: null, art } as Token, { kind: "dyn", id: nid++, value: "f" } as Token, n("D")];
     const song = { ...st0.song, papers: [{ ...p1, tracks: { [pid]: toks } }] };
-    const t = buildTimeline({ song, order: [p1.id], parts: st0.song.parts, info: () => ({ ...info("soundfont"), spec: { ...spec, rollHz: 8 }, velDb: depthCurve(800) }), singOpt: {} });
+    const t = buildTimeline({ song, order: [p1.id], parts: st0.song.parts, info: () => ({ ...info("soundfont"), spec: { ...spec, rollHz: 8 }, velDb: sf2Curve(800) }), singOpt: {} });
     return (t.tracks[0] as unknown as { notes: { t0: number; vel?: number }[] }).notes.filter((x) => x.t0 < 4 * Q - 1e-6).map((x) => Math.round((x.vel ?? 0) * 127));
   };
   it("渐强盖在滚奏上 = 每一下的力度一路往上；没写 = 每一下一样", () => {

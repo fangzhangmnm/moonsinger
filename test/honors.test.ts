@@ -7,10 +7,10 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, select, tr, toggleArtSel, toggleSlurSel, type EditorState, type NoteTok } from "../src/score/song.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
 import { gainSegments, noteEnd, noteVelocity, ignoredArts, lightMarks, ALL_MARKS, type Mark } from "../src/score/perform.ts";
-import { DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION } from "../src/format/performance.ts";
+import { DYNAMICS_VEL, DYNAMICS_DB, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION } from "../src/format/performance.ts";
 
 const deq = (a: unknown, b: unknown, msg?: string) => eq(JSON.stringify(a), JSON.stringify(b), msg);
-const spec = (gapSec: number) => ({ dynamicsVel: { ...DYNAMICS_VEL }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, gapSec });
+const spec = (gapSec: number) => ({ dynamicsVel: { ...DYNAMICS_VEL }, dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, gapSec });
 /** 新建的 SoundFont 演奏者：按力度敲（力度记号 / 重音 / 强音走 MIDI 力度；9-2 起力度表人人都有，分路看插件能力）。 */
 const sfSpec = (gapSec: number) => ({ ...spec(gapSec), dynamicsVel: { ...DYNAMICS_VEL }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL });
 /** 两个四分音符；mark = 给第一个音加的记号（连线 = 第一个连到第二个）。chord = 第一个音叠成和弦（琶音要和弦才听得出来，v0.9.45）。 */

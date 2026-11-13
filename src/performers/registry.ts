@@ -95,11 +95,9 @@ export interface PerformerPlugin {
   readonly pedals?: readonly import("../score/song.ts").PedalKind[];
   /** 本来就连着唱（连线 / 保持对它没意义，断句用呼吸）→ 这两个记号画灰的理由是 "sung" 而不是 "gap"。 */
   readonly connected: boolean;
-  /** 力度怎么落：velocity = 按下那一下的 MIDI 力度（有力度表）；gain = 音量曲线（dB）乘在声音上。乐器页按这个摆哪一行。 */
+  /** 力度怎么落：velocity = 按下那一下的 MIDI 力度（候选带力度表 dynamicsVel，深度是库给每件乐器写的、引擎自己读，vendor/tsf/patch-tsf.py 补丁 2）；
+   *  gain = 音量曲线（dB）乘在声音上（候选带 dB 表 dynamicsDb，16-4）。乐器页按这个摆哪一行；存档按这个分这位身上写哪张表（format/project.ts dynKeysOf）。 */
   readonly dynamics: "velocity" | "gain";
-  /** 力度深度（cB，9-4；和 SoundFont「力度 → 初始衰减」调制器的量同一个单位）：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）。
-   *  按音量曲线走力度的（dynamics: "gain"）必须报；按力度敲的乐器不报——深度是库给每件乐器写的，引擎自己读（vendor/tsf/patch-tsf.py 补丁 2）。 */
-  readonly velocityDepth?: number;
   /** 按块出声的（sound: "chunks"）块乘多少：这个引擎原始输出的满音量归它自己（9-3，2026-11-12；user「小月相有自己的normalization，normalization应该是乐器自己可以带的」）。
    *  公共的出声代码不认识这个数（守卫：src/engine、src/core、src/score 里没有针对某个引擎的音量常数）。按音符表出声的不报。 */
   readonly chunkGain?: number;

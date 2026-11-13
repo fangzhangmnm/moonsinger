@@ -71,15 +71,16 @@ describe("滚奏：写谱 / MusicXML / 画", () => {
 
 // ── 7-N 第一批（2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「这个滚奏完全没法用啊，比如如何实现我之前手动滚奏的效果？」「没法上音内渐强」）──
 //   每一下按它敲下去那一刻的力度水平（出声同一份 dynLevels）；滚奏的音上音内起伏谁都能演（鼓也行）；音头那一组只算第一下、弱化 / 幽灵音每一下都算；
-//   dB ↔ 力度只经过 L（perform.ts VelDb：乐器 = 引擎在那个键上实际的；这里用深度曲线代替，真库的那一份在 test/sf-velcurve.test.ts 拿引擎核）。
-import { gainSegments, rollHitVelocity, noteVelocities, depthCurve, velocityForDb, swellByVelocity, velocityDb, type PerfSpec, type VelDb } from "../src/score/perform.ts";
+//   dB ↔ 力度只经过 L（perform.ts VelDb：乐器 = 引擎在那个键上实际的；这里用 SF2 规范的深度曲线代替（test/fixtures/vel-curve.ts），真库的那一份在 test/sf-velcurve.test.ts 拿引擎核）。
+import { gainSegments, rollHitVelocity, noteVelocities, velocityForDb, swellByVelocity, type PerfSpec, type VelDb } from "../src/score/perform.ts";
+import { sf2Curve, sf2Db } from "./fixtures/vel-curve.ts";
 import type { Art } from "../src/score/song.ts";
 import { openBytes } from "../src/format/project.ts";
 import { MARK_DEFAULTS, DYNAMICS_VEL } from "../src/format/performance.ts";
 const nodeMod7n = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
 /** 一位按力度敲的鼓（新的 SoundFont 候选的样子：标准力度表、音内起伏做不到）。 */
 const DRUM: PerfSpec = { ...MARK_DEFAULTS, staccatoGate: 0.5, accentDb: 3, dynamicsVel: { ...DYNAMICS_VEL }, accentVel: 16, marcatoVel: 28, canSwell: false } as PerfSpec;
-const C800 = depthCurve(800);
+const C800 = sf2Curve(800);
 /** 照 timeline.ts 的接法排一条（力度那一路）：每个音的力度 + 滚奏每一下的力度。 */
 const play = (toks: Token[], map: never, hz: number, curve: VelDb = C800, spec = DRUM) => lightNotes(toks, map, true, { ...lightMarks(spec as never), rollHz: () => hz }, (i) => noteVelocities(toks, map, spec, 80 / 127).get(i) ?? 80 / 127, rollHitVelocity(toks, map, spec, 80 / 127, undefined, undefined, curve));
 describe("滚奏 7-N 第一批：每一下按当时的力度", () => {
@@ -117,7 +118,7 @@ describe("滚奏 7-N 第一批：每一下按当时的力度", () => {
     assert(!plain, "不是滚奏的音：鼓照旧做不到音内渐强（不画灰的例外只给滚奏）");
   });
   it("力度做不出起伏的（深度 0：力度不改响度）：滚奏的音内起伏走音量曲线、每一下力度不动（不静默丢掉）", () => {
-    const C0 = depthCurve(0);
+    const C0 = sf2Curve(0);
     assert(!swellByVelocity(C0, 38, 6) && swellByVelocity(C800, 38, 6), "深度 0 做不出、800 做得出");
     const toks = [...head(), dyn("mf"), n(38, 4 * TPQ, { art: ["roll", "swellUp"] })];
     assert(play(toks, map1, 8, C0).every((h) => Math.round(h.vel! * 127) === 80), "每一下 mf");
@@ -134,7 +135,7 @@ describe("滚奏 7-N 第一批：每一下按当时的力度", () => {
   });
   it("强后即弱在不是滚奏的乐器音上：压多少 = 这件乐器的 L(p) − L(f)（深度 800：−9.74 dB；原来写死 960 = −11.68）", () => {
     const gs = gainSegments([...head(), dyn("mf"), n(60, 4 * TPQ, { art: ["fp"] })], map1, DRUM, undefined, undefined, true, C800)!;
-    const end = gs[gs.length - 1]!.dB, want = velocityDb(DYNAMICS_VEL.p, 800) - velocityDb(DYNAMICS_VEL.f, 800);
+    const end = gs[gs.length - 1]!.dB, want = sf2Db(DYNAMICS_VEL.p, 800) - sf2Db(DYNAMICS_VEL.f, 800);
     assert(Math.abs(end - want) < 0.01 && Math.abs(want + 9.74) < 0.01, `${end.toFixed(2)} vs ${want.toFixed(2)}`);
   });
   it("反查的规矩（统筹定的，写死）：只在不高于当前力度的整数里找、取 L 最接近目标的、一样近取力度高的；L 不单调也照这个规矩；不出声 = 原样", () => {
@@ -145,11 +146,11 @@ describe("滚奏 7-N 第一批：每一下按当时的力度", () => {
     eq(velocityForDb(() => null, 60, 77, 6), 77, "不出声 = 原样");
     eq(velocityForDb(C800, 60, 80, 0), 80, "低 0 dB = 不动");
   });
-  it("结构：perform.ts 里 dB 和力度互相换只经过 velocityDb / L（VelDb）——别处没有 log10、没有写死的 960", () => {
+  it("结构：perform.ts 里 dB 和力度互相换只经过 L（VelDb，按力度敲的乐器从库算）——没有 log10、幂、写死的 960（16-4 起连那一条公式也没有了）", () => {
     const src = (nodeMod7n("node:fs").readFileSync(new URL("../src/score/perform.ts", import.meta.url), "utf8") as string).replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map((l) => l.replace(/\/\/.*$/, ""));
     const log = src.filter((l) => /Math\.log10|\*\*|Math\.pow/.test(l)), n960 = src.filter((l) => /\b960\b/.test(l));
-    assert(log.length === 1 && /export const velocityDb/.test(log[0]!), `log10 / 幂只在 velocityDb 里：${log.join(" | ")}`);
-    assert(n960.length === 1 && /SF2_VEL_DEPTH = 960/.test(n960[0]!), `960 只在 SF2_VEL_DEPTH：${n960.join(" | ")}`);
+    assert(!log.length, `log10 / 幂：${log.join(" | ")}`);
+    assert(!n960.length, `960：${n960.join(" | ")}`);
   });
 });
 describe("滚奏 7-N 第一批：谱上", () => {

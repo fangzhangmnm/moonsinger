@@ -9,7 +9,7 @@ import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type
 import { midiOf } from "../score/pitch.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { scriptLang } from "../score/lang.ts";
-import { gainSegments, noteEnd, noteVelocities, rollHitVelocity, depthCurve, lightMarks, rollDefaultHz, ROLL_HZ_MIN, ROLL_HZ_MAX, type PerfSpec, type VelDb } from "../score/perform.ts";
+import { gainSegments, noteEnd, noteVelocities, rollHitVelocity, NO_CURVE, lightMarks, rollDefaultHz, ROLL_HZ_MIN, ROLL_HZ_MAX, type PerfSpec, type VelDb } from "../score/perform.ts";
 import { grooveWeights, grooveMapOf, followOf, timeMapOf, type GrooveStyle } from "../score/groove.ts";
 import { toLabScore, singChunks, type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
 import { playSegments } from "../score/repeats.ts";
@@ -50,7 +50,7 @@ export interface PerformerInfo {
   /** 这位自己的唱法参数（小月相：候选 defaults 里的旋钮，乐器页「高级」；2026-10-15）：盖在 TimelineInput.singOpt 上，一起进块的内容键。 */
   singOpt?: Record<string, unknown>;
   /** 按力度敲的乐器：引擎在敲的键上实际的 L（写的音高 × 力度 → dB；perform.ts VelDb，7-N）。准备声音时从库的字节算（录音房载库时），没载好 = 没有（这个声部本来就不出声）。
-   *  按音量曲线走力度的不给——用插件报的深度（depthCurve）。 */
+   *  按音量走力度的（小月相 / 元音版）不给——她们的力度就是候选身上的 dB 表（PerfSpec.dynamicsDb，16-4）。 */
   velDb?: VelDb;
 }
 export interface TimelineInput {
@@ -182,8 +182,8 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     if (!info.plugin) { unplayable.push({ part: part.id, why: _t("还没有人上场") }); continue; }
     const groove = grooveWeights(tokens, bounds, gmap, info.follow);
     const byVel = info.plugin.dynamics === "velocity";   // 按力度敲（乐器）/ 按音量曲线（小月相 / 元音版）= 插件的能力（9-2：不再看「有没有力度表」）
-    // L（dB ↔ 力度只经过它，7-N）：按力度敲的 = 引擎在敲的键上实际的（准备声音时从库算；没载好 = 没有，这个声部本来就不出声，不换算）；按音量曲线的 = 插件报的深度
-    const curve: VelDb = byVel ? info.velDb ?? (() => null) : depthCurve(info.plugin.velocityDepth!);   // 按音量曲线的必须报深度（test/performers.test.ts 守）
+    // L（dB ↔ 力度只经过它，7-N）：按力度敲的 = 引擎在敲的键上实际的（准备声音时从库算；没载好 = 没有，这个声部本来就不出声，不换算）
+    const curve: VelDb = byVel ? info.velDb ?? NO_CURVE : NO_CURVE;   // 按力度敲的 = 引擎在敲的键上实际的 L；按音量走的不用（她们的力度就是 dB 表，16-4）
     const rolls = info.plugin.honors.includes("roll");
     const gain: GainSeg[] | null = gainSegments(tokens, map, info.spec, bounds, groove, byVel, curve, rolls);
     if (info.plugin.sound === "chunks") {   // 慢引擎：按句出块（谁唱由 worker 按插件定；现在只有小月相）

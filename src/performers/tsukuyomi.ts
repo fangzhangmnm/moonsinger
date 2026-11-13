@@ -28,7 +28,6 @@ export const tsukuyomi = registerPerformer({
   connected: true, dynamics: "gain", grooveCategory: "voice", removable: false,
   // 力度深度 800（施工单 9-4 第 4 条，统筹定；user 2026-11-12「小月相要不要也用库里多数乐器的那个深度 什么乐器的逻辑最像人声？你想想」）：
   //   GS 里三个人声类音色（Concert Choir / Voice Oohs / Synth Voice）都写 800，和长笛、双簧管、小提琴一样，而且亮度不随力度变——她的力度也是只变响度
-  velocityDepth: 800,
   // 块乘多少（9-3，原来是 src/engine/timeline.ts 的 SUNG_GAIN，数不变）：唱法核心 raw 输出的补偿——刀 0 量的 raw 峰值 ≈ 0.42（うさぎ 0.419 / 団子 0.412）→ 乘到 0.89
   //   （原整首归一化的目标；按句出块后不再整首归一化，句与句的强弱照原样）
   chunkGain: 0.89 / 0.42,

@@ -3298,11 +3298,17 @@ export declare const S: {
     readonly "\u529B\u5EA6\u8868\uFF1A{string}": {
         readonly en: "Dynamics table: {string}";
     };
+    readonly "dB \u8868\uFF1A{string}": {
+        readonly en: "dB table: {string}";
+    };
     readonly 渐强渐弱没写终点: {
         readonly en: "Crescendo / diminuendo with no endpoint";
     };
     readonly "\u8D70\u4E00\u6863 = \u529B\u5EA6 {wedgeStepVel}": {
         readonly en: "One step = velocity {wedgeStepVel}";
+    };
+    readonly 走到表里的下一档: {
+        readonly en: "Goes to the next step in the table";
     };
     readonly 幽灵音: {
         readonly en: "Ghost note";
@@ -3553,8 +3559,8 @@ export declare const S: {
     readonly "\u5531\u51FA\u6765\u7684\u6BCF\u4E00\u53E5\u5148\u4E58 \u00D7{k}\uFF08{db} dB\uFF09\uFF1A\u5531\u6CD5\u6838\u5FC3\u539F\u59CB\u8F93\u51FA\u7684\u8865\u507F\uFF0C\u6211\u4EEC\u6309\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\uFF08\u7EA6 0.42\uFF09\u653E\u5927\u5230 0.89 \u5B9A\u7684\u6570\u3002": {
         readonly en: "Each sung phrase is first multiplied by ×{k} ({db} dB): compensation for the singing core's raw output, a number we set by scaling the measured raw peak (about 0.42) up to 0.89.";
     };
-    readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u7684\u653E\u6CD5\uFF1A\u54CD\u5EA6 = \u6DF1\u5EA6 \u00F7 960 \u00D7 40\u00B7log10(\u529B\u5EA6 \u00F7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\u3002\u8FD9\u4F4D\u7684\u529B\u5EA6\u6DF1\u5EA6 {dp}\uFF08\u7167\u5E93\u91CC\u4EBA\u58F0\u7C7B\u548C\u957F\u7B1B\u3001\u5C0F\u63D0\u7434\u8FD9\u7C7B\u62C9\u957F\u97F3\u7684\u4E50\u5668\uFF1B\u89C4\u8303\u9ED8\u8BA4 960\uFF09\uFF1B\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}": {
-        readonly en: "Dynamic mark → velocity → loudness, by the same rule as the instruments (the SoundFont way: loudness = depth ÷ 960 × 40·log10(velocity ÷ 127), full velocity = 0 dB). This performer's velocity depth is {dp} (like the library's voices and sustained instruments such as flute and violin; the SoundFont default is 960); no recorded layers, only loudness changes: {extras}";
+    readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": {
+        readonly en: "Dynamic markings → loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers — only loudness changes: {table}";
     };
     readonly "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u8FD9\u4E00\u4F4D\u7684\uFF09": {
         readonly en: "What notes without lyrics are sung as (this performer’s own)";

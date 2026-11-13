@@ -8,7 +8,7 @@ import { CALIBRATION_DEFAULT_DB, ROLL_HZ_MIN, ROLL_HZ_MAX, MARK_DEFAULTS } from 
 const MARK_DEFAULTS_SWELL = MARK_DEFAULTS.swellDb;
 import { performerOf } from "../../performers/index.ts";
 import type { InspectorCtx } from "../../performers/registry.ts";
-import { ignoredArts, rollDefaultHz, depthCurve, velocityForDb, SF2_VEL_DEPTH, type Mark } from "../../score/perform.ts";
+import { ignoredArts, rollDefaultHz, velocityForDb, type Mark } from "../../score/perform.ts";
 import { sf2VelocityCurve, type VelCurve } from "../../gm/sf2-subset.ts";
 import { sfKey } from "../../gm/sf-key.ts";
 import { DYNS, type Dyn, type Hum, type Song } from "../../score/song.ts";
@@ -55,8 +55,9 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       : _t("一条连续的音量曲线（乘在{sung}出来的声音上）：渐强渐弱在一个长音中间也一直在变，和音内起伏是同一种变法；只变响度、不变音色{sung2}", { sung: sung ? _t("唱##出声") : _t("弹##出声"), sung2: sung ? _t("（真人渐弱会变虚、变暗，这个还没有）") : "" });
     const rows: [string, string, string][] = [
       [_t("力度怎么变"), "", how],
-      [_t("力度记号"), "", _t("力度表：{string}", { string: (Object.entries(sp.dynamicsVel) as [string, number][]).map(([d, x]) => `${d} ${x}`).join(" · ") })],
-      [_t("渐强渐弱没写终点"), "", _t("走一档 = 力度 {wedgeStepVel}", { wedgeStepVel: sp.wedgeStepVel })],
+      vel ? [_t("力度记号"), "", _t("力度表：{string}", { string: (Object.entries(sp.dynamicsVel) as [string, number][]).map(([d, x]) => `${d} ${x}`).join(" · ") })]
+        : [_t("力度记号"), "", _t("dB 表：{string}", { string: DYNS.map((d) => `${d} ${sp.dynamicsDb[d]}`).join(" · ") })],   // 按音量走的 = 她身上的 dB 表（16-4）
+      vel ? [_t("渐强渐弱没写终点"), "", _t("走一档 = 力度 {wedgeStepVel}", { wedgeStepVel: sp.wedgeStepVel })] : [_t("渐强渐弱没写终点"), "", _t("走到表里的下一档")],
       [_t("幽灵音"), "ghost", vel ? _t("力度 {ghostVel}", { ghostVel: sp.ghostVel }) : _t("整个音 {ghostDb}", { ghostDb: db(sp.ghostDb) })],
       [_t("弱化"), "unstress", vel ? _t("力度 {unstressVel}", { unstressVel: sp.unstressVel }) : _t("整个音 {unstressDb}", { unstressDb: db(sp.unstressDb) })],
       [_t("次重音"), "stress", vel ? _t("力度 +{stressVel}", { stressVel: sp.stressVel }) : _t("音头 {accentSec} {stressDb}", { accentSec: ms(sp.accentSec), stressDb: db(sp.stressDb) })],
@@ -105,21 +106,27 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     return `<div class="role-detail">${what ? _t("这件乐器：{what}", { what: esc(what) }) + (ab ? " · " : "") : ""}${ab ? _t("第二行起写 {ab}", { ab: esc(ab) }) : ""}</div>`;
   }
   /** 力度换算表（v0.9.23；user 2026-10-10「wishlist: ppp fff，以及帮我科普这些和db的换算关系，然后应该向用户揭露，方便对比」「揭露表的位置建议是乐器页「力度」那一行 同意」）：
-   *  每个力度记号 → 这位的 MIDI 力度 + 响度（9-2 起全体一张表、一条规矩；9-4 起：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)，满力度 = 0 dB，深度 = 库给这件乐器写的 /
-   *  小月相和元音版的插件报的；不知道 = 不写 dB 那一行），有 GS 力度层数据的再加一行「第几份录音」（跨层 = 换一份录音）。 */
+   *  按力度敲的乐器：每个力度记号 → 这位的 MIDI 力度 + 响度（响度 = 引擎在那个键上实际的 L，深度是库给这件乐器写的；声音没载好 = 不写 dB 那一行），
+   *  有 GS 力度层数据的再加一行「第几份录音」（跨层 = 换一份录音）。小月相 / 元音版是另一张：dbTable（她身上的八个 dB，16-4）。 */
   function dynTable(sp: { dynamicsVel: Record<Dyn, number> }, layers: { count: number; ranges: [number, number][] } | null, L: ((vel: number) => number | null) | null): string {
     const db = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(x)}`;
     const cells = (f: (d: Dyn) => string) => DYNS.map((d) => `<td>${f(d)}</td>`).join("");
     const vel = sp.dynamicsVel;
     return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d) => `<th title="${d}"><span class="smufl">${DYN_GLYPH[d]}</span></th>`).join("")}</tr>` +
       `<tr><th>${_t("MIDI 力度")}</th>${cells((d) => String(vel[d]))}</tr>` +
-      // 响度（第 9 节 / 9-2 / 9-4，2026-11-12）：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127) dB（满力度 = 0）；一张表看出每档差多少
+      // 响度：这件乐器在那个键上实际的 L（库写的深度）；满力度 = 0 dB，一张表看出每档差多少
       // L（7-N）：和出声同一个函数（乐器 = 引擎在那个键上实际的，perform.ts VelDb）；满力度 = 0 dB
       ((top) => (L && top !== null ? `<tr><th>${_t("响度 dB")}</th>${cells((d) => { const x = L(vel[d]); return x === null ? "–" : db(Math.round((x - top) * 10) / 10); })}</tr>` : ""))(L ? L(127) : null) +
       (layers && layers.count > 1 ? `<tr><th>${_t("第几份录音")}</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
   }
+  /** 按音量走力度的这位（小月相 / 元音版）身上的 dB 表：照实显示八个数（16-4，统筹 2026-11-12 夜；逐档能不能改 = 16-6 摆法）。 */
+  function dbTable(t: Record<Dyn, number>): string {
+    const db = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(x)}`;
+    return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d) => `<th title="${d}"><span class="smufl">${DYN_GLYPH[d]}</span></th>`).join("")}</tr>` +
+      `<tr><th>${_t("响度 dB")}</th>${DYNS.map((d) => `<td>${db(t[d])}</td>`).join("")}</tr></table>`;
+  }
   /** 乐器页的内容（每次改完整页重画；输入框里正在打的字不受影响——只有提交时才改 extras）。 */
-  /** 这位的 L 在一个键上（7-N；和出声同一个函数）：乐器 = 库的字节在手边才有（嵌在歌里的 / 这次找到过的），按写的中央 C 换成敲的键；按音量曲线的 = 插件报的深度。没有 = null。 */
+  /** 这位的 L 在一个键上（7-N；和出声同一个函数）：乐器 = 库的字节在手边才有（嵌在歌里的 / 这次找到过的），按写的中央 C 换成敲的键。按音量走力度的没有 L（她的力度就是 dB 表）= null。 */
   const curves = new Map<string, VelCurve | null>();
   function curveOf(sha: string, bank: number, program: number): VelCurve | null {
     const k = `${sha}|${bank}:${program}`; if (curves.has(k)) return curves.get(k)!;
@@ -130,7 +137,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
   }
   function curveHere(role: string): ((vel: number) => number | null) | null {
     const plug = performerOf(h.engine());
-    if (plug?.dynamics === "gain") { const c = depthCurve(plug.velocityDepth ?? SF2_VEL_DEPTH); return (v) => c(60, v); }
+    if (plug?.dynamics === "gain") return null;
     const aid = activeId(h.extras(), role), g = gmCandidates(h.extras(), role).find((x) => x.id === aid); if (!g) return null;
     const c = curveOf(g.subsetSha256, g.bank, g.program), key = sfKey(60, g, activeTranspose(h.extras(), role));
     return c ? (v) => c.at(key, v) : null;
@@ -191,8 +198,8 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       ownMain.map(rowOf).join("") +
       // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
       // 按块出声的（小月相）块乘多少照实写在这里，和力度深度一起（第 14 条，2026-11-12：「我们自己放的、界面上看不见的」这一类要清到零）
-      (plug?.dynamics === "gain" ? ((dp: number) => row(_t("力度记号"), "", (plug.chunkGain ? _t("唱出来的每一句先乘 ×{k}（{db} dB）：唱法核心原始输出的补偿，我们按量过的原始峰值（约 0.42）放大到 0.89 定的数。", { k: plug.chunkGain.toFixed(2), db: `+${(20 * Math.log10(plug.chunkGain)).toFixed(1)}` }) : "") +
-        _t("力度记号 → 力度 → 响度，和乐器同一条规矩（SoundFont 的放法：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)，满力度 = 0 dB）。这位的力度深度 {dp}（照库里人声类和长笛、小提琴这类拉长音的乐器；规范默认 960）；没有录音层，只变响度：{extras}", { dp, extras: dynTable(activePerfSpec(h.extras(), role), null, (v) => depthCurve(dp)(60, v)) })))(plug.velocityDepth ?? SF2_VEL_DEPTH) : "") +
+      (plug?.dynamics === "gain" ? row(_t("力度记号"), "", (plug.chunkGain ? _t("唱出来的每一句先乘 ×{k}（{db} dB）：唱法核心原始输出的补偿，我们按量过的原始峰值（约 0.42）放大到 0.89 定的数。", { k: plug.chunkGain.toFixed(2), db: `+${(20 * Math.log10(plug.chunkGain)).toFixed(1)}` }) : "") +
+        _t("力度记号 → 响度：这位身上带着一张表，每个力度记号乘多少 dB。渐强渐弱在 dB 上平均地变；后面没写力度记号的，走到表里的下一档。没有录音层，只变响度：{table}", { table: dbTable(activePerfSpec(h.extras(), role).dynamicsDb) })) : "") +
       ((plug?.lyrics ?? "none") !== "none" ? row(_t("哼的字"), HUMS.map(([v, l]) => chip(`hum:${v}`, l, hum === v)).join(""), _t("没写歌词的音唱什么（这一位的）")) : "") +
       (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("高级：唱法核心的旋钮")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") +
       ownTail.map(rowOf).join("") +

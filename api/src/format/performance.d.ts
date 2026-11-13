@@ -39,6 +39,10 @@ export declare const SING_MARKS: Record<"staccato" | "accent" | "marcato" | "bre
  *  「mp mf 大于小于号这种，可以preliminary的控制力度。然后跳音强音重音也应该是这个」）。起点 = MuseScore 的经典默认值，好不好听归 user 耳朵。
  *  新建候选都抄一份；旧候选没有这张表 = 用这张（9-2：不再有「没表就走 dB」那条路）。GS 很多音色按力度换录音层（仓鼠 v11 velLayers）。 */
 export declare const DYNAMICS_VEL: Record<Dynamic, number>;
+/** 按音量走力度的乐手（小月相 / 元音版）新建时按值抄进去的 dB 表（第 16 条 16-4，统筹 2026-11-12 夜）：这个力度记号下她的声音乘多少 dB。
+ *  这八个数 = 9-4 那条公式（深度 800 ÷ 960 × 40·log10(力度 ÷ 127)）在标准力度表 DYNAMICS_VEL 上算出来、取两位小数（和公式最大差 0.0044 dB），新建的歌声音和改之前一样；
+ *  从这里起它是数据、不是公式。老歌身上带着的表照文件读（缺的档用这里的补）。 */
+export declare const DYNAMICS_DB: Record<Dynamic, number>;
 /** 重音 / 强音在力度上加多少（MIDI 格；SoundFont 这一路）。月读 / 元音版这一路是音头加 dB：重音 accentDb、强音 MARCATO_DB。 */
 export declare const ACCENT_VEL = 16, MARCATO_VEL = 28, MARCATO_DB = 7;
 /** 没画曲线的音用的默认数（单位同 curves.json 的 units）：soundfont 的 velocity = MIDI 力度比例 0–1。 */

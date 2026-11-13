@@ -25,8 +25,7 @@ await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTim
 await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300);
 const tab = await p.evaluate(() => { const t = document.querySelector(".dyn-tab"); if (!t) return null; const rows = [...t.querySelectorAll("tr")].map((r) => [...r.children].map((c) => c.textContent.trim())); return rows; });
 check(!!tab && tab[0].length === 9, "乐器页有力度换算表（ppp…fff 八列）", JSON.stringify(tab));
-check(!!tab && tab[1][0] === "MIDI 力度" && tab[1][1] === "16" && tab[1][8] === "126", "小月相：力度表（ppp 16 … fff 126，和乐器同一张）", JSON.stringify(tab?.[1]));
-check(!!tab && tab[2][0] === "响度 dB" && tab[2][1] === "−30" && tab[2][5] === "−6.7" && tab[2][8] === "−0.1", "小月相：响度 = 800 ÷ 960 × 40·log10(力度 ÷ 127)（ppp −30 … mf −6.7 … fff −0.1）", JSON.stringify(tab?.[2]));
+check(!!tab && tab.length === 2 && tab[1][0] === "响度 dB" && tab[1][1] === "−29.99" && tab[1][5] === "−6.69" && tab[1][8] === "−0.11", "小月相：她身上的 dB 表照实显示八个数（16-4；没有 MIDI 力度那一行）", JSON.stringify(tab));
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();

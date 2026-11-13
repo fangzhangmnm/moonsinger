@@ -31,7 +31,7 @@
  *  manifest 2 / score 2（2026-10-08，0.5.0 多声部多纸，存法 B）：纸的顺序表 + 声部并集；每张纸一份 MusicXML 正本，score.musicxml 变派生件。
  *  lounge 3（9-2，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「按照SoundFont对齐，然后小月相也应该对齐」，统筹裁定走大版本）：力度 → 响度全体演奏者只有一条
  *  （响度 = 40·log10(力度 ÷ 127)，SoundFont 规范的放法；score/perform.ts velocityDb）。候选按值存的 dynamicsDb（小月相 / 元音版那张「力度字母 → dB」的表）和
- *  articulation.wedgeStepDb 退役（当时的迁移 2→3 删这两个键；第 16 条起没有迁移：老文件里带着的读的时候不理，16-4 起小月相 / 元音版的力度表恢复成按值带的 dB 表）；新建的候选都按值带 dynamicsVel。为什么是大版本不是小版本（统筹的三条）：
+ *  articulation.wedgeStepDb 退役（当时的迁移 2→3 删这两个键；第 16 条起没有迁移；16-4 起按音量走的小月相 / 元音版的 dynamicsDb 恢复成她的力度、照文件读，见下面 lounge minor 3）；新建的候选都按值带 dynamicsVel。为什么是大版本不是小版本（统筹的三条）：
  *  ① 旧版本拿「有没有 dynamicsVel」当分路的开关（gainSegments 里 vel = !!spec.dynamicsVel）：读到带表的小月相会把她当成按力度敲的，音量曲线里不再有力度水平，
  *     她又不吃力度——她的强弱整个没了。这不是「声音不太一样」，是旧读者把新数据读成了另一个意思。
  *  ② 这次改的是约定本身（力度记号多响），user 的原话是吃书：新约定下存的歌本来就不该让旧版本去放，明确拒开比提示一次之后放错好。
@@ -106,8 +106,12 @@ export type FormatFile = keyof typeof FORMAT;
  *  lounge 2：哼的字只在乐手身上（不再整首一个、不再存的时候抄给每一位）；乐手缺的数存的时候按现行默认写全；dynamicsDb / articulation.wedgeStepDb 算有定义的键（照写照读，16-4 再定）；
  *    articulation.rollHz 可以是 null（= 按乐器）、canSwell 明写。
  *  studio 2：轨的 bypass、效果的 on 明写；效果参数表里每个参数都写；「原声」dry 没写 = 参数表的默认（原来 = 1 − 湿）。
+ *  lounge 3（第 16 条 16-4，2026-11-12 夜，统筹「v0.17.12 收」四问）：按音量走力度的乐手（插件报 dynamics: "gain"，现在 = 小月相 / 元音版）的力度 = 身上的 dynamicsDb（八档 → dB；
+ *    意思和老的一样：这个力度记号下她的声音乘多少 dB），程序里没有公式和深度；她们不写 dynamicsVel / articulation.wedgeStepVel。按力度敲的（SoundFont）照旧 dynamicsVel / wedgeStepVel，
+ *    身上老的 dynamicsDb / wedgeStepDb 不再有定义、不写。音符上的 lang 删（xml:lang 按唱的规矩写、读的时候不看）；SoundFont 的 instrument.note 不固定也明写 null。
+ *    旧读者（lounge 2）读到：dynamicsDb 是它认识、但运行时不读的键 = 照它自己的公式放（模板那八个数就是那条公式算的，新建的歌听起来一样；带老表的那几位不一样），提示一次。
  *  旧读者（小版本更小）照小版本的规矩：能开能改能存、提示一次。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 11, lounge: 2, studio: 2 };   // lounge 3（9-2）起小版本从 0 数
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 11, lounge: 3, studio: 2 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
@@ -263,12 +267,14 @@ export interface CandidateV2 {
    *  只给少数本身就差八度的音色兜底（GS 32 Guitar Harmonics 高两个八度、18 / 19 风琴听着低一个八度），不自动套用（user「大部分情况不应该动，是worst case兜底」）。 */
   transpose?: number;
   defaults: Record<string, number>;    // 一个音没画曲线时用的默认数（by value）：参数名 → 值，单位同 curves.json 的 units
-  //   dynamicsDb（谱上记号 ↔ 曲线的换算表，力度字母 → dB）：lounge 3（9-2，2026-11-12）退役——迁移 2→3 删掉，写的时候没有。
-  /** 力度记号 → MIDI 力度（1–127；by value）。2026-10-08 起 SoundFont 候选带（可选，不升版本；Claude Opus 5.5），lounge 3（9-2）起全体演奏者的新候选都带；
-   *  没带 = 内置的标准表（performance.ts DYNAMICS_VEL）。响度全体只有一条 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)（score/perform.ts velocityDb；深度 = SoundFont 库自己写的 / 小月相和元音版的插件报的，9-4，不进文件）。accentVel / marcatoVel 加在力度上。 */
+  /** 力度记号 → dB（八档；by value）。按音量走力度的乐手（插件 dynamics: "gain" = 小月相 / 元音版）带，这张表就是她的力度（16-4，lounge minor 3）：
+   *  渐强渐弱 / 渐到在 dB 上线性，没终点走到表里的下一档，强后即弱压到表里的 p。新建 = 模板 performance.ts DYNAMICS_DB；缺的档读的时候用模板补。按力度敲的乐手身上不写。 */
+  dynamicsDb?: Record<Dynamic, number>;
+  /** 力度记号 → MIDI 力度（1–127；by value）。按力度敲的乐手（SoundFont）带；没带的那一档 = 模板 performance.ts DYNAMICS_VEL。
+   *  响多少跟着音色库给这件乐器写的深度（引擎自己读，SF2 规范）。accentVel / marcatoVel 加在力度上。按音量走的乐手身上不写（16-4）。 */
   dynamicsVel?: Record<Dynamic, number>;
   articulation: { staccatoGate: number; tenutoGate: number; accentDb: number; gapSec?: number; marcatoDb?: number; accentVel?: number; marcatoVel?: number;
-    accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; /* wedgeStepDb：lounge 3 退役（迁移 2→3 删掉） */ wedgeStepVel?: number;
+    accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; /* wedgeStepVel：只有按力度敲的写；wedgeStepDb 不再有定义（16-4） */ wedgeStepVel?: number;
     sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number; swellDb?: number;
     /** 能不能在一个音里面变强（2026-10-08 加，可选）：false = 按下去就自然衰减（钢琴 / 吉他 / 打击）——音内渐强 / 鼓起画灰、明说；音内渐弱照做。没写 = 能。
      *  SoundFont 新候选按仓鼠 v11 的 sustain（sustained = 能）by value 抄进来。 */

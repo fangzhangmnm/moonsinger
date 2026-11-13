@@ -22,10 +22,12 @@ export interface PerfSpec {
     unstressVel?: number;
     ghostDb?: number;
     ghostVel?: number;
-    /** 力度记号 → 力度（1–127；全体演奏者一张，9-2 起人人都有：按值带的，没带 = 内置的标准表）。重音 / 强音按力度加多少。 */
+    /** 力度记号 → 力度（1–127；按力度敲的乐器用：按值带的，没带的那一档 = 模板）。重音 / 强音按力度加多少。 */
     dynamicsVel: Record<Dyn, number>;
     accentVel?: number;
     marcatoVel?: number;
+    /** 力度记号 → dB（八档；按音量走力度的小月相 / 元音版用：按值带的，没带的那一档 = 模板。第 16 条 16-4，统筹 2026-11-12 夜：这张表就是她的力度，程序里没有公式和深度）。 */
+    dynamicsDb?: Record<Dyn, number>;
     /** 滚奏每秒敲几下（v0.16.64；演奏者自己的，没写 = 按乐器的默认，rollDefaultHz）。 */
     rollHz?: number | null;
 }
@@ -35,19 +37,12 @@ export interface GainSeg {
     t1: number;
     dB: number;
 }
-/** SoundFont 规范默认的力度深度（cB）：「力度 → 初始衰减」调制器的量（SF2.01 8.4.1）。深度 960 = 音量按力度的平方。 */
-export declare const SF2_VEL_DEPTH = 960;
-/** 力度 → 响度（施工单第 9 节 / 9-2 / 9-4，2026-11-12；user「按照SoundFont对齐，然后小月相也应该对齐」「真正该对齐的是：我们的引擎和标准播放器 对齐」）：
- *  全体演奏者只有这一条——SoundFont 的放法，响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127) dB（满力度 = 0；深度 960 = 规范默认 = 音量按力度的平方）。
- *  乐器：力度送进引擎（选录音），深度是库给每件乐器写的，引擎自己读（vendor/tsf/patch-tsf.py 补丁 2，照 FluidSynth）；
- *  小月相 / 元音版没有录音层：音量曲线上的水平就是这一条，深度由她们的插件报（registry.ts velocityDepth）。
- *  不以 mf 为基准、不乘任何数拉回原来的响度（user：「这个就是我绝对无法容忍的那个东西」）。 */
-export declare const velocityDb: (vel: number, depth?: number) => number;
 /** 「这一下力度让它多响」L（dB）：写的音高 × 力度 → dB（施工单 7-N，2026-11-12，统筹选 A）。**dB 和力度互相换只经过这个接口**（守卫：test/roll.test.ts「结构」）。
- *  按音量曲线走力度的（小月相 / 元音版）= depthCurve(插件报的深度)，不看音高；按力度敲的乐器 = 引擎在敲的那个键上实际施加的（src/gm/sf2-subset.ts sf2VelocityCurve，
- *  插件把写的音高换成敲的键；准备声音时从库的字节算）。只用差（L(f) − L(p) …），绝对值不管。null = 这个键不出声（声音没载好 / 没有区）= 不换算。 */
+ *  只有按力度敲的乐器有：引擎在敲的那个键上实际施加的（src/gm/sf2-subset.ts sf2VelocityCurve，深度是音色库自己写的；插件把写的音高换成敲的键；准备声音时从库的字节算）。
+ *  按音量走力度的小月相 / 元音版没有这一条：她们的力度就是 dB 表（16-4）。只用差（L(f) − L(p) …），绝对值不管。null = 这个键不出声（声音没载好 / 没有区）= 不换算。 */
 export type VelDb = (midi: number, vel: number) => number | null;
-export declare const depthCurve: (depth: number) => VelDb;
+/** 没有曲线（声音没载好）：哪个力度都不换算。 */
+export declare const NO_CURVE: VelDb;
 /** 反查（7-N；统筹定的规矩，写死、确定）：从力度 from 往下找一个力度，让 L 低 D dB——只在不高于 from 的整数力度里找，取 L 最接近目标的；一样近取力度高的那个。
  *  L 不单调的地方（换力度层时）照这个规矩走、不特判。L 没有（不出声）= 原样回 from。 */
 export declare function velocityForDb(curve: VelDb, midi: number, from: number, D: number): number;
@@ -56,11 +51,12 @@ export declare function velocityForDb(curve: VelDb, midi: number, from: number, 
 export declare function swellByVelocity(curve: VelDb, midi: number, D: number): boolean;
 /** 一个声部的音量曲线。byVelocity = 这位按力度敲（演奏者插件的能力 dynamics: "velocity"）：力度记号 / 渐强渐弱 / 重音都在每个音的力度里（noteVelocities），
  *  这条曲线只剩强后即弱的「压」和音内起伏；否则（小月相 / 元音版）力度水平、重音、渐强渐弱都在这条曲线上。全程 0 dB = null。
- *  渐强渐弱 / 渐到只有一种走法（9-2）：在力度上按时间线性，再换成 dB（curve = 这位的 L：小月相 / 元音版 = 插件报的深度；乐器 = 引擎在那个键上实际的，7-N）。
+ *  渐强渐弱 / 渐到按这位的表的单位线性（16-4，统筹 2026-11-12 夜）：小月相 / 元音版 = 她的 dB 表，在 dB 上线性、没终点走到表里的下一档；
+ *  按力度敲的乐器 = 力度表，在力度上线性（curve = 引擎在那个键上实际的 L，7-N；这条曲线上只用它压强后即弱、做不出的音内起伏）。
  *  rolls = 这位认滚奏（7-N）：滚奏的音是靠连着敲撑起来的长音——音内起伏谁都能演（不看 canSwell）；按力度敲的这一路，强后即弱和（做得出来的）音内起伏
  *  已经在每一下的力度里（rollHitVelocity），这里不再压一遍。
  *  groove = 拍子轻重（下标 → 权重，src/score/groove.ts；已乘过幅度和跟多少）：正的 = 按次重音的量在音头加，负的 = 按弱化的量整个音轻下去（写了音头记号的音不在里面）。 */
-export declare function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity?: boolean, curve?: VelDb | number, rolls?: boolean): GainSeg[] | null;
+export declare function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity?: boolean, curve?: VelDb, rolls?: boolean): GainSeg[] | null;
 /** 轻量版 / SoundFont 一个音的结束时刻（秒）：跳音截到 staccatoGate；呼吸（只给元音版）= 收短一口气的空当（同唱法核心的 v：至多 0.16 s / 25%）。 */
 export declare function noteEnd(t0: number, t1: number, art: readonly string[], o: {
     staccatoGate: number;
@@ -79,7 +75,9 @@ export declare function hairpinEnd(tokens: Token[], i: number, bounds?: readonly
  *  渐强 / 渐弱记号 = 过渡：从它后面第一个音的音头，线性变到同一张纸里下一个力度记号生效的那个音的音头；先遇到另一个渐强渐弱 = 到那儿为止、走一档；
  *  都没有 = 到纸尾、走一档（step，卡在表的最小最大之间；谱上灰字披露）。前面一个力度记号都没有 = def（演奏者的默认 / 旋钮）。
  *  2026-10-08，user「所以<>是一个语义，就是从这一刻开始连续变到下一个强度/速度标记？」「过渡到这张纸的结尾…走一档也行，更合理，需要向用户披露」。 */
-export declare function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Record<Dyn, number>, def: number, step: number, bounds?: readonly number[]): Map<number, {
+/** step = 渐强渐弱 / 渐到后面没有终点时「走一档」怎么走：一个数 = 在表的单位上走这么多（按力度敲的乐器，wedgeStepVel）；"table" = 走到表里的下一档（ppp → pp → … → fff，到头不动；
+ *  小月相 / 元音版的 dB 表，16-4）。 */
+export declare function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Record<Dyn, number>, def: number, step: number | "table", bounds?: readonly number[]): Map<number, {
     at0: number;
     at1: number;
 }>;
@@ -99,7 +97,7 @@ export declare function noteVelocities(tokens: Token[], map: TempoMap | undefine
  *  · 音内起伏（< > <>）：形状照旧（写的力度是最高点），fr = 这一下在整个滚奏音里的进度；低 D dB 按这件乐器在这个键上实际的 L 反查力度（velocityForDb）；
  *    力度做不出来的（swellByVelocity 为假）这里不动、音量曲线做。
  *  返回 0–1（同 noteVel）。 */
-export declare function rollHitVelocity(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, curve?: VelDb | number): (hit: {
+export declare function rollHitVelocity(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, curve?: VelDb): (hit: {
     index: number;
     t: number;
     seg: {

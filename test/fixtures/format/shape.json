@@ -210,6 +210,16 @@
             "levelMaxDb": "number",
             "velocity": "number"
           },
+          "dynamicsDb": {
+            "f": "number",
+            "ff": "number",
+            "fff": "number",
+            "mf": "number",
+            "mp": "number",
+            "p": "number",
+            "pp": "number",
+            "ppp": "number"
+          },
           "dynamicsVel": {
             "f": "number",
             "ff": "number",

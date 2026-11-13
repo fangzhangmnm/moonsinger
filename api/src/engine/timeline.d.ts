@@ -45,7 +45,7 @@ export interface PerformerInfo {
     /** 这位自己的唱法参数（小月相：候选 defaults 里的旋钮，乐器页「高级」；2026-10-15）：盖在 TimelineInput.singOpt 上，一起进块的内容键。 */
     singOpt?: Record<string, unknown>;
     /** 按力度敲的乐器：引擎在敲的键上实际的 L（写的音高 × 力度 → dB；perform.ts VelDb，7-N）。准备声音时从库的字节算（录音房载库时），没载好 = 没有（这个声部本来就不出声）。
-     *  按音量曲线走力度的不给——用插件报的深度（depthCurve）。 */
+     *  按音量走力度的（小月相 / 元音版）不给——她们的力度就是候选身上的 dB 表（PerfSpec.dynamicsDb，16-4）。 */
     velDb?: VelDb;
 }
 export interface TimelineInput {

@@ -12,6 +12,7 @@
 //   两头核对：做出来的和当底比，只许差「歌词 / 歌名 / 作者栏 / 许可 / 显示方式 / 视图态 / 参考窗卡片 / 封面」；和出词比，只许差「增益推子 / 表情记号」
 //     加上清单里单独列出来的那几类。多出任何一类 = 不写（退出码 4）。
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import "../src/performers/index.ts";   // 演奏者注册表（16-4；不装 = saveMxl 报错）
 import { openBytes, saveMxl } from "../src/format/project.ts";
 import { CORE_VERSION } from "../src/core/version.ts";
 import { coreHash } from "./core-hash.mjs";

@@ -1,6 +1,7 @@
 // encode-worker.ts —— 存档编码进 worker：saveMxl（MusicXML 串化 + zip）在这条线程上跑；主线程只递 SaveArgs（结构化克隆）、收回字节。
 //   created 2026-10-21 by Claude Fable 5.1（音游级延迟那一刀的第二件：自动存每 2 s 一次，大歌（1204 token）saveMxl 在主线程要 20–60 ms——实时演奏时这就是每两秒一次的卡顿）。
 //   纯函数 runEncodeJob 单独导出（node 测试）；self.onmessage 只在 worker 环境里挂。saveMxl 抛的错原样带回，主线程再抛给 editor-session。
+import "../performers/index.ts";   // 演奏者注册表：存档按插件报的力度路分每位乐手写哪张表（project.ts dynPathOf）——worker 里不装 = 每位都当读不懂的引擎原样带着，和主线程存的不一样（16-4）
 import { saveMxlWithFingerprint, type SaveArgs } from "./project.ts";
 
 export type EncodeJob = { seq: number; args: SaveArgs };

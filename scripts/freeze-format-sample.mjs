@@ -7,6 +7,7 @@
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import "../src/performers/index.ts";   // 演奏者注册表：存档按插件报的力度路分每位写哪张表（16-4；不装 = saveMxl 报错）
 import { saveMxl, openBytes, activeInstrument, FORMAT } from "../src/format/project.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong, sampleView, sampleExtras, canonTokens, canonTracks, shapeOf, mergeShape } from "../test/fixtures/format/sample-song.ts";

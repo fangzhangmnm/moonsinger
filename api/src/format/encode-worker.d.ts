@@ -1,3 +1,4 @@
+import "../performers/index.ts";
 import { type SaveArgs } from "./project.ts";
 export type EncodeJob = {
     seq: number;

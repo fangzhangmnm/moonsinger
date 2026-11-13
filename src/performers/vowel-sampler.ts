@@ -13,7 +13,6 @@ export const vowelSampler = registerPerformer({
   // 和乐器同一条 lightMarks（跳音截短 / 呼吸收短 / 保持·连线 = 不留缝）；气声 / 出声的换气只有完整版做得到；琶音 = 单声
   honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
   connected: false, dynamics: "gain", grooveCategory: "voice", removable: false,
-  velocityDepth: 800,   // 同小月相（施工单 9-4 第 4 条）
   defaultCalibrationDb: () => CALIBRATION_DEFAULT_DB,   // 现行的那一个默认（第 14 条）
   info: () => ({ gm: null, chunk: "phrase" }),
   prepare: async (ctx) => { await ctx.ensureVowels(); },

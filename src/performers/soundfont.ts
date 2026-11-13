@@ -5,7 +5,7 @@ import { registerPerformer } from "./registry.ts";
 import { activeGm, activeVelocity, activeTranspose, activePerfSpec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, type GmCandidate } from "../format/project.ts";
 import { SOUNDFONT_DEFAULTS, CALIBRATION_DEFAULT_DB } from "../format/performance.ts";
 import { velLayersOf, octaveCheckOf, conceptOfIds, octaveDisclosure, GS_LIBRARY_ID } from "../gm/catalog.ts";
-import { sf2VelocityDepths } from "../gm/sf2-subset.ts";
+import { sf2VelocityDepths, sf2HalfVelocityDb } from "../gm/sf2-subset.ts";
 import { canAlign } from "../gm/sf-key.ts";
 import { CLEF_LABEL } from "../score/clef.ts";
 import type { ClefName } from "../score/song.ts";
@@ -76,7 +76,7 @@ export const soundfont = registerPerformer({
       const bytes = active ? active.bytes ?? bankBytes(active.subsetSha256) : undefined, ds = active && bytes ? (() => { try { return sf2VelocityDepths(bytes, active.bank, active.program, active.note); } catch { return null; } })() : null, one = ds && ds.length === 1 ? ds[0] : null;
       const depth = !active ? "" : !ds || !ds.length ? _t("力度深度 = 库里给这件乐器写的（声音载好后显示）；响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)。")
         : one === 0 ? _t("这件乐器按多重都一样响（库里这么定的：力度深度 0）。")
-        : one !== null ? _t("力度深度 {d}（库里写的；规范默认 960）：响度 = {d} ÷ 960 × 40·log10(力度 ÷ 127)，满力度 127 = 0 dB，力度减半 = 轻 {half} dB。", { d: one, half: Math.round((one / 960) * 40 * Math.log10(2) * 10) / 10 })
+        : one !== null ? _t("力度深度 {d}（库里写的；规范默认 960）：响度 = {d} ÷ 960 × 40·log10(力度 ÷ 127)，满力度 127 = 0 dB，力度减半 = 轻 {half} dB。", { d: one, half: Math.round(sf2HalfVelocityDb(one) * 10) / 10 })
         : _t("力度深度按鼓件 / 音区不一样：{ds}（库里写的；规范默认 960）。响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)。", { ds: ds.join(" / ") });
       // 表里的响度 dB（7-N）：和出声同一个函数 L——引擎在敲的那个键上实际施加的（写的中央 C 换成敲的键；鼓件 / 固定原速 = 那一件）
       const vc = active ? velCurve(active.subsetSha256, active.bank, active.program) : null, key = active ? sfKey(60, active, tr) : 60, Lk = vc ? (v: number) => vc.at(key, v) : null;

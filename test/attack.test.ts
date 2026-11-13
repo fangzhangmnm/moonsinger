@@ -2,8 +2,9 @@
 // user「音头先冲一下，再回落…要，要，我都要」；数从演奏者的配置来（user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, tr, withArt, swellOf, TPQ, type Token, type NoteTok } from "../src/score/song.ts";
-import { dynLevels, noteVelocities, gainSegments , velocityDb } from "../src/score/perform.ts";
-import { DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
+import { dynLevels, noteVelocities, gainSegments } from "../src/score/perform.ts";
+import { sf2Curve } from "./fixtures/vel-curve.ts";
+import { DYNAMICS_VEL, DYNAMICS_DB, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 
 let nid = 500;
@@ -11,10 +12,10 @@ const note = (art?: NoteTok["art"]) => ({ kind: "note", id: nid++, pitch: { step
 const dyn = (v: "mf" | "f") => ({ kind: "dyn", id: nid++, value: v }) as Token;
 const line = (items: Token[]) => [...tr(initState()).slice(0, 3), ...items];
 const notes = (toks: Token[]) => toks.flatMap((t, i) => (t.kind === "note" ? [i] : []));
-const db = { dynamicsVel: { ...DYNAMICS_VEL }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS };
+const db = { dynamicsVel: { ...DYNAMICS_VEL }, dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS };
 const vel = { ...db, dynamicsVel: { ...DYNAMICS_VEL }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL };
 /** 响度（9-2：全体一条，40·log10(力度 ÷ 127)）：mf / f / p 各在哪。 */
-const MF = velocityDb(DYNAMICS_VEL.mf), F = velocityDb(DYNAMICS_VEL.f), Pp = velocityDb(DYNAMICS_VEL.p);
+const MF = DYNAMICS_DB.mf, F = DYNAMICS_DB.f, Pp = DYNAMICS_DB.p;
 
 describe("音头那一组：互斥", () => {
   it("开 sfz 就关掉重音；开 fp 就关掉 sfz；跳音不在这一组、不受影响", () => {
@@ -33,7 +34,7 @@ describe("强后即弱 fp", () => {
   it("乐器：音头按 f 的力度弹，音量曲线在 fpSec 里压到 p；月读 / 元音版：音量从 f 落到 p", () => {
     const toks = line([dyn("mf"), note(["fp"]), note()]), [a] = notes(toks);
     eq(Math.round(noteVelocities(toks, undefined, vel, 80 / 127).get(a)! * 127), 96, "音头 = f");
-    const gv = gainSegments(toks, undefined, vel, undefined, undefined, true)!; assert(gv.at(0)!.dB > gv.find((x) => x.t0 >= MARK_DEFAULTS.fpSec - 1e-9)!.dB, "乐器：压下去");
+    const gv = gainSegments(toks, undefined, vel, undefined, undefined, true, sf2Curve())!; assert(gv.at(0)!.dB > gv.find((x) => x.t0 >= MARK_DEFAULTS.fpSec - 1e-9)!.dB, "乐器：压下去");
     const g = gainSegments(toks, undefined, db)!; assert(Math.abs(g[0].dB - F) < 1.5 && g.some((x) => Math.abs(x.dB - Pp) < 1e-9), "dB：从 f 落到 p");
   });
 });

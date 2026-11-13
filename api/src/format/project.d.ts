@@ -271,6 +271,7 @@ export declare function activePerfSpec(extras: Extras, role: string): {
     gapSec: number;
     marcatoDb: number;
     dynamicsVel: Record<Dynamic, number>;
+    dynamicsDb: Record<Dynamic, number>;
     accentVel: number;
     marcatoVel: number;
     stressDb: number;

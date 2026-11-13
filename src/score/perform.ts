@@ -1,12 +1,12 @@
 // perform.ts —— 谱上的「修」→ 出声的数（纯函数，Node 里可测）。created 2026-10-08 by Claude Opus 5.5
-// user 2026-10-08 拍「挂在音上 + 选区条」「月读在那儿换气」。数从哪来：上场那位 by value 带着的力度表（dynamicsVel：力度记号 → 力度；9-2 起全体一张、响度 = velocityDb）和演奏法（articulation：
+// user 2026-10-08 拍「挂在音上 + 选区条」「月读在那儿换气」。数从哪来：上场那位 by value 带着的力度表（按力度敲的 = dynamicsVel：力度记号 → 力度；按音量走的小月相 / 元音版 = dynamicsDb：力度记号 → dB，16-4）和演奏法（articulation：
 //   staccatoGate 跳音吃掉时值的多少、accentDb 重音加多少）——契约 CandidateV2，app 改默认动不到旧歌。
 // 怎么出声（各引擎一样的部分在这里，引擎特有的在调用方）：
 //   力度 + 重音 = 一条按时间的音量曲线（谱的时钟，秒），渲染完乘上去（src/audio/mix.ts applyGain）；一个力度 / 重音都没有 = null = 不碰声音（和以前逐样本一样）。
 //   跳音：SoundFont / 元音版把音截短（lightNotes，乐器自己的余音照常收）；月读截不短（唱法核心按谱唱满）→ 曲线在音的后半段收声（gateStaccato）。
 //   呼吸：月读 = 下一个字前「v」（lab-score.ts）；元音版和乐器 = 前一个音收短一点（lightNotes；乐器上的逗号 = 稍微断开再进下一个音，管乐 / 人声就是换气；
 //   2026-10-08 user「breath是否应该对大量GS乐器也生效。毕竟不断气一直拖着也不对，fl你还得手动调一下时长」）。
-import { type Token, type NoteTok, type TempoMap, type Dyn, timeline, artOf, swellOf, DEFAULT_DYN, rampTarget, isTimed } from "./song.ts";
+import { type Token, type NoteTok, type TempoMap, type Dyn, DYNS, timeline, artOf, swellOf, DEFAULT_DYN, rampTarget, isTimed } from "./song.ts";
 import { MARK_DEFAULTS, ROLL_HZ_MIN, ROLL_HZ_MAX } from "../format/performance.ts";
 import { midiOf } from "./pitch.ts";
 const DEFAULT_DYN_KEY: Dyn = DEFAULT_DYN;
@@ -16,27 +16,21 @@ export interface PerfSpec { staccatoGate: number; accentDb: number; marcatoDb?: 
   accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; wedgeStepVel?: number;
   sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number; swellDb?: number; canSwell?: boolean;
   stressDb?: number; stressVel?: number; unstressDb?: number; unstressVel?: number; ghostDb?: number; ghostVel?: number;
-  /** 力度记号 → 力度（1–127；全体演奏者一张，9-2 起人人都有：按值带的，没带 = 内置的标准表）。重音 / 强音按力度加多少。 */
+  /** 力度记号 → 力度（1–127；按力度敲的乐器用：按值带的，没带的那一档 = 模板）。重音 / 强音按力度加多少。 */
   dynamicsVel: Record<Dyn, number>; accentVel?: number; marcatoVel?: number;
+  /** 力度记号 → dB（八档；按音量走力度的小月相 / 元音版用：按值带的，没带的那一档 = 模板。第 16 条 16-4，统筹 2026-11-12 夜：这张表就是她的力度，程序里没有公式和深度）。 */
+  dynamicsDb?: Record<Dyn, number>;
   /** 滚奏每秒敲几下（v0.16.64；演奏者自己的，没写 = 按乐器的默认，rollDefaultHz）。 */
   rollHz?: number | null }
 const M = MARK_DEFAULTS;   // 演奏者没写的键用它（= 这一版之前写死的数）
 /** 音量曲线的一段：t0–t1（秒，谱的时钟）这段多少 dB；-Infinity = 静音。 */
 export interface GainSeg { t0: number; t1: number; dB: number }
-/** SoundFont 规范默认的力度深度（cB）：「力度 → 初始衰减」调制器的量（SF2.01 8.4.1）。深度 960 = 音量按力度的平方。 */
-export const SF2_VEL_DEPTH = 960;
-/** 力度 → 响度（施工单第 9 节 / 9-2 / 9-4，2026-11-12；user「按照SoundFont对齐，然后小月相也应该对齐」「真正该对齐的是：我们的引擎和标准播放器 对齐」）：
- *  全体演奏者只有这一条——SoundFont 的放法，响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127) dB（满力度 = 0；深度 960 = 规范默认 = 音量按力度的平方）。
- *  乐器：力度送进引擎（选录音），深度是库给每件乐器写的，引擎自己读（vendor/tsf/patch-tsf.py 补丁 2，照 FluidSynth）；
- *  小月相 / 元音版没有录音层：音量曲线上的水平就是这一条，深度由她们的插件报（registry.ts velocityDepth）。
- *  不以 mf 为基准、不乘任何数拉回原来的响度（user：「这个就是我绝对无法容忍的那个东西」）。 */
-export const velocityDb = (vel: number, depth = SF2_VEL_DEPTH): number => (depth / SF2_VEL_DEPTH) * 40 * Math.log10(Math.max(1, Math.min(127, vel)) / 127);
 /** 「这一下力度让它多响」L（dB）：写的音高 × 力度 → dB（施工单 7-N，2026-11-12，统筹选 A）。**dB 和力度互相换只经过这个接口**（守卫：test/roll.test.ts「结构」）。
- *  按音量曲线走力度的（小月相 / 元音版）= depthCurve(插件报的深度)，不看音高；按力度敲的乐器 = 引擎在敲的那个键上实际施加的（src/gm/sf2-subset.ts sf2VelocityCurve，
- *  插件把写的音高换成敲的键；准备声音时从库的字节算）。只用差（L(f) − L(p) …），绝对值不管。null = 这个键不出声（声音没载好 / 没有区）= 不换算。 */
+ *  只有按力度敲的乐器有：引擎在敲的那个键上实际施加的（src/gm/sf2-subset.ts sf2VelocityCurve，深度是音色库自己写的；插件把写的音高换成敲的键；准备声音时从库的字节算）。
+ *  按音量走力度的小月相 / 元音版没有这一条：她们的力度就是 dB 表（16-4）。只用差（L(f) − L(p) …），绝对值不管。null = 这个键不出声（声音没载好 / 没有区）= 不换算。 */
 export type VelDb = (midi: number, vel: number) => number | null;
-export const depthCurve = (depth: number): VelDb => (_midi, vel) => velocityDb(vel, depth);
-const asCurve = (c: VelDb | number): VelDb => (typeof c === "number" ? depthCurve(c) : c);
+/** 没有曲线（声音没载好）：哪个力度都不换算。 */
+export const NO_CURVE: VelDb = () => null;
 /** 反查（7-N；统筹定的规矩，写死、确定）：从力度 from 往下找一个力度，让 L 低 D dB——只在不高于 from 的整数力度里找，取 L 最接近目标的；一样近取力度高的那个。
  *  L 不单调的地方（换力度层时）照这个规矩走、不特判。L 没有（不出声）= 原样回 from。 */
 export function velocityForDb(curve: VelDb, midi: number, from: number, D: number): number {
@@ -52,16 +46,19 @@ const keyOfTok = (tok: Token): number => (tok.kind === "note" && tok.pitch ? mid
 
 /** 一个声部的音量曲线。byVelocity = 这位按力度敲（演奏者插件的能力 dynamics: "velocity"）：力度记号 / 渐强渐弱 / 重音都在每个音的力度里（noteVelocities），
  *  这条曲线只剩强后即弱的「压」和音内起伏；否则（小月相 / 元音版）力度水平、重音、渐强渐弱都在这条曲线上。全程 0 dB = null。
- *  渐强渐弱 / 渐到只有一种走法（9-2）：在力度上按时间线性，再换成 dB（curve = 这位的 L：小月相 / 元音版 = 插件报的深度；乐器 = 引擎在那个键上实际的，7-N）。
+ *  渐强渐弱 / 渐到按这位的表的单位线性（16-4，统筹 2026-11-12 夜）：小月相 / 元音版 = 她的 dB 表，在 dB 上线性、没终点走到表里的下一档；
+ *  按力度敲的乐器 = 力度表，在力度上线性（curve = 引擎在那个键上实际的 L，7-N；这条曲线上只用它压强后即弱、做不出的音内起伏）。
  *  rolls = 这位认滚奏（7-N）：滚奏的音是靠连着敲撑起来的长音——音内起伏谁都能演（不看 canSwell）；按力度敲的这一路，强后即弱和（做得出来的）音内起伏
  *  已经在每一下的力度里（rollHitVelocity），这里不再压一遍。
  *  groove = 拍子轻重（下标 → 权重，src/score/groove.ts；已乘过幅度和跟多少）：正的 = 按次重音的量在音头加，负的 = 按弱化的量整个音轻下去（写了音头记号的音不在里面）。 */
-export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity = false, curve: VelDb | number = SF2_VEL_DEPTH, rolls = false): GainSeg[] | null {
+export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity = false, curve: VelDb = NO_CURVE, rolls = false): GainSeg[] | null {
   const segs: GainSeg[] = [];
   let any = false;
-  const vel = byVelocity, tab = spec.dynamicsVel;
-  const levels = vel ? null : dynLevels(tokens, map, tab, tab.mf, spec.wedgeStepVel ?? M.wedgeStepVel, bounds);   // 力度水平（按时间线性）；按力度敲的在 noteVelocities
-  const C = asCurve(curve);
+  const vel = byVelocity;
+  if (!vel && !spec.dynamicsDb) throw new Error("gainSegments: a gain-path performer needs its dynamicsDb table");
+  const tab: Record<Dyn, number> = vel ? spec.dynamicsVel : spec.dynamicsDb!;   // 按力度敲 = 力度表；按音量走 = dB 表（水平直接就是 dB）
+  const levels = vel ? null : dynLevels(tokens, map, tab, tab.mf, "table", bounds);   // 音量那一路的水平（dB，按时间线性；没终点走到表里的下一档）；按力度敲的在 noteVelocities
+  const C: VelDb = vel ? curve : (_m, v) => v;
   let K = 60;   // 这一个 token 的写的音高（L 按它取；音量曲线那一路不看）
   const lv = (v: number | null) => (v === null ? 0 : C(K, v) ?? 0);
   /** s0–s1 这段：力度从 va 线性走到 vb（null = 这位不按曲线走力度 = 0 dB），换成 dB 再加 off 和 add(这一小段中点)。切成小段（月读一个长音也能渐强）。 */
@@ -139,22 +136,24 @@ const paperEndOf = (i: number, n: number, bounds?: readonly number[]) => { for (
  *  渐强 / 渐弱记号 = 过渡：从它后面第一个音的音头，线性变到同一张纸里下一个力度记号生效的那个音的音头；先遇到另一个渐强渐弱 = 到那儿为止、走一档；
  *  都没有 = 到纸尾、走一档（step，卡在表的最小最大之间；谱上灰字披露）。前面一个力度记号都没有 = def（演奏者的默认 / 旋钮）。
  *  2026-10-08，user「所以<>是一个语义，就是从这一刻开始连续变到下一个强度/速度标记？」「过渡到这张纸的结尾…走一档也行，更合理，需要向用户披露」。 */
-export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Record<Dyn, number>, def: number, step: number, bounds?: readonly number[]): Map<number, { at0: number; at1: number }> {
+/** step = 渐强渐弱 / 渐到后面没有终点时「走一档」怎么走：一个数 = 在表的单位上走这么多（按力度敲的乐器，wedgeStepVel）；"table" = 走到表里的下一档（ppp → pp → … → fff，到头不动；
+ *  小月相 / 元音版的 dB 表，16-4）。 */
+export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Record<Dyn, number>, def: number, step: number | "table", bounds?: readonly number[]): Map<number, { at0: number; at1: number }> {
   const out = new Map<number, { at0: number; at1: number }>(), tl = timeline(tokens, map), at = new Map(tl.map((x) => [x.index, x]));
   const lo = Math.min(...Object.values(table)), hi = Math.max(...Object.values(table));
   const onsetFrom = (j: number, stop = tokens.length) => { for (let k = j; k < stop; k++) { const x = at.get(k); if (x) return x; } return null; };   // j 起第一个有时值的
   const endBefore = (j: number) => { for (let k = j - 1; k >= 0; k--) { const x = at.get(k); if (x) return x.t1; } return 0; };
-  let cur = def, ramp: { from: number; to: number; T0: number; T1: number; end: number } | null = null;
+  let cur = def, curDyn: Dyn = DEFAULT_DYN_KEY, ramp: { from: number; to: number; toDyn: Dyn; T0: number; T1: number; end: number } | null = null;   // curDyn = 现在生效的那一档（「走到表里的下一档」按它走）
   const lvl = (t: number) => (ramp ? ramp.from + (ramp.to - ramp.from) * Math.max(0, Math.min(1, ramp.T1 > ramp.T0 ? (t - ramp.T0) / (ramp.T1 - ramp.T0) : 1)) : cur);
   for (let i = 0; i < tokens.length; i++) {
-    if (ramp && i >= ramp.end) { cur = ramp.to; ramp = null; }
+    if (ramp && i >= ramp.end) { cur = ramp.to; curDyn = ramp.toDyn; ramp = null; }
     const t = tokens[i];
     if (t.kind === "dyn") {
-      if (!ramp) cur = table[t.value];
+      if (!ramp) { cur = table[t.value]; curDyn = t.value; }
       // 渐到：这张纸里下一个力度记号写着「从上一个渐变过来」、中间没有手写的渐强渐弱 = 从这儿后面第一个音一路变到它那个音的音头（关键帧线性插值；
       //   user「渐到 同意…其实就是有一个start位置和一开始就均匀插值的问题」；dB / 力度本来就是对数的量，线性插就是听感上均匀）
       const pe = paperEndOf(i, tokens.length, bounds), j: number = ramp ? -1 : rampTarget(tokens, i, pe), start = j >= 0 ? onsetFrom(i + 1, j) : null;
-      if (j >= 0 && start) ramp = { from: cur, to: table[(tokens[j] as Extract<Token, { kind: "dyn" }>).value], T0: start.t0, T1: onsetFrom(j, pe)?.t0 ?? endBefore(j), end: j };
+      if (j >= 0 && start) { const v: Dyn = (tokens[j] as Extract<Token, { kind: "dyn" }>).value; ramp = { from: cur, to: table[v], toDyn: v, T0: start.t0, T1: onsetFrom(j, pe)?.t0 ?? endBefore(j), end: j }; }
       continue;
     }
     if (t.kind === "hairpin") {
@@ -162,16 +161,18 @@ export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Rec
       if (!start) continue;   // 它和终点之间一个音都没有 = 不起作用
       // 终点是力度记号、但和方向反着（渐弱后面接更强的 / 一样的；渐强后面接更弱的 / 一样的）= **记号的方向说了算**：先按方向走一档，到那个力度记号再突变（subito）
       //   （2026-10-08 user 拍：「记号的方向说了算。先按渐弱方向走一档，到那个 f 再突变…同意」；贝多芬的「cresc. … subito p」）。谱上发夹末端画灰字推定的那一档（engrave）
-      const endVal = e.kind === "dyn" ? table[(tokens[e.at] as Extract<Token, { kind: "dyn" }>).value] : null, oneStep = Math.max(lo, Math.min(hi, cur + (t.dir === "cresc" ? step : -step)));
+      const endDyn = e.kind === "dyn" ? (tokens[e.at] as Extract<Token, { kind: "dyn" }>).value : null, endVal = endDyn ? table[endDyn] : null;
+      const stepDyn = step === "table" ? DYNS[Math.max(0, Math.min(DYNS.length - 1, DYNS.indexOf(curDyn) + (t.dir === "cresc" ? 1 : -1)))]! : curDyn;
+      const oneStep = step === "table" ? table[stepDyn] : Math.max(lo, Math.min(hi, cur + (t.dir === "cresc" ? step : -step)));
       const agrees = endVal !== null && (t.dir === "cresc" ? endVal > cur : endVal < cur);
-      const to = agrees ? endVal! : oneStep;
+      const to = agrees ? endVal! : oneStep, toDyn = agrees ? endDyn! : stepDyn;
       const T1 = e.kind === "end" ? endBefore(e.at) : (onsetFrom(e.at, paperEndOf(i, tokens.length, bounds))?.t0 ?? endBefore(e.at));
-      ramp = { from: cur, to, T0: start.t0, T1, end: e.at };
+      ramp = { from: cur, to, toDyn, T0: start.t0, T1, end: e.at };
       continue;
     }
     const x = at.get(i); if (!x) continue;
     out.set(i, { at0: lvl(x.t0), at1: lvl(x.t1) });
-    if (t.kind === "note" && !ramp && artOf(t).includes("fp")) cur = table.p;   // 强后即弱：之后的音都是 p（它也是一个新状态）
+    if (t.kind === "note" && !ramp && artOf(t).includes("fp")) { cur = table.p; curDyn = "p"; }   // 强后即弱：之后的音都是 p（它也是一个新状态）
   }
   return out;
 }
@@ -222,9 +223,9 @@ const noteVel = (v: number, art: readonly string[], spec: PerfSpec, gw = 0) => {
  *  · 音内起伏（< > <>）：形状照旧（写的力度是最高点），fr = 这一下在整个滚奏音里的进度；低 D dB 按这件乐器在这个键上实际的 L 反查力度（velocityForDb）；
  *    力度做不出来的（swellByVelocity 为假）这里不动、音量曲线做。
  *  返回 0–1（同 noteVel）。 */
-export function rollHitVelocity(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, curve: VelDb | number = SF2_VEL_DEPTH):
+export function rollHitVelocity(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, curve: VelDb = NO_CURVE):
   (hit: { index: number; t: number; seg: { t0: number; t1: number }; first: number; isFirst: boolean; fr: number }) => number {
-  const tab = spec.dynamicsVel, C = asCurve(curve), D = spec.swellDb ?? M.swellDb;
+  const tab = spec.dynamicsVel, C = curve, D = spec.swellDb ?? M.swellDb;
   const levels = dynLevels(tokens, map, tab, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel, bounds);
   return ({ index, t, seg, first, isFirst, fr }) => {
     const L = levels.get(index), k = seg.t1 > seg.t0 ? Math.max(0, Math.min(1, (t - seg.t0) / (seg.t1 - seg.t0))) : 0;

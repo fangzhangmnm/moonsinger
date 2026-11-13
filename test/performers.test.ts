@@ -38,9 +38,8 @@ describe("演奏者注册表", () => {
       for (const m of p.honors) assert((ALL_MARKS as readonly string[]).includes(m), `${p.name} honors ${m}`);
       assert(!!grooveCategory(p.grooveCategory, { bank: 0, program: 0 }), `${p.name} 拍子轻重类别`);
       assert(!!p.audition, `${p.name} 能试听`);
-      // 力度深度（9-4）：按音量曲线走力度的必须报（0–1440 cB）；按力度敲的不报（深度在库里，引擎自己读）
-      if (p.dynamics === "gain") assert(p.velocityDepth !== undefined && p.velocityDepth >= 0 && p.velocityDepth <= 1440, `${p.name} 力度深度`);
-      else eq(p.velocityDepth, undefined, `${p.name} 按力度敲的不报深度`);
+      // 力度走哪条路只报这一个能力（16-4：插件不再报「力度深度」——按音量走的力度就是乐手身上的 dB 表；按力度敲的深度在库里、引擎自己读）
+      assert(p.dynamics === "gain" || p.dynamics === "velocity", `${p.name} 力度的路`); assert(!("velocityDepth" in p), `${p.name} 不报深度`);
     }
   });
   it("乐器页里插件自报的行（ADR §2.5）：每个按钮的 data-v 都有人接（onInspector 不回 null）；没有候选也不炸", () => {

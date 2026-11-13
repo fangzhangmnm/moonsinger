@@ -21,6 +21,8 @@ export declare function sf2Info(input: Uint8Array): {
  *  （施工单 9-4，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；引擎那一半 = vendor/tsf/patch-tsf.py 补丁 2，两边同一套规矩）：
  *  规范默认 960（来源 0x0502 = 力度、负向、单极、凹，量来源 = 无）；乐器一级同源的盖掉它（区里的盖过全局区的），预设一级同源的加上去（量 0 不加）。
  *  响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)；0 = 按多重都一样响。回不重复、从小到大的几个数（一般一件乐器一个数；鼓组按鼓件不同）；没有这个预设 = null。 */
+/** SF2 规范的放法下，库写的深度 d（cB）让「力度减半」轻多少 dB（乐器页的说明用；响度 = d ÷ 960 × 40·log10(力度 ÷ 127)，960 = 规范默认）。这条公式只住在 gm/ 这一层（16-4 守卫）。 */
+export declare const sf2HalfVelocityDb: (depth: number) => number;
 export declare function sf2VelocityDepths(input: Uint8Array, bank: number, program: number, key?: number): number[] | null;
 /** 「这一下力度让它多响」的那一项（7-N，2026-11-12；统筹选 A）：引擎（vendor/tsf/patch-tsf.py 补丁 2，照 FluidSynth）对每个响的区实际施加的初始衰减（dB），逐区照搬同一套规矩——
  *  发生器（预设一级 + 乐器一级，区里的盖全局区的）× 0.04 dB/cB；「→ 初始衰减」调制器（默认 0x0502 / 960，乐器一级同源盖、预设一级同源加、量 0 不加；来源 = 力度 / 键号 / 无），
