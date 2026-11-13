@@ -8,8 +8,9 @@ const XML = `<?xml version="1.0"?><score-partwise version="4.0"><part-list><scor
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
-// 能叠音的声部 = SoundFont 引擎（canStack）；测试环境里没有音色库，载入时直接把这个角色的候选标成 SoundFont（只为过「能不能叠」这一关，不放音）
-await p.evaluate((xml) => { const m = window.__moonsinger, o = m.open("t.musicxml", new TextEncoder().encode(xml)), r = o.song.parts[0].role; for (const c of o.extras.lounge[r].candidates) c.instrument = { engine: "soundfont", bank: 0, program: 0, source: { embedded: null, subsetBytes: 0, subsetSha256: "e2e", origin: { name: "e2e.sf2", fileSha256: "e2e", bytes: 0 } } }; m.load(o); }, XML);
+// 能叠音的声部 = SoundFont 引擎（canStack）；测试环境里没有音色库，载入时直接把这个角色的候选标成 SoundFont（只为过「能不能叠」这一关，不放音）。
+//   v0.17.42 起拿乐手规格只有一个口、缺数 = 试听不响：真的 SoundFont 乐手身上一定有 pedal 和 defaults.velocity（门口补 / 新建按模板写），这里补上这两个，造的才像真的
+await p.evaluate((xml) => { const m = window.__moonsinger, o = m.open("t.musicxml", new TextEncoder().encode(xml)), r = o.song.parts[0].role; for (const c of o.extras.lounge[r].candidates) c.instrument = { engine: "soundfont", bank: 0, program: 0, source: { embedded: null, subsetBytes: 0, subsetSha256: "e2e", origin: { name: "e2e.sf2", fileSha256: "e2e", bytes: 0 } } }, c.articulation = { ...c.articulation, pedal: "up" }, c.defaults = { ...c.defaults, velocity: 80 / 127 }; m.load(o); }, XML);
 await p.waitForTimeout(300);
 const toks = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "note" || t.kind === "rest").map((t) => t.kind === "rest" ? `r${t.dur}` : `${[t.pitch, ...(t.chord ?? [])].map((q) => q.step).join("+")}${t.dur}`).join(" "); });
 const sel = () => p.evaluate(() => window.__moonsinger.state().sel);
