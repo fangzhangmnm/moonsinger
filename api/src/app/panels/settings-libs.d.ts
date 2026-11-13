@@ -10,12 +10,15 @@ export interface VoiceView {
     /** 文件夹版（双击打开的那一份）：不下载、不导入、不删，这一栏画灰 + 这一句；不是 = null。 */
     folder: string | null;
     source: string;
+    /** 你在这里删了（设备上的记号，v0.17.25）：缺包时不自己下载。 */
+    removed: boolean;
 }
 export interface GsView {
     name: string;
     description?: string;
     bytes: number;
-    cached: boolean;
+    cached: boolean; /** 你在这里删了（v0.17.25）。 */
+    removed: boolean;
     license: {
         name: string;
         summary?: string;
@@ -103,6 +106,10 @@ export interface LibsHost {
         delete(): Promise<void>;
         install(onPct: (p: number) => void): Promise<void>;
     };
+    /** 「你删了」的记号（设备键值，v0.17.25）：删成功才记、装成功才去掉。 */
+    removed: {
+        set(lib: LibId, on: boolean): void;
+    };
     sounds: {
         delete(sha256: string): Promise<void>;
         installGs(onPct: (p: number) => void): Promise<void>;
@@ -145,6 +152,8 @@ export interface LibsHost {
     doc(lib: "voice"): void;
     progress(text: string): void;
 }
+/** 「装回来」/「现在下载」（音源页、不出声的清单都走这一个；v0.17.25）：下好了才去掉「你删了」的记号。 */
+export declare function libInstall(h: Pick<LibsHost, "voice" | "sounds" | "removed" | "info" | "error" | "progress" | "refresh">, lib: LibId): Promise<boolean>;
 /** 按下一颗钮（data-v）。认得 = true（宿主就不用再管）；不认得 = false。 */
 export declare function libAction(h: LibsHost, v: string): Promise<boolean>;
 /** 维护页上的钮（守卫：按下去都不许让任何一首歌少东西）。 */

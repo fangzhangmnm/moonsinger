@@ -29,6 +29,8 @@ type Extra = Partial<Pick<SingRequest, "opt" | "breath" | "models" | "raw" | "ca
     tag?: string;
 };
 export declare class Singer {
+    /** 小月相被人删了（设置「音源」页的记号，宿主给）：每个 warm / sing 请求都带上，worker 缺包时就不下载（v0.17.25）。 */
+    noDownload: () => boolean;
     private lanes;
     private retiring;
     private seq;

@@ -3664,6 +3664,7 @@ var S = {
   "\u81EA\u52A8\u7FFB\uFF1A\u5173": { en: "Auto-follow: off" },
   "\u73B0\u5728\u7684\u58F0\u90E8\u90FD\u80FD\u51FA\u58F0": { en: "All parts can sound now" },
   "\u4E0D\u51FA\u58F0\u7684\u58F0\u90E8": { en: "Silent parts" },
+  "\u88C5\u56DE\u6765": { en: "Reinstall" },
   "\u6362\u4EBA / \u627E\u58F0\u97F3\u2026": { en: "Change performer / find sound\u2026" },
   "\u653E\u548C\u5BFC\u51FA\u7684 mp3 \u91CC\u90FD\u6CA1\u6709\u8FD9{p}\u7684\u58F0\u97F3\uFF0C\u5176\u4F59\u7167\u653E\u3002\u6362\u8C01\u7531\u4F60\u5B9A\uFF0C\u4E0D\u66FF\u8865\u3002": { en: "Neither playback nor the exported mp3 will have the sound of {p}; the rest plays as usual. Who replaces it is up to you \u2014 no automatic substitutes." },
   "{n} \u6761\u8F68": { en: "{n} {n|track|tracks}" },
@@ -4621,18 +4622,20 @@ var S = {
   "\u4E2D\u6587\u8BFB\u97F3": { en: "Chinese readings" },
   "\u82F1\u6587\u8BFB\u97F3": { en: "English readings" },
   "\u5B58\u5728\u8FD9\u4E2A\u7F51\u5740\u4E0B\uFF0C\u6B63\u5F0F\u7248\u548C\u5F00\u53D1\u7248\u5171\u7528\u8FD9\u4E00\u4EFD\uFF1B\u5728\u8FD9\u91CC\u5220\u4E86\uFF0C\u53E6\u4E00\u4E2A\u7248\u672C\u4E5F\u8981\u91CD\u65B0\u4E0B\u8F7D\u3002": { en: "Stored under this web address; the release and dev versions share this copy. Delete it here and the other version has to download it again too." },
+  "\u88C5\u7740 = \u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6CA1\u88C5 = \u7528\u5230\u65F6\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF1B\u4F60\u5220\u4E86 = \u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u7528\u5B83\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF0C\u70B9\u300C\u88C5\u56DE\u6765\u300D\u624D\u4E0B\u3002": { en: "Installed = on this device, works offline; Not installed = downloads by itself when needed; Deleted by you = never downloads by itself, voices using it are silent until you press Reinstall." },
   "\u5B83\u7684\u7F13\u5B58\u5728\u300C\u7EF4\u62A4\u300D\u91CC": { en: "Its cache is under Upkeep" },
   "\u5728\u6587\u4EF6\u5939\u91CC": { en: "In the folder" },
   "\u88C5\u7740 \xB7 {size}": { en: "Installed \xB7 {size}" },
-  "\u6CA1\u88C5": { en: "Not installed" },
-  "\u88C5\u4E86\u4E00\u90E8\u5206\uFF08{have} / {total}\uFF09": { en: "Partly installed ({have} / {total})" },
+  "\u4F60\u5220\u4E86 \xB7 \u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D": { en: "Deleted by you \xB7 won\u2019t download by itself" },
+  "\u6CA1\u88C5 \xB7 \u7528\u5230\u65F6\u4F1A\u81EA\u5DF1\u4E0B\u8F7D": { en: "Not installed \xB7 downloads by itself when needed" },
+  "\u88C5\u4E86\u4E00\u90E8\u5206\uFF08{have} / {total}\uFF09\xB7 \u7528\u5230\u65F6\u4F1A\u81EA\u5DF1\u4E0B\u8F7D": { en: "Partly installed ({have} / {total}) \xB7 downloads by itself when needed" },
   "\uFF08\u6CA1\u4E0B\uFF09": { en: " (not downloaded)" },
-  "\u5531\u6B4C\u7684\u90A3\u4E00\u4F4D\uFF1A\u5979\u7684\u58F0\u97F3\uFF0C\u548C\u5531\u7684\u65F6\u5019\u8981\u7528\u7684\u51E0\u6837\uFF08\u8FD0\u884C\u5F15\u64CE\u3001\u65E5\u8BED / \u4E2D\u6587 / \u82F1\u6587\u8BFB\u97F3\uFF09\u3002\u7528\u5230\u624D\u4E0B\u8F7D\uFF0C\u4E0B\u597D\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u5531\u3002": { en: "The singer: her voice, plus what she needs to sing (runtime engine; Japanese / Chinese / English readings). Downloaded when first used and kept on this device, so she sings offline too." },
+  "\u5531\u6B4C\u7684\u90A3\u4E00\u4F4D\uFF1A\u5979\u7684\u58F0\u97F3\uFF0C\u548C\u5531\u7684\u65F6\u5019\u8981\u7528\u7684\u51E0\u6837\uFF08\u8FD0\u884C\u5F15\u64CE\u3001\u65E5\u8BED / \u4E2D\u6587 / \u82F1\u6587\u8BFB\u97F3\uFF09\u3002": { en: "The singer: her voice, plus what she needs to sing (runtime engine; Japanese / Chinese / English readings)." },
   "\u7EC4\u6210\uFF08\u5305\u7684\u539F\u540D\uFF09\uFF1A": { en: "Made of (original package names): " },
   "\u7248\u6743\u548C\u4F7F\u7528\u89C4\u5219": { en: "Copyright and terms of use" },
   "\u5168\u6587\u2026": { en: "Full text\u2026" },
   "\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165": { en: "Import from a local file" },
-  "\u88C5\u56DE\u6765": { en: "Reinstall" },
+  "\u73B0\u5728\u4E0B\u8F7D": { en: "Download now" },
   "\u5C0F\u6708\u76F8": { en: "Tsukuyomi-chan" },
   "\u6765\u6E90": { en: "Source" },
   "\u6062\u590D\u9ED8\u8BA4": { en: "Reset to default" },
@@ -4673,21 +4676,24 @@ var S = {
   "\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907": { en: "Black box: send this to the developer if something breaks; never uploaded, it only leaves the device when you tap Copy / Share" },
   "\u4E0B\u8F7D .txt": { en: "Download .txt" },
   "\u5206\u4EAB\u2026": { en: "Share\u2026" },
+  "\u4E0B\u8F7D\u5C0F\u6708\u76F8 {p}%": { en: "Downloading Tsukuyomi-chan {p}%" },
+  "\u4E0B\u8F7D\u4E50\u5668\u97F3\u8272\u5E93 {p}%": { en: "Downloading the instrument library {p}%" },
+  "\u5C0F\u6708\u76F8\u88C5\u597D\u4E86": { en: "Tsukuyomi-chan installed" },
+  "\u4E50\u5668\u97F3\u8272\u5E93\u88C5\u597D\u4E86": { en: "Instrument library installed" },
+  "\u6CA1\u88C5\u4E0A\uFF1A{e}": { en: "Not installed: {e}" },
+  "\u6CA1\u6E05\u6389\uFF1A{e}": { en: "Not cleared: {e}" },
   "\u73B0\u5728\u6253\u5F00\u7684\u6B4C\u91CC\uFF0C{names} \u4F1A\u4E0D\u51FA\u58F0\u3002": { en: "In the song that is open now, {names} will go silent." },
   "\u73B0\u5728\u6253\u5F00\u7684\u6B4C\u91CC\u6CA1\u6709\u58F0\u90E8\u4F1A\u56E0\u6B64\u4E0D\u51FA\u58F0\u3002": { en: "No voice in the song that is open now goes silent because of this." },
   "\u5220\u6389\u5C0F\u6708\u76F8\uFF1F": { en: "Delete Tsukuyomi-chan?" },
-  "\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u8981\u8054\u7F51\u91CD\u65B0\u4E0B\u8F7D\u624D\u80FD\u88C5\u56DE\u6765\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u4E00\u8D77\u6E05\u6389\u3002{silenced}{shared}": { en: "Takes {size}. Reinstalling needs an internet connection to download again; spoken lyrics are cleared as well. {silenced}{shared}" },
-  "\u5C0F\u6708\u76F8\u5220\u4E86\uFF08\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF09": { en: "Tsukuyomi-chan deleted (press Reinstall when you need her)" },
+  "\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u7528\u5230\u5979\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF0C\u76F4\u5230\u4F60\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF08\u8981\u8054\u7F51\uFF09\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u4E00\u8D77\u6E05\u6389\u3002{silenced}{shared}": { en: "Takes {size}. After deleting it won\u2019t download by itself; voices using her are silent until you press Reinstall (needs internet). Spoken lyrics are cleared as well. {silenced}{shared}" },
+  "\u6CA1\u5220\u6389\uFF1A{e}": { en: "Not deleted: {e}" },
+  "\u5FF5\u8FC7\u7684\u53E5\u5B50\u6CA1\u6E05\u6389\uFF1A{e}": { en: "Spoken lyrics not cleared: {e}" },
+  "\u5C0F\u6708\u76F8\u5220\u4E86\uFF1A\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u7528\u5230\u5979\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF1B\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D": { en: "Tsukuyomi-chan deleted: she won\u2019t download by itself and voices using her are silent; press Reinstall when you need her" },
   "\u5220\u6389\u4E50\u5668\u97F3\u8272\u5E93\uFF1F": { en: "Delete the instrument library?" },
-  "\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u8981\u8054\u7F51\u91CD\u65B0\u4E0B\u8F7D\u624D\u80FD\u88C5\u56DE\u6765\uFF1B\u6B4C\u91CC\u6253\u5305\u7740\u58F0\u97F3\u7684\u7167\u6837\u54CD\uFF0C\u53EA\u5F15\u7528\u5B83\u7684\u8981\u7528\u65F6\u4F1A\u53BB\u91CD\u65B0\u4E0B\u8F7D\uFF0C\u6CA1\u7F51\u5C31\u4E0D\u51FA\u58F0\u3002{silenced}{shared}": { en: "Takes {size}. Reinstalling needs an internet connection to download again; voices whose sound is packed into the song keep playing, voices that only reference it download it again when needed and are silent offline. {silenced}{shared}" },
-  "\u4E50\u5668\u97F3\u8272\u5E93\u5220\u4E86\uFF08\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF09": { en: "Instrument library deleted (press Reinstall when you need it)" },
+  "\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF1A\u6B4C\u91CC\u6253\u5305\u7740\u58F0\u97F3\u7684\u7167\u6837\u54CD\uFF0C\u53EA\u5F15\u7528\u5B83\u7684\u4E0D\u51FA\u58F0\uFF0C\u76F4\u5230\u4F60\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF08\u8981\u8054\u7F51\uFF09\u3002{silenced}{shared}": { en: "Takes {size}. After deleting it won\u2019t download by itself: voices whose sound is packed into the song keep playing, voices that only reference it are silent until you press Reinstall (needs internet). {silenced}{shared}" },
+  "\u4E50\u5668\u97F3\u8272\u5E93\u5220\u4E86\uFF1A\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u53EA\u5F15\u7528\u5B83\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF1B\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D": { en: "Instrument library deleted: it won\u2019t download by itself and voices that only reference it are silent; press Reinstall when you need it" },
   "\u5220\u6389\u8FD9\u4E2A\u97F3\u8272\u6587\u4EF6\uFF1F": { en: "Delete this sound file?" },
   "\u5360 {size}\u3002\u4E0D\u662F\u81EA\u5E26\u7684\uFF1A\u5220\u4E86\u5C31\u6CA1\u4E86\uFF0C\u6CA1\u6709\u539F\u6765\u7684 .sf2 \u5C31\u627E\u4E0D\u56DE\u6765\u3002{silenced}": { en: "Takes {size}. Not built in: once deleted it is gone, and without the original .sf2 it cannot be recovered. {silenced}" },
-  "\u4E0B\u8F7D\u5C0F\u6708\u76F8 {p}%": { en: "Downloading Tsukuyomi-chan {p}%" },
-  "\u5C0F\u6708\u76F8\u88C5\u597D\u4E86": { en: "Tsukuyomi-chan installed" },
-  "\u6CA1\u88C5\u4E0A\uFF1A{e}": { en: "Not installed: {e}" },
-  "\u4E0B\u8F7D\u4E50\u5668\u97F3\u8272\u5E93 {p}%": { en: "Downloading the instrument library {p}%" },
-  "\u4E50\u5668\u97F3\u8272\u5E93\u88C5\u597D\u4E86": { en: "Instrument library installed" },
   "\u5FF5\u8FC7\u7684\u53E5\u5B50\u6E05\u4E86\uFF08\u8981\u91CD\u5FF5\uFF09": { en: "Spoken lyrics cleared (they will be read again)" },
   "\u5C0F\u6708\u76F8\u7684\u5F15\u64CE\u91CD\u5F00\u4E86\uFF0C\u5185\u5B58\u8FD8\u56DE\u53BB\u4E86\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u4E0D\u4E22\uFF09": { en: "Tsukuyomi-chan\u2019s engine restarted and its memory given back (spoken lyrics are kept)" },
   "\u6E32\u67D3\u597D\u7684\u58F0\u97F3\u6E05\u4E86\uFF08\u8981\u542C\u518D\u6E32\uFF09": { en: "Rendered audio cleared (render again to listen)" },
@@ -5546,6 +5552,8 @@ var S = {
   "{host} \u4E0D\u8BA9\u8BFB\uFF08{status}\uFF09\uFF1A\u8FD9\u6761\u94FE\u63A5\u6CA1\u8BBE\u6210\u300C\u77E5\u9053\u94FE\u63A5\u7684\u4EBA\u90FD\u80FD\u770B\u300D\u3002": { en: "{host} refused ({status}). The link isn\u2019t set to \u201Canyone with the link can view\u201D." },
   "{host} \u56DE\u4E86 {status}\uFF0C\u6CA1\u62FF\u5230\u6587\u4EF6\u3002": { en: "{host} answered {status}; no file." },
   "\u8FD9\u4E2A\u6587\u4EF6\u8D85\u8FC7 {mb} MB\uFF0C\u4E0D\u50CF\u4E00\u9996\u6B4C\uFF0C\u6CA1\u6253\u5F00\u3002": { en: "This file is over {mb} MB, too big for a song, so it wasn\u2019t opened." },
+  "\u5C0F\u6708\u76F8\u88AB\u4F60\u5220\u4E86": { en: "Tsukuyomi-chan was deleted by you" },
+  "\u4E50\u5668\u97F3\u8272\u5E93\u88AB\u4F60\u5220\u4E86": { en: "The instrument library was deleted by you" },
   "\u5927\u5C0F\u4E0D\u5BF9\uFF08{n} \u2260 {bytes}\uFF09": { en: "Wrong size ({n} \u2260 {bytes})" },
   "\u6BD4\u76EE\u5F55\u91CC\u8BF4\u7684\u5927": { en: "Larger than the catalog says" },
   "\u5927\u5C0F\u4E0D\u5BF9\uFF08{o} \u2260 {bytes}\uFF09": { en: "Wrong size ({o} \u2260 {bytes})" },
@@ -6177,7 +6185,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.24-2026-11-13";
+var APP_VERSION = "v0.17.25-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -34955,15 +34963,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick2(() => "singer-worker-77626f9b3af8.mjs");
+      return pick2(() => "singer-worker-33f36b738410.mjs");
     case "mp3-worker":
       return pick2(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick2(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick2(() => "layout-worker-c21d9fcfcd1e.mjs");
+      return pick2(() => "layout-worker-a6b24cd3e4ac.mjs");
     case "encode-worker":
-      return pick2(() => "encode-worker-434648728d2d.mjs");
+      return pick2(() => "encode-worker-1b067a66739e.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35450,6 +35458,8 @@ var hash = (s10) => {
   return h2 >>> 0;
 };
 var Singer = class {
+  /** 小月相被人删了（设置「音源」页的记号，宿主给）：每个 warm / sing 请求都带上，worker 缺包时就不下载（v0.17.25）。 */
+  noDownload = () => false;
   lanes = [newLane()];
   retiring = [];
   // 减掉但还在算的道
@@ -35585,7 +35595,7 @@ var Singer = class {
   warm(models2, diskBytes) {
     const l10 = this.lanes[0];
     return l10.warming ??= new Promise((ok2) => {
-      const id2 = ++this.seq, req = { type: "warm", id: id2, models: models2, diskBytes };
+      const id2 = ++this.seq, req = { type: "warm", id: id2, models: models2, diskBytes, ...this.noDownload() ? { blocked: true } : {} };
       this.pending.set(id2, { ok: () => ok2(), fail: () => ok2(), progress: () => {
       }, lane: l10 });
       this.worker(l10).postMessage(req);
@@ -35672,7 +35682,7 @@ var Singer = class {
       lane.inflightId = id2;
       lane.inflightTag = tag2;
     }
-    const req = { type: "sing", id: id2, score: s10.SCORE, text: s10.TEXT, tempo: s10.TEMPO_QUARTER, lang: s10.LANG, ...rest };
+    const req = { type: "sing", id: id2, score: s10.SCORE, text: s10.TEXT, tempo: s10.TEMPO_QUARTER, lang: s10.LANG, ...rest, ...this.noDownload() ? { blocked: true } : {} };
     return new Promise((ok2, fail) => {
       this.pending.set(id2, { ok: ok2, fail, progress: progress2, lane, tag: tag2 });
       this.worker(lane).postMessage(req);
@@ -36660,6 +36670,9 @@ async function siteStorageEstimate() {
 // src/sources/sha256.ts
 var sha256Hex3 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
 
+// src/sources/removed.ts
+var removedWhy = (lib) => lib === "voice" ? _t("\u5C0F\u6708\u76F8\u88AB\u4F60\u5220\u4E86") : _t("\u4E50\u5668\u97F3\u8272\u5E93\u88AB\u4F60\u5220\u4E86");
+
 // src/sources/sounds.ts
 function createSoundSources(o10) {
   let source = SOUNDS_SOURCE_DEFAULT;
@@ -36720,6 +36733,7 @@ function createSoundSources(o10) {
     let bank = await cachedSound(g3.origin.fileSha256);
     if (!bank) {
       const e10 = Object.values(SOUNDS).find((x2) => x2.sha256 === g3.origin.fileSha256);
+      if (e10 && o10.removed?.(e10.id)) throw new Error(removedWhy("gs"));
       if (e10) {
         try {
           bank = await fetchSound(e10, (done2) => o10.progress(_t("\u627E\u300C{name}\u300D\u7684\u58F0\u97F3\uFF1A\u4E0B\u8F7D {name2} {bytes}%", { name: g3.name, name2: e10.name, bytes: Math.round(done2 / e10.bytes * 100) })));
@@ -42928,7 +42942,7 @@ function createPerformance(host2) {
   };
   const songIn2 = (s10) => s10 === "all" ? st2().song : s10 === "segment" ? songOnlyPaper(st2().song, st2().at.paper) : playSong2();
   const GM_SR = RENDER_SR;
-  const audibleParts3 = () => audibleParts(st2().song, pv2);
+  const audibleParts3 = () => audibleParts(st2().song, pv2).filter((p2) => !(host2.libRemoved("voice") && performerOf(activeInstrument(extras(), p2.role)?.engine)?.sound === "chunks"));
   const micOf3 = (part2) => micOf(extras(), part2);
   const channelOf3 = (part2) => channelOf(extras(), part2);
   const planOf = (song, parts, raw = mixBypass) => ({ song, extras: extras(), parts, mixBypass: raw, busMuted: host2.busMuted() });
@@ -42960,8 +42974,9 @@ function createPerformance(host2) {
         const why2 = !r10 ? _t("\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u6587\u4EF6\u91CC\u6CA1\u6709") : eng === "unknown" ? _t("\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF0C\u8FD9\u4E00\u7248\u8BA4\u4E0D\u51FA\uFF09") : _t("\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u8BFB\u4E0D\u61C2");
         return [{ part: p2.id, role: p2.role, label: labels2[k2], kind: "unknown", why: why2 }];
       }
+      if (plugin.sound === "chunks" && host2.libRemoved("voice")) return [{ part: p2.id, role: p2.role, label: labels2[k2], kind: "removed", why: removedWhy("voice"), lib: "voice" }];
       const e10 = prepErrs.get(p2.id);
-      return e10 && e10.cand === activeId(extras(), p2.role) ? [{ part: p2.id, role: p2.role, label: labels2[k2], kind: e10.kind, why: e10.why }] : [];
+      return e10 && e10.cand === activeId(extras(), p2.role) ? [{ part: p2.id, role: p2.role, label: labels2[k2], kind: e10.kind, why: e10.why, ...e10.lib ? { lib: e10.lib } : {} }] : [];
     });
   }
   const issuesText = (list2) => list2.map((i10) => `\u300C${i10.label}\u300D\uFF1A${i10.why}`).join("\uFF1B");
@@ -43175,7 +43190,7 @@ function createPerformance(host2) {
     const errs = await prepareBanks(parts);
     const tl2 = timelineOf(planOf(song, parts), engine2);
     for (const p2 of parts) prepErrs.delete(p2.id);
-    for (const e10 of errs) prepErrs.set(e10.part, { cand: e10.cand, kind: "sound", why: e10.why });
+    for (const e10 of errs) prepErrs.set(e10.part, e10.why === removedWhy("gs") ? { cand: e10.cand, kind: "removed", why: e10.why, lib: "gs" } : { cand: e10.cand, kind: "sound", why: e10.why });
     for (const u2 of tl2.unplayable) {
       const p2 = st2().song.parts.find((x2) => x2.id === u2.part);
       if (p2 && !prepErrs.has(u2.part)) prepErrs.set(u2.part, { cand: activeId(extras(), p2.role), kind: "unplayable", why: u2.why });
@@ -43539,7 +43554,7 @@ function createPerformance(host2) {
         },
         onPrepared: (errs, tl2) => {
           for (const p2 of parts) prepErrs.delete(p2.id);
-          for (const e10 of errs) prepErrs.set(e10.part, { cand: e10.cand, kind: "sound", why: e10.why });
+          for (const e10 of errs) prepErrs.set(e10.part, e10.why === removedWhy("gs") ? { cand: e10.cand, kind: "removed", why: e10.why, lib: "gs" } : { cand: e10.cand, kind: "sound", why: e10.why });
           for (const u2 of tl2.unplayable) {
             const p2 = st2().song.parts.find((x2) => x2.id === u2.part);
             if (p2 && !prepErrs.has(u2.part)) prepErrs.set(u2.part, { cand: activeId(extras(), p2.role), kind: "unplayable", why: u2.why });
@@ -46169,7 +46184,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "cbe5bb8687c077aa" : "dev";
+var CORE_HASH = true ? "1a2337518e5e5631" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -59775,6 +59790,7 @@ function packLabel(slug) {
   return slug;
 }
 var SHARED = () => _t("\u5B58\u5728\u8FD9\u4E2A\u7F51\u5740\u4E0B\uFF0C\u6B63\u5F0F\u7248\u548C\u5F00\u53D1\u7248\u5171\u7528\u8FD9\u4E00\u4EFD\uFF1B\u5728\u8FD9\u91CC\u5220\u4E86\uFF0C\u53E6\u4E00\u4E2A\u7248\u672C\u4E5F\u8981\u91CD\u65B0\u4E0B\u8F7D\u3002");
+var STATES = () => _t("\u88C5\u7740 = \u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6CA1\u88C5 = \u7528\u5230\u65F6\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF1B\u4F60\u5220\u4E86 = \u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u7528\u5B83\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF0C\u70B9\u300C\u88C5\u56DE\u6765\u300D\u624D\u4E0B\u3002");
 var btn = (v, label, extra = "") => `<button class="btn" type="button" data-v="${v}"${extra}>${label}</button>`;
 var off = (label, why2) => `<span class="btn is-off" title="${escapeHtml2(why2)}">${label}</span>`;
 var note2 = (html) => `<div class="set-row"><span class="set-note">${html}</span></div>`;
@@ -59783,12 +59799,12 @@ var toUpkeep = (lib) => `<button class="lib-jump" type="button" data-v="goto:upk
 function voiceColumnHtml(v) {
   const total = v.packs.reduce((n10, p2) => n10 + p2.bytesTotal, 0), have = v.packs.reduce((n10, p2) => n10 + (p2.ready ? p2.bytesTotal : 0), 0);
   const all = v.packs.length > 0 && v.packs.every((p2) => p2.ready), none = v.packs.every((p2) => !p2.ready && !p2.bytesCached);
-  const status = v.folder ? _t("\u5728\u6587\u4EF6\u5939\u91CC") : all ? _t("\u88C5\u7740 \xB7 {size}", { size: sizeText2(total) }) : none ? _t("\u6CA1\u88C5") : _t("\u88C5\u4E86\u4E00\u90E8\u5206\uFF08{have} / {total}\uFF09", { have: sizeText2(have), total: sizeText2(total) });
+  const status = v.folder ? _t("\u5728\u6587\u4EF6\u5939\u91CC") : all ? _t("\u88C5\u7740 \xB7 {size}", { size: sizeText2(total) }) : v.removed ? _t("\u4F60\u5220\u4E86 \xB7 \u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D") : none ? _t("\u6CA1\u88C5 \xB7 \u7528\u5230\u65F6\u4F1A\u81EA\u5DF1\u4E0B\u8F7D") : _t("\u88C5\u4E86\u4E00\u90E8\u5206\uFF08{have} / {total}\uFF09\xB7 \u7528\u5230\u65F6\u4F1A\u81EA\u5DF1\u4E0B\u8F7D", { have: sizeText2(have), total: sizeText2(total) });
   const parts = v.packs.map((p2) => `${escapeHtml2(packLabel(p2.slug))} ${sizeText2(p2.bytesTotal)}${!v.folder && !all && !none && !p2.ready ? _t("\uFF08\u6CA1\u4E0B\uFF09") : ""}`).join(" \xB7 ");
   const tr3 = CREDIT_TRANSLATIONS[lang() === "zh" ? "zh" : "en"];
-  const what = _t("\u5531\u6B4C\u7684\u90A3\u4E00\u4F4D\uFF1A\u5979\u7684\u58F0\u97F3\uFF0C\u548C\u5531\u7684\u65F6\u5019\u8981\u7528\u7684\u51E0\u6837\uFF08\u8FD0\u884C\u5F15\u64CE\u3001\u65E5\u8BED / \u4E2D\u6587 / \u82F1\u6587\u8BFB\u97F3\uFF09\u3002\u7528\u5230\u624D\u4E0B\u8F7D\uFF0C\u4E0B\u597D\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u5531\u3002") + `<br>${_t("\u7EC4\u6210\uFF08\u5305\u7684\u539F\u540D\uFF09\uFF1A")}${v.packs.map((p2) => `<code>${escapeHtml2(p2.slug)}</code>`).join("\u3001")}<br>${SHARED()}`;
+  const what = _t("\u5531\u6B4C\u7684\u90A3\u4E00\u4F4D\uFF1A\u5979\u7684\u58F0\u97F3\uFF0C\u548C\u5531\u7684\u65F6\u5019\u8981\u7528\u7684\u51E0\u6837\uFF08\u8FD0\u884C\u5F15\u64CE\u3001\u65E5\u8BED / \u4E2D\u6587 / \u82F1\u6587\u8BFB\u97F3\uFF09\u3002") + `<br>${STATES()}<br>${_t("\u7EC4\u6210\uFF08\u5305\u7684\u539F\u540D\uFF09\uFF1A")}${v.packs.map((p2) => `<code>${escapeHtml2(p2.slug)}</code>`).join("\u3001")}<br>${SHARED()}`;
   const rules = `<b>${_t("\u7248\u6743\u548C\u4F7F\u7528\u89C4\u5219")}</b><br>${escapeHtml2(tr3.credit).replace(/\n/g, "<br>")}<br>${escapeHtml2(tr3.terms).replace(/\n/g, "<br>")}<br>${btn("lib:doc:voice", _t("\u5168\u6587\u2026"))}`;
-  const actions = v.folder ? off(_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165"), v.folder) : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165")}<input id="impIn" type="file" multiple hidden /></label>` + (all ? "" : btn("lib:add:voice", _t("\u88C5\u56DE\u6765"))) + (none ? "" : btn("lib:del:voice", _t("\u5220")));
+  const actions = v.folder ? off(_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165"), v.folder) : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165")}<input id="impIn" type="file" multiple hidden /></label>` + (all ? "" : btn("lib:add:voice", v.removed ? _t("\u88C5\u56DE\u6765") : _t("\u73B0\u5728\u4E0B\u8F7D"))) + (none ? "" : btn("lib:del:voice", _t("\u5220")));
   return settingRowHtml({
     labelHtml: escapeHtml2(_t("\u5C0F\u6708\u76F8")),
     notes: [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: what }, { mark: "\xA9", label: _t("\u7248\u6743\u548C\u4F7F\u7528\u89C4\u5219"), html: rules }],
@@ -59798,10 +59814,10 @@ function voiceColumnHtml(v) {
   });
 }
 function gsColumnHtml(v) {
-  const status = v.folder ? _t("\u5728\u6587\u4EF6\u5939\u91CC") : v.cached ? _t("\u88C5\u7740 \xB7 {size}", { size: sizeText2(v.bytes) }) : _t("\u6CA1\u88C5");
-  const what = escapeHtml2(v.description ?? "") + `<br>${_t("\u4E00\u4E2A\u6587\u4EF6\uFF08{size}\uFF09\uFF0C\u4E0D\u662F AI \u6A21\u578B\uFF1B\u6B4C\u91CC\u7528\u5230\u7684\u90A3\u51E0\u4EF6\u4F1A\u5207\u4E0B\u6765\u6253\u5305\u8FDB\u6B4C\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\u3002", { size: sizeText2(v.bytes) })}<br>${SHARED()}`;
+  const status = v.folder ? _t("\u5728\u6587\u4EF6\u5939\u91CC") : v.cached ? _t("\u88C5\u7740 \xB7 {size}", { size: sizeText2(v.bytes) }) : v.removed ? _t("\u4F60\u5220\u4E86 \xB7 \u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D") : _t("\u6CA1\u88C5 \xB7 \u7528\u5230\u65F6\u4F1A\u81EA\u5DF1\u4E0B\u8F7D");
+  const what = escapeHtml2(v.description ?? "") + `<br>${_t("\u4E00\u4E2A\u6587\u4EF6\uFF08{size}\uFF09\uFF0C\u4E0D\u662F AI \u6A21\u578B\uFF1B\u6B4C\u91CC\u7528\u5230\u7684\u90A3\u51E0\u4EF6\u4F1A\u5207\u4E0B\u6765\u6253\u5305\u8FDB\u6B4C\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\u3002", { size: sizeText2(v.bytes) })}<br>${STATES()}<br>${SHARED()}`;
   const rules = `<b>${_t("\u7248\u6743\u548C\u4F7F\u7528\u89C4\u5219")}</b><br>${escapeHtml2(v.license.name)}${v.license.summary ? `<br>${escapeHtml2(v.license.summary)}` : ""}<br>${escapeHtml2(v.attribution)}${v.homepage ? `<br><a href="${escapeHtml2(v.homepage)}" target="_blank" rel="noopener">${escapeHtml2(v.homepage)}</a>` : ""}`;
-  const actions = v.folder ? "" : v.cached ? btn("lib:del:gs", _t("\u5220")) : btn("lib:add:gs", _t("\u88C5\u56DE\u6765"));
+  const actions = v.folder ? "" : v.cached ? btn("lib:del:gs", _t("\u5220")) : btn("lib:add:gs", v.removed ? _t("\u88C5\u56DE\u6765") : _t("\u73B0\u5728\u4E0B\u8F7D"));
   return settingRowHtml({
     labelHtml: escapeHtml2(v.name),
     notes: [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: what }, { mark: "\xA9", label: _t("\u7248\u6743\u548C\u4F7F\u7528\u89C4\u5219"), html: rules }],
@@ -59876,26 +59892,69 @@ function upkeepRestHtml(o10) {
     "diag"
   );
 }
+async function libInstall(h2, lib) {
+  let ok2 = false;
+  try {
+    if (lib === "voice") await h2.voice.install((p2) => h2.progress(_t("\u4E0B\u8F7D\u5C0F\u6708\u76F8 {p}%", { p: p2 })));
+    else await h2.sounds.installGs((p2) => h2.progress(_t("\u4E0B\u8F7D\u4E50\u5668\u97F3\u8272\u5E93 {p}%", { p: p2 })));
+    h2.removed.set(lib, false);
+    ok2 = true;
+    h2.info(lib === "voice" ? _t("\u5C0F\u6708\u76F8\u88C5\u597D\u4E86") : _t("\u4E50\u5668\u97F3\u8272\u5E93\u88C5\u597D\u4E86"));
+  } catch (e10) {
+    h2.error(_t("\u6CA1\u88C5\u4E0A\uFF1A{e}", { e: e10.message }));
+  }
+  h2.progress("");
+  h2.refresh("sound");
+  return ok2;
+}
+async function cleared(h2, run2, done2) {
+  try {
+    const r10 = await run2();
+    const msg = typeof r10 === "string" && r10 ? r10 : done2;
+    if (msg) h2.info(msg);
+  } catch (e10) {
+    h2.error(_t("\u6CA1\u6E05\u6389\uFF1A{e}", { e: e10.message }));
+  }
+  h2.refresh("upkeep");
+}
 var silenced = (h2, lib) => {
   const n10 = h2.silencedBy(lib);
   return n10.length ? _t("\u73B0\u5728\u6253\u5F00\u7684\u6B4C\u91CC\uFF0C{names} \u4F1A\u4E0D\u51FA\u58F0\u3002", { names: n10.join("\u3001") }) : _t("\u73B0\u5728\u6253\u5F00\u7684\u6B4C\u91CC\u6CA1\u6709\u58F0\u90E8\u4F1A\u56E0\u6B64\u4E0D\u51FA\u58F0\u3002");
 };
 async function libAction(h2, v) {
   if (v === "lib:del:voice") {
-    if (!await h2.ask(_t("\u5220\u6389\u5C0F\u6708\u76F8\uFF1F"), _t("\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u8981\u8054\u7F51\u91CD\u65B0\u4E0B\u8F7D\u624D\u80FD\u88C5\u56DE\u6765\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u4E00\u8D77\u6E05\u6389\u3002{silenced}{shared}", { size: sizeText2(h2.sizeOf("voice")), silenced: silenced(h2, "voice"), shared: SHARED() }), _t("\u5220"), true)) return true;
-    await h2.voice.delete();
-    await h2.speech.clear();
+    if (!await h2.ask(_t("\u5220\u6389\u5C0F\u6708\u76F8\uFF1F"), _t("\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u7528\u5230\u5979\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF0C\u76F4\u5230\u4F60\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF08\u8981\u8054\u7F51\uFF09\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u4E00\u8D77\u6E05\u6389\u3002{silenced}{shared}", { size: sizeText2(h2.sizeOf("voice")), silenced: silenced(h2, "voice"), shared: SHARED() }), _t("\u5220"), true)) return true;
+    try {
+      await h2.voice.delete();
+    } catch (e10) {
+      h2.error(_t("\u6CA1\u5220\u6389\uFF1A{e}", { e: e10.message }));
+      h2.refresh("sound");
+      return true;
+    }
+    h2.removed.set("voice", true);
+    try {
+      await h2.speech.clear();
+    } catch (e10) {
+      h2.error(_t("\u5FF5\u8FC7\u7684\u53E5\u5B50\u6CA1\u6E05\u6389\uFF1A{e}", { e: e10.message }));
+    }
     h2.lanes.restart();
-    h2.info(_t("\u5C0F\u6708\u76F8\u5220\u4E86\uFF08\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF09"));
+    h2.info(_t("\u5C0F\u6708\u76F8\u5220\u4E86\uFF1A\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u7528\u5230\u5979\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF1B\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D"));
     h2.refresh("sound");
     h2.refresh("upkeep");
     return true;
   }
   if (v === "lib:del:gs") {
-    if (!await h2.ask(_t("\u5220\u6389\u4E50\u5668\u97F3\u8272\u5E93\uFF1F"), _t("\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u8981\u8054\u7F51\u91CD\u65B0\u4E0B\u8F7D\u624D\u80FD\u88C5\u56DE\u6765\uFF1B\u6B4C\u91CC\u6253\u5305\u7740\u58F0\u97F3\u7684\u7167\u6837\u54CD\uFF0C\u53EA\u5F15\u7528\u5B83\u7684\u8981\u7528\u65F6\u4F1A\u53BB\u91CD\u65B0\u4E0B\u8F7D\uFF0C\u6CA1\u7F51\u5C31\u4E0D\u51FA\u58F0\u3002{silenced}{shared}", { size: sizeText2(h2.sizeOf("gs")), silenced: silenced(h2, "gs"), shared: SHARED() }), _t("\u5220"), true)) return true;
-    await h2.sounds.delete(h2.sounds.gsSha);
+    if (!await h2.ask(_t("\u5220\u6389\u4E50\u5668\u97F3\u8272\u5E93\uFF1F"), _t("\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF1A\u6B4C\u91CC\u6253\u5305\u7740\u58F0\u97F3\u7684\u7167\u6837\u54CD\uFF0C\u53EA\u5F15\u7528\u5B83\u7684\u4E0D\u51FA\u58F0\uFF0C\u76F4\u5230\u4F60\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF08\u8981\u8054\u7F51\uFF09\u3002{silenced}{shared}", { size: sizeText2(h2.sizeOf("gs")), silenced: silenced(h2, "gs"), shared: SHARED() }), _t("\u5220"), true)) return true;
+    try {
+      await h2.sounds.delete(h2.sounds.gsSha);
+    } catch (e10) {
+      h2.error(_t("\u6CA1\u5220\u6389\uFF1A{e}", { e: e10.message }));
+      h2.refresh("sound");
+      return true;
+    }
+    h2.removed.set("gs", true);
     h2.sounds.releaseMemory();
-    h2.info(_t("\u4E50\u5668\u97F3\u8272\u5E93\u5220\u4E86\uFF08\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF09"));
+    h2.info(_t("\u4E50\u5668\u97F3\u8272\u5E93\u5220\u4E86\uFF1A\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u53EA\u5F15\u7528\u5B83\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF1B\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D"));
     h2.refresh("sound");
     h2.refresh("upkeep");
     return true;
@@ -59903,30 +59962,16 @@ async function libAction(h2, v) {
   if (v.startsWith("lib:del:own:")) {
     const sha256 = v.slice("lib:del:own:".length);
     if (!await h2.ask(_t("\u5220\u6389\u8FD9\u4E2A\u97F3\u8272\u6587\u4EF6\uFF1F"), _t("\u5360 {size}\u3002\u4E0D\u662F\u81EA\u5E26\u7684\uFF1A\u5220\u4E86\u5C31\u6CA1\u4E86\uFF0C\u6CA1\u6709\u539F\u6765\u7684 .sf2 \u5C31\u627E\u4E0D\u56DE\u6765\u3002{silenced}", { size: sizeText2(h2.sizeOf({ sha256 })), silenced: silenced(h2, { sha256 }) }), _t("\u5220"), true)) return true;
-    await h2.sounds.delete(sha256);
+    try {
+      await h2.sounds.delete(sha256);
+    } catch (e10) {
+      h2.error(_t("\u6CA1\u5220\u6389\uFF1A{e}", { e: e10.message }));
+    }
     h2.refresh("sound");
     return true;
   }
-  if (v === "lib:add:voice") {
-    try {
-      await h2.voice.install((p2) => h2.progress(_t("\u4E0B\u8F7D\u5C0F\u6708\u76F8 {p}%", { p: p2 })));
-      h2.info(_t("\u5C0F\u6708\u76F8\u88C5\u597D\u4E86"));
-    } catch (e10) {
-      h2.error(_t("\u6CA1\u88C5\u4E0A\uFF1A{e}", { e: e10.message }));
-    }
-    h2.progress("");
-    h2.refresh("sound");
-    return true;
-  }
-  if (v === "lib:add:gs") {
-    try {
-      await h2.sounds.installGs((p2) => h2.progress(_t("\u4E0B\u8F7D\u4E50\u5668\u97F3\u8272\u5E93 {p}%", { p: p2 })));
-      h2.info(_t("\u4E50\u5668\u97F3\u8272\u5E93\u88C5\u597D\u4E86"));
-    } catch (e10) {
-      h2.error(_t("\u6CA1\u88C5\u4E0A\uFF1A{e}", { e: e10.message }));
-    }
-    h2.progress("");
-    h2.refresh("sound");
+  if (v === "lib:add:voice" || v === "lib:add:gs") {
+    await libInstall(h2, v === "lib:add:voice" ? "voice" : "gs");
     return true;
   }
   if (v === "lib:doc:voice") {
@@ -59939,9 +59984,7 @@ async function libAction(h2, v) {
     return true;
   }
   if (v === "sp:clear") {
-    await h2.speech.clear();
-    h2.info(_t("\u5FF5\u8FC7\u7684\u53E5\u5B50\u6E05\u4E86\uFF08\u8981\u91CD\u5FF5\uFF09"));
-    h2.refresh("upkeep");
+    await cleared(h2, () => h2.speech.clear(), _t("\u5FF5\u8FC7\u7684\u53E5\u5B50\u6E05\u4E86\uFF08\u8981\u91CD\u5FF5\uFF09"));
     return true;
   }
   if (v === "eng:restart") {
@@ -59956,20 +59999,18 @@ async function libAction(h2, v) {
     return true;
   }
   if (v === "rc:clear") {
-    await h2.renders.clearAll();
-    h2.info(_t("\u6E32\u67D3\u597D\u7684\u58F0\u97F3\u6E05\u4E86\uFF08\u8981\u542C\u518D\u6E32\uFF09"));
-    h2.refresh("upkeep");
+    await cleared(h2, () => h2.renders.clearAll(), _t("\u6E32\u67D3\u597D\u7684\u58F0\u97F3\u6E05\u4E86\uFF08\u8981\u542C\u518D\u6E32\uFF09"));
     return true;
   }
   if (v === "rc:old") {
-    const r10 = await h2.renders.clearOld();
-    h2.info(_t("\u6E05\u4E86 {n} \u6761\u65E7\u7248\u672C\u6E32\u7684\uFF08{size}\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8981\u542C\u518D\u6E32", { n: r10.count, size: sizeText2(r10.bytes) }));
-    h2.refresh("upkeep");
+    await cleared(h2, async () => {
+      const r10 = await h2.renders.clearOld();
+      return _t("\u6E05\u4E86 {n} \u6761\u65E7\u7248\u672C\u6E32\u7684\uFF08{size}\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8981\u542C\u518D\u6E32", { n: r10.count, size: sizeText2(r10.bytes) });
+    }, "");
     return true;
   }
   if (v.startsWith("rc:del:")) {
-    if (await h2.renders.clear(Number(v.slice(7)))) h2.info(_t("\u6E05\u4E86\u8FD9\u4E00\u904D\uFF08\u8981\u542C\u518D\u6E32\uFF09"));
-    h2.refresh("upkeep");
+    await cleared(h2, async () => await h2.renders.clear(Number(v.slice(7))) ? _t("\u6E05\u4E86\u8FD9\u4E00\u904D\uFF08\u8981\u542C\u518D\u6E32\uFF09") : "", "");
     return true;
   }
   if (v === "audio:revive") {
@@ -60611,6 +60652,15 @@ function manualRevive(from) {
 }
 var KV_FEEL_ALWAYS = "feel-always";
 var feelAlways = false;
+var KV_LIB_REMOVED = (lib) => `lib-removed-${lib}`;
+var libRemoved = (lib) => deviceKvGet(KV_LIB_REMOVED(lib)) === "1";
+function setLibRemoved(lib, on2) {
+  if (libRemoved(lib) === on2) return;
+  deviceKvSet(KV_LIB_REMOVED(lib), on2 ? "1" : null);
+  diagNote("libs", `${lib} ${on2 ? "removed by user" : "installed"}`);
+  libsRowSync?.();
+  perfApi.refreshIssues();
+}
 var KV_PRIMER = "audio-primer";
 var IS_IOS = /iPad|iPhone|iPod/.test(navigator.platform) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
 var PRIMER_URL = new URLSearchParams(location.search).get("primer");
@@ -61312,6 +61362,7 @@ function renderUndo() {
   $2("redoBtn").disabled = !D3.history.future.length;
 }
 var singer = new Singer();
+singer.noDownload = () => libRemoved("voice");
 var statusLast = "";
 var statusBar = false;
 var renderBusyText = null;
@@ -61369,6 +61420,7 @@ function drawIssueBadges() {
   }
 }
 var perfApi = createPerformance({
+  libRemoved,
   labels: () => labelsNow(),
   roleLabel: (role) => roleLabel(role),
   state: () => D3.st,
@@ -61593,7 +61645,7 @@ $2("partSel").addEventListener("change", (e10) => {
   updateChrome();
 });
 var embedSoftLimit = 1e7;
-var sources = createSoundSources({ progress: (m2) => progress(m2), roleLabel: () => roleLabel(curRole()) });
+var sources = createSoundSources({ progress: (m2) => progress(m2), roleLabel: () => roleLabel(curRole()), removed: (id2) => id2 === GS.id && libRemoved("gs") });
 var mp3Scope = "all";
 function openIssuesSheet() {
   ui2.close();
@@ -61604,7 +61656,7 @@ function openIssuesSheet() {
   }
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u4E0D\u51FA\u58F0\u7684\u58F0\u90E8")}</div>` + list2.map((i10) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc13(i10.label)}</b><small>${esc13(i10.why)}</small></div><button class="btn primary" data-v="inst:${esc13(i10.part)}">${_t("\u6362\u4EBA / \u627E\u58F0\u97F3\u2026")}</button></div>`).join("") + `<div class="offer-msg">${_t("\u653E\u548C\u5BFC\u51FA\u7684 mp3 \u91CC\u90FD\u6CA1\u6709\u8FD9{p}\u7684\u58F0\u97F3\uFF0C\u5176\u4F59\u7167\u653E\u3002\u6362\u8C01\u7531\u4F60\u5B9A\uFF0C\u4E0D\u66FF\u8865\u3002", { p: list2.length > 1 ? _t("{n} \u6761\u8F68", { n: list2.length }) : _t("\u6761\u8F68") })}</div><div class="offer-btns"><button class="btn" data-v="close">${_t("\u77E5\u9053\u4E86")}</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u4E0D\u51FA\u58F0\u7684\u58F0\u90E8")}</div>` + list2.map((i10) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc13(i10.label)}</b><small>${esc13(i10.why)}</small></div>${i10.kind === "removed" && i10.lib ? `<button class="btn" data-v="libadd:${i10.lib}">${_t("\u88C5\u56DE\u6765")}</button>` : ""}<button class="btn primary" data-v="inst:${esc13(i10.part)}">${_t("\u6362\u4EBA / \u627E\u58F0\u97F3\u2026")}</button></div>`).join("") + `<div class="offer-msg">${_t("\u653E\u548C\u5BFC\u51FA\u7684 mp3 \u91CC\u90FD\u6CA1\u6709\u8FD9{p}\u7684\u58F0\u97F3\uFF0C\u5176\u4F59\u7167\u653E\u3002\u6362\u8C01\u7531\u4F60\u5B9A\uFF0C\u4E0D\u66FF\u8865\u3002", { p: list2.length > 1 ? _t("{n} \u6761\u8F68", { n: list2.length }) : _t("\u6761\u8F68") })}</div><div class="offer-btns"><button class="btn" data-v="close">${_t("\u77E5\u9053\u4E86")}</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -61620,8 +61672,40 @@ function openIssuesSheet() {
     if (v?.startsWith("inst:")) {
       close();
       goToPartInst(v.slice(5));
+    } else if (v === "libadd:voice" || v === "libadd:gs") {
+      close();
+      void installBuiltin(v === "libadd:voice" ? "voice" : "gs");
     }
   });
+}
+function forgetGsDerived() {
+  for (const u2 of soundUses(D3.extras)) if (!u2.packed && u2.origin?.library === GS.id) {
+    sources.session.drop(u2.subsetSha256);
+    engine.unbank(u2.subsetSha256);
+  }
+}
+function installBuiltin(lib) {
+  return libInstall({
+    info,
+    error: showError,
+    progress,
+    refresh: () => libsRowSync?.(),
+    removed: { set: setLibRemoved },
+    voice: { delete: () => packStore.delete(Object.keys(PACKS)), install: installVoicePacks },
+    sounds: { gsSha: GS.sha256, delete: (sha) => forgetSound(sha), releaseMemory: () => releaseSoundMemory(), installGs: (onPct) => sources.fetchSound(GS, (done2) => onPct(Math.round(done2 / GS.bytes * 100))).then(() => void 0) }
+  }, lib);
+}
+async function installVoicePacks(onPct) {
+  let last = null;
+  for (const base2 of models.bases()) {
+    try {
+      await packStore.download(Object.keys(PACKS), base2, (p2) => onPct(Math.floor(p2.done / p2.total * 100)));
+      return;
+    } catch (e10) {
+      last = e10;
+    }
+  }
+  throw last ?? new Error("no source");
 }
 function goToPartInst(partId) {
   const paper = D3.st.song.papers.find((pp) => pp.id === D3.st.at.paper && pp.tracks[partId]) ?? D3.st.song.papers.find((pp) => pp.tracks[partId]);
@@ -61865,10 +61949,10 @@ function openSettings() {
     keepSources();
     const packs = await voicePacks();
     sizes.set("voice", packs.reduce((n10, p2) => n10 + p2.bytesCached, 0));
-    libVoice.innerHTML = voiceColumnHtml({ packs, folder: inFolder2 ? FOLDER_TEXT.models : null, source: models.source });
+    libVoice.innerHTML = voiceColumnHtml({ packs, folder: inFolder2 ? FOLDER_TEXT.models : null, source: models.source, removed: libRemoved("voice") });
     const cached2 = inFolder2 ? [] : await listCachedSounds(), gsHere = cached2.find((c10) => c10.sha256 === GS2.sha256);
     sizes.set("gs", gsHere?.bytes ?? 0);
-    libGs.innerHTML = gsColumnHtml({ name: GS2.name, ...GS2.description ? { description: GS2.description } : {}, bytes: GS2.bytes, cached: !!gsHere, license: GS2.license, attribution: GS2.attribution, ...GS2.homepage ? { homepage: GS2.homepage } : {}, folder: inFolder2 ? FOLDER_TEXT.sounds : null, source: sources.source });
+    libGs.innerHTML = gsColumnHtml({ name: GS2.name, ...GS2.description ? { description: GS2.description } : {}, bytes: GS2.bytes, cached: !!gsHere, removed: libRemoved("gs"), license: GS2.license, attribution: GS2.attribution, ...GS2.homepage ? { homepage: GS2.homepage } : {}, folder: inFolder2 ? FOLDER_TEXT.sounds : null, source: sources.source });
     const known = new Set(Object.values(SOUNDS).map((e10) => e10.sha256)), uses = new Map(soundUses(D3.extras).map((u2) => [u2.subsetSha256, u2]));
     const own = cached2.filter((c10) => !known.has(c10.sha256)).map((c10) => {
       sizes.set(c10.sha256, c10.bytes);
@@ -61922,6 +62006,7 @@ function openSettings() {
       await packStore.importFiles(Object.keys(PACKS), files, (p2) => {
         if (packSt) packSt.textContent = _t("\u5BFC\u5165\u4E2D\u2026 {total}%", { total: Math.floor(p2.done / p2.total * 100) });
       });
+      if ((await packStore.status(Object.keys(PACKS))).every((x2) => x2.ready)) setLibRemoved("voice", false);
     } catch (err2) {
       showError(_t("\u5BFC\u5165\u6CA1\u6210\uFF1A{Error}", { Error: err2.message === "no-matching-file" ? _t("\u8FD9\u4E9B\u6587\u4EF6\u4E0D\u662F\u5C0F\u6708\u76F8\u8981\u7684\u6A21\u578B\u5305\u5206\u7247") : err2.message }));
     }
@@ -61943,6 +62028,7 @@ function openSettings() {
   const host2 = {
     ask: (title, msg, ok2, danger) => askOver(box, title, msg, ok2, danger),
     info,
+    removed: { set: setLibRemoved },
     error: showError,
     silencedBy,
     sizeOf: (lib) => sizes.get(typeof lib === "string" ? lib : lib.sha256) ?? 0,
@@ -61950,19 +62036,13 @@ function openSettings() {
       delete: () => packStore.delete(Object.keys(PACKS)),
       install: async (onPct) => {
         keepSources();
-        let last = null;
-        for (const base2 of models.bases()) {
-          try {
-            await packStore.download(Object.keys(PACKS), base2, (p2) => onPct(Math.floor(p2.done / p2.total * 100)));
-            return;
-          } catch (e10) {
-            last = e10;
-          }
-        }
-        throw last ?? new Error("no source");
+        await installVoicePacks(onPct);
       }
     },
-    sounds: { gsSha: GS2.sha256, delete: (sha) => forgetSound(sha), releaseMemory: () => releaseSoundMemory(), installGs: async (onPct) => {
+    sounds: { gsSha: GS2.sha256, delete: async (sha) => {
+      await forgetSound(sha);
+      if (sha === GS2.sha256) forgetGsDerived();
+    }, releaseMemory: () => releaseSoundMemory(), installGs: async (onPct) => {
       keepSources();
       await sources.fetchSound(GS2, (done2) => onPct(Math.round(done2 / GS2.bytes * 100)));
     } },
@@ -62011,9 +62091,14 @@ function openSettings() {
     if (el2) el2.innerHTML = midiStatusHtml(s10);
     if (s10.k !== "off" && s10.k !== "denied") box.querySelector('[data-v="midi:connect"]')?.remove();
   };
+  libsRowSync = () => {
+    void refreshSound();
+    void refreshUpkeep();
+  };
   const close = () => {
     clearInterval(resTimer);
     midiRowSync = null;
+    libsRowSync = null;
     keepSources();
     box.remove();
     ui2.closed(close);
@@ -62413,6 +62498,7 @@ async function setAudition(p2) {
   try {
     const bank = await sources.fetchSound(GS, (done2) => progress(_t("\u4E0B\u8F7D {name} {bytes}%", { name: GS.name, bytes: Math.round(done2 / GS.bytes * 100) })));
     progress("");
+    setLibRemoved("gs", false);
     const subset = subsetSf2(bank, [{ bank: p2.provider.bank, program: p2.provider.program }]), sha256 = await sha256Hex3(subset);
     if (gen !== auditionGen) return;
     audition = { from: pickFrom(p2), bank: p2.provider.bank, program: p2.provider.program, ...cat2 ? castArgsOf(cat2, p2.provider.bank, p2.provider.program, p2.provider.note) : {}, sha256, subset, label: p2.provider.gmName };
@@ -66384,6 +66470,7 @@ function midiRoute() {
   return w2 === "write" || w2 === "edit" || w2 === "impro" ? "pad" : "sound";
 }
 var midiRowSync = null;
+var libsRowSync = null;
 var midi = createMidiKeyboard({
   down: (note3, _vel, id2) => {
     const r10 = midiRoute();
@@ -66623,4 +66710,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e9394fbe1e11.mjs.map
+//# sourceMappingURL=moonsinger-2ec2b28a8def.mjs.map

@@ -20,7 +20,7 @@ export const AREAS = {
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
   studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "parts-manager", "paper-adds", "inst-split", "finder-pins", "finder-sf2", "finder-presets", "landscape-widgets", "modes", "dyn-levels", "sing-experiments", "performer-db", "performer-defaults"],
   // 歌库 / 云 / 文件 / 念缓存
-  store: ["csp", "store", "sync", "gate", "folder-home", "speech-store", "save-keys", "render-cache", "factory-reset", "legacy-dbs", "gallery-marks", "edit-lock", "edit-lock-gallery", "link-open", "settings-libs"],
+  store: ["csp", "store", "sync", "gate", "folder-home", "speech-store", "save-keys", "render-cache", "factory-reset", "legacy-dbs", "gallery-marks", "edit-lock", "edit-lock-gallery", "link-open", "settings-libs", "lib-removed"],
   // 导出
   export: ["pdf", "pdf-wysiwyg", "issues", "render-cache"],
   // 参考窗
@@ -101,6 +101,8 @@ export const AREA_OF_PATH = [
   // 搬出 main.ts 的面板（src/app/panels/，2026-11-09 起：乐器设置页）：调的东西在放 / 录音房 / 键盘（试听）三处听得见
   // 设置的音源 / 维护两页（13-2）：删库、清缓存 = 声音的库和它们的缓存 → 歌库那一区（念缓存、渲好的声音都在那里测）
   [/^src\/app\/panels\/settings-libs\.ts$/, ["store"]],
+  // 删掉的库不自己下回来（v0.17.25）：记号在 sources/removed.ts，拦在 worker 和解析链 → 歌库那一区（lib-removed、settings-libs）+ 放
+  [/^src\/sources\/removed\.ts$/, ["store", "play"]],
   [/^src\/app\/panels\//, ["pad", "studio", "play"]],
   [/^assets\//, ["play", "export"]],
   // 其余 src 没登记 = 整套（宁多跑不漏跑；登记了再缩）

@@ -20,4 +20,5 @@ export interface SoundSources {
 export declare function createSoundSources(o: {
     progress(msg: string): void; /** 报错里提到的「谁」：光标所在声部的名字（原来的措辞）。 */
     roleLabel(): string;
+    /** 这个音源库条目被人在设置里删了（v0.17.25）：解析链自动去拿整包那一步不下载、报「被删了」。人自己点的 fetchSound 不拦（那就是装回来）。 */ removed?(entryId: string): boolean;
 }): SoundSources;

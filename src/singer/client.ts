@@ -37,6 +37,8 @@ const newLane = (): Lane => ({ w: null, inflightId: 0, onlyId: 0, warming: null,
 const hash = (s: string): number => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
 
 export class Singer {
+  /** 小月相被人删了（设置「音源」页的记号，宿主给）：每个 warm / sing 请求都带上，worker 缺包时就不下载（v0.17.25）。 */
+  noDownload: () => boolean = () => false;
   private lanes: Lane[] = [newLane()];
   private retiring: Lane[] = [];   // 减掉但还在算的道
   private seq = 0;
@@ -113,7 +115,7 @@ export class Singer {
   warm(models?: string[], diskBytes?: number): Promise<void> {
     const l = this.lanes[0];
     return (l.warming ??= new Promise<void>((ok) => {
-      const id = ++this.seq, req: WarmRequest = { type: "warm", id, models, diskBytes };
+      const id = ++this.seq, req: WarmRequest = { type: "warm", id, models, diskBytes, ...(this.noDownload() ? { blocked: true } : {}) };
       this.pending.set(id, { ok: () => ok(), fail: () => ok(), progress: () => {}, lane: l }); this.worker(l).postMessage(req);
     }).finally(() => { l.warming = null; }));
   }
@@ -166,7 +168,7 @@ export class Singer {
     const id = ++this.seq;
     const { tag, ...rest } = extra;
     if (rest.only) { if (lane.onlyId) lane.w?.postMessage({ type: "cancel", id: lane.onlyId } satisfies CancelRequest); lane.onlyId = id; } else { lane.inflightId = id; lane.inflightTag = tag; }
-    const req: SingRequest = { type: "sing", id, score: s.SCORE, text: s.TEXT, tempo: s.TEMPO_QUARTER, lang: s.LANG, ...rest };
+    const req: SingRequest = { type: "sing", id, score: s.SCORE, text: s.TEXT, tempo: s.TEMPO_QUARTER, lang: s.LANG, ...rest, ...(this.noDownload() ? { blocked: true } : {}) };
     return new Promise((ok, fail) => { this.pending.set(id, { ok, fail, progress, lane, tag }); this.worker(lane).postMessage(req); });
   }
   /** 只唱一个字（按键试听，刀 3）：不排队、直接给这一句自己的道（排在整句后面 = 迟到的音更烦；worker 在段界之间就会插进来）；念缓存命中时几毫秒。 */

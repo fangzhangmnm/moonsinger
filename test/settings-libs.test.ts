@@ -6,16 +6,18 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { libAction, voiceColumnHtml, gsColumnHtml, ownColumnHtml, upkeepVoiceHtml, upkeepGsHtml, upkeepRendersHtml, upkeepRestHtml, packLabel, ownLabel, UPKEEP_ACTIONS, type LibsHost, type PackView } from "../src/app/panels/settings-libs.ts";
 import { sf2Label, listSf2Presets, sf2Info } from "../src/gm/sf2-subset.ts";
+import { packPlan, removedWhy } from "../src/sources/removed.ts";
+import { libInstall } from "../src/app/panels/settings-libs.ts";
 import { SOUNDS } from "../src/gm/sounds.gen.ts";
 import { PACKS } from "../src/singer/packs.gen.ts";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL | string, e?: "utf8"): string & Uint8Array };
 const ROOT = new URL("../", import.meta.url);
 
 /** 假的宿主：每一样碰存储的操作记一个名字。ask 的回答由测试给。 */
-function fakeHost(answer = true): { host: LibsHost; touched: string[] } {
-  const touched: string[] = [], t = (n: string) => { touched.push(n); };
+function fakeHost(answer = true, fail: string | null = null): { host: LibsHost; touched: string[]; marks: string[]; said: string[] } {
+  const touched: string[] = [], marks: string[] = [], said: string[] = [], t = (n: string) => { if (fail && n.startsWith(fail)) throw new Error("boom"); touched.push(n); };
   const host: LibsHost = {
-    ask: async () => answer, info: () => {}, error: () => {}, silencedBy: () => ["人声"], sizeOf: () => 1e6, progress: () => {},
+    ask: async () => answer, info: (m) => said.push(`info:${m}`), error: (m) => said.push(`error:${m}`), removed: { set: (lib, on) => marks.push(`${lib}:${on ? "on" : "off"}`) }, silencedBy: () => ["人声"], sizeOf: () => 1e6, progress: () => {},
     voice: { delete: async () => t("pwa-models:delete"), install: async () => t("pwa-models:download") },
     sounds: { gsSha: "g".repeat(64), delete: async (sha) => t(`pwa-sounds:delete:${sha === "g".repeat(64) ? "gs" : "own"}`), installGs: async () => t("pwa-sounds:download"), releaseMemory: () => t("memory") },
     speech: { clear: async () => t("speech") },
@@ -26,15 +28,15 @@ function fakeHost(answer = true): { host: LibsHost; touched: string[] } {
     diag: { view: () => t("diag"), copy: () => t("diag"), download: () => t("diag"), share: () => t("diag"), clear: () => t("diag") },
     refresh: () => {}, goto: () => {}, doc: () => {},
   };
-  return { host, touched };
+  return { host, touched, marks, said };
 }
 const packs = (ready: boolean): PackView[] => Object.entries(PACKS).map(([slug, p]) => ({ slug, ready, bytesTotal: p.manifest.totalBytes, bytesCached: ready ? p.manifest.totalBytes : 0 }));
 const GS = SOUNDS["generaluser-gs-2.0.3"]!;
-const gsView = (cached: boolean) => ({ name: GS.name, bytes: GS.bytes, cached, license: GS.license, attribution: GS.attribution, folder: null, source: "x" });
+const gsView = (cached: boolean, removed = false) => ({ name: GS.name, bytes: GS.bytes, cached, removed, license: GS.license, attribution: GS.attribution, folder: null, source: "x" });
 const own = [{ sha256: "a".repeat(64), bytes: 1000, label: { preset: "Sine Wave", library: "GeneralUser GS 2.0.3 BETA", presets: 1 }, users: ["钢琴"], packed: false }];
 const renders = { rows: [{ key: "k", title: "t", secs: 3, size: 1000, at: 0, old: true, coreVersion: "0.2.1", links: [] }], bytes: 1000, oldCount: 1, oldBytes: 1000, coreNow: "0.3.0" };
 /** 两页在各种状态下画出来的全部钮（data-v）。 */
-const soundPage = [voiceColumnHtml({ packs: packs(true), folder: null, source: "x" }), voiceColumnHtml({ packs: packs(false), folder: null, source: "x" }), gsColumnHtml(gsView(true)), gsColumnHtml(gsView(false)), ownColumnHtml(own, null)].join("");
+const soundPage = [voiceColumnHtml({ packs: packs(true), folder: null, source: "x", removed: false }), voiceColumnHtml({ packs: packs(false), folder: null, source: "x", removed: false }), gsColumnHtml(gsView(true)), gsColumnHtml(gsView(false)), ownColumnHtml(own, null)].join("");
 const upkeepPage = [upkeepVoiceHtml({ speech: { bytes: 1, budget: 2, entries: 3 }, speechNote: null, engineBytes: 5e8 }), upkeepGsHtml(3e7), upkeepRendersHtml(renders, 8), upkeepRestHtml({ canShare: true, diagText: "" })].join("");
 const buttons = (html: string) => [...new Set([...html.matchAll(/data-v="([^"]+)"/g)].map((m) => m[1]!))];
 /** 白名单：声音的库和它们的缓存、运行状态、自己的离线壳、诊断日志（device-kv 里 app 自己的那一条）。 */
@@ -95,8 +97,54 @@ describe("设置的音源 / 维护两页（13-2）", () => {
     eq(await sf2Label(async (s, e) => new Uint8Array(e - s), 4096), null, "不是 sf2 = null");
   });
   it("「版权和使用规则」= 名字后面的「©」，问号只解释这是什么；自己加的文件没有规则可说就不放 ©", () => {
-    assert(/data-note="1"[^>]*aria-label="版权和使用规则"/.test(voiceColumnHtml({ packs: packs(true), folder: null, source: "x" })), "小月相那一栏有 ©");
+    assert(/data-note="1"[^>]*aria-label="版权和使用规则"/.test(voiceColumnHtml({ packs: packs(true), folder: null, source: "x", removed: false })), "小月相那一栏有 ©");
     assert(/aria-label="版权和使用规则"/.test(gsColumnHtml(gsView(true))), "乐器音色库那一栏有 ©");
     assert(!/版权和使用规则/.test(ownColumnHtml(own, null)), "自己加的音色文件那一栏没有 ©");
+  });
+});
+
+describe("删掉的库不自己下回来（v0.17.25）", () => {
+  it("删成功才记「你删了」；删没成 = 不记、说一句；「算了」= 不记", async () => {
+    { const { host, marks } = fakeHost(); await libAction(host, "lib:del:voice"); eq(marks.join(","), "voice:on"); }
+    { const { host, marks } = fakeHost(); await libAction(host, "lib:del:gs"); eq(marks.join(","), "gs:on"); }
+    { const { host, marks, said } = fakeHost(true, "pwa-models:delete"); await libAction(host, "lib:del:voice"); eq(marks.join(","), ""); assert(said.some((x) => x.startsWith("error:")), `删没成要说一句：${said.join("|")}`); }
+    { const { host, marks } = fakeHost(false); await libAction(host, "lib:del:voice"); eq(marks.join(","), ""); }
+  });
+  it("装成功才去掉记号（音源页和清单里的「装回来」同一个 libInstall）；装没成 = 记号还在", async () => {
+    { const { host, marks } = fakeHost(); await libAction(host, "lib:add:voice"); eq(marks.join(","), "voice:off"); }
+    { const { host, marks } = fakeHost(); eq(await libInstall(host, "gs"), true); eq(marks.join(","), "gs:off"); }
+    { const { host, marks, said } = fakeHost(true, "pwa-sounds:download"); eq(await libInstall(host, "gs"), false); eq(marks.join(","), ""); assert(said.some((x) => x.startsWith("error:")), said.join("|")); }
+  });
+  it("维护页的「清」没成也说一句", async () => {
+    const { host, said } = fakeHost(true, "speech"); await libAction(host, "sp:clear"); assert(said.some((x) => x.startsWith("error:")), said.join("|"));
+  });
+  it("三种状态三种说法：装着 = 删；没装 = 用到时会自己下载 +「现在下载」；你删了 = 不会自己下载 +「装回来」", () => {
+    const off = voiceColumnHtml({ packs: packs(false), folder: null, source: "x", removed: false }), del = voiceColumnHtml({ packs: packs(false), folder: null, source: "x", removed: true });
+    assert(/没装 · 用到时会自己下载/.test(off) && /data-v="lib:add:voice"[^>]*>现在下载/.test(off), "没装：用到时会自己下载 +「现在下载」");
+    assert(/你删了 · 不会自己下载/.test(del) && /data-v="lib:add:voice"[^>]*>装回来/.test(del), "你删了：不会自己下载 +「装回来」");
+    assert(/你删了 · 不会自己下载/.test(gsColumnHtml(gsView(false, true))) && /没装 · 用到时会自己下载/.test(gsColumnHtml(gsView(false))), "乐器音色库同样");
+    assert(/你删了 = 不会自己下载/.test(off) && /你删了 = 不会自己下载/.test(gsColumnHtml(gsView(true))), "「?」里三种状态各一句");
+  });
+  it("缺包怎么办：在 = 用；不在、没删 = 自己下载（照原来）；不在、你删了 = 不下载、报「被删了」", () => {
+    eq([packPlan(true, true), packPlan(false, false), packPlan(false, true)].join(","), "use,download,removed");
+  });
+  it("小月相：每个 warm / sing 请求都带着记号，worker 的 ensurePacks 按 packPlan 走、被删了就报「被删了」不下载", () => {
+    const client = fs.readFileSync(new URL("src/singer/client.ts", ROOT), "utf8"), worker = fs.readFileSync(new URL("src/singer/worker.ts", ROOT), "utf8");
+    eq((client.match(/\.\.\.\(this\.noDownload\(\) \? \{ blocked: true \} : \{\}\)/g) ?? []).length, 2, "warm 和 sing 两处");
+    const ensure = worker.slice(worker.indexOf("async function ensurePacks("), worker.indexOf("async function ensurePacks(") + 1500);
+    assert(ensure.includes("packPlan(") && /, blocked\);/.test(ensure) && /plan === "removed"\) throw new Error\(removedWhy\("voice"\)\)/.test(ensure) && ensure.indexOf("packPlan") < ensure.indexOf("store.download"), "ensurePacks 先问 packPlan、被删了在下载之前就报错");
+    eq((worker.match(/blocked = !!q\.blocked/g) ?? []).length, 2, "warm 和 sing 都从请求里取记号");
+  });
+  it("乐器音色库：解析链自动去拿整包那一步，有记号 = 不下载、报「被删了」；没记号 = 照原来去下载", async () => {
+    const g = globalThis as unknown as { location?: unknown; fetch: unknown }, keep = { location: g.location, fetch: g.fetch };
+    let fetched = 0; g.location = { href: "http://127.0.0.1/", origin: "http://127.0.0.1" }; g.fetch = async () => { fetched++; throw new Error("offline"); };
+    try {
+      const { createSoundSources } = await import("../src/sources/sounds.ts");
+      const cand = { id: "c", name: "Piano", bank: 0, program: 0, subsetSha256: "s".repeat(64), origin: { name: GS.name, fileSha256: GS.sha256, bytes: GS.bytes, library: GS.id } } as unknown as Parameters<ReturnType<typeof createSoundSources>["resolveGmBytes"]>[0];
+      let removed = true; const src = createSoundSources({ progress: () => {}, roleLabel: () => "x", removed: () => removed });
+      const msg = await src.resolveGmBytes(cand).then(() => "", (e: Error) => e.message);
+      eq(msg, removedWhy("gs"), "有记号：报「被删了」"); eq(fetched, 0, "有记号：一次都没去下载");
+      removed = false; await src.resolveGmBytes(cand).catch(() => {}); assert(fetched > 0, "没记号：照原来去下载");
+    } finally { g.location = keep.location; g.fetch = keep.fetch; }
   });
 });

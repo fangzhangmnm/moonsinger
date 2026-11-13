@@ -12,6 +12,8 @@ export interface SingRequest {
     raw?: boolean;
     /** 模型源，按顺序试（宿主给：同源 pwa-models/ → 设置里的来源）。不给 = 出厂默认。 */
     models?: string[];
+    /** 小月相被人删了：缺包时不下载、报「被删了」（v0.17.25）。 */
+    blocked?: boolean;
     /** 「念」缓存的预算（字节；src/singer/speech-cache.ts）。不给 = 不动。 */
     cacheBytes?: number;
     /** 念缓存持久层（全局池，IndexedDB）的预算（字节）。不给 = 不动。 */
@@ -28,7 +30,8 @@ export interface WarmRequest {
     type: "warm";
     id: number;
     models?: string[];
-    diskBytes?: number;
+    diskBytes?: number; /** 小月相被人删了：缺包时不下载（v0.17.25）。 */
+    blocked?: boolean;
 }
 export interface CancelRequest {
     type: "cancel";

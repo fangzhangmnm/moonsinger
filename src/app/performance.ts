@@ -28,10 +28,13 @@ import { fileSafe, stampedCopy } from "./names.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
 import { reportError, diagNote } from "./report-error.ts";
 import { undo } from "../score/history.ts";
+import { removedWhy, type BuiltinLib } from "../sources/removed.ts";
 
 /** 胶水向宿主要的东西（main.ts 给）：状态只读访问器 + 几个界面 / 音源 / 署名的口；胶水不碰 DOM、不碰文件、不碰 undo。 */
 export interface PerfHost {
   state(): EditorState;
+  /** 自带的库被人在设置里删了（设备上的记号；v0.17.25）。 */
+  libRemoved(lib: BuiltinLib): boolean;
   /** 每个声部显示成什么 / 某个角色显示成什么（唯一出口 src/format/part-show.ts，12-4）。 */
   labels(): string[];
   roleLabel(role: string): string;
@@ -60,8 +63,9 @@ export type RenderScope = "view" | "all" | "segment";
 
 /** 「这位有事」（ADR-0004 §2.2½ 一套机制、四个出口；user 2026-10-14「一套机制、四个出口 同意」）：现在歌里有音的声部里出不了声的那几位。
  *  kind：unknown = 认不出 / 还没有人上场；sound = 找不到声音（弱引用解析失败）；unplayable = 别的出声失败；upgrade / substitute = 留给格式那一刀（版本比对，§2.2）。 */
-export type IssueKind = "unknown" | "sound" | "unplayable" | "upgrade" | "substitute";
-export interface Issue { part: string; role: string; label: string; kind: IssueKind; why: string }
+export type IssueKind = "unknown" | "sound" | "unplayable" | "upgrade" | "substitute" | "removed";
+/** removed = 用的自带库被人在设置里删了（v0.17.25）：lib 是哪一个，清单上给一颗「装回来」。 */
+export interface Issue { part: string; role: string; label: string; kind: IssueKind; why: string; lib?: BuiltinLib }
 
 export type Performance = ReturnType<typeof createPerformance>;
 
@@ -83,7 +87,8 @@ export function createPerformance(host: PerfHost) {
   const songIn = (s: RenderScope): Song => (s === "all" ? st().song : s === "segment" ? songOnlyPaper(st().song, st().at.paper) : playSong());
   const GM_SR = RENDER_SR;   // 导出的采样率
   /** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
-  const audibleParts = (): PartDef[] => audiblePartsOf(st().song, pv);
+  /** 放 / 预唱 / 导出的声部。小月相被人删了 = 唱的那几位（按句出块的）不出声：不拿缓存里唱好的块顶上（v0.17.25，「你删了」= 用它的声部不出声，直到装回来）。 */
+  const audibleParts = (): PartDef[] => audiblePartsOf(st().song, pv).filter((p) => !(host.libRemoved("voice") && performerOf(activeInstrument(extras(), p.role)?.engine)?.sound === "chunks"));
   /** 录音房里这个声部的麦克风（增益 dB、声像 −1…1）；没有 = 0 / 0。 */
   const micOf = (part: PartDef): { gainDb: number; pan: number } => micOfCore(extras(), part);
   /** 这条通道 = 麦克风增益 + 上场那位的响度校准。 */
@@ -107,7 +112,7 @@ export function createPerformance(host: PerfHost) {
   const prepareBanks = (parts: readonly PartDef[]) => prepareParts(parts, extras(), deps);
   // ── 一套机制、四个出口（ADR-0004 §2.2½）：一张 issues 清单；出口 = 谱上角标 / |▶ 角标 + 清单面板 / 清单变了才一条 toast / 导出面板一行（后三个在 main.ts）──
   let issues: Issue[] = [], issuesKey = "";
-  const prepErrs = new Map<string, { cand: string; kind: IssueKind; why: string }>();   // 上一次准备（播放 / 导出）里出不了声的：按声部记，带着当时上场的候选 id——换了人就不算
+  const prepErrs = new Map<string, { cand: string; kind: IssueKind; why: string; lib?: BuiltinLib }>();   // 上一次准备（播放 / 导出）里出不了声的：按声部记，带着当时上场的候选 id——换了人就不算
   const hasNotes = (partId: string): boolean => st().song.papers.some((pp) => (pp.tracks[partId] ?? []).some((t) => t.kind === "note"));
   /** 这一份 mp3 里没有、因为静着 / 被独奏挡住的声部（第 17 条四问第 3 条：导出的就是听到的，照现在管导出；要补的是看得见）。只算写了音的。没有 = 空字符串。 */
   function silencedText(): string {
@@ -125,8 +130,10 @@ export function createPerformance(host: PerfHost) {
       if (!plugin) { const r = extras().lounge[p.role], eng = activeInstrument(extras(), p.role)?.engine;
         const why = !r ? _t("还没有人上场：这个声部的乐手文件里没有") : eng === "unknown" ? _t("还没有人上场（别的软件原来的乐器，这一版认不出）") : _t("还没有人上场：这个声部的乐手读不懂");
         return [{ part: p.id, role: p.role, label: labels[k], kind: "unknown", why }]; }
+      // 唱的那一种（按句出块）要小月相的库：被人删了 = 不出声，不用等放一次才知道（v0.17.25）
+      if (plugin.sound === "chunks" && host.libRemoved("voice")) return [{ part: p.id, role: p.role, label: labels[k], kind: "removed", why: removedWhy("voice"), lib: "voice" }];
       const e = prepErrs.get(p.id);
-      return e && e.cand === activeId(extras(), p.role) ? [{ part: p.id, role: p.role, label: labels[k], kind: e.kind, why: e.why }] : [];
+      return e && e.cand === activeId(extras(), p.role) ? [{ part: p.id, role: p.role, label: labels[k], kind: e.kind, why: e.why, ...(e.lib ? { lib: e.lib } : {}) }] : [];
     });
   }
   const issuesText = (list: readonly Issue[]): string => list.map((i) => `「${i.label}」：${i.why}`).join("；");
@@ -283,7 +290,7 @@ export function createPerformance(host: PerfHost) {
     const tl = timelineOf(planOf(song, parts), engine);
     // 出不了声的进清单（§2.2½）：这次准备过的声部先清掉旧账，再按结果记；toast 只在清单变了时说（refreshIssues），不再每按一次播放弹一次
     for (const p of parts) prepErrs.delete(p.id);
-    for (const e of errs) prepErrs.set(e.part, { cand: e.cand, kind: "sound", why: e.why });
+    for (const e of errs) prepErrs.set(e.part, e.why === removedWhy("gs") ? { cand: e.cand, kind: "removed", why: e.why, lib: "gs" } : { cand: e.cand, kind: "sound", why: e.why });
     for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); }
     refreshIssues();
     if (!tl.tracks.length) { showError(_t("没有出声：{issues}。点谱前面的声部名换一个「谁来演」。", { issues: issuesText(issues) || _t("没有会出声的声部") })); return null; }   // 一个都放不了 = 这一下必须说
@@ -534,7 +541,7 @@ export function createPerformance(host: PerfHost) {
     progress(_t("准备…"));
     const r = await renderSong(planOf(song, parts, false), { ...deps, sing: async (tl) => { pruneChunks(tl); await awaitAllChunks(tl); } },
       { sr: GM_SR, pv, progress: (m, f) => { if (f === undefined) { progress(m); return; } if (f === 0) { progress(m); renderBar.start(1); } renderBar.frac(f); },
-        onPrepared: (errs, tl) => { for (const p of parts) prepErrs.delete(p.id); for (const e of errs) prepErrs.set(e.part, { cand: e.cand, kind: "sound", why: e.why }); for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); } refreshIssues(); } })
+        onPrepared: (errs, tl) => { for (const p of parts) prepErrs.delete(p.id); for (const e of errs) prepErrs.set(e.part, e.why === removedWhy("gs") ? { cand: e.cand, kind: "removed", why: e.why, lib: "gs" } : { cand: e.cand, kind: "sound", why: e.why }); for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); } refreshIssues(); } })
       .finally(() => { renderBar.end(); if (mixBypass) pushChannels(); });   // 效果全关（A/B）不影响导出；导完按开关重推
     const roles = st().song.parts.filter((p) => r.timeline.tracks.some((t) => t.id === p.id)).map((p) => p.role);   // 真出了声的声部（署名推演）
     if (renderAbort) throw cancelledErr();

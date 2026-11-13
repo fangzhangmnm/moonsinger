@@ -25,6 +25,8 @@ export interface SingRequest { type: "sing"; id: number; score: unknown[]; text:
   raw?: boolean;
   /** 模型源，按顺序试（宿主给：同源 pwa-models/ → 设置里的来源）。不给 = 出厂默认。 */
   models?: string[];
+  /** 小月相被人删了：缺包时不下载、报「被删了」（v0.17.25）。 */
+  blocked?: boolean;
   /** 「念」缓存的预算（字节；src/singer/speech-cache.ts）。不给 = 不动。 */
   cacheBytes?: number;
   /** 念缓存持久层（全局池，IndexedDB）的预算（字节）。不给 = 不动。 */
@@ -32,7 +34,7 @@ export interface SingRequest { type: "sing"; id: number; score: unknown[]; text:
   /** 只唱第 entry 个字（按键试听，刀 3）：按下的 midi、唱 secs 秒；回原样（raw）。 */
   only?: { entry: number; midi: number; secs: number } }
 /** 只把引擎起起来（打开歌就起，不等第一句）/ 中途取消某一句（在段与段之间认：两遍 piper 之间、分析三段之间、合成前；正在跑的那一段跑完才停）。 */
-export interface WarmRequest { type: "warm"; id: number; models?: string[]; diskBytes?: number }
+export interface WarmRequest { type: "warm"; id: number; models?: string[]; diskBytes?: number; /** 小月相被人删了：缺包时不下载（v0.17.25）。 */ blocked?: boolean }
 export interface CancelRequest { type: "cancel"; id: number }
 /** 念缓存持久层：看大小 / 清空（设置页）。不用起引擎。 */
 export interface CacheRequest { type: "cache"; id: number; op: "info" | "clear"; diskBytes?: number }
@@ -58,6 +60,7 @@ import { createJaFrontend, mountDictionaryBytes } from "@internal/read-aloud/bac
 import { encodeTokens } from "@internal/read-aloud/backend/piper-plus/encode.js";
 import { createChineseG2p } from "@internal/read-aloud/backend/piper-plus/zh-g2p.js";
 import { createEnglishG2p } from "@internal/read-aloud/backend/piper-plus/en-g2p.js";
+import { packPlan, removedWhy } from "../sources/removed.ts";
 
 // ── 内存监控（刀 6；user「负载和内存监控防闪退 做」）：WASM 的堆是 WebAssembly.Memory，只涨不落——在实例化那一刻把它记下来，之后随时能读 buffer.byteLength。
 //   ort / OpenJTalk / WORLD 三块都经 WebAssembly.instantiate(Streaming) 起来（emscripten 的 memory 走 imports.env.memory，别的走 exports），这里一处全接住。
@@ -93,6 +96,8 @@ const hostPacks = new Map<string, Blob[]>();
 // 模型源 = 宿主随请求给的候选列表（ADR-0006 ③：界面上能改、出厂预填；user 2026-10-07「i might worry about hardcode my gh link…」）；
 // 主机只是运输，字节先对内嵌清单的哈希。没给就用出厂默认（家族模型仓，黄线区白名单 ②）。
 let bases: string[] = ["https://fangzhangmnm.github.io/pwa-models"];
+/** 小月相被人删了（设置「音源」页；最近一次请求带来的）：缺包时不下载。 */
+let blocked = false;
 const store = createPackStore({ packs: PACKS });
 /** 这几个包不在缓存里就下（只下这一次）；进度报给界面。 */
 async function ensurePacks(slugs: string[], what: string, say: (s: string) => void): Promise<void> {
@@ -106,7 +111,10 @@ async function ensurePacks(slugs: string[], what: string, say: (s: string) => vo
     }
     return;
   }
-  if ((await store.status(slugs)).every((s) => s.ready)) return;
+  // 不在缓存里：没被删 = 自己下载（照原来）；被人在设置里删了 = 不下载、报「被删了」（v0.17.25；记号在主线程，随请求带来 = blocked）
+  const plan = packPlan((await store.status(slugs)).every((s) => s.ready), blocked);
+  if (plan === "use") return;
+  if (plan === "removed") throw new Error(removedWhy("voice"));
   let last: unknown = null;
   for (const base of bases) {   // 按顺序试；已经下好的分片不重取（续传 + 逐片验，从两个来源各拿一部分也没关系）
     try { await store.download(slugs, base, (p) => say(_t("下载{what}（{e6} MB，只下这一次）{total}%", { what, e6: (p.total / 1e6).toFixed(0), total: Math.floor((p.done / p.total) * 100) }))); return; }
@@ -248,7 +256,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelReque
   }
   if (q.type === "warm") {
     const say = (stage: string) => post({ type: "progress", id: q.id, stage });
-    try { if (q.models?.length) bases = q.models; if (q.diskBytes !== undefined) diskBudget = q.diskBytes; if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; }); await engine; post({ type: "done", id: q.id, samples: new Float32Array(0), sr: SR, mem: memNow(), ms: { load: 0, sing: 0, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }); bootMs = {}; }
+    try { if (q.models?.length) bases = q.models; blocked = !!q.blocked; if (q.diskBytes !== undefined) diskBudget = q.diskBytes; if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; }); await engine; post({ type: "done", id: q.id, samples: new Float32Array(0), sr: SR, mem: memNow(), ms: { load: 0, sing: 0, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }); bootMs = {}; }
     catch (err) { post({ type: "error", id: q.id, message: (err as Error)?.message ?? String(err) }); }
     return;
   }
@@ -258,6 +266,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelReque
   try {
     const t0 = performance.now();
     if (q.models?.length) bases = q.models;
+    blocked = !!q.blocked;
     if (q.cacheBytes !== undefined) speech.setBudget(q.cacheBytes);
     if (q.diskBytes !== undefined) { diskBudget = q.diskBytes; (await storeP)?.setBudget(diskBudget); }
     if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; });   // 起不来不缓存失败（原来缓存了被拒的 promise = 之后每次播放都报同一个错，直到重开 app）

@@ -19,8 +19,10 @@ export interface VoiceView {
   /** 文件夹版（双击打开的那一份）：不下载、不导入、不删，这一栏画灰 + 这一句；不是 = null。 */
   folder: string | null;
   source: string;
+  /** 你在这里删了（设备上的记号，v0.17.25）：缺包时不自己下载。 */
+  removed: boolean;
 }
-export interface GsView { name: string; description?: string; bytes: number; cached: boolean; license: { name: string; summary?: string }; attribution: string; homepage?: string; folder: string | null; source: string }
+export interface GsView { name: string; description?: string; bytes: number; cached: boolean; /** 你在这里删了（v0.17.25）。 */ removed: boolean; license: { name: string; summary?: string }; attribution: string; homepage?: string; folder: string | null; source: string }
 export interface OwnView {
   sha256: string; bytes: number;
   /** 从这块字节里读出来的名字；undefined = 还在读（先出页面、名字后补）；null = 读不出（写 sha256 前 8 位）。 */
@@ -43,6 +45,8 @@ export function packLabel(slug: string): string {
 /** 「存在哪、和谁共用」那一句（统筹「五件的回话」第 1 条：照实际的存法核过——写歌软件住在自己的网址，浏览器按网址分开存，这个网址下只有它自己；
  *  共用的是同一个网址下的正式版和开发版）。**网址或存法变了，这一句跟着改。**测试守不住这种话，所以写在这里。 */
 const SHARED = () => _t("存在这个网址下，正式版和开发版共用这一份；在这里删了，另一个版本也要重新下载。");
+/** 自带的库三种状态各一句（「?」里；v0.17.25）。 */
+const STATES = () => _t("装着 = 在这台设备上，没网也能用；没装 = 用到时会自己下载；你删了 = 不会自己下载，用它的声部不出声，点「装回来」才下。");
 const btn = (v: string, label: string, extra = "") => `<button class="btn" type="button" data-v="${v}"${extra}>${label}</button>`;
 const off = (label: string, why: string) => `<span class="btn is-off" title="${esc(why)}">${label}</span>`;
 const note = (html: string) => `<div class="set-row"><span class="set-note">${html}</span></div>`;
@@ -53,15 +57,17 @@ const toUpkeep = (lib: LibId) => `<button class="lib-jump" type="button" data-v=
 export function voiceColumnHtml(v: VoiceView): string {
   const total = v.packs.reduce((n, p) => n + p.bytesTotal, 0), have = v.packs.reduce((n, p) => n + (p.ready ? p.bytesTotal : 0), 0);
   const all = v.packs.length > 0 && v.packs.every((p) => p.ready), none = v.packs.every((p) => !p.ready && !p.bytesCached);
-  const status = v.folder ? _t("在文件夹里") : all ? _t("装着 · {size}", { size: sizeText(total) }) : none ? _t("没装") : _t("装了一部分（{have} / {total}）", { have: sizeText(have), total: sizeText(total) });
+  // 三种状态（v0.17.25，统筹「…删掉的库不许自己下回来」）：装着 / 没装（用到时自己下载）/ 你删了（不会自己下载）
+  const status = v.folder ? _t("在文件夹里") : all ? _t("装着 · {size}", { size: sizeText(total) })
+    : v.removed ? _t("你删了 · 不会自己下载") : none ? _t("没装 · 用到时会自己下载") : _t("装了一部分（{have} / {total}）· 用到时会自己下载", { have: sizeText(have), total: sizeText(total) });
   const parts = v.packs.map((p) => `${esc(packLabel(p.slug))} ${sizeText(p.bytesTotal)}${!v.folder && !all && !none && !p.ready ? _t("（没下）") : ""}`).join(" · ");   // 「没下」只在装了一部分时标
   const tr = CREDIT_TRANSLATIONS[lang() === "zh" ? "zh" : "en"];   // 署名和禁止用途 = 钉着原文的译文（credit-translations.ts）；原文在「全文…」里
-  const what = _t("唱歌的那一位：她的声音，和唱的时候要用的几样（运行引擎、日语 / 中文 / 英文读音）。用到才下载，下好留在设备上，没网也能唱。") +
+  const what = _t("唱歌的那一位：她的声音，和唱的时候要用的几样（运行引擎、日语 / 中文 / 英文读音）。") + `<br>${STATES()}` +
     `<br>${_t("组成（包的原名）：")}${v.packs.map((p) => `<code>${esc(p.slug)}</code>`).join("、")}<br>${SHARED()}`;
   const rules = `<b>${_t("版权和使用规则")}</b><br>${esc(tr.credit).replace(/\n/g, "<br>")}<br>${esc(tr.terms).replace(/\n/g, "<br>")}<br>${btn("lib:doc:voice", _t("全文…"))}`;
   const actions = v.folder ? off(_t("从本机文件导入"), v.folder)
     : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入")}<input id="impIn" type="file" multiple hidden /></label>` +
-      (all ? "" : btn("lib:add:voice", _t("装回来"))) + (none ? "" : btn("lib:del:voice", _t("删")));
+      (all ? "" : btn("lib:add:voice", v.removed ? _t("装回来") : _t("现在下载"))) + (none ? "" : btn("lib:del:voice", _t("删")));
   return settingRowHtml({
     labelHtml: esc(_t("小月相")),
     notes: [{ mark: "?", label: _t("这是什么"), html: what }, { mark: "©", label: _t("版权和使用规则"), html: rules }],
@@ -76,10 +82,10 @@ export function voiceColumnHtml(v: VoiceView): string {
 
 /** 乐器音色库那一栏（GeneralUser GS）。 */
 export function gsColumnHtml(v: GsView): string {
-  const status = v.folder ? _t("在文件夹里") : v.cached ? _t("装着 · {size}", { size: sizeText(v.bytes) }) : _t("没装");
-  const what = esc(v.description ?? "") + `<br>${_t("一个文件（{size}），不是 AI 模型；歌里用到的那几件会切下来打包进歌，这里只是货架。", { size: sizeText(v.bytes) })}<br>${SHARED()}`;
+  const status = v.folder ? _t("在文件夹里") : v.cached ? _t("装着 · {size}", { size: sizeText(v.bytes) }) : v.removed ? _t("你删了 · 不会自己下载") : _t("没装 · 用到时会自己下载");
+  const what = esc(v.description ?? "") + `<br>${_t("一个文件（{size}），不是 AI 模型；歌里用到的那几件会切下来打包进歌，这里只是货架。", { size: sizeText(v.bytes) })}<br>${STATES()}<br>${SHARED()}`;
   const rules = `<b>${_t("版权和使用规则")}</b><br>${esc(v.license.name)}${v.license.summary ? `<br>${esc(v.license.summary)}` : ""}<br>${esc(v.attribution)}${v.homepage ? `<br><a href="${esc(v.homepage)}" target="_blank" rel="noopener">${esc(v.homepage)}</a>` : ""}`;
-  const actions = v.folder ? "" : v.cached ? btn("lib:del:gs", _t("删")) : btn("lib:add:gs", _t("装回来"));
+  const actions = v.folder ? "" : v.cached ? btn("lib:del:gs", _t("删")) : btn("lib:add:gs", v.removed ? _t("装回来") : _t("现在下载"));
   return settingRowHtml({
     labelHtml: esc(v.name),
     notes: [{ mark: "?", label: _t("这是什么"), html: what }, { mark: "©", label: _t("版权和使用规则"), html: rules }],
@@ -169,6 +175,8 @@ export interface LibsHost {
   /** 这个库现在在设备上占多大（问之前写进面板）。 */
   sizeOf(lib: LibId | { sha256: string }): number;
   voice: { delete(): Promise<void>; install(onPct: (p: number) => void): Promise<void> };
+  /** 「你删了」的记号（设备键值，v0.17.25）：删成功才记、装成功才去掉。 */
+  removed: { set(lib: LibId, on: boolean): void };
   sounds: { delete(sha256: string): Promise<void>; installGs(onPct: (p: number) => void): Promise<void>; releaseMemory(): void; gsSha: string };
   speech: { clear(): Promise<void> };
   lanes: { restart(): void };
@@ -184,41 +192,55 @@ export interface LibsHost {
   doc(lib: "voice"): void;
   progress(text: string): void;
 }
+/** 「装回来」/「现在下载」（音源页、不出声的清单都走这一个；v0.17.25）：下好了才去掉「你删了」的记号。 */
+export async function libInstall(h: Pick<LibsHost, "voice" | "sounds" | "removed" | "info" | "error" | "progress" | "refresh">, lib: LibId): Promise<boolean> {
+  let ok = false;
+  try {
+    if (lib === "voice") await h.voice.install((p) => h.progress(_t("下载小月相 {p}%", { p }))); else await h.sounds.installGs((p) => h.progress(_t("下载乐器音色库 {p}%", { p })));
+    h.removed.set(lib, false); ok = true;
+    h.info(lib === "voice" ? _t("小月相装好了") : _t("乐器音色库装好了"));
+  } catch (e) { h.error(_t("没装上：{e}", { e: (e as Error).message })); }
+  h.progress(""); h.refresh("sound"); return ok;
+}
+/** 维护页的「清」：做；成了说一句（done 可以是做完回的那一句），没成也说一句（「删和清失败了要说一句」，v0.17.25）。 */
+async function cleared(h: LibsHost, run: () => Promise<unknown>, done: string): Promise<void> {
+  try { const r = await run(); const msg = typeof r === "string" && r ? r : done; if (msg) h.info(msg); }
+  catch (e) { h.error(_t("没清掉：{e}", { e: (e as Error).message })); }
+  h.refresh("upkeep");
+}
 const silenced = (h: LibsHost, lib: LibId | { sha256: string }) => { const n = h.silencedBy(lib); return n.length ? _t("现在打开的歌里，{names} 会不出声。", { names: n.join("、") }) : _t("现在打开的歌里没有声部会因此不出声。"); };
 /** 按下一颗钮（data-v）。认得 = true（宿主就不用再管）；不认得 = false。 */
 export async function libAction(h: LibsHost, v: string): Promise<boolean> {
   if (v === "lib:del:voice") {
-    if (!(await h.ask(_t("删掉小月相？"), _t("占 {size}。删了之后要联网重新下载才能装回来；念过的句子一起清掉。{silenced}{shared}", { size: sizeText(h.sizeOf("voice")), silenced: silenced(h, "voice"), shared: SHARED() }), _t("删"), true))) return true;
-    await h.voice.delete(); await h.speech.clear(); h.lanes.restart();   // 删库时顺带清掉它自己的缓存（「13 补」）；引擎关掉，内存还回去
-    h.info(_t("小月相删了（要用时点「装回来」）")); h.refresh("sound"); h.refresh("upkeep"); return true;
+    if (!(await h.ask(_t("删掉小月相？"), _t("占 {size}。删了之后不会自己下载，用到她的声部不出声，直到你点「装回来」（要联网）；念过的句子一起清掉。{silenced}{shared}", { size: sizeText(h.sizeOf("voice")), silenced: silenced(h, "voice"), shared: SHARED() }), _t("删"), true))) return true;
+    try { await h.voice.delete(); } catch (e) { h.error(_t("没删掉：{e}", { e: (e as Error).message })); h.refresh("sound"); return true; }
+    h.removed.set("voice", true);   // 删成功才记：从这以后缺包不自己下载（v0.17.25）
+    try { await h.speech.clear(); } catch (e) { h.error(_t("念过的句子没清掉：{e}", { e: (e as Error).message })); }
+    h.lanes.restart();   // 删库时顺带清掉它自己的缓存（「13 补」）；引擎关掉，内存还回去
+    h.info(_t("小月相删了：不会自己下载，用到她的声部不出声；要用时点「装回来」")); h.refresh("sound"); h.refresh("upkeep"); return true;
   }
   if (v === "lib:del:gs") {
-    if (!(await h.ask(_t("删掉乐器音色库？"), _t("占 {size}。删了之后要联网重新下载才能装回来；歌里打包着声音的照样响，只引用它的要用时会去重新下载，没网就不出声。{silenced}{shared}", { size: sizeText(h.sizeOf("gs")), silenced: silenced(h, "gs"), shared: SHARED() }), _t("删"), true))) return true;
-    await h.sounds.delete(h.sounds.gsSha); h.sounds.releaseMemory();
-    h.info(_t("乐器音色库删了（要用时点「装回来」）")); h.refresh("sound"); h.refresh("upkeep"); return true;
+    if (!(await h.ask(_t("删掉乐器音色库？"), _t("占 {size}。删了之后不会自己下载：歌里打包着声音的照样响，只引用它的不出声，直到你点「装回来」（要联网）。{silenced}{shared}", { size: sizeText(h.sizeOf("gs")), silenced: silenced(h, "gs"), shared: SHARED() }), _t("删"), true))) return true;
+    try { await h.sounds.delete(h.sounds.gsSha); } catch (e) { h.error(_t("没删掉：{e}", { e: (e as Error).message })); h.refresh("sound"); return true; }
+    h.removed.set("gs", true); h.sounds.releaseMemory();
+    h.info(_t("乐器音色库删了：不会自己下载，只引用它的声部不出声；要用时点「装回来」")); h.refresh("sound"); h.refresh("upkeep"); return true;
   }
   if (v.startsWith("lib:del:own:")) {
     const sha256 = v.slice("lib:del:own:".length);
     if (!(await h.ask(_t("删掉这个音色文件？"), _t("占 {size}。不是自带的：删了就没了，没有原来的 .sf2 就找不回来。{silenced}", { size: sizeText(h.sizeOf({ sha256 })), silenced: silenced(h, { sha256 }) }), _t("删"), true))) return true;
-    await h.sounds.delete(sha256); h.refresh("sound"); return true;
+    try { await h.sounds.delete(sha256); } catch (e) { h.error(_t("没删掉：{e}", { e: (e as Error).message })); }
+    h.refresh("sound"); return true;
   }
-  if (v === "lib:add:voice") {
-    try { await h.voice.install((p) => h.progress(_t("下载小月相 {p}%", { p }))); h.info(_t("小月相装好了")); } catch (e) { h.error(_t("没装上：{e}", { e: (e as Error).message })); }
-    h.progress(""); h.refresh("sound"); return true;
-  }
-  if (v === "lib:add:gs") {
-    try { await h.sounds.installGs((p) => h.progress(_t("下载乐器音色库 {p}%", { p }))); h.info(_t("乐器音色库装好了")); } catch (e) { h.error(_t("没装上：{e}", { e: (e as Error).message })); }
-    h.progress(""); h.refresh("sound"); return true;
-  }
+  if (v === "lib:add:voice" || v === "lib:add:gs") { await libInstall(h, v === "lib:add:voice" ? "voice" : "gs"); return true; }
   if (v === "lib:doc:voice") { h.doc("voice"); return true; }
   const go = /^goto:(sound|upkeep):(voice|gs)$/.exec(v); if (go) { h.goto(go[1] as "sound" | "upkeep", go[2] as LibId); return true; }
   // 维护页：只清缓存和运行状态
-  if (v === "sp:clear") { await h.speech.clear(); h.info(_t("念过的句子清了（要重念）")); h.refresh("upkeep"); return true; }
+  if (v === "sp:clear") { await cleared(h, () => h.speech.clear(), _t("念过的句子清了（要重念）")); return true; }
   if (v === "eng:restart") { h.lanes.restart(); h.info(_t("小月相的引擎重开了，内存还回去了（念过的句子不丢）")); h.refresh("upkeep"); return true; }
   if (v === "snd:mem") { h.sounds.releaseMemory(); h.refresh("upkeep"); return true; }
-  if (v === "rc:clear") { await h.renders.clearAll(); h.info(_t("渲染好的声音清了（要听再渲）")); h.refresh("upkeep"); return true; }
-  if (v === "rc:old") { const r = await h.renders.clearOld(); h.info(_t("清了 {n} 条旧版本渲的（{size}）：歌库里要听再渲", { n: r.count, size: sizeText(r.bytes) })); h.refresh("upkeep"); return true; }
-  if (v.startsWith("rc:del:")) { if (await h.renders.clear(Number(v.slice(7)))) h.info(_t("清了这一遍（要听再渲）")); h.refresh("upkeep"); return true; }
+  if (v === "rc:clear") { await cleared(h, () => h.renders.clearAll(), _t("渲染好的声音清了（要听再渲）")); return true; }
+  if (v === "rc:old") { await cleared(h, async () => { const r = await h.renders.clearOld(); return _t("清了 {n} 条旧版本渲的（{size}）：歌库里要听再渲", { n: r.count, size: sizeText(r.bytes) }); }, ""); return true; }
+  if (v.startsWith("rc:del:")) { await cleared(h, async () => ((await h.renders.clear(Number(v.slice(7)))) ? _t("清了这一遍（要听再渲）") : ""), ""); return true; }
   if (v === "audio:revive") { const ok = await h.audio.revive(); h.info(ok ? _t("声音重启了") : _t("换过了，但声音设备还没起来：再按一次，或者把 app 关掉重开")); return true; }
   if (v === "check") { await h.shell.check(); return true; }
   if (v === "reset") { await h.shell.reset(); return true; }

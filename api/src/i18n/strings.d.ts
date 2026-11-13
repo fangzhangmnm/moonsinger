@@ -703,6 +703,9 @@ export declare const S: {
     readonly 不出声的声部: {
         readonly en: "Silent parts";
     };
+    readonly 装回来: {
+        readonly en: "Reinstall";
+    };
     readonly "\u6362\u4EBA / \u627E\u58F0\u97F3\u2026": {
         readonly en: "Change performer / find sound…";
     };
@@ -3574,6 +3577,9 @@ export declare const S: {
     readonly "\u5B58\u5728\u8FD9\u4E2A\u7F51\u5740\u4E0B\uFF0C\u6B63\u5F0F\u7248\u548C\u5F00\u53D1\u7248\u5171\u7528\u8FD9\u4E00\u4EFD\uFF1B\u5728\u8FD9\u91CC\u5220\u4E86\uFF0C\u53E6\u4E00\u4E2A\u7248\u672C\u4E5F\u8981\u91CD\u65B0\u4E0B\u8F7D\u3002": {
         readonly en: "Stored under this web address; the release and dev versions share this copy. Delete it here and the other version has to download it again too.";
     };
+    readonly "\u88C5\u7740 = \u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6CA1\u88C5 = \u7528\u5230\u65F6\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF1B\u4F60\u5220\u4E86 = \u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u7528\u5B83\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF0C\u70B9\u300C\u88C5\u56DE\u6765\u300D\u624D\u4E0B\u3002": {
+        readonly en: "Installed = on this device, works offline; Not installed = downloads by itself when needed; Deleted by you = never downloads by itself, voices using it are silent until you press Reinstall.";
+    };
     readonly "\u5B83\u7684\u7F13\u5B58\u5728\u300C\u7EF4\u62A4\u300D\u91CC": {
         readonly en: "Its cache is under Upkeep";
     };
@@ -3583,17 +3589,20 @@ export declare const S: {
     readonly "\u88C5\u7740 \u00B7 {size}": {
         readonly en: "Installed · {size}";
     };
-    readonly 没装: {
-        readonly en: "Not installed";
+    readonly "\u4F60\u5220\u4E86 \u00B7 \u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D": {
+        readonly en: "Deleted by you · won’t download by itself";
     };
-    readonly "\u88C5\u4E86\u4E00\u90E8\u5206\uFF08{have} / {total}\uFF09": {
-        readonly en: "Partly installed ({have} / {total})";
+    readonly "\u6CA1\u88C5 \u00B7 \u7528\u5230\u65F6\u4F1A\u81EA\u5DF1\u4E0B\u8F7D": {
+        readonly en: "Not installed · downloads by itself when needed";
+    };
+    readonly "\u88C5\u4E86\u4E00\u90E8\u5206\uFF08{have} / {total}\uFF09\u00B7 \u7528\u5230\u65F6\u4F1A\u81EA\u5DF1\u4E0B\u8F7D": {
+        readonly en: "Partly installed ({have} / {total}) · downloads by itself when needed";
     };
     readonly "\uFF08\u6CA1\u4E0B\uFF09": {
         readonly en: " (not downloaded)";
     };
-    readonly "\u5531\u6B4C\u7684\u90A3\u4E00\u4F4D\uFF1A\u5979\u7684\u58F0\u97F3\uFF0C\u548C\u5531\u7684\u65F6\u5019\u8981\u7528\u7684\u51E0\u6837\uFF08\u8FD0\u884C\u5F15\u64CE\u3001\u65E5\u8BED / \u4E2D\u6587 / \u82F1\u6587\u8BFB\u97F3\uFF09\u3002\u7528\u5230\u624D\u4E0B\u8F7D\uFF0C\u4E0B\u597D\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u5531\u3002": {
-        readonly en: "The singer: her voice, plus what she needs to sing (runtime engine; Japanese / Chinese / English readings). Downloaded when first used and kept on this device, so she sings offline too.";
+    readonly "\u5531\u6B4C\u7684\u90A3\u4E00\u4F4D\uFF1A\u5979\u7684\u58F0\u97F3\uFF0C\u548C\u5531\u7684\u65F6\u5019\u8981\u7528\u7684\u51E0\u6837\uFF08\u8FD0\u884C\u5F15\u64CE\u3001\u65E5\u8BED / \u4E2D\u6587 / \u82F1\u6587\u8BFB\u97F3\uFF09\u3002": {
+        readonly en: "The singer: her voice, plus what she needs to sing (runtime engine; Japanese / Chinese / English readings).";
     };
     readonly "\u7EC4\u6210\uFF08\u5305\u7684\u539F\u540D\uFF09\uFF1A": {
         readonly en: "Made of (original package names): ";
@@ -3607,8 +3616,8 @@ export declare const S: {
     readonly 从本机文件导入: {
         readonly en: "Import from a local file";
     };
-    readonly 装回来: {
-        readonly en: "Reinstall";
+    readonly 现在下载: {
+        readonly en: "Download now";
     };
     readonly 小月相: {
         readonly en: "Tsukuyomi-chan";
@@ -3730,6 +3739,24 @@ export declare const S: {
     readonly "\u5206\u4EAB\u2026": {
         readonly en: "Share…";
     };
+    readonly "\u4E0B\u8F7D\u5C0F\u6708\u76F8 {p}%": {
+        readonly en: "Downloading Tsukuyomi-chan {p}%";
+    };
+    readonly "\u4E0B\u8F7D\u4E50\u5668\u97F3\u8272\u5E93 {p}%": {
+        readonly en: "Downloading the instrument library {p}%";
+    };
+    readonly 小月相装好了: {
+        readonly en: "Tsukuyomi-chan installed";
+    };
+    readonly 乐器音色库装好了: {
+        readonly en: "Instrument library installed";
+    };
+    readonly "\u6CA1\u88C5\u4E0A\uFF1A{e}": {
+        readonly en: "Not installed: {e}";
+    };
+    readonly "\u6CA1\u6E05\u6389\uFF1A{e}": {
+        readonly en: "Not cleared: {e}";
+    };
     readonly "\u73B0\u5728\u6253\u5F00\u7684\u6B4C\u91CC\uFF0C{names} \u4F1A\u4E0D\u51FA\u58F0\u3002": {
         readonly en: "In the song that is open now, {names} will go silent.";
     };
@@ -3739,41 +3766,32 @@ export declare const S: {
     readonly "\u5220\u6389\u5C0F\u6708\u76F8\uFF1F": {
         readonly en: "Delete Tsukuyomi-chan?";
     };
-    readonly "\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u8981\u8054\u7F51\u91CD\u65B0\u4E0B\u8F7D\u624D\u80FD\u88C5\u56DE\u6765\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u4E00\u8D77\u6E05\u6389\u3002{silenced}{shared}": {
-        readonly en: "Takes {size}. Reinstalling needs an internet connection to download again; spoken lyrics are cleared as well. {silenced}{shared}";
+    readonly "\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u7528\u5230\u5979\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF0C\u76F4\u5230\u4F60\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF08\u8981\u8054\u7F51\uFF09\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u4E00\u8D77\u6E05\u6389\u3002{silenced}{shared}": {
+        readonly en: "Takes {size}. After deleting it won’t download by itself; voices using her are silent until you press Reinstall (needs internet). Spoken lyrics are cleared as well. {silenced}{shared}";
     };
-    readonly "\u5C0F\u6708\u76F8\u5220\u4E86\uFF08\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF09": {
-        readonly en: "Tsukuyomi-chan deleted (press Reinstall when you need her)";
+    readonly "\u6CA1\u5220\u6389\uFF1A{e}": {
+        readonly en: "Not deleted: {e}";
+    };
+    readonly "\u5FF5\u8FC7\u7684\u53E5\u5B50\u6CA1\u6E05\u6389\uFF1A{e}": {
+        readonly en: "Spoken lyrics not cleared: {e}";
+    };
+    readonly "\u5C0F\u6708\u76F8\u5220\u4E86\uFF1A\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u7528\u5230\u5979\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF1B\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D": {
+        readonly en: "Tsukuyomi-chan deleted: she won’t download by itself and voices using her are silent; press Reinstall when you need her";
     };
     readonly "\u5220\u6389\u4E50\u5668\u97F3\u8272\u5E93\uFF1F": {
         readonly en: "Delete the instrument library?";
     };
-    readonly "\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u8981\u8054\u7F51\u91CD\u65B0\u4E0B\u8F7D\u624D\u80FD\u88C5\u56DE\u6765\uFF1B\u6B4C\u91CC\u6253\u5305\u7740\u58F0\u97F3\u7684\u7167\u6837\u54CD\uFF0C\u53EA\u5F15\u7528\u5B83\u7684\u8981\u7528\u65F6\u4F1A\u53BB\u91CD\u65B0\u4E0B\u8F7D\uFF0C\u6CA1\u7F51\u5C31\u4E0D\u51FA\u58F0\u3002{silenced}{shared}": {
-        readonly en: "Takes {size}. Reinstalling needs an internet connection to download again; voices whose sound is packed into the song keep playing, voices that only reference it download it again when needed and are silent offline. {silenced}{shared}";
+    readonly "\u5360 {size}\u3002\u5220\u4E86\u4E4B\u540E\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF1A\u6B4C\u91CC\u6253\u5305\u7740\u58F0\u97F3\u7684\u7167\u6837\u54CD\uFF0C\u53EA\u5F15\u7528\u5B83\u7684\u4E0D\u51FA\u58F0\uFF0C\u76F4\u5230\u4F60\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF08\u8981\u8054\u7F51\uFF09\u3002{silenced}{shared}": {
+        readonly en: "Takes {size}. After deleting it won’t download by itself: voices whose sound is packed into the song keep playing, voices that only reference it are silent until you press Reinstall (needs internet). {silenced}{shared}";
     };
-    readonly "\u4E50\u5668\u97F3\u8272\u5E93\u5220\u4E86\uFF08\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D\uFF09": {
-        readonly en: "Instrument library deleted (press Reinstall when you need it)";
+    readonly "\u4E50\u5668\u97F3\u8272\u5E93\u5220\u4E86\uFF1A\u4E0D\u4F1A\u81EA\u5DF1\u4E0B\u8F7D\uFF0C\u53EA\u5F15\u7528\u5B83\u7684\u58F0\u90E8\u4E0D\u51FA\u58F0\uFF1B\u8981\u7528\u65F6\u70B9\u300C\u88C5\u56DE\u6765\u300D": {
+        readonly en: "Instrument library deleted: it won’t download by itself and voices that only reference it are silent; press Reinstall when you need it";
     };
     readonly "\u5220\u6389\u8FD9\u4E2A\u97F3\u8272\u6587\u4EF6\uFF1F": {
         readonly en: "Delete this sound file?";
     };
     readonly "\u5360 {size}\u3002\u4E0D\u662F\u81EA\u5E26\u7684\uFF1A\u5220\u4E86\u5C31\u6CA1\u4E86\uFF0C\u6CA1\u6709\u539F\u6765\u7684 .sf2 \u5C31\u627E\u4E0D\u56DE\u6765\u3002{silenced}": {
         readonly en: "Takes {size}. Not built in: once deleted it is gone, and without the original .sf2 it cannot be recovered. {silenced}";
-    };
-    readonly "\u4E0B\u8F7D\u5C0F\u6708\u76F8 {p}%": {
-        readonly en: "Downloading Tsukuyomi-chan {p}%";
-    };
-    readonly 小月相装好了: {
-        readonly en: "Tsukuyomi-chan installed";
-    };
-    readonly "\u6CA1\u88C5\u4E0A\uFF1A{e}": {
-        readonly en: "Not installed: {e}";
-    };
-    readonly "\u4E0B\u8F7D\u4E50\u5668\u97F3\u8272\u5E93 {p}%": {
-        readonly en: "Downloading the instrument library {p}%";
-    };
-    readonly 乐器音色库装好了: {
-        readonly en: "Instrument library installed";
     };
     readonly "\u5FF5\u8FC7\u7684\u53E5\u5B50\u6E05\u4E86\uFF08\u8981\u91CD\u5FF5\uFF09": {
         readonly en: "Spoken lyrics cleared (they will be read again)";
@@ -6348,6 +6366,12 @@ export declare const S: {
     };
     readonly "\u8FD9\u4E2A\u6587\u4EF6\u8D85\u8FC7 {mb} MB\uFF0C\u4E0D\u50CF\u4E00\u9996\u6B4C\uFF0C\u6CA1\u6253\u5F00\u3002": {
         readonly en: "This file is over {mb} MB, too big for a song, so it wasn’t opened.";
+    };
+    readonly 小月相被你删了: {
+        readonly en: "Tsukuyomi-chan was deleted by you";
+    };
+    readonly 乐器音色库被你删了: {
+        readonly en: "The instrument library was deleted by you";
     };
     readonly "\u5927\u5C0F\u4E0D\u5BF9\uFF08{n} \u2260 {bytes}\uFF09": {
         readonly en: "Wrong size ({n} ≠ {bytes})";

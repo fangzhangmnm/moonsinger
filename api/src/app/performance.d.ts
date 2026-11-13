@@ -9,9 +9,12 @@ import { StudioClient } from "../engine/studio-client.ts";
 import type { TrackSpec } from "../engine/studio.ts";
 import { type Timeline, type PerformerInfo } from "../engine/timeline.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
+import { type BuiltinLib } from "../sources/removed.ts";
 /** 胶水向宿主要的东西（main.ts 给）：状态只读访问器 + 几个界面 / 音源 / 署名的口；胶水不碰 DOM、不碰文件、不碰 undo。 */
 export interface PerfHost {
     state(): EditorState;
+    /** 自带的库被人在设置里删了（设备上的记号；v0.17.25）。 */
+    libRemoved(lib: BuiltinLib): boolean;
     /** 每个声部显示成什么 / 某个角色显示成什么（唯一出口 src/format/part-show.ts，12-4）。 */
     labels(): string[];
     roleLabel(role: string): string;
@@ -82,13 +85,15 @@ export interface PerfHost {
 export type RenderScope = "view" | "all" | "segment";
 /** 「这位有事」（ADR-0004 §2.2½ 一套机制、四个出口；user 2026-10-14「一套机制、四个出口 同意」）：现在歌里有音的声部里出不了声的那几位。
  *  kind：unknown = 认不出 / 还没有人上场；sound = 找不到声音（弱引用解析失败）；unplayable = 别的出声失败；upgrade / substitute = 留给格式那一刀（版本比对，§2.2）。 */
-export type IssueKind = "unknown" | "sound" | "unplayable" | "upgrade" | "substitute";
+export type IssueKind = "unknown" | "sound" | "unplayable" | "upgrade" | "substitute" | "removed";
+/** removed = 用的自带库被人在设置里删了（v0.17.25）：lib 是哪一个，清单上给一颗「装回来」。 */
 export interface Issue {
     part: string;
     role: string;
     label: string;
     kind: IssueKind;
     why: string;
+    lib?: BuiltinLib;
 }
 export type Performance = ReturnType<typeof createPerformance>;
 export declare function createPerformance(host: PerfHost): {

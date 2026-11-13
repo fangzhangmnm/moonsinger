@@ -142,7 +142,8 @@ import type { ClefHit } from "../render/engrave.ts";
 import { TAB20, partColorIndices } from "../ui/part-colors.ts";
 import { fitWide } from "../ui/fit-wide.ts";
 import { sizeText } from "../ui/size-text.ts";
-import { libAction, voiceColumnHtml, gsColumnHtml, ownColumnHtml, ownLabel, upkeepVoiceHtml, upkeepGsHtml, upkeepRendersHtml, upkeepRestHtml, type PackView, type OwnView, type LibId, type LibsHost } from "./panels/settings-libs.ts";   // 设置的音源 / 维护两页（13-2）
+import { libAction, libInstall, voiceColumnHtml, gsColumnHtml, ownColumnHtml, ownLabel, upkeepVoiceHtml, upkeepGsHtml, upkeepRendersHtml, upkeepRestHtml, type PackView, type OwnView, type LibId, type LibsHost } from "./panels/settings-libs.ts";   // 设置的音源 / 维护两页（13-2）
+import type { BuiltinLib } from "../sources/removed.ts";
 
 installTouchTips();
 applyDocumentLang();   // <html lang> + CSS 里写死的几句：第一个做，后面画界面都已经是这个语言
@@ -588,6 +589,15 @@ const KV_FEEL_ALWAYS = "feel-always";   // 设置 → 开发者：显示手感�
 let feelAlways = false;
 // 垫脚（src/singer/audio.ts ⑥）：iPad 才用（冷启动多算声音只在那儿量到过；电脑上起得干净）；设置 → 开发者能关着对照。还没证实，证实了再把开关拿掉。
 //   必须在第一次碰声音之前定下来（开机时别的代码一碰声音就会去叫醒它）；网址里 ?primer=1 / ?primer=0 = 强开 / 强关（测试用：电脑上平时不开）。
+/** 自带的库「你删了」的记号（v0.17.25，统筹「v0.17.24：…删掉的库不许自己下回来」）：app 自己的设备键值，一个库一个；删成功才记、装成功才去掉；
+ *  还原出厂跟着清掉（app 自己的命名空间）。有记号 = 用到时不自己下载（小月相 = worker 的 ensurePacks，乐器音色库 = 解析链拿整包那一步），用它的声部进不出声的清单。 */
+const KV_LIB_REMOVED = (lib: BuiltinLib) => `lib-removed-${lib}`;
+const libRemoved = (lib: BuiltinLib): boolean => deviceKvGet(KV_LIB_REMOVED(lib)) === "1";
+function setLibRemoved(lib: BuiltinLib, on: boolean): void {
+  if (libRemoved(lib) === on) return;
+  deviceKvSet(KV_LIB_REMOVED(lib), on ? "1" : null); diagNote("libs", `${lib} ${on ? "removed by user" : "installed"}`); libsRowSync?.();
+  perfApi.refreshIssues();   // 清单跟着变（用到她 / 它的声部挂上或摘掉「不出声」）
+}
 const KV_PRIMER = "audio-primer", IS_IOS = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const PRIMER_URL = new URLSearchParams(location.search).get("primer");
 setPrimer(PRIMER_URL === "1" || (PRIMER_URL !== "0" && IS_IOS));
@@ -1039,6 +1049,7 @@ function renderUndo(): void { $<HTMLButtonElement>("undoBtn").disabled = !D.hist
 
 // ── 播放：月读唱（第一次要加载引擎，之后复用） ─────────────────────────
 const singer = new Singer();
+singer.noDownload = () => libRemoved("voice");   // 小月相被人删了 = worker 缺包时不自己下载（v0.17.25）
 /** 唱 / 导出的进度 = 顶栏走带条旁边的小字（停了就清）。 */
 // 顶栏的小状态行撤了（2026-10-10 user「小状态栏不要放在顶栏，这样会让顶栏的按钮重拍…或者就不显示？反正有log，用户也不care，有重要的事情有toast」）：
 //   文字进黑匣子（同一句换数字不重复记）；带百分比的（下载）推顶栏底边那条细线（不占位置、不挤按钮）。
@@ -1076,6 +1087,7 @@ function drawIssueBadges(): void {
 }
 // ── 唱歌 / 播放 / 导出的胶水 = src/app/performance.ts（刀 1 之二，2026-10-14）：这里只给访问器，拿回一组函数 + 走带态的 getter ──────────
 const perfApi = createPerformance({
+  libRemoved,
   labels: () => labelsNow(), roleLabel: (role) => roleLabel(role),
   state: () => D.st, extras: () => D.extras, viewScope: () => viewScope, pv: (id) => pv(id), busMuted: () => busMuted, curRole: () => curRole(), docName: () => docName(),
   engine, singer, view,
@@ -1212,7 +1224,7 @@ $("partSel").addEventListener("change", (e) => {
 /** 嵌进歌的软上限（user 2026-10-07「控制在10M左右的体积（不严格要求）」）：超了三选一——嵌 / 不嵌只记来源（弱引用）/ 算了。 */
 let embedSoftLimit = 10e6;
 // 音源来源 + 弱引用解析 = src/sources/sounds.ts（刀 4 音源来源接缝，2026-10-15）；这里只留一个实例
-const sources = createSoundSources({ progress: (m) => progress(m), roleLabel: () => roleLabel(curRole()) });
+const sources = createSoundSources({ progress: (m) => progress(m), roleLabel: () => roleLabel(curRole()), removed: (id) => id === GS.id && libRemoved("gs") });   // 乐器音色库被人删了 = 解析链不自己去拿整包（v0.17.25）
 
 // ── 导出歌声（user「基于wxhw的经验分享是可以很早就做」）：照 WXHW 的形状——先生成，再弹「好了」面板，
 //    点「分享」那一下才调系统分享（iOS Safari 只认用户手势里的 navigator.share）；没有分享的（桌面 / Quest）= 下载。
@@ -1226,7 +1238,7 @@ function openIssuesSheet(): void {
   const list = perfApi.issues(); if (!list.length) { info(_t("现在的声部都能出声")); return; }
   const box = document.createElement("div"); box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("不出声的声部")}</div>` +
-    list.map((i) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc(i.label)}</b><small>${esc(i.why)}</small></div><button class="btn primary" data-v="inst:${esc(i.part)}">${_t("换人 / 找声音…")}</button></div>`).join("") +
+    list.map((i) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc(i.label)}</b><small>${esc(i.why)}</small></div>${i.kind === "removed" && i.lib ? `<button class="btn" data-v="libadd:${i.lib}">${_t("装回来")}</button>` : ""}<button class="btn primary" data-v="inst:${esc(i.part)}">${_t("换人 / 找声音…")}</button></div>`).join("") +
     `<div class="offer-msg">${_t("放和导出的 mp3 里都没有这{p}的声音，其余照放。换谁由你定，不替补。", { p: list.length > 1 ? _t("{n} 条轨", { n: list.length }) : _t("条轨") })}</div>` +
     `<div class="offer-btns"><button class="btn" data-v="close">${_t("知道了")}</button></div></div>`;
   document.body.append(box);
@@ -1236,7 +1248,24 @@ function openIssuesSheet(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
     if (v?.startsWith("inst:")) { close(); goToPartInst(v.slice(5)); }
+    else if (v === "libadd:voice" || v === "libadd:gs") { close(); void installBuiltin(v === "libadd:voice" ? "voice" : "gs"); }   // 和音源页的「装回来」同一个动作（settings-libs libInstall）
   });
+}
+/** 删了乐器音色库之后：这次打开里从它切出来、又没打包进歌的小块，从解析过的记忆和声音线程里一起放掉——不然删了照样响到重开（v0.17.25；
+ *  打包着的照响；设备上另外留着子集的，下次解析照样从设备上拿）。 */
+function forgetGsDerived(): void {
+  for (const u of soundUses(D.extras)) if (!u.packed && u.origin?.library === GS.id) { sources.session.drop(u.subsetSha256); engine.unbank(u.subsetSha256); }
+}
+/** 「装回来」（不出声的清单里那一颗；音源页走同一个 libInstall）：下好了才去掉「你删了」的记号。 */
+function installBuiltin(lib: BuiltinLib): Promise<boolean> {
+  return libInstall({ info, error: showError, progress, refresh: () => libsRowSync?.(), removed: { set: setLibRemoved }, voice: { delete: () => packStore.delete(Object.keys(PACKS)), install: installVoicePacks },
+    sounds: { gsSha: GS.sha256, delete: (sha) => forgetSound(sha), releaseMemory: () => releaseSoundMemory(), installGs: (onPct) => sources.fetchSound(GS, (done) => onPct(Math.round((done / GS.bytes) * 100))).then(() => undefined) } }, lib);
+}
+/** 下小月相的五个包（逐个来源试；设置里的「现在下载 / 装回来」和清单里的「装回来」共用）。 */
+async function installVoicePacks(onPct: (p: number) => void): Promise<void> {
+  let last: unknown = null;
+  for (const base of models.bases()) { try { await packStore.download(Object.keys(PACKS), base, (p) => onPct(Math.floor((p.done / p.total) * 100))); return; } catch (e) { last = e; } }
+  throw last ?? new Error("no source");
 }
 /** 光标挪到这位歌手（优先这张纸，没有就第一张有它的纸）再开乐器页。 */
 function goToPartInst(partId: string): void {
@@ -1467,9 +1496,9 @@ function openSettings(): void {
   const refreshSound = async (): Promise<void> => {
     keepSources();
     const packs = await voicePacks(); sizes.set("voice", packs.reduce((n, p) => n + p.bytesCached, 0));
-    libVoice.innerHTML = voiceColumnHtml({ packs, folder: inFolder ? FOLDER_TEXT.models : null, source: models.source });
+    libVoice.innerHTML = voiceColumnHtml({ packs, folder: inFolder ? FOLDER_TEXT.models : null, source: models.source, removed: libRemoved("voice") });
     const cached = inFolder ? [] : await listCachedSounds(), gsHere = cached.find((c) => c.sha256 === GS.sha256); sizes.set("gs", gsHere?.bytes ?? 0);
-    libGs.innerHTML = gsColumnHtml({ name: GS.name, ...(GS.description ? { description: GS.description } : {}), bytes: GS.bytes, cached: !!gsHere, license: GS.license, attribution: GS.attribution, ...(GS.homepage ? { homepage: GS.homepage } : {}), folder: inFolder ? FOLDER_TEXT.sounds : null, source: sources.source });
+    libGs.innerHTML = gsColumnHtml({ name: GS.name, ...(GS.description ? { description: GS.description } : {}), bytes: GS.bytes, cached: !!gsHere, removed: libRemoved("gs"), license: GS.license, attribution: GS.attribution, ...(GS.homepage ? { homepage: GS.homepage } : {}), folder: inFolder ? FOLDER_TEXT.sounds : null, source: sources.source });
     // 自己加的：设备上留着、又不是目录里认得的整包（「五件的回话」第 2 条：名字从这一块字节里读，先出页面、名字后补）
     const known = new Set(Object.values(SOUNDS).map((e) => e.sha256)), uses = new Map(soundUses(D.extras).map((u) => [u.subsetSha256, u]));
     const own: OwnView[] = cached.filter((c) => !known.has(c.sha256)).map((c) => { sizes.set(c.sha256, c.bytes); const u = uses.get(c.sha256); return { sha256: c.sha256, bytes: c.bytes, label: undefined, users: u?.names ?? [], packed: !!u?.packed }; });
@@ -1499,7 +1528,7 @@ function openSettings(): void {
   const importPacks = async (input: HTMLInputElement): Promise<void> => {
     const files = [...(input.files ?? [])]; if (!files.length) return;
     const packSt = box.querySelector<HTMLElement>("#packSt"); if (packSt) { packSt.hidden = false; packSt.textContent = _t("导入中…"); }
-    try { await packStore.importFiles(Object.keys(PACKS), files, (p) => { if (packSt) packSt.textContent = _t("导入中… {total}%", { total: Math.floor((p.done / p.total) * 100) }); }); }
+    try { await packStore.importFiles(Object.keys(PACKS), files, (p) => { if (packSt) packSt.textContent = _t("导入中… {total}%", { total: Math.floor((p.done / p.total) * 100) }); }); if ((await packStore.status(Object.keys(PACKS))).every((x) => x.ready)) setLibRemoved("voice", false); }   // 从本机文件导入 = 装回来（v0.17.25）
     catch (err) { showError(_t("导入没成：{Error}", { Error: (err as Error).message === "no-matching-file" ? _t("这些文件不是小月相要的模型包分片") : (err as Error).message })); }
     void refreshSound();
   };
@@ -1516,12 +1545,12 @@ function openSettings(): void {
     });
   };
   const host: LibsHost = {
-    ask: (title, msg, ok, danger) => askOver(box, title, msg, ok, danger), info, error: showError, silencedBy, sizeOf: (lib) => sizes.get(typeof lib === "string" ? lib : lib.sha256) ?? 0,
+    ask: (title, msg, ok, danger) => askOver(box, title, msg, ok, danger), info, removed: { set: setLibRemoved }, error: showError, silencedBy, sizeOf: (lib) => sizes.get(typeof lib === "string" ? lib : lib.sha256) ?? 0,
     voice: {
       delete: () => packStore.delete(Object.keys(PACKS)),
-      install: async (onPct) => { keepSources(); let last: unknown = null; for (const base of models.bases()) { try { await packStore.download(Object.keys(PACKS), base, (p) => onPct(Math.floor((p.done / p.total) * 100))); return; } catch (e) { last = e; } } throw last ?? new Error("no source"); },
+      install: async (onPct) => { keepSources(); await installVoicePacks(onPct); },
     },
-    sounds: { gsSha: GS.sha256, delete: (sha) => forgetSound(sha), releaseMemory: () => releaseSoundMemory(), installGs: async (onPct) => { keepSources(); await sources.fetchSound(GS, (done) => onPct(Math.round((done / GS.bytes) * 100))); } },
+    sounds: { gsSha: GS.sha256, delete: async (sha) => { await forgetSound(sha); if (sha === GS.sha256) forgetGsDerived(); }, releaseMemory: () => releaseSoundMemory(), installGs: async (onPct) => { keepSources(); await sources.fetchSound(GS, (done) => onPct(Math.round((done / GS.bytes) * 100))); } },
     speech: { clear: async () => { await singer.cache("clear", BUDGET.speechDisk); } },
     lanes: { restart: () => { singer.restart(); diagNote("resource", "manual restart of singer lanes"); } },
     renders: { clearAll: () => renders.clear(), clearOld: () => renders.removeOld(coreInfo()), clear: async (i) => { const k = rcKeys[i]; if (!k) return false; await renders.remove(k); return true; } },
@@ -1541,7 +1570,8 @@ function openSettings(): void {
     progress,
   };
   midiRowSync = (s) => { const el = box.querySelector<HTMLElement>("#midiSt"); if (el) el.innerHTML = midiStatusHtml(s); if (s.k !== "off" && s.k !== "denied") box.querySelector('[data-v="midi:connect"]')?.remove(); };
-  const close = () => { clearInterval(resTimer); midiRowSync = null; keepSources(); box.remove(); ui.closed(close); scoreEl.focus(); };
+  libsRowSync = () => { void refreshSound(); void refreshUpkeep(); };
+  const close = () => { clearInterval(resTimer); midiRowSync = null; libsRowSync = null; keepSources(); box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     if ((e.target as HTMLElement).closest(".wbe-row-mark, [data-tab]")) return;   // 「?」「©」和页签归 wireSetPages
@@ -1757,6 +1787,7 @@ async function setAudition(p: FinderPick | FinderNobody | null): Promise<void> {
   if (!p || p.kind === "voice") { audition = null; sound.allOff(); return; }
   try {
     const bank = await sources.fetchSound(GS, (done) => progress(_t("下载 {name} {bytes}%", { name: GS.name, bytes: Math.round((done / GS.bytes) * 100) }))); progress("");
+    setLibRemoved("gs", false);   // 在乐器目录里从这个库挑乐器 = 人自己去货架上拿 = 装回来（v0.17.25）
     const subset = subsetSf2(bank, [{ bank: p.provider.bank, program: p.provider.program }]), sha256 = await sha256Hex(subset);
     if (gen !== auditionGen) return;
     audition = { from: pickFrom(p), bank: p.provider.bank, program: p.provider.program, ...(cat ? castArgsOf(cat, p.provider.bank, p.provider.program, p.provider.note) : {}), sha256, subset, label: p.provider.gmName };   // 音效默认固定原速（上场后也是）
@@ -4407,6 +4438,8 @@ function midiRoute(): "pad" | "sound" | null {
   const w = whereNow(); return w === "write" || w === "edit" || w === "impro" ? "pad" : "sound";
 }
 let midiRowSync: ((s: MidiStatus) => void) | null = null;   // 设置面板开着时那一行跟着变
+/** 设置开着时重画音源 / 维护两页（v0.17.25）：别处改了「你删了」的记号、或者清单里的「装回来」下完了，开着的设置跟着变（不然状态停在打开那一刻）。 */
+let libsRowSync: (() => void) | null = null;
 const midi = createMidiKeyboard({
   down: (note, _vel, id) => {
     const r = midiRoute(); if (!r) { midiBlink(); return; }
