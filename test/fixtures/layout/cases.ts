@@ -9,7 +9,7 @@ import { openBytes } from "../../../src/format/project.ts";
 import { partNames } from "../../../src/format/part-show.ts";
 import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../src/render/engrave.ts";
 import { printOpts, isPrinted } from "../../../src/export/score-pdf.ts";
-import { lineSp, pageGeoOf, textScaleOf } from "../../../src/score/paper.ts";
+import { lineSp, pageGeoOf, textScaleOf } from "../../../src/look/paper.ts";
 import { lookOf } from "../../../src/look/index.ts";
 import type { Song } from "../../../src/score/song.ts";
 import { asOpened } from "./opened.ts";

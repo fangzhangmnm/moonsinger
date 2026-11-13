@@ -1,9 +1,4 @@
-// src/render/text/style.ts
-var TEXT_FACES = {
-  sans: `system-ui, -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", sans-serif`,
-  serif: `"Noto Serif", "Times New Roman", Times, Georgia, serif`,
-  lyric: `system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`
-};
+// src/look/text.ts
 var s = (face, em, ruler, weight = 400, italic = false) => ({ face, weight, italic, em, ruler });
 var STEM_REGULAR = 0.092;
 var BOLD_STROKE = 0.035;
@@ -17,7 +12,6 @@ var TEMPO_EM = 1.35;
 var LYRIC_EM = 1.6;
 var LYRIC_LOOK = { cozy: { k: 1, sx: 1, gapFloor: 0.2 }, compact: { k: 1.15, sx: 0.85, gapFloor: 0.2 } };
 var LYRIC_MIN_SX = 0.5;
-var isBlockScript = (s2) => /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af\uff66-\uff9f]/.test(s2);
 var TEXT_STYLES = {
   "song-title": s("sans", 2.8, "text", 600),
   credits: s("sans", 1.25, "text"),
@@ -62,19 +56,26 @@ var TEXT_STYLES = {
   "jp-legend": s("sans", 1.05, "text")
 };
 var GHOST_DIGIT_K = 0.62;
+var LYRIC_SPACE = 0.6;
+var HYPHEN_SX = 0.8;
+var GAP_MIN = 0.5;
+var GAP_FLOOR = 0.2;
+var DEFAULT_GAPS = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
+
+// src/render/text/style.ts
+var TEXT_FACES = {
+  sans: `system-ui, -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", sans-serif`,
+  serif: `"Noto Serif", "Times New Roman", Times, Georgia, serif`,
+  lyric: `system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`
+};
+var isBlockScript = (s2) => /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af\uff66-\uff9f]/.test(s2);
 var VARIANTS = [{ role: "part-name", when: "empty", weight: 400 }, { role: "jp-digit", when: "art-ghost", weight: smallWeight(GHOST_DIGIT_K) }];
-var DEFAULT = s("sans", LYRIC_EM, "staff");
 function textPx(role, sp, ts = 1) {
   const st = TEXT_STYLES[role];
   return st.ruler === "text" ? st.em * sp * ts : st.em * sp;
 }
 
 // src/render/text/lyric-fit.ts
-var LYRIC_SPACE = 0.6;
-var HYPHEN_SX = 0.8;
-var GAP_MIN = 0.5;
-var GAP_FLOOR = 0.2;
-var DEFAULT_GAPS = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
 function solveLyrics(items, blockSx, minSx, gaps, widen = true, bounds) {
   const n2 = items.length, f = items.map((it) => it.block ? blockSx : 1), tight = /* @__PURE__ */ new Set();
   if (!n2) return { pos: [], f, tight };
@@ -818,6 +819,9 @@ var S = {
   "{paper}\uFF08{note}\uFF09": { en: "{paper} ({note})" },
   "\u5176\u4ED6": { en: "Other" },
   "\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002": { en: "One paper size for the whole song. Bigger paper fits more bars per line; if the screen fits, it's laid out as on paper. No page breaks unless printing." },
+  "\u8FB9\u8DDD": { en: "Margins" },
+  "\u81EA\u5B9A\u4E49\uFF08{x}\uFF09": { en: "Custom ({x})" },
+  "\u7EB8\u8FB9\u7559\u591A\u5BBD\u3002\u8FD9\u9996\u6B4C\u5E26\u7740\u81EA\u5DF1\u7684\u8FB9\u8DDD\uFF08\u522B\u7684\u8F6F\u4EF6\u5B58\u7684\u8C31\u3001\u8001\u6587\u4EF6\u91CC\u5199\u7740\u7684\uFF09\uFF1B\u9009\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D= \u7528\u8FD9\u5F20\u7EB8\u81EA\u5DF1\u7684\u8FB9\u8DDD\uFF0C\u6362\u7EB8\u65F6\u8DDF\u7740\u6362\u3002": { en: "How much space is left at the edges of the paper. This song carries its own margins (a score saved by another program, or written in an older file); choose Follow the software to use this paper size's own margins, which change when you change the paper." },
   "\u97F3\u7B26\u5BC6\u5EA6": { en: "Note density" },
   "\u81EA\u5B9A\u4E49\uFF08{mm} \u6BEB\u7C73\uFF09": { en: "Custom ({mm} mm)" },
   "\u540C\u4E00\u5F20\u7EB8\u4E0A\u6392\u5F97\u677E\u8FD8\u662F\u5BC6\uFF1A\u97F3\u7B26\u591A\u5927\u3001\u884C\u8DDD\u3001\u97F3\u548C\u97F3\u4E4B\u95F4\u7684\u8DDD\u79BB\u4E00\u8D77\u53D8\u3002": { en: "How loosely or tightly a page is set: note size, line spacing and the space between notes change together." },
@@ -2127,6 +2131,9 @@ var S = {
   "\u8FDE\u97F3": { en: "Tuplets" },
   "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3": { en: "Mode: which notes the pad lays out" },
   ' data-def="{def}" title="\u53CC\u51FB\u56DE {defText}"': { en: ' data-def="{def}" title="Double-click: back to {defText}"' },
+  "\u4E0A {t} \xB7 \u4E0B {b} \xB7 \u5DE6 {l} \xB7 \u53F3 {r} \u6BEB\u7C73": { en: "top {t} \xB7 bottom {b} \xB7 left {l} \xB7 right {r} mm" },
+  "{mm} \u6BEB\u7C73": { en: "{mm} mm" },
+  "\u4E0D\u7528": { en: "Off" },
   "\u8DDF\u7740\u97F3\u7B26\u5BC6\u5EA6": { en: "Follows note density" },
   "\u8FD9\u5F20\u7EB8\u81EA\u5DF1\u7684": { en: "This paper\u2019s own" },
   "\u97F3\u548C\u97F3\u4E4B\u95F4\uFF08\u6700\u591A\uFF09": { en: "Between notes (at most)" },
@@ -2812,20 +2819,9 @@ function _tIn(l, key, params) {
 }
 
 // src/score/paper.ts
-var STAFF_MM = 7;
-var STAFF_MM_COMPACT = 5;
 var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u97F3\u7B26\u5927\uFF0C\u4E00\u9875\u653E\u5F97\u5C11") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u97F3\u7B26\u5C0F\uFF0C\u4E00\u9875\u653E\u5F97\u591A\uFF08\u6B4C\u540D\u548C\u58F0\u90E8\u540D\u7167\u5927\u7684\uFF0C\u6B4C\u8BCD\u7528\u5C0F\u5B57\uFF09") }];
-var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
-var marginsOf = (kind) => {
-  const m = SIZES[kind].m;
-  return { l: m, r: m, t: m, b: m };
-};
 var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF0CA4 \u5BF9\u6298"), A6: _t("\u53E3\u888B\u672C") };
 var PAPER_LABEL = { A3L: _t("A3 \u6A2A"), A4: "A4", A5: "A5", A6: "A6" };
-function paperOf(kind, density = "cozy") {
-  const s2 = SIZES[kind];
-  return { kind, widthMm: s2.w, heightMm: s2.h, marginMm: { l: s2.m, r: s2.m, t: s2.m, b: s2.m }, ...density === "compact" ? { density } : {} };
-}
 
 // src/score/pitch.ts
 var STEPS = ["C", "D", "E", "F", "G", "A", "B"];
@@ -3165,6 +3161,13 @@ function parseArrangement(text, papers, l = lang()) {
   return { order: expand(main), loop: loop && loop.length ? loop : null, issues, explicit: true };
 }
 
+// src/look/spacing.ts
+var LOOSE = [[TPQ / 8, 2.2], [TPQ / 4, 2.2], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
+var DENSE = [[TPQ / 8, 1.6], [TPQ / 4, 1.9], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
+var TIGHT = [[TPQ / 8, 1.5], [TPQ / 4, 1.7], [TPQ / 2, 2.35], [TPQ, 3], [TPQ * 2, 3.6], [TPQ * 4, 4.2]];
+var SP_DEFAULTS = { pad: 0.3, emptyBar: 4.5 };
+var NOTEHEAD_X = 0.35;
+
 // src/render/spacing.ts
 function indexRods(rods, n2) {
   const into = Array.from({ length: n2 }, () => []);
@@ -3173,9 +3176,6 @@ function indexRods(rods, n2) {
 }
 var isZero = (c) => c.fixed !== void 0 && c.fixed <= EPS;
 var EPS = 1e-6;
-var LOOSE = [[TPQ / 8, 2.2], [TPQ / 4, 2.2], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
-var DENSE = [[TPQ / 8, 1.6], [TPQ / 4, 1.9], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
-var TIGHT = [[TPQ / 8, 1.5], [TPQ / 4, 1.7], [TPQ / 2, 2.35], [TPQ, 3], [TPQ * 2, 3.6], [TPQ * 4, 4.2]];
 var lerpLog = (pts, ticks) => {
   if (ticks <= pts[0][0]) return pts[0][1];
   const last = pts[pts.length - 1], prev = pts[pts.length - 2];
@@ -3190,7 +3190,6 @@ var curveOf = (m) => {
   const t = typeof m === "object" ? m : m === true || m === "normal" ? DENSE : m === "tight" ? TIGHT : LOOSE;
   return (ticks) => lerpLog(t, ticks);
 };
-var SP_DEFAULTS = { pad: 0.3, emptyBar: 4.5 };
 function idealGaps(cols, endTick, o) {
   const out = new Array(cols.length).fill(0), sounding = /* @__PURE__ */ new Map();
   cols.forEach((c, k) => {
@@ -3733,8 +3732,14 @@ function primY(p) {
   }
 }
 
-// src/render/frame/hints.ts
+// src/look/order.ts
+var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, pedal: 3.65, hairpin: 3.7, tail: 4, note: 5 };
+var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow", "pedal"];
+var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "pedal"];
+var LEFT_CLEAR = 4;
 var MAX_CLIMB = 6;
+
+// src/render/frame/hints.ts
 var at = (k, x, y) => ({ x0: k.x0 + x, x1: k.x1 + x, y0: k.y0 + y, y1: k.y1 + y });
 var hit = (a, b, pad) => a.x0 < b.x1 + pad && b.x0 < a.x1 + pad && a.y0 < b.y1 + pad && b.y0 < a.y1 + pad;
 function placeHints(printed, hints, pad = 0) {
@@ -3802,6 +3807,20 @@ var isNotation = (v) => NOTATIONS.includes(v);
 var IN_C_APPLIES = { staff: true, jianpu: false, letters: false };
 var isMiddleC = (v) => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 9;
 
+// src/look/paper.ts
+var STAFF_MM = 7;
+var STAFF_MM_COMPACT = 5;
+var staffMmFor = (d) => d === "compact" ? STAFF_MM_COMPACT : STAFF_MM;
+var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
+var marginsOf = (kind) => {
+  const m = SIZES[kind].m;
+  return { l: m, r: m, t: m, b: m };
+};
+function paperOf(kind, density = "cozy") {
+  const s2 = SIZES[kind];
+  return { kind, widthMm: s2.w, heightMm: s2.h, marginMm: marginsOf(kind), density, staffMm: staffMmFor(density) };
+}
+
 // src/look/index.ts
 var LOOK_KEYS = ["notation", "viewInC", "middleC", "chordTags", "expressions", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"];
 var DEFAULTS = { notation: "staff", viewInC: false, middleC: 4, chordTags: true, expressions: true, barNumbers: "line", lyricFit: "rhythm", paper: "A5", density: "cozy" };
@@ -3834,11 +3853,12 @@ var densityIn = (song) => {
   const d = pick(song.density, DEFAULTS.density);
   return d === "compact" ? "compact" : "cozy";
 };
+var ownMargins = (kind) => marginsOf(kind === "other" ? DEFAULTS.paper : kind);
 function paperIn(song) {
   const c = song.paper === "default" ? { kind: DEFAULTS.paper } : song.paper, density = densityIn(song);
-  const base = c.kind === "other" ? { kind: "other", widthMm: c.widthMm, heightMm: c.heightMm, marginMm: marginsOf(DEFAULTS.paper) } : paperOf(c.kind);
+  const base = c.kind === "other" ? { kind: "other", widthMm: c.widthMm, heightMm: c.heightMm, marginMm: ownMargins("other") } : paperOf(c.kind);
   const marginMm = song.marginMm === "default" ? base.marginMm : song.marginMm;
-  const staffMm = song.staffMm === "default" ? density === "compact" ? STAFF_MM_COMPACT : STAFF_MM : song.staffMm;
+  const staffMm = song.staffMm === "default" ? staffMmFor(density) : song.staffMm;
   return { kind: base.kind, widthMm: base.widthMm, heightMm: base.heightMm, marginMm, density, staffMm };
 }
 function trackLookOf(song) {
@@ -5265,7 +5285,7 @@ function harmonyTags(theory, track) {
   return [...byIndex.values()].sort((a, b) => a.index - b.index);
 }
 
-// src/render/frame/params.ts
+// src/look/frame.ts
 var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
 var NAME_MAX = 6.5;
@@ -5279,7 +5299,7 @@ var CTL_H = 3;
 var SYSTEM_LINE_W = 0.16 * 1.4;
 var LYRIC_EDGE = 0.25;
 
-// src/render/layout-params.ts
+// src/look/layout.ts
 var JP_COZY = 3.6 / (2.5 * 1.75);
 var JP_COMPACT = 3 / (2.5 * 1.25);
 var mockSpring = (q) => (5 + 6.8 * Math.log2(1 + 4 * q)) * 2.5 / 22;
@@ -5291,7 +5311,7 @@ var PAPER_PARAMS = {
   staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
   //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
-  //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，text/style.ts LYRIC_LOOK）
+  //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，src/look/text.ts LYRIC_LOOK）
   jianpu: JIANPU_PAPER,
   letters: JIANPU_PAPER
   // 字母谱（7-B）= 简谱的变体，同一种数字行，纸一级参数照简谱
@@ -6007,26 +6027,35 @@ var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
 // src/render/staff/notation.ts
 var baseWidth = (base) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base / TPQ));
 
-// src/render/staff/units.ts
+// src/look/marks.ts
+var PIN_GAP = 0.7;
+var PIN_MIN = 1.4;
+var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
+var DASH = { len: 0.6, gap: 1 };
+var RAMP_DASH = { len: 1.2, gapK: 0.5, min: 2 };
+var PEDAL = { scale: 0.8, gap: 1, textGap: 0.3, hook: 1.1, notch: 0.45, hookIn: 0.3 };
 var CLEF_CUE = 0.72;
 var CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
-var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };
 var KEY_LABEL_W = 3.5;
+var STAFF_UNIT = { repeat: 0.8, barStyle: 0.7, time: 1.2, tempo: 0.3, acc: 1.3, dot: 0.6, lyricHyph: 1.4, lyricPlain: 0.7, breath: 0.8, inhale: { soft: 1.2, big: 2.1 } };
+
+// src/render/staff/units.ts
+var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };
 var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 var STAFF_WIDTHS = {
   // 反复小节线：字形宽 1.47（:|: 2.43）+ 两边留一点（Bravura repeatLeft / repeatRight / repeatRightLeft）；段落线 / 终止线（v0.9.32）比一根小节线宽一点
-  bar: (repeat, style) => repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : style ? BAR_W + 0.7 : BAR_W,
+  bar: (repeat, style) => repeat ? (repeat === "both" ? 2.43 : 1.47) + STAFF_UNIT.repeat : style ? BAR_W + STAFF_UNIT.barStyle : BAR_W,
   // 按 C 调看：这一处要写「1=X」，给字留宽（KEY_LABEL_W）
   key: (fifths, prev, inCLabel, ts) => inCLabel ? Math.max(KEY_LABEL_W * (TEXT_STYLES["key-label"].ruler === "text" ? ts : 1), keyWidth(fifths, prev)) : keyWidth(fifths, prev),
-  time: (beats, beatType) => timeWidth(beats, beatType) + 1.2,
-  tempo: 0.3,
+  time: (beats, beatType) => timeWidth(beats, beatType) + STAFF_UNIT.time,
+  tempo: STAFF_UNIT.tempo,
   clef: CLEF_CUE_W,
-  acc: (any) => any ? 1.3 : 0,
-  chunk: (accW, base, dotted) => accW + baseWidth(base) + (dotted ? 0.6 : 0),
-  lyric: (accW, lyW, hyph) => accW + lyW + (hyph ? 1.4 : 0.7),
-  breath: 0.8,
-  inhale: { soft: 1.2, big: 2.1 }
+  acc: (any) => any ? STAFF_UNIT.acc : 0,
+  chunk: (accW, base, dotted) => accW + baseWidth(base) + (dotted ? STAFF_UNIT.dot : 0),
+  lyric: (accW, lyW, hyph) => accW + lyW + (hyph ? STAFF_UNIT.lyricHyph : STAFF_UNIT.lyricPlain),
+  breath: STAFF_UNIT.breath,
+  inhale: STAFF_UNIT.inhale
   // 呼吸逗号画在这个音后面：留一点地方；出声的换气：逗号后面的字也留地方
 };
 
@@ -6222,9 +6251,6 @@ function layoutStems(seq, dir, f = LOCAL) {
   return { notes, groups: out };
 }
 
-// src/render/frame/columns.ts
-var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, pedal: 3.65, hairpin: 3.7, tail: 4, note: 5 };
-
 // src/render/staff/glyphs.ts
 var TOP_LINE2 = 38;
 var MID_LINE2 = 34;
@@ -6329,7 +6355,6 @@ function measureTrack(q) {
 }
 var clefW = (q) => q.fFam ? W.fClef : W.gClef;
 var lineStartWidth = (q, key, first, base) => base + 0.6 + clefW(q) + 1 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
-var NOTEHEAD_X = 0.35;
 function noteheadW(q, c) {
   const percHere = !!q.pmode && !!q.p.perc, k = c.base >= WHOLE ? 2 : c.base >= TPQ * 2 ? 1 : 0;
   if (!!q.p.xHead && !percHere || !!c.whisper) return k === 2 ? W.noteheadXWhole : k === 1 ? W.noteheadXHalf : W.noteheadXBlack;
@@ -6457,11 +6482,6 @@ function dynOverridden(tokens, bounds) {
 }
 
 // src/render/ornaments/index.ts
-var PIN_GAP = 0.7;
-var PIN_MIN = 1.4;
-var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
-var DASH = { len: 0.6, gap: 1 };
-var RAMP_DASH = { len: 1.2, gapK: 0.5, min: 2 };
 var rampDashes = (L, unit) => {
   const n2 = Math.max(RAMP_DASH.min, Math.round(L / (unit * RAMP_DASH.len * (1 + RAMP_DASH.gapK)))), on = L / (n2 + (n2 - 1) * RAMP_DASH.gapK);
   return { n: n2, on, per: on * (1 + RAMP_DASH.gapK) };
@@ -6784,7 +6804,6 @@ function layNoteDynamics(c, row, _ch, a) {
     prims.push({ t: "path", d, cls: cl });
   }));
 }
-var PEDAL = { scale: 0.8, gap: 1, textGap: 0.3, hook: 1.1, notch: 0.45, hookIn: 0.3 };
 var PEDAL_GLYPH = { sustain: "\uE650", sostenuto: "\uE659" };
 var PEDAL_UP_GLYPH = "\uE655";
 function layPedals(c) {
@@ -7008,7 +7027,6 @@ var yAt = (staffTop, d, half) => staffTop + (TOP_LINE2 - d) * half;
 var anchors = (staffTop, half) => ({ top: yAt(staffTop, TOP_LINE2, half), mid: yAt(staffTop, MID_LINE2, half), bottom: yAt(staffTop, BOTTOM_LINE, half) });
 
 // src/render/staff/draw.ts
-var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow", "pedal"];
 function drawStaff(c, mine) {
   const lyricParts = [];
   const own = mine ? new Set(mine) : null, skip = (r) => own !== null && !own.has(r);
@@ -8131,7 +8149,6 @@ function keyPrims(k, x, y, size, cls, T2) {
 }
 
 // src/render/jianpu/measure.ts
-var LEFT_CLEAR = 4;
 var core = (u, nameW) => nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN;
 var COLUMN_KIND2 = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
 function unitW(u, printKey) {
@@ -8188,7 +8205,6 @@ function layoutHead(x0, items) {
 }
 
 // src/render/jianpu/draw.ts
-var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "pedal"];
 var jpGlyph = (a) => {
   const d = SIGNS[`art:${a}`]?.draw.jianpu;
   return d && d.kind === "glyph" ? { above: d.above, w: d.w ?? 1, h: d.h ?? 1 } : null;
@@ -9771,4 +9787,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-37c08e1ee2fa.mjs.map
+//# sourceMappingURL=layout-worker-78f06fa582dc.mjs.map

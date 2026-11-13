@@ -15,7 +15,7 @@ import { trioSong, TRIO_LABELS } from "./fixtures/layout/trio-song.ts";
 import { asFrozen, editorBase, views, SP } from "./fixtures/layout/cases.ts";
 import { emptySong, type Token } from "../src/score/song.ts";
 import { allPrims, inkOf, overlaps, kindOf } from "./fixtures/layout/collide.ts";
-import { PAPER_PARAMS } from "../src/render/layout-params.ts";
+import { PAPER_PARAMS } from "../src/look/layout.ts";
 // node 的内置模块照 pdf-wysiwyg.test.ts 的取法（类型检查不带 node 的类型）
 const nodeMod = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
 const fs = nodeMod("node:fs"), zlib = nodeMod("node:zlib");

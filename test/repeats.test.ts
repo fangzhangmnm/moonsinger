@@ -4,7 +4,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { TPQ, type Token, type Song, type PaperSeg, type NavWhat } from "../src/score/song.ts";
 import { playSegments, sliceBySegments, expandPaper, tickOf } from "../src/score/repeats.ts";
-import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
+import { paperOf as paperOfA5 } from "../src/look/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 let id = 100;
 const head = (): Token[] => [{ kind: "key", id: id++, fifths: 0 }, { kind: "time", id: id++, beats: 4, beatType: 4 }, { kind: "tempo", id: id++, bpm: 120 }] as Token[];

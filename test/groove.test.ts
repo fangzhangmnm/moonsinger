@@ -9,7 +9,7 @@ import { DYNAMICS_DB } from "../src/format/template.ts";
 import { gainSpec, velSpec } from "./fixtures/spec.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { toJianpu, fromJianpu } from "../src/score/clipboard.ts";
-import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
+import { paperOf as paperOfA5 } from "../src/look/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 const fs = (await import("node:fs" as string)) as { readFileSync(p: string | URL): Uint8Array };
 const g = (await import(new URL("../scripts/gen-grooves.mjs", import.meta.url).href)) as { render(): string | null };
 

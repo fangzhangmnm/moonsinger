@@ -16,7 +16,7 @@ export type Seg = {
 } | {
     k: "Z";
 };
-/** 粗体 = 字的轮廓再描一圈，线宽 = 字号的这么多（屏幕上是 CSS 600；小字补粗的规矩按它算：render/text/style.ts BOLD_STROKE，测试核着一样）。 */
+/** 粗体 = 字的轮廓再描一圈，线宽 = 字号的这么多（屏幕上是 CSS 600；小字补粗的规矩按它算：src/look/text.ts BOLD_STROKE，测试核着一样）。 */
 export declare const PDF_BOLD_STROKE = 0.035;
 export type PdfOp = {
     op: "rect";

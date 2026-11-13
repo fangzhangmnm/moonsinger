@@ -17,7 +17,7 @@ import { navWhy } from "../../score/repeats.ts";
 import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, layPedals, tempoAt, tempoW, type OrnCtx } from "../ornaments/index.ts";
 import type { TextRole } from "../text/index.ts";
 import type { LaneKind } from "../frame/lanes.ts";
-import { MARGIN, NAME_MAX } from "../frame/params.ts";
+import { MARGIN, NAME_MAX } from "../../look/frame.ts";
 import { caretStops } from "../frame/carets.ts";
 import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
@@ -31,8 +31,6 @@ import type { Part } from "../frame/cell.ts";
 import { scalePrim } from "../skyline.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_GAP, UL_W, DASH_PITCH, BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, DIGIT_H, KIT_CHAR, JP_BODY, HEAD_EM, MARK_GAP, MARK_GAP2, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, MARCATO_EM, UNSTRESS_EM, CHORD_H, chordNameW, dotPath } from "./glyphs.ts";
 
-/** 简谱数字行贴挂件的先后（从数字往上：演奏法 → 音的修饰 → 力度道 → 跳转 → 速度 → 风格 → 小节号 → 和弦级数；歌词在下面）。和五线谱同一张道名表（frame/lanes.ts）。 */
-export const JIANPU_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "pedal"];
 
 /** 框架交给数字行的东西（是五线谱那一份的子集：不要纵向 ↔ 音高的几何）。 */
 export interface JianpuDrawCtx {

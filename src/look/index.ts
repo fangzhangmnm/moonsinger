@@ -5,9 +5,12 @@
 //   规矩（守卫 test/look.test.ts）：这个目录之外没有人比较 "default"、没有人写「没写就当成某个值」的退路（song.paper ?? …、autoOttava !== false、和弦选项 ?? "auto"）。
 //   方向：src/score 不 import 这里（谱这一层不知道「现在怎么画」）；这里 import 谱那一层的类型和纯函数。
 //   这一个模块不改歌（withLook / allDefault 交回新的歌，由宿主走写入口）。
-//   17-2 起排版规则的数（ai-docs/20261113-view-defaults-recon.md 表二第一类）也搬进来；这一版只收歌级的选择、纸张和那几处退路。
+//   17-2：排版规则的数（ai-docs/20261113-view-defaults-recon.md 表二第一类）在这个目录的 paper / layout / spacing / frame / text / marks / order 里——只放数（和造表用的公式），
+//   算法留在 src/render；运行时不 import src/render（只要类型）。这些数不按歌选、不进文件，改了老歌跟着变。守卫 test/look-rules.test.ts。
+//   以后哪个数要按歌选，再一次一个加进 LOOK_KEYS、由 lookOf 交出、排版从 Look 拿（统筹 2026-11-13）。
 import { headClefOf, type Song, type PaperSeg, type Choice, type ClefChoice } from "../score/song.ts";
-import { paperOf, marginsOf, sizeOf, isPaperKind, STAFF_MM, STAFF_MM_COMPACT, PAPER_LABEL, DENSITIES, paperSizeText, type Paper, type PaperKind, type Density, type PaperChoice, type Margins } from "../score/paper.ts";
+import { isPaperKind, PAPER_LABEL, DENSITIES, type Paper, type ReadPaper, type PaperKind, type Density, type PaperChoice, type Margins } from "../score/paper.ts";
+import { paperOf, marginsOf, sizeOf, staffMmFor, STAFF_MM, STAFF_MM_COMPACT, paperSizeText } from "./paper.ts";
 import { isNotation, isMiddleC, isTextLang, IN_C_APPLIES, NOTATIONS, type SongView, type ChordsMode, type NotationId, CHORDS_MODES } from "../score/song-view.ts";
 import { _t } from "../i18n/index.ts";
 
@@ -24,7 +27,7 @@ const UNWRITTEN_TRACK = { autoOttava: true, grand: false, chords: "auto" as Chor
 /** 一整份「现在怎么画」：SongView 的每一项（排版、PDF、键上的大字、鬼音符都读它）+ 纸（每个字段都有值）+ 每一项是选的还是跟着软件。 */
 export interface Look extends SongView {
   /** 这张纸到底多大、边距、舒适 / 紧凑、谱高（每个字段都填好了，没有可选的）。屏幕、PDF、存 MusicXML 的 <defaults> 都用这一份。 */
-  readonly paper: Paper & { density: Density; staffMm: number };
+  readonly paper: Paper;
   /** 每一项是不是跟着软件（true）——页面设置「跟着软件（现在是：X）」那一格亮不亮。模块外面问它，不自己比 "default"。 */
   readonly follows: { readonly [K in LookKey]: boolean };
 }
@@ -54,15 +57,27 @@ export function lookOf(song: Song): Look {
   };
 }
 const densityIn = (song: Song): Density => { const d = pick(song.density, DEFAULTS.density); return d === "compact" ? "compact" : "cozy"; };
+/** 边距跟着软件时用哪个：这张纸自己的（「其他」大小的纸没有自己的 = 用默认那张纸的）。 */
+const ownMargins = (kind: PaperKind | "other"): Margins => marginsOf(kind === "other" ? DEFAULTS.paper : kind);
 /** 这首歌画的时候用的纸（每个字段都有值）。 */
-function paperIn(song: Song): Paper & { density: Density; staffMm: number } {
+function paperIn(song: Song): Paper {
   const c: PaperChoice = song.paper === "default" ? { kind: DEFAULTS.paper } : song.paper, density = densityIn(song);
-  const base: Paper = c.kind === "other" ? { kind: "other", widthMm: c.widthMm, heightMm: c.heightMm, marginMm: marginsOf(DEFAULTS.paper) } : paperOf(c.kind);
+  const base = c.kind === "other" ? { kind: "other" as const, widthMm: c.widthMm, heightMm: c.heightMm, marginMm: ownMargins("other") } : paperOf(c.kind);
   const marginMm: Margins = song.marginMm === "default" ? base.marginMm : song.marginMm;
-  const staffMm = song.staffMm === "default" ? (density === "compact" ? STAFF_MM_COMPACT : STAFF_MM) : song.staffMm;
+  const staffMm = song.staffMm === "default" ? staffMmFor(density) : song.staffMm;
   return { kind: base.kind, widthMm: base.widthMm, heightMm: base.heightMm, marginMm, density, staffMm };
 }
 
+/** 页面设置「音符密度」那一格（第 17 条 17-2：原来 main.ts 自己拿 STAFF_MM 比）：这首歌选了一个谱高、又不是这一档本来的 = 那个毫米数（下拉里写「自定义（N 毫米）」）；否则 null。 */
+export const customStaffMm = (look: Look): number | null => (!look.follows.staffMm && Math.abs(look.paper.staffMm - staffMmFor(look.density)) > 0.01 ? look.paper.staffMm : null);
+/** 页面设置「版面」页「边距」那一行（第 17 条 17-2 顺手，统筹 2026-11-13）：边距按值带着（别家的谱、老文件）才有这一行；跟着软件 = null（不显示）。
+ *  follow = 第一格「跟着软件（现在是：X）」的 X（这张纸自己的边距）；custom = 另一格「自定义（X）」的 X（这首歌带着的四边）。 */
+export function marginRow(look: Look): { follow: string; custom: string } | null {
+  if (look.follows.marginMm) return null;
+  const n = (v: number) => +v.toFixed(2), sides = (m: Margins) => _t("上 {t} · 下 {b} · 左 {l} · 右 {r} 毫米", { t: n(m.t), b: n(m.b), l: n(m.l), r: n(m.r) });
+  const own = ownMargins(look.paper.kind), even = own.l === own.r && own.l === own.t && own.l === own.b;
+  return { follow: even ? _t("{mm} 毫米", { mm: n(own.l) }) : sides(own), custom: sides(look.paper.marginMm) };
+}
 /** 每张纸 / 每个声部那几样（第 17 条四问第 2 条）：排版、存档都只问这一个口子。文件和内存的写法不动（PaperSeg.looks 只存大谱表 = true、自动八度线 = false）。 */
 export interface TrackLook { autoOttava: boolean; grand: boolean }
 export function trackLookOf(song: Song): (paperId: string, partId: string) => TrackLook {
@@ -94,7 +109,7 @@ export const chosenCount = (song: Song): number => LOOK_KEYS.filter((k) => song[
 export function defaultText(key: LookKey): string {
   switch (key) {
     case "notation": return ({ staff: _t("五线谱"), jianpu: _t("简谱"), letters: _t("字母谱") } as Record<NotationId, string>)[DEFAULTS.notation];
-    case "viewInC": return DEFAULTS.viewInC ? _t("按 C 调看") : _t("不用（照写的调）");
+    case "viewInC": return DEFAULTS.viewInC ? _t("按 C 调看") : _t("不用");   // 第一格是「跟着软件（现在是：X）」，X 里不再套括号（17-2 顺手）
     case "middleC": return `C${DEFAULTS.middleC}`;
     case "chordTags": return DEFAULTS.chordTags ? _t("标级数") : _t("不标");
     case "expressions": return DEFAULTS.expressions ? _t("显示") : _t("不显示");
@@ -107,14 +122,14 @@ export function defaultText(key: LookKey): string {
   }
 }
 /** 纸张那一格的字（选的是「其他」时写大小）。 */
-export const paperChoiceText = (c: PaperChoice): string => (c.kind === "other" ? paperSizeText({ kind: "other", widthMm: c.widthMm, heightMm: c.heightMm, marginMm: marginsOf(DEFAULTS.paper) }) : PAPER_LABEL[c.kind]);
+export const paperChoiceText = (c: PaperChoice): string => (c.kind === "other" ? paperSizeText(c) : PAPER_LABEL[c.kind]);
 
 /** 读文件的门口（17-1）：score.json 里没有纸张那几项（老文件、别家的谱）时，从 MusicXML <defaults> 认出来的纸认一次——
  *  认成四种之一的算选过的；认成「A5 舒适、边距和谱高都是那一档的」的算 "default"；舒适算跟着软件（老文件里舒适就是没写）；边距 / 谱高和这张纸、这一档自己的一样 = "default"，不一样 = 按值带着。没有 <defaults> = 全部 "default"。 */
-export function paperChoicesOf(p: Paper | undefined): Pick<Song, "paper" | "density" | "staffMm" | "marginMm"> {
+export function paperChoicesOf(p: ReadPaper | undefined): Pick<Song, "paper" | "density" | "staffMm" | "marginMm"> {
   const all = { paper: "default", density: "default", staffMm: "default", marginMm: "default" } as const;
   if (!p) return { ...all };
-  const density: Choice<Density> = p.density === "compact" ? "compact" : "default", want = p.density === "compact" ? STAFF_MM_COMPACT : STAFF_MM;
+  const density: Choice<Density> = p.density === "compact" ? "compact" : "default", want = staffMmFor(p.density === "compact" ? "compact" : "cozy");
   const staffMm: Choice<number> = p.staffMm === undefined || Math.abs(p.staffMm - want) < 0.05 ? "default" : p.staffMm;
   const own = p.kind === "other" ? null : marginsOf(p.kind), same = (a: Margins, b: Margins) => (["l", "r", "t", "b"] as const).every((k) => Math.abs(a[k] - b[k]) < 0.05);
   const marginMm: Choice<Margins> = own && same(p.marginMm, own) ? "default" : { ...p.marginMm };
@@ -125,7 +140,7 @@ export function paperChoicesOf(p: Paper | undefined): Pick<Song, "paper" | "dens
 /** 读文件的门口（17-1）：score.json 顶层这几项 → 歌字段。没写 / 写坏了 = "default"（补的是这个字，不是当时的默认值）；认得的值原样；
  *  比这一版新的文件里键认识、值不认识的字（以后的谱种 / 排法…）原样留在歌里、存的时候照写，记进 odd（打开时说一句）——画的时候 lookOf 按最基本的那一档。
  *  纸张那四项：score.json 里有任何一项 = 以它为准（缺的那几项 = "default"）；一项都没有（老文件、别家的谱）= 从 MusicXML <defaults> 认一次（paperChoicesOf）。 */
-export function lookFromFile(x: Record<string, unknown> | undefined, xmlPaper: Paper | undefined, newer: boolean, odd: string[]): Pick<Song, LookKey> {
+export function lookFromFile(x: Record<string, unknown> | undefined, xmlPaper: ReadPaper | undefined, newer: boolean, odd: string[]): Pick<Song, LookKey> {
   const g = (k: string): unknown => x?.[k];
   const word = (k: "notation" | "barNumbers" | "lyricFit", allowed: readonly string[]): string => { const v = g(k);
     if (v === "default" || (typeof v === "string" && allowed.includes(v))) return v as string;

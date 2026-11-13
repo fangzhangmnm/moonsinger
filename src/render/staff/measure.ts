@@ -9,7 +9,9 @@ import { percOf, type PercInfo } from "../../gm/percussion.ts";
 import { W, FLAG_W, PERC_HEAD, PERC_SMUFL } from "../smufl.ts";
 import { layoutStems, type StemNote, type StemDir } from "../stems.ts";
 import type { SpItem } from "../spacing.ts";
-import { SLOT, type ColumnKind } from "../frame/columns.ts";
+import { type ColumnKind } from "../frame/columns.ts";
+import { SLOT } from "../../look/order.ts";
+import { NOTEHEAD_X } from "../../look/spacing.ts";
 import type { ColEntry } from "../frame/arrange.ts";
 import type { PartView } from "../engrave.ts";
 import { TOP_LINE, MID_LINE } from "./glyphs.ts";
@@ -101,8 +103,6 @@ export const clefW = (q: { fFam: boolean }) => (q.fFam ? W.fClef : W.gClef);
 export const lineStartWidth = (q: StaffTrack, key: number, first: boolean, base: number): number =>
   base + 0.6 + clefW(q) + 1.0 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
 
-/** 符头的左缘离对齐线（列的 x）多远（sp）：刀 3 起临时记号挂在左边，符头从这儿起。 */
-export const NOTEHEAD_X = 0.35;
 /** 这个音的符头多宽（sp）：× 符头（台上那位固定敲一个键 / 气声）、鼓谱按仓鼠的表、其余按时值挑黑 / 全。画（draw.ts）和歌词的锚点（lyricAnchors）用同一个。 */
 export function noteheadW(q: StaffTrack, c: Chunk): number {
   const percHere = !!q.pmode && !!q.p.perc, k = c.base >= WHOLE ? 2 : c.base >= TPQ * 2 ? 1 : 0;

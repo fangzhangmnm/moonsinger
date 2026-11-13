@@ -1501,6 +1501,15 @@ export declare const S: {
     readonly "\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002": {
         readonly en: "One paper size for the whole song. Bigger paper fits more bars per line; if the screen fits, it's laid out as on paper. No page breaks unless printing.";
     };
+    readonly 边距: {
+        readonly en: "Margins";
+    };
+    readonly "\u81EA\u5B9A\u4E49\uFF08{x}\uFF09": {
+        readonly en: "Custom ({x})";
+    };
+    readonly "\u7EB8\u8FB9\u7559\u591A\u5BBD\u3002\u8FD9\u9996\u6B4C\u5E26\u7740\u81EA\u5DF1\u7684\u8FB9\u8DDD\uFF08\u522B\u7684\u8F6F\u4EF6\u5B58\u7684\u8C31\u3001\u8001\u6587\u4EF6\u91CC\u5199\u7740\u7684\uFF09\uFF1B\u9009\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D= \u7528\u8FD9\u5F20\u7EB8\u81EA\u5DF1\u7684\u8FB9\u8DDD\uFF0C\u6362\u7EB8\u65F6\u8DDF\u7740\u6362\u3002": {
+        readonly en: "How much space is left at the edges of the paper. This song carries its own margins (a score saved by another program, or written in an older file); choose Follow the software to use this paper size's own margins, which change when you change the paper.";
+    };
     readonly 音符密度: {
         readonly en: "Note density";
     };
@@ -5427,6 +5436,15 @@ export declare const S: {
     };
     readonly " data-def=\"{def}\" title=\"\u53CC\u51FB\u56DE {defText}\"": {
         readonly en: " data-def=\"{def}\" title=\"Double-click: back to {defText}\"";
+    };
+    readonly "\u4E0A {t} \u00B7 \u4E0B {b} \u00B7 \u5DE6 {l} \u00B7 \u53F3 {r} \u6BEB\u7C73": {
+        readonly en: "top {t} · bottom {b} · left {l} · right {r} mm";
+    };
+    readonly "{mm} \u6BEB\u7C73": {
+        readonly en: "{mm} mm";
+    };
+    readonly 不用: {
+        readonly en: "Off";
     };
     readonly 跟着音符密度: {
         readonly en: "Follows note density";

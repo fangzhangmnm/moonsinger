@@ -1,6 +1,7 @@
 // text/lyric-fit.ts —— 歌词让路 + 连字符摆哪：纯函数，单位一律 sp（连字符那个函数单位随宿主）。2026-11-09 by Claude Opus 5.5 从 src/render/engrave.ts 原样搬来
 //   （计划书 ai-docs/20261109-plan-text-engine.md 第 1 步：搬家不改行为；让路的算法 v0.16.47 起，作者和用户原话见下面各段注释）。
-import { LYRIC_MIN_SX } from "./style.ts";
+import { LYRIC_MIN_SX, LYRIC_SPACE, HYPHEN_SX, GAP_MIN, GAP_FLOOR, DEFAULT_GAPS } from "../../look/text.ts";   // 规则的数在 src/look/text.ts（17-2）
+export { LYRIC_SPACE, HYPHEN_SX, GAP_MIN, GAP_FLOOR, DEFAULT_GAPS };
 
 export interface LyricFit { dx: number; /** 宽度倍数（乘在这一档平常的宽度上；1 = 不收）。 */ sx: number; tight: boolean }
 export interface LyricItem { cx: number; w: number; hy?: boolean; /** 方块字：宽度跟整段统一（不各收各的）。 */ block?: boolean }
@@ -12,11 +13,6 @@ export interface LyricBounds { left: number; right: number }
  *  · 连字符 hyphen = 连字符「-」画出来的宽度（压到 HYPHEN_SX）+ 一个上面那种空格（两边各半个）；方块字挨着的连字符不占地方（挂在两个方块字中间本来就有的那道小缝里，user「方块字的排版最好能忽视连字符」）；
  *  · 缝跟着左右两个字里**更窄的那个**一起收（× min(f)，user「空格和最窄的邻居宽度对齐」），挤的时候**先压缝、再压字**（缝最多压到 GAP_MIN）。单位都是 sp。 */
 export interface LyricGaps { space: number; hyphen: number; /** 缝再挤也至少留这么宽（sp）；没给 = GAP_FLOOR。按档的数在样式表 LYRIC_LOOK.gapFloor。 */ floor?: number }
-/** 没量的时候的默认（测试 / 没有量字的宿主）：歌词字号 1.6 sp 的系统无衬线体，空格约 0.27 字宽、连字符约 0.33 字宽。 */
-export const LYRIC_SPACE = 0.6, HYPHEN_SX = 0.8, GAP_MIN = 0.5;
-/** 缝再挤也至少留这么宽（sp）：能看出是两个词（user「只要能勉强看出节奏就行了」；v0.16.48 第一版没有底线 = 英文连成一片「bovetheworld」）。排版器按档传（LyricGaps.floor ← LYRIC_LOOK.gapFloor）；这个是没给时的默认。 */
-export const GAP_FLOOR = 0.2;
-export const DEFAULT_GAPS: LyricGaps = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
 /** 歌词让路 = 一个小优化问题（v0.16.47；user 11-09「你能不能把他formalize成一个数学问题…不用完美最优」「规则很简单。1.位置固定，不能反过来推音符。2. 空格和最窄的邻居宽度对齐 3. 帮我想一下怎么样算跑到外面没对齐」）：
  *  变量：每个字的中心 x_i、宽度倍数 f_i ∈ [minSx, 1]（方块字 = 整段统一的 blockSx，不单收）。已知：音的位置 c_i（不动）、原宽 w_i。
  *  ① 对齐（「跑到外面」的定义）：音还在字底下（|x_i − c_i| ≤ 半宽 − 0.15）且没越过和邻居音的中点（≤ 到邻居音的一半）；短字至少能挪 0.2。

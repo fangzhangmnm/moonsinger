@@ -11,7 +11,7 @@ import { toLabScore } from "./fixtures/lab-score.ts";
 import { gainSegments, noteEnd } from "../src/score/perform.ts";
 import { DYNAMICS_DB } from "../src/format/template.ts";
 import { gainSpec, velSpec } from "./fixtures/spec.ts";
-import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
+import { paperOf as paperOfA5 } from "../src/look/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 const ACCENT_SEC = gainSpec().accentSec;
 /** 音量曲线乘在一条声音上（原 src/audio/mix.ts applyGain 的参考实现；2026-10-09 乘法搬进录音房 src/engine/studio.ts 后这里留一份对照）。 */
 function applyGain(samples: Float32Array, sr: number, at: number, segs: readonly { t0: number; t1: number; dB: number }[], smoothSec = 0.004): Float32Array {

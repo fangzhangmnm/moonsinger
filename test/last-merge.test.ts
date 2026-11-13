@@ -1,11 +1,12 @@
-// 最后一行很短并进上一行（7-F；src/render/frame/arrange.ts lastMerge，参数在 src/render/layout-params.ts LAST_MERGE）。created 2026-11-12 by Claude Opus 5.5（MoonSinger小弟）
+// 最后一行很短并进上一行（7-F；src/render/frame/arrange.ts lastMerge，参数在 src/look/layout.ts LAST_MERGE）。created 2026-11-12 by Claude Opus 5.5（MoonSinger小弟）
 //   user 2026-11-11「以及我反而需要最后多了一小节的时候前面能不能再挤一点放进去」，看了做法「嗯动前两行合理，赞」。
 //   守：① 7 + 1 能并成 8 ② 塞不进的照旧 7 + 1（硬下限 = 顶杆）③ 只动最后两行（前面的折行一个不变）④ 最后一行不短（超过行宽三成、两小节以上）不并
 //   ⑤ 并进来那一行不超出行宽、顶杆一个都没压破。排版那一层（三种谱 × 带歌词、并了之后不相叠、按节奏排时歌词不影响并不并）在 no-collide.test.ts。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "../src/render/frame/arrange.ts";
-import { curveOf, SP_DEFAULTS } from "../src/render/spacing.ts";
-import { PAPER_PARAMS } from "../src/render/layout-params.ts";
+import { curveOf } from "../src/render/spacing.ts";
+import { SP_DEFAULTS } from "../src/look/spacing.ts";
+import { PAPER_PARAMS } from "../src/look/layout.ts";
 import { TPQ } from "../src/score/song.ts";
 
 const LM = PAPER_PARAMS.staff.cozy.lastMerge!;

@@ -60,8 +60,6 @@ export declare const clefW: (q: {
 }) => 2.684 | 2.736;
 /** 行首多宽（sp）：base = 框架给的（名字一栏的缩进 + 边距），后面是这条轨行首要画的：谱号 + 调号（key = 那里生效的调号）+ 第一行的拍号。加的先后照原来（浮点逐位相同）。 */
 export declare const lineStartWidth: (q: StaffTrack, key: number, first: boolean, base: number) => number;
-/** 符头的左缘离对齐线（列的 x）多远（sp）：刀 3 起临时记号挂在左边，符头从这儿起。 */
-export declare const NOTEHEAD_X = 0.35;
 /** 这个音的符头多宽（sp）：× 符头（台上那位固定敲一个键 / 气声）、鼓谱按仓鼠的表、其余按时值挑黑 / 全。画（draw.ts）和歌词的锚点（lyricAnchors）用同一个。 */
 export declare function noteheadW(q: StaffTrack, c: Chunk): number;
 /** 歌词按节奏排（框架的歌词让路）要的：这条轨每个带字的音在第几行、字的中心在哪（sp）= 符头的中心（对齐线 + NOTEHEAD_X + 半个符头宽），和画字的那一处（draw.ts 歌词锚点）同一个数。拖腔线不算。

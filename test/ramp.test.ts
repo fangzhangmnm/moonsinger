@@ -8,8 +8,9 @@ import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { apply } from "../src/score/commands.ts";
 import { engrave } from "../src/render/engrave.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
-import { rampDashes, PIN_MIN } from "../src/render/ornaments/index.ts";
-import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
+import { rampDashes } from "../src/render/ornaments/index.ts";
+import { PIN_MIN } from "../src/look/marks.ts";
+import { paperOf as paperOfA5 } from "../src/look/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 let nid = 4000;
 const dyn = (v: "p" | "mp" | "mf" | "f", ramp = false) => ({ kind: "dyn", id: nid++, value: v, ...(ramp ? { ramp: true } : {}) }) as Token;

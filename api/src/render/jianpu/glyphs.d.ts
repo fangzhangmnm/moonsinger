@@ -86,7 +86,7 @@ export declare const ACC_GLYPH: {
 /** 升降号这一家（降、重降、还原、升、重升）的补粗规矩（7-P 补，统筹 11-12 定 B，写成规矩不只给 ♭ 开一个数）：
  *  ① 同一家先彼此看齐：主笔画都补到这一家的参照粗细 ACC_FAMILY_DOM——取 ♯ 的 0.09（改前图里 ♮ ♯ 的轻重是对的，取 ♮ 的 0.105 会把 ♯ 也描粗；♮ 本来就更粗，不动）。
  *  ② 看齐之后整家再和主字比：参照粗细缩到实际字号后明显轻于「主字竖笔 × 0.9」（不到它的 FAMILY_LIGHT）才一起补，补到那条线为止；数字行、谱头、字母谱角标现在都不用补（♯ 约是线的 85%–89%）。
- *  字号的几成（描边两边各长一半，所以补的就是差多少）；主字竖笔 = vendor 那款黑体「I」量的（text/style.ts STEM_REGULAR），同小字补粗。 */
+ *  字号的几成（描边两边各长一半，所以补的就是差多少）；主字竖笔 = vendor 那款黑体「I」量的（src/look/text.ts STEM_REGULAR），同小字补粗。 */
 export declare const ACC_FAMILY_DOM: 0.09, FAMILY_LIGHT = 0.8;
 export declare const accStroke: (g: {
     dom: number;
@@ -134,7 +134,7 @@ export declare function textInkRun(s: string, x: number, y: number, size: number
 export declare const accText: (rel: number) => string;
 export declare const letterW: (step: string) => number;
 /** 角标多大（字母的几成）：7-L（user 11-12「数字可以大一点再靠的近一点，以及latex是不是subscript用优化可读性的小字了？」）从六成改成七成（LaTeX 下标 = 正文的七成）；
- *  笔画加粗照小字号专用字的思路做 = 样式表里上下标两种字是半粗（text/style.ts jp-letter-sup / jp-letter-sub，屏幕和 PDF 同一张表）。离字母多近（SCRIPT_GAP）等第八刀一起摆。 */
+ *  笔画加粗照小字号专用字的思路做 = 样式表里上下标两种字是半粗（src/look/text.ts TEXT_STYLES 的 jp-letter-sup / jp-letter-sub，屏幕和 PDF 同一张表）。离字母多近（SCRIPT_GAP）等第八刀一起摆。 */
 export declare const SCRIPT_K = 0.7, SCRIPT_GAP: number;
 /** 上标（升降号）的基线、下标（八度数字）的基线：离字母基线多远（数字行的单位；上 = 负）。 */
 export declare const SUP_DY: number, SUB_DY: number;

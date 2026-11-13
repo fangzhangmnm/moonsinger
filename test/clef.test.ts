@@ -9,7 +9,7 @@ import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { engrave } from "../src/render/engrave.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
-import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
+import { paperOf as paperOfA5 } from "../src/look/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 import { trackLookOf, clefChoiceOf } from "../src/look/index.ts";
 
 const S = ["C", "D", "E", "F", "G", "A", "B"] as const;

@@ -11,6 +11,7 @@
 //   ③ 顶杆：同一行里前后两样东西真会撞（前一样的右伸 + 后一样的左伸 + 一点缝）才把距离顶开。不在同一行、不撞 = 不顶。
 //   ④ 一行排满：只拉 / 压弹簧（按理想距离的比例），顶杆是下限；固定宽的列（小节线 / 调号 / 拍号 / 行中谱号）不拉不压。
 import { TPQ } from "../score/song.ts";
+import { LOOSE, DENSE, TIGHT } from "../look/spacing.ts";   // 排版规则的数（第 17 条 17-2）
 
 /** 一列里某一行的一样东西。left / right = 从对齐线往左 / 往右占多宽（sp）。dur = 时值（tick）；没有 = 不算「正在响的音」（整小节休止：画在小节正中，不参加间距）。 */
 export interface SpItem {
@@ -44,15 +45,8 @@ const isZero = (c: SpCol) => c.fixed !== undefined && c.fixed <= EPS;
 const EPS = 1e-6;
 
 // ── 时值 → 宽 ────────────────────────────────────────────────────────────────
-// 折线（横轴 = 时值的 log2）。app 用两档（纸设置「音距」；user 11-09「我觉得可以再紧一点，你这个新版本算正常，然后加一个紧凑的」「松可能不要，因为原来的样子真的很难看」）；
-//   松 = 原来的样子（四分 3.6，每翻一倍 +0.75，十六分及更短一律 2.2）：app 不再给，留着当单测里一把简单的尺子；
-//   正常（默认；user 11-08「很密的十六分和三十二分音符…压密一点」「正常人都会画密」）= 松的那条，十六分 1.9、三十二分及更短 1.6（符头宽 1.18，留 0.4 的缝）；
-//   紧 = 整条再收一截（四分 3.0、每翻一倍 +0.6），短音符贴着顶杆（三十二分 1.5 ≈ 两个符头之间留 0.3）。
-// 这几个数是起点：出了样张 user 看着再调，只改这三张表。
+// 三条折线（松 / 正常 / 紧）和 SP_DEFAULTS 是排版规则的数：第 17 条 17-2 搬进 src/look/spacing.ts（数一个没改）；这里只留按折线插值的算法。
 type Pt = readonly [ticks: number, width: number];
-const LOOSE: readonly Pt[] = [[TPQ / 8, 2.2], [TPQ / 4, 2.2], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
-const DENSE: readonly Pt[] = [[TPQ / 8, 1.6], [TPQ / 4, 1.9], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
-const TIGHT: readonly Pt[] = [[TPQ / 8, 1.5], [TPQ / 4, 1.7], [TPQ / 2, 2.35], [TPQ, 3.0], [TPQ * 2, 3.6], [TPQ * 4, 4.2]];
 export type SpacingMode = "loose" | "normal" | "tight";
 /** 一条自己给的弹簧折线（时值 tick → 宽 sp；按时值从短到长）。简谱的纸用它（排版参数表纸一级，第五刀 5-0c）。 */
 export type SpringPts = readonly (readonly [ticks: number, width: number])[];
@@ -68,7 +62,6 @@ const lerpLog = (pts: readonly Pt[], ticks: number): number => {
 };
 /** 时值 → 宽（三档；true = 正常、false = 松，老写法）。连音 / 附点按实际时值落在折线上（八分三连音在八分和十六分之间）。 */
 export const curveOf = (m: SpacingMode | boolean | SpringPts) => { const t = typeof m === "object" ? m : m === true || m === "normal" ? DENSE : m === "tight" ? TIGHT : LOOSE; return (ticks: number): number => lerpLog(t, ticks); };
-export const SP_DEFAULTS = { pad: 0.3, emptyBar: 4.5 } as const;
 
 // ── 弹簧：每一列到下一列的理想距离 ──────────────────────────────────────────────
 /** cols 按时间排好（同一时刻的先后 = 画的先后）。endTick = 这一串最后到哪（这张纸的长度）。返回每一列到下一列的理想距离（最后一列 = 到结尾）。 */

@@ -110,7 +110,7 @@ describe("连字符摆哪（hyphens，2026-11-09 从排版器抽出来：src/ren
 import { addPart } from "../src/score/song.ts";
 import { setNotation } from "../src/score/song-view.ts";
 import { primInk } from "../src/render/skyline.ts";
-import { MARGIN, LYRIC_EDGE } from "../src/render/frame/params.ts";
+import { MARGIN, LYRIC_EDGE } from "../src/look/frame.ts";
 describe("歌词不越过这一行的左右边界（7-E）", () => {
   const W = 900, SP = 10, raw = (s: string, px: number) => s.length * px * 0.55, M = createTextMeasure(raw);
   /** 两位歌手（第一位带词：每个四分音符一个短词，first / last 换成长词）→ 排一遍，回每个字的墨 [x0, x1]、它在第几行、那一行左边那根竖线。 */

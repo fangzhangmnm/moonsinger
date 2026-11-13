@@ -2,7 +2,8 @@
 // 每条 = user 11-08 点名的一种毛病，或者它的反面（不该变的）。数字单位 = 线间距。
 import { describe, it, assert } from "./runner.mjs";
 import { TPQ } from "../src/score/song.ts";
-import { curveOf, idealGaps, rodsOf, placeLine, fitLine, SP_DEFAULTS, type SpCol, type SpItem } from "../src/render/spacing.ts";
+import { curveOf, idealGaps, rodsOf, placeLine, fitLine, type SpCol, type SpItem } from "../src/render/spacing.ts";
+import { SP_DEFAULTS } from "../src/look/spacing.ts";
 
 const HEAD = 1.18, Q = TPQ, E = TPQ / 2, S = TPQ / 4, T32 = TPQ / 8, W = TPQ * 4, T8 = TPQ / 3;
 const near = (a: number, b: number, eps = 1e-6) => Math.abs(a - b) <= eps;

@@ -87,8 +87,9 @@ import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, castArgsOf, sampleKeyOf,
 import { creditsSections, sectionsHtml } from "./credits-doc.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { partShow, partNameOf, roleNameIn, roleGivenName, roleInstrumentLabel, type PartShow } from "../format/part-show.ts";   // 声部显示成什么：唯一出口（12-4）
-import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES, STAFF_MM, STAFF_MM_COMPACT, paperSizeText } from "../score/paper.ts";
-import { lookOf, trackLookOf, followDefault, allDefault, chosenCount, defaultText, type LookKey } from "../look/index.ts";   // 「现在怎么画」和「跟着软件」只问这一处（第 17 条）
+import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES } from "../score/paper.ts";
+import { paperSizeText } from "../look/paper.ts";
+import { lookOf, trackLookOf, followDefault, allDefault, chosenCount, defaultText, customStaffMm, marginRow, type LookKey } from "../look/index.ts";   // 「现在怎么画」和「跟着软件」只问这一处（第 17 条）
 import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
@@ -2021,7 +2022,8 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
   const IN_SONG = where(_t("跟着这首歌存：进歌、能撤销，导出的 PDF 照这里印。")), IN_VIEW = where(_t("跟着这首歌的视图存：存的时候顺手带上，不算改动、不进撤销。")), IN_SESSION = where(_t("只在这次打开里有效，不进歌。"));
   const draw = () => {
     const look = lookOf(D.st.song), p = look.paper, movable = !IN_C_APPLIES[look.notation];   // 选中哪一项 = 这首歌现在怎么画（src/look，只此一处读）
-    const fileMm = !look.follows.staffMm && Math.abs(p.staffMm - (look.density === "compact" ? STAFF_MM_COMPACT : STAFF_MM)) > 0.01 ? p.staffMm : null;   // 谱高是别家文件里写的、不是两档之一
+    const fileMm = customStaffMm(look);   // 谱高是别家文件里写的、不是两档之一
+    const mrow = marginRow(look);   // 边距按值带着（别家的谱、老文件）才有「边距」那一行（第 17 条 17-2 顺手）
     // 第一格「跟着软件（现在是：X）」（第 17 条 17-1）：选它 = 这一项写回跟着软件；亮着 = 这首歌没选过这一项。下拉的值用自己的记号 FOLLOW，不拿歌里的字比
     const fol = (key: LookKey) => [FOLLOW, _t("跟着软件（现在是：{x}）", { x: defaultText(key) })] as const;
     const cur = (key: LookKey, v: string) => (look.follows[key] ? FOLLOW : v);
@@ -2051,6 +2053,9 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
     const layoutPage =
       setItem(_t("纸张"), sel("paper", [fol("paper"), ...PAPER_KINDS.map((k) => [k, _t("{paper}（{note}）", { paper: PAPER_LABEL[k], note: PAPER_NOTE[k] })] as const), ...(p.kind === "other" ? [["other", _t("{paper}（{note}）", { paper: _t("其他"), note: paperSizeText(p) })] as const] : [])], cur("paper", p.kind)),
         _t("整首歌一张纸。纸越大一行放的小节越多；屏幕放得下就照纸排。不打印的时候不分页。") + IN_SONG) +
+      // 边距（17-2 顺手，统筹 2026-11-13）：这首歌带着自己的边距时才出这一行；第一格跟着软件 = 用这张纸自己的边距，另一格 = 照实写这首歌带着的四边、选它 = 不动
+      (mrow ? setItem(_t("边距"), sel("margin", [[FOLLOW, _t("跟着软件（现在是：{x}）", { x: mrow.follow })], ["file", _t("自定义（{x}）", { x: mrow.custom })]], "file"),
+        _t("纸边留多宽。这首歌带着自己的边距（别的软件存的谱、老文件里写着的）；选「跟着软件」= 用这张纸自己的边距，换纸时跟着换。") + IN_SONG) : "") +
       // 音符密度（user 11-12「嗯，那么叫音符密度」；原来叫「版式」）。别家文件写的谱高不是我们两档里的任何一档：如实叫「自定义（N 毫米）」（user「应该有一个选项是相当于自定义，得如实那么说」），选它 = 不动。
       //   每个选项得到什么写进问号（下拉的项只有一行字，不把选项撑长）；问号里只说「常用」，不说「应该」（统筹 2026-11-12）
       setItem(_t("音符密度"), sel("density", [fol("density"), ...DENSITIES.map((z) => [z.id, z.label] as const), ...(fileMm !== null ? [["file", _t("自定义（{mm} 毫米）", { mm: +fileMm.toFixed(2) })] as const] : [])], fileMm !== null ? "file" : cur("density", look.density)),
@@ -2089,10 +2094,10 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
   box.addEventListener("change", (e) => {
     const el = e.target as HTMLButtonElement, k = el.dataset.pg, v = el.value; if (!k || v === ODD) return;   // 「这一版不认识」那一项不是一个可选的值
     // 选「跟着软件」：这一项写回跟着软件（src/look followDefault）；按这一项原来那一类走写入口（修改锁的「看法」按类别核）
-    const FOLLOW_KEY: Record<string, LookKey> = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit" };
+    const FOLLOW_KEY: Record<string, LookKey> = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit", margin: "marginMm" };
     if (v === FOLLOW && FOLLOW_KEY[k]) {
-      const key = FOLLOW_KEY[k]!, next = { ...D.st, song: followDefault(D.st.song, key) }, label = _t("{what}：跟着软件", { what: ({ nota: _t("谱种"), inc: _t("移调辅助"), mc: _t("中央 C 叫"), ct: _t("和弦辅助"), expr: _t("演奏法和表情"), paper: _t("纸张"), density: _t("音符密度"), bn: _t("小节号"), lyr: _t("歌词排法") } as Record<string, string>)[k] ?? key });
-      if (key === "paper") setPageLook(next, { kind: "paperSize", label }); else if (key === "density") setPageLook(next, { kind: "density", label });
+      const key = FOLLOW_KEY[k]!, next = { ...D.st, song: followDefault(D.st.song, key) }, label = _t("{what}：跟着软件", { what: ({ nota: _t("谱种"), inc: _t("移调辅助"), mc: _t("中央 C 叫"), ct: _t("和弦辅助"), expr: _t("演奏法和表情"), paper: _t("纸张"), density: _t("音符密度"), bn: _t("小节号"), lyr: _t("歌词排法"), margin: _t("边距") } as Record<string, string>)[k] ?? key });
+      if (key === "paper" || key === "marginMm") setPageLook(next, { kind: "paperSize", label }); else if (key === "density") setPageLook(next, { kind: "density", label });
       else if (key === "barNumbers") setPageLook(next, { kind: "barNumbers", label }); else if (key === "lyricFit") setPageLook(next, { kind: "lyricFit", label });
       else setSongLook(next, label);
       draw(); return;

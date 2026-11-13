@@ -5,7 +5,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave, type Layout, type Prim } from "../src/render/engrave.ts";
 import { LYRIC_LOOK, LYRIC_MIN_SX } from "../src/render/text/index.ts";
 import { primInk } from "../src/render/skyline.ts";
-import { textScaleOf, paperOf } from "../src/score/paper.ts";
+import { textScaleOf, paperOf } from "../src/look/paper.ts";
 import { lookOf } from "../src/look/index.ts";
 import { VIEWS, loadSong, measure } from "./fixtures/layout/cases.ts";
 import { createTextMeasure, LYRIC_EM } from "../src/render/text/index.ts";
@@ -21,7 +21,7 @@ function pair(key: string, view = "edit-all"): [Layout, Layout, number] {
 }
 
 describe("刀 2：紧凑档的字照舒适档那么大（textScale = 7 / 5）", () => {
-  it("紧凑档 textScale = 1.4、舒适档 = 1", () => { eq(textScaleOf(paperOf("A5")), 1); assert(Math.abs(textScaleOf({ ...paperOf("A5"), density: "compact" }) - 1.4) < 1e-9); });
+  it("紧凑档 textScale = 1.4、舒适档 = 1", () => { eq(textScaleOf(paperOf("A5")), 1); assert(Math.abs(textScaleOf(paperOf("A5", "compact")) - 1.4) < 1e-9); });
   for (const key of ["once", "v2-2-2-2"]) for (const view of ["edit-all", "print"]) it(`${key} · ${view}：跟字的字号 ×1.4，跟谱的字和字形不变`, () => {
     const [A, B, ts] = pair(key, view), sp = A.sp;
     eq(B.sp, A.sp, "谱的尺子不变"); assert(Math.abs(B.tp - A.tp * ts) < 1e-9, "字的尺子 ×1.4");

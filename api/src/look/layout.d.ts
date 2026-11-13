@@ -1,7 +1,7 @@
 import type { Density } from "../score/paper.ts";
 import type { NotationId } from "../score/song-view.ts";
-import type { SpacingMode, SpringPts } from "./spacing.ts";
-import type { RowKind } from "./notations.ts";
+import type { SpacingMode, SpringPts } from "../render/spacing.ts";
+import type { RowKind } from "../render/notations.ts";
 /** 纸一级（按这首歌的谱种 × 版式）：行与行之间多空（sysGap，sp）、音距曲线（curve：v0.16.43 起跟版式，user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧」）、
  *  一行最多压紧多少（squeeze，弹簧的比例）、一行最多拉宽到自然宽的几倍（maxStretch；两种谱都是 1.3，第六刀起；Infinity = 不设上限、拉满整行）。 */
 export interface PaperParams {

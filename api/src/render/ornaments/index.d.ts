@@ -4,26 +4,6 @@ import { type TextRole } from "../text/index.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import type { Prim, EngraveOpts, DynHit, MarkHit } from "../engrave.ts";
 import type { Unit, Chunk, NavU } from "../frame/units.ts";
-/** 渐强渐弱和两头的字之间留多少（sp）；比一整行还长 = 写「cresc. - - -」（字的大概宽 / 虚线一节多长、隔多远）；渐到的虚线。原样从 staff/glyphs.ts 搬来。 */
-export declare const PIN_GAP = 0.7;
-/** 一个楔形（发夹 / 渐到）最短多长（sp）：整条短于它就拉到它；折到下一行的那一段短于它就不画。 */
-export declare const PIN_MIN = 1.4;
-export declare const PIN_WORD: {
-    readonly w: {
-        readonly cresc: 4.7;
-        readonly dim: 3.5;
-    };
-}, DASH: {
-    readonly len: 0.6;
-    readonly gap: 1;
-};
-/** 渐到的虚线（统筹看样张 ⑩：原来固定 0.5 / 0.4 的小段，A5 上短的发夹碎成一串点）：段数跟着这一段发夹的长度定——每段大约 len（sp）、空隙 = 段长 × gapK，
- *  至少两段；短的发夹 = 更少、更长的段，两头都落在发夹的两端。空隙是段长的一半 = 一眼看得出是虚线（渐到），不是实线（手写的渐强渐弱）。 */
-export declare const RAMP_DASH: {
-    readonly len: 1.2;
-    readonly gapK: 0.5;
-    readonly min: 2;
-};
 /** 一段长 L 的渐到发夹切成几段、每段多长、隔多远（同一个单位进出）。 */
 export declare const rampDashes: (L: number, unit: number) => {
     n: number;
@@ -121,19 +101,4 @@ export declare function layNoteDynamics(c: OrnCtx, row: number, _ch: Chunk, a: {
     roll?: boolean;
     atk: readonly ("sfz" | "fp")[];
 }): void;
-/** 踏板（11-1，设计稿 ai-docs/20261112-pedals-and-ring-design.md 第 5 节）：挂件最外一道——这一位最下面那条谱下面（歌词、8vb 再往外）。
- *  延音 =「Ped.」+ 一条线到抬起处、抬起处往上一个钩；换踏板 = 线上一个尖（先抬再踩）；持音 =「Sost.」、弱音 =「una corda」（细斜体字），同样的线和钩
- *  （统筹 11-12：三种踏板一个读法，范围看得见；弱音不写「tre corde」、不用「U.C.」）。
- *  道：三种严格按 延音 → 持音 → 弱音 从里往外，同一种在同一行永远一条基线；这一行没有的那种不占道（统筹 11-12）。离上面最近的东西（级数、歌词、下八度点…）至少 1 个线间距。
- *  同一行同一种踏板共用一条基线（一次贴：整行的线一样高）；三种踏板各一条，延音最靠谱。跨行 = 每行一段，下一行从行首接着画线（不再写「Ped.」）。
- *  不起作用的（已经踩着又踩、没踩就抬）照画、画灰（踩下 = 灰「Ped.」、抬起 = 灰「*」）；没踩就「换踏板」= 照踩下画（统筹 11-12：换完本来就是踩着的）。
- *  台上这位不认这种踏板（PartView.ignores 里有「pedal:<种类>」）= 整条画灰。纸尾还踩着 = 画到这张纸内容的右缘、照样有钩（放的时候纸尾就抬，sustainSpans）。 */
-export declare const PEDAL: {
-    readonly scale: 0.8;
-    readonly gap: 1;
-    readonly textGap: 0.3;
-    readonly hook: 1.1;
-    readonly notch: 0.45;
-    readonly hookIn: 0.3;
-};
 export declare function layPedals(c: OrnCtx): void;

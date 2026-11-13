@@ -20,7 +20,8 @@
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
 import { _t, workerOptions, lang } from "../i18n/index.ts";
-import { lineSp, spMm, staffMmOf, STAFF_MM, pageGeoOf, textScaleOf } from "../score/paper.ts";
+import { lineSp, spMm, STAFF_MM, pageGeoOf, textScaleOf } from "../look/paper.ts";   // 纸的数（第 17 条 17-2）
+import { CONT_MARGIN, REFLOW_MARGIN } from "../look/frame.ts";   // 连续 / 按屏宽折行的边距（第 17 条 17-2）
 import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, moveMarkToEnd, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, keySpell, type Pitch } from "../score/pitch.ts";
@@ -44,8 +45,6 @@ import { TAB20 } from "./part-colors.ts";
 /** 一个光标位置的身份（纸 | 声部 | 下标）：行末 / 行首的画法只对这一个位置有效。 */
 const caretKey = (st: EditorState): string => `${st.at.paper}|${st.at.part}|${st.caret}`;
 
-/** 连续排法的边距（sp）：纸的真边距只在分页里画（所见即所得）；连续 = 一圈舒服的窄边，行宽照旧是版心。 */
-const CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 } as const;
 /** 拖时值的阶梯：三十二分起，plain 与附点交替（都画得出来）。 */
 const DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => (v * TPQ) / 48);
 
@@ -280,7 +279,7 @@ export class ScoreView {
   /** 谱面多宽时自动大小一格几 px（宿主判底座贴不贴边用：按贴底时的全宽算，和用户的缩放无关；2026-10-21）。 */
   spaceAt(avail: number): number { return this.frameAt(avail).sp; }
   private frameAt(avail: number): Frame {
-    const st = this.host.get(), paper = lookOf(st.song).paper, scale = staffMmOf(paper) / STAFF_MM;
+    const st = this.host.get(), paper = lookOf(st.song).paper, scale = paper.staffMm / STAFF_MM;
     const base = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale;
     // 分页：整页（版心 + 左右边距）要放得下；页高 / 边距按这张纸算（sp）
     const geo = pageGeoOf(paper), page = this.host.look.pages?.() ? geo : null;
@@ -294,7 +293,7 @@ export class ScoreView {
     // 放不下、不折行（默认；user「纸能不能toggle不折行预览有多宽和折行的两种选项。我其实还是倾向于不折行」
     //   「我现在发现我基本不点五线谱，都是用键盘输入。这样的话其实五线谱只是让你看你在哪里」）：整张纸按比例缩小，行和纸上一样
     if (avail > 0 && (page || !(this.host.look.reflow?.() ?? false))) { const sp = (base * avail) / want; return { sp, width: lineSp(paper) * sp, strict: false, page, margins }; }
-    return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base, (avail / 42) * scale)) : base, width: Math.max(320, avail), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
+    return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base, (avail / 42) * scale)) : base, width: Math.max(320, avail), strict: false, page: null, margins: REFLOW_MARGIN };
   }
 
   /** 量文字宽的原始尺子（这串字、歌词那款字、px 那么大 = 多宽 px）：屏幕和 PDF 共用这一把——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。字体串和换算在文字模块（src/render/text/measure.ts；worker 同一串）。 */

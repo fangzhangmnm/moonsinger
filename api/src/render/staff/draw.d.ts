@@ -8,8 +8,6 @@ import type { StaffTrack } from "./measure.ts";
 import type { SongView } from "../../score/song-view.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 /** 框架交给五线谱画法的东西（施工单 1b-6a：原来是 engrave() 里的局部变量）。以后 6b–6d 收窄：挂件改成清单、每行一张图元表、摆的结果不抄回单元。 */
-/** 五线谱这一种贴挂件的先后（原来按编号 later[2..12]：跳音 / 保持在音符层里，不是挂件）。 */
-export declare const STAFF_LANES: readonly LaneKind[];
 export interface StaffDrawCtx {
     song: Song;
     paper: PaperSeg;

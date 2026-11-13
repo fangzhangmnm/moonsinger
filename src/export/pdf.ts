@@ -12,7 +12,7 @@ import type { TtfFont } from "./ttf.ts";
 export type Rgb = [number, number, number];   // 0..1
 /** 路径的一段（页面坐标）。 */
 export type Seg = { k: "M" | "L"; x: number; y: number } | { k: "C"; x1: number; y1: number; x2: number; y2: number; x: number; y: number } | { k: "Z" };
-/** 粗体 = 字的轮廓再描一圈，线宽 = 字号的这么多（屏幕上是 CSS 600；小字补粗的规矩按它算：render/text/style.ts BOLD_STROKE，测试核着一样）。 */
+/** 粗体 = 字的轮廓再描一圈，线宽 = 字号的这么多（屏幕上是 CSS 600；小字补粗的规矩按它算：src/look/text.ts BOLD_STROKE，测试核着一样）。 */
 export const PDF_BOLD_STROKE = 0.035;
 export type PdfOp =
   | { op: "rect"; x: number; y: number; w: number; h: number; color: Rgb }

@@ -40,10 +40,6 @@ export type SpacingMode = "loose" | "normal" | "tight";
 export type SpringPts = readonly (readonly [ticks: number, width: number])[];
 /** 时值 → 宽（三档；true = 正常、false = 松，老写法）。连音 / 附点按实际时值落在折线上（八分三连音在八分和十六分之间）。 */
 export declare const curveOf: (m: SpacingMode | boolean | SpringPts) => (ticks: number) => number;
-export declare const SP_DEFAULTS: {
-    readonly pad: 0.3;
-    readonly emptyBar: 4.5;
-};
 /** cols 按时间排好（同一时刻的先后 = 画的先后）。endTick = 这一串最后到哪（这张纸的长度）。返回每一列到下一列的理想距离（最后一列 = 到结尾）。 */
 export declare function idealGaps(cols: readonly SpCol[], endTick: number, o: SpOpts): number[];
 export declare function rodsOf(cols: readonly SpCol[], o: SpOpts): Rod[];

@@ -12,7 +12,7 @@ import type { FxV2, CandidateV2 } from "../../../src/format/contract.ts";
 const nodeFs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array };
 const nodeCrypto = (await import("node:crypto" as string)) as { createHash(a: string): { update(b: Uint8Array): { digest(e: "hex"): string } } };
 import { MELISMA_MARK } from "../../../src/score/lyrics.ts";
-import { paperOf } from "../../../src/score/paper.ts";
+import { paperOf } from "../../../src/look/paper.ts";
 
 const Q = TPQ, E = TPQ / 2, T3 = (TPQ / 2) * 2 / 3;
 const p = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", octave = 4, alter = 0) => ({ step, alter, octave });

@@ -1,4 +1,4 @@
-import { type Paper } from "../score/paper.ts";
+import type { Paper, ReadPaper } from "../score/paper.ts";
 import { type ClefName, type Token } from "../score/song.ts";
 export interface PartInfo {
     id: string;
@@ -62,7 +62,7 @@ export interface ReadPart {
 export interface ReadScore {
     title: string;
     movementTitle: string;
-    paper?: Paper;
+    paper?: ReadPaper;
     credits?: string;
     rights?: string;
     parts: {

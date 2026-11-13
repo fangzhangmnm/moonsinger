@@ -7,7 +7,8 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { _t } from "../i18n/index.ts";
-import { type Paper, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
+import type { Paper, ReadPaper } from "../score/paper.ts";
+import { detectPaper } from "../look/paper.ts";   // 纸的数和认档（第 17 条 17-2 搬进 src/look）
 import { NEW_SONG_HEAD, DYNS, withArt, type ClefName, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { ChordPin, PedalTok, PedalKind } from "../score/song.ts";
@@ -53,16 +54,16 @@ const pitchXml = (p: Pitch) => `<pitch><step>${p.step}</step>${p.alter ? `<alter
 /** 版式 → MusicXML 的行距 / 谱距（tenths，40 = 一个五线谱高）：舒适 / 紧凑；读的时候 staff-distance < 65 = 紧凑。 */
 const LAYOUT_TENTHS = { cozy: { system: 110, staff: 80 }, compact: { system: 60, staff: 50 } };
 /** 纸 → <defaults>：<scaling> = 五线谱多大（四个线间距 = staffMm mm = 40 tenths；默认 STAFF_MM），<page-layout> = 页宽高 + 四边边距（tenths，按这张纸的谱大小换算）。 */
-const tenthsPerMm = (p: Paper) => 40 / staffMmOf(p);
+const tenthsPerMm = (p: Paper) => 40 / p.staffMm;
 function defaultsXml(p: Paper): string {
   const t = (mm: number) => +(mm * tenthsPerMm(p)).toFixed(2), m = p.marginMm;
-  const compact = densityOf(p) === "compact";   // 版式进标准的 system-layout / staff-layout（tenths；紧凑 = 行距 / 谱距收紧）
-  return `<defaults><scaling><millimeters>${staffMmOf(p)}</millimeters><tenths>40</tenths></scaling><page-layout><page-height>${t(p.heightMm)}</page-height><page-width>${t(p.widthMm)}</page-width>` +
+  const compact = p.density === "compact";   // 版式进标准的 system-layout / staff-layout（tenths；紧凑 = 行距 / 谱距收紧）
+  return `<defaults><scaling><millimeters>${p.staffMm}</millimeters><tenths>40</tenths></scaling><page-layout><page-height>${t(p.heightMm)}</page-height><page-width>${t(p.widthMm)}</page-width>` +
     `<page-margins type="both"><left-margin>${t(m.l)}</left-margin><right-margin>${t(m.r)}</right-margin><top-margin>${t(m.t)}</top-margin><bottom-margin>${t(m.b)}</bottom-margin></page-margins></page-layout>` +
     `<system-layout><system-distance>${compact ? LAYOUT_TENTHS.compact.system : LAYOUT_TENTHS.cozy.system}</system-distance></system-layout><staff-layout><staff-distance>${compact ? LAYOUT_TENTHS.compact.staff : LAYOUT_TENTHS.cozy.staff}</staff-distance></staff-layout></defaults>`;
 }
 /** <defaults> → 纸（按文件自己的 <scaling> 换成 mm 再认档）；没有页面设置 = undefined。只有 score.json 里没有纸张那几项（老文件、别家的谱）时门口才用它（17-1）。 */
-function readPaper(root: El): Paper | undefined {
+function readPaper(root: El): ReadPaper | undefined {
   const d = kid(root, "defaults"), pl = kid(d, "page-layout");
   const n = (el: El | undefined, name: string) => { const v = childText(el, name); return v === undefined ? NaN : Number(v); };
   const mm = n(kid(d, "scaling"), "millimeters"), tn = n(kid(d, "scaling"), "tenths"), w = n(pl, "page-width"), h = n(pl, "page-height");
@@ -343,7 +344,7 @@ export interface ReadPart { id: string; name: string; instrumentName?: string; s
 const DIR_READ = new Set(["octave-shift", "dynamics", "wedge", "metronome", "segno", "coda", "words", "pedal"]);
 /** 认不得、但常见的几种，数的时候说人话（其余 = 「别的方向记号」）。 */
 const DIR_LABEL: Record<string, () => string> = { rehearsal: () => _t("排练记号"), dashes: () => _t("虚线（如渐强渐弱的延续线）"), bracket: () => _t("括线"), "string-mute": () => _t("弱音器记号"), "harp-pedals": () => _t("竖琴踏板图"), damp: () => _t("止音记号"), "damp-all": () => _t("止音记号") };
-export interface ReadScore { title: string; movementTitle: string; paper?: Paper; credits?: string; rights?: string; parts: { info: ReadPart; tokens: Token[] }[]; dropped: Record<string, number>;
+export interface ReadScore { title: string; movementTitle: string; paper?: ReadPaper; credits?: string; rights?: string; parts: { info: ReadPart; tokens: Token[] }[]; dropped: Record<string, number>;
   /** 第一个声部的谱头这一份文件没写、用了这一版的默认开的（新建的谱头 NEW_SONG_HEAD：♩=90 / C 大调 / 4/4）：别家的谱打开时照实说一句（第 16 条，全表 2-11）。自家文件三样都写。 */
   unwrittenHead: { tempo: boolean; key: boolean; time: boolean } }
 export interface ReadHints { manualBars?: Record<string, number[]>; unwritten?: string[] }   // 自家文件的 .moonsinger/score.json（这张纸的）；别家文件 = 没有

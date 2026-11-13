@@ -13,3 +13,17 @@ export declare const CTL_H = 3;
 export declare const SYSTEM_LINE_W: number;
 /** 歌词离这一行左右边界至少多远（sp；7-E）：字的前进宽度（含字形自带的留白）不越过「边界往里这么多」。 */
 export declare const LYRIC_EDGE = 0.25;
+/** 连续排法的边距（sp）：纸的真边距只在分页里画（所见即所得）；连续 = 一圈舒服的窄边，行宽照旧是版心。（原 src/ui/score-view.ts，17-2 搬来） */
+export declare const CONT_MARGIN: {
+    readonly l: 1.5;
+    readonly r: 1.5;
+    readonly t: 1.5;
+    readonly b: 2;
+};
+/** 按屏宽折行（不按纸排）时的边距（sp）：左右不留、上面给歌名那一点、下面一点。（原 src/ui/score-view.ts frameAt 里的字面量，17-2 搬来） */
+export declare const REFLOW_MARGIN: {
+    readonly l: 0;
+    readonly r: 0;
+    readonly t: 2.4;
+    readonly b: 1.5;
+};

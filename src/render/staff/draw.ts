@@ -13,12 +13,14 @@ import { GLYPH_BOX } from "../glyph-box.gen.ts";
 import { keyText } from "../../score/pitch.ts";
 import { harmonyTheory, type PlacedTag, type ChordFold } from "../../theory/index.ts";
 import { baseClef } from "../../score/clef.ts";
-import { MARGIN } from "../frame/params.ts";
+import { MARGIN } from "../../look/frame.ts";
 import { TOP_LINE, MID_LINE, BOTTOM_LINE, ART_GLYPH, GLYPH_BREATH, SHARP_POS, FLAT_POS, GLYPH_TUPLET } from "./glyphs.ts";
 import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, layPedals, type OrnCtx } from "../ornaments/index.ts";   // 两种行共用的挂件（第四刀 4-3）
-import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W } from "./units.ts";
+import { CLEF_GLYPH } from "./units.ts";
+import { CLEF_CUE, KEY_LABEL_W } from "../../look/marks.ts";
 import type { Unit, Chunk } from "../frame/units.ts";
-import { stemInput, posD, shAt, percAt, clefW, noteheadW, NOTEHEAD_X } from "./measure.ts";
+import { stemInput, posD, shAt, percAt, clefW, noteheadW } from "./measure.ts";
+import { NOTEHEAD_X } from "../../look/spacing.ts";
 import type { Prim, EngraveOpts, Layout, HitNote, RestHit, LyricHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox } from "../engrave.ts";
 import type { StaffTrack } from "./measure.ts";
 import { caretStops } from "../frame/carets.ts";
@@ -27,8 +29,6 @@ import type { SongView } from "../../score/song-view.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 
 /** 框架交给五线谱画法的东西（施工单 1b-6a：原来是 engrave() 里的局部变量）。以后 6b–6d 收窄：挂件改成清单、每行一张图元表、摆的结果不抄回单元。 */
-/** 五线谱这一种贴挂件的先后（原来按编号 later[2..12]：跳音 / 保持在音符层里，不是挂件）。 */
-export const STAFF_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow", "pedal"];
 export interface StaffDrawCtx {
   song: Song; paper: PaperSeg; o: EngraveOpts;
   /** 这首歌怎么看（src/score/song-view.ts；框架读一次传进来：按 C 调看、和弦标级数、每条轨的和弦选项）。 */

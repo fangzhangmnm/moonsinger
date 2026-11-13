@@ -7,21 +7,14 @@ import { grooveLabel, grooveDataIn } from "../../score/groove.ts";
 import type { NotationId } from "../../score/song-view.ts";
 import { TEMPO_EM, type TextRole } from "../text/index.ts";
 import { GLYPH } from "../smufl.ts";
-import { MARGIN } from "../frame/params.ts";
+import { MARGIN } from "../../look/frame.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import type { Prim, EngraveOpts, DynHit, MarkHit } from "../engrave.ts";
 import type { Unit, Chunk, DynU, NavU, PedalU } from "../frame/units.ts";
 import { dynDepiction, SIGNS } from "../signs.ts";
 import { GLYPH_BOX } from "../glyph-box.gen.ts";
+import { PIN_GAP, PIN_MIN, PIN_WORD, DASH, RAMP_DASH, PEDAL } from "../../look/marks.ts";   // 记号摆法的数在 src/look/marks.ts（17-2）
 
-/** 渐强渐弱和两头的字之间留多少（sp）；比一整行还长 = 写「cresc. - - -」（字的大概宽 / 虚线一节多长、隔多远）；渐到的虚线。原样从 staff/glyphs.ts 搬来。 */
-export const PIN_GAP = 0.7;
-/** 一个楔形（发夹 / 渐到）最短多长（sp）：整条短于它就拉到它；折到下一行的那一段短于它就不画。 */
-export const PIN_MIN = 1.4;
-export const PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } } as const, DASH = { len: 0.6, gap: 1.0 } as const;
-/** 渐到的虚线（统筹看样张 ⑩：原来固定 0.5 / 0.4 的小段，A5 上短的发夹碎成一串点）：段数跟着这一段发夹的长度定——每段大约 len（sp）、空隙 = 段长 × gapK，
- *  至少两段；短的发夹 = 更少、更长的段，两头都落在发夹的两端。空隙是段长的一半 = 一眼看得出是虚线（渐到），不是实线（手写的渐强渐弱）。 */
-export const RAMP_DASH = { len: 1.2, gapK: 0.5, min: 2 } as const;
 /** 一段长 L 的渐到发夹切成几段、每段多长、隔多远（同一个单位进出）。 */
 export const rampDashes = (L: number, unit: number): { n: number; on: number; per: number } => {
   const n = Math.max(RAMP_DASH.min, Math.round(L / (unit * RAMP_DASH.len * (1 + RAMP_DASH.gapK)))), on = L / (n + (n - 1) * RAMP_DASH.gapK);
@@ -344,7 +337,6 @@ export function layNoteDynamics(c: OrnCtx, row: number, _ch: Chunk, a: { cx: num
  *  同一行同一种踏板共用一条基线（一次贴：整行的线一样高）；三种踏板各一条，延音最靠谱。跨行 = 每行一段，下一行从行首接着画线（不再写「Ped.」）。
  *  不起作用的（已经踩着又踩、没踩就抬）照画、画灰（踩下 = 灰「Ped.」、抬起 = 灰「*」）；没踩就「换踏板」= 照踩下画（统筹 11-12：换完本来就是踩着的）。
  *  台上这位不认这种踏板（PartView.ignores 里有「pedal:<种类>」）= 整条画灰。纸尾还踩着 = 画到这张纸内容的右缘、照样有钩（放的时候纸尾就抬，sustainSpans）。 */
-export const PEDAL = { scale: 0.8, gap: 1.0, textGap: 0.3, hook: 1.1, notch: 0.45, hookIn: 0.3 } as const;
 const PEDAL_GLYPH: Readonly<Record<"sustain" | "sostenuto", string>> = { sustain: "\u{E650}", sostenuto: "\u{E659}" };
 const PEDAL_UP_GLYPH = "\u{E655}";
 export function layPedals(c: OrnCtx): void {

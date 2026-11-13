@@ -14,7 +14,7 @@ import { engrave, type Prim, type PartView, type EngraveOpts } from "../render/e
 import { lang } from "../i18n/index.ts";
 import type { Song } from "../score/song.ts";
 import { lookOf } from "../look/index.ts";   // 用哪一张纸只问这一处（第 17 条）
-import { spMm, lineSp, pageGeoOf, textScaleOf } from "../score/paper.ts";
+import { spMm, lineSp, pageGeoOf, textScaleOf } from "../look/paper.ts";
 import { writePdf, type PdfOp, type PdfPage, type Seg, type MusicOutlines, type PdfStats, type Rgb } from "./pdf.ts";
 import type { TtfFont } from "./ttf.ts";
 

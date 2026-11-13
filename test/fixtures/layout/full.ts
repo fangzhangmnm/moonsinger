@@ -9,7 +9,7 @@ import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../
 import { printOpts } from "../../../src/export/score-pdf.ts";
 import { yAt, dAt } from "../../../src/render/staff/geometry.ts";
 import { createTextMeasure } from "../../../src/render/text/index.ts";
-import { pageGeoOf } from "../../../src/score/paper.ts";
+import { pageGeoOf } from "../../../src/look/paper.ts";
 import { lookOf } from "../../../src/look/index.ts";
 import type { Song } from "../../../src/score/song.ts";
 

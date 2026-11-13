@@ -6,8 +6,8 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, setPaper, setDensity, setBarNumbers, setLyricFit, type Song } from "../src/score/song.ts";
 import { setNotation, setChordTags } from "../src/score/song-view.ts";
-import { paperOf, detectPaper } from "../src/score/paper.ts";
-import { lookOf, followDefault, allDefault, chosenCount, trackLookOf, paperChoicesOf, LOOK_KEYS } from "../src/look/index.ts";
+import { paperOf, detectPaper } from "../src/look/paper.ts";
+import { lookOf, followDefault, allDefault, chosenCount, trackLookOf, paperChoicesOf, marginRow, defaultText, LOOK_KEYS } from "../src/look/index.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
 const fs = (await import("node:fs" as string)) as { readdirSync(u: URL, o: { withFileTypes: true }): { name: string; isDirectory(): boolean }[]; readFileSync(u: URL, e: "utf8"): string };
@@ -92,4 +92,17 @@ describe("每张纸每个声部那几样（第 17 条四问第 2 条）", () => 
     eq(JSON.stringify(trackLookOf(s2)(p.id, part)), JSON.stringify({ autoOttava: false, grand: true }));
     eq(lookOf(st.song).chordsOf(part), "auto", "和弦选项没写 = 也认拆开弹的");
   });
+});
+
+describe("版面页「边距」那一行（第 17 条 17-2 顺手）", () => {
+  it("边距跟着软件 = 没有这一行；按值带着 = 第一格写这张纸自己的边距、另一格照实写四边；「其他」大小的纸跟着软件 = 默认那张纸的边距", () => {
+    const s = initState().song;
+    eq(marginRow(lookOf(s)), null, "新歌：边距跟着软件，不出这一行");
+    const a4 = { ...s, paper: { kind: "A4" as const }, marginMm: { t: 12, b: 14.5, l: 10, r: 10.125 } };
+    eq(JSON.stringify(marginRow(lookOf(a4))), JSON.stringify({ follow: "15 毫米", custom: "上 12 · 下 14.5 · 左 10 · 右 10.13 毫米" }));
+    const other = { ...s, paper: { kind: "other" as const, widthMm: 215.9, heightMm: 279.4 }, marginMm: { t: 12, b: 12, l: 12, r: 12 } };
+    eq(marginRow(lookOf(other))?.follow, "16 毫米", "其他大小的纸：跟着软件 = A5 的 16 毫米（和 lookOf 跟着软件时用的同一个）");
+    eq(JSON.stringify(lookOf(followDefault(other, "marginMm")).paper.marginMm), JSON.stringify({ l: 16, r: 16, t: 16, b: 16 }), "选「跟着软件」之后真的用这个数");
+  });
+  it("「移调辅助」第一格：跟着软件（现在是：不用）——不再括号套括号", () => { eq(defaultText("viewInC"), "不用"); });
 });

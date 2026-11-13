@@ -13,9 +13,10 @@ import { _t } from "../i18n/index.ts";
 import { TEXT_FACES, textStyleOf, faceMetrics, boxTopFor, type TextStyle } from "../render/text/index.ts";
 import type { Layout } from "../render/engrave.ts";
 import type { Song } from "../score/song.ts";
+import { CTL_H } from "../look/frame.ts";
 
 // 名字上面原来的两颗钮（眼睛 / 喇叭）2026-11-12 起搬进点名字弹出的小卡（施工单第 12 条 12-2，user「声部上面的两个钮还是难看…能不能排版的时候不看这些钮。然后这些钮找个聪明的地方放」）
-const CTL_H = 3.0, CTL_GLYPH = 2.0, CTL_TEXT = 1.4, TOUCH_SLOP = 10;
+const CTL_GLYPH = 2.0, CTL_TEXT = 1.4, TOUCH_SLOP = 10;   // CTL_H（那一条多高）= 排版给它留的高，从 src/look/frame.ts 拿（17-2：原来这里另写了一份 3.0）
 
 export interface OverlayHost {
   onPaperAdd(paper: string, kind: "part" | "paper", at: { x: number; y: number }): void;

@@ -5,7 +5,7 @@ import { resolveSongLooks, type ResolvedLook } from "../../score/clef.ts";
 import { trackLookOf } from "../../look/index.ts";
 export { staffRows, staffTracks, type FoldFamily, type StaffRows } from "./rows.ts";
 export { measureTrack, lineStartWidth, lyricAnchors, type StaffTrack } from "./measure.ts";
-export { drawStaff, STAFF_LANES, type LyricPart, type LyricSpot, type StaffDrawCtx } from "./draw.ts";
+export { drawStaff, type LyricPart, type LyricSpot, type StaffDrawCtx } from "./draw.ts";
 export { yAt, dAt, anchors, caretSpan, previewAt, pitchAxis, bandTop, staffGhost, type StaffRowData } from "./geometry.ts";
 export type { Unit, Chunk } from "../frame/units.ts";
 

@@ -1,3 +1,5 @@
+import { LYRIC_SPACE, HYPHEN_SX, GAP_MIN, GAP_FLOOR, DEFAULT_GAPS } from "../../look/text.ts";
+export { LYRIC_SPACE, HYPHEN_SX, GAP_MIN, GAP_FLOOR, DEFAULT_GAPS };
 export interface LyricFit {
     dx: number; /** 宽度倍数（乘在这一档平常的宽度上；1 = 不收）。 */
     sx: number;
@@ -24,11 +26,6 @@ export interface LyricGaps {
     hyphen: number; /** 缝再挤也至少留这么宽（sp）；没给 = GAP_FLOOR。按档的数在样式表 LYRIC_LOOK.gapFloor。 */
     floor?: number;
 }
-/** 没量的时候的默认（测试 / 没有量字的宿主）：歌词字号 1.6 sp 的系统无衬线体，空格约 0.27 字宽、连字符约 0.33 字宽。 */
-export declare const LYRIC_SPACE = 0.6, HYPHEN_SX = 0.8, GAP_MIN = 0.5;
-/** 缝再挤也至少留这么宽（sp）：能看出是两个词（user「只要能勉强看出节奏就行了」；v0.16.48 第一版没有底线 = 英文连成一片「bovetheworld」）。排版器按档传（LyricGaps.floor ← LYRIC_LOOK.gapFloor）；这个是没给时的默认。 */
-export declare const GAP_FLOOR = 0.2;
-export declare const DEFAULT_GAPS: LyricGaps;
 /** 这一行的方块字至少要压到多宽才不挤（1、0.95…minSx 里取最宽的那个；压到底也救不了 = 救得最多的那个）。整段取各行里最窄的 = 整段统一的宽度。 */
 export declare function lyricBlockSx(items: readonly LyricItem[], minSx?: number, gaps?: LyricGaps, bounds?: LyricBounds): number;
 /** 歌词按节奏排的让路（v0.9.40 立；v0.16.43 整行一起缩；v0.16.44 字高不动、只收宽度；v0.16.47 改成上面那个小优化问题——见 solveLyrics）。

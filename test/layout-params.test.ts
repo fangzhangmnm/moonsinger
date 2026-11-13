@@ -1,15 +1,16 @@
-// 排版参数表（谱面分家第四刀 4-5；src/render/layout-params.ts）：纸一级「一行最多拉宽多少」、行一级按这一行的种类、行身只从画法的竖向锚点来。
+// 排版参数表（谱面分家第四刀 4-5；src/look/layout.ts，17-2 前在 src/render/layout-params.ts）：纸一级「一行最多拉宽多少」、行一级按这一行的种类、行身只从画法的竖向锚点来。
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟）。五线谱「一个图元都不变」由 score-surface 的底本守着，这里只守新的量。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "../src/render/frame/arrange.ts";
-import { curveOf, SP_DEFAULTS } from "../src/render/spacing.ts";
-import { PAPER_PARAMS, ROW_PARAMS } from "../src/render/layout-params.ts";
+import { curveOf } from "../src/render/spacing.ts";
+import { SP_DEFAULTS } from "../src/look/spacing.ts";
+import { PAPER_PARAMS, ROW_PARAMS } from "../src/look/layout.ts";
 import { DRAWERS } from "../src/render/notations.ts";
 import { engrave } from "../src/render/engrave.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 import { initState, TPQ, type Song, type Token } from "../src/score/song.ts";
 import { setNotation } from "../src/score/song-view.ts";
-import { paperOf, lineSp, pageGeoOf, spMm, textScaleOf } from "../src/score/paper.ts";
+import { paperOf, lineSp, pageGeoOf, spMm, textScaleOf } from "../src/look/paper.ts";
 
 /** 一条轨：n 个小节，每小节 4 个四分音符（列条目：音 = 弹簧，小节线 = 固定宽）。 */
 function track(bars: number): ArrangeTrack<null> {
@@ -66,7 +67,7 @@ describe("排版参数表", () => {
     const head = paper.tracks[part]!.map((t) => (t.kind === "time" ? { ...t, beats, beatType: 4 } : t));
     let id = 5000, k = 0; const body: Token[] = [];
     for (let b = 0; b < bars; b++) for (const d of beats === 4 ? (b % 2 ? [1, 0.5, 0.5, 1, 1] : [1, 1, 0.5, 0.5, 1]) : (b % 2 ? [1, 0.5, 0.5, 1] : [1, 1, 1])) body.push({ kind: "note", id: id++, pitch: { step: "CDEFGAB"[k++ % 7] as "C", alter: 0, octave: 4 }, dur: TPQ * d, lyric: null } as Token);
-    const pp = { ...paperOf(paperKind), ...(compact ? { density: "compact" as const } : {}) };
+    const pp = paperOf(paperKind, compact ? "compact" : "cozy");   // 17-2：纸是一份完整的值（版式和谱高都写着），不再靠「没写谱高 = 按版式算」
     let s: Song = { ...st0.song, paper: { kind: paperKind }, density: compact ? "compact" : "default", papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...head, ...body] } }] };   // 17-1：纸张和版式是选择
     s = setNotation({ ...st0, song: s }, "jianpu").song;
     const sp = 10, ts = textScaleOf(pp), L = engrave(s, { width: lineSp(pp) * sp, sp, locale: "zh", ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: paper.id, part }, parts: [{ id: part, name: "Vocals", first: true }], measure: createTextMeasure((x: string, px: number) => [...x].length * 0.55 * px), autoBars: true, page: pageGeoOf(pp) });

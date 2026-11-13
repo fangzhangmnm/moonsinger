@@ -5,7 +5,7 @@ import { initState, tr, withArt, toggleInhaleBefore, toggleArtBefore, symBackspa
 import { toLabScore } from "./fixtures/lab-score.ts";
 import { SING_MARKS } from "../src/format/template.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
-import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
+import { paperOf as paperOfA5 } from "../src/look/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 let nid = 900;
 const note = (lyric: string, extra: Partial<NoteTok> = {}) => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 5 }, dur: TPQ, lyric, ...extra }) as Token;

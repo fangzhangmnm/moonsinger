@@ -3896,6 +3896,9 @@ var S = {
   "{paper}\uFF08{note}\uFF09": { en: "{paper} ({note})" },
   "\u5176\u4ED6": { en: "Other" },
   "\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002": { en: "One paper size for the whole song. Bigger paper fits more bars per line; if the screen fits, it's laid out as on paper. No page breaks unless printing." },
+  "\u8FB9\u8DDD": { en: "Margins" },
+  "\u81EA\u5B9A\u4E49\uFF08{x}\uFF09": { en: "Custom ({x})" },
+  "\u7EB8\u8FB9\u7559\u591A\u5BBD\u3002\u8FD9\u9996\u6B4C\u5E26\u7740\u81EA\u5DF1\u7684\u8FB9\u8DDD\uFF08\u522B\u7684\u8F6F\u4EF6\u5B58\u7684\u8C31\u3001\u8001\u6587\u4EF6\u91CC\u5199\u7740\u7684\uFF09\uFF1B\u9009\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D= \u7528\u8FD9\u5F20\u7EB8\u81EA\u5DF1\u7684\u8FB9\u8DDD\uFF0C\u6362\u7EB8\u65F6\u8DDF\u7740\u6362\u3002": { en: "How much space is left at the edges of the paper. This song carries its own margins (a score saved by another program, or written in an older file); choose Follow the software to use this paper size's own margins, which change when you change the paper." },
   "\u97F3\u7B26\u5BC6\u5EA6": { en: "Note density" },
   "\u81EA\u5B9A\u4E49\uFF08{mm} \u6BEB\u7C73\uFF09": { en: "Custom ({mm} mm)" },
   "\u540C\u4E00\u5F20\u7EB8\u4E0A\u6392\u5F97\u677E\u8FD8\u662F\u5BC6\uFF1A\u97F3\u7B26\u591A\u5927\u3001\u884C\u8DDD\u3001\u97F3\u548C\u97F3\u4E4B\u95F4\u7684\u8DDD\u79BB\u4E00\u8D77\u53D8\u3002": { en: "How loosely or tightly a page is set: note size, line spacing and the space between notes change together." },
@@ -5205,6 +5208,9 @@ var S = {
   "\u8FDE\u97F3": { en: "Tuplets" },
   "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3": { en: "Mode: which notes the pad lays out" },
   ' data-def="{def}" title="\u53CC\u51FB\u56DE {defText}"': { en: ' data-def="{def}" title="Double-click: back to {defText}"' },
+  "\u4E0A {t} \xB7 \u4E0B {b} \xB7 \u5DE6 {l} \xB7 \u53F3 {r} \u6BEB\u7C73": { en: "top {t} \xB7 bottom {b} \xB7 left {l} \xB7 right {r} mm" },
+  "{mm} \u6BEB\u7C73": { en: "{mm} mm" },
+  "\u4E0D\u7528": { en: "Off" },
   "\u8DDF\u7740\u97F3\u7B26\u5BC6\u5EA6": { en: "Follows note density" },
   "\u8FD9\u5F20\u7EB8\u81EA\u5DF1\u7684": { en: "This paper\u2019s own" },
   "\u97F3\u548C\u97F3\u4E4B\u95F4\uFF08\u6700\u591A\uFF09": { en: "Between notes (at most)" },
@@ -6112,7 +6118,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.21-2026-11-13";
+var APP_VERSION = "v0.17.22-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -6256,39 +6262,11 @@ function initPwaShell(opts) {
 }
 
 // src/score/paper.ts
-var STAFF_MM = 7;
-var STAFF_MM_COMPACT = 5;
 var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u97F3\u7B26\u5927\uFF0C\u4E00\u9875\u653E\u5F97\u5C11") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u97F3\u7B26\u5C0F\uFF0C\u4E00\u9875\u653E\u5F97\u591A\uFF08\u6B4C\u540D\u548C\u58F0\u90E8\u540D\u7167\u5927\u7684\uFF0C\u6B4C\u8BCD\u7528\u5C0F\u5B57\uFF09") }];
-var densityOf = (p2) => p2.density ?? "cozy";
-var staffMmOf = (p2) => p2.staffMm ?? (densityOf(p2) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
-var spMm = (p2) => staffMmOf(p2) / 4;
-var textScaleOf = (p2) => STAFF_MM / staffMmOf(p2);
-var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
 var PAPER_KINDS = ["A3L", "A4", "A5", "A6"];
 var isPaperKind = (v) => PAPER_KINDS.includes(v);
-var marginsOf = (kind) => {
-  const m2 = SIZES[kind].m;
-  return { l: m2, r: m2, t: m2, b: m2 };
-};
 var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF0CA4 \u5BF9\u6298"), A6: _t("\u53E3\u888B\u672C") };
 var PAPER_LABEL = { A3L: _t("A3 \u6A2A"), A4: "A4", A5: "A5", A6: "A6" };
-function paperOf(kind, density = "cozy") {
-  const s10 = SIZES[kind];
-  return { kind, widthMm: s10.w, heightMm: s10.h, marginMm: { l: s10.m, r: s10.m, t: s10.m, b: s10.m }, ...density === "compact" ? { density } : {} };
-}
-var lineSp = (p2) => (p2.widthMm - p2.marginMm.l - p2.marginMm.r) / spMm(p2);
-var pageGeoOf = (p2) => {
-  const mm = spMm(p2), m2 = p2.marginMm;
-  return { h: p2.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm };
-};
-function detectPaper(widthMm, heightMm, marginMm, staffMm = STAFF_MM, density = "cozy") {
-  const near2 = (a10, b3) => Math.abs(a10 - b3) <= 2;
-  const kind = PAPER_KINDS.find((k2) => near2(widthMm, SIZES[k2].w) && near2(heightMm, SIZES[k2].h));
-  const want = density === "compact" ? STAFF_MM_COMPACT : STAFF_MM;
-  const extra = { ...density === "compact" ? { density } : {}, ...Math.abs(staffMm - want) < 0.05 ? {} : { staffMm: +staffMm.toFixed(2) } };
-  return kind ? { ...paperOf(kind), marginMm, ...extra } : { kind: "other", widthMm, heightMm, marginMm, ...extra };
-}
-var paperSizeText = (p2) => `${Math.round(p2.widthMm)} \xD7 ${Math.round(p2.heightMm)} mm`;
 
 // src/keyboard/latch.ts
 var DOUBLE_TAP_MS = 350;
@@ -11308,6 +11286,50 @@ function prettyReading(lang2, x2) {
   return lang2 !== "ja" ? x2 : x2.split("-").map((y2) => y2.replace(/N_[a-z]+/g, "n").replace(/^clch/, "tch").replace(/^cl([a-z])/, "$1$1")).join("-");
 }
 
+// src/look/paper.ts
+var STAFF_MM = 7;
+var STAFF_MM_COMPACT = 5;
+var staffMmFor = (d3) => d3 === "compact" ? STAFF_MM_COMPACT : STAFF_MM;
+var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
+var marginsOf = (kind) => {
+  const m2 = SIZES[kind].m;
+  return { l: m2, r: m2, t: m2, b: m2 };
+};
+function paperOf(kind, density = "cozy") {
+  const s10 = SIZES[kind];
+  return { kind, widthMm: s10.w, heightMm: s10.h, marginMm: marginsOf(kind), density, staffMm: staffMmFor(density) };
+}
+var spMm = (p2) => p2.staffMm / 4;
+var textScaleOf = (p2) => STAFF_MM / p2.staffMm;
+var lineSp = (p2) => (p2.widthMm - p2.marginMm.l - p2.marginMm.r) / spMm(p2);
+var pageGeoOf = (p2) => {
+  const mm = spMm(p2), m2 = p2.marginMm;
+  return { h: p2.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm };
+};
+function detectPaper(widthMm, heightMm, marginMm, staffMm = STAFF_MM, density = "cozy") {
+  const near2 = (a10, b3) => Math.abs(a10 - b3) <= 2;
+  const kind = PAPER_KINDS.find((k2) => near2(widthMm, SIZES[k2].w) && near2(heightMm, SIZES[k2].h));
+  const extra = { ...density === "compact" ? { density } : {}, ...Math.abs(staffMm - staffMmFor(density)) < 0.05 ? {} : { staffMm: +staffMm.toFixed(2) } };
+  return kind ? { kind, widthMm: SIZES[kind].w, heightMm: SIZES[kind].h, marginMm, ...extra } : { kind: "other", widthMm, heightMm, marginMm, ...extra };
+}
+var paperSizeText = (p2) => `${Math.round(p2.widthMm)} \xD7 ${Math.round(p2.heightMm)} mm`;
+
+// src/look/frame.ts
+var SCROLL_TAIL = 6;
+var ABBR_REF = "Vln.Vc.";
+var NAME_MAX = 6.5;
+var ROW_STEP = 1;
+var MARGIN = 1.2;
+var BAR_W = 1.6;
+var TITLE_H = 5.4;
+var PAPER_H = 3.4;
+var PAPER_GAP = 1.6;
+var CTL_H = 3;
+var SYSTEM_LINE_W = 0.16 * 1.4;
+var LYRIC_EDGE = 0.25;
+var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
+var REFLOW_MARGIN = { l: 0, r: 0, t: 2.4, b: 1.5 };
+
 // src/score/view-in-c.ts
 var realFifthsOf = (t10) => t10.realFifths ?? t10.fifths;
 function toC(p2, fifths) {
@@ -11363,12 +11385,20 @@ var densityIn = (song) => {
   const d3 = pick(song.density, DEFAULTS.density);
   return d3 === "compact" ? "compact" : "cozy";
 };
+var ownMargins = (kind) => marginsOf(kind === "other" ? DEFAULTS.paper : kind);
 function paperIn(song) {
   const c10 = song.paper === "default" ? { kind: DEFAULTS.paper } : song.paper, density = densityIn(song);
-  const base2 = c10.kind === "other" ? { kind: "other", widthMm: c10.widthMm, heightMm: c10.heightMm, marginMm: marginsOf(DEFAULTS.paper) } : paperOf(c10.kind);
+  const base2 = c10.kind === "other" ? { kind: "other", widthMm: c10.widthMm, heightMm: c10.heightMm, marginMm: ownMargins("other") } : paperOf(c10.kind);
   const marginMm = song.marginMm === "default" ? base2.marginMm : song.marginMm;
-  const staffMm = song.staffMm === "default" ? density === "compact" ? STAFF_MM_COMPACT : STAFF_MM : song.staffMm;
+  const staffMm = song.staffMm === "default" ? staffMmFor(density) : song.staffMm;
   return { kind: base2.kind, widthMm: base2.widthMm, heightMm: base2.heightMm, marginMm, density, staffMm };
+}
+var customStaffMm = (look) => !look.follows.staffMm && Math.abs(look.paper.staffMm - staffMmFor(look.density)) > 0.01 ? look.paper.staffMm : null;
+function marginRow(look) {
+  if (look.follows.marginMm) return null;
+  const n10 = (v) => +v.toFixed(2), sides = (m2) => _t("\u4E0A {t} \xB7 \u4E0B {b} \xB7 \u5DE6 {l} \xB7 \u53F3 {r} \u6BEB\u7C73", { t: n10(m2.t), b: n10(m2.b), l: n10(m2.l), r: n10(m2.r) });
+  const own = ownMargins(look.paper.kind), even = own.l === own.r && own.l === own.t && own.l === own.b;
+  return { follow: even ? _t("{mm} \u6BEB\u7C73", { mm: n10(own.l) }) : sides(own), custom: sides(look.paper.marginMm) };
 }
 function trackLookOf(song) {
   const byId = new Map(song.papers.map((p2) => [p2.id, p2]));
@@ -11396,7 +11426,8 @@ function defaultText(key) {
     case "notation":
       return { staff: _t("\u4E94\u7EBF\u8C31"), jianpu: _t("\u7B80\u8C31"), letters: _t("\u5B57\u6BCD\u8C31") }[DEFAULTS.notation];
     case "viewInC":
-      return DEFAULTS.viewInC ? _t("\u6309 C \u8C03\u770B") : _t("\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09");
+      return DEFAULTS.viewInC ? _t("\u6309 C \u8C03\u770B") : _t("\u4E0D\u7528");
+    // 第一格是「跟着软件（现在是：X）」，X 里不再套括号（17-2 顺手）
     case "middleC":
       return `C${DEFAULTS.middleC}`;
     case "chordTags":
@@ -11420,7 +11451,7 @@ function defaultText(key) {
 function paperChoicesOf(p2) {
   const all = { paper: "default", density: "default", staffMm: "default", marginMm: "default" };
   if (!p2) return { ...all };
-  const density = p2.density === "compact" ? "compact" : "default", want = p2.density === "compact" ? STAFF_MM_COMPACT : STAFF_MM;
+  const density = p2.density === "compact" ? "compact" : "default", want = staffMmFor(p2.density === "compact" ? "compact" : "cozy");
   const staffMm = p2.staffMm === void 0 || Math.abs(p2.staffMm - want) < 0.05 ? "default" : p2.staffMm;
   const own = p2.kind === "other" ? null : marginsOf(p2.kind), same = (a10, b3) => ["l", "r", "t", "b"].every((k2) => Math.abs(a10[k2] - b3[k2]) < 0.05);
   const marginMm = own && same(p2.marginMm, own) ? "default" : { ...p2.marginMm };
@@ -11477,12 +11508,7 @@ function readMargins(v) {
   return ks.every((k2) => typeof o10[k2] === "number" && o10[k2] >= 0) ? { l: o10.l, r: o10.r, t: o10.t, b: o10.b } : null;
 }
 
-// src/render/text/style.ts
-var TEXT_FACES = {
-  sans: `system-ui, -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", sans-serif`,
-  serif: `"Noto Serif", "Times New Roman", Times, Georgia, serif`,
-  lyric: `system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`
-};
+// src/look/text.ts
 var s = (face, em2, ruler, weight = 400, italic = false) => ({ face, weight, italic, em: em2, ruler });
 var STEM_REGULAR = 0.092;
 var BOLD_STROKE = 0.035;
@@ -11496,7 +11522,6 @@ var TEMPO_EM = 1.35;
 var LYRIC_EM = 1.6;
 var LYRIC_LOOK = { cozy: { k: 1, sx: 1, gapFloor: 0.2 }, compact: { k: 1.15, sx: 0.85, gapFloor: 0.2 } };
 var LYRIC_MIN_SX = 0.5;
-var isBlockScript = (s10) => /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af\uff66-\uff9f]/.test(s10);
 var TEXT_STYLES = {
   "song-title": s("sans", 2.8, "text", 600),
   credits: s("sans", 1.25, "text"),
@@ -11541,8 +11566,21 @@ var TEXT_STYLES = {
   "jp-legend": s("sans", 1.05, "text")
 };
 var GHOST_DIGIT_K = 0.62;
+var LYRIC_SPACE = 0.6;
+var HYPHEN_SX = 0.8;
+var GAP_MIN = 0.5;
+var GAP_FLOOR = 0.2;
+var DEFAULT_GAPS = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
+
+// src/render/text/style.ts
+var TEXT_FACES = {
+  sans: `system-ui, -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", sans-serif`,
+  serif: `"Noto Serif", "Times New Roman", Times, Georgia, serif`,
+  lyric: `system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`
+};
+var isBlockScript = (s10) => /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af\uff66-\uff9f]/.test(s10);
 var VARIANTS = [{ role: "part-name", when: "empty", weight: 400 }, { role: "jp-digit", when: "art-ghost", weight: smallWeight(GHOST_DIGIT_K) }];
-var DEFAULT = s("sans", LYRIC_EM, "staff");
+var DEFAULT = { face: "sans", weight: 400, italic: false, em: LYRIC_EM, ruler: "staff" };
 function textStyleOf(cls) {
   const words = (cls ?? "").split(/\s+/).filter(Boolean);
   const role = words.filter((w2) => w2 in TEXT_STYLES).pop();
@@ -11566,11 +11604,6 @@ function textStyleCss(scope = ".staff-svg") {
 }
 
 // src/render/text/lyric-fit.ts
-var LYRIC_SPACE = 0.6;
-var HYPHEN_SX = 0.8;
-var GAP_MIN = 0.5;
-var GAP_FLOOR = 0.2;
-var DEFAULT_GAPS = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
 function solveLyrics(items, blockSx, minSx, gaps, widen = true, bounds) {
   const n10 = items.length, f2 = items.map((it2) => it2.block ? blockSx : 1), tight = /* @__PURE__ */ new Set();
   if (!n10) return { pos: [], f: f2, tight };
@@ -11833,6 +11866,13 @@ function faceMetrics(st2) {
 }
 var boxTopFor = (base2, px, m2) => base2 - px * (1 + m2.a - m2.d) / 2;
 
+// src/look/spacing.ts
+var LOOSE = [[TPQ / 8, 2.2], [TPQ / 4, 2.2], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
+var DENSE = [[TPQ / 8, 1.6], [TPQ / 4, 1.9], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
+var TIGHT = [[TPQ / 8, 1.5], [TPQ / 4, 1.7], [TPQ / 2, 2.35], [TPQ, 3], [TPQ * 2, 3.6], [TPQ * 4, 4.2]];
+var SP_DEFAULTS = { pad: 0.3, emptyBar: 4.5 };
+var NOTEHEAD_X = 0.35;
+
 // src/render/spacing.ts
 function indexRods(rods, n10) {
   const into = Array.from({ length: n10 }, () => []);
@@ -11841,9 +11881,6 @@ function indexRods(rods, n10) {
 }
 var isZero = (c10) => c10.fixed !== void 0 && c10.fixed <= EPS;
 var EPS = 1e-6;
-var LOOSE = [[TPQ / 8, 2.2], [TPQ / 4, 2.2], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
-var DENSE = [[TPQ / 8, 1.6], [TPQ / 4, 1.9], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
-var TIGHT = [[TPQ / 8, 1.5], [TPQ / 4, 1.7], [TPQ / 2, 2.35], [TPQ, 3], [TPQ * 2, 3.6], [TPQ * 4, 4.2]];
 var lerpLog = (pts, ticks) => {
   if (ticks <= pts[0][0]) return pts[0][1];
   const last = pts[pts.length - 1], prev = pts[pts.length - 2];
@@ -11858,7 +11895,6 @@ var curveOf = (m2) => {
   const t10 = typeof m2 === "object" ? m2 : m2 === true || m2 === "normal" ? DENSE : m2 === "tight" ? TIGHT : LOOSE;
   return (ticks) => lerpLog(t10, ticks);
 };
-var SP_DEFAULTS = { pad: 0.3, emptyBar: 4.5 };
 function idealGaps(cols, endTick, o10) {
   const out = new Array(cols.length).fill(0), sounding = /* @__PURE__ */ new Map();
   cols.forEach((c10, k2) => {
@@ -12395,8 +12431,14 @@ function primY(p2) {
   }
 }
 
-// src/render/frame/hints.ts
+// src/look/order.ts
+var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, pedal: 3.65, hairpin: 3.7, tail: 4, note: 5 };
+var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow", "pedal"];
+var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "pedal"];
+var LEFT_CLEAR = 4;
 var MAX_CLIMB = 6;
+
+// src/render/frame/hints.ts
 var at = (k2, x2, y2) => ({ x0: k2.x0 + x2, x1: k2.x1 + x2, y0: k2.y0 + y2, y1: k2.y1 + y2 });
 var hit = (a10, b3, pad4) => a10.x0 < b3.x1 + pad4 && b3.x0 < a10.x1 + pad4 && a10.y0 < b3.y1 + pad4 && b3.y0 < a10.y1 + pad4;
 function placeHints(printed, hints, pad4 = 0) {
@@ -12430,21 +12472,7 @@ function placeHints(printed, hints, pad4 = 0) {
   return out;
 }
 
-// src/render/frame/params.ts
-var SCROLL_TAIL = 6;
-var ABBR_REF = "Vln.Vc.";
-var NAME_MAX = 6.5;
-var ROW_STEP = 1;
-var MARGIN = 1.2;
-var BAR_W = 1.6;
-var TITLE_H = 5.4;
-var PAPER_H = 3.4;
-var PAPER_GAP = 1.6;
-var CTL_H = 3;
-var SYSTEM_LINE_W = 0.16 * 1.4;
-var LYRIC_EDGE = 0.25;
-
-// src/render/layout-params.ts
+// src/look/layout.ts
 var JP_COZY = 3.6 / (2.5 * 1.75);
 var JP_COMPACT = 3 / (2.5 * 1.25);
 var mockSpring = (q2) => (5 + 6.8 * Math.log2(1 + 4 * q2)) * 2.5 / 22;
@@ -12456,7 +12484,7 @@ var PAPER_PARAMS = {
   staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true, lastMerge: LAST_MERGE } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
   //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
-  //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，text/style.ts LYRIC_LOOK）
+  //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，src/look/text.ts LYRIC_LOOK）
   jianpu: JIANPU_PAPER,
   letters: JIANPU_PAPER
   // 字母谱（7-B）= 简谱的变体，同一种数字行，纸一级参数照简谱
@@ -13061,26 +13089,35 @@ var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
 // src/render/staff/notation.ts
 var baseWidth = (base2) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base2 / TPQ));
 
-// src/render/staff/units.ts
+// src/look/marks.ts
+var PIN_GAP = 0.7;
+var PIN_MIN = 1.4;
+var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
+var DASH = { len: 0.6, gap: 1 };
+var RAMP_DASH = { len: 1.2, gapK: 0.5, min: 2 };
+var PEDAL = { scale: 0.8, gap: 1, textGap: 0.3, hook: 1.1, notch: 0.45, hookIn: 0.3 };
 var CLEF_CUE = 0.72;
 var CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
-var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };
 var KEY_LABEL_W = 3.5;
+var STAFF_UNIT = { repeat: 0.8, barStyle: 0.7, time: 1.2, tempo: 0.3, acc: 1.3, dot: 0.6, lyricHyph: 1.4, lyricPlain: 0.7, breath: 0.8, inhale: { soft: 1.2, big: 2.1 } };
+
+// src/render/staff/units.ts
+var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };
 var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 var STAFF_WIDTHS = {
   // 反复小节线：字形宽 1.47（:|: 2.43）+ 两边留一点（Bravura repeatLeft / repeatRight / repeatRightLeft）；段落线 / 终止线（v0.9.32）比一根小节线宽一点
-  bar: (repeat, style) => repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : style ? BAR_W + 0.7 : BAR_W,
+  bar: (repeat, style) => repeat ? (repeat === "both" ? 2.43 : 1.47) + STAFF_UNIT.repeat : style ? BAR_W + STAFF_UNIT.barStyle : BAR_W,
   // 按 C 调看：这一处要写「1=X」，给字留宽（KEY_LABEL_W）
   key: (fifths, prev, inCLabel, ts2) => inCLabel ? Math.max(KEY_LABEL_W * (TEXT_STYLES["key-label"].ruler === "text" ? ts2 : 1), keyWidth(fifths, prev)) : keyWidth(fifths, prev),
-  time: (beats, beatType) => timeWidth(beats, beatType) + 1.2,
-  tempo: 0.3,
+  time: (beats, beatType) => timeWidth(beats, beatType) + STAFF_UNIT.time,
+  tempo: STAFF_UNIT.tempo,
   clef: CLEF_CUE_W,
-  acc: (any) => any ? 1.3 : 0,
-  chunk: (accW, base2, dotted) => accW + baseWidth(base2) + (dotted ? 0.6 : 0),
-  lyric: (accW, lyW, hyph) => accW + lyW + (hyph ? 1.4 : 0.7),
-  breath: 0.8,
-  inhale: { soft: 1.2, big: 2.1 }
+  acc: (any) => any ? STAFF_UNIT.acc : 0,
+  chunk: (accW, base2, dotted) => accW + baseWidth(base2) + (dotted ? STAFF_UNIT.dot : 0),
+  lyric: (accW, lyW, hyph) => accW + lyW + (hyph ? STAFF_UNIT.lyricHyph : STAFF_UNIT.lyricPlain),
+  breath: STAFF_UNIT.breath,
+  inhale: STAFF_UNIT.inhale
   // 呼吸逗号画在这个音后面：留一点地方；出声的换气：逗号后面的字也留地方
 };
 
@@ -13276,9 +13313,6 @@ function layoutStems(seq, dir, f2 = LOCAL) {
   return { notes, groups: out };
 }
 
-// src/render/frame/columns.ts
-var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, pedal: 3.65, hairpin: 3.7, tail: 4, note: 5 };
-
 // src/render/staff/glyphs.ts
 var TOP_LINE2 = 38;
 var MID_LINE2 = 34;
@@ -13383,7 +13417,6 @@ function measureTrack(q2) {
 }
 var clefW = (q2) => q2.fFam ? W.fClef : W.gClef;
 var lineStartWidth = (q2, key, first, base2) => base2 + 0.6 + clefW(q2) + 1 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q2.head.time.beats, q2.head.time.beatType) + 1.2 : 0.4);
-var NOTEHEAD_X = 0.35;
 function noteheadW(q2, c10) {
   const percHere = !!q2.pmode && !!q2.p.perc, k2 = c10.base >= WHOLE ? 2 : c10.base >= TPQ * 2 ? 1 : 0;
   if (!!q2.p.xHead && !percHere || !!c10.whisper) return k2 === 2 ? W.noteheadXWhole : k2 === 1 ? W.noteheadXHalf : W.noteheadXBlack;
@@ -13692,11 +13725,6 @@ function lightMarks(spec) {
 }
 
 // src/render/ornaments/index.ts
-var PIN_GAP = 0.7;
-var PIN_MIN = 1.4;
-var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
-var DASH = { len: 0.6, gap: 1 };
-var RAMP_DASH = { len: 1.2, gapK: 0.5, min: 2 };
 var rampDashes = (L2, unit) => {
   const n10 = Math.max(RAMP_DASH.min, Math.round(L2 / (unit * RAMP_DASH.len * (1 + RAMP_DASH.gapK)))), on2 = L2 / (n10 + (n10 - 1) * RAMP_DASH.gapK);
   return { n: n10, on: on2, per: on2 * (1 + RAMP_DASH.gapK) };
@@ -14019,7 +14047,6 @@ function layNoteDynamics(c10, row2, _ch, a10) {
     prims.push({ t: "path", d: d3, cls: cl2 });
   }));
 }
-var PEDAL = { scale: 0.8, gap: 1, textGap: 0.3, hook: 1.1, notch: 0.45, hookIn: 0.3 };
 var PEDAL_GLYPH = { sustain: "\uE650", sostenuto: "\uE659" };
 var PEDAL_UP_GLYPH = "\uE655";
 function layPedals(c10) {
@@ -14267,7 +14294,6 @@ var pitchAxis = {
 var bandTop = (row2, half2) => yAt(row2.staffTop, 44, half2);
 
 // src/render/staff/draw.ts
-var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow", "pedal"];
 function drawStaff(c10, mine) {
   const lyricParts = [];
   const own = mine ? new Set(mine) : null, skip = (r10) => own !== null && !own.has(r10);
@@ -15391,7 +15417,6 @@ function keyPrims(k2, x2, y2, size, cls, T3) {
 }
 
 // src/render/jianpu/measure.ts
-var LEFT_CLEAR = 4;
 var core = (u2, nameW) => nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u2.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN;
 var COLUMN_KIND2 = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
 function unitW(u2, printKey) {
@@ -15448,7 +15473,6 @@ function layoutHead(x0, items) {
 }
 
 // src/render/jianpu/draw.ts
-var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "pedal"];
 var jpGlyph = (a10) => {
   const d3 = SIGNS[`art:${a10}`]?.draw.jianpu;
   return d3 && d3.kind === "glyph" ? { above: d3.above, w: d3.w ?? 1, h: d3.h ?? 1 } : null;
@@ -17926,7 +17950,6 @@ function fitAbbr(base2, num2 = "", W3 = ABBR_W) {
 
 // src/ui/score-view.ts
 var caretKey = (st2) => `${st2.at.paper}|${st2.at.part}|${st2.caret}`;
-var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
 var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
 var PX_PER_MM = 96 / 25.4;
 var MAX_ZOOM = 8;
@@ -18164,7 +18187,7 @@ var ScoreView = class {
     return this.frameAt(avail2).sp;
   }
   frameAt(avail2) {
-    const st2 = this.host.get(), paper = lookOf(st2.song).paper, scale = staffMmOf(paper) / STAFF_MM;
+    const st2 = this.host.get(), paper = lookOf(st2.song).paper, scale = paper.staffMm / STAFF_MM;
     const base2 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale;
     const geo = pageGeoOf(paper), page = this.host.look.pages?.() ? geo : null;
     if (this.host.look.scroll?.()) return { sp: avail2 > 0 && avail2 < 420 ? Math.max(8.5 * scale, Math.min(base2, avail2 / 42 * scale)) : base2, width: Math.max(320, avail2 - (CONT_MARGIN.l + CONT_MARGIN.r) * base2), strict: false, page: null, margins: CONT_MARGIN };
@@ -18175,7 +18198,7 @@ var ScoreView = class {
       const sp2 = base2 * avail2 / want;
       return { sp: sp2, width: lineSp(paper) * sp2, strict: false, page, margins };
     }
-    return { sp: avail2 > 0 && avail2 < 420 ? Math.max(8.5 * scale, Math.min(base2, avail2 / 42 * scale)) : base2, width: Math.max(320, avail2), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
+    return { sp: avail2 > 0 && avail2 < 420 ? Math.max(8.5 * scale, Math.min(base2, avail2 / 42 * scale)) : base2, width: Math.max(320, avail2), strict: false, page: null, margins: REFLOW_MARGIN };
   }
   /** 量文字宽的原始尺子（这串字、歌词那款字、px 那么大 = 多宽 px）：屏幕和 PDF 共用这一把——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。字体串和换算在文字模块（src/render/text/measure.ts；worker 同一串）。 */
   get rawMeasure() {
@@ -20066,7 +20089,6 @@ var ScoreView = class {
 };
 
 // src/ui/score-overlay.ts
-var CTL_H2 = 3;
 var CTL_GLYPH = 2;
 var CTL_TEXT = 1.4;
 var TOUCH_SLOP = 10;
@@ -20119,17 +20141,17 @@ var ScoreOverlay = class {
     const song = v.song, papers = song.papers, multi = papers.length > 1, nameOf2 = (id2) => papers.find((p2) => p2.id === id2);
     this.hiddenOf = new Map(L2.papers.map((pp) => [pp.id, pp.hiddenParts]));
     {
-      const s10 = CTL_H2 * sp2, x2 = L2.content.right - s10, y2 = L2.title.y + 0.5 * sp2;
+      const s10 = CTL_H * sp2, x2 = L2.content.right - s10, y2 = L2.title.y + 0.5 * sp2;
       add("chip", "button", "ov-i ov-chip ov-paper-chip", box(x2, y2, s10, s10), icon("jianpu-staff", CTL_GLYPH * sp2), { "data-ov": "chip", title: _t("\u8C31\u79CD\u548C\u7EB8\uFF1A{paperLabel}", { paperLabel: v.paperLabel }) });
     }
-    if (!multi && v.edit) add(`menu:${papers[0].id}`, "button", "ov-i ov-chip ov-menu", `${box(L2.content.left, L2.title.y + 0.5 * sp2, (CTL_H2 + 0.6) * sp2, CTL_H2 * sp2)};font-size:${px(CTL_GLYPH * sp2)}`, "\u22EF", { "data-ov": "menu", "data-paper": papers[0].id, title: _t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355") });
+    if (!multi && v.edit) add(`menu:${papers[0].id}`, "button", "ov-i ov-chip ov-menu", `${box(L2.content.left, L2.title.y + 0.5 * sp2, (CTL_H + 0.6) * sp2, CTL_H * sp2)};font-size:${px(CTL_GLYPH * sp2)}`, "\u22EF", { "data-ov": "menu", "data-paper": papers[0].id, title: _t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355") });
     const hiddenChip = (paperId, ids, style) => {
       add(`hid:${paperId}`, "button", "ov-i ov-chip ov-hidden", style, esc3(_t("\u9690\u85CF {n}", { n: ids.length })), { "data-ov": "hidden", "data-paper": paperId, title: _t("\u8FD9\u4E00\u6BB5\u6709 {n} \u4F4D\u9690\u85CF\u7740\uFF08\u4E0D\u6392\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u770B\u662F\u8C01\u3001\u653E\u51FA\u6765", { n: ids.length }) });
     };
     for (const pp of L2.papers) {
       const paper = nameOf2(pp.id);
       if (!paper) continue;
-      const k2 = papers.indexOf(paper), h2 = CTL_H2 * sp2, y2 = pp.title.y + (pp.title.h - h2) / 2, pid = esc3(pp.id);
+      const k2 = papers.indexOf(paper), h2 = CTL_H * sp2, y2 = pp.title.y + (pp.title.h - h2) / 2, pid = esc3(pp.id);
       if (pp.title.shown && multi) {
         const segOn = v.onlyPaper === pp.id;
         const kids2 = [
@@ -20142,7 +20164,7 @@ var ScoreOverlay = class {
         ];
         add(`nav:${pp.id}:${k2}:${papers.length}:${segOn}:${v.edit}:${pp.hiddenParts.join(",")}`, "div", "ov-nav", `right:${px(-L2.content.right)};top:${px(y2)};height:${px(h2)};--ctl:${px(h2)};--ctl-glyph:${px(CTL_GLYPH * sp2)};--ctl-text:${px(CTL_TEXT * sp2)}`, kids2.join(""));
       } else if (pp.hiddenParts.length && pp.title.shown) {
-        hiddenChip(pp.id, pp.hiddenParts, `right:${px(-(L2.content.right - (CTL_H2 + 0.6) * sp2))};top:${px(y2)};height:${px(h2)};font-size:${px(CTL_TEXT * sp2)}`);
+        hiddenChip(pp.id, pp.hiddenParts, `right:${px(-(L2.content.right - (CTL_H + 0.6) * sp2))};top:${px(y2)};height:${px(h2)};font-size:${px(CTL_TEXT * sp2)}`);
       }
       if (pp.title.shown && !paper.name && !pp.hidden) add(`ph-paper:${pp.id}`, "div", "ov-placeholder ov-ph-paper", text2(pp.title.x, pp.title.baseline, pp.title.size), esc3(_t("\u66F2\u6BB5\u540D")));
       if (pp.note) add(`hp-note:${pp.id}`, "div", "ov-stub ov-note", `${box(pp.note.x, pp.note.y, pp.note.w, pp.note.h)};font-size:${px(1.1 * sp2)}`, `<span>${esc3(_t("\u8FD9\u4E00\u6BB5\u9690\u85CF\u7740\uFF1A\u4E0D\u653E\u3001\u4E0D\u5370\uFF08\u300C\u22EF\u300D\u91CC\u80FD\u653E\u51FA\u6765\uFF09"))}</span>`);
@@ -34872,15 +34894,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick2(() => "singer-worker-4d51b34c0bc6.mjs");
+      return pick2(() => "singer-worker-2fe6f22a3f26.mjs");
     case "mp3-worker":
       return pick2(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick2(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick2(() => "layout-worker-37c08e1ee2fa.mjs");
+      return pick2(() => "layout-worker-78f06fa582dc.mjs");
     case "encode-worker":
-      return pick2(() => "encode-worker-793226294b32.mjs");
+      return pick2(() => "encode-worker-10e69fc7ac37.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -37961,11 +37983,11 @@ function noteType(dur) {
 }
 var pitchXml = (p2) => `<pitch><step>${p2.step}</step>${p2.alter ? `<alter>${p2.alter}</alter>` : ""}<octave>${p2.octave}</octave></pitch>`;
 var LAYOUT_TENTHS = { cozy: { system: 110, staff: 80 }, compact: { system: 60, staff: 50 } };
-var tenthsPerMm = (p2) => 40 / staffMmOf(p2);
+var tenthsPerMm = (p2) => 40 / p2.staffMm;
 function defaultsXml(p2) {
   const t10 = (mm) => +(mm * tenthsPerMm(p2)).toFixed(2), m2 = p2.marginMm;
-  const compact = densityOf(p2) === "compact";
-  return `<defaults><scaling><millimeters>${staffMmOf(p2)}</millimeters><tenths>40</tenths></scaling><page-layout><page-height>${t10(p2.heightMm)}</page-height><page-width>${t10(p2.widthMm)}</page-width><page-margins type="both"><left-margin>${t10(m2.l)}</left-margin><right-margin>${t10(m2.r)}</right-margin><top-margin>${t10(m2.t)}</top-margin><bottom-margin>${t10(m2.b)}</bottom-margin></page-margins></page-layout><system-layout><system-distance>${compact ? LAYOUT_TENTHS.compact.system : LAYOUT_TENTHS.cozy.system}</system-distance></system-layout><staff-layout><staff-distance>${compact ? LAYOUT_TENTHS.compact.staff : LAYOUT_TENTHS.cozy.staff}</staff-distance></staff-layout></defaults>`;
+  const compact = p2.density === "compact";
+  return `<defaults><scaling><millimeters>${p2.staffMm}</millimeters><tenths>40</tenths></scaling><page-layout><page-height>${t10(p2.heightMm)}</page-height><page-width>${t10(p2.widthMm)}</page-width><page-margins type="both"><left-margin>${t10(m2.l)}</left-margin><right-margin>${t10(m2.r)}</right-margin><top-margin>${t10(m2.t)}</top-margin><bottom-margin>${t10(m2.b)}</bottom-margin></page-margins></page-layout><system-layout><system-distance>${compact ? LAYOUT_TENTHS.compact.system : LAYOUT_TENTHS.cozy.system}</system-distance></system-layout><staff-layout><staff-distance>${compact ? LAYOUT_TENTHS.compact.staff : LAYOUT_TENTHS.cozy.staff}</staff-distance></staff-layout></defaults>`;
 }
 function readPaper(root) {
   const d3 = kid(root, "defaults"), pl = kid(d3, "page-layout");
@@ -46036,7 +46058,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "e84d00584defcae4" : "dev";
+var CORE_HASH = true ? "d9bd645706c4da0b" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -62482,7 +62504,8 @@ function openPaperSheet(focus) {
   const IN_SONG = where(_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u5B58\uFF1A\u8FDB\u6B4C\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002")), IN_VIEW = where(_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u7684\u89C6\u56FE\u5B58\uFF1A\u5B58\u7684\u65F6\u5019\u987A\u624B\u5E26\u4E0A\uFF0C\u4E0D\u7B97\u6539\u52A8\u3001\u4E0D\u8FDB\u64A4\u9500\u3002")), IN_SESSION = where(_t("\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002"));
   const draw = () => {
     const look = lookOf(D3.st.song), p2 = look.paper, movable = !IN_C_APPLIES[look.notation];
-    const fileMm = !look.follows.staffMm && Math.abs(p2.staffMm - (look.density === "compact" ? STAFF_MM_COMPACT : STAFF_MM)) > 0.01 ? p2.staffMm : null;
+    const fileMm = customStaffMm(look);
+    const mrow = marginRow(look);
     const fol = (key) => [FOLLOW, _t("\u8DDF\u7740\u8F6F\u4EF6\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09", { x: defaultText(key) })];
     const cur = (key, v) => look.follows[key] ? FOLLOW : v;
     const one = D3.st.song.parts[0], only1 = !!one && pv(one.id).only && D3.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only);
@@ -62516,7 +62539,12 @@ function openPaperSheet(focus) {
       _t("\u7EB8\u5F20"),
       sel2("paper", [fol("paper"), ...PAPER_KINDS.map((k2) => [k2, _t("{paper}\uFF08{note}\uFF09", { paper: PAPER_LABEL[k2], note: PAPER_NOTE[k2] })]), ...p2.kind === "other" ? [["other", _t("{paper}\uFF08{note}\uFF09", { paper: _t("\u5176\u4ED6"), note: paperSizeText(p2) })]] : []], cur("paper", p2.kind)),
       _t("\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002") + IN_SONG
-    ) + // 音符密度（user 11-12「嗯，那么叫音符密度」；原来叫「版式」）。别家文件写的谱高不是我们两档里的任何一档：如实叫「自定义（N 毫米）」（user「应该有一个选项是相当于自定义，得如实那么说」），选它 = 不动。
+    ) + // 边距（17-2 顺手，统筹 2026-11-13）：这首歌带着自己的边距时才出这一行；第一格跟着软件 = 用这张纸自己的边距，另一格 = 照实写这首歌带着的四边、选它 = 不动
+    (mrow ? setItem(
+      _t("\u8FB9\u8DDD"),
+      sel2("margin", [[FOLLOW, _t("\u8DDF\u7740\u8F6F\u4EF6\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09", { x: mrow.follow })], ["file", _t("\u81EA\u5B9A\u4E49\uFF08{x}\uFF09", { x: mrow.custom })]], "file"),
+      _t("\u7EB8\u8FB9\u7559\u591A\u5BBD\u3002\u8FD9\u9996\u6B4C\u5E26\u7740\u81EA\u5DF1\u7684\u8FB9\u8DDD\uFF08\u522B\u7684\u8F6F\u4EF6\u5B58\u7684\u8C31\u3001\u8001\u6587\u4EF6\u91CC\u5199\u7740\u7684\uFF09\uFF1B\u9009\u300C\u8DDF\u7740\u8F6F\u4EF6\u300D= \u7528\u8FD9\u5F20\u7EB8\u81EA\u5DF1\u7684\u8FB9\u8DDD\uFF0C\u6362\u7EB8\u65F6\u8DDF\u7740\u6362\u3002") + IN_SONG
+    ) : "") + // 音符密度（user 11-12「嗯，那么叫音符密度」；原来叫「版式」）。别家文件写的谱高不是我们两档里的任何一档：如实叫「自定义（N 毫米）」（user「应该有一个选项是相当于自定义，得如实那么说」），选它 = 不动。
     //   每个选项得到什么写进问号（下拉的项只有一行字，不把选项撑长）；问号里只说「常用」，不说「应该」（统筹 2026-11-12）
     setItem(
       _t("\u97F3\u7B26\u5BC6\u5EA6"),
@@ -62567,10 +62595,10 @@ function openPaperSheet(focus) {
   box.addEventListener("change", (e10) => {
     const el2 = e10.target, k2 = el2.dataset.pg, v = el2.value;
     if (!k2 || v === ODD) return;
-    const FOLLOW_KEY = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit" };
+    const FOLLOW_KEY = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit", margin: "marginMm" };
     if (v === FOLLOW && FOLLOW_KEY[k2]) {
-      const key = FOLLOW_KEY[k2], next2 = { ...D3.st, song: followDefault(D3.st.song, key) }, label = _t("{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6", { what: { nota: _t("\u8C31\u79CD"), inc: _t("\u79FB\u8C03\u8F85\u52A9"), mc: _t("\u4E2D\u592E C \u53EB"), ct: _t("\u548C\u5F26\u8F85\u52A9"), expr: _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5"), paper: _t("\u7EB8\u5F20"), density: _t("\u97F3\u7B26\u5BC6\u5EA6"), bn: _t("\u5C0F\u8282\u53F7"), lyr: _t("\u6B4C\u8BCD\u6392\u6CD5") }[k2] ?? key });
-      if (key === "paper") setPageLook(next2, { kind: "paperSize", label });
+      const key = FOLLOW_KEY[k2], next2 = { ...D3.st, song: followDefault(D3.st.song, key) }, label = _t("{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6", { what: { nota: _t("\u8C31\u79CD"), inc: _t("\u79FB\u8C03\u8F85\u52A9"), mc: _t("\u4E2D\u592E C \u53EB"), ct: _t("\u548C\u5F26\u8F85\u52A9"), expr: _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5"), paper: _t("\u7EB8\u5F20"), density: _t("\u97F3\u7B26\u5BC6\u5EA6"), bn: _t("\u5C0F\u8282\u53F7"), lyr: _t("\u6B4C\u8BCD\u6392\u6CD5"), margin: _t("\u8FB9\u8DDD") }[k2] ?? key });
+      if (key === "paper" || key === "marginMm") setPageLook(next2, { kind: "paperSize", label });
       else if (key === "density") setPageLook(next2, { kind: "density", label });
       else if (key === "barNumbers") setPageLook(next2, { kind: "barNumbers", label });
       else if (key === "lyricFit") setPageLook(next2, { kind: "lyricFit", label });
@@ -66204,4 +66232,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-04dcfdb4bc72.mjs.map
+//# sourceMappingURL=moonsinger-c3328e4d622a.mjs.map

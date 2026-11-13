@@ -4,19 +4,18 @@
 import { TPQ } from "../../score/song.ts";
 import { MELISMA_MARK } from "../../score/lyrics.ts";
 import type { SpItem } from "../spacing.ts";
-import { SLOT, type ColumnKind } from "../frame/columns.ts";
+import { type ColumnKind } from "../frame/columns.ts";
+import { SLOT, LEFT_CLEAR } from "../../look/order.ts";
 import type { ColEntry } from "../frame/arrange.ts";
 import type { Unit, Chunk } from "../frame/units.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, lettersOf, glyphWOf } from "./chunk.ts";
 import { noteCell } from "./note-cell.ts";
 import { keyParts, keyLayout } from "./keytext.ts";
 export type { JianpuTrack, JianpuMode, JianpuAux } from "./chunk.ts";
-import { SP_DEFAULTS } from "../spacing.ts";
+import { SP_DEFAULTS } from "../../look/spacing.ts";
 import { DIGIT_W, COL_MIN, COL_MIN_SHORT, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, headTextW } from "./glyphs.ts";
 
 /** 这一段（第一个字形）这一列至少多宽（数字行的单位；样张：四分 / 八分 = 数字宽 + 一点缝，十六分及更短只占字宽——「密的声部自己挤紧」；和弦名 = 名字的宽 + 两边的缝）。 */
-/** 左边挂了东西的音：前一个音的墨到这个挂件的空 ≥ 挂件到它自己那个音的空的几倍（第八刀，统筹 2026-11-12 定成规矩，不定成数）。 */
-const LEFT_CLEAR = 4;
 const core = (u: Chunk, nameW: number): number => (nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN);
 const COLUMN_KIND: Record<Unit["kind"], ColumnKind> = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", pedal: "pedal", hairpin: "hairpin", head: "tail", chunk: "note" };
 /** 中途换调 / 换拍号写的那几个字（「1=♭B」「3/4」）大约多宽（sp）。 */

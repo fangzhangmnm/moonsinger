@@ -20,7 +20,8 @@ import { TEXT_STYLES, lyricSizePx, hyphens, LYRIC_MIN_SX, isBlockScript, textPx,
 import { _tIn, type Lang } from "../i18n/index.ts";
 import { type Song, type PaperSeg, type Token, type Focus, type Staff, isTimed, tempoOwner, sheetEndBpm, DEFAULT_KEY } from "../score/song.ts";
 import { parseArrangement } from "../score/arrange.ts";
-import { curveOf, SP_DEFAULTS } from "./spacing.ts";
+import { curveOf } from "./spacing.ts";
+import { SP_DEFAULTS } from "../look/spacing.ts";
 import { type PercInfo } from "../gm/percussion.ts";
 import { MELISMA_MARK, lyricShow, lyricHang } from "../score/lyrics.ts";
 import { Skyline, primInk, shiftPrim, movePrim, primY } from "./skyline.ts";
@@ -30,8 +31,8 @@ import { songInC } from "../score/view-in-c.ts";
 import { textLangIn } from "../score/song-view.ts";
 import { lookOf } from "../look/index.ts";   // 「现在怎么画」只问这一处（第 17 条）
 import { type HarmonyRead } from "../theory/index.ts";
-import { SCROLL_TAIL, ABBR_REF, NAME_MAX, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SYSTEM_LINE_W, LYRIC_EDGE } from "./frame/params.ts";
-import { PAPER_PARAMS, ROW_PARAMS } from "./layout-params.ts";   // 排版参数表（纸一级按谱种、行一级按行的种类）
+import { SCROLL_TAIL, ABBR_REF, NAME_MAX, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SYSTEM_LINE_W, LYRIC_EDGE } from "../look/frame.ts";
+import { PAPER_PARAMS, ROW_PARAMS } from "../look/layout.ts";   // 排版参数表（纸一级按谱种、行一级按行的种类）
 import { wrapTitle } from "./frame/furniture.ts";
 // 五线谱这一种：只从它的入口拿（施工单 1b-9 守卫 1：框架不直接 import 字形表、符干、谱号模块）
 import { DRAWERS, NOTATIONS, type RowKind, type FoldFamily, type StaffTrack, type Unit, type Chunk, type TrackAux, type RowLabel } from "./notations.ts";   // 谱种的表（第四刀）：框架只经过它拿画法，不直接 import staff/ / jianpu/
@@ -88,7 +89,7 @@ export interface EngraveOpts {
   /** 连续排法的纸边距（sp）：和分页同一张纸的几何，只是不断页（user 2026-10-08「连续和分页看到的行宽应该是一样的」「连续只是没有了断页，但是每一行还是一样的」）。 */
   margins?: { l: number; r: number; t: number; b: number };
   // 按 C 调看、和弦标级数（v0.16.10 / v0.16.13 起是这里的两个选项）：谱面分家第三刀起是歌里的设置，排版自己读（src/look lookOf，原来 src/score/song-view.ts songViewOf），不再从选项进来。
-  /** 字的尺子比谱的尺子大多少（刀 2；src/score/paper.ts textScaleOf：舒适 = 1、紧凑 = 1.4）：歌名 / 作者栏 / 编排 / 曲段名、声部名 / 简写、歌词、速度 / 风格 / 反复的字、
+  /** 字的尺子比谱的尺子大多少（刀 2；src/look/paper.ts textScaleOf：舒适 = 1、紧凑 = 1.4）：歌名 / 作者栏 / 编排 / 曲段名、声部名 / 简写、歌词、速度 / 风格 / 反复的字、
    *  「1=F」、小节号、和弦级数、页码，连同它们周围留的地方，都按 sp × textScale 量；字形、线、cresc. / 8va / 「吸」/ 推定的灰字照旧跟谱。量字的换算在文字模块里（measure.width）。没给 = 1。 */
   textScale?: number;
   /** 界面语言（谱面分家施工单 1b-3）：不印的提示（编排写错的说明、「无调」、状态提示那一串…）按它翻；印出来的字（「编排」、换气后面的「吸 / 深吸」）按歌里「谱上的字」那一项（12-4），
@@ -204,7 +205,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   if (!songLook.expressions) song = foldExpressions(song);
   const sp = o.sp, P = (v: number) => v * sp, ts = o.textScale ?? 1, T = (v: number) => v * sp * ts;   // P = 谱的尺子；T = 字的尺子（刀 2：紧凑档 ts = 1.4，字和它周围留的地方照舒适档）
   const density = songLook.density;
-  const PPAR = PAPER_PARAMS[songLook.notation][density];   // 排版参数表（layout-params.ts）：纸一级按这首歌的谱种；行一级（rowPar）按这一行的种类
+  const PPAR = PAPER_PARAMS[songLook.notation][density];   // 排版参数表（src/look/layout.ts）：纸一级按这首歌的谱种；行一级（rowPar）按这一行的种类
   // 分页：第 k 页从 pageTopY(k) 起、高 PG.h；内容只放在上下边距之间；放不下的整块（一行谱 / 曲段名 + 第一行 / 细行）挪到下一页
   const PG = o.page ?? null, PAGE_GAP = 3, MX = o.page ?? o.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };   // MX = 纸的边距（连续 / 分页同一套）
   const pageTopY = (k: number) => P(k * ((PG?.h ?? 0) + PAGE_GAP));

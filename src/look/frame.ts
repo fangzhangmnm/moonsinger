@@ -1,4 +1,4 @@
-// params.ts —— 排版框架自己的尺寸常数（sp）：边距、名字一栏、歌名 / 曲段名那一条、小控件、左边的竖线。
+// src/look/frame.ts（原 src/render/frame/params.ts；第 17 条 17-2 原样搬进 src/look，数一个没改）—— 排版框架自己的尺寸常数（sp）：边距、名字一栏、歌名 / 曲段名那一条、小控件、左边的竖线。
 // > moved 2026-11-11 by Claude Opus 5.5（施工单 1b-2 搬家：从 src/render/engrave.ts 原样搬出，内容没改）
 // > edited 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-5）：版式表 SPACING 和 SQUEEZE 搬去排版参数表 src/render/layout-params.ts
 //   （纸一级按谱种、行一级按行的种类；参数表要知道有哪几种行，住在谱种表那一层，框架这一层不往上 import）。
@@ -18,3 +18,7 @@ export const CTL_H = 3.0;   // 曲段名那一条里纸上小控件的高（不�
 export const SYSTEM_LINE_W = 0.16 * 1.4;
 /** 歌词离这一行左右边界至少多远（sp；7-E）：字的前进宽度（含字形自带的留白）不越过「边界往里这么多」。 */
 export const LYRIC_EDGE = 0.25;
+/** 连续排法的边距（sp）：纸的真边距只在分页里画（所见即所得）；连续 = 一圈舒服的窄边，行宽照旧是版心。（原 src/ui/score-view.ts，17-2 搬来） */
+export const CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 } as const;
+/** 按屏宽折行（不按纸排）时的边距（sp）：左右不留、上面给歌名那一点、下面一点。（原 src/ui/score-view.ts frameAt 里的字面量，17-2 搬来） */
+export const REFLOW_MARGIN = { l: 0, r: 0, t: 2.4, b: 1.5 } as const;

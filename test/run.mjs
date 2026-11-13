@@ -59,6 +59,7 @@ import "./template.test.ts";   // 模板只在门口（16-4 A）：出声那一�
 import "./art-keys-by-path.test.ts";   // 乐手身上的键按力度路分；力度路是契约（统筹 2026-11-12 夜）
 import "./performer-defaults.test.ts";   // 乐手和现在的默认比：按「这位的声音变不变」核每个键恰好落在一行上（16-6，统筹 2026-11-13）
 import "./look.test.ts";   // 「现在怎么画」只在 src/look：边界 + 跟着软件 + 纸张存选择（第 17 条 17-1）
+import "./look-rules.test.ts";   // 排版规则的数只在 src/look；src/render 留着的数每个都登记了类别（第 17 条 17-2）
 import "./gm-format.test.ts";
 import "./sounds.test.ts";
 import "./synth-wasm.test.ts";

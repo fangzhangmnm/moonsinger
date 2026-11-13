@@ -4,5 +4,3 @@
 //   note = 音 / 休止（一段：跨小节的音切开、拆成能记的时值后的每一段）；tail = 写字头停在这条轨的尾巴后面（零宽）。
 
 export type ColumnKind = "bar" | "nav" | "clef" | "key" | "time" | "tempo" | "groove" | "dyn" | "ottava" | "pedal" | "hairpin" | "tail" | "note";
-/** 同一时刻里的先后（小）→（大）。房子 / Segno / Coda 排在小节线后面（0.5），D.C. / Fine / To Coda 排在前面（−0.5）由画法直接报。 */
-export const SLOT: Record<ColumnKind, number> = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, pedal: 3.65, hairpin: 3.7, tail: 4, note: 5 };

@@ -1,7 +1,8 @@
 // 纸测试：A4 / A5 / A6 认档、别的纸原样留着、存进 MusicXML <defaults> 往返；17-1 起纸张存选择（"default" 或选的那一种）。
 // created 2026-10-07 by Claude Opus 5.5（user「嗯A4 A5 A6三种，可以定」「默认A5同意」；数据契约草稿 §6¾）
 import { describe, it, eq, assert } from "./runner.mjs";
-import { paperOf, detectPaper, lineSp, PAPER_KINDS } from "../src/score/paper.ts";
+import { PAPER_KINDS } from "../src/score/paper.ts";
+import { paperOf, detectPaper, lineSp } from "../src/look/paper.ts";
 import { emptySong, initState, setPaper, firstTrack } from "../src/score/song.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { lookOf, followDefault } from "../src/look/index.ts";

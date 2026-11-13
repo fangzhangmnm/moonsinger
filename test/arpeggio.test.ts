@@ -4,7 +4,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, tr, TPQ, withArt, withPitches, type Token, type NoteTok } from "../src/score/song.ts";
 import { lightNotes } from "../src/engine/timeline.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
-import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
+import { paperOf as paperOfA5 } from "../src/look/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 let nid = 9900;
 const P = (s: string, o: number) => ({ step: s as "C", alter: 0, octave: o });

@@ -9,7 +9,7 @@ import { gainSpec, velSpec } from "./fixtures/spec.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { toJianpu, fromJianpu } from "../src/score/clipboard.ts";
 import { apply } from "../src/score/commands.ts";
-import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
+import { paperOf as paperOfA5 } from "../src/look/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 
 const meta = { software: "test", date: "2026-10-08" };
 const info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };

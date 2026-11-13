@@ -169,7 +169,7 @@ describe("滚奏 7-N 第一批：谱上", () => {
 // 力度记号放在一张纸最后一个音的后面（7-N 第一批第 1 条；user 新版 Once upon a Tale：军鼓 mp + 两个连着的滚奏一直滚到这张纸结束、后面没有音可以挂 fff）
 import { moveMarkToEnd, markAtEnd } from "../src/score/song.ts";
 import { dynLevels } from "../src/score/perform.ts";
-import { paperOf as paperOfA5 } from "../src/score/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
+import { paperOf as paperOfA5 } from "../src/look/paper.ts"; const A5_PAPER = paperOfA5("A5");   // writeMusicXml 要一张算好的纸（第 17 条 17-1：不垫默认）
 describe("力度记号放纸尾（7-N）", () => {
   const dyn = (value: string): Token => ({ kind: "dyn", id: id++, value }) as Token, hp = (): Token => ({ kind: "hairpin", id: id++, dir: "cresc" }) as Token;
   const stOf = (toks: Token[]) => { const st0 = initState(); return { ...st0, song: withTrack(st0.song, st0.at.paper, st0.at.part, toks), caret: toks.length }; };

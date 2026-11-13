@@ -22,7 +22,7 @@ import { FX_KINDS } from "../engine/fx.ts";
 import { withGrooveData } from "../score/groove.ts";
 import { TEXT_LANGS } from "../score/song-view.ts";
 import { lookOf, trackLookOf, lookFromFile } from "../look/index.ts";
-import type { Paper } from "../score/paper.ts";   // 「现在怎么画」、每张纸每个声部那几样、读文件时这几项怎么认：只问这一处（第 17 条 17-1）
+import type { ReadPaper } from "../score/paper.ts";   // 「现在怎么画」、每张纸每个声部那几样、读文件时这几项怎么认：只问这一处（第 17 条 17-1）
 import { HOST_PARAMS, writeResolved, lowestMidiOf, songBpm } from "../engine/chain.ts";
 import { performerOf, performers } from "../performers/registry.ts";
 import { serializeDesk, freshDesk } from "../score/desk.ts";
@@ -158,7 +158,7 @@ const stampFor = (k: FormatFile, j: unknown): Json => (newerThanMe(j, k) ? { ver
 const LOOK_LABEL: Partial<Record<string, () => string>> = { notation: () => _t("谱种"), lyricFit: () => _t("歌词怎么排"), barNumbers: () => _t("小节号"), textLang: () => _t("谱上的字用哪种语言") };
 /** 第 17 条 17-1：能跟着软件的那十一项（看谱那几样 + 版面那几样 + 纸张四项）的读法在 src/look lookFromFile（没写 = "default"，纸张没写 = 从 <defaults> 认一次）；
  *  这里只管住在同一组里的另两样：编排（改声音，第 16 条那一侧；没写 = 空）、谱上的字（"ui" 本身就是跟界面；没写 = "ui"，更新的版本写的不认识的字原样留）。音距（spacing）退役：读到不理。 */
-function songLookOf(x: Json | undefined, newer: boolean, odd: string[], xmlPaper: Paper | undefined): Pick<Song, SongLookKey> {
+function songLookOf(x: Json | undefined, newer: boolean, odd: string[], xmlPaper: ReadPaper | undefined): Pick<Song, SongLookKey> {
   const a = x?.arrangement, tl = x?.textLang;
   const textLang = typeof tl === "string" && (TEXT_LANGS as readonly string[]).includes(tl) ? tl : newer && typeof tl === "string" && tl ? (odd.push("textLang"), tl) : NEW_SONG_LOOK.textLang;
   return { ...lookFromFile(x, xmlPaper, newer, odd), arrangement: typeof a === "string" ? a : NEW_SONG_LOOK.arrangement, textLang };
