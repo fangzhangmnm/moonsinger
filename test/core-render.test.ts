@@ -54,7 +54,7 @@ describe("无头渲染核心", () => {
     const m1 = on.channels.find((c) => c.id === "P1")!.p, m1off = off.channels.find((c) => c.id === "P1")!.p;
     assert((m1.chain?.length ?? 0) > 0 || (m1.sends?.length ?? 0) > 0, "样本的 m1 有链 / 发送");
     eq(m1off.chain?.length ?? 0, 0); eq(m1off.sends?.length ?? 0, 0); eq(m1off.gainDb, m1.gainDb); eq(m1off.to, m1.to);
-    eq(off.buses[0].chain.length, 0); eq(off.master.chain?.length ?? 0, 0); eq(off.master.limiter, on.master.limiter);
+    eq(off.buses[0].chain.length, 0); eq(off.master!.chain?.length ?? 0, 0); eq(off.master!.limiter, on.master!.limiter);
   });
   it("准备：找不到声音 = 那个声部报错、时间线照算其余", async () => {
     const song = sampleSong(), extras = sampleExtras(song), d = deps();

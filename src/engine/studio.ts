@@ -10,14 +10,12 @@
 //   · 慢引擎的块没到 = 走带冻住等（A，user「倾向于这个」）：全体同一个采样停，续放时该响的音重新按下（note chase）。绝不自动替补。
 //   · 按键试听（audition）走通道的增益 / 声像，绕过静音 / 独奏和总轨限幅（user「按键不管solomute同意」「限幅嗯」）。
 import type { Tsf, TsfBank } from "../gm/tsf-standalone.ts";
-import type { FxV2 } from "../format/contract.ts";
+import type { FxV2, LimiterParamsV2 } from "../format/contract.ts";
 import { buildChain, type FxInstance } from "./fx.ts";
 
 export const BLOCK = 128;
-/** 母线天花板（−0.18 dBFS；原 src/audio/mix.ts 的 0.98）。 */
-export const CEILING = 0.98;
-/** 限幅器：attack 3 ms（提前收）、release 150 ms（慢慢放开）；前瞻 = 3 × attack（原离线版的指数在 3τ 处只剩 5%，截到这儿听不出）。 */
-const LIM_ATTACK = 0.003, LIM_RELEASE = 0.15, LIM_LOOK_TAUS = 3;
+/** 限幅器的四个数（天花板、起、放、前瞻）不在这里：从总轨设置里来（studio.json master.limiterParams，16-4 C；新建 = 模板 0.98 / 3 ms / 150 ms / 9 ms）。
+ *  收到之前不限幅（录音房自己不带一套默认）。是哪一种限幅、每个数的意思见契约 LimiterParamsV2。 */
 /** 范围尾最多等尾巴响多久（秒）；块淡出 / 起放淡入（秒）；表情曲线的一阶平滑 τ（同原 applyGain）。 */
 const TAIL_MAX = 2, CLIP_FADE_OUT = 0.03, CLIP_FADE_IN = 0.01, GAIN_TAU = 0.004;
 /** 范围尾（放到歌尾 / 导出）什么时候收：演奏者都没声了 **而且** 总轨出来的声连着 QUIET_HOLD 秒低于 QUIET（−80 dBFS）。
@@ -62,7 +60,7 @@ export interface TimelineMsg { tracks: TrackSpec[]; range: { from: number; to: n
 export interface ChannelParams { gainDb: number; pan: number; mute: boolean; solo: boolean; chain?: FxV2[]; sends?: { to: string; gainDb: number }[]; to?: string }
 /** 路由轨（总线）：to = 出到哪（"master" / 别的总线）；sends = 推子后发给别的总线（v0.10.9：总线也能接总线；user「插件：可以随便插，比如混响也是，你可以做中间的路由轨」）。 */
 export interface BusSpec { id: string; gainDb: number; pan: number; chain: FxV2[]; to?: string; sends?: { to: string; gainDb: number }[]; /** 静音（v0.10.35，视图态）：这条混音轨不出声、也不往下发。 */ mute?: boolean }
-export interface MasterParams { gainDb: number; limiter: boolean; chain?: FxV2[] }
+export interface MasterParams { gainDb: number; limiter: boolean; chain?: FxV2[]; /** 限幅器的四个数（16-4 C）：推总轨时带着；录音房收到之前不限幅。 */ limiterParams?: LimiterParamsV2 }
 /** 元音表（assets/preview/vowels.json + .pcm16 的形状）。 */
 export interface VowelEntry { kana: string; midi: number; start: number; len: number; loopStart: number; loopEnd: number }
 export type AuditionInst = { kind: "sf"; sha: string; preset: number } | { kind: "vowel"; kana: string } | { kind: "clip" };
@@ -163,7 +161,7 @@ export class Studio {
   private buses = new Map<string, Bus>();
   /** 处理总线的顺序：送出去的在被送进的前面（busOrder）。 */
   private busList: Bus[] = [];
-  private master: MasterParams = { gainDb: 0, limiter: true };
+  private master: MasterParams = { gainDb: 0, limiter: false };   // 宿主推总轨之前 = 原样（不加不减、不限幅）
   private masterLin = 1;
   private masterFx: FxInstance[] = [];
   // 走带
@@ -191,8 +189,8 @@ export class Studio {
   private busL = new Float32Array(BLOCK); private busR = new Float32Array(BLOCK);
   private audL = new Float32Array(BLOCK); private audR = new Float32Array(BLOCK);
   // 限幅器
-  private look: number; private delayL: Float32Array; private delayR: Float32Array; private need: Float32Array; private attPow: Float32Array;
-  private wr = 0; private gPrev = 1; private aRel: number;
+  private look = 0; private delayL = new Float32Array(0); private delayR = new Float32Array(0); private need = new Float32Array(0); private attPow = new Float32Array(0);
+  private wr = 0; private gPrev = 1; private aRel = 0; private ceiling = 1; private lim: LimiterParamsV2 | null = null;
   // 表 / 报告
   private meterOn = false; private meterPeak = 0; private meterFrames = 0;
   /** 每条轨 / 混音轨这一段推子后的峰值（只在 meterOn 时攒；混音台开着才开）。 */
@@ -232,13 +230,18 @@ export class Studio {
 
   constructor(sampleRate: number, tsf: Tsf, post: (m: StudioOut, transfer?: Transferable[]) => void) {
     this.sr = sampleRate; this.tsf = tsf; this.post = post;
-    this.look = Math.max(1, Math.round(LIM_ATTACK * LIM_LOOK_TAUS * sampleRate));
-    this.delayL = new Float32Array(this.look); this.delayR = new Float32Array(this.look); this.need = new Float32Array(this.look).fill(1);
-    const aAtt = Math.exp(-1 / (LIM_ATTACK * sampleRate)); this.attPow = Float32Array.from({ length: this.look + 1 }, (_, k) => aAtt ** k);
-    this.aRel = Math.exp(-1 / (LIM_RELEASE * sampleRate));
+  }
+  /** 限幅器的四个数（从总轨设置来）：变了才重建窗（只在推总轨那一下分配，不在 process 里）。 */
+  private setLimiter(p: LimiterParamsV2): void {
+    const l = this.lim; if (l && l.ceiling === p.ceiling && l.attackMs === p.attackMs && l.releaseMs === p.releaseMs && l.lookaheadMs === p.lookaheadMs) return;
+    this.lim = { ...p }; this.ceiling = p.ceiling;
+    this.look = Math.max(1, Math.round((p.lookaheadMs / 1000) * this.sr));
+    this.delayL = new Float32Array(this.look); this.delayR = new Float32Array(this.look); this.need = new Float32Array(this.look).fill(1); this.wr = 0; this.gPrev = 1;
+    const aAtt = Math.exp(-1 / ((p.attackMs / 1000) * this.sr)); this.attPow = Float32Array.from({ length: this.look + 1 }, (_, k) => aAtt ** k);
+    this.aRel = Math.exp(-1 / ((p.releaseMs / 1000) * this.sr));
   }
   /** 限幅器带来的固定延迟（采样）：导出时从输出里扣掉。 */
-  get latency(): number { return this.master.limiter ? this.look : 0; }
+  get latency(): number { return this.master.limiter && this.lim ? this.look : 0; }
   get isPlaying(): boolean { return this.playing; }
   get position(): number { return this.pos; }
   get waitingFor(): string | null { return this.waiting; }
@@ -287,7 +290,7 @@ export class Studio {
         this.busList = busOrder(m.buses, this.buses);
         return;
       }
-      case "master": this.master = { ...this.master, ...m.p }; this.masterLin = dbToLin(this.master.gainDb); if (m.p.chain !== undefined) this.masterFx = buildChain(m.p.chain, this.masterFx, this.sr); return;
+      case "master": this.master = { ...this.master, ...m.p }; this.masterLin = dbToLin(this.master.gainDb); if (m.p.chain !== undefined) this.masterFx = buildChain(m.p.chain, this.masterFx, this.sr); if (m.p.limiterParams) this.setLimiter(m.p.limiterParams); return;
       case "play": if (m.gen !== undefined) this.gen = m.gen; this.play(m.at, m.quiet); return;
       case "stop": this.stop(); return;
       case "seek": this.seek(m.at, m.quiet); return;
@@ -506,7 +509,7 @@ export class Studio {
     this.renderAuditions(n);
     // 总轨：增益 → 限幅（只管走带来的声）→ 加上试听（绕过限幅）
     const g = this.masterLin;
-    if (this.master.limiter) this.limit(n, g);
+    if (this.master.limiter && this.lim) this.limit(n, g);
     else for (let i = 0; i < n; i++) { this.busL[i] *= g; this.busR[i] *= g; }
     if (this.tail >= 0) { let pk = 0; for (let i = 0; i < n; i++) { const a = Math.abs(this.busL[i]), b = Math.abs(this.busR[i]); if (a > pk) pk = a; if (b > pk) pk = b; } this.quietSecs = pk < QUIET ? this.quietSecs + n / this.sr : 0; }   // 下一块判收不收用
     for (let i = 0; i < n; i++) { outL[i] = this.busL[i] + this.audL[i] * g; outR[i] = this.busR[i] + this.audR[i] * g; }
@@ -791,7 +794,7 @@ export class Studio {
   }
   // ── 母线前瞻限幅（原 src/audio/mix.ts limitBus 的实时版：输出晚 look 个采样；每个未来的峰按 attack 曲线提前收、过了峰按 release 慢慢放开；左右同一条增益）───
   private limit(n: number, g: number): void {
-    const look = this.look, c = CEILING, L = this.busL, R = this.busR, dL = this.delayL, dR = this.delayR, need = this.need, att = this.attPow;
+    const look = this.look, c = this.ceiling, L = this.busL, R = this.busR, dL = this.delayL, dR = this.delayR, need = this.need, att = this.attPow;
     for (let i = 0; i < n; i++) {
       const l = L[i] * g, r = R[i] * g, p = Math.max(Math.abs(l), Math.abs(r));
       const slot = this.wr, outL = dL[slot], outR = dR[slot];   // 最旧的 = 这一采样的输出

@@ -70,11 +70,14 @@ export declare function audibleParts(song: Song, pv: PartAudible): PartDef[];
 export declare function performerInfoOf(extras: Extras, part: PartDef, banks: BankLookup): PerformerInfo;
 /** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
 export declare function prepareParts(parts: readonly PartDef[], extras: Extras, deps: Pick<RenderDeps, "engine" | "sounds">): Promise<PrepareError[]>;
-/** 录音房里这个声部的麦克风（增益 dB、声像 −1…1）；没有 = 0 / 0。 */
+/** 录音房里这个声部的麦克风（增益 dB、声像 −1…1）；照写着的读（没有这条轨 = NaN：新建 / 门口都会建，到这儿还没有 = 缺数，mixProblemsFor 报）。 */
 export declare function micOf(extras: Extras, part: PartDef): {
     gainDb: number;
     pan: number;
 };
+/** 这个声部的声音一路经过的录音房里缺的数（16-4 A2；和乐手身上的缺数同一处查——送进录音房之前，performerInfoOf）：
+ *  它自己的轨、出到 / 发给的每一条混音轨（一路往下）、总轨。缺了 = 这个声部明着不出声，清单里写在哪、缺哪几个；音频线程不抛、不替它补。 */
+export declare function mixProblemsFor(extras: Extras, part: PartDef): string[];
 /** 这条通道 = 麦克风增益 + 上场那位的响度校准（三层不连乘：音符力度 = 意图；校准 = 看得见能调的默认；推子 = dB）。 */
 export declare const channelOf: (extras: Extras, part: PartDef) => {
     gainDb: number;
@@ -89,7 +92,7 @@ export declare function mixParamsOf(plan: RenderPlan, pv: PartAudible): {
         p: Partial<ChannelParams>;
     }[];
     buses: BusSpec[];
-    master: MasterParams;
+    master: MasterParams | null;
 };
 /** 通道参数推进录音房（播放时才乘 → 边放边调立刻听见；静音 / 独奏在 audibleParts 里筛，不在通道上）。 */
 export declare function pushMix(engine: RenderEngine, plan: RenderPlan, pv: PartAudible): void;

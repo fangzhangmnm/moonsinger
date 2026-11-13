@@ -29,7 +29,7 @@ export { FINAL_MP3_ENTRY, type FinalRecord };
 import { badIds, isSafeId, safePartIds, safeView, type IdKind } from "./ids.ts";
 import { sha256HexSync } from "./sha256-sync.ts";
 import { ROLL_HZ_MIN, ROLL_HZ_MAX, type SingMark, SOUNDFONT_SPEC } from "./performance.ts";
-import { TEMPLATE, templateCandidate, DYNAMICS_VEL, DYNAMICS_DB, CALIBRATION_DEFAULT_DB } from "./template.ts";
+import { TEMPLATE, templateCandidate, templateFxParams, DYNAMICS_VEL, DYNAMICS_DB, CALIBRATION_DEFAULT_DB } from "./template.ts";
 import type { PerfSpec, PerfCommon } from "../score/perform.ts";
 export { FORMAT };
 export type { Hum, InstrumentV2 };
@@ -184,7 +184,7 @@ export const ART_KEYS_BY = {
  *  小月相身上的 dynamicsVel / wedgeStepVel）在这一版格式里没有定义 = 存的时候不写。 */
 const CAND_KEYS_BY = { gain: new Set([...CAND_KEYS, "dynamicsDb"]), velocity: new Set([...CAND_KEYS, "dynamicsVel"]) } as const;
 const STUDIO_KEYS = new Set(["version", "minor", "patch", "tracks", "master"]), TRACK_KEYS = new Set(["id", "kind", "name", "gainDb", "pan", "chain", "sends", "to", "bypass"]);
-const FX_KEYS = new Set(["id", "kind", "on", "params", "key", "note"]), MASTER_KEYS = new Set(["gainDb", "limiter", "chain"]);
+const FX_KEYS = new Set(["id", "kind", "on", "params", "key", "note"]), MASTER_KEYS = new Set(["gainDb", "limiter", "chain", "limiterParams"]);
 const MANIFEST_KEYS = new Set(["format", "version", "minor", "patch", "app", "saved", "files", "derived", "sounds", "core"]);
 /** 读进来的这一份比这一版新（同一个大版本、小版本更大）。 */
 const newerThanMe = (j: unknown, k: FormatFile): boolean => !!j && typeof j === "object" && Number((j as Json).version ?? 1) === FORMAT[k] && Number((j as Json).minor ?? 0) > FORMAT_MINOR[k];
@@ -247,16 +247,15 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   }
   const studio: Json = structuredClone(a.extras.studio ?? emptyStudio());
   const tracks = ((studio.tracks as Json[] | undefined) ?? []).slice();
-  for (const part of song.parts) if (!tracks.some((m) => m.id === part.mic)) tracks.push(micTrack(part.mic, _t("麦克风 {t}", { t: tracks.filter((t) => t.kind === "mic").length + 1 })));   // 每个声部的麦克风一条轨
-  // 每一项都明写（第 16 条 16-3）：轨的增益 / 声像 / 链 / 发送 / 出到 / 旁通，效果的开关和参数表里的每一个参数（没写的按参数表默认写出来——读的一侧没写也是它）；不认识的种类 / 键原样带着
-  const fullFx = (f: Json): Json => { const def = FX_KINDS[String(f.kind)]; return def ? { ...f, on: f.on !== false, params: { ...Object.fromEntries([...(HOST_PARAMS[String(f.kind)] ?? []), ...def.params].map((d) => [d.id, d.default])), ...((f.params as Json | undefined) ?? {}) } } : f; };   // 参数表 = 原语的 + 主线程换算的两个开关（16-5）
-  const studioNewer = newerThanMe(a.extras.studio, "studio"), fx2 = (f: Json) => only(fullFx(f), FX_KEYS, studioNewer);
+  // 照写着的写（16-4 A2）：轨的增益 / 声像 / 链 / 发送 / 出到 / 旁通、效果的开关和每个参数，都是新建时从模板抄的、读文件时门口补的、或者人改的；存的时候不再补、不再替声部建轨。
+  //   只按现行格式的键表筛（不认识的种类 / 键：那一份比这一版新才原样带着）
+  const studioNewer = newerThanMe(a.extras.studio, "studio"), fx2 = (f: Json) => only(f, FX_KEYS, studioNewer);
   // 自动低切 / 跟速度开着的那一格：存的时候把这一刻算出来的 Hz / 毫秒写进 hpHz / timeMs（16-5；和放的时候同一份换算，core/render.ts mixParamsOf）：歌手轨 = 这位最低的音，混音轨 / 总轨 = 没有音
   const bpm = songBpm(song), ctxOf = (t: Json) => ({ lowestMidi: t.kind === "mic" ? ((p) => (p ? lowestMidiOf(song, p.id) : null))(song.parts.find((p) => p.mic === t.id)) : null, bpm });
   const resolved = (chain: unknown, ctx: { lowestMidi: number | null; bpm: number }): Json[] => writeResolved(((chain as Json[] | undefined) ?? []) as unknown as FxV2[], ctx) as unknown as Json[];
-  studio.tracks = tracks.map((t) => only({ ...t, ...normTrack(t), chain: resolved(t.chain, ctxOf(t)).map(fx2) }, TRACK_KEYS, studioNewer));
-  const m0 = (studio.master ?? {}) as Json, mm = activeMaster({ ...a.extras, studio: { master: m0 } } as Extras);
-  studio.master = only({ ...m0, gainDb: mm.gainDb, limiter: mm.limiter, chain: resolved(mm.chain, { lowestMidi: null, bpm }).map(fx2) }, MASTER_KEYS, studioNewer);
+  studio.tracks = tracks.map((t) => only({ ...t, ...(Array.isArray(t.chain) ? { chain: resolved(t.chain, ctxOf(t)).map(fx2) } : {}) }, TRACK_KEYS, studioNewer));
+  const m0 = (studio.master ?? {}) as Json;
+  studio.master = only({ ...m0, ...(Array.isArray(m0.chain) ? { chain: resolved(m0.chain, { lowestMidi: null, bpm }).map(fx2) } : {}) }, MASTER_KEYS, studioNewer);
   for (const k of Object.keys(studio)) if (!studioNewer && !STUDIO_KEYS.has(k)) delete studio[k];
   const mics = tracks.filter((t) => t.kind === "mic");
   // <part-name>（给别的软件看的，派生的；自己读回来以休息室为准）：起了名字 = 那个名字；没起 = 这件乐器谱上的叫法，**语言只看歌自己**——「谱上的字」钉了一种 = 那一种，
@@ -413,10 +412,49 @@ export function newRoleId(extras: Extras, song: Song): string { return nextKey([
 /** 新声部要的麦克风 id。 */
 // ── 录音房 v2：轨（mic / bus）+ 总轨（契约 StudioV2；2026-10-10 刀 4）──────────────────────────────────────────────
 export type StudioTrack = { id: string; kind: "mic" | "bus"; name: string; gainDb: number; pan: number; chain: FxV2[]; sends: { to: string; gainDb: number }[]; to: string; bypass: boolean };
-const emptyStudio = (): Json => ({ version: FORMAT.studio, tracks: [], master: { gainDb: 0, limiter: true, chain: [] } });
-const micTrack = (id: string, name: string): Json => ({ id, kind: "mic", name, gainDb: 0, pan: 0, chain: [], sends: [], to: "master" });
-const normTrack = (t: Json): StudioTrack => ({ id: String(t.id), kind: t.kind === "bus" ? "bus" : "mic", name: String(t.name ?? ""), gainDb: Number(t.gainDb ?? 0) || 0, pan: Math.max(-1, Math.min(1, Number(t.pan ?? 0) || 0)),
-  chain: Array.isArray(t.chain) ? (t.chain as FxV2[]) : [], sends: Array.isArray(t.sends) ? (t.sends as { to: string; gainDb: number }[]) : [], to: typeof t.to === "string" ? t.to : "master", bypass: t.bypass === true });
+/** 新建的录音房 / 一条轨：按值抄模板（16-4 A2）。名字新建时现起。 */
+const emptyStudio = (): Json => ({ version: FORMAT.studio, tracks: [], master: structuredClone(TEMPLATE.studio.master) });
+const micTrack = (id: string, name: string): Json => ({ id, kind: "mic", name, ...structuredClone(TEMPLATE.studio.track) });
+/** 读一条轨：照写着的读（门口补全过；缺了 = NaN / 不是字符串，出声那一层查出来报缺数）。声像夹在 −1…1。 */
+const normTrack = (t: Json): StudioTrack => ({ id: String(t.id), kind: t.kind === "bus" ? "bus" : "mic", name: String(t.name ?? ""), gainDb: Number(t.gainDb), pan: Math.max(-1, Math.min(1, Number(t.pan))),
+  chain: Array.isArray(t.chain) ? (t.chain as FxV2[]) : [], sends: Array.isArray(t.sends) ? (t.sends as { to: string; gainDb: number }[]) : [], to: t.to as string, bypass: t.bypass === true });
+/** 录音房这一块的门口（16-4 A2，照休息室那一块的五条）：读文件之后把缺的 / 类型不对的按模板补进内存——写了的、对得上类型的原样留。
+ *  补：每条轨的增益 / 声像 / 链 / 发送（每条发送的量）/ 出到 / 旁通；每格认得的效果的开关（老文件没写 = 开）和每个参数（按这格在不在混音轨上，取模板那一份）；
+ *  总轨的增益 / 限幅开关 / 链 / 限幅器四个数；歌里的声部没有混音轨的 = 按模板建一条。不补：比这一版新的那一份；不认识的效果种类（原样带着）。
+ *  补完才是「打开时的样子」：不算改过、不说话。 */
+function completeStudio(extras: Extras, parts: readonly PartDef[]): void {
+  if (extras.studio && newerThanMe(extras.studio, "studio")) return;
+  const T = TEMPLATE.studio, num = (v: unknown) => typeof v === "number" && Number.isFinite(v);
+  const s: Json = extras.studio && typeof extras.studio === "object" ? { ...extras.studio } : { version: FORMAT.studio };
+  const fill = (got: unknown, t: Json): Json => { const g = (got && typeof got === "object" ? got : {}) as Json, o: Json = { ...t }; for (const k of Object.keys(g)) if (num(g[k])) o[k] = g[k]; return o; };
+  const fxOf = (f: unknown, onBus: boolean): unknown => {
+    if (!f || typeof f !== "object") return f;
+    const c: Json = { ...(f as Json) }, t = FX_KINDS[String(c.kind)] ? templateFxParams(String(c.kind), onBus) : null;
+    if (!t) return c;   // 不认识的种类：原样
+    c.params = fill(c.params, t);
+    if (typeof c.on !== "boolean") c.on = true;
+    return c;
+  };
+  const tracks = (Array.isArray(s.tracks) ? s.tracks : []).map((t0: unknown) => {
+    if (!t0 || typeof t0 !== "object") return t0;
+    const t: Json = { ...(t0 as Json) }, bus = t.kind === "bus";
+    for (const k of ["gainDb", "pan"] as const) if (!num(t[k])) t[k] = T.track[k];
+    t.chain = Array.isArray(t.chain) ? (t.chain as unknown[]).map((f) => fxOf(f, bus)) : [];
+    t.sends = Array.isArray(t.sends) ? (t.sends as unknown[]).map((sd) => (sd && typeof sd === "object" && !num((sd as Json).gainDb) ? { ...(sd as Json), gainDb: T.sendGainDb } : sd)) : [];
+    if (typeof t.to !== "string") t.to = T.track.to;
+    if (typeof t.bypass !== "boolean") t.bypass = T.track.bypass;
+    return t;
+  }) as Json[];
+  for (const part of parts) if (!tracks.some((m) => m && m.id === part.mic)) tracks.push(micTrack(part.mic, _t("麦克风 {t}", { t: tracks.filter((t) => t?.kind === "mic").length + 1 })));
+  s.tracks = tracks;
+  const m: Json = s.master && typeof s.master === "object" ? { ...(s.master as Json) } : {};
+  if (!num(m.gainDb)) m.gainDb = T.master.gainDb;
+  if (typeof m.limiter !== "boolean") m.limiter = T.master.limiter;
+  m.chain = Array.isArray(m.chain) ? (m.chain as unknown[]).map((f) => fxOf(f, false)) : [];
+  m.limiterParams = fill(m.limiterParams, T.master.limiterParams as unknown as Json);
+  s.master = m;
+  extras.studio = s;
+}
 /** 录音房里的轨（原样读出；没有录音房 = 空）。 */
 export function studioTracks(extras: Extras): StudioTrack[] { return ((extras.studio?.tracks as Json[] | undefined) ?? []).map(normTrack); }
 export function studioTrack(extras: Extras, id: string): StudioTrack | null { const t = ((extras.studio?.tracks as Json[] | undefined) ?? []).find((x) => x.id === id); return t ? normTrack(t) : null; }
@@ -427,7 +465,6 @@ export function withTrack(extras: Extras, id: string, patch: Partial<Omit<Studio
   let t = tracks.find((x) => x.id === id);
   if (!t) { t = patch.kind === "bus" ? { ...micTrack(id, patch.name ?? _t("总线")), kind: "bus" } : micTrack(id, patch.name ?? _t("麦克风 {x}", { x: tracks.filter((x) => x.kind === "mic").length + 1 })); tracks.push(t); }
   const { kind: _k, ...rest } = patch; Object.assign(t, structuredClone(rest));
-  if (t.bypass !== true) delete t.bypass;   // 旁通只写 true（没开 = 不写这个字段）
   studio.tracks = tracks;
   return { ...extras, studio };
 }
@@ -445,15 +482,18 @@ export function moveBus(extras: Extras, id: string, dir: -1 | 1): Extras {
   return { ...extras, studio: { ...(extras.studio as Json), tracks } };
 }
 export function newBusId(extras: Extras): string { return nextKey(studioTracks(extras).map((t) => t.id), "b"); }
-/** 总轨（studio.json master；没写 = 0 dB + 限幅开 + 空链）。 */
-export function activeMaster(extras: Extras): { gainDb: number; limiter: boolean; chain: FxV2[] } {
-  const m = extras.studio?.master as { gainDb?: unknown; limiter?: unknown; chain?: unknown } | undefined;
-  const g = Number(m?.gainDb ?? 0);
-  return { gainDb: Number.isFinite(g) ? Math.max(-24, Math.min(12, g)) : 0, limiter: m?.limiter === undefined ? true : !!m.limiter, chain: Array.isArray(m?.chain) ? (m!.chain as FxV2[]) : [] };
+/** 限幅器的四个数（16-4 C；契约 LimiterParamsV2）：天花板 = 满幅的几分之几（线性）；起 / 放 / 前瞻 = 毫秒。 */
+export type LimiterParams = import("./contract.ts").LimiterParamsV2;
+/** 总轨（studio.json master）：照写着的读（门口补全过；缺了 = NaN / 不是布尔，出声那一层查出来报缺数）。增益夹在 −24…+12。 */
+export function activeMaster(extras: Extras): { gainDb: number; limiter: boolean; chain: FxV2[]; limiterParams: LimiterParams } {
+  const m = extras.studio?.master as { gainDb?: unknown; limiter?: unknown; chain?: unknown; limiterParams?: unknown } | undefined;
+  const g = Number(m?.gainDb), lp = (m?.limiterParams ?? {}) as Record<string, unknown>;
+  return { gainDb: Math.max(-24, Math.min(12, g)), limiter: m?.limiter === true, chain: Array.isArray(m?.chain) ? (m!.chain as FxV2[]) : [],
+    limiterParams: { ceiling: Number(lp.ceiling), attackMs: Number(lp.attackMs), releaseMs: Number(lp.releaseMs), lookaheadMs: Number(lp.lookaheadMs) } };
 }
 export function withMaster(extras: Extras, patch: { gainDb?: number; limiter?: boolean; chain?: FxV2[] }): Extras {
   const studio: Json = structuredClone(extras.studio ?? emptyStudio());
-  studio.master = { ...activeMaster(extras), ...structuredClone(patch) };
+  studio.master = { ...(studio.master as Json), ...structuredClone(patch) };
   return { ...extras, studio };
 }
 /** 跟着演奏者走的效果链（CandidateV2.chain；没有 = 空）。 */
@@ -469,7 +509,8 @@ export function withNewRole(extras: Extras, role: string, hum: Hum, name?: strin
 export function templateExtras(song: Song): Extras {
   let x = emptyExtras();
   for (const p of song.parts) x = withNewRole(x, p.role, "n");   // 新乐手的哼的字 = 模板的「嗯」
-  return x;
+  for (const p of song.parts) if (!studioTrack(x, p.mic)) x = withTrack(x, p.mic, {});   // 每个声部一条混音轨 + 总轨，按模板（16-4 A2）
+  return { ...x, studio: x.studio ?? emptyStudio() };
 }
 /** 删一个声部之后：它的角色从休息室拿掉（嵌的音源没别人引用 = 一起丢）。 */
 export function withoutRole(extras: Extras, role: string): Extras {
@@ -958,10 +999,11 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   });
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
   const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null);
+  const studioUnreadable = !!extras.studio && !Array.isArray((extras.studio as Json).tracks);   // 门口补之前看（补完就有轨表了）
   const o = finish(reads, song, pruneSounds(extras), ours, name);
   const advice = newerMinor.length ? [_t("这首歌是更新版本的 MoonSinger 存的（{p}里有这一版还没有的东西）：照样能开能改能存，只是那些东西这一版看不到，在这一版里存一次，其中一部分会丢。想原样留着，先更新 app 再改。", { p: newerMinor.join("、") })] : [];
   // 录音房那一份在、但没有现行格式的轨表 = 读不出轨（推子 / 声像用默认，总轨照文件里写的读）：打开时说一句（统筹 2026-11-12；走现成的那串话，不提老键名）
-  if (extras.studio && !Array.isArray((extras.studio as Json).tracks)) o.notices.push(_t("这首歌的混音台那一份读不懂：每条轨的推子、声像按默认开的（总轨照文件里写的）。存一次就按现在的样子写进文件。"));
+  if (studioUnreadable) o.notices.push(_t("这首歌的混音台那一份读不懂：每条轨的推子、声像按默认开的（总轨照文件里写的）。存一次就按现在的样子写进文件。"));
   return { ...o, references, advice };
 }
 
@@ -1037,6 +1079,7 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
     const gm = activeGm(extras, part.role);
     if (gm && gm.path && !gm.bytes) notices.push(_t("「{name}」的声音（{path}）没随这首歌一起带来，所以没人上场。点谱前面的「{name2}」换一个「谁来演」。", { name: gm.name, path: gm.path, name2: role.name ?? "" }));   // 强引用、文件里却少了那块：不静默（§10）。弱引用（path = null）要出声时去找，找不到再报
   }
+  completeStudio(extras, song0.parts);   // 录音房的门口（16-4 A2）：别家的谱 / 没有 studio.json = 整份按模板建；老文件缺的补
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const arr = extras.scoreExt?.arrangement;   // 编排那一行（只有我们自己的文件有）
   return { song: { ...song0, ...(typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}), ...(extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" as const } : {}), ...(extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" as const } : {}), ...(extras.scoreExt?.spacing === "tight" ? { spacing: "tight" as const } : {}), ...songViewFields(extras.scoreExt) }, stem, extras, ours, notices, view: safeView((extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null), references: {}, advice: [] };

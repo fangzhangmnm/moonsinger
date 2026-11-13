@@ -3,6 +3,7 @@
 // scripts/freeze-format-sample.mjs 用它生成 test/fixtures/format/v<版本>/sample.mxl + expected.json；test/format-guard.test.ts 用它算形状快照。
 // 2026-10-13（Claude Fable 5.1；家族周账 F-18）：样本要把**每个可选字段都用上**，形状指纹 shapeOf 对数组取**所有元素的并集**（原来只照第一项）——
 //   不然 parts[].host / 轨的 bypass / 效果 / 发送 / 嵌的音源这些只在第二项、或样本没写的键，快照看不见，加了删了都不红。sampleExtras() 同理把休息室 / 录音房的可选项都摆上。
+import { templateFxParams } from "../../../src/format/template.ts";
 import { TPQ, type Song, type Token, firstTrack } from "../../../src/score/song.ts";
 import { withRoleName, emptyExtras, withActive, withCastAs, activeId, withSwap, withSf2Candidate, withTrack, withMaster, newBusId, withTranspose, withSingChunk, withGapSec, withRoleConcept, withCalibration, type Extras } from "../../../src/format/project.ts";
 import type { FxV2, CandidateV2 } from "../../../src/format/contract.ts";
@@ -84,9 +85,10 @@ export function sampleExtras(song: Song): Extras {
   { const r2 = ex.lounge.r2 as unknown as { sound: string; concept: NonNullable<CandidateV2["castAs"]>["concept"] };   // 候选记着「作为哪件乐器上场」（castAs，2026-11-08；name = 上场时的叫法）
     ex = withCastAs(ex, "r2", activeId(ex, "r2"), { name: "Castanets", sound: r2.sound, concept: r2.concept }, hum);
     ex = withSwap(ex, "r2", activeId(ex, "r2"), hum, { fresh: true }); }   // 换上台那一刻的设置指纹（asCast，2026-11-09；施工单 §5 R3）
-  const reverb: FxV2 = { id: "f1", kind: "reverb", on: true, params: { room: 0.8, damp: 0.4, wet: -12, dry: -120, predelayMs: 20 }, note: "样本" };
-  const comp: FxV2 = { id: "f2", kind: "comp", on: false, params: { thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120, makeupDb: 0 }, key: "m2" };
-  const gain: FxV2 = { id: "f3", kind: "gain", params: { dB: -3 } };
+  // 每格写全（16-4 A2：新插的一格 = 模板那一份，再按样本改几个；出声那一层不替缺的补）。wet / predelayMs 是参数表里没有的键（原样带着、引擎不认）
+  const reverb: FxV2 = { id: "f1", kind: "reverb", on: true, params: { ...templateFxParams("reverb", true)!, room: 0.8, damp: 0.4, wet: -12, dry: -120, predelayMs: 20 }, note: "样本" };
+  const comp: FxV2 = { id: "f2", kind: "comp", on: false, params: { ...templateFxParams("comp")!, thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120, makeupDb: 0 }, key: "m2" };
+  const gain: FxV2 = { id: "f3", kind: "gain", on: true, params: { dB: -3 } };
   const bus = newBusId(ex);
   ex = withTrack(ex, bus, { kind: "bus", name: "空间感", gainDb: -3, pan: 0.2, chain: [reverb], sends: [], to: "master" });
   ex = withTrack(ex, "m1", { bypass: true, chain: [comp], sends: [{ to: bus, gainDb: -12 }], to: bus });

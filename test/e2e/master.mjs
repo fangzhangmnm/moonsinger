@@ -11,7 +11,7 @@ await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ sample
 const master = () => p.evaluate(() => window.__moonsinger.extras().studio?.master ?? null);
 await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(250);
 check(!!(await p.$(".strip.master")), "录音室里有总轨那一条");
-check((await master()) === null, "没动过 = 歌里没有 master 字段（老文件也不会多出东西）");
+check(JSON.stringify(await master()) === JSON.stringify({ gainDb: 0, limiter: true, chain: [], limiterParams: { ceiling: 0.98, attackMs: 3, releaseMs: 150, lookaheadMs: 9 } }), "新歌 = 总轨按模板写着（16-4 A2 / C：0 dB、限幅开、四个数）", JSON.stringify(await master()));
 const peakBefore = await p.evaluate(async () => { const m = await window.__moonsinger.renderMix(); let pk = 0; for (const v of m.samples) pk = Math.max(pk, Math.abs(v)); return pk; });
 await p.$eval(".strip.master input[data-master]", (el) => { el.value = "-6"; el.dispatchEvent(new Event("input", { bubbles: true })); }); await p.waitForTimeout(150);
 check((await master())?.gainDb === -6, "推子 −6 dB 进歌", JSON.stringify(await master()));

@@ -54,6 +54,7 @@ import "./read-as-written.test.ts";
 import "./loudness-convention.test.ts";
 import "./chain-numbers.test.ts";   // 自动低切 / 跟速度：存的时候写算出来的数（16-5）
 import "./hit-sec-by-key.test.ts";   // 鼓的着力点按值进乐手（16-4 E）
+import "./studio-door.test.ts";   // 录音房的门口 + 缺数在送进录音房之前查（16-4 A2 / C）
 import "./template.test.ts";   // 模板只在门口（16-4 A）：出声那一层不 import 模板；出厂乐手的数写全
 import "./art-keys-by-path.test.ts";   // 乐手身上的键按力度路分；力度路是契约（统筹 2026-11-12 夜）
 import "./gm-format.test.ts";

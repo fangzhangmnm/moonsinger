@@ -1775,7 +1775,7 @@ function newPartState(np: NonNullable<typeof newPartPending>): { st: EditorState
   if (np.place) st = placePart(st, id, np.place.anchor, np.place.above);
   if (np.giveFrom) st = rebindTrack(st, np.paper, np.giveFrom, id);
   if (st.at.part !== id) { const pp = st.song.papers.find((x) => x.id === np.paper && x.tracks[id]) ?? st.song.papers.find((x) => x.tracks[id]); if (pp) st = setFocus(st, pp.id, id); }   // 光标跟到新声部（后面再选 = 换它的乐器）
-  return { st, extras: withNewRole(D.extras, role, "n"), role };   // 新乐手的哼的字 = 模板的「嗯」
+  return { st, extras: withTrack(withNewRole(D.extras, role, "n"), mic, {}), role };   // 新乐手的哼的字 = 模板的「嗯」；这个声部的混音轨按模板建（16-4 A2：建声部那一刻就有，存的时候不再补）
 }
 /** 从目录换上一件乐器（v0.16.35 起选完不关目录：user 11-09「你选乐器的时候不自动退出…在播放的时候，我可以快速切不同的乐器」；回谱 = 「← 谱」/ Esc）。
  *  换一件乐器 = 一次提交 = 一步撤销（v0.16.23；声音到手才一起改，没到 = 什么都不动）。新声部那一路见上面。 */

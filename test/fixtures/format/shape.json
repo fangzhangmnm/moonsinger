@@ -356,7 +356,13 @@
           }
         ],
         "gainDb": "number",
-        "limiter": "boolean"
+        "limiter": "boolean",
+        "limiterParams": {
+          "attackMs": "number",
+          "ceiling": "number",
+          "lookaheadMs": "number",
+          "releaseMs": "number"
+        }
       },
       "minor": "number",
       "patch": "number",

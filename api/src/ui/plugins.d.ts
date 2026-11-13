@@ -9,8 +9,7 @@ export declare const pluginName: (kind: string) => string;
 /** 主线程换算的参数（不是原语的，录音房不认）：登记在 engine/chain.ts HOST_PARAMS（存档也按它补、按它写，16-5）。 */
 /** 全量面板：原语参数表的每一个 + 主线程换算的那几个。 */
 export declare function fullParams(kind: string): ParamDef[];
-export declare function defaults(kind: string): Params;
-/** 一格的参数（缺的补参数表的默认；第 16 条起「原声」没写也是参数表的默认，和录音房同一个意思——原来按 1 − 湿 算）。 */
+/** 一格的参数 = 文件里写着的（16-4 A2：读文件的门口补全过；界面不替缺的补，缺了显示「没写」那样的空，出声那一层报缺数）。 */
 export declare const paramsOf: (fx: FxV2) => Params;
 /** 全量面板里关掉「自动低切」/ 把「跟速度」拨到 0 的那一刻：把关之前面板上正显示的那个算出来的数（resolved = 和录音房同一份换算的这一格）写进 hpHz / timeMs，
  *  和关开关同一步（统筹 2026-11-12 夜「v0.17.14 收」补的一件）。别的改动原样。一键面板不走这里（它的公式里关 = 0）。 */
@@ -71,7 +70,9 @@ export declare const simpleView: (kind: string, onBus?: boolean, keyed?: boolean
 export declare const viewOfFx: (fx: Pick<FxV2, "kind" | "key">, onBus?: boolean) => SimpleView | undefined;
 /** 「改成最接近的一键」：全量参数 → 最接近的一键值 → 按一键公式写回（公式不管的参数照留）。结果一定读得回一键（plugins.test 钉着）。 */
 export declare function projectToSimple(kind: string, onBus: boolean, p: Params, keyed?: boolean): Params;
-/** 新插一格的初始参数：一键面板的「中间值」（插上就有一点效果，一眼能听出它在干什么）。 */
+/** 新插一格的初始参数 = 模板（format/template.ts TEMPLATE.studio.fx / fxOnBus；16-4 A2 起数住在那里，原来是这里按一键面板的「中间值」现算：
+ *  EQ 平 + 自动低切关、压缩「压多少」0.3、混响「远近」0.4、延迟「回声多少」0.3 + 附点八分、合唱「宽」0.4；混音轨上的混响「混响时间」0.5、合唱「宽」0.4，全湿）。
+ *  不认识的种类 = 空（插不上）。守卫 test/plugins.test.ts：模板里的数正好落在一键面板的这几个位置上。 */
 export declare function freshParams(kind: string, onBus?: boolean): Params;
 /** 一格在卡片上的一句话（插件格小钮上的字）。 */
 export declare function fxSummary(fx: FxV2, onBus?: boolean): string;

@@ -42,7 +42,7 @@ export const tsukuyomi = registerPerformer({
       { label: _t("原始输出增益"), control: `<b class="ip-val">${Number.isFinite(og) ? fmt(og) : _t("没写")}</b>` +
           `<button class="btn" data-v="og:-0.5" title="${_t("小 0.5 dB")}">−0.5</button><button class="btn" data-v="og:0.5" title="${_t("大 0.5 dB")}">+0.5</button>` +
           (og !== ogDef ? `<button class="btn" data-v="og:def" title="${_t("回到默认 {d}", { d: fmt(ogDef) })}">${_t("默认")}</button>` : ""),
-        note: _t("唱法核心算出来的原始声音，进她这条轨之前先乘多少。默认 {d}：量过的原始峰值约 0.42，抬到 0.89——这是这个引擎自己的满音量。上面「响度」那一行在这之上管这位乐手整体多响、和别的乐手对齐；平常调「响度」就够。改了不用重唱，每一句跟着变", { d: fmt(ogDef) }) },
+        note: _t("唱法核心算出来的原始声音，进她这条轨之前先乘多少。默认 {d}：量过的原始峰值约 0.42，抬到 0.89——这是这个引擎自己的满音量。改了不用重唱，每一句跟着变。它乘在效果器之前：压缩、均衡收到的是乘过之后的声音。上面「响度」那一行和推子在一起，在效果器之后。", { d: fmt(ogDef) }) },
       ...SING_CORE_ROWS.map((x) => ({ label: x.label, control: x.values.map((v) => chip(`core:${x.key}:${v}`, `${x.names?.[v] ?? v}${v === TSUKUYOMI_DEFAULTS[x.key] ? _t("（默认）") : ""}`, cur[x.key] === v, _t("改了用到的句子会重唱；存进歌里、能撤销"))).join(""), note: x.why, place: "adv" as const })),
       // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
       { label: _t("分段唱"), control: (([["phrase", _t("每句"), _t("在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句")], ["sheet", _t("每张纸"), _t("一张纸一段")], ["whole", _t("一整首"), _t("一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）")]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),

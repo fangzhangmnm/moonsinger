@@ -114,7 +114,7 @@ describe("持久化守卫", () => {
       eq(roleGivenName(o.extras.lounge, "r1"), exp.role.name, `${d}：角色名照文件（第 16 条，user 定的甲）`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);
       eq(JSON.stringify((role.candidates as Json[]).map((c) => c.id)), JSON.stringify(exp.role.candidates), `${d}：候选 id`);
       const mics = (((o.extras.studio as Json).tracks as Json[] | undefined) ?? []).filter((t) => t.kind === "mic").map((m) => m.id);
-      if (Number(exp.versions.studio) === 1) eq(mics.length, 0, `${d}：录音房第 1 版形状（mics）= 读不出轨，推子 / 声像用默认`);
+      if (Number(exp.versions.studio) === 1) eq(JSON.stringify(mics), JSON.stringify(o.song.parts.map((p) => p.mic)), `${d}：录音房第 1 版形状（mics）= 读不出轨：门口按模板给每个声部建一条（16-4 A2；推子 0、声像中，打开时说一句）`);
       else eq(JSON.stringify(mics), JSON.stringify(exp.mics), `${d}：麦克风 id（tracks 里 kind mic 的）`);
       for (const k of KINDS) { const j = (k === "manifest" ? o.extras.manifest : k === "score" ? o.extras.scoreExt : k === "studio" ? o.extras.studio : role) as Json; eq(Number(j.version ?? 1), Number(exp.versions[k]), `${d}：${k} 照文件写的版本（不升级）`); }
     }

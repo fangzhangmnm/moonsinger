@@ -8,6 +8,7 @@
 import { _t } from "../i18n/index.ts";
 import { FX_KINDS, type ParamDef } from "../engine/fx.ts";
 import { HOST_PARAMS } from "../engine/chain.ts";
+import { templateFxParams } from "../format/template.ts";   // 新插一格 / 全量面板「双击回默认」= 模板（16-4 A2）
 import type { FxV2 } from "../format/contract.ts";
 
 export type Params = Record<string, number>;
@@ -20,9 +21,8 @@ export const pluginName = (kind: string): string => FX_KINDS[kind]?.name ?? kind
 /** 主线程换算的参数（不是原语的，录音房不认）：登记在 engine/chain.ts HOST_PARAMS（存档也按它补、按它写，16-5）。 */
 /** 全量面板：原语参数表的每一个 + 主线程换算的那几个。 */
 export function fullParams(kind: string): ParamDef[] { return [...(HOST_PARAMS[kind] ?? []), ...(FX_KINDS[kind]?.params ?? [])]; }
-export function defaults(kind: string): Params { const p: Params = {}; for (const d of fullParams(kind)) p[d.id] = d.default; return p; }
-/** 一格的参数（缺的补参数表的默认；第 16 条起「原声」没写也是参数表的默认，和录音房同一个意思——原来按 1 − 湿 算）。 */
-export const paramsOf = (fx: FxV2): Params => ({ ...defaults(fx.kind), ...fx.params });
+/** 一格的参数 = 文件里写着的（16-4 A2：读文件的门口补全过；界面不替缺的补，缺了显示「没写」那样的空，出声那一层报缺数）。 */
+export const paramsOf = (fx: FxV2): Params => fx.params;
 /** 全量面板里关掉「自动低切」/ 把「跟速度」拨到 0 的那一刻：把关之前面板上正显示的那个算出来的数（resolved = 和录音房同一份换算的这一格）写进 hpHz / timeMs，
  *  和关开关同一步（统筹 2026-11-12 夜「v0.17.14 收」补的一件）。别的改动原样。一键面板不走这里（它的公式里关 = 0）。 */
 export function keepShownOnOff(fx: FxV2, next: Params, resolved: FxV2): Params {
@@ -216,19 +216,10 @@ export const viewOfFx = (fx: Pick<FxV2, "kind" | "key">, onBus = false): SimpleV
 export function projectToSimple(kind: string, onBus: boolean, p: Params, keyed = false): Params {
   const v = simpleView(kind, onBus, keyed); return v ? v.write(v.project(p), p) : p;
 }
-/** 新插一格的初始参数：一键面板的「中间值」（插上就有一点效果，一眼能听出它在干什么）。 */
-export function freshParams(kind: string, onBus = false): Params {
-  const p = defaults(kind), s = SIMPLE[kind];
-  if (onBus && kind === "reverb") return SIMPLE_BUS.reverb.write({ size: 0.5 }, p);
-  if (onBus && kind === "delay") return SIMPLE_BUS.delay.write({ echo: 0.3, beats: 0.75 }, p);
-  if (onBus && kind === "chorus") return SIMPLE_BUS.chorus.write({ wide: 0.4 }, p);
-  if (kind === "eq") return s.write({ autoLow: 0, tilt: 0 }, p);
-  if (kind === "comp") return s.write({ amount: 0.3 }, p);
-  if (kind === "reverb") return s.write({ far: 0.4 }, p);
-  if (kind === "delay") return s.write({ echo: 0.3, beats: 0.75 }, p);
-  if (kind === "chorus") return s.write({ wide: 0.4 }, p);
-  return p;
-}
+/** 新插一格的初始参数 = 模板（format/template.ts TEMPLATE.studio.fx / fxOnBus；16-4 A2 起数住在那里，原来是这里按一键面板的「中间值」现算：
+ *  EQ 平 + 自动低切关、压缩「压多少」0.3、混响「远近」0.4、延迟「回声多少」0.3 + 附点八分、合唱「宽」0.4；混音轨上的混响「混响时间」0.5、合唱「宽」0.4，全湿）。
+ *  不认识的种类 = 空（插不上）。守卫 test/plugins.test.ts：模板里的数正好落在一键面板的这几个位置上。 */
+export function freshParams(kind: string, onBus = false): Params { return templateFxParams(kind, onBus) ?? {}; }
 /** 一格在卡片上的一句话（插件格小钮上的字）。 */
 export function fxSummary(fx: FxV2, onBus = false): string {
   const view = viewOfFx(fx, onBus), p = paramsOf(fx), s = view?.read(p), name = pluginName(fx.kind);

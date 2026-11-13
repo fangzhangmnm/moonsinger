@@ -123,11 +123,14 @@ export declare function withoutBus(extras: Extras, id: string): Extras;
 /** 混音轨往前 / 往后挪一位（只在混音轨之间换；歌手的麦克风轨不动，它们的顺序跟谱走）。到头 = 原样。v0.10.10，user「混音轨之间还可以排序」。 */
 export declare function moveBus(extras: Extras, id: string, dir: -1 | 1): Extras;
 export declare function newBusId(extras: Extras): string;
-/** 总轨（studio.json master；没写 = 0 dB + 限幅开 + 空链）。 */
+/** 限幅器的四个数（16-4 C；契约 LimiterParamsV2）：天花板 = 满幅的几分之几（线性）；起 / 放 / 前瞻 = 毫秒。 */
+export type LimiterParams = import("./contract.ts").LimiterParamsV2;
+/** 总轨（studio.json master）：照写着的读（门口补全过；缺了 = NaN / 不是布尔，出声那一层查出来报缺数）。增益夹在 −24…+12。 */
 export declare function activeMaster(extras: Extras): {
     gainDb: number;
     limiter: boolean;
     chain: FxV2[];
+    limiterParams: LimiterParams;
 };
 export declare function withMaster(extras: Extras, patch: {
     gainDb?: number;

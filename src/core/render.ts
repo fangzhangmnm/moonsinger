@@ -15,7 +15,8 @@ import type { Hum } from "../format/contract.ts";
 import { activeGm, activeInstrument, activeHum, activeCalibrationDb, activeVelocity, activePerfSpec, perfSpecProblems, activeTranspose, activeMaster, studioTrack, studioTracks, activeChain, activeId, type Extras, type GmCandidate } from "../format/project.ts";
 import { performerOf } from "../performers/index.ts";
 import { buildTimeline, LEAD_IN, type Timeline, type PerformerInfo } from "../engine/timeline.ts";
-import { resolveChain, lowestMidiOf, songBpm } from "../engine/chain.ts";
+import { resolveChain, lowestMidiOf, songBpm, HOST_PARAMS } from "../engine/chain.ts";
+import { FX_KINDS } from "../engine/fx.ts";
 import type { TimelineMsg, ChannelParams, BusSpec, MasterParams } from "../engine/studio.ts";
 import type { VowelTableMsg } from "../engine/studio-client.ts";   // 只要类型（元音表的形状）；运行时不碰 studio-client（它要 AudioWorklet）
 
@@ -78,8 +79,8 @@ export function performerInfoOf(extras: Extras, part: PartDef, banks: BankLookup
   const missing = [...(plugin && spec ? perfSpecProblems(spec, velocity) : plugin ? ["articulation"] : []), ...((own as { missing?: string[] }).missing ?? [])];   // 插件自己那份缺的（着力点表…）一起报
   for (const [k, v] of Object.entries((own as { singOpt?: Record<string, unknown> }).singOpt ?? {})) if (!Number.isFinite(v as number)) missing.push(`defaults.${k}`);   // 唱法核心的旋钮也一样：缺了不交给核心自己的默认
   if (plugin?.sound === "chunks" && !Number.isFinite((own as { outputGainDb?: number }).outputGainDb)) missing.push("instrument.outputGainDb");   // 按块出声的：块乘多少（16-4 B）
-  const { missing: _m, ...ownRest } = own as typeof own & { missing?: string[] };
-  return { engine: eng, hum: activeHum(extras, role), plugin, spec, velocity, transpose: activeTranspose(extras, role), follow: (s) => followOf(s, cat), chain: activeChain(extras, role), ...ownRest, ...(missing.length ? { missing } : {}) };
+  const { missing: _m, ...ownRest } = own as typeof own & { missing?: string[] }, mixMissing = mixProblemsFor(extras, part);
+  return { engine: eng, hum: activeHum(extras, role), plugin, spec, velocity, transpose: activeTranspose(extras, role), follow: (s) => followOf(s, cat), chain: activeChain(extras, role), ...ownRest, ...(missing.length ? { missing } : {}), ...(mixMissing.length ? { mixMissing } : {}) };
 }
 /** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
 export async function prepareParts(parts: readonly PartDef[], extras: Extras, deps: Pick<RenderDeps, "engine" | "sounds">): Promise<PrepareError[]> {
@@ -91,30 +92,79 @@ export async function prepareParts(parts: readonly PartDef[], extras: Extras, de
   }
   return errs;
 }
-/** 录音房里这个声部的麦克风（增益 dB、声像 −1…1）；没有 = 0 / 0。 */
+/** 录音房里这个声部的麦克风（增益 dB、声像 −1…1）；照写着的读（没有这条轨 = NaN：新建 / 门口都会建，到这儿还没有 = 缺数，mixProblemsFor 报）。 */
 export function micOf(extras: Extras, part: PartDef): { gainDb: number; pan: number } {
   const m = studioTrack(extras, part.mic);
-  return { gainDb: m?.gainDb ?? 0, pan: m?.pan ?? 0 };
+  return { gainDb: m ? m.gainDb : NaN, pan: m ? m.pan : NaN };
+}
+type Raw = Record<string, unknown>;
+const finite = (v: unknown): boolean => typeof v === "number" && Number.isFinite(v);
+/** 一条链上认得的效果缺的数（开关 + 参数表里每个参数；不认识的种类不算缺：原样带着、不出声）。 */
+function fxGaps(chain: unknown): string[] {
+  const out: string[] = [];
+  for (const f of (Array.isArray(chain) ? chain : []) as Raw[]) {
+    const def = f && FX_KINDS[String(f.kind)]; if (!def) continue;
+    const p = (f.params ?? {}) as Raw, bad = [...(HOST_PARAMS[String(f.kind)] ?? []), ...def.params].map((d) => d.id).filter((k) => !finite(p[k]));
+    if (typeof f.on !== "boolean") bad.push("on");
+    if (bad.length) out.push(`${def.name}（${bad.join(" ")}）`);
+  }
+  return out;
+}
+/** 一条轨（歌手的 / 混音轨）自己缺的数：推子、声像、出到、旁通、每条发送的量、链上的效果。 */
+function trackGaps(t: Raw): string[] {
+  const bad = (["gainDb", "pan"] as const).filter((k) => !finite(t[k])) as string[];
+  if (typeof t.to !== "string") bad.push("to");
+  if (typeof t.bypass !== "boolean") bad.push("bypass");
+  if (!Array.isArray(t.chain)) bad.push("chain");
+  if (!Array.isArray(t.sends)) bad.push("sends"); else (t.sends as Raw[]).forEach((sd, i) => { if (!finite(sd?.gainDb)) bad.push(`sends[${i}].gainDb`); });
+  return [...bad, ...fxGaps(t.chain)];
+}
+/** 总轨缺的数：增益、限幅开关、限幅器四个数、链上的效果。 */
+function masterGaps(m: Raw | undefined): string[] {
+  if (!m || typeof m !== "object") return ["master"];
+  const lp = (m.limiterParams ?? {}) as Raw, bad: string[] = [];
+  if (!finite(m.gainDb)) bad.push("gainDb");
+  if (typeof m.limiter !== "boolean") bad.push("limiter");
+  for (const k of ["ceiling", "attackMs", "releaseMs", "lookaheadMs"]) if (!finite(lp[k])) bad.push(`limiterParams.${k}`);
+  if (!Array.isArray(m.chain)) bad.push("chain");
+  return [...bad, ...fxGaps(m.chain)];
+}
+const rawTracks = (extras: Extras): Raw[] => ((extras.studio as Raw | undefined)?.tracks as Raw[] | undefined)?.filter((t) => t && typeof t === "object") ?? [];
+/** 这个声部的声音一路经过的录音房里缺的数（16-4 A2；和乐手身上的缺数同一处查——送进录音房之前，performerInfoOf）：
+ *  它自己的轨、出到 / 发给的每一条混音轨（一路往下）、总轨。缺了 = 这个声部明着不出声，清单里写在哪、缺哪几个；音频线程不抛、不替它补。 */
+export function mixProblemsFor(extras: Extras, part: PartDef): string[] {
+  const tracks = rawTracks(extras), byId = new Map(tracks.map((t) => [String(t.id), t])), out: string[] = [];
+  const own = byId.get(part.mic);
+  if (!own) return [_t("这个声部的轨（没有）")];
+  const say = (where: string, gaps: string[]) => { if (gaps.length) out.push(`${where}：${gaps.join("、")}`); };
+  say(_t("这个声部的轨"), trackGaps(own));
+  const seen = new Set<string>(), next = (t: Raw): string[] => [...(typeof t.to === "string" && t.to !== "master" ? [t.to] : []), ...((Array.isArray(t.sends) ? t.sends : []) as Raw[]).map((sd) => String(sd?.to))];
+  const todo = next(own);
+  while (todo.length) { const id = todo.shift()!; if (seen.has(id)) continue; seen.add(id); const b = byId.get(id); if (!b || b.kind !== "bus") continue; say(_t("混音轨「{name}」", { name: String(b.name ?? id) }), trackGaps(b)); todo.push(...next(b)); }
+  say(_t("总轨"), masterGaps((extras.studio as Raw | undefined)?.master as Raw | undefined));
+  return out;
 }
 /** 这条通道 = 麦克风增益 + 上场那位的响度校准（三层不连乘：音符力度 = 意图；校准 = 看得见能调的默认；推子 = dB）。 */
 export const channelOf = (extras: Extras, part: PartDef): { gainDb: number; pan: number } => { const { gainDb, pan } = micOf(extras, part); return { gainDb: gainDb + activeCalibrationDb(extras, part.role), pan }; };
 /** 这位歌手全曲最低的音、歌开头的速度：住在 engine/chain.ts（存档也要用，16-5）。 */
 export { lowestMidiOf, songBpm };
 /** 通道 / 总线 / 总轨的参数（录音房认的样子）：插件里「主线程换算」的参数（自动低切 = 这位最低的音、延迟跟速度）换成数；效果全关 = 插件格和发送都不响、推子 / 声像 / 出到 / 限幅留着。 */
-export function mixParamsOf(plan: RenderPlan, pv: PartAudible): { channels: { id: string; p: Partial<ChannelParams> }[]; buses: BusSpec[]; master: MasterParams } {
+export function mixParamsOf(plan: RenderPlan, pv: PartAudible): { channels: { id: string; p: Partial<ChannelParams> }[]; buses: BusSpec[]; master: MasterParams | null } {
   const { song, extras } = plan, raw = !!plan.mixBypass;
   const bpm = songBpm(song), ctx = (lowestMidi: number | null) => ({ lowestMidi, bpm }), fx = <T,>(x: T[]): T[] => (raw ? [] : x);
-  const channels = song.parts.map((p) => { const t = studioTrack(extras, p.mic); return { id: p.id, p: { ...channelOf(extras, p), mute: pv(p.id).muted, solo: pv(p.id).solo, chain: fx(resolveChain(t?.chain ?? [], ctx(lowestMidiOf(song, p.id)))), sends: fx(t?.sends ?? []), to: t?.to ?? "master" } }; });
-  const buses = studioTracks(extras).filter((t) => t.kind === "bus").map((b): BusSpec => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: b.bypass ? [] : fx(resolveChain(b.chain, ctx(null))), to: b.to, sends: fx(b.sends), ...(plan.busMuted?.has(b.id) ? { mute: true } : {}) }));   // 混音轨旁通 = 插件全跳过，推子 / 发送照旧   // 总线也能出到 / 发给别的总线（v0.10.9）
-  const m = activeMaster(extras);
-  return { channels, buses, master: { ...m, chain: fx(resolveChain(m.chain, ctx(null))) } };
+  // 缺数的不送（16-4 A2）：用到它的声部在 performerInfoOf 里已经报了缺数、不出声；这里只是不把 NaN 交给录音房
+  const okTrack = new Set(rawTracks(extras).filter((t) => !trackGaps(t).length).map((t) => String(t.id)));
+  const channels = song.parts.filter((p) => okTrack.has(p.mic)).map((p) => { const t = studioTrack(extras, p.mic)!; return { id: p.id, p: { ...channelOf(extras, p), mute: pv(p.id).muted, solo: pv(p.id).solo, chain: fx(resolveChain(t.chain, ctx(lowestMidiOf(song, p.id)))), sends: fx(t.sends), to: t.to } }; });
+  const buses = studioTracks(extras).filter((t) => t.kind === "bus" && okTrack.has(t.id)).map((b): BusSpec => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: b.bypass ? [] : fx(resolveChain(b.chain, ctx(null))), to: b.to, sends: fx(b.sends), ...(plan.busMuted?.has(b.id) ? { mute: true } : {}) }));   // 混音轨旁通 = 插件全跳过，推子 / 发送照旧   // 总线也能出到 / 发给别的总线（v0.10.9）
+  const m = activeMaster(extras), mOk = !masterGaps((extras.studio as Raw | undefined)?.master as Raw | undefined).length;
+  return { channels, buses, master: mOk ? { ...m, chain: fx(resolveChain(m.chain, ctx(null))) } : null };
 }
 /** 通道参数推进录音房（播放时才乘 → 边放边调立刻听见；静音 / 独奏在 audibleParts 里筛，不在通道上）。 */
 export function pushMix(engine: RenderEngine, plan: RenderPlan, pv: PartAudible): void {
   const m = mixParamsOf(plan, pv);
   for (const c of m.channels) engine.channel(c.id, c.p);
   engine.buses(m.buses);
-  engine.master(m.master);
+  if (m.master) engine.master(m.master);
 }
 /** 这首歌（出声的声部）的时间线：谁上场 / 分段 / 音符表 / 块清单。纯函数（除了预设下标 / L 曲线要问录音房里的库）。 */
 export function timelineOf(plan: RenderPlan, banks: BankLookup): Timeline {

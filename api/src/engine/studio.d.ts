@@ -1,9 +1,7 @@
 import type { Tsf } from "../gm/tsf-standalone.ts";
-import type { FxV2 } from "../format/contract.ts";
+import type { FxV2, LimiterParamsV2 } from "../format/contract.ts";
 import { type FxInstance } from "./fx.ts";
 export declare const BLOCK = 128;
-/** 母线天花板（−0.18 dBFS；原 src/audio/mix.ts 的 0.98）。 */
-export declare const CEILING = 0.98;
 /** 范围尾（放到歌尾 / 导出）什么时候收：演奏者都没声了 **而且** 总轨出来的声连着 QUIET_HOLD 秒低于 QUIET（−80 dBFS）。
  *  只看演奏者（原来的 TAIL_MAX / silent）会把混响 / 延迟的尾巴切掉——它们住在总线和链上（2026-11-09 user「结束的时候硬截断了」，导出的 mp3 同样）。
  *  上限 TAIL_FX_MAX 秒（反馈很大的回声可能永远到不了 −80）。实时放的时候 ended 之后总线照样自己响完（render 每块都处理总线）；
@@ -99,7 +97,8 @@ export interface BusSpec {
 export interface MasterParams {
     gainDb: number;
     limiter: boolean;
-    chain?: FxV2[];
+    chain?: FxV2[]; /** 限幅器的四个数（16-4 C）：推总轨时带着；录音房收到之前不限幅。 */
+    limiterParams?: LimiterParamsV2;
 }
 /** 元音表（assets/preview/vowels.json + .pcm16 的形状）。 */
 export interface VowelEntry {
@@ -338,6 +337,8 @@ export declare class Studio {
     private wr;
     private gPrev;
     private aRel;
+    private ceiling;
+    private lim;
     private meterOn;
     private meterPeak;
     private meterFrames;
@@ -368,6 +369,8 @@ export declare class Studio {
     clock: number | null;
     private missingSent;
     constructor(sampleRate: number, tsf: Tsf, post: (m: StudioOut, transfer?: Transferable[]) => void);
+    /** 限幅器的四个数（从总轨设置来）：变了才重建窗（只在推总轨那一下分配，不在 process 里）。 */
+    private setLimiter;
     /** 限幅器带来的固定延迟（采样）：导出时从输出里扣掉。 */
     get latency(): number;
     get isPlaying(): boolean;

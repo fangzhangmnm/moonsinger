@@ -225,19 +225,19 @@ var EQ = {
   name: _t("\u5747\u8861"),
   formula: _t("\u6BCF\u6BB5\u4E00\u4E2A\u53CC\u4E8C\u9636 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)\uFF0C\u7CFB\u6570\u6309 RBJ Audio EQ Cookbook\uFF08hp / lp Q = 0.707\uFF1B\u67B6\u5B50 Q = 0.707\uFF1B\u5CF0 Q \u53EF\u8C03\uFF09\u3002hpHz / lpHz = 0 \u5173\u3002"),
   params: [
-    { id: "hpHz", unit: "Hz", min: 0, max: 2e3, default: 0, label: _t("\u4F4E\u5207") },
-    { id: "lpHz", unit: "Hz", min: 0, max: 2e4, default: 0, label: _t("\u9AD8\u5207") },
-    { id: "lowDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u4F4E\u67B6") },
-    { id: "lowHz", unit: "Hz", min: 40, max: 1e3, default: 200, label: _t("\u4F4E\u67B6\u9891\u7387") },
-    { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u4E2D\u5CF0") },
-    { id: "midHz", unit: "Hz", min: 100, max: 1e4, default: 1500, label: _t("\u4E2D\u5CF0\u9891\u7387") },
-    { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: _t("\u4E2D\u5CF0\u5BBD") },
-    { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u9AD8\u67B6") },
-    { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, default: 5e3, label: _t("\u9AD8\u67B6\u9891\u7387") }
+    { id: "hpHz", unit: "Hz", min: 0, max: 2e3, label: _t("\u4F4E\u5207") },
+    { id: "lpHz", unit: "Hz", min: 0, max: 2e4, label: _t("\u9AD8\u5207") },
+    { id: "lowDb", unit: "dB", min: -24, max: 24, label: _t("\u4F4E\u67B6") },
+    { id: "lowHz", unit: "Hz", min: 40, max: 1e3, label: _t("\u4F4E\u67B6\u9891\u7387") },
+    { id: "midDb", unit: "dB", min: -24, max: 24, label: _t("\u4E2D\u5CF0") },
+    { id: "midHz", unit: "Hz", min: 100, max: 1e4, label: _t("\u4E2D\u5CF0\u9891\u7387") },
+    { id: "midQ", unit: "ratio", min: 0.2, max: 10, label: _t("\u4E2D\u5CF0\u5BBD") },
+    { id: "highDb", unit: "dB", min: -24, max: 24, label: _t("\u9AD8\u67B6") },
+    { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, label: _t("\u9AD8\u67B6\u9891\u7387") }
   ]
 };
 function eqSections(p) {
-  const g = (k) => p[k] ?? EQ.params.find((d) => d.id === k).default;
+  const g = (k) => p[k];
   return [
     [g("hpHz") > 0, "hp", g("hpHz"), 0.707, 0],
     [g("lpHz") > 0, "lp", g("lpHz"), 0.707, 0],
@@ -281,12 +281,12 @@ var COMP = {
   name: _t("\u538B\u7F29"),
   formula: _t("\u5305\u7EDC e[n] = max(|x|, e[n-1]\xB7r) \u8D77\uFF08attack\uFF09\u843D\uFF08release\uFF09\u5404\u4E00\u4E2A\u65F6\u95F4\u5E38\u6570\uFF1B\u8D85\u8FC7 threshold \u7684\u90E8\u5206\u6309 ratio \u538B\uFF08kneeDb \u5185\u8F6F\u62D0\u70B9\uFF1Ag = -(x - T + K/2)^2 \xB7 (1 - 1/R) / (2K)\uFF09\uFF1B\u589E\u76CA = 10^(g/20) \xD7 10^(makeup/20)\u3002key \u7ED9\u4E86 = \u542C\u522B\u7684\u8F68\uFF08\u4FA7\u94FE\uFF09\uFF0C\u4E0D\u7ED9 = \u542C\u81EA\u5DF1\u3002"),
   params: [
-    { id: "thresholdDb", unit: "dB", min: -60, max: 0, default: -18, label: _t("\u9608\u503C") },
-    { id: "ratio", unit: "ratio", min: 1, max: 20, default: 3, label: _t("\u6BD4\u4F8B") },
-    { id: "attackMs", unit: "ms", min: 0.1, max: 200, default: 10, label: _t("\u8D77") },
-    { id: "releaseMs", unit: "ms", min: 5, max: 2e3, default: 120, label: _t("\u843D") },
-    { id: "kneeDb", unit: "dB", min: 0, max: 24, default: 6, label: _t("\u62D0\u70B9") },
-    { id: "makeupDb", unit: "dB", min: -12, max: 24, default: 0, label: _t("\u8865\u507F") }
+    { id: "thresholdDb", unit: "dB", min: -60, max: 0, label: _t("\u9608\u503C") },
+    { id: "ratio", unit: "ratio", min: 1, max: 20, label: _t("\u6BD4\u4F8B") },
+    { id: "attackMs", unit: "ms", min: 0.1, max: 200, label: _t("\u8D77") },
+    { id: "releaseMs", unit: "ms", min: 5, max: 2e3, label: _t("\u843D") },
+    { id: "kneeDb", unit: "dB", min: 0, max: 24, label: _t("\u62D0\u70B9") },
+    { id: "makeupDb", unit: "dB", min: -12, max: 24, label: _t("\u8865\u507F") }
   ]
 };
 var Comp = class {
@@ -312,7 +312,7 @@ var Comp = class {
     this.setParams(p);
   }
   setParams(p) {
-    const g = (k) => p[k] ?? COMP.params.find((d) => d.id === k).default;
+    const g = (k) => p[k];
     this.T = g("thresholdDb");
     this.R = Math.max(1, g("ratio"));
     this.K = Math.max(0, g("kneeDb"));
@@ -352,11 +352,11 @@ var DELAY = {
   name: _t("\u5EF6\u8FDF"),
   formula: _t("y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08mix / dry = \u7EBF\u6027\u7684\u5E45\u5EA6\u500D\u6570\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002"),
   params: [
-    { id: "timeMs", unit: "ms", min: 1, max: 2e3, default: 375, label: _t("\u65F6\u95F4") },
-    { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: _t("\u53CD\u9988") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("\u6E7F") },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") },
-    { id: "dampHz", unit: "Hz", min: 500, max: 2e4, default: 6e3, label: _t("\u53CD\u9988\u9AD8\u5207") }
+    { id: "timeMs", unit: "ms", min: 1, max: 2e3, label: _t("\u65F6\u95F4") },
+    { id: "feedback", unit: "0..1", min: 0, max: 0.95, label: _t("\u53CD\u9988") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, label: _t("\u539F\u58F0") },
+    { id: "dampHz", unit: "Hz", min: 500, max: 2e4, label: _t("\u53CD\u9988\u9AD8\u5207") }
   ]
 };
 var Delay = class {
@@ -383,7 +383,7 @@ var Delay = class {
     this.setParams(p);
   }
   setParams(p) {
-    const g = (k) => p[k] ?? DELAY.params.find((d) => d.id === k).default;
+    const g = (k) => p[k];
     this.D = clamp(Math.round(g("timeMs") / 1e3 * this.sr), 1, this.bufL.length - 1);
     this.fb = clamp(g("feedback"), 0, 0.95);
     this.mix = clamp(g("mix"), 0, 1);
@@ -414,12 +414,12 @@ var REVERB = {
   name: _t("\u6DF7\u54CD"),
   formula: _t("Freeverb\uFF08\u516C\u5F00\u7B97\u6CD5\uFF0Croom / damp \u5C31\u662F\u5B83\u7684\u540C\u540D\u53C2\u6570\uFF09\uFF1A8 \u6761\u4F4E\u901A\u53CD\u9988\u68B3\u72B6\uFF08\u957F\u5EA6 1116\u20261617 @44.1k\uFF0C\u6309\u91C7\u6837\u7387\u7F29\u653E\uFF1B\u53CD\u9988 = 0.7 + 0.28\xB7room\uFF0C\u4F4E\u901A = damp\uFF09\u5E76\u8054\uFF0C\u518D\u4E32 4 \u6761\u5168\u901A\uFF08g = 0.5\uFF09\uFF1B\u53F3\u8FB9\u5404\u957F 23 \u4E2A\u91C7\u6837\uFF1B\u524D\u9762\u4E00\u6BB5 preDelayMs \u7EAF\u5EF6\u8FDF\uFF1By = x\xB7dry + wet\xB7mix\uFF08mix / dry = \u7EBF\u6027\u7684\u5E45\u5EA6\u500D\u6570\uFF1B\u754C\u9762\u4E0A\u7684\u79D2 / kHz / dB \u662F\u4ECE\u8FD9\u51E0\u4E2A\u6570\u6362\u7B97\u51FA\u6765\u7ED9\u4EBA\u770B\u7684\uFF09\u3002"),
   params: [
-    { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u623F\u95F4\u5927\u5C0F") },
-    { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u9AD8\u9891\u5438\u6536") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("\u6E7F") },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") },
-    { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: _t("\u9884\u5EF6\u8FDF") },
-    { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u5BBD\u5EA6") }
+    { id: "room", unit: "0..1", min: 0, max: 1, label: _t("\u623F\u95F4\u5927\u5C0F") },
+    { id: "damp", unit: "0..1", min: 0, max: 1, label: _t("\u9AD8\u9891\u5438\u6536") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, label: _t("\u539F\u58F0") },
+    { id: "preDelayMs", unit: "ms", min: 0, max: 200, label: _t("\u9884\u5EF6\u8FDF") },
+    { id: "width", unit: "0..1", min: 0, max: 1, label: _t("\u5BBD\u5EA6") }
   ],
   stereoOnly: true
 };
@@ -483,7 +483,7 @@ var Reverb = class {
     this.setParams(p);
   }
   setParams(p) {
-    const g = (k) => p[k] ?? REVERB.params.find((d) => d.id === k).default;
+    const g = (k) => p[k];
     this.fb = 0.7 + 0.28 * clamp(g("room"), 0, 1);
     this.damp = clamp(g("damp"), 0, 1) * 0.4;
     this.mix = clamp(g("mix"), 0, 1);
@@ -519,13 +519,13 @@ var CHORUS = {
   name: _t("\u5408\u5531"),
   formula: _t("v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7dry + mix \xB7 \u03A3_k d_k / v\uFF08mix / dry = \u7EBF\u6027\u7684\u5E45\u5EA6\u500D\u6570\uFF09\u3002"),
   params: [
-    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: _t("\u51E0\u6761") },
-    { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: _t("\u5EF6\u8FDF") },
-    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: _t("\u6296\u52A8\u6DF1\u5EA6") },
-    { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: _t("\u6296\u52A8\u5FEB\u6162") },
-    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: _t("\u5DE6\u53F3\u94FA\u5F00") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u6E7F") },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") }
+    { id: "voices", unit: "ratio", min: 1, max: 4, label: _t("\u51E0\u6761") },
+    { id: "delayMs", unit: "ms", min: 5, max: 40, label: _t("\u5EF6\u8FDF") },
+    { id: "depthMs", unit: "ms", min: 0, max: 10, label: _t("\u6296\u52A8\u6DF1\u5EA6") },
+    { id: "rateHz", unit: "Hz", min: 0.05, max: 5, label: _t("\u6296\u52A8\u5FEB\u6162") },
+    { id: "spread", unit: "0..1", min: 0, max: 1, label: _t("\u5DE6\u53F3\u94FA\u5F00") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, label: _t("\u539F\u58F0") }
   ]
 };
 var Chorus = class {
@@ -550,7 +550,7 @@ var Chorus = class {
     this.setParams(p);
   }
   setParams(p) {
-    const g = (k) => p[k] ?? CHORUS.params.find((d) => d.id === k).default;
+    const g = (k) => p[k];
     this.voices = clamp(Math.round(g("voices")), 1, 4);
     this.delay = clamp(g("delayMs"), 5, 40) / 1e3 * this.sr;
     this.depth = clamp(g("depthMs"), 0, 10) / 1e3 * this.sr;
@@ -581,7 +581,7 @@ var Chorus = class {
     }
   }
 };
-var GAIN = { kind: "gain", name: _t("\u589E\u76CA"), formula: "y = x \xB7 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, default: 0, label: _t("\u589E\u76CA") }] };
+var GAIN = { kind: "gain", name: _t("\u589E\u76CA"), formula: "y = x \xB7 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, label: _t("\u589E\u76CA") }] };
 var Gain = class {
   kind = "gain";
   on = true;
@@ -592,7 +592,7 @@ var Gain = class {
     this.setParams(p);
   }
   setParams(p) {
-    this.g = dbToLin(clamp(p.dB ?? 0, -60, 24));
+    this.g = dbToLin(clamp(p.dB, -60, 24));
   }
   process(L, R, n) {
     if (!this.on || this.g === 1) return;
@@ -625,7 +625,7 @@ function createFx(spec, sr) {
       fx = new Gain(spec.id, sr, p);
       break;
   }
-  if (fx) fx.on = spec.on !== false;
+  if (fx) fx.on = spec.on === true;
   return fx;
 }
 function buildChain(specs, prev, sr) {
@@ -634,7 +634,7 @@ function buildChain(specs, prev, sr) {
     const had = prev.find((f) => f.id === s.id && f.kind === s.kind);
     if (had) {
       had.setParams(Object.fromEntries(Object.entries(s.params ?? {}).filter(([, v]) => typeof v === "number")));
-      had.on = s.on !== false;
+      had.on = s.on === true;
       out.push(had);
       continue;
     }
@@ -646,10 +646,6 @@ function buildChain(specs, prev, sr) {
 
 // src/engine/studio.ts
 var BLOCK = 128;
-var CEILING = 0.98;
-var LIM_ATTACK = 3e-3;
-var LIM_RELEASE = 0.15;
-var LIM_LOOK_TAUS = 3;
 var TAIL_MAX = 2;
 var CLIP_FADE_OUT = 0.03;
 var CLIP_FADE_IN = 0.01;
@@ -706,7 +702,8 @@ var Studio = class {
   buses = /* @__PURE__ */ new Map();
   /** 处理总线的顺序：送出去的在被送进的前面（busOrder）。 */
   busList = [];
-  master = { gainDb: 0, limiter: true };
+  master = { gainDb: 0, limiter: false };
+  // 宿主推总轨之前 = 原样（不加不减、不限幅）
   masterLin = 1;
   masterFx = [];
   // 走带
@@ -750,14 +747,16 @@ var Studio = class {
   audL = new Float32Array(BLOCK);
   audR = new Float32Array(BLOCK);
   // 限幅器
-  look;
-  delayL;
-  delayR;
-  need;
-  attPow;
+  look = 0;
+  delayL = new Float32Array(0);
+  delayR = new Float32Array(0);
+  need = new Float32Array(0);
+  attPow = new Float32Array(0);
   wr = 0;
   gPrev = 1;
-  aRel;
+  aRel = 0;
+  ceiling = 1;
+  lim = null;
   // 表 / 报告
   meterOn = false;
   meterPeak = 0;
@@ -826,17 +825,26 @@ var Studio = class {
     this.sr = sampleRate2;
     this.tsf = tsf;
     this.post = post;
-    this.look = Math.max(1, Math.round(LIM_ATTACK * LIM_LOOK_TAUS * sampleRate2));
+  }
+  /** 限幅器的四个数（从总轨设置来）：变了才重建窗（只在推总轨那一下分配，不在 process 里）。 */
+  setLimiter(p) {
+    const l = this.lim;
+    if (l && l.ceiling === p.ceiling && l.attackMs === p.attackMs && l.releaseMs === p.releaseMs && l.lookaheadMs === p.lookaheadMs) return;
+    this.lim = { ...p };
+    this.ceiling = p.ceiling;
+    this.look = Math.max(1, Math.round(p.lookaheadMs / 1e3 * this.sr));
     this.delayL = new Float32Array(this.look);
     this.delayR = new Float32Array(this.look);
     this.need = new Float32Array(this.look).fill(1);
-    const aAtt = Math.exp(-1 / (LIM_ATTACK * sampleRate2));
+    this.wr = 0;
+    this.gPrev = 1;
+    const aAtt = Math.exp(-1 / (p.attackMs / 1e3 * this.sr));
     this.attPow = Float32Array.from({ length: this.look + 1 }, (_, k) => aAtt ** k);
-    this.aRel = Math.exp(-1 / (LIM_RELEASE * sampleRate2));
+    this.aRel = Math.exp(-1 / (p.releaseMs / 1e3 * this.sr));
   }
   /** 限幅器带来的固定延迟（采样）：导出时从输出里扣掉。 */
   get latency() {
-    return this.master.limiter ? this.look : 0;
+    return this.master.limiter && this.lim ? this.look : 0;
   }
   get isPlaying() {
     return this.playing;
@@ -944,6 +952,7 @@ var Studio = class {
         this.master = { ...this.master, ...m.p };
         this.masterLin = dbToLin2(this.master.gainDb);
         if (m.p.chain !== void 0) this.masterFx = buildChain(m.p.chain, this.masterFx, this.sr);
+        if (m.p.limiterParams) this.setLimiter(m.p.limiterParams);
         return;
       case "play":
         if (m.gen !== void 0) this.gen = m.gen;
@@ -1329,7 +1338,7 @@ var Studio = class {
     for (const fx of this.masterFx) fx.process(this.busL, this.busR, n, null);
     this.renderAuditions(n);
     const g = this.masterLin;
-    if (this.master.limiter) this.limit(n, g);
+    if (this.master.limiter && this.lim) this.limit(n, g);
     else for (let i = 0; i < n; i++) {
       this.busL[i] *= g;
       this.busR[i] *= g;
@@ -1835,7 +1844,7 @@ var Studio = class {
   }
   // ── 母线前瞻限幅（原 src/audio/mix.ts limitBus 的实时版：输出晚 look 个采样；每个未来的峰按 attack 曲线提前收、过了峰按 release 慢慢放开；左右同一条增益）───
   limit(n, g) {
-    const look = this.look, c = CEILING, L = this.busL, R = this.busR, dL = this.delayL, dR = this.delayR, need = this.need, att = this.attPow;
+    const look = this.look, c = this.ceiling, L = this.busL, R = this.busR, dL = this.delayL, dR = this.delayR, need = this.need, att = this.attPow;
     for (let i = 0; i < n; i++) {
       const l = L[i] * g, r = R[i] * g, p = Math.max(Math.abs(l), Math.abs(r));
       const slot = this.wr, outL = dL[slot], outR = dR[slot];
@@ -1960,4 +1969,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-dda6aa774a7b.mjs.map
+//# sourceMappingURL=studio-worklet-3c8e50977d99.mjs.map

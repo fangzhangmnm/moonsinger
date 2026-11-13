@@ -47,7 +47,7 @@ await tab("basic"); await p.click(`${strip(b2)} [data-v="busbypass"]`); await p.
   check(t2.bypass === true && t2.chain.length === 1 && Math.abs(pk2 / pk0 - 1) < 0.05, "混音轨 2 旁通 = 链上的 −40 跳过（A 回来）、链留着、存成 bypass: true", `${pk0.toFixed(3)} → ${pk2.toFixed(3)} ${JSON.stringify({ bypass: t2.bypass, chain: t2.chain.length })}`);
   await p.click(`${strip(b2)} [data-v="busbypass"]`); await p.waitForTimeout(150);
   const raw = await p.evaluate((id) => window.__moonsinger.extras().studio.tracks.find((t) => t.id === id), b2);
-  check(!("bypass" in raw) && Math.abs((await peak()) / pk1 - 1) < 0.05, "再点 = 回来；文件里不留 bypass 字段"); }
+  check(raw.bypass === false && Math.abs((await peak()) / pk1 - 1) < 0.05, "再点 = 回来；旁通明写 false（16-4 A2：每个键都写，不再「只写 true」）"); }
 await tab("chain");
 // 发送：B 发给 混音轨 1，−12 dB 起步，拖到 −6
 await tab("send");

@@ -1,4 +1,5 @@
 // 混音台 EQ 页卡片背景的频谱 + EQ 响应曲线（src/ui/spectrum.ts、engine/fx.ts eqResponseDb；v0.10.11）。created 2026-10-10 by Claude Opus 5.5
+import { NEUTRAL } from "./fixtures/fx.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { bandsDb, bandHz, xOfHz, SPEC_BANDS, areaPath } from "../src/ui/spectrum.ts";
 import { eqResponseDb } from "../src/engine/fx.ts";
@@ -29,7 +30,7 @@ describe("频谱（加窗 FFT → 96 个对数频带）", () => {
   });
 });
 describe("EQ 响应曲线（和录音房同一份双二阶系数）", () => {
-  const at = (p: Record<string, number>, f: number) => eqResponseDb(p, 48000, [f])[0];
+  const at = (p: Record<string, number>, f: number) => eqResponseDb({ ...NEUTRAL.eq, ...p }, 48000, [f])[0];   // 16-4 A2：每个参数都给（引擎不替缺的补）
   it("全平 = 处处 0 dB", () => { for (const f of [50, 1000, 10000]) assert(Math.abs(at({}, f)) < 1e-6); });
   it("低切 200 Hz：50 Hz 大幅衰减、2 kHz 不变；高架 +6 dB（5 kHz）：10 kHz 约 +6", () => {
     assert(at({ hpHz: 200 }, 50) < -20, `${at({ hpHz: 200 }, 50)}`); assert(Math.abs(at({ hpHz: 200 }, 2000)) < 0.5);

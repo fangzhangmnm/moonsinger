@@ -1,10 +1,10 @@
 import type { FxV2 } from "../format/contract.ts";
+/** 一个参数：id / 量纲 / 范围 / 名字。默认值不在这里（16-4 A2：新插一格的样子在 format/template.ts；出声这一层只吃写全的，缺数在送进录音房之前查）。 */
 export interface ParamDef {
     id: string;
     unit: "dB" | "Hz" | "ms" | "ratio" | "0..1" | "bool";
     min: number;
     max: number;
-    default: number;
     label: string;
 }
 export interface FxKindDef {

@@ -3967,6 +3967,15 @@ export declare const S: {
     readonly "\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\u2014\u2014\u8F7B\u70B9\u53EA\u8BA4\u770B\u8C31\u7684\uFF08\u58F0\u90E8\u540D / \u7FFB\u7EB8 / \u672C\u6BB5\uFF09\uFF0C\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E / \u63A5\u7740\u653E / \u4ECE\u5934\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\uFF08Esc \u56DE\u5230\u5199\uFF09": {
         readonly en: "Listen: the score locks to prevent accidental edits — taps only do viewing things (part names / page turns / this section) and never jump playback; long-press / right-click the score = play from here / resume / from the top; Space = play / stop; the mixer sits below (Esc returns to writing)";
     };
+    readonly "\u8FD9\u4E2A\u58F0\u90E8\u7684\u8F68\uFF08\u6CA1\u6709\uFF09": {
+        readonly en: "this part’s track (missing)";
+    };
+    readonly 这个声部的轨: {
+        readonly en: "this part’s track";
+    };
+    readonly "\u6DF7\u97F3\u8F68\u300C{name}\u300D": {
+        readonly en: "mix track “{name}”";
+    };
     readonly "\u6CA1\u6709\u51FA\u58F0\uFF1A{e}": {
         readonly en: "Nothing sounded: {e}";
     };
@@ -4104,6 +4113,9 @@ export declare const S: {
     };
     readonly "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": {
         readonly en: "This performer is missing these numbers, so it makes no sound: {keys}";
+    };
+    readonly "\u6DF7\u97F3\u53F0\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": {
+        readonly en: "These numbers are missing on the mixer, so it made no sound: {keys}";
     };
     readonly "\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0": {
         readonly en: "“{label}” can't sound from a note list";
@@ -4276,11 +4288,11 @@ export declare const S: {
     readonly "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09": {
         readonly en: "Tsukuyomi-chan Corpus Terms of Use (derived model)";
     };
-    readonly "\u9EA6\u514B\u98CE {t}": {
-        readonly en: "Mic {t}";
-    };
     readonly "\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 {REFERENCES_DIR} \u4E0B\uFF1A{path}": {
         readonly en: "A reference window file isn't under {REFERENCES_DIR}: {path}";
+    };
+    readonly "\u9EA6\u514B\u98CE {t}": {
+        readonly en: "Mic {t}";
     };
     readonly "\u9EA6\u514B\u98CE {x}": {
         readonly en: "Mic {x}";
@@ -5506,8 +5518,8 @@ export declare const S: {
     readonly "\u5927 0.5 dB": {
         readonly en: "0.5 dB louder";
     };
-    readonly "\u5531\u6CD5\u6838\u5FC3\u7B97\u51FA\u6765\u7684\u539F\u59CB\u58F0\u97F3\uFF0C\u8FDB\u5979\u8FD9\u6761\u8F68\u4E4B\u524D\u5148\u4E58\u591A\u5C11\u3002\u9ED8\u8BA4 {d}\uFF1A\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\u7EA6 0.42\uFF0C\u62AC\u5230 0.89\u2014\u2014\u8FD9\u662F\u8FD9\u4E2A\u5F15\u64CE\u81EA\u5DF1\u7684\u6EE1\u97F3\u91CF\u3002\u4E0A\u9762\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\u5728\u8FD9\u4E4B\u4E0A\u7BA1\u8FD9\u4F4D\u4E50\u624B\u6574\u4F53\u591A\u54CD\u3001\u548C\u522B\u7684\u4E50\u624B\u5BF9\u9F50\uFF1B\u5E73\u5E38\u8C03\u300C\u54CD\u5EA6\u300D\u5C31\u591F\u3002\u6539\u4E86\u4E0D\u7528\u91CD\u5531\uFF0C\u6BCF\u4E00\u53E5\u8DDF\u7740\u53D8": {
-        readonly en: "How much the singing core’s raw output is multiplied by before it enters her track. Default {d}: the measured raw peak is about 0.42, lifted to 0.89 — this is the engine’s own full scale. The “Loudness” row above sets how loud this performer is overall on top of that, to match other performers; adjusting “Loudness” is usually enough. Changing this needs no re-singing; every phrase follows.";
+    readonly "\u5531\u6CD5\u6838\u5FC3\u7B97\u51FA\u6765\u7684\u539F\u59CB\u58F0\u97F3\uFF0C\u8FDB\u5979\u8FD9\u6761\u8F68\u4E4B\u524D\u5148\u4E58\u591A\u5C11\u3002\u9ED8\u8BA4 {d}\uFF1A\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\u7EA6 0.42\uFF0C\u62AC\u5230 0.89\u2014\u2014\u8FD9\u662F\u8FD9\u4E2A\u5F15\u64CE\u81EA\u5DF1\u7684\u6EE1\u97F3\u91CF\u3002\u6539\u4E86\u4E0D\u7528\u91CD\u5531\uFF0C\u6BCF\u4E00\u53E5\u8DDF\u7740\u53D8\u3002\u5B83\u4E58\u5728\u6548\u679C\u5668\u4E4B\u524D\uFF1A\u538B\u7F29\u3001\u5747\u8861\u6536\u5230\u7684\u662F\u4E58\u8FC7\u4E4B\u540E\u7684\u58F0\u97F3\u3002\u4E0A\u9762\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\u548C\u63A8\u5B50\u5728\u4E00\u8D77\uFF0C\u5728\u6548\u679C\u5668\u4E4B\u540E\u3002": {
+        readonly en: "How much the singing core’s raw output is multiplied by before it enters her track. Default {d}: the measured raw peak is about 0.42, lifted to 0.89 — this is the engine’s own full scale. Changing this needs no re-singing; every phrase follows. It is applied before the effects: the compressor and EQ receive the sound after this gain. The “Loudness” row above sits with the fader, after the effects.";
     };
     readonly "\uFF08\u9ED8\u8BA4\uFF09": {
         readonly en: " (default)";
@@ -6853,11 +6865,8 @@ export declare const S: {
     readonly "\u6DF7\u97F3\u8F68\u589E\u76CA\uFF1A\u4ECE\u8FD9\u6761\u6DF7\u97F3\u8F68\u51FA\u6765\u7684\u603B\u91CF\u3002\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u5168\u6E7F\u7684\u6DF7\u97F3\u8F68 = \u90A3\u8FB9\u7684\u6548\u679C\u6709\u591A\u5927\uFF0C\u53D1\u7ED9\u5B83\u7684\u51E0\u4F4D\u4E00\u8D77\u53D8\uFF08\u6BCF\u4F4D\u5355\u72EC\u591A\u5C11\u770B\u5404\u81EA\u7684\u300C\u53D1\u9001\u300D\uFF09\u3002\u8981\u662F\u6709\u51E0\u4F4D\u662F\u300C\u51FA\u5230\u300D\u5B83\uFF08\u539F\u58F0\u4E5F\u8FDB\u6765\uFF09\uFF0C\u90A3\u8FD9\u4E2A\u63A8\u5B50\u8FDE\u539F\u58F0\u4E00\u8D77\u8C03": {
         readonly en: "Bus gain: the total coming out of this bus. For fully wet buses (reverb / delay) = how big the effect is, for everyone sending to it (each one's amount is on their own “Send”). If some parts “Output to” it (dry sound too), this fader moves the dry sound as well";
     };
-    readonly "\u9650\u5E45\uFF08\u603B\u8F68\u6700\u540E\u4E00\u9053\uFF09\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u5F88\u5FEB\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E00\u4E2A\u91C7\u6837\u90FD\u4E0D\u52A8\uFF0C\u4E0D\u6539\u97F3\u8272\u3002\u5173\u6389 = \u8D85\u4E86\u5C31\u524A\u6CE2\uFF08\u7206\u97F3\u3001\u5BFC\u51FA\u7684\u6587\u4EF6\u91CC\u4E5F\u662F\uFF09\u3002\u4E00\u822C\u4E00\u76F4\u5F00\u7740\uFF1B\u60F3\u770B\u81EA\u5DF1\u7684\u6DF7\u97F3\u5230\u5E95\u591A\u54CD\uFF0C\u53EF\u4EE5\u5148\u5173\u4E86\u770B\u5CF0\u503C": {
-        readonly en: "Limiter (the final stage on master): quickly brings down the bit that exceeds the ceiling (−0.18 dBFS); everywhere else not one sample changes, and timbre is untouched. Off = clipping when over (crackle, in exported files too). Usually left on; to see how loud your mix really is, turn it off and watch the peak";
-    };
-    readonly "\u5CF0\u503C\uFF1A\u6700\u8FD1\u8FD9\u4E00\u4E0B\u6700\u54CD\u7684\u90A3\u4E2A\u91C7\u6837\uFF08dBFS\uFF09\u30020 dB = \u6EE1\u683C\uFF0C\u518D\u5927\u5C31\u524A\u6CE2\uFF1B\u9650\u5E45\u5F00\u7740\u65F6\u6700\u591A\u5230 \u22120.18 dB\u3002\u9876\u4E0A\u7684\u7EC6\u7EBF\u662F\u540C\u4E00\u4E2A\u6570": {
-        readonly en: "Peak: the loudest sample just now (dBFS). 0 dB = full scale, above that clips; with the limiter on it tops out at −0.18 dB. The thin line on top shows the same number";
+    readonly "\u5CF0\u503C\uFF1A\u6700\u8FD1\u8FD9\u4E00\u4E0B\u6700\u54CD\u7684\u90A3\u4E2A\u91C7\u6837\uFF08dBFS\uFF09\u30020 dB = \u6EE1\u683C\uFF0C\u518D\u5927\u5C31\u524A\u6CE2\uFF1B\u9650\u5E45\u5F00\u7740\u65F6\u6700\u591A\u5230\u5929\u82B1\u677F\u3002\u9876\u4E0A\u7684\u7EC6\u7EBF\u662F\u540C\u4E00\u4E2A\u6570": {
+        readonly en: "Peak: the loudest sample just now (dBFS). 0 dB = full scale, above that it clips; with the limiter on it stops at the ceiling. The thin line at the top is the same number";
     };
     readonly "\u5E73\u5747\u7535\u5E73\uFF08RMS\uFF0C\u6700\u8FD1 0.3 \u79D2\uFF0C\u63A8\u5B50\u4E4B\u540E\uFF0CdBFS\uFF09\uFF1A\u6BD4\u5CF0\u503C\u66F4\u63A5\u8FD1\u8033\u6735\u89C9\u5F97\u7684\u54CD\u3002\u51E0\u6761\u8F68\u6446\u5E73\u97F3\u91CF\u770B\u8FD9\u4E2A\uFF1B\u9876\u4E0A\u7684\u7EC6\u7EBF\uFF08\u5CF0\u503C\uFF09\u770B\u4F1A\u4E0D\u4F1A\u7206": {
         readonly en: "Average level (RMS, last 0.3 s, post-fader, dBFS): closer to perceived loudness than peak. Use this to balance tracks; use the thin line on top (peak) to watch for clipping";
@@ -6876,6 +6885,9 @@ export declare const S: {
     };
     readonly 左右相关: {
         readonly en: "Stereo correlation";
+    };
+    readonly "\u9650\u5E45\uFF08\u603B\u8F68\u6700\u540E\u4E00\u9053\uFF09\uFF1A\u524D\u77BB {la} ms \u770B\u89C1\u8981\u8D85\u8FC7\u5929\u82B1\u677F\uFF08{c} dBFS = \u6EE1\u5E45\u7684 {lin}\uFF09\u7684\u90A3\u4E00\u4E0B\uFF0C\u6309\u300C\u8D77\u300D{a} ms \u63D0\u524D\u628A\u5B83\u538B\u4E0B\u6765\uFF0C\u8FC7\u4E86\u6309\u300C\u653E\u300D{r} ms \u6162\u6162\u677E\u5F00\uFF1B\u4E0D\u8D85\u7684\u5730\u65B9\u4E00\u4E2A\u91C7\u6837\u90FD\u4E0D\u52A8\uFF0C\u4E0D\u6539\u97F3\u8272\u3002\u8F93\u51FA\u56E0\u6B64\u665A {la} ms\uFF08\u5BFC\u51FA\u65F6\u6263\u6389\uFF09\u3002\u8FD9\u56DB\u4E2A\u6570\u5B58\u5728\u8FD9\u9996\u6B4C\u91CC\uFF0C\u8FD9\u4E00\u7248\u6CA1\u6709\u8C03\u8282\u7684\u94AE\u3002\u5173\u6389 = \u8D85\u4E86\u5C31\u524A\u6CE2\uFF08\u7206\u97F3\u3001\u5BFC\u51FA\u7684\u6587\u4EF6\u91CC\u4E5F\u662F\uFF09\u3002\u4E00\u822C\u4E00\u76F4\u5F00\u7740\uFF1B\u60F3\u770B\u81EA\u5DF1\u7684\u6DF7\u97F3\u5230\u5E95\u591A\u54CD\uFF0C\u53EF\u4EE5\u5148\u5173\u4E86\u770B\u5CF0\u503C": {
+        readonly en: "Limiter (the last stage on the master): it looks {la} ms ahead for anything about to go over the ceiling ({c} dBFS = {lin} of full scale), pulls it down early with a {a} ms attack, and lets go slowly over a {r} ms release afterwards; everywhere it isn’t over, not a single sample changes and the tone stays the same. The output is therefore {la} ms late (removed on export). These four numbers are stored in this song; this version has no knobs for them. Off = anything over clips (pops, in exported files too). Usually leave it on; to see how loud your mix really is, turn it off for a moment and watch the peak";
     };
     readonly "\u62F7\u8FD9\u4E00\u683C\u7684\u53C2\u6570\uFF08\u79CD\u7C7B + \u5168\u90E8\u53C2\u6570\uFF1B\u4E0D\u62F7\u5F00\u5173\u3001\u4E0D\u62F7\u88AB\u8C01\u538B\uFF09": {
         readonly en: "Copy this slot's parameters (kind + all parameters; not on/off, not “compressed by”)";

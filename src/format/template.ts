@@ -3,7 +3,7 @@
 //   原处只留量纲、范围、公式的说明。
 // 用它的只有三处（统筹第 3 条）：新建（按值抄）、读文件的门口（缺的补；project.ts completeCandidate）、界面上的「默认」钮。
 //   出声的代码（src/score、src/engine、src/core）不许 import 这个文件——它们拿到的永远是写全的（守卫 test/template.test.ts）。
-// 分三块：休息室（三种出厂乐手）/ 录音房（轨、混音轨、总轨、每种效果）/ 谱的扩展（歌级的显示设置）。这一版先有休息室那一块；另两块下一步搬进来。
+// 分三块：休息室（三种出厂乐手）/ 录音房（轨、混音轨、总轨、每种效果）/ 谱的扩展（歌级的显示设置）。现在有休息室、录音房两块（v0.17.16 / v0.17.17）；谱的扩展下一步。
 // 「从目录抄」的几样不在这里放数：SoundFont 的缝（gapSec）、能不能音内渐强（canSwell）、着力点（hitSecByKey）——新上场那一刻从音乐目录那一行按值抄；
 //   这里的 gapSec 0 / canSwell true 只是门口给「老歌里没写」的那一位补的（和改之前一样）。
 import { _t } from "../i18n/index.ts";
@@ -17,6 +17,31 @@ const ART_BOTH = { staccatoGate: 0.5, gapSec: 0, gapShare: 0.25, breathSec: 0.16
 const ROLL_HZ = { drum: 12, pitched: 14 } as const;
 
 export const TEMPLATE = {
+  /** 录音房（16-4 A2，v0.17.17）：新建的轨 / 混音轨 / 总轨 / 每种效果刚插上一格时的样子。数从原处搬来、一个没改（project.ts micTrack / emptyStudio、
+   *  ui/plugins.ts freshParams、混音台加发送时的 −12）；效果参数表（engine/fx.ts）只剩量纲、范围、公式。读老文件时门口缺的也按这里补（每种效果按「轨上」那一份）。 */
+  studio: {
+    /** 一条轨（歌手的麦克风轨 / 混音轨）：推子 dB、声像 −1…1、效果链、推子后的发送、出到哪、整条旁通（混音轨才有开关；歌手轨照样写 false）。名字新建时现起。 */
+    track: { gainDb: 0, pan: 0, chain: [] as unknown[], sends: [] as unknown[], to: "master", bypass: false },
+    /** 新加一条发送的量（dB，推子后）。 */
+    sendGainDb: -12,
+    /** 总轨：增益 dB、限幅开关、效果链、限幅器的四个数（16-4 C：天花板 = 满幅的几分之几（线性）；起 / 放 / 前瞻 = 毫秒）。 */
+    master: { gainDb: 0, limiter: true, chain: [] as unknown[], limiterParams: { ceiling: 0.98, attackMs: 3, releaseMs: 150, lookaheadMs: 9 } },
+    /** 每种效果新插一格的参数（歌手轨 / 总轨上 = 一键面板的「中间值」：插上就有一点效果，一眼能听出它在干什么）。键的先后 = 存出来的先后。 */
+    fx: {
+      eq: { hpAuto: 0, hpHz: 0, lpHz: 0, lowDb: 0, lowHz: 300, midDb: 0, midHz: 1500, midQ: 1, highDb: 0, highHz: 3000 },
+      comp: { thresholdDb: -15, ratio: 2.8, attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: 2.4 },
+      reverb: { room: 0.56, damp: 0.5, mix: 0.24, dry: 1, preDelayMs: 10, width: 1 },
+      delay: { syncBeats: 0.75, timeMs: 375, feedback: 0.3, mix: 0.22, dry: 1, dampHz: 6000 },
+      chorus: { voices: 3, delayMs: 18, depthMs: 2.6, rateHz: 0.6, spread: 0.64, mix: 0.36, dry: 1 },
+      gain: { dB: 0 },
+    } as Record<string, Record<string, number>>,
+    /** 插在混音轨（发送的返回轨）上的混响 / 延迟 / 合唱：全湿（混音的老规矩：原声留在歌手自己那条路上，发多少 = 加多少效果）。别的种类和轨上一样。 */
+    fxOnBus: {
+      reverb: { room: 0.625, damp: 0.5, mix: 1, dry: 0, preDelayMs: 10, width: 1 },
+      delay: { syncBeats: 0.75, timeMs: 375, feedback: 0.3, mix: 1, dry: 0, dampHz: 6000 },
+      chorus: { voices: 3, delayMs: 18, depthMs: 2.6, rateHz: 0.6, spread: 0.64, mix: 1, dry: 0 },
+    } as Record<string, Record<string, number>>,
+  },
   lounge: {
     /** 力度记号 → MIDI 力度（按力度敲的乐手；MuseScore 的经典值，ppp 16 / fff 126 = v0.9.23）。 */
     dynamicsVel: { ppp: 16, pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112, fff: 126 } as Record<Dynamic, number>,
@@ -71,4 +96,10 @@ export function templateCandidate(engine: "tsukuyomi" | "vowel-sampler" | "sound
     instrument: { engine: "soundfont" }, calibrationDb: L.calibrationDb, chain: [], dynamicsVel: { ...L.dynamicsVel },
     articulation: { ...L.articulation.velocity }, defaults: { ...L.soundfontDefaults }, transpose: 0,
   };
+}
+
+/** 新插一格的参数（按值抄一份）：onBus = 插在混音轨上（混响 / 延迟 / 合唱 = 全湿那一份）。不认识的种类 = null。 */
+export function templateFxParams(kind: string, onBus = false): Record<string, number> | null {
+  const S = TEMPLATE.studio, p = (onBus ? S.fxOnBus[kind] : undefined) ?? S.fx[kind];
+  return p ? { ...p } : null;
 }

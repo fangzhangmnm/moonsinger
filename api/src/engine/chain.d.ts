@@ -1,7 +1,8 @@
 import type { FxV2 } from "../format/contract.ts";
 import type { ParamDef } from "./fx.ts";
 import { type Song } from "../score/song.ts";
-/** 主线程换算的两个参数（不是原语的，录音房不认；放之前就换成 hpHz / timeMs）。登记在这里 = 有默认、没写时补、存的时候明写（第 16 条 16-5，统筹 2026-11-12 夜）。
+/** 主线程换算的两个参数（不是原语的，录音房不认；放之前就换成 hpHz / timeMs）。登记在这里 = 参数表的一员、存的时候明写（第 16 条 16-5，统筹 2026-11-12 夜）；
+ *  新插一格写什么在 format/template.ts（16-4 A2），这里不带默认。
  *  意思：开着 = 这个数跟着这首歌自己的谱（跟着的东西就在同一个文件里）；存的时候把那一刻算出来的数写进 hpHz / timeMs（文件里的数 = 存那一刻真的在用的数，writeResolved）。 */
 export declare const HOST_PARAMS: Record<string, ParamDef[]>;
 /** 这位歌手全曲最低的音（自动低切用；没有音 = null）。 */

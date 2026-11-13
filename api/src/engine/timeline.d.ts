@@ -43,6 +43,8 @@ export interface PerformerInfo {
     hitSec?: (key: number) => number;
     /** 这位自己的唱法参数（小月相：候选 defaults 里的旋钮，乐器页「高级」；2026-10-15）：盖在 TimelineInput.singOpt 上，一起进块的内容键。 */
     singOpt?: Record<string, unknown>;
+    /** 这个声部的声音一路经过的录音房里缺的数（16-4 A2；core/render.ts mixProblemsFor 在送进来之前查的）：有 = 不出声、清单写在哪缺哪几个。 */
+    mixMissing?: string[];
     /** 按块出声的（小月相）：唱法核心原始输出进轨之前乘多少（dB，乐手身上的 instrument.outputGainDb；16-4 B）。 */
     outputGainDb?: number;
     /** 按力度敲的乐器：引擎在敲的键上实际的 L（写的音高 × 力度 → dB；perform.ts VelDb，7-N）。准备声音时从库的字节算（录音房载库时），没载好 = 没有（这个声部本来就不出声）。

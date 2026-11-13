@@ -75,6 +75,7 @@
 - 哼的字只在乐手身上（`instrument.hum`）；歌上不再有一份、存的时候不再互相抄。
 - 歌词每个音节的 `xml:lang` = 唱的那一段的语言（`engine/timeline.ts sungLangsOf`，和唱同一个 `sungPlan`）。
 - 加了新键 / 新值的那几份小版本 +1（`contract.ts FORMAT_MINOR`：manifest 1、score 11、lounge 2、studio 2；16-4 起 lounge 3；v0.17.16 起 lounge 4）。
+- 录音房也照写着的写（as-of v0.17.17，16-4 A2）：不再按参数表的默认补效果参数、不再替声部建轨；新建的歌（`templateExtras`）和新加的声部（`main.ts newPartState`）在建的那一刻按模板建好混音轨。只按键表筛；开着的自动低切 / 跟速度照旧写算出来的数（`writeResolved`）。
 - 存的时候不再补数（as-of v0.17.16，16-4 A，Claude Opus 5.5）：休息室里每位乐手的数要么是新建时从模板（`format/template.ts`）按值抄的，要么是读文件时门口补的，要么是人改的——`buildEntries` 只按键表筛、不问模板；唯一的例外是 SoundFont 不固定敲一个键的写 `note: null`。新写的键：小月相 `instrument.outputGainDb`、鼓 / 固定敲一件的 `instrument.hitSecByKey`；`articulation.rollHz` 只写数。
 - 每位乐手身上的键按它的力度路分（as-of v0.17.15）：插件报的 `dynamics` 是格式契约（引擎名走哪条路永远不变）；演奏法的键表 `ART_KEYS_BY` 按「这条路出声的代码读不读」分（守卫 `test/art-keys-by-path.test.ts` 拿真的时间线核），另一路的、哪条路都不读的（`tenutoGate`）不补不写。
 - 效果链里的两个开关（16-5，as-of v0.17.14）：EQ 的自动低切 `hpAuto`、延迟的跟速度 `syncBeats` 登记在 `engine/chain.ts HOST_PARAMS`，存的时候和别的参数一样明写；开着的那一格把这一刻算出来的数写进 `hpHz` / `timeMs`（`writeResolved`，和放的时候 `core/render.ts mixParamsOf` 里的 `resolveChain` 同一份换算：歌手轨 = 这位全曲最低的音往下大三度，混音轨 / 总轨 = 0；延迟 = 几拍 × 60000 ÷ 歌开头的速度）。乐手自己的链放的时候不换算，存的时候也不碰。
@@ -96,8 +97,9 @@
 - 断了的照实标：合租不成立 → `PartDef.hostBroken`（照没合租来画，歌手牌「合租」那一行写清，存的时候照原样写回）；声部没有乐手 / 读不懂 → 没人上场（不再当小月相；四个「不出声」的出口说原因）；混音台出到 / 发送 / 被谁压断了 → 那一页那一格写「断了」、卡片上「有 N 处断了」（判法 = `engine/studio.ts busLinkStates`，和录音房接线同一个）。
 - 别家的谱没写速度 / 调号 / 拍号 → 打开时那一串话里各一句（`headNotice`）。
 - `loadDoc` 开歌不补力度、不理顺先后（人改谱时 A6 的 normalize 照旧补）。新歌 = `templateExtras(song)`：创建那一刻每个声部的乐手按模板写进休息室。
+- **录音房的门口**（16-4 A2，as-of v0.17.17，Claude Opus 5.5）：`finish` 末尾 `completeStudio`：每条轨缺的增益 / 声像 / 链 / 发送的量 / 出到 / 旁通，每格认得的效果的开关（没写 = 开）和每个参数（按在不在混音轨上取模板那一份），总轨的增益 / 限幅开关 / 链 / 限幅器四个数，按模板补；歌里的声部没有混音轨的按模板建一条（别家的谱、没有 studio.json 的 = 整份按模板建）。不补：比这一版新的、不认识的效果种类。不说话、不算改过（`test/studio-door.test.ts`）。录音房那一份读不懂（没有轨表）照旧打开时说一句。
 - **休息室的门口**（16-4 A，as-of v0.17.16，Claude Opus 5.5；统筹 2026-11-12 夜五条）：`openBytes` 里每位角色 `noteNullAsUnset` → `completeRole`：每位乐手缺的 / 类型不对的数按模板补（演奏法按力度路那一份、力度表按八档、唱法表和旋钮、SoundFont 没写力度的那一档；滚奏密度按是不是鼓 12 / 14；小月相的原始输出增益 6.52；鼓 / 固定敲一件的着力点表按目录）；写了的原样留。不补：比这一版新的那一份、读不懂的引擎、不认识的效果。补完才是「打开时的样子」：不算改过、不自动存、不进撤销、不说话（`test/read-as-written.test.ts` 守，含一份 v0.17.15 代码写的冻结样本 `test/fixtures/format/minor/lounge-3/`）。
-- **出声那一层只吃写全的**：`src/score`、`src/engine`、`src/core` 不 import 模板（`test/template.test.ts`）；`core/render.ts performerInfoOf` 送进录音房之前查一遍缺数（`perfSpecProblems` + 唱法核心的旋钮 + 按块出声的原始输出增益 + 插件自己报的，如着力点表），缺了 = 这个声部明着不出声、清单里写缺哪几个，音频线程不抛。
+- **出声那一层只吃写全的**：`src/score`、`src/engine`、`src/core` 不 import 模板（`test/template.test.ts`）；`core/render.ts performerInfoOf` 送进录音房之前查一遍缺数（`perfSpecProblems` + 唱法核心的旋钮 + 按块出声的原始输出增益 + 插件自己报的，如着力点表），缺了 = 这个声部明着不出声、清单里写缺哪几个，音频线程不抛。v0.17.17 起同一处还查录音房（`mixProblemsFor`：这个声部自己的轨、一路出到 / 发给的每条混音轨、总轨），缺数的轨 / 总轨也不交给录音房（`mixParamsOf`）；效果原语（`engine/fx.ts`）不带默认、开关照写的读。
 
 ## 六、还随整个模型涨的点（优化时先看这里）
 
@@ -236,7 +238,7 @@
 | 在哪 | 乘多少 | 谁定的 | 界面上哪里看得见 |
 |---|---|---|---|
 | 总轨链 → 总轨增益 | 链里的效果、dB | 人 | 混音台总轨卡 |
-| 限幅器 | 天花板 0.98（−0.18 dBFS）；起 3 ms、放 150 ms、前瞻 9 ms；不超的地方不动 | 开关：人；四个数：我们 | 天花板写在限幅的问号里；起、放、前瞻**看不见** |
+| 限幅器 | 天花板 0.98（−0.18 dBFS）；起 3 ms、放 150 ms、前瞻 9 ms；不超的地方不动 | 开关：人；四个数：v0.17.17 起写在歌里（`studio.json master.limiterParams`，新建 = 模板；录音房收到总轨设置之前不限幅） | 四个数都写在限幅的问号里（照这首歌文件里的；这一版没有调节的钮） |
 | 实时出口 | 不乘 | — | — |
 | 导出 | mp3（LAME）/ 16 位 wav：不改电平 | — | — |
 

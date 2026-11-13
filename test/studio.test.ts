@@ -3,8 +3,9 @@
 //   通道（推子 / 声像 / 静音 / 独奏）和表情曲线播放时才乘；母线绝不超天花板、不超的地方不动；试听绕过限幅。听感归 user，这里只管数学。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { instantiateTsf } from "../src/gm/tsf-standalone.ts";
-import { Studio, BLOCK, CEILING, TAIL_FX_MAX, fadeTail, type StudioOut, type TimelineMsg, type TrackSpec } from "../src/engine/studio.ts";
+import { Studio, BLOCK, TAIL_FX_MAX, fadeTail, type StudioOut, type TimelineMsg, type TrackSpec } from "../src/engine/studio.ts";
 import { audibleAt, outputClock } from "../src/engine/studio-client.ts";
+import { fx } from "./fixtures/fx.ts";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL | string): Uint8Array };
 
 const SR = 48000;
@@ -12,10 +13,13 @@ const wasm = fs.readFileSync(new URL("../vendor/tsf/tsf-standalone.wasm", import
 const sf2 = fs.readFileSync(new URL("./fixtures/sf2/gu-square-castanets.sf2", import.meta.url));
 const SHA = "fixture";
 
+/** 总轨限幅器的四个数（= 模板；16-4 C 起录音房自己不带，宿主推总轨时给）。 */
+const LIM = { ceiling: 0.98, attackMs: 3, releaseMs: 150, lookaheadMs: 9 };
 async function studio(): Promise<{ s: Studio; out: StudioOut[] }> {
   const out: StudioOut[] = [];
   const s = new Studio(SR, await instantiateTsf(wasm), (m) => out.push(m));
   s.handle({ type: "bank", sha: SHA, bytes: sf2 });
+  s.handle({ type: "master", p: { gainDb: 0, limiter: true, limiterParams: LIM } });   // 和宿主一样：开歌就推总轨（core/render.ts pushMix）
   return { s, out };
 }
 /** 出 secs 秒，返回左右两条。 */
@@ -274,11 +278,22 @@ describe("录音房：通道 / 表情曲线 / 总轨", () => {
       return run(s, 0.9);
     };
     const on = await mk(true, true);
-    assert(peak(on.L) <= CEILING + 1e-6 && peak(on.L, sec(0.2), sec(0.8)) > 0.9, `限幅：峰 ${peak(on.L)}`);
+    assert(peak(on.L) <= LIM.ceiling + 1e-6 && peak(on.L, sec(0.2), sec(0.8)) > 0.9, `限幅：峰 ${peak(on.L)}`);
     const off = await mk(false, true);
     assert(peak(off.L) > 1.1, "关掉 = 1.6 × 0.707 原样出去");
     const quiet = await mk(true, false);
     assert(Math.abs(peak(quiet.L, sec(0.2), sec(0.8)) - 0.6 * PAN0) < 1e-4, "没超 = 不动（0.3 + 0.3）× 0.707；块存 Int16 差一个量化步");
+  });
+  it("限幅器的四个数从总轨设置里来（16-4 C）：收到之前不限幅、没有延迟；前瞻 = round(lookaheadMs · 采样率)（44.1 kHz 397、48 kHz 432）；天花板照给的数", async () => {
+    const tsf = await instantiateTsf(wasm), mk = (sr: number) => new Studio(sr, tsf, () => {});
+    const bare = mk(48000); eq(bare.latency, 0, "收到总轨之前 = 不限幅、没有延迟");
+    for (const [sr, n] of [[44100, 397], [48000, 432]] as const) { const st = mk(sr); st.handle({ type: "master", p: { gainDb: 0, limiter: true, limiterParams: LIM } }); eq(st.latency, n, `${sr} Hz 前瞻 ${n} 个采样`); }
+    const st = mk(48000); st.handle({ type: "master", p: { gainDb: 0, limiter: true, limiterParams: { ...LIM, lookaheadMs: 20 } } }); eq(st.latency, 960, "前瞻是独立的数（不再是「起 × 3」）");
+    const { s } = await studio();
+    s.handle({ type: "master", p: { limiterParams: { ...LIM, ceiling: 0.5 } } });
+    s.handle({ type: "chunk", key: "A", sr: SR, samples: flat(1, 0.8) }); s.handle({ type: "timeline", tl: tl([clipTrack("a", "A", 0, 1)], { from: 0, to: 1 }) }); s.handle({ type: "play" });
+    const r = run(s, 0.9);
+    assert(peak(r.L) <= 0.5 + 1e-6 && peak(r.L, sec(0.2), sec(0.8)) > 0.45, `天花板 0.5：峰 ${peak(r.L)}`);
   });
 });
 
@@ -312,7 +327,7 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
   };
   it("仪表（v0.10.16）：平均电平 = 推子后的均方（声像不算）；压了多少 = 第一台压缩；李萨如图只在开着时发、单声道正中 = 左右一样", async () => {
     const { s, out } = await clipS([{ id: "A", v: 0.4 }]);
-    s.handle({ type: "channel", id: "A", p: { gainDb: -6.0206, pan: 0.5, chain: [{ id: "c", kind: "comp", params: { thresholdDb: -30, ratio: 4, attackMs: 1, releaseMs: 50, kneeDb: 0, makeupDb: 0 } }] } });
+    s.handle({ type: "channel", id: "A", p: { gainDb: -6.0206, pan: 0.5, chain: [fx("c", "comp", { thresholdDb: -30, ratio: 4, attackMs: 1, releaseMs: 50, kneeDb: 0, makeupDb: 0 })] } });
     s.handle({ type: "meter", on: true }); s.handle({ type: "play" }); run(s, 0.5);
     const m = out.filter((x) => x.type === "meter").at(-1) as Extract<StudioOut, { type: "meter" }>;
     const gr = 20 * Math.log10(0.4) + 30, want = -gr * (1 - 1 / 4);   // 输入 −7.96 dBFS，超阈值 22.04 dB，4:1 → 压 16.53 dB
@@ -329,7 +344,7 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
   it("压缩页的波形（v0.10.26，user「效果器的动画没开效果器的卡上面也应该有」）：没有压缩 / 关着的轨也报进出峰值 = 链尾推子前的电平、压了 0", async () => {
     const { s, out } = await clipS([{ id: "A", v: 0.4 }, { id: "B", v: 0.2 }]);
     s.handle({ type: "channel", id: "A", p: { gainDb: -12 } });   // 推子不算：波形看的是推子前
-    s.handle({ type: "channel", id: "B", p: { chain: [{ id: "c", kind: "comp", on: false, params: { thresholdDb: -30, ratio: 4, attackMs: 1, releaseMs: 50, kneeDb: 0, makeupDb: 0 } }] } });
+    s.handle({ type: "channel", id: "B", p: { chain: [fx("c", "comp", { thresholdDb: -30, ratio: 4, attackMs: 1, releaseMs: 50, kneeDb: 0, makeupDb: 0 }, { on: false })] } });
     s.handle({ type: "meter", on: true }); s.handle({ type: "play" }); run(s, 0.5);
     const m = out.filter((x) => x.type === "meter").at(-1) as Extract<StudioOut, { type: "meter" }>;
     const a = m.cl?.A, b = m.cl?.B, mm = m.cl?.__master;
@@ -343,17 +358,17 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
     const x = Float32Array.from({ length: SR }, (_, i) => 0.3 * Math.sin((2 * Math.PI * 100 * i) / SR));
     s.handle({ type: "chunk", key: "A", sr: SR, samples: x });
     s.handle({ type: "timeline", tl: tl([clipTrack("a", "A", 0, 1)], { from: 0, to: 1 }) });
-    s.handle({ type: "channel", id: "a", p: { chain: [{ id: "e", kind: "eq", params: { hpHz: 2000 } }] } });
+    s.handle({ type: "channel", id: "a", p: { chain: [fx("e", "eq", { hpHz: 2000 })] } });
     s.handle({ type: "play" });
     const r = run(s, 1);
     assert(peak(r.L, sec(0.5), sec(0.9)) < 0.3 * PAN0 * 0.1, `低切后 ${peak(r.L, sec(0.5), sec(0.9))}`);
     const { s: s2 } = await clipS([{ id: "A", v: 0.4 }]);
-    s2.handle({ type: "master", p: { chain: [{ id: "g", kind: "gain", params: { dB: -6.0206 } }] } }); s2.handle({ type: "play" });
+    s2.handle({ type: "master", p: { chain: [fx("g", "gain", { dB: -6.0206 })] } }); s2.handle({ type: "play" });
     assert(Math.abs(peak(run(s2, 1).L, sec(0.5), sec(0.9)) - 0.4 * PAN0 * 0.5) < 1e-3, "总轨链 −6 dB");
   });
   it("总线接总线（v0.10.9）：A → b1 → b2（b2 上增益 −6 dB）→ 总轨 = 峰值减半；b1 发一份给 b2 = 两份叠起来", async () => {
     const lvl = async (buses: unknown[], ch: Record<string, unknown>) => { const { s } = await clipS([{ id: "A", v: 0.4 }]); s.handle({ type: "buses", buses: buses as never }); s.handle({ type: "channel", id: "A", p: ch as never }); s.handle({ type: "play" }); return peak(run(s, 1).L, sec(0.5), sec(0.9)); };
-    const g6 = [{ id: "g", kind: "gain", params: { dB: -6.0206 } }];
+    const g6 = [fx("g", "gain", { dB: -6.0206 })];
     const chainOf = await lvl([{ id: "b2", gainDb: 0, pan: 0, chain: g6 }, { id: "b1", gainDb: 0, pan: 0, chain: [], to: "b2" }], { to: "b1" });   // 故意倒着给：顺序按连线排，不按给的顺序
     assert(Math.abs(chainOf - 0.4 * PAN0 * 0.5) < 1e-3, `A → b1 → b2(−6) → 总轨 ${chainOf}`);
     const both = await lvl([{ id: "b1", gainDb: 0, pan: 0, chain: [], sends: [{ to: "b2", gainDb: 0 }] }, { id: "b2", gainDb: 0, pan: 0, chain: [] }], { to: "b1" });
@@ -383,7 +398,7 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
   it("侧链：B 轨很响时 A 轨上的压缩器（key = B）把 A 压下去；没有 key 时 A 自己很轻不压", async () => {
     const mk = async (key: string | undefined) => {
       const { s } = await clipS([{ id: "A", v: 0.05 }, { id: "B", v: 0.8 }]);
-      s.handle({ type: "channel", id: "A", p: { chain: [{ id: "c", kind: "comp", params: { thresholdDb: -20, ratio: 8, attackMs: 1, releaseMs: 50, kneeDb: 0 }, ...(key ? { key } : {}) }] } });
+      s.handle({ type: "channel", id: "A", p: { chain: [fx("c", "comp", { thresholdDb: -20, ratio: 8, attackMs: 1, releaseMs: 50, kneeDb: 0 }, key ? { key } : {})] } });
       s.handle({ type: "channel", id: "B", p: { mute: true } });   // B 自己不出声，只当 key
       s.handle({ type: "play" }); return peak(run(s, 1).L, sec(0.5), sec(0.9));
     };
@@ -394,7 +409,7 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
     const mk = async (room: number) => {
       const { s, out } = await studio();
       s.handle({ type: "timeline", tl: tl([sfTrack("p", [{ t0: 0, t1: 0.4, key: 60 }])], { from: 0, to: 0.5 }) });
-      s.handle({ type: "buses", buses: [{ id: "b1", gainDb: 0, pan: 0, chain: [{ id: "r", kind: "reverb", params: { room, damp: 0.1, mix: 1, preDelayMs: 0 } }] }] });
+      s.handle({ type: "buses", buses: [{ id: "b1", gainDb: 0, pan: 0, chain: [fx("r", "reverb", { room, damp: 0.1, mix: 1, preDelayMs: 0 })] }] });
       s.handle({ type: "channel", id: "p", p: { sends: [{ to: "b1", gainDb: 0 }] } });
       s.handle({ type: "play" });
       // 一块一块放到 ended（或 20 s），记下每块的峰值和 ended 在第几秒
@@ -420,7 +435,7 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
   });
   it("发送到混响总线：块停了之后总线上还有尾巴；总线增益 / 删了总线 = 发送落空不出声", async () => {
     const { s } = await clipS([{ id: "A", v: 0.3 }]);
-    s.handle({ type: "buses", buses: [{ id: "b1", gainDb: 0, pan: 0, chain: [{ id: "r", kind: "reverb", params: { room: 0.7, damp: 0.2, mix: 1, preDelayMs: 0 } }] }] });
+    s.handle({ type: "buses", buses: [{ id: "b1", gainDb: 0, pan: 0, chain: [fx("r", "reverb", { room: 0.7, damp: 0.2, mix: 1, preDelayMs: 0 })] }] });
     s.handle({ type: "channel", id: "A", p: { sends: [{ to: "b1", gainDb: 0 }] } });
     s.handle({ type: "play" });
     const r = run(s, 2.5);
@@ -430,7 +445,7 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
     assert(Math.abs(peak(run(s2, 1).L, sec(0.5), sec(0.9)) - 0.3 * PAN0) < 1e-3, "去向找不到的总线 = 照旧进总轨（不丢声）");
   });
   it("演奏者的链（时间线 chain）在通道链之前；两趟都确定性", async () => {
-    const mk = async () => { const { s } = await clipS([{ id: "A", v: 0.4 }]); s.handle({ type: "timeline", tl: tl([{ ...clipTrack("A", "A", 0, 1), chain: [{ id: "g", kind: "gain", params: { dB: -6.0206 } }] }], { from: 0, to: 1 }) }); s.handle({ type: "play" }); return run(s, 1).L; };
+    const mk = async () => { const { s } = await clipS([{ id: "A", v: 0.4 }]); s.handle({ type: "timeline", tl: tl([{ ...clipTrack("A", "A", 0, 1), chain: [fx("g", "gain", { dB: -6.0206 })] }], { from: 0, to: 1 }) }); s.handle({ type: "play" }); return run(s, 1).L; };
     const a = await mk(), b = await mk();
     assert(Math.abs(peak(a, sec(0.5), sec(0.9)) - 0.4 * PAN0 * 0.5) < 1e-3, "演奏者链 −6 dB"); assert(same(a, b), "确定性");
   });

@@ -119,7 +119,10 @@ export type FormatFile = keyof typeof FORMAT;
  *  ③ articulation.rollHz 只写数（老的 null = 按乐器，门口按鼓 12 / 有音高 14 补成数）。
  *  老文件（lounge ≤ 3）缺的这几样 = 读文件的门口按模板 / 目录补，不说话、不算改过；存的时候写。
  *  旧读者（lounge 3）读到：outputGainDb / hitSecByKey 是不认识的键（照它自己的常数 / 目录放，值一样）；rollHz 是数 = 当成调过的（值就是默认那一档）；提示一次。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 11, lounge: 4, studio: 2 };   // lounge 3（9-2）起小版本从 0 数
+/** studio minor 3（第 16 条 16-4 A2 + C，2026-11-12 夜，统筹「v0.17.16 收」）：总轨多一个键 master.limiterParams（限幅器的四个数，见 LimiterParamsV2）。
+ *  另外几样意思不变、从此由门口保证明写：效果格的 on（老文件没写 = 开）、轨的 bypass（没写 = 不旁通）、效果参数表里每个参数（没写 = 门口按模板补——新插一格的那一份）。
+ *  存的时候不再补、不再替声部建轨；新建的歌 / 新加的声部在建的那一刻按模板建好混音轨。旧读者（studio 2）读到 limiterParams = 不认识的键（照它自己的常数限幅，数一样），提示一次。 */
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 11, lounge: 4, studio: 3 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
@@ -223,12 +226,19 @@ export interface ViewV1 { scope?: "all"; pageFlow?: true; /** 排法「横卷」
 /** 录音房 v2（2026-10-10 刀 4；user「轨还是和乐手是两个概念」）：轨是通用的条——乐手的通道（kind mic，谱上声部 `part.mic` 指着它）、总线（kind bus，没有乐手；混响 / 延迟这类「留在屋里的」）、
  *  以后的素材轨。每条：增益 / 声像 / 效果链 / 发送（推子之后发到哪条总线多少）/ 去哪（"master" 或总线 id）。总轨：增益 / 限幅 / 链。老文件（v1）读进来 = 每个麦克风一条 mic 轨、空链、直通总轨。 */
 export interface StudioTrackV2 { id: string; kind: "mic" | "bus"; name: string; gainDb: number; pan: number; chain: FxV2[]; sends: { to: string; gainDb: number }[]; to: string;
-  /** 2026-10-10 加（可选，不升版本；Opus 5.5）：混音轨整条旁通——链上的插件全跳过，推子 / 声像 / 出到 / 发送照旧；只写 true（user「混音轨和每个插件都可以toggle bypass」）。 */
-  bypass?: true }
+  /** 2026-10-10 加（可选，不升版本；Opus 5.5）：混音轨整条旁通——链上的插件全跳过，推子 / 声像 / 出到 / 发送照旧（user「混音轨和每个插件都可以toggle bypass」）。
+   *  第 16 条 16-3 起明写（false 也写，歌手轨照样写 false）。 */
+  bypass?: boolean }
+/** 总轨的限幅器（2026-11-12 加，16-4 C；studio 小版本 3）。是哪一种：前瞻的峰值限幅（feed-forward、左右用同一条增益）——输出比输入晚 lookaheadMs；
+ *  每个采样看前瞻窗里每一个将来的样本要压多少（超过 ceiling 的 = ceiling ÷ 峰值），按「起」的指数曲线提前收下来（离那个样本 d 个采样处的增益 = 1 − (1 − 要的) · e^(−d / (attackMs·采样率))），
+ *  过了峰按「放」的一阶慢慢放开（每个采样 g = min(要的, 1 − (1 − 上一个) · e^(−1 / (releaseMs·采样率)))）；最后再按天花板硬切一下兜底。
+ *  ceiling = 满幅的几分之几（线性；0.98 ≈ −0.18 dBFS）；attackMs = 起（提前收的时间常数）；releaseMs = 放；lookaheadMs = 前瞻多远（独立的数；原来是「起 × 3」算出来的，9 ms）。
+ *  前瞻在 44.1 kHz = 397 个采样、48 kHz = 432 个采样（和原来一样）。新建 = 模板的 0.98 / 3 / 150 / 9；老文件没写 = 读文件的门口按模板补，存的时候写。 */
+export interface LimiterParamsV2 { ceiling: number; attackMs: number; releaseMs: number; lookaheadMs: number }
 export interface StudioV2 {
   version: 2;
   tracks: StudioTrackV2[];
-  master: { gainDb: number; limiter: boolean; chain: FxV2[] };
+  master: { gainDb: number; limiter: boolean; chain: FxV2[]; limiterParams?: LimiterParamsV2 };
 }
 
 // ─── 休息室 v2（现役）：角色 = 谱上的功能位；候选 = 谁来演 + 怎么出声 ─────────────────────────
@@ -340,7 +350,9 @@ export type Spec =
   | { kind: "ours"; doc: string; source: { repo: string; ref: string; path: string } }   // ref = 版本号 / commit；doc = vault README 的章节锚
   | { kind: "unknown" };
 /** 一个效果（2026-10-10 刀 4 定形；原草稿的 engine / owner 去掉——引擎随 app 发、主人就是它在哪条链上）：kind 见 src/engine/fx.ts FX_KINDS（eq / comp / delay / reverb / gain…；
- *  不认识的 = 不出声、原样带着、界面画灰）；params 按 kind 的参数表（量纲 / 公式在那张表里，vault 自描述）；on = false 旁通；key = 压缩器的侧链来源（轨 id）。 */
+ *  不认识的 = 不出声、原样带着、界面画灰）；params 按 kind 的参数表（量纲 / 公式在那张表里，vault 自描述）；on = false 旁通；key = 压缩器的侧链来源（轨 id）。
+ *  16-4 A2（2026-11-12 夜）起：参数表里每个参数、on 都明写；新插一格 = 模板（format/template.ts）那一份；老文件没写的 = 读文件的门口补（on 没写 = 开；参数没写 = 模板那一份，
+ *  按这格在不在混音轨上取）；出声那一层照写的读，缺了 = 用到它的声部不出声、清单里写缺哪几个。 */
 export interface FxV2 { id: string; kind: string; on?: boolean; params: Record<string, number>; key?: string; note?: string }
 
 // ═══ 提案（未写入文件；多轨 / 曲线 / 录音房落地时改 FORMAT + 冻结样本）══════════════════

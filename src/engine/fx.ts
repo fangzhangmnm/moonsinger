@@ -2,13 +2,15 @@
 // created 2026-10-10 by Claude Fable 5.1（实时试听刀 4；user「空间效果器这些具体的content应该opus做就可以了吧，除非有性能敏感的复杂优化算法…侧链之类的我也不懂但算法层面应该考虑到」
 //   「那几个基础的东西都做一下，性能代价几乎是零」）。内容（预设、什么风用什么、界面）归 Opus / user；这里只有数学。
 // 规矩：
-//   · 每种效果一张参数表（id / 量纲 / 范围 / 默认 / 公式）——vault 自描述，anti-abandonware（user「必须存latex公式…或者github链接，在歌里面」）。
+//   · 每种效果一张参数表（id / 量纲 / 范围 / 公式）——vault 自描述，anti-abandonware（user「必须存latex公式…或者github链接，在歌里面」）。
+//     默认不在这里（16-4 A2，2026-11-12 夜）：新插一格写什么 = format/template.ts；每个参数都由调用方给全（core/render.ts 送进录音房之前查过），这里不替缺的补。
 //   · 参数只在 setParams 时算系数；process 里只乘加。全部零延迟（限幅器那种要前瞻的不放这里）。
 //   · 不认识的 kind = 不出声、原样带着（画灰归界面）。
 import { _t } from "../i18n/index.ts";
 import type { FxV2 } from "../format/contract.ts";
 
-export interface ParamDef { id: string; unit: "dB" | "Hz" | "ms" | "ratio" | "0..1" | "bool"; min: number; max: number; default: number; label: string }
+/** 一个参数：id / 量纲 / 范围 / 名字。默认值不在这里（16-4 A2：新插一格的样子在 format/template.ts；出声这一层只吃写全的，缺数在送进录音房之前查）。 */
+export interface ParamDef { id: string; unit: "dB" | "Hz" | "ms" | "ratio" | "0..1" | "bool"; min: number; max: number; label: string }
 export interface FxKindDef { kind: string; name: string; params: ParamDef[]; /** 算法一句话 + 公式（伪码 / latex），进 vault README */ formula: string; stereoOnly?: boolean }
 /** 一个效果实例：process 就地改 L（和 R；单声道链 R = null）；key = 侧链信号（压缩器才看）。 */
 export interface FxInstance { readonly kind: string; readonly id: string; on: boolean; setParams(p: Record<string, number>): void; process(L: Float32Array, R: Float32Array | null, n: number, key: Float32Array | null): void }
@@ -44,15 +46,15 @@ class Biquad {
 // ── EQ：高切 / 低切 + 低架 / 高架 + 一个峰 ────────────────────────────────────────────────────────────────────────
 const EQ: FxKindDef = { kind: "eq", name: _t("均衡"), formula: _t("每段一个双二阶 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)，系数按 RBJ Audio EQ Cookbook（hp / lp Q = 0.707；架子 Q = 0.707；峰 Q 可调）。hpHz / lpHz = 0 关。"),
   params: [
-    { id: "hpHz", unit: "Hz", min: 0, max: 2000, default: 0, label: _t("低切") }, { id: "lpHz", unit: "Hz", min: 0, max: 20000, default: 0, label: _t("高切") },
-    { id: "lowDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("低架") }, { id: "lowHz", unit: "Hz", min: 40, max: 1000, default: 200, label: _t("低架频率") },
-    { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("中峰") }, { id: "midHz", unit: "Hz", min: 100, max: 10000, default: 1500, label: _t("中峰频率") }, { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: _t("中峰宽") },
-    { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("高架") }, { id: "highHz", unit: "Hz", min: 1000, max: 16000, default: 5000, label: _t("高架频率") },
+    { id: "hpHz", unit: "Hz", min: 0, max: 2000, label: _t("低切") }, { id: "lpHz", unit: "Hz", min: 0, max: 20000, label: _t("高切") },
+    { id: "lowDb", unit: "dB", min: -24, max: 24, label: _t("低架") }, { id: "lowHz", unit: "Hz", min: 40, max: 1000, label: _t("低架频率") },
+    { id: "midDb", unit: "dB", min: -24, max: 24, label: _t("中峰") }, { id: "midHz", unit: "Hz", min: 100, max: 10000, label: _t("中峰频率") }, { id: "midQ", unit: "ratio", min: 0.2, max: 10, label: _t("中峰宽") },
+    { id: "highDb", unit: "dB", min: -24, max: 24, label: _t("高架") }, { id: "highHz", unit: "Hz", min: 1000, max: 16000, label: _t("高架频率") },
   ] };
 type EqSection = [boolean, "hp" | "lp" | "lowshelf" | "peak" | "highshelf", number, number, number];
 /** EQ 的五段（录音房设系数和画响应曲线共用这一份，v0.10.11）：开不开、类型、频率、Q、增益。 */
 function eqSections(p: Record<string, number>): EqSection[] {
-  const g = (k: string) => p[k] ?? EQ.params.find((d) => d.id === k)!.default;
+  const g = (k: string) => p[k]!;
   return [
     [g("hpHz") > 0, "hp", g("hpHz"), 0.707, 0], [g("lpHz") > 0, "lp", g("lpHz"), 0.707, 0],
     [g("lowDb") !== 0, "lowshelf", g("lowHz"), 0.707, g("lowDb")], [g("midDb") !== 0, "peak", g("midHz"), g("midQ"), g("midDb")], [g("highDb") !== 0, "highshelf", g("highHz"), 0.707, g("highDb")],
@@ -90,9 +92,9 @@ class Eq implements FxInstance {
 // ── 压缩器（峰值检波、软拐点、可侧链；立体声联动）────────────────────────────────────────────────────────────────
 const COMP: FxKindDef = { kind: "comp", name: _t("压缩"), formula: _t("包络 e[n] = max(|x|, e[n-1]·r) 起（attack）落（release）各一个时间常数；超过 threshold 的部分按 ratio 压（kneeDb 内软拐点：g = -(x - T + K/2)^2 · (1 - 1/R) / (2K)）；增益 = 10^(g/20) × 10^(makeup/20)。key 给了 = 听别的轨（侧链），不给 = 听自己。"),
   params: [
-    { id: "thresholdDb", unit: "dB", min: -60, max: 0, default: -18, label: _t("阈值") }, { id: "ratio", unit: "ratio", min: 1, max: 20, default: 3, label: _t("比例") },
-    { id: "attackMs", unit: "ms", min: 0.1, max: 200, default: 10, label: _t("起") }, { id: "releaseMs", unit: "ms", min: 5, max: 2000, default: 120, label: _t("落") },
-    { id: "kneeDb", unit: "dB", min: 0, max: 24, default: 6, label: _t("拐点") }, { id: "makeupDb", unit: "dB", min: -12, max: 24, default: 0, label: _t("补偿") },
+    { id: "thresholdDb", unit: "dB", min: -60, max: 0, label: _t("阈值") }, { id: "ratio", unit: "ratio", min: 1, max: 20, label: _t("比例") },
+    { id: "attackMs", unit: "ms", min: 0.1, max: 200, label: _t("起") }, { id: "releaseMs", unit: "ms", min: 5, max: 2000, label: _t("落") },
+    { id: "kneeDb", unit: "dB", min: 0, max: 24, label: _t("拐点") }, { id: "makeupDb", unit: "dB", min: -12, max: 24, label: _t("补偿") },
   ] };
 class Comp implements FxInstance {
   readonly kind = "comp"; on = true;
@@ -102,7 +104,7 @@ class Comp implements FxInstance {
   readonly id: string; private sr: number;
   constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; this.setParams(p); }
   setParams(p: Record<string, number>): void {
-    const g = (k: string) => p[k] ?? COMP.params.find((d) => d.id === k)!.default;
+    const g = (k: string) => p[k]!;
     this.T = g("thresholdDb"); this.R = Math.max(1, g("ratio")); this.K = Math.max(0, g("kneeDb")); this.makeup = dbToLin(g("makeupDb"));
     this.aAtt = Math.exp(-1 / (Math.max(0.0001, g("attackMs") / 1000) * this.sr)); this.aRel = Math.exp(-1 / (Math.max(0.001, g("releaseMs") / 1000) * this.sr));
   }
@@ -129,8 +131,8 @@ class Comp implements FxInstance {
 // ── 延迟（反馈里一个低通，立体声同长）─────────────────────────────────────────────────────────────────────────────
 const DELAY: FxKindDef = { kind: "delay", name: _t("延迟"), formula: _t("y[n] = x[n]·dry + d[n]·mix（mix / dry = 线性的幅度倍数），d[n] = x[n - D] + fb · LP(d[n - D])，LP = 一阶低通 dampHz。D = timeMs（最长 2 s）。"),
   params: [
-    { id: "timeMs", unit: "ms", min: 1, max: 2000, default: 375, label: _t("时间") }, { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: _t("反馈") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("原声") }, { id: "dampHz", unit: "Hz", min: 500, max: 20000, default: 6000, label: _t("反馈高切") },
+    { id: "timeMs", unit: "ms", min: 1, max: 2000, label: _t("时间") }, { id: "feedback", unit: "0..1", min: 0, max: 0.95, label: _t("反馈") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, label: _t("原声") }, { id: "dampHz", unit: "Hz", min: 500, max: 20000, label: _t("反馈高切") },
   ] };
 class Delay implements FxInstance {
   readonly kind = "delay"; on = true;
@@ -138,7 +140,7 @@ class Delay implements FxInstance {
   readonly id: string; private sr: number;
   constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; const max = Math.ceil(2 * sr) + 1; this.bufL = new Float32Array(max); this.bufR = new Float32Array(max); this.setParams(p); }
   setParams(p: Record<string, number>): void {
-    const g = (k: string) => p[k] ?? DELAY.params.find((d) => d.id === k)!.default;
+    const g = (k: string) => p[k]!;
     this.D = clamp(Math.round((g("timeMs") / 1000) * this.sr), 1, this.bufL.length - 1); this.fb = clamp(g("feedback"), 0, 0.95); this.mix = clamp(g("mix"), 0, 1); this.dry = clamp(g("dry"), 0, 1);
     this.lpK = 1 - Math.exp((-2 * Math.PI * clamp(g("dampHz"), 100, this.sr * 0.45)) / this.sr);
   }
@@ -157,8 +159,8 @@ class Delay implements FxInstance {
 // ── 算法混响（Freeverb 结构：8 条梳状 + 4 条全通，每边一组、右边错开；公共领域的经典结构）────────────────────────────
 const REVERB: FxKindDef = { kind: "reverb", name: _t("混响"), formula: _t("Freeverb（公开算法，room / damp 就是它的同名参数）：8 条低通反馈梳状（长度 1116…1617 @44.1k，按采样率缩放；反馈 = 0.7 + 0.28·room，低通 = damp）并联，再串 4 条全通（g = 0.5）；右边各长 23 个采样；前面一段 preDelayMs 纯延迟；y = x·dry + wet·mix（mix / dry = 线性的幅度倍数；界面上的秒 / kHz / dB 是从这几个数换算出来给人看的）。"),
   params: [
-    { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("房间大小") }, { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("高频吸收") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("原声") }, { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: _t("预延迟") }, { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: _t("宽度") },
+    { id: "room", unit: "0..1", min: 0, max: 1, label: _t("房间大小") }, { id: "damp", unit: "0..1", min: 0, max: 1, label: _t("高频吸收") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, label: _t("原声") }, { id: "preDelayMs", unit: "ms", min: 0, max: 200, label: _t("预延迟") }, { id: "width", unit: "0..1", min: 0, max: 1, label: _t("宽度") },
   ], stereoOnly: true };
 const COMBS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617], ALLPASS = [556, 441, 341, 225], SPREAD = 23;
 class Comb { buf: Float32Array; idx = 0; store = 0; constructor(n: number) { this.buf = new Float32Array(n); }
@@ -179,7 +181,7 @@ class Reverb implements FxInstance {
     this.pre = new Float32Array(Math.ceil(0.2 * sr) + 1); this.setParams(p);
   }
   setParams(p: Record<string, number>): void {
-    const g = (k: string) => p[k] ?? REVERB.params.find((d) => d.id === k)!.default;
+    const g = (k: string) => p[k]!;
     this.fb = 0.7 + 0.28 * clamp(g("room"), 0, 1); this.damp = clamp(g("damp"), 0, 1) * 0.4; this.mix = clamp(g("mix"), 0, 1); this.dry = clamp(g("dry"), 0, 1); this.width = clamp(g("width"), 0, 1);
     this.preD = clamp(Math.round((g("preDelayMs") / 1000) * this.sr), 0, this.pre.length - 1);
   }
@@ -201,9 +203,9 @@ class Reverb implements FxInstance {
 // ── 合唱 / 加倍（user 2026-10-10「齐唱 我想的是用混音效果做，clannad也只有茶太一名歌手啊」）：几条短延迟各自被低频抖动（= 轻微的音高抖动），分到左右，和干声叠在一起 ──
 const CHORUS: FxKindDef = { kind: "chorus", name: _t("合唱"), formula: _t("v 条延迟 d_k(t) = delayMs + depthMs · sin(2π · rateHz · t + 2πk/v)（线性插值读），第 k 条摆在 pan_k = spread · (2k/(v-1) - 1)；y = x·dry + mix · Σ_k d_k / v（mix / dry = 线性的幅度倍数）。"),
   params: [
-    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: _t("几条") }, { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: _t("延迟") },
-    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: _t("抖动深度") }, { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: _t("抖动快慢") },
-    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: _t("左右铺开") }, { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("原声") },
+    { id: "voices", unit: "ratio", min: 1, max: 4, label: _t("几条") }, { id: "delayMs", unit: "ms", min: 5, max: 40, label: _t("延迟") },
+    { id: "depthMs", unit: "ms", min: 0, max: 10, label: _t("抖动深度") }, { id: "rateHz", unit: "Hz", min: 0.05, max: 5, label: _t("抖动快慢") },
+    { id: "spread", unit: "0..1", min: 0, max: 1, label: _t("左右铺开") }, { id: "mix", unit: "0..1", min: 0, max: 1, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, label: _t("原声") },
   ] };
 class Chorus implements FxInstance {
   readonly kind = "chorus"; on = true;
@@ -212,7 +214,7 @@ class Chorus implements FxInstance {
   private voices = 3; private delay = 0; private depth = 0; private rate = 0.6; private spread = 0.8; private mix = 0.5; private dry = 0.5;
   constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; this.buf = new Float32Array(Math.ceil(0.06 * sr) + 2); this.setParams(p); }
   setParams(p: Record<string, number>): void {
-    const g = (k: string) => p[k] ?? CHORUS.params.find((d) => d.id === k)!.default;
+    const g = (k: string) => p[k]!;
     this.voices = clamp(Math.round(g("voices")), 1, 4); this.delay = (clamp(g("delayMs"), 5, 40) / 1000) * this.sr; this.depth = (clamp(g("depthMs"), 0, 10) / 1000) * this.sr;
     this.rate = clamp(g("rateHz"), 0.05, 5); this.spread = clamp(g("spread"), 0, 1); this.mix = clamp(g("mix"), 0, 1); this.dry = clamp(g("dry"), 0, 1);
   }
@@ -237,12 +239,12 @@ class Chorus implements FxInstance {
 }
 
 // ── 增益 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-const GAIN: FxKindDef = { kind: "gain", name: _t("增益"), formula: "y = x · 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, default: 0, label: _t("增益") }] };
+const GAIN: FxKindDef = { kind: "gain", name: _t("增益"), formula: "y = x · 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, label: _t("增益") }] };
 class Gain implements FxInstance {
   readonly kind = "gain"; on = true; private g = 1;
   readonly id: string;
   constructor(id: string, _sr: number, p: Record<string, number>) { this.id = id; this.setParams(p); }
-  setParams(p: Record<string, number>): void { this.g = dbToLin(clamp(p.dB ?? 0, -60, 24)); }
+  setParams(p: Record<string, number>): void { this.g = dbToLin(clamp(p.dB!, -60, 24)); }
   process(L: Float32Array, R: Float32Array | null, n: number): void { if (!this.on || this.g === 1) return; for (let i = 0; i < n; i++) { L[i] *= this.g; if (R) R[i] *= this.g; } }
 }
 
@@ -261,7 +263,7 @@ export function createFx(spec: FxV2, sr: number): FxInstance | null {
     case "chorus": fx = new Chorus(spec.id, sr, p); break;
     case "gain": fx = new Gain(spec.id, sr, p); break;
   }
-  if (fx) fx.on = spec.on !== false;
+  if (fx) fx.on = spec.on === true;   // 开关照写的读（16-4 A2：门口把老文件没写的补成 true；送进来之前查过是不是布尔）
   return fx;
 }
 /** 一条链：按 spec 建 / 复用实例（同 id 同 kind 的留着状态，只换参数；不认识的跳过）。 */
@@ -269,7 +271,7 @@ export function buildChain(specs: readonly FxV2[], prev: FxInstance[], sr: numbe
   const out: FxInstance[] = [];
   for (const s of specs) {
     const had = prev.find((f) => f.id === s.id && f.kind === s.kind);
-    if (had) { had.setParams(Object.fromEntries(Object.entries(s.params ?? {}).filter(([, v]) => typeof v === "number")) as Record<string, number>); had.on = s.on !== false; out.push(had); continue; }
+    if (had) { had.setParams(Object.fromEntries(Object.entries(s.params ?? {}).filter(([, v]) => typeof v === "number")) as Record<string, number>); had.on = s.on === true; out.push(had); continue; }
     const fx = createFx(s, sr); if (fx) out.push(fx);
   }
   return out;

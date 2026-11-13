@@ -4718,6 +4718,9 @@ var S = {
   "\u8BCD\uFF1A\u70B9\u97F3\u6216\u5B83\u4E0B\u9762 = \u5199\u8FD9\u4E2A\u97F3\u7684\u6B4C\u8BCD\uFF1B\u6309\u4F4F\u5B57\u62D6 = \u632A / \u5408\uFF1B\u9000\u683C = \u5220\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u7684\u5B57": { en: "Lyrics: tap a note or below it = write its lyric; hold a syllable and drag = move / join; Backspace = delete the syllable of the note before the cursor" },
   "\u7B26\uFF1A\u952E\u76D8 = \u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7\uFF09\u3002\u8C31\u4E0A\u548C\u300C\u97F3\u300D\u4E00\u6837\uFF1A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539": { en: "Symbols: keys = symbol grid (dynamics, hairpins, articulations, key / time / tempo, repeats, style; Backspace = delete marks). On the score it's the same as \u201CNotes\u201D: notes and marks can both be edited" },
   "\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\u2014\u2014\u8F7B\u70B9\u53EA\u8BA4\u770B\u8C31\u7684\uFF08\u58F0\u90E8\u540D / \u7FFB\u7EB8 / \u672C\u6BB5\uFF09\uFF0C\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E / \u63A5\u7740\u653E / \u4ECE\u5934\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\uFF08Esc \u56DE\u5230\u5199\uFF09": { en: "Listen: the score locks to prevent accidental edits \u2014 taps only do viewing things (part names / page turns / this section) and never jump playback; long-press / right-click the score = play from here / resume / from the top; Space = play / stop; the mixer sits below (Esc returns to writing)" },
+  "\u8FD9\u4E2A\u58F0\u90E8\u7684\u8F68\uFF08\u6CA1\u6709\uFF09": { en: "this part\u2019s track (missing)" },
+  "\u8FD9\u4E2A\u58F0\u90E8\u7684\u8F68": { en: "this part\u2019s track" },
+  "\u6DF7\u97F3\u8F68\u300C{name}\u300D": { en: "mix track \u201C{name}\u201D" },
   "\u6CA1\u6709\u51FA\u58F0\uFF1A{e}": { en: "Nothing sounded: {e}" },
   "\u6DF7\u97F3\u2026": { en: "Mixing\u2026" },
   "\u81EA\u52A8\u4F4E\u5207": { en: "Auto low cut" },
@@ -4764,6 +4767,7 @@ var S = {
   "{kind}\uFF1A\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6": { en: "{kind}: not recognized by this version" },
   "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A": { en: "Nobody on stage yet" },
   "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": { en: "This performer is missing these numbers, so it makes no sound: {keys}" },
+  "\u6DF7\u97F3\u53F0\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": { en: "These numbers are missing on the mixer, so it made no sound: {keys}" },
   "\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0": { en: "\u201C{label}\u201D can't sound from a note list" },
   "\u8BD5\u542C\u5143\u97F3\u8868\uFF1A{Error}\uFF08\u5148\u8DD1 node scripts/gen-preview-vowels.mjs\uFF1F\uFF09": { en: "Audition vowel table: {Error} (run node scripts/gen-preview-vowels.mjs first?)" },
   "\u7ACB\u4F53\u58F0 192k": { en: "Stereo 192k" },
@@ -4821,8 +4825,8 @@ var S = {
   "\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD": { en: "Lyrics beyond the first verse" },
   "\uFF08\u6CA1\u6709\u4E50\u624B\uFF09": { en: "(no performer)" },
   "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09": { en: "Tsukuyomi-chan Corpus Terms of Use (derived model)" },
-  "\u9EA6\u514B\u98CE {t}": { en: "Mic {t}" },
   "\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 {REFERENCES_DIR} \u4E0B\uFF1A{path}": { en: "A reference window file isn't under {REFERENCES_DIR}: {path}" },
+  "\u9EA6\u514B\u98CE {t}": { en: "Mic {t}" },
   "\u9EA6\u514B\u98CE {x}": { en: "Mic {x}" },
   "\u4E0A\u573A\u7684\u5019\u9009\u4E0D\u80FD\u5220\uFF0C\u5148\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D": { en: "The candidate on stage can't be deleted; change \u201CWho performs\u201D first" },
   "\u89D2\u8272": { en: "role" },
@@ -5231,7 +5235,7 @@ var S = {
   "\u6CA1\u5199": { en: "not set" },
   "\u5C0F 0.5 dB": { en: "0.5 dB quieter" },
   "\u5927 0.5 dB": { en: "0.5 dB louder" },
-  "\u5531\u6CD5\u6838\u5FC3\u7B97\u51FA\u6765\u7684\u539F\u59CB\u58F0\u97F3\uFF0C\u8FDB\u5979\u8FD9\u6761\u8F68\u4E4B\u524D\u5148\u4E58\u591A\u5C11\u3002\u9ED8\u8BA4 {d}\uFF1A\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\u7EA6 0.42\uFF0C\u62AC\u5230 0.89\u2014\u2014\u8FD9\u662F\u8FD9\u4E2A\u5F15\u64CE\u81EA\u5DF1\u7684\u6EE1\u97F3\u91CF\u3002\u4E0A\u9762\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\u5728\u8FD9\u4E4B\u4E0A\u7BA1\u8FD9\u4F4D\u4E50\u624B\u6574\u4F53\u591A\u54CD\u3001\u548C\u522B\u7684\u4E50\u624B\u5BF9\u9F50\uFF1B\u5E73\u5E38\u8C03\u300C\u54CD\u5EA6\u300D\u5C31\u591F\u3002\u6539\u4E86\u4E0D\u7528\u91CD\u5531\uFF0C\u6BCF\u4E00\u53E5\u8DDF\u7740\u53D8": { en: "How much the singing core\u2019s raw output is multiplied by before it enters her track. Default {d}: the measured raw peak is about 0.42, lifted to 0.89 \u2014 this is the engine\u2019s own full scale. The \u201CLoudness\u201D row above sets how loud this performer is overall on top of that, to match other performers; adjusting \u201CLoudness\u201D is usually enough. Changing this needs no re-singing; every phrase follows." },
+  "\u5531\u6CD5\u6838\u5FC3\u7B97\u51FA\u6765\u7684\u539F\u59CB\u58F0\u97F3\uFF0C\u8FDB\u5979\u8FD9\u6761\u8F68\u4E4B\u524D\u5148\u4E58\u591A\u5C11\u3002\u9ED8\u8BA4 {d}\uFF1A\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\u7EA6 0.42\uFF0C\u62AC\u5230 0.89\u2014\u2014\u8FD9\u662F\u8FD9\u4E2A\u5F15\u64CE\u81EA\u5DF1\u7684\u6EE1\u97F3\u91CF\u3002\u6539\u4E86\u4E0D\u7528\u91CD\u5531\uFF0C\u6BCF\u4E00\u53E5\u8DDF\u7740\u53D8\u3002\u5B83\u4E58\u5728\u6548\u679C\u5668\u4E4B\u524D\uFF1A\u538B\u7F29\u3001\u5747\u8861\u6536\u5230\u7684\u662F\u4E58\u8FC7\u4E4B\u540E\u7684\u58F0\u97F3\u3002\u4E0A\u9762\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\u548C\u63A8\u5B50\u5728\u4E00\u8D77\uFF0C\u5728\u6548\u679C\u5668\u4E4B\u540E\u3002": { en: "How much the singing core\u2019s raw output is multiplied by before it enters her track. Default {d}: the measured raw peak is about 0.42, lifted to 0.89 \u2014 this is the engine\u2019s own full scale. Changing this needs no re-singing; every phrase follows. It is applied before the effects: the compressor and EQ receive the sound after this gain. The \u201CLoudness\u201D row above sits with the fader, after the effects." },
   "\uFF08\u9ED8\u8BA4\uFF09": { en: " (default)" },
   "\u6539\u4E86\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u5B58\u8FDB\u6B4C\u91CC\u3001\u80FD\u64A4\u9500": { en: "Changing it re-sings the lines that use it; saved in the song, can be undone" },
   "\u5206\u6BB5\u5531": { en: "Sing in segments" },
@@ -5680,14 +5684,14 @@ var S = {
   "\u51FA\u5230\uFF1A\u8FD9\u6761\u8F68\u7684\u58F0\u97F3\u6700\u540E\u53BB\u54EA\u2014\u2014\u76F4\u63A5\u53BB\u603B\u8F68\uFF0C\u6216\u8005\u5148\u8FDB\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u5728\u90A3\u91CC\u4E00\u8D77\u8FC7\u6548\u679C\uFF09": { en: "Output to: where this track's sound finally goes \u2014 straight to master, or into a bus first (to share effects there)" },
   "\u53D1\u9001\uFF1A\u63A8\u5B50\u4E4B\u540E\u518D\u590D\u5236\u4E00\u4EFD\u7ED9\u8FD9\u6761\u6DF7\u97F3\u8F68\u2014\u2014\u8DDF\u7740\u8FD9\u6761\u8F68\u7684\u589E\u76CA\u548C\u58F0\u50CF\u8D70\uFF1A\u63A8\u5B50\u62C9\u4F4E 3 dB\uFF0C\u53D1\u8FC7\u53BB\u7684\u4E5F\u4F4E 3 dB\uFF08\u539F\u58F0\u548C\u6548\u679C\u7684\u6BD4\u4F8B\u4E0D\u53D8\uFF09\uFF1B\u9759\u97F3\u4E86\u5C31\u4E0D\u53D1\u3002\u8FD9\u91CC\u7684\u6570 = \u8FD9\u4E00\u4F4D\u8FDB\u90A3\u8FB9\u7684\u91CF\uFF0C\u8D8A\u5927\u90A3\u8FB9\u7684\u6548\u679C\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\uFF09\u8D8A\u591A\uFF1B\u539F\u58F0\u7167\u65E7\u8D70\u300C\u51FA\u5230\u300D": { en: "Send: a post-fader copy goes to this bus \u2014 it follows this track's gain and pan: pull the fader down 3 dB and the send drops 3 dB too (dry-to-effect ratio stays); muted means no send. The number = how much enters that bus; higher means more of its effect (reverb / delay); the dry sound still goes to \u201COutput to\u201D" },
   "\u6DF7\u97F3\u8F68\u589E\u76CA\uFF1A\u4ECE\u8FD9\u6761\u6DF7\u97F3\u8F68\u51FA\u6765\u7684\u603B\u91CF\u3002\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u5168\u6E7F\u7684\u6DF7\u97F3\u8F68 = \u90A3\u8FB9\u7684\u6548\u679C\u6709\u591A\u5927\uFF0C\u53D1\u7ED9\u5B83\u7684\u51E0\u4F4D\u4E00\u8D77\u53D8\uFF08\u6BCF\u4F4D\u5355\u72EC\u591A\u5C11\u770B\u5404\u81EA\u7684\u300C\u53D1\u9001\u300D\uFF09\u3002\u8981\u662F\u6709\u51E0\u4F4D\u662F\u300C\u51FA\u5230\u300D\u5B83\uFF08\u539F\u58F0\u4E5F\u8FDB\u6765\uFF09\uFF0C\u90A3\u8FD9\u4E2A\u63A8\u5B50\u8FDE\u539F\u58F0\u4E00\u8D77\u8C03": { en: "Bus gain: the total coming out of this bus. For fully wet buses (reverb / delay) = how big the effect is, for everyone sending to it (each one's amount is on their own \u201CSend\u201D). If some parts \u201COutput to\u201D it (dry sound too), this fader moves the dry sound as well" },
-  "\u9650\u5E45\uFF08\u603B\u8F68\u6700\u540E\u4E00\u9053\uFF09\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u5F88\u5FEB\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E00\u4E2A\u91C7\u6837\u90FD\u4E0D\u52A8\uFF0C\u4E0D\u6539\u97F3\u8272\u3002\u5173\u6389 = \u8D85\u4E86\u5C31\u524A\u6CE2\uFF08\u7206\u97F3\u3001\u5BFC\u51FA\u7684\u6587\u4EF6\u91CC\u4E5F\u662F\uFF09\u3002\u4E00\u822C\u4E00\u76F4\u5F00\u7740\uFF1B\u60F3\u770B\u81EA\u5DF1\u7684\u6DF7\u97F3\u5230\u5E95\u591A\u54CD\uFF0C\u53EF\u4EE5\u5148\u5173\u4E86\u770B\u5CF0\u503C": { en: "Limiter (the final stage on master): quickly brings down the bit that exceeds the ceiling (\u22120.18 dBFS); everywhere else not one sample changes, and timbre is untouched. Off = clipping when over (crackle, in exported files too). Usually left on; to see how loud your mix really is, turn it off and watch the peak" },
-  "\u5CF0\u503C\uFF1A\u6700\u8FD1\u8FD9\u4E00\u4E0B\u6700\u54CD\u7684\u90A3\u4E2A\u91C7\u6837\uFF08dBFS\uFF09\u30020 dB = \u6EE1\u683C\uFF0C\u518D\u5927\u5C31\u524A\u6CE2\uFF1B\u9650\u5E45\u5F00\u7740\u65F6\u6700\u591A\u5230 \u22120.18 dB\u3002\u9876\u4E0A\u7684\u7EC6\u7EBF\u662F\u540C\u4E00\u4E2A\u6570": { en: "Peak: the loudest sample just now (dBFS). 0 dB = full scale, above that clips; with the limiter on it tops out at \u22120.18 dB. The thin line on top shows the same number" },
+  "\u5CF0\u503C\uFF1A\u6700\u8FD1\u8FD9\u4E00\u4E0B\u6700\u54CD\u7684\u90A3\u4E2A\u91C7\u6837\uFF08dBFS\uFF09\u30020 dB = \u6EE1\u683C\uFF0C\u518D\u5927\u5C31\u524A\u6CE2\uFF1B\u9650\u5E45\u5F00\u7740\u65F6\u6700\u591A\u5230\u5929\u82B1\u677F\u3002\u9876\u4E0A\u7684\u7EC6\u7EBF\u662F\u540C\u4E00\u4E2A\u6570": { en: "Peak: the loudest sample just now (dBFS). 0 dB = full scale, above that it clips; with the limiter on it stops at the ceiling. The thin line at the top is the same number" },
   "\u5E73\u5747\u7535\u5E73\uFF08RMS\uFF0C\u6700\u8FD1 0.3 \u79D2\uFF0C\u63A8\u5B50\u4E4B\u540E\uFF0CdBFS\uFF09\uFF1A\u6BD4\u5CF0\u503C\u66F4\u63A5\u8FD1\u8033\u6735\u89C9\u5F97\u7684\u54CD\u3002\u51E0\u6761\u8F68\u6446\u5E73\u97F3\u91CF\u770B\u8FD9\u4E2A\uFF1B\u9876\u4E0A\u7684\u7EC6\u7EBF\uFF08\u5CF0\u503C\uFF09\u770B\u4F1A\u4E0D\u4F1A\u7206": { en: "Average level (RMS, last 0.3 s, post-fader, dBFS): closer to perceived loudness than peak. Use this to balance tracks; use the thin line on top (peak) to watch for clipping" },
   "\u5DE6\u53F3\u76F8\u5173\uFF08\u22121 \u5230 +1\uFF09\uFF1A+1 = \u5DE6\u53F3\u4E00\u6837\uFF08\u5355\u58F0\u9053\uFF09\uFF1B0 \u9644\u8FD1 = \u5F88\u5BBD\uFF1B\u5C0F\u4E8E 0 = \u5DE6\u53F3\u53CD\u76F8\uFF0C\u624B\u673A\u5916\u653E / \u5355\u58F0\u9053\u4E00\u5408\u5C31\u4F1A\u53D8\u5C0F\u3001\u53D8\u7A7A\u3002\u80CC\u666F\u7684\u56FE\uFF1A\u7AD6\u7EBF = \u5355\u58F0\u9053\uFF0C\u8D8A\u5706\u8D8A\u5BBD\uFF0C\u6A2A\u7740 = \u53CD\u76F8\uFF1B\u5F80\u5DE6\u4E0A\u659C = \u504F\u5DE6\u58F0\u9053\u3001\u5F80\u53F3\u4E0A\u659C = \u504F\u53F3": { en: "Stereo correlation (\u22121 to +1): +1 = left and right identical (mono); around 0 = very wide; below 0 = out of phase, which gets thin and quiet on phone speakers / mono. The background figure: vertical line = mono, rounder = wider, horizontal = out of phase; tilting up-left = left-heavy, up-right = right-heavy" },
   "\u538B\u4E86\u591A\u5C11\uFF1A\u8FD9\u6761\u8F68\u4E0A\u7B2C\u4E00\u53F0\u538B\u7F29\u6B64\u523B\u628A\u58F0\u97F3\u538B\u4F4E\u4E86\u51E0 dB\uFF08\u4E0B\u9762\u644A\u5F00\u7684\u5C31\u662F\u5B83\uFF09\u3002\u4E00\u76F4\u538B\u5F88\u591A = \u9608\u503C\u592A\u4F4E\u6216\u6BD4\u4F8B\u592A\u5927": { en: "Gain reduction: how many dB the first compressor on this track is reducing right now (it's the one shown below). Constantly a lot = threshold too low or ratio too high" },
   "\u88AB\u8C01\u538B\uFF08\u4FA7\u94FE\uFF09\uFF1A\u538B\u7F29\u5668\u4E0D\u770B\u81EA\u5DF1\uFF0C\u800C\u770B\u53E6\u4E00\u6761\u8F68\u6709\u591A\u54CD\u2014\u2014\u6BD4\u5982\u5C0F\u6708\u76F8\u4E00\u5531\uFF0C\u4F34\u594F\u81EA\u5DF1\u8BA9\u4E00\u70B9": { en: "Compressed by (sidechain): the compressor listens to another track instead of itself \u2014 say, the backing ducks a bit when Tsukuyomi-chan sings" },
   "\u5E73\u5747": { en: "Average" },
   "\u5DE6\u53F3\u76F8\u5173": { en: "Stereo correlation" },
+  "\u9650\u5E45\uFF08\u603B\u8F68\u6700\u540E\u4E00\u9053\uFF09\uFF1A\u524D\u77BB {la} ms \u770B\u89C1\u8981\u8D85\u8FC7\u5929\u82B1\u677F\uFF08{c} dBFS = \u6EE1\u5E45\u7684 {lin}\uFF09\u7684\u90A3\u4E00\u4E0B\uFF0C\u6309\u300C\u8D77\u300D{a} ms \u63D0\u524D\u628A\u5B83\u538B\u4E0B\u6765\uFF0C\u8FC7\u4E86\u6309\u300C\u653E\u300D{r} ms \u6162\u6162\u677E\u5F00\uFF1B\u4E0D\u8D85\u7684\u5730\u65B9\u4E00\u4E2A\u91C7\u6837\u90FD\u4E0D\u52A8\uFF0C\u4E0D\u6539\u97F3\u8272\u3002\u8F93\u51FA\u56E0\u6B64\u665A {la} ms\uFF08\u5BFC\u51FA\u65F6\u6263\u6389\uFF09\u3002\u8FD9\u56DB\u4E2A\u6570\u5B58\u5728\u8FD9\u9996\u6B4C\u91CC\uFF0C\u8FD9\u4E00\u7248\u6CA1\u6709\u8C03\u8282\u7684\u94AE\u3002\u5173\u6389 = \u8D85\u4E86\u5C31\u524A\u6CE2\uFF08\u7206\u97F3\u3001\u5BFC\u51FA\u7684\u6587\u4EF6\u91CC\u4E5F\u662F\uFF09\u3002\u4E00\u822C\u4E00\u76F4\u5F00\u7740\uFF1B\u60F3\u770B\u81EA\u5DF1\u7684\u6DF7\u97F3\u5230\u5E95\u591A\u54CD\uFF0C\u53EF\u4EE5\u5148\u5173\u4E86\u770B\u5CF0\u503C": { en: "Limiter (the last stage on the master): it looks {la} ms ahead for anything about to go over the ceiling ({c} dBFS = {lin} of full scale), pulls it down early with a {a} ms attack, and lets go slowly over a {r} ms release afterwards; everywhere it isn\u2019t over, not a single sample changes and the tone stays the same. The output is therefore {la} ms late (removed on export). These four numbers are stored in this song; this version has no knobs for them. Off = anything over clips (pops, in exported files too). Usually leave it on; to see how loud your mix really is, turn it off for a moment and watch the peak" },
   "\u62F7\u8FD9\u4E00\u683C\u7684\u53C2\u6570\uFF08\u79CD\u7C7B + \u5168\u90E8\u53C2\u6570\uFF1B\u4E0D\u62F7\u5F00\u5173\u3001\u4E0D\u62F7\u88AB\u8C01\u538B\uFF09": { en: "Copy this slot's parameters (kind + all parameters; not on/off, not \u201Ccompressed by\u201D)" },
   "\u62F7\u53C2\u6570": { en: "Copy params" },
   "\u628A\u62F7\u7684\u53C2\u6570\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u76D6\u5230\u8FD9\u4E00\u683C\u4E0A\uFF1B\u5F00\u5173 / \u88AB\u8C01\u538B\u7167\u65E7\uFF1B\u80FD\u64A4\u9500": { en: "Applies the copied parameters (from \u201C{from}\u201D) to this slot; on/off and \u201Ccompressed by\u201D stay; can be undone" },
@@ -6074,7 +6078,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.16-2026-11-12";
+var APP_VERSION = "v0.17.17-2026-11-12";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -34717,15 +34721,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-cb1d94516e28.mjs");
+      return pick(() => "singer-worker-e511ca25328c.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
-      return pick(() => "studio-worklet-dda6aa774a7b.mjs");
+      return pick(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-7496a8e46dab.mjs");
+      return pick(() => "layout-worker-f92e1fcb7b36.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-6ef3fc6d4c04.mjs");
+      return pick(() => "encode-worker-2ba3ce989078.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35647,6 +35651,31 @@ function createFeelProbe(host2, now2 = () => performance.now(), raf = (cb2) => {
 var ART_BOTH = { staccatoGate: 0.5, gapSec: 0, gapShare: 0.25, breathSec: 0.16, breathShare: 0.25, fpSec: 0.2, swellDb: 6, canSwell: true, arpeggioSec: 0.035 };
 var ROLL_HZ = { drum: 12, pitched: 14 };
 var TEMPLATE = {
+  /** 录音房（16-4 A2，v0.17.17）：新建的轨 / 混音轨 / 总轨 / 每种效果刚插上一格时的样子。数从原处搬来、一个没改（project.ts micTrack / emptyStudio、
+   *  ui/plugins.ts freshParams、混音台加发送时的 −12）；效果参数表（engine/fx.ts）只剩量纲、范围、公式。读老文件时门口缺的也按这里补（每种效果按「轨上」那一份）。 */
+  studio: {
+    /** 一条轨（歌手的麦克风轨 / 混音轨）：推子 dB、声像 −1…1、效果链、推子后的发送、出到哪、整条旁通（混音轨才有开关；歌手轨照样写 false）。名字新建时现起。 */
+    track: { gainDb: 0, pan: 0, chain: [], sends: [], to: "master", bypass: false },
+    /** 新加一条发送的量（dB，推子后）。 */
+    sendGainDb: -12,
+    /** 总轨：增益 dB、限幅开关、效果链、限幅器的四个数（16-4 C：天花板 = 满幅的几分之几（线性）；起 / 放 / 前瞻 = 毫秒）。 */
+    master: { gainDb: 0, limiter: true, chain: [], limiterParams: { ceiling: 0.98, attackMs: 3, releaseMs: 150, lookaheadMs: 9 } },
+    /** 每种效果新插一格的参数（歌手轨 / 总轨上 = 一键面板的「中间值」：插上就有一点效果，一眼能听出它在干什么）。键的先后 = 存出来的先后。 */
+    fx: {
+      eq: { hpAuto: 0, hpHz: 0, lpHz: 0, lowDb: 0, lowHz: 300, midDb: 0, midHz: 1500, midQ: 1, highDb: 0, highHz: 3e3 },
+      comp: { thresholdDb: -15, ratio: 2.8, attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: 2.4 },
+      reverb: { room: 0.56, damp: 0.5, mix: 0.24, dry: 1, preDelayMs: 10, width: 1 },
+      delay: { syncBeats: 0.75, timeMs: 375, feedback: 0.3, mix: 0.22, dry: 1, dampHz: 6e3 },
+      chorus: { voices: 3, delayMs: 18, depthMs: 2.6, rateHz: 0.6, spread: 0.64, mix: 0.36, dry: 1 },
+      gain: { dB: 0 }
+    },
+    /** 插在混音轨（发送的返回轨）上的混响 / 延迟 / 合唱：全湿（混音的老规矩：原声留在歌手自己那条路上，发多少 = 加多少效果）。别的种类和轨上一样。 */
+    fxOnBus: {
+      reverb: { room: 0.625, damp: 0.5, mix: 1, dry: 0, preDelayMs: 10, width: 1 },
+      delay: { syncBeats: 0.75, timeMs: 375, feedback: 0.3, mix: 1, dry: 0, dampHz: 6e3 },
+      chorus: { voices: 3, delayMs: 18, depthMs: 2.6, rateHz: 0.6, spread: 0.64, mix: 1, dry: 0 }
+    }
+  },
   lounge: {
     /** 力度记号 → MIDI 力度（按力度敲的乐手；MuseScore 的经典值，ppp 16 / fff 126 = v0.9.23）。 */
     dynamicsVel: { ppp: 16, pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112, fff: 126 },
@@ -35722,6 +35751,10 @@ function templateCandidate(engine2) {
     defaults: { ...L2.soundfontDefaults },
     transpose: 0
   };
+}
+function templateFxParams(kind, onBus = false) {
+  const S3 = TEMPLATE.studio, p2 = (onBus ? S3.fxOnBus[kind] : void 0) ?? S3.fx[kind];
+  return p2 ? { ...p2 } : null;
 }
 
 // src/export/mp3.ts
@@ -36884,6 +36917,10 @@ function buildTimeline(inp) {
       unplayable.push({ part: part2.id, why: _t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}", { keys: info2.missing.join("\u3001") }) });
       continue;
     }
+    if (info2.mixMissing?.length) {
+      unplayable.push({ part: part2.id, why: _t("\u6DF7\u97F3\u53F0\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}", { keys: info2.mixMissing.join("\uFF1B") }) });
+      continue;
+    }
     const groove = grooveWeights(tokens, bounds, gmap, info2.follow);
     const sp2 = info2.spec, byVel = sp2.path === "velocity";
     const curve = byVel ? info2.velDb ?? NO_CURVE : NO_CURVE;
@@ -37094,19 +37131,19 @@ var EQ = {
   name: _t("\u5747\u8861"),
   formula: _t("\u6BCF\u6BB5\u4E00\u4E2A\u53CC\u4E8C\u9636 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)\uFF0C\u7CFB\u6570\u6309 RBJ Audio EQ Cookbook\uFF08hp / lp Q = 0.707\uFF1B\u67B6\u5B50 Q = 0.707\uFF1B\u5CF0 Q \u53EF\u8C03\uFF09\u3002hpHz / lpHz = 0 \u5173\u3002"),
   params: [
-    { id: "hpHz", unit: "Hz", min: 0, max: 2e3, default: 0, label: _t("\u4F4E\u5207") },
-    { id: "lpHz", unit: "Hz", min: 0, max: 2e4, default: 0, label: _t("\u9AD8\u5207") },
-    { id: "lowDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u4F4E\u67B6") },
-    { id: "lowHz", unit: "Hz", min: 40, max: 1e3, default: 200, label: _t("\u4F4E\u67B6\u9891\u7387") },
-    { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u4E2D\u5CF0") },
-    { id: "midHz", unit: "Hz", min: 100, max: 1e4, default: 1500, label: _t("\u4E2D\u5CF0\u9891\u7387") },
-    { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: _t("\u4E2D\u5CF0\u5BBD") },
-    { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u9AD8\u67B6") },
-    { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, default: 5e3, label: _t("\u9AD8\u67B6\u9891\u7387") }
+    { id: "hpHz", unit: "Hz", min: 0, max: 2e3, label: _t("\u4F4E\u5207") },
+    { id: "lpHz", unit: "Hz", min: 0, max: 2e4, label: _t("\u9AD8\u5207") },
+    { id: "lowDb", unit: "dB", min: -24, max: 24, label: _t("\u4F4E\u67B6") },
+    { id: "lowHz", unit: "Hz", min: 40, max: 1e3, label: _t("\u4F4E\u67B6\u9891\u7387") },
+    { id: "midDb", unit: "dB", min: -24, max: 24, label: _t("\u4E2D\u5CF0") },
+    { id: "midHz", unit: "Hz", min: 100, max: 1e4, label: _t("\u4E2D\u5CF0\u9891\u7387") },
+    { id: "midQ", unit: "ratio", min: 0.2, max: 10, label: _t("\u4E2D\u5CF0\u5BBD") },
+    { id: "highDb", unit: "dB", min: -24, max: 24, label: _t("\u9AD8\u67B6") },
+    { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, label: _t("\u9AD8\u67B6\u9891\u7387") }
   ]
 };
 function eqSections(p2) {
-  const g3 = (k2) => p2[k2] ?? EQ.params.find((d3) => d3.id === k2).default;
+  const g3 = (k2) => p2[k2];
   return [
     [g3("hpHz") > 0, "hp", g3("hpHz"), 0.707, 0],
     [g3("lpHz") > 0, "lp", g3("lpHz"), 0.707, 0],
@@ -37166,12 +37203,12 @@ var COMP = {
   name: _t("\u538B\u7F29"),
   formula: _t("\u5305\u7EDC e[n] = max(|x|, e[n-1]\xB7r) \u8D77\uFF08attack\uFF09\u843D\uFF08release\uFF09\u5404\u4E00\u4E2A\u65F6\u95F4\u5E38\u6570\uFF1B\u8D85\u8FC7 threshold \u7684\u90E8\u5206\u6309 ratio \u538B\uFF08kneeDb \u5185\u8F6F\u62D0\u70B9\uFF1Ag = -(x - T + K/2)^2 \xB7 (1 - 1/R) / (2K)\uFF09\uFF1B\u589E\u76CA = 10^(g/20) \xD7 10^(makeup/20)\u3002key \u7ED9\u4E86 = \u542C\u522B\u7684\u8F68\uFF08\u4FA7\u94FE\uFF09\uFF0C\u4E0D\u7ED9 = \u542C\u81EA\u5DF1\u3002"),
   params: [
-    { id: "thresholdDb", unit: "dB", min: -60, max: 0, default: -18, label: _t("\u9608\u503C") },
-    { id: "ratio", unit: "ratio", min: 1, max: 20, default: 3, label: _t("\u6BD4\u4F8B") },
-    { id: "attackMs", unit: "ms", min: 0.1, max: 200, default: 10, label: _t("\u8D77") },
-    { id: "releaseMs", unit: "ms", min: 5, max: 2e3, default: 120, label: _t("\u843D") },
-    { id: "kneeDb", unit: "dB", min: 0, max: 24, default: 6, label: _t("\u62D0\u70B9") },
-    { id: "makeupDb", unit: "dB", min: -12, max: 24, default: 0, label: _t("\u8865\u507F") }
+    { id: "thresholdDb", unit: "dB", min: -60, max: 0, label: _t("\u9608\u503C") },
+    { id: "ratio", unit: "ratio", min: 1, max: 20, label: _t("\u6BD4\u4F8B") },
+    { id: "attackMs", unit: "ms", min: 0.1, max: 200, label: _t("\u8D77") },
+    { id: "releaseMs", unit: "ms", min: 5, max: 2e3, label: _t("\u843D") },
+    { id: "kneeDb", unit: "dB", min: 0, max: 24, label: _t("\u62D0\u70B9") },
+    { id: "makeupDb", unit: "dB", min: -12, max: 24, label: _t("\u8865\u507F") }
   ]
 };
 var Comp = class {
@@ -37197,7 +37234,7 @@ var Comp = class {
     this.setParams(p2);
   }
   setParams(p2) {
-    const g3 = (k2) => p2[k2] ?? COMP.params.find((d3) => d3.id === k2).default;
+    const g3 = (k2) => p2[k2];
     this.T = g3("thresholdDb");
     this.R = Math.max(1, g3("ratio"));
     this.K = Math.max(0, g3("kneeDb"));
@@ -37237,11 +37274,11 @@ var DELAY = {
   name: _t("\u5EF6\u8FDF"),
   formula: _t("y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08mix / dry = \u7EBF\u6027\u7684\u5E45\u5EA6\u500D\u6570\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002"),
   params: [
-    { id: "timeMs", unit: "ms", min: 1, max: 2e3, default: 375, label: _t("\u65F6\u95F4") },
-    { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: _t("\u53CD\u9988") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("\u6E7F") },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") },
-    { id: "dampHz", unit: "Hz", min: 500, max: 2e4, default: 6e3, label: _t("\u53CD\u9988\u9AD8\u5207") }
+    { id: "timeMs", unit: "ms", min: 1, max: 2e3, label: _t("\u65F6\u95F4") },
+    { id: "feedback", unit: "0..1", min: 0, max: 0.95, label: _t("\u53CD\u9988") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, label: _t("\u539F\u58F0") },
+    { id: "dampHz", unit: "Hz", min: 500, max: 2e4, label: _t("\u53CD\u9988\u9AD8\u5207") }
   ]
 };
 var Delay = class {
@@ -37268,7 +37305,7 @@ var Delay = class {
     this.setParams(p2);
   }
   setParams(p2) {
-    const g3 = (k2) => p2[k2] ?? DELAY.params.find((d3) => d3.id === k2).default;
+    const g3 = (k2) => p2[k2];
     this.D = clamp(Math.round(g3("timeMs") / 1e3 * this.sr), 1, this.bufL.length - 1);
     this.fb = clamp(g3("feedback"), 0, 0.95);
     this.mix = clamp(g3("mix"), 0, 1);
@@ -37299,12 +37336,12 @@ var REVERB = {
   name: _t("\u6DF7\u54CD"),
   formula: _t("Freeverb\uFF08\u516C\u5F00\u7B97\u6CD5\uFF0Croom / damp \u5C31\u662F\u5B83\u7684\u540C\u540D\u53C2\u6570\uFF09\uFF1A8 \u6761\u4F4E\u901A\u53CD\u9988\u68B3\u72B6\uFF08\u957F\u5EA6 1116\u20261617 @44.1k\uFF0C\u6309\u91C7\u6837\u7387\u7F29\u653E\uFF1B\u53CD\u9988 = 0.7 + 0.28\xB7room\uFF0C\u4F4E\u901A = damp\uFF09\u5E76\u8054\uFF0C\u518D\u4E32 4 \u6761\u5168\u901A\uFF08g = 0.5\uFF09\uFF1B\u53F3\u8FB9\u5404\u957F 23 \u4E2A\u91C7\u6837\uFF1B\u524D\u9762\u4E00\u6BB5 preDelayMs \u7EAF\u5EF6\u8FDF\uFF1By = x\xB7dry + wet\xB7mix\uFF08mix / dry = \u7EBF\u6027\u7684\u5E45\u5EA6\u500D\u6570\uFF1B\u754C\u9762\u4E0A\u7684\u79D2 / kHz / dB \u662F\u4ECE\u8FD9\u51E0\u4E2A\u6570\u6362\u7B97\u51FA\u6765\u7ED9\u4EBA\u770B\u7684\uFF09\u3002"),
   params: [
-    { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u623F\u95F4\u5927\u5C0F") },
-    { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u9AD8\u9891\u5438\u6536") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("\u6E7F") },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") },
-    { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: _t("\u9884\u5EF6\u8FDF") },
-    { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u5BBD\u5EA6") }
+    { id: "room", unit: "0..1", min: 0, max: 1, label: _t("\u623F\u95F4\u5927\u5C0F") },
+    { id: "damp", unit: "0..1", min: 0, max: 1, label: _t("\u9AD8\u9891\u5438\u6536") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, label: _t("\u539F\u58F0") },
+    { id: "preDelayMs", unit: "ms", min: 0, max: 200, label: _t("\u9884\u5EF6\u8FDF") },
+    { id: "width", unit: "0..1", min: 0, max: 1, label: _t("\u5BBD\u5EA6") }
   ],
   stereoOnly: true
 };
@@ -37368,7 +37405,7 @@ var Reverb = class {
     this.setParams(p2);
   }
   setParams(p2) {
-    const g3 = (k2) => p2[k2] ?? REVERB.params.find((d3) => d3.id === k2).default;
+    const g3 = (k2) => p2[k2];
     this.fb = 0.7 + 0.28 * clamp(g3("room"), 0, 1);
     this.damp = clamp(g3("damp"), 0, 1) * 0.4;
     this.mix = clamp(g3("mix"), 0, 1);
@@ -37404,13 +37441,13 @@ var CHORUS = {
   name: _t("\u5408\u5531"),
   formula: _t("v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7dry + mix \xB7 \u03A3_k d_k / v\uFF08mix / dry = \u7EBF\u6027\u7684\u5E45\u5EA6\u500D\u6570\uFF09\u3002"),
   params: [
-    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: _t("\u51E0\u6761") },
-    { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: _t("\u5EF6\u8FDF") },
-    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: _t("\u6296\u52A8\u6DF1\u5EA6") },
-    { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: _t("\u6296\u52A8\u5FEB\u6162") },
-    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: _t("\u5DE6\u53F3\u94FA\u5F00") },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u6E7F") },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") }
+    { id: "voices", unit: "ratio", min: 1, max: 4, label: _t("\u51E0\u6761") },
+    { id: "delayMs", unit: "ms", min: 5, max: 40, label: _t("\u5EF6\u8FDF") },
+    { id: "depthMs", unit: "ms", min: 0, max: 10, label: _t("\u6296\u52A8\u6DF1\u5EA6") },
+    { id: "rateHz", unit: "Hz", min: 0.05, max: 5, label: _t("\u6296\u52A8\u5FEB\u6162") },
+    { id: "spread", unit: "0..1", min: 0, max: 1, label: _t("\u5DE6\u53F3\u94FA\u5F00") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, label: _t("\u539F\u58F0") }
   ]
 };
 var Chorus = class {
@@ -37435,7 +37472,7 @@ var Chorus = class {
     this.setParams(p2);
   }
   setParams(p2) {
-    const g3 = (k2) => p2[k2] ?? CHORUS.params.find((d3) => d3.id === k2).default;
+    const g3 = (k2) => p2[k2];
     this.voices = clamp(Math.round(g3("voices")), 1, 4);
     this.delay = clamp(g3("delayMs"), 5, 40) / 1e3 * this.sr;
     this.depth = clamp(g3("depthMs"), 0, 10) / 1e3 * this.sr;
@@ -37466,7 +37503,7 @@ var Chorus = class {
     }
   }
 };
-var GAIN = { kind: "gain", name: _t("\u589E\u76CA"), formula: "y = x \xB7 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, default: 0, label: _t("\u589E\u76CA") }] };
+var GAIN = { kind: "gain", name: _t("\u589E\u76CA"), formula: "y = x \xB7 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, label: _t("\u589E\u76CA") }] };
 var Gain = class {
   kind = "gain";
   on = true;
@@ -37477,7 +37514,7 @@ var Gain = class {
     this.setParams(p2);
   }
   setParams(p2) {
-    this.g = dbToLin(clamp(p2.dB ?? 0, -60, 24));
+    this.g = dbToLin(clamp(p2.dB, -60, 24));
   }
   process(L2, R2, n10) {
     if (!this.on || this.g === 1) return;
@@ -37511,7 +37548,7 @@ function createFx(spec, sr2) {
       fx = new Gain(spec.id, sr2, p2);
       break;
   }
-  if (fx) fx.on = spec.on !== false;
+  if (fx) fx.on = spec.on === true;
   return fx;
 }
 function buildChain(specs, prev, sr2) {
@@ -37520,7 +37557,7 @@ function buildChain(specs, prev, sr2) {
     const had = prev.find((f2) => f2.id === s10.id && f2.kind === s10.kind);
     if (had) {
       had.setParams(Object.fromEntries(Object.entries(s10.params ?? {}).filter(([, v]) => typeof v === "number")));
-      had.on = s10.on !== false;
+      had.on = s10.on === true;
       out.push(had);
       continue;
     }
@@ -37532,8 +37569,8 @@ function buildChain(specs, prev, sr2) {
 
 // src/engine/chain.ts
 var HOST_PARAMS = {
-  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: _t("\u81EA\u52A8\u4F4E\u5207") }],
-  delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, default: 0, label: _t("\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09") }]
+  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, label: _t("\u81EA\u52A8\u4F4E\u5207") }],
+  delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, label: _t("\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09") }]
 };
 function lowestMidiOf(song, partId) {
   let lo2 = null;
@@ -38524,7 +38561,7 @@ function readMusicXml(xml, hints) {
 
 // src/format/contract.ts
 var FORMAT = { manifest: 2, score: 2, lounge: 3, studio: 2 };
-var FORMAT_MINOR = { manifest: 1, score: 11, lounge: 4, studio: 2 };
+var FORMAT_MINOR = { manifest: 1, score: 11, lounge: 4, studio: 3 };
 var FORMAT_PATCH = { manifest: 1, score: 1, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
@@ -38852,7 +38889,7 @@ var CAND_KEYS_BY = { gain: /* @__PURE__ */ new Set([...CAND_KEYS, "dynamicsDb"])
 var STUDIO_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "tracks", "master"]);
 var TRACK_KEYS = /* @__PURE__ */ new Set(["id", "kind", "name", "gainDb", "pan", "chain", "sends", "to", "bypass"]);
 var FX_KEYS = /* @__PURE__ */ new Set(["id", "kind", "on", "params", "key", "note"]);
-var MASTER_KEYS = /* @__PURE__ */ new Set(["gainDb", "limiter", "chain"]);
+var MASTER_KEYS = /* @__PURE__ */ new Set(["gainDb", "limiter", "chain", "limiterParams"]);
 var MANIFEST_KEYS = /* @__PURE__ */ new Set(["format", "version", "minor", "patch", "app", "saved", "files", "derived", "sounds", "core"]);
 var newerThanMe = (j2, k2) => !!j2 && typeof j2 === "object" && Number(j2.version ?? 1) === FORMAT[k2] && Number(j2.minor ?? 0) > FORMAT_MINOR[k2];
 var only = (o10, keys, newer) => newer ? o10 : Object.fromEntries(Object.entries(o10).filter(([k2]) => keys.has(k2)));
@@ -38926,17 +38963,12 @@ function buildEntries(a10) {
   }
   const studio2 = structuredClone(a10.extras.studio ?? emptyStudio());
   const tracks = (studio2.tracks ?? []).slice();
-  for (const part2 of song.parts) if (!tracks.some((m2) => m2.id === part2.mic)) tracks.push(micTrack(part2.mic, _t("\u9EA6\u514B\u98CE {t}", { t: tracks.filter((t10) => t10.kind === "mic").length + 1 })));
-  const fullFx = (f2) => {
-    const def = FX_KINDS[String(f2.kind)];
-    return def ? { ...f2, on: f2.on !== false, params: { ...Object.fromEntries([...HOST_PARAMS[String(f2.kind)] ?? [], ...def.params].map((d3) => [d3.id, d3.default])), ...f2.params ?? {} } } : f2;
-  };
-  const studioNewer = newerThanMe(a10.extras.studio, "studio"), fx2 = (f2) => only(fullFx(f2), FX_KEYS, studioNewer);
+  const studioNewer = newerThanMe(a10.extras.studio, "studio"), fx2 = (f2) => only(f2, FX_KEYS, studioNewer);
   const bpm = songBpm(song), ctxOf = (t10) => ({ lowestMidi: t10.kind === "mic" ? ((p2) => p2 ? lowestMidiOf(song, p2.id) : null)(song.parts.find((p2) => p2.mic === t10.id)) : null, bpm });
   const resolved = (chain, ctx2) => writeResolved(chain ?? [], ctx2);
-  studio2.tracks = tracks.map((t10) => only({ ...t10, ...normTrack(t10), chain: resolved(t10.chain, ctxOf(t10)).map(fx2) }, TRACK_KEYS, studioNewer));
-  const m0 = studio2.master ?? {}, mm = activeMaster({ ...a10.extras, studio: { master: m0 } });
-  studio2.master = only({ ...m0, gainDb: mm.gainDb, limiter: mm.limiter, chain: resolved(mm.chain, { lowestMidi: null, bpm }).map(fx2) }, MASTER_KEYS, studioNewer);
+  studio2.tracks = tracks.map((t10) => only({ ...t10, ...Array.isArray(t10.chain) ? { chain: resolved(t10.chain, ctxOf(t10)).map(fx2) } : {} }, TRACK_KEYS, studioNewer));
+  const m0 = studio2.master ?? {};
+  studio2.master = only({ ...m0, ...Array.isArray(m0.chain) ? { chain: resolved(m0.chain, { lowestMidi: null, bpm }).map(fx2) } : {} }, MASTER_KEYS, studioNewer);
   for (const k2 of Object.keys(studio2)) if (!studioNewer && !STUDIO_KEYS.has(k2)) delete studio2[k2];
   const mics = tracks.filter((t10) => t10.kind === "mic");
   const labels = partNames(song, lounge, song.textLang === "zh" || song.textLang === "en" ? song.textLang : "en");
@@ -39134,19 +39166,56 @@ function withCastAs(extras, role, candId, castAs, hum) {
 function newRoleId(extras, song) {
   return nextKey2([...Object.keys(extras.lounge), ...song.parts.map((p2) => p2.role)], "r");
 }
-var emptyStudio = () => ({ version: FORMAT.studio, tracks: [], master: { gainDb: 0, limiter: true, chain: [] } });
-var micTrack = (id2, name) => ({ id: id2, kind: "mic", name, gainDb: 0, pan: 0, chain: [], sends: [], to: "master" });
+var emptyStudio = () => ({ version: FORMAT.studio, tracks: [], master: structuredClone(TEMPLATE.studio.master) });
+var micTrack = (id2, name) => ({ id: id2, kind: "mic", name, ...structuredClone(TEMPLATE.studio.track) });
 var normTrack = (t10) => ({
   id: String(t10.id),
   kind: t10.kind === "bus" ? "bus" : "mic",
   name: String(t10.name ?? ""),
-  gainDb: Number(t10.gainDb ?? 0) || 0,
-  pan: Math.max(-1, Math.min(1, Number(t10.pan ?? 0) || 0)),
+  gainDb: Number(t10.gainDb),
+  pan: Math.max(-1, Math.min(1, Number(t10.pan))),
   chain: Array.isArray(t10.chain) ? t10.chain : [],
   sends: Array.isArray(t10.sends) ? t10.sends : [],
-  to: typeof t10.to === "string" ? t10.to : "master",
+  to: t10.to,
   bypass: t10.bypass === true
 });
+function completeStudio(extras, parts) {
+  if (extras.studio && newerThanMe(extras.studio, "studio")) return;
+  const T3 = TEMPLATE.studio, num2 = (v) => typeof v === "number" && Number.isFinite(v);
+  const s10 = extras.studio && typeof extras.studio === "object" ? { ...extras.studio } : { version: FORMAT.studio };
+  const fill2 = (got2, t10) => {
+    const g3 = got2 && typeof got2 === "object" ? got2 : {}, o10 = { ...t10 };
+    for (const k2 of Object.keys(g3)) if (num2(g3[k2])) o10[k2] = g3[k2];
+    return o10;
+  };
+  const fxOf = (f2, onBus) => {
+    if (!f2 || typeof f2 !== "object") return f2;
+    const c10 = { ...f2 }, t10 = FX_KINDS[String(c10.kind)] ? templateFxParams(String(c10.kind), onBus) : null;
+    if (!t10) return c10;
+    c10.params = fill2(c10.params, t10);
+    if (typeof c10.on !== "boolean") c10.on = true;
+    return c10;
+  };
+  const tracks = (Array.isArray(s10.tracks) ? s10.tracks : []).map((t02) => {
+    if (!t02 || typeof t02 !== "object") return t02;
+    const t10 = { ...t02 }, bus = t10.kind === "bus";
+    for (const k2 of ["gainDb", "pan"]) if (!num2(t10[k2])) t10[k2] = T3.track[k2];
+    t10.chain = Array.isArray(t10.chain) ? t10.chain.map((f2) => fxOf(f2, bus)) : [];
+    t10.sends = Array.isArray(t10.sends) ? t10.sends.map((sd2) => sd2 && typeof sd2 === "object" && !num2(sd2.gainDb) ? { ...sd2, gainDb: T3.sendGainDb } : sd2) : [];
+    if (typeof t10.to !== "string") t10.to = T3.track.to;
+    if (typeof t10.bypass !== "boolean") t10.bypass = T3.track.bypass;
+    return t10;
+  });
+  for (const part2 of parts) if (!tracks.some((m3) => m3 && m3.id === part2.mic)) tracks.push(micTrack(part2.mic, _t("\u9EA6\u514B\u98CE {t}", { t: tracks.filter((t10) => t10?.kind === "mic").length + 1 })));
+  s10.tracks = tracks;
+  const m2 = s10.master && typeof s10.master === "object" ? { ...s10.master } : {};
+  if (!num2(m2.gainDb)) m2.gainDb = T3.master.gainDb;
+  if (typeof m2.limiter !== "boolean") m2.limiter = T3.master.limiter;
+  m2.chain = Array.isArray(m2.chain) ? m2.chain.map((f2) => fxOf(f2, false)) : [];
+  m2.limiterParams = fill2(m2.limiterParams, T3.master.limiterParams);
+  s10.master = m2;
+  extras.studio = s10;
+}
 function studioTracks(extras) {
   return (extras.studio?.tracks ?? []).map(normTrack);
 }
@@ -39164,7 +39233,6 @@ function withTrack2(extras, id2, patch) {
   }
   const { kind: _k, ...rest } = patch;
   Object.assign(t10, structuredClone(rest));
-  if (t10.bypass !== true) delete t10.bypass;
   studio2.tracks = tracks;
   return { ...extras, studio: studio2 };
 }
@@ -39187,12 +39255,17 @@ function newBusId(extras) {
 }
 function activeMaster(extras) {
   const m2 = extras.studio?.master;
-  const g3 = Number(m2?.gainDb ?? 0);
-  return { gainDb: Number.isFinite(g3) ? Math.max(-24, Math.min(12, g3)) : 0, limiter: m2?.limiter === void 0 ? true : !!m2.limiter, chain: Array.isArray(m2?.chain) ? m2.chain : [] };
+  const g3 = Number(m2?.gainDb), lp2 = m2?.limiterParams ?? {};
+  return {
+    gainDb: Math.max(-24, Math.min(12, g3)),
+    limiter: m2?.limiter === true,
+    chain: Array.isArray(m2?.chain) ? m2.chain : [],
+    limiterParams: { ceiling: Number(lp2.ceiling), attackMs: Number(lp2.attackMs), releaseMs: Number(lp2.releaseMs), lookaheadMs: Number(lp2.lookaheadMs) }
+  };
 }
 function withMaster(extras, patch) {
   const studio2 = structuredClone(extras.studio ?? emptyStudio());
-  studio2.master = { ...activeMaster(extras), ...structuredClone(patch) };
+  studio2.master = { ...studio2.master, ...structuredClone(patch) };
   return { ...extras, studio: studio2 };
 }
 function activeChain(extras, role) {
@@ -39212,7 +39285,8 @@ function withNewRole(extras, role, hum, name, sound2) {
 function templateExtras(song) {
   let x2 = emptyExtras();
   for (const p2 of song.parts) x2 = withNewRole(x2, p2.role, "n");
-  return x2;
+  for (const p2 of song.parts) if (!studioTrack(x2, p2.mic)) x2 = withTrack2(x2, p2.mic, {});
+  return { ...x2, studio: x2.studio ?? emptyStudio() };
 }
 function withoutRole(extras, role) {
   const lounge = { ...extras.lounge };
@@ -39738,9 +39812,10 @@ function openBytes(name, bytes) {
   });
   for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
   const song = songFromReads(reads, papers, scoreExt?.parts ?? null);
+  const studioUnreadable = !!extras.studio && !Array.isArray(extras.studio.tracks);
   const o10 = finish(reads, song, pruneSounds(extras), ours, name);
   const advice = newerMinor.length ? [_t("\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u53EA\u662F\u90A3\u4E9B\u4E1C\u897F\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\uFF0C\u5728\u8FD9\u4E00\u7248\u91CC\u5B58\u4E00\u6B21\uFF0C\u5176\u4E2D\u4E00\u90E8\u5206\u4F1A\u4E22\u3002\u60F3\u539F\u6837\u7559\u7740\uFF0C\u5148\u66F4\u65B0 app \u518D\u6539\u3002", { p: newerMinor.join("\u3001") })] : [];
-  if (extras.studio && !Array.isArray(extras.studio.tracks)) o10.notices.push(_t("\u8FD9\u9996\u6B4C\u7684\u6DF7\u97F3\u53F0\u90A3\u4E00\u4EFD\u8BFB\u4E0D\u61C2\uFF1A\u6BCF\u6761\u8F68\u7684\u63A8\u5B50\u3001\u58F0\u50CF\u6309\u9ED8\u8BA4\u5F00\u7684\uFF08\u603B\u8F68\u7167\u6587\u4EF6\u91CC\u5199\u7684\uFF09\u3002\u5B58\u4E00\u6B21\u5C31\u6309\u73B0\u5728\u7684\u6837\u5B50\u5199\u8FDB\u6587\u4EF6\u3002"));
+  if (studioUnreadable) o10.notices.push(_t("\u8FD9\u9996\u6B4C\u7684\u6DF7\u97F3\u53F0\u90A3\u4E00\u4EFD\u8BFB\u4E0D\u61C2\uFF1A\u6BCF\u6761\u8F68\u7684\u63A8\u5B50\u3001\u58F0\u50CF\u6309\u9ED8\u8BA4\u5F00\u7684\uFF08\u603B\u8F68\u7167\u6587\u4EF6\u91CC\u5199\u7684\uFF09\u3002\u5B58\u4E00\u6B21\u5C31\u6309\u73B0\u5728\u7684\u6837\u5B50\u5199\u8FDB\u6587\u4EF6\u3002"));
   return { ...o10, references, advice };
 }
 function songFromReads(reads, papers, partList = null) {
@@ -39831,6 +39906,7 @@ function finish(reads, song0, extras, ours, name) {
     const gm = activeGm(extras, part2.role);
     if (gm && gm.path && !gm.bytes) notices.push(_t("\u300C{name}\u300D\u7684\u58F0\u97F3\uFF08{path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u4E00\u8D77\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C{name2}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002", { name: gm.name, path: gm.path, name2: role.name ?? "" }));
   }
+  completeStudio(extras, song0.parts);
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const arr = extras.scoreExt?.arrangement;
   return { song: { ...song0, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}, ...extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}, ...extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" } : {}, ...extras.scoreExt?.spacing === "tight" ? { spacing: "tight" } : {}, ...songViewFields(extras.scoreExt) }, stem, extras, ours, notices, view: safeView(extras.scoreExt?.view ?? null), references: {}, advice: [] };
@@ -39979,10 +40055,6 @@ var Tsf = class {
 
 // src/engine/studio.ts
 var BLOCK = 128;
-var CEILING = 0.98;
-var LIM_ATTACK = 3e-3;
-var LIM_RELEASE = 0.15;
-var LIM_LOOK_TAUS = 3;
 var TAIL_MAX = 2;
 var CLIP_FADE_OUT = 0.03;
 var CLIP_FADE_IN = 0.01;
@@ -40051,7 +40123,8 @@ var Studio = class {
   buses = /* @__PURE__ */ new Map();
   /** 处理总线的顺序：送出去的在被送进的前面（busOrder）。 */
   busList = [];
-  master = { gainDb: 0, limiter: true };
+  master = { gainDb: 0, limiter: false };
+  // 宿主推总轨之前 = 原样（不加不减、不限幅）
   masterLin = 1;
   masterFx = [];
   // 走带
@@ -40095,14 +40168,16 @@ var Studio = class {
   audL = new Float32Array(BLOCK);
   audR = new Float32Array(BLOCK);
   // 限幅器
-  look;
-  delayL;
-  delayR;
-  need;
-  attPow;
+  look = 0;
+  delayL = new Float32Array(0);
+  delayR = new Float32Array(0);
+  need = new Float32Array(0);
+  attPow = new Float32Array(0);
   wr = 0;
   gPrev = 1;
-  aRel;
+  aRel = 0;
+  ceiling = 1;
+  lim = null;
   // 表 / 报告
   meterOn = false;
   meterPeak = 0;
@@ -40171,17 +40246,26 @@ var Studio = class {
     this.sr = sampleRate;
     this.tsf = tsf;
     this.post = post;
-    this.look = Math.max(1, Math.round(LIM_ATTACK * LIM_LOOK_TAUS * sampleRate));
+  }
+  /** 限幅器的四个数（从总轨设置来）：变了才重建窗（只在推总轨那一下分配，不在 process 里）。 */
+  setLimiter(p2) {
+    const l10 = this.lim;
+    if (l10 && l10.ceiling === p2.ceiling && l10.attackMs === p2.attackMs && l10.releaseMs === p2.releaseMs && l10.lookaheadMs === p2.lookaheadMs) return;
+    this.lim = { ...p2 };
+    this.ceiling = p2.ceiling;
+    this.look = Math.max(1, Math.round(p2.lookaheadMs / 1e3 * this.sr));
     this.delayL = new Float32Array(this.look);
     this.delayR = new Float32Array(this.look);
     this.need = new Float32Array(this.look).fill(1);
-    const aAtt = Math.exp(-1 / (LIM_ATTACK * sampleRate));
+    this.wr = 0;
+    this.gPrev = 1;
+    const aAtt = Math.exp(-1 / (p2.attackMs / 1e3 * this.sr));
     this.attPow = Float32Array.from({ length: this.look + 1 }, (_2, k2) => aAtt ** k2);
-    this.aRel = Math.exp(-1 / (LIM_RELEASE * sampleRate));
+    this.aRel = Math.exp(-1 / (p2.releaseMs / 1e3 * this.sr));
   }
   /** 限幅器带来的固定延迟（采样）：导出时从输出里扣掉。 */
   get latency() {
-    return this.master.limiter ? this.look : 0;
+    return this.master.limiter && this.lim ? this.look : 0;
   }
   get isPlaying() {
     return this.playing;
@@ -40289,6 +40373,7 @@ var Studio = class {
         this.master = { ...this.master, ...m2.p };
         this.masterLin = dbToLin2(this.master.gainDb);
         if (m2.p.chain !== void 0) this.masterFx = buildChain(m2.p.chain, this.masterFx, this.sr);
+        if (m2.p.limiterParams) this.setLimiter(m2.p.limiterParams);
         return;
       case "play":
         if (m2.gen !== void 0) this.gen = m2.gen;
@@ -40674,7 +40759,7 @@ var Studio = class {
     for (const fx of this.masterFx) fx.process(this.busL, this.busR, n10, null);
     this.renderAuditions(n10);
     const g3 = this.masterLin;
-    if (this.master.limiter) this.limit(n10, g3);
+    if (this.master.limiter && this.lim) this.limit(n10, g3);
     else for (let i10 = 0; i10 < n10; i10++) {
       this.busL[i10] *= g3;
       this.busR[i10] *= g3;
@@ -41180,7 +41265,7 @@ var Studio = class {
   }
   // ── 母线前瞻限幅（原 src/audio/mix.ts limitBus 的实时版：输出晚 look 个采样；每个未来的峰按 attack 曲线提前收、过了峰按 release 慢慢放开；左右同一条增益）───
   limit(n10, g3) {
-    const look = this.look, c10 = CEILING, L2 = this.busL, R2 = this.busR, dL = this.delayL, dR = this.delayR, need = this.need, att = this.attPow;
+    const look = this.look, c10 = this.ceiling, L2 = this.busL, R2 = this.busR, dL = this.delayL, dR = this.delayR, need = this.need, att = this.attPow;
     for (let i10 = 0; i10 < n10; i10++) {
       const l10 = L2[i10] * g3, r10 = R2[i10] * g3, p2 = Math.max(Math.abs(l10), Math.abs(r10));
       const slot = this.wr, outL = dL[slot], outR = dR[slot];
@@ -41701,7 +41786,7 @@ var tsukuyomi = registerPerformer({
       {
         label: _t("\u539F\u59CB\u8F93\u51FA\u589E\u76CA"),
         control: `<b class="ip-val">${Number.isFinite(og2) ? fmt(og2) : _t("\u6CA1\u5199")}</b><button class="btn" data-v="og:-0.5" title="${_t("\u5C0F 0.5 dB")}">\u22120.5</button><button class="btn" data-v="og:0.5" title="${_t("\u5927 0.5 dB")}">+0.5</button>` + (og2 !== ogDef ? `<button class="btn" data-v="og:def" title="${_t("\u56DE\u5230\u9ED8\u8BA4 {d}", { d: fmt(ogDef) })}">${_t("\u9ED8\u8BA4")}</button>` : ""),
-        note: _t("\u5531\u6CD5\u6838\u5FC3\u7B97\u51FA\u6765\u7684\u539F\u59CB\u58F0\u97F3\uFF0C\u8FDB\u5979\u8FD9\u6761\u8F68\u4E4B\u524D\u5148\u4E58\u591A\u5C11\u3002\u9ED8\u8BA4 {d}\uFF1A\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\u7EA6 0.42\uFF0C\u62AC\u5230 0.89\u2014\u2014\u8FD9\u662F\u8FD9\u4E2A\u5F15\u64CE\u81EA\u5DF1\u7684\u6EE1\u97F3\u91CF\u3002\u4E0A\u9762\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\u5728\u8FD9\u4E4B\u4E0A\u7BA1\u8FD9\u4F4D\u4E50\u624B\u6574\u4F53\u591A\u54CD\u3001\u548C\u522B\u7684\u4E50\u624B\u5BF9\u9F50\uFF1B\u5E73\u5E38\u8C03\u300C\u54CD\u5EA6\u300D\u5C31\u591F\u3002\u6539\u4E86\u4E0D\u7528\u91CD\u5531\uFF0C\u6BCF\u4E00\u53E5\u8DDF\u7740\u53D8", { d: fmt(ogDef) })
+        note: _t("\u5531\u6CD5\u6838\u5FC3\u7B97\u51FA\u6765\u7684\u539F\u59CB\u58F0\u97F3\uFF0C\u8FDB\u5979\u8FD9\u6761\u8F68\u4E4B\u524D\u5148\u4E58\u591A\u5C11\u3002\u9ED8\u8BA4 {d}\uFF1A\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\u7EA6 0.42\uFF0C\u62AC\u5230 0.89\u2014\u2014\u8FD9\u662F\u8FD9\u4E2A\u5F15\u64CE\u81EA\u5DF1\u7684\u6EE1\u97F3\u91CF\u3002\u6539\u4E86\u4E0D\u7528\u91CD\u5531\uFF0C\u6BCF\u4E00\u53E5\u8DDF\u7740\u53D8\u3002\u5B83\u4E58\u5728\u6548\u679C\u5668\u4E4B\u524D\uFF1A\u538B\u7F29\u3001\u5747\u8861\u6536\u5230\u7684\u662F\u4E58\u8FC7\u4E4B\u540E\u7684\u58F0\u97F3\u3002\u4E0A\u9762\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\u548C\u63A8\u5B50\u5728\u4E00\u8D77\uFF0C\u5728\u6548\u679C\u5668\u4E4B\u540E\u3002", { d: fmt(ogDef) })
       },
       ...SING_CORE_ROWS.map((x2) => ({ label: x2.label, control: x2.values.map((v) => chip2(`core:${x2.key}:${v}`, `${x2.names?.[v] ?? v}${v === TSUKUYOMI_DEFAULTS[x2.key] ? _t("\uFF08\u9ED8\u8BA4\uFF09") : ""}`, cur[x2.key] === v, _t("\u6539\u4E86\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u5B58\u8FDB\u6B4C\u91CC\u3001\u80FD\u64A4\u9500"))).join(""), note: x2.why, place: "adv" })),
       // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
@@ -42140,8 +42225,8 @@ function performerInfoOf(extras, part2, banks) {
   const missing = [...plugin && spec ? perfSpecProblems(spec, velocity) : plugin ? ["articulation"] : [], ...own.missing ?? []];
   for (const [k2, v] of Object.entries(own.singOpt ?? {})) if (!Number.isFinite(v)) missing.push(`defaults.${k2}`);
   if (plugin?.sound === "chunks" && !Number.isFinite(own.outputGainDb)) missing.push("instrument.outputGainDb");
-  const { missing: _m, ...ownRest } = own;
-  return { engine: eng, hum: activeHum(extras, role), plugin, spec, velocity, transpose: activeTranspose(extras, role), follow: (s10) => followOf(s10, cat2), chain: activeChain(extras, role), ...ownRest, ...missing.length ? { missing } : {} };
+  const { missing: _m, ...ownRest } = own, mixMissing = mixProblemsFor(extras, part2);
+  return { engine: eng, hum: activeHum(extras, role), plugin, spec, velocity, transpose: activeTranspose(extras, role), follow: (s10) => followOf(s10, cat2), chain: activeChain(extras, role), ...ownRest, ...missing.length ? { missing } : {}, ...mixMissing.length ? { mixMissing } : {} };
 }
 async function prepareParts(parts, extras, deps) {
   const errs = [];
@@ -42158,7 +42243,62 @@ async function prepareParts(parts, extras, deps) {
 }
 function micOf(extras, part2) {
   const m2 = studioTrack(extras, part2.mic);
-  return { gainDb: m2?.gainDb ?? 0, pan: m2?.pan ?? 0 };
+  return { gainDb: m2 ? m2.gainDb : NaN, pan: m2 ? m2.pan : NaN };
+}
+var finite = (v) => typeof v === "number" && Number.isFinite(v);
+function fxGaps(chain) {
+  const out = [];
+  for (const f2 of Array.isArray(chain) ? chain : []) {
+    const def = f2 && FX_KINDS[String(f2.kind)];
+    if (!def) continue;
+    const p2 = f2.params ?? {}, bad = [...HOST_PARAMS[String(f2.kind)] ?? [], ...def.params].map((d3) => d3.id).filter((k2) => !finite(p2[k2]));
+    if (typeof f2.on !== "boolean") bad.push("on");
+    if (bad.length) out.push(`${def.name}\uFF08${bad.join(" ")}\uFF09`);
+  }
+  return out;
+}
+function trackGaps(t10) {
+  const bad = ["gainDb", "pan"].filter((k2) => !finite(t10[k2]));
+  if (typeof t10.to !== "string") bad.push("to");
+  if (typeof t10.bypass !== "boolean") bad.push("bypass");
+  if (!Array.isArray(t10.chain)) bad.push("chain");
+  if (!Array.isArray(t10.sends)) bad.push("sends");
+  else t10.sends.forEach((sd2, i10) => {
+    if (!finite(sd2?.gainDb)) bad.push(`sends[${i10}].gainDb`);
+  });
+  return [...bad, ...fxGaps(t10.chain)];
+}
+function masterGaps(m2) {
+  if (!m2 || typeof m2 !== "object") return ["master"];
+  const lp2 = m2.limiterParams ?? {}, bad = [];
+  if (!finite(m2.gainDb)) bad.push("gainDb");
+  if (typeof m2.limiter !== "boolean") bad.push("limiter");
+  for (const k2 of ["ceiling", "attackMs", "releaseMs", "lookaheadMs"]) if (!finite(lp2[k2])) bad.push(`limiterParams.${k2}`);
+  if (!Array.isArray(m2.chain)) bad.push("chain");
+  return [...bad, ...fxGaps(m2.chain)];
+}
+var rawTracks = (extras) => extras.studio?.tracks?.filter((t10) => t10 && typeof t10 === "object") ?? [];
+function mixProblemsFor(extras, part2) {
+  const tracks = rawTracks(extras), byId = new Map(tracks.map((t10) => [String(t10.id), t10])), out = [];
+  const own = byId.get(part2.mic);
+  if (!own) return [_t("\u8FD9\u4E2A\u58F0\u90E8\u7684\u8F68\uFF08\u6CA1\u6709\uFF09")];
+  const say = (where, gaps) => {
+    if (gaps.length) out.push(`${where}\uFF1A${gaps.join("\u3001")}`);
+  };
+  say(_t("\u8FD9\u4E2A\u58F0\u90E8\u7684\u8F68"), trackGaps(own));
+  const seen = /* @__PURE__ */ new Set(), next2 = (t10) => [...typeof t10.to === "string" && t10.to !== "master" ? [t10.to] : [], ...(Array.isArray(t10.sends) ? t10.sends : []).map((sd2) => String(sd2?.to))];
+  const todo = next2(own);
+  while (todo.length) {
+    const id2 = todo.shift();
+    if (seen.has(id2)) continue;
+    seen.add(id2);
+    const b3 = byId.get(id2);
+    if (!b3 || b3.kind !== "bus") continue;
+    say(_t("\u6DF7\u97F3\u8F68\u300C{name}\u300D", { name: String(b3.name ?? id2) }), trackGaps(b3));
+    todo.push(...next2(b3));
+  }
+  say(_t("\u603B\u8F68"), masterGaps(extras.studio?.master));
+  return out;
 }
 var channelOf = (extras, part2) => {
   const { gainDb, pan } = micOf(extras, part2);
@@ -42167,19 +42307,20 @@ var channelOf = (extras, part2) => {
 function mixParamsOf(plan, pv2) {
   const { song, extras } = plan, raw = !!plan.mixBypass;
   const bpm = songBpm(song), ctx2 = (lowestMidi) => ({ lowestMidi, bpm }), fx = (x2) => raw ? [] : x2;
-  const channels = song.parts.map((p2) => {
+  const okTrack = new Set(rawTracks(extras).filter((t10) => !trackGaps(t10).length).map((t10) => String(t10.id)));
+  const channels = song.parts.filter((p2) => okTrack.has(p2.mic)).map((p2) => {
     const t10 = studioTrack(extras, p2.mic);
-    return { id: p2.id, p: { ...channelOf(extras, p2), mute: pv2(p2.id).muted, solo: pv2(p2.id).solo, chain: fx(resolveChain(t10?.chain ?? [], ctx2(lowestMidiOf(song, p2.id)))), sends: fx(t10?.sends ?? []), to: t10?.to ?? "master" } };
+    return { id: p2.id, p: { ...channelOf(extras, p2), mute: pv2(p2.id).muted, solo: pv2(p2.id).solo, chain: fx(resolveChain(t10.chain, ctx2(lowestMidiOf(song, p2.id)))), sends: fx(t10.sends), to: t10.to } };
   });
-  const buses = studioTracks(extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, gainDb: b3.gainDb, pan: b3.pan, chain: b3.bypass ? [] : fx(resolveChain(b3.chain, ctx2(null))), to: b3.to, sends: fx(b3.sends), ...plan.busMuted?.has(b3.id) ? { mute: true } : {} }));
-  const m2 = activeMaster(extras);
-  return { channels, buses, master: { ...m2, chain: fx(resolveChain(m2.chain, ctx2(null))) } };
+  const buses = studioTracks(extras).filter((t10) => t10.kind === "bus" && okTrack.has(t10.id)).map((b3) => ({ id: b3.id, gainDb: b3.gainDb, pan: b3.pan, chain: b3.bypass ? [] : fx(resolveChain(b3.chain, ctx2(null))), to: b3.to, sends: fx(b3.sends), ...plan.busMuted?.has(b3.id) ? { mute: true } : {} }));
+  const m2 = activeMaster(extras), mOk = !masterGaps(extras.studio?.master).length;
+  return { channels, buses, master: mOk ? { ...m2, chain: fx(resolveChain(m2.chain, ctx2(null))) } : null };
 }
 function pushMix(engine2, plan, pv2) {
   const m2 = mixParamsOf(plan, pv2);
   for (const c10 of m2.channels) engine2.channel(c10.id, c10.p);
   engine2.buses(m2.buses);
-  engine2.master(m2.master);
+  if (m2.master) engine2.master(m2.master);
 }
 function timelineOf(plan, banks) {
   const { song } = plan;
@@ -44271,12 +44412,7 @@ var pluginName = (kind) => FX_KINDS[kind]?.name ?? kind;
 function fullParams(kind) {
   return [...HOST_PARAMS[kind] ?? [], ...FX_KINDS[kind]?.params ?? []];
 }
-function defaults(kind) {
-  const p2 = {};
-  for (const d3 of fullParams(kind)) p2[d3.id] = d3.default;
-  return p2;
-}
-var paramsOf = (fx) => ({ ...defaults(fx.kind), ...fx.params });
+var paramsOf = (fx) => fx.params;
 function keepShownOnOff(fx, next2, resolved) {
   const was = paramsOf(fx);
   if (fx.kind === "eq" && was.hpAuto && !next2.hpAuto) return { ...next2, hpHz: resolved.params.hpHz ?? next2.hpHz };
@@ -44533,16 +44669,7 @@ function projectToSimple(kind, onBus, p2, keyed = false) {
   return v ? v.write(v.project(p2), p2) : p2;
 }
 function freshParams(kind, onBus = false) {
-  const p2 = defaults(kind), s10 = SIMPLE[kind];
-  if (onBus && kind === "reverb") return SIMPLE_BUS.reverb.write({ size: 0.5 }, p2);
-  if (onBus && kind === "delay") return SIMPLE_BUS.delay.write({ echo: 0.3, beats: 0.75 }, p2);
-  if (onBus && kind === "chorus") return SIMPLE_BUS.chorus.write({ wide: 0.4 }, p2);
-  if (kind === "eq") return s10.write({ autoLow: 0, tilt: 0 }, p2);
-  if (kind === "comp") return s10.write({ amount: 0.3 }, p2);
-  if (kind === "reverb") return s10.write({ far: 0.4 }, p2);
-  if (kind === "delay") return s10.write({ echo: 0.3, beats: 0.75 }, p2);
-  if (kind === "chorus") return s10.write({ wide: 0.4 }, p2);
-  return p2;
+  return templateFxParams(kind, onBus) ?? {};
 }
 function fxSummary(fx, onBus = false) {
   const view2 = viewOfFx(fx, onBus), p2 = paramsOf(fx), s10 = view2?.read(p2), name = pluginName(fx.kind);
@@ -44671,8 +44798,7 @@ var HINT2 = {
   out: _t("\u51FA\u5230\uFF1A\u8FD9\u6761\u8F68\u7684\u58F0\u97F3\u6700\u540E\u53BB\u54EA\u2014\u2014\u76F4\u63A5\u53BB\u603B\u8F68\uFF0C\u6216\u8005\u5148\u8FDB\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u5728\u90A3\u91CC\u4E00\u8D77\u8FC7\u6548\u679C\uFF09"),
   send: _t("\u53D1\u9001\uFF1A\u63A8\u5B50\u4E4B\u540E\u518D\u590D\u5236\u4E00\u4EFD\u7ED9\u8FD9\u6761\u6DF7\u97F3\u8F68\u2014\u2014\u8DDF\u7740\u8FD9\u6761\u8F68\u7684\u589E\u76CA\u548C\u58F0\u50CF\u8D70\uFF1A\u63A8\u5B50\u62C9\u4F4E 3 dB\uFF0C\u53D1\u8FC7\u53BB\u7684\u4E5F\u4F4E 3 dB\uFF08\u539F\u58F0\u548C\u6548\u679C\u7684\u6BD4\u4F8B\u4E0D\u53D8\uFF09\uFF1B\u9759\u97F3\u4E86\u5C31\u4E0D\u53D1\u3002\u8FD9\u91CC\u7684\u6570 = \u8FD9\u4E00\u4F4D\u8FDB\u90A3\u8FB9\u7684\u91CF\uFF0C\u8D8A\u5927\u90A3\u8FB9\u7684\u6548\u679C\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\uFF09\u8D8A\u591A\uFF1B\u539F\u58F0\u7167\u65E7\u8D70\u300C\u51FA\u5230\u300D"),
   busGain: _t("\u6DF7\u97F3\u8F68\u589E\u76CA\uFF1A\u4ECE\u8FD9\u6761\u6DF7\u97F3\u8F68\u51FA\u6765\u7684\u603B\u91CF\u3002\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u5168\u6E7F\u7684\u6DF7\u97F3\u8F68 = \u90A3\u8FB9\u7684\u6548\u679C\u6709\u591A\u5927\uFF0C\u53D1\u7ED9\u5B83\u7684\u51E0\u4F4D\u4E00\u8D77\u53D8\uFF08\u6BCF\u4F4D\u5355\u72EC\u591A\u5C11\u770B\u5404\u81EA\u7684\u300C\u53D1\u9001\u300D\uFF09\u3002\u8981\u662F\u6709\u51E0\u4F4D\u662F\u300C\u51FA\u5230\u300D\u5B83\uFF08\u539F\u58F0\u4E5F\u8FDB\u6765\uFF09\uFF0C\u90A3\u8FD9\u4E2A\u63A8\u5B50\u8FDE\u539F\u58F0\u4E00\u8D77\u8C03"),
-  limiter: _t("\u9650\u5E45\uFF08\u603B\u8F68\u6700\u540E\u4E00\u9053\uFF09\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u5F88\u5FEB\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E00\u4E2A\u91C7\u6837\u90FD\u4E0D\u52A8\uFF0C\u4E0D\u6539\u97F3\u8272\u3002\u5173\u6389 = \u8D85\u4E86\u5C31\u524A\u6CE2\uFF08\u7206\u97F3\u3001\u5BFC\u51FA\u7684\u6587\u4EF6\u91CC\u4E5F\u662F\uFF09\u3002\u4E00\u822C\u4E00\u76F4\u5F00\u7740\uFF1B\u60F3\u770B\u81EA\u5DF1\u7684\u6DF7\u97F3\u5230\u5E95\u591A\u54CD\uFF0C\u53EF\u4EE5\u5148\u5173\u4E86\u770B\u5CF0\u503C"),
-  peak: _t("\u5CF0\u503C\uFF1A\u6700\u8FD1\u8FD9\u4E00\u4E0B\u6700\u54CD\u7684\u90A3\u4E2A\u91C7\u6837\uFF08dBFS\uFF09\u30020 dB = \u6EE1\u683C\uFF0C\u518D\u5927\u5C31\u524A\u6CE2\uFF1B\u9650\u5E45\u5F00\u7740\u65F6\u6700\u591A\u5230 \u22120.18 dB\u3002\u9876\u4E0A\u7684\u7EC6\u7EBF\u662F\u540C\u4E00\u4E2A\u6570"),
+  peak: _t("\u5CF0\u503C\uFF1A\u6700\u8FD1\u8FD9\u4E00\u4E0B\u6700\u54CD\u7684\u90A3\u4E2A\u91C7\u6837\uFF08dBFS\uFF09\u30020 dB = \u6EE1\u683C\uFF0C\u518D\u5927\u5C31\u524A\u6CE2\uFF1B\u9650\u5E45\u5F00\u7740\u65F6\u6700\u591A\u5230\u5929\u82B1\u677F\u3002\u9876\u4E0A\u7684\u7EC6\u7EBF\u662F\u540C\u4E00\u4E2A\u6570"),
   rms: _t("\u5E73\u5747\u7535\u5E73\uFF08RMS\uFF0C\u6700\u8FD1 0.3 \u79D2\uFF0C\u63A8\u5B50\u4E4B\u540E\uFF0CdBFS\uFF09\uFF1A\u6BD4\u5CF0\u503C\u66F4\u63A5\u8FD1\u8033\u6735\u89C9\u5F97\u7684\u54CD\u3002\u51E0\u6761\u8F68\u6446\u5E73\u97F3\u91CF\u770B\u8FD9\u4E2A\uFF1B\u9876\u4E0A\u7684\u7EC6\u7EBF\uFF08\u5CF0\u503C\uFF09\u770B\u4F1A\u4E0D\u4F1A\u7206"),
   corr: _t("\u5DE6\u53F3\u76F8\u5173\uFF08\u22121 \u5230 +1\uFF09\uFF1A+1 = \u5DE6\u53F3\u4E00\u6837\uFF08\u5355\u58F0\u9053\uFF09\uFF1B0 \u9644\u8FD1 = \u5F88\u5BBD\uFF1B\u5C0F\u4E8E 0 = \u5DE6\u53F3\u53CD\u76F8\uFF0C\u624B\u673A\u5916\u653E / \u5355\u58F0\u9053\u4E00\u5408\u5C31\u4F1A\u53D8\u5C0F\u3001\u53D8\u7A7A\u3002\u80CC\u666F\u7684\u56FE\uFF1A\u7AD6\u7EBF = \u5355\u58F0\u9053\uFF0C\u8D8A\u5706\u8D8A\u5BBD\uFF0C\u6A2A\u7740 = \u53CD\u76F8\uFF1B\u5F80\u5DE6\u4E0A\u659C = \u504F\u5DE6\u58F0\u9053\u3001\u5F80\u53F3\u4E0A\u659C = \u504F\u53F3"),
   gr: _t("\u538B\u4E86\u591A\u5C11\uFF1A\u8FD9\u6761\u8F68\u4E0A\u7B2C\u4E00\u53F0\u538B\u7F29\u6B64\u523B\u628A\u58F0\u97F3\u538B\u4F4E\u4E86\u51E0 dB\uFF08\u4E0B\u9762\u644A\u5F00\u7684\u5C31\u662F\u5B83\uFF09\u3002\u4E00\u76F4\u538B\u5F88\u591A = \u9608\u503C\u592A\u4F4E\u6216\u6BD4\u4F8B\u592A\u5927"),
@@ -44683,6 +44809,12 @@ var RMS_ROW = row(_t("\u5E73\u5747"), HINT2.rms, `<output class="rms-val">\u2014
 var CORR_ROW = row(_t("\u5DE6\u53F3\u76F8\u5173"), HINT2.corr, `<output class="corr-val">\u2014</output>`, "", "strip-row");
 var STEREO_TABS = /* @__PURE__ */ new Set(["basic", "send", "chain"]);
 var GONIO_SVG = `<svg class="strip-gonio" viewBox="-1 -1 2 2" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="gon-axis" d="M0,-1L0,1M-1,0L1,0"/><path class="gon" d=""/></svg>`;
+function limiterHint(p2) {
+  return _t(
+    "\u9650\u5E45\uFF08\u603B\u8F68\u6700\u540E\u4E00\u9053\uFF09\uFF1A\u524D\u77BB {la} ms \u770B\u89C1\u8981\u8D85\u8FC7\u5929\u82B1\u677F\uFF08{c} dBFS = \u6EE1\u5E45\u7684 {lin}\uFF09\u7684\u90A3\u4E00\u4E0B\uFF0C\u6309\u300C\u8D77\u300D{a} ms \u63D0\u524D\u628A\u5B83\u538B\u4E0B\u6765\uFF0C\u8FC7\u4E86\u6309\u300C\u653E\u300D{r} ms \u6162\u6162\u677E\u5F00\uFF1B\u4E0D\u8D85\u7684\u5730\u65B9\u4E00\u4E2A\u91C7\u6837\u90FD\u4E0D\u52A8\uFF0C\u4E0D\u6539\u97F3\u8272\u3002\u8F93\u51FA\u56E0\u6B64\u665A {la} ms\uFF08\u5BFC\u51FA\u65F6\u6263\u6389\uFF09\u3002\u8FD9\u56DB\u4E2A\u6570\u5B58\u5728\u8FD9\u9996\u6B4C\u91CC\uFF0C\u8FD9\u4E00\u7248\u6CA1\u6709\u8C03\u8282\u7684\u94AE\u3002\u5173\u6389 = \u8D85\u4E86\u5C31\u524A\u6CE2\uFF08\u7206\u97F3\u3001\u5BFC\u51FA\u7684\u6587\u4EF6\u91CC\u4E5F\u662F\uFF09\u3002\u4E00\u822C\u4E00\u76F4\u5F00\u7740\uFF1B\u60F3\u770B\u81EA\u5DF1\u7684\u6DF7\u97F3\u5230\u5E95\u591A\u54CD\uFF0C\u53EF\u4EE5\u5148\u5173\u4E86\u770B\u5CF0\u503C",
+    { la: p2.lookaheadMs, c: (20 * Math.log10(p2.ceiling)).toFixed(2), lin: p2.ceiling, a: p2.attackMs, r: p2.releaseMs }
+  );
+}
 var Studio2 = class {
   constructor(parent, host2) {
     this.host = host2;
@@ -44903,6 +45035,7 @@ var Studio2 = class {
     const text2 = now2 - this.lastText > 250;
     if (text2) this.lastText = now2;
     let alive = false;
+    const hotAt = this.host.master().limiterParams.ceiling;
     for (const el2 of this.el.querySelectorAll(".strip[data-id]")) {
       const id2 = el2.dataset.id, raw = stale ? 0 : this.target.get(id2) ?? 0, want = toDb(raw), cur = this.shown.get(id2) ?? -60;
       const next2 = want >= cur ? want : Math.max(want, cur - 30 * dt);
@@ -44911,8 +45044,8 @@ var Studio2 = class {
       const bar2 = el2.querySelector(".strip-meter > i");
       if (bar2) {
         bar2.style.width = `${Math.max(0, Math.min(100, (next2 + 60) / 60 * 100))}%`;
-        bar2.classList.toggle("hot", raw >= 0.98);
-        bar2.parentElement.classList.toggle("hot", raw >= 0.98);
+        bar2.classList.toggle("hot", raw >= hotAt);
+        bar2.parentElement.classList.toggle("hot", raw >= hotAt);
       }
       const msWant = stale ? 0 : this.msTarget.get(id2) ?? 0, msCur = this.msShown.get(id2) ?? 0, ms = msCur + (msWant - msCur) * (1 - Math.exp(-dt / 0.3));
       this.msShown.set(id2, ms);
@@ -45066,7 +45199,7 @@ ${tg2.fx}`, t10.closest("[data-mode]").dataset.mode);
       const c10 = this.fxClip, ch2 = this.host.chain(strip), used = new Set(ch2.map((f2) => f2.id));
       let n10 = 1;
       while (used.has(`${c10.kind}${n10}`)) n10++;
-      const fx = { id: `${c10.kind}${n10}`, kind: c10.kind, params: structuredClone(c10.params) };
+      const fx = { id: `${c10.kind}${n10}`, kind: c10.kind, params: structuredClone(c10.params), on: true };
       this.host.setChain(strip, [...ch2, fx], _t("{strip} \u7C98\u6210\u65B0\u7684\u4E00\u683C\uFF1A{kind}", { strip: this.trackName(strip), kind: pluginName(c10.kind) }));
       this.addFor = null;
       this.open = { track: strip, fx: fx.id };
@@ -45122,7 +45255,7 @@ ${tg2.fx}`, t10.closest("[data-mode]").dataset.mode);
       return;
     }
     if (strip && t10.dataset.sendadd !== void 0 && t10.value) {
-      this.host.setSends(strip, [...this.host.sends(strip), { to: t10.value, gainDb: -12 }], _t("\u53D1\u7ED9 {value}", { value: this.trackName(t10.value) }));
+      this.host.setSends(strip, [...this.host.sends(strip), { to: t10.value, gainDb: TEMPLATE.studio.sendGainDb }], _t("\u53D1\u7ED9 {value}", { value: this.trackName(t10.value) }));
       this.render();
       return;
     }
@@ -45145,7 +45278,7 @@ ${tg2.fx}`, t10.closest("[data-mode]").dataset.mode);
   /** 一条轨显示的格子：歌手轨 / 混音轨没有默认 EQ 那一格 = 补一个虚的（平，不在文件里）。 */
   slots(track) {
     const ch2 = this.host.chain(track), out = ch2.map((fx) => ({ fx, virtual: false }));
-    if (track !== MASTER && !ch2.some((f2) => f2.id === DEFAULT_EQ_ID)) out.unshift({ fx: { id: DEFAULT_EQ_ID, kind: "eq", params: freshParams("eq") }, virtual: true });
+    if (track !== MASTER && !ch2.some((f2) => f2.id === DEFAULT_EQ_ID)) out.unshift({ fx: { id: DEFAULT_EQ_ID, kind: "eq", params: freshParams("eq"), on: true }, virtual: true });
     return out;
   }
   slotOf(tg2) {
@@ -45178,7 +45311,7 @@ ${tg2.fx}`);
     const ch2 = this.host.chain(track), used = new Set(ch2.map((f2) => f2.id));
     let n10 = 1;
     while (used.has(`${kind}${n10}`)) n10++;
-    const fx = { id: `${kind}${n10}`, kind, params: freshParams(kind, this.onBus(track)) };
+    const fx = { id: `${kind}${n10}`, kind, params: freshParams(kind, this.onBus(track)), on: true };
     this.host.setChain(track, [...ch2, fx], _t("{track} \u63D2\u4E0A{kind}", { track: this.trackName(track), kind: pluginName(kind) }));
     this.addFor = null;
     if (openPanel) this.open = { track, fx: fx.id };
@@ -45302,7 +45435,7 @@ ${tg2.fx}`);
   routeHtml(track) {
     const out = this.host.outTo(track), tg2 = this.host.targets(track), sends = this.host.sends(track), name = (id2) => esc9(this.trackName(id2));
     const outSel = row(_t("\u51FA\u5230"), HINT2.out, "", dropdownHtml([...[{ id: "master", name: _t("\u603B\u8F68") }, ...tg2].map((x2) => ({ value: x2.id, label: x2.name })), ...out !== "master" && !tg2.some((x2) => x2.id === out) ? [{ value: out, label: _t("{out}\uFF08\u63A5\u4E0D\u4E0A\uFF09", { out: name(out) }) }] : []], out, { attrs: "data-out" }), "strip-row");
-    const rows = sends.map((sd2) => `<div class="strip-send">${row(_t("\u53D1\u7ED9 {to}", { to: this.trackName(sd2.to) }), HINT2.send, `<output>${dbText(sd2.gainDb)}</output>`, slider({ min: -40, max: 6, step: 0.5, value: sd2.gainDb, attrs: `data-send="${esc9(sd2.to)}"`, def: -12, defText: "\u221212 dB" }), "strip-row")}<button class="btn" data-v="sendx" data-to="${esc9(sd2.to)}" title="${_t("\u4E0D\u518D\u53D1\u7ED9\u5B83")}">\u2715</button></div>`);
+    const rows = sends.map((sd2) => `<div class="strip-send">${row(_t("\u53D1\u7ED9 {to}", { to: this.trackName(sd2.to) }), HINT2.send, `<output>${dbText(sd2.gainDb)}</output>`, slider({ min: -40, max: 6, step: 0.5, value: sd2.gainDb, attrs: `data-send="${esc9(sd2.to)}"`, def: TEMPLATE.studio.sendGainDb, defText: dbText(TEMPLATE.studio.sendGainDb) }), "strip-row")}<button class="btn" data-v="sendx" data-to="${esc9(sd2.to)}" title="${_t("\u4E0D\u518D\u53D1\u7ED9\u5B83")}">\u2715</button></div>`);
     const free = tg2.filter((x2) => !sends.some((sd2) => sd2.to === x2.id));
     const add = free.length ? dropdownHtml([{ value: "", label: _t("\uFF0B \u53D1\u9001\u5230\u2026") }, ...free.map((x2) => ({ value: x2.id, label: x2.name }))], "", { cls: "send-add", attrs: "data-sendadd", title: _t("\u63A8\u5B50\u4E4B\u540E\u53D1\u4E00\u4EFD\u5230\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u653E\u5728\u6DF7\u97F3\u8F68\u4E0A\uFF0C\u51E0\u6761\u8F68\u5171\u7528\uFF09") }) : tg2.length ? "" : `<div class="fx-dim">${_t("\u8FD8\u6CA1\u6709\u6DF7\u97F3\u8F68\uFF08\u9876\u680F\u300C\uFF0B \u6DF7\u97F3\u8F68\u300D\u52A0\uFF09")}</div>`;
     const wet = out !== "master" ? this.host.chain(out).find(fullyWet) : void 0;
@@ -45403,18 +45536,18 @@ ${tg2.fx}`);
     if (this.open && !this.slotOf(this.open)) this.open = null;
     this.renderBar();
     const nameDiv = (s10) => `<div class="strip-name">${esc9(s10)}</div>`;
-    const gainRow = (attrs, hint2, db, extra = "") => row(_t("\u589E\u76CA"), hint2, `<output>${dbText(db)}</output>${extra}`, slider({ min: -24, max: 12, step: 0.5, value: db, attrs, def: 0, defText: "0 dB" }), "strip-row");
-    const masterBody = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") + row(_t("\u9650\u5E45"), HINT2.limiter, "", `<button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter">${m2.limiter ? _t("\u5F00\u7740") : _t("\u5173\u7740\uFF08\u53EF\u80FD\u524A\u6CE2\uFF09")}</button>`, "strip-row") + row(_t("\u5CF0\u503C"), HINT2.peak, `<span class="meter-val">\u2014</span>`, "", "strip-row") + RMS_ROW + CORR_ROW : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? gainRow("data-master", HINT2.masterGain, m2.gainDb) + `<div class="fx-dim">${_t("\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904")}</div>` : this.chipsHtml(MASTER);
+    const gainRow = (attrs, hint2, db, extra = "") => row(_t("\u589E\u76CA"), hint2, `<output>${dbText(db)}</output>${extra}`, slider({ min: -24, max: 12, step: 0.5, value: db, attrs, def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row");
+    const masterBody = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: TEMPLATE.studio.master.gainDb, defText: dbText(TEMPLATE.studio.master.gainDb) }), "strip-row") + row(_t("\u9650\u5E45"), limiterHint(m2.limiterParams), "", `<button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter">${m2.limiter ? _t("\u5F00\u7740") : _t("\u5173\u7740\uFF08\u53EF\u80FD\u524A\u6CE2\uFF09")}</button>`, "strip-row") + row(_t("\u5CF0\u503C"), HINT2.peak, `<span class="meter-val">\u2014</span>`, "", "strip-row") + RMS_ROW + CORR_ROW : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? gainRow("data-master", HINT2.masterGain, m2.gainDb) + `<div class="fx-dim">${_t("\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904")}</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv(_t("\u603B\u8F68")), _t("\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E"), masterBody);
     const buses = this.host.buses(), busCards = buses.map((b3, k2) => {
-      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.busGain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: 0, defText: _t("\u4E2D") }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="btn-row"><button class="btn cand${b3.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765")}">${b3.bypass ? _t("\u65C1\u901A\u4E2D") : _t("\u65C1\u901A")}</button><button class="btn" data-v="busleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D")}"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="${_t("\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389")}</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? gainRow("data-busgain", HINT2.busGain, b3.gainDb) + this.routeHtml(b3.id) : this.chipsHtml(b3.id);
+      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.busGain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="btn-row"><button class="btn cand${b3.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765")}">${b3.bypass ? _t("\u65C1\u901A\u4E2D") : _t("\u65C1\u901A")}</button><button class="btn" data-v="busleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D")}"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="${_t("\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389")}</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? gainRow("data-busgain", HINT2.busGain, b3.gainDb) + this.routeHtml(b3.id) : this.chipsHtml(b3.id);
       const name = `<input class="bus-name" value="${esc9(b3.name)}" title="${_t("\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09")}" />`;
       const ms = `<span class="strip-ms"><button class="btn${b3.muted ? " is-on mute" : ""}" data-v="busmute" title="${_t("\u9759\u97F3\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u51FA\u58F0\u3001\u4E5F\u4E0D\u5F80\u4E0B\u53D1\uFF08\u53D1\u7ED9\u5B83\u7684\u90A3\u51E0\u4F4D\u539F\u58F0\u7167\u65E7\uFF09")}">${_t("\u9759")}</button></span>`;
       return this.card(b3.id, ` bus${b3.bypass ? " bypassed" : ""}`, `<div class="strip-head">${name}${ms}</div>${this.brokenLine(b3.id)}`, b3.bypass ? _t("\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09") : _t("\u6DF7\u97F3\u8F68"), body2);
     }).join("");
     const strips = this.host.strips(), singers = strips.map((s10, k2) => {
       const perf = s10.performerDb ? `<button class="btn strip-perfdb" data-v="perfdb" title="${_t("\u8FD9\u4F4D\u4E50\u624B\u81EA\u5DF1\u7684\u54CD\u5EA6\uFF08\u4E50\u5668\u9875\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\uFF09\uFF0C\u548C\u63A8\u5B50\u76F8\u52A0\uFF1A\u63A8\u5B50 {g}\u3001\u4E50\u624B {p} = \u8FD9\u6761\u8F68\u4E00\u5171 {t}\u3002\u70B9\u8FD9\u91CC\u53BB\u4E50\u5668\u9875\u6539", { g: dbText(s10.gainDb), p: dbText(s10.performerDb), t: dbText(s10.gainDb + s10.performerDb) })}">${_t("\u4E50\u624B {p}", { p: dbText(s10.performerDb) })}</button>` : "";
-      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.gain, `<output>${dbText(s10.gainDb)}</output>${perf}`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: 0, defText: _t("\u4E2D") }), "strip-row") + RMS_ROW + `<div class="btn-row"><button class="btn" data-v="partleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09")}"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.gain, `<output>${dbText(s10.gainDb)}</output>${perf}`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + `<div class="btn-row"><button class="btn" data-v="partleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09")}"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
       (s10.refs ? `<div class="strip-refs">${_t("\u5728 {refs} \u5F20\u7EB8\u4E0A", { refs: s10.refs })}</div>` : `<div class="strip-refs">${_t("\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709")} <button class="btn cand danger" data-v="delpart" title="${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8")}</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? gainRow("data-gain", HINT2.gain, s10.gainDb, perf) + this.routeHtml(s10.id) : this.chipsHtml(s10.id);
       const ms = `<span class="strip-ms"><button class="btn${s10.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09")}">${_t("\u9759")}</button><button class="btn${s10.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09")}">${_t("\u72EC")}</button></span>`;
       return this.card(s10.id, "", `<div class="strip-head">${nameDiv(s10.name)}${ms}</div>${this.brokenLine(s10.id)}`, s10.performer, body2, s10.color);
@@ -45429,7 +45562,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "85a4e58cfbc1ef41" : "dev";
+var CORE_HASH = true ? "a597f1307fcf0aa6" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -61440,7 +61573,7 @@ function newPartState(np2) {
     const pp = st2.song.papers.find((x2) => x2.id === np2.paper && x2.tracks[id2]) ?? st2.song.papers.find((x2) => x2.tracks[id2]);
     if (pp) st2 = setFocus(st2, pp.id, id2);
   }
-  return { st: st2, extras: withNewRole(D3.extras, role, "n"), role };
+  return { st: st2, extras: withTrack2(withNewRole(D3.extras, role, "n"), mic, {}), role };
 }
 async function castPick(p2) {
   if (finderPlayOnly()) return;
@@ -65579,4 +65712,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ed7e4678aee1.mjs.map
+//# sourceMappingURL=moonsinger-8ef82d409aff.mjs.map

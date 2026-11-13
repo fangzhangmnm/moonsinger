@@ -9,7 +9,8 @@
 //   每张卡片顶上一条峰值细线（所有页都有；录音房只在混音台开着时报）。加混音轨在页签那一行的「⋯」里（user「混音轨不要用一个单独的空页面，可以在混音台的顶栏上面加一个...的目录，里面有加混音轨。然后混音轨之间还可以排序。然后歌手卡片的排序还是以五线谱为准」）。
 import { dropdownHtml, mountDropdowns } from "./dropdown.ts";
 import { _t } from "../i18n/index.ts";
-import type { FxV2 } from "../format/contract.ts";
+import type { FxV2, LimiterParamsV2 } from "../format/contract.ts";
+import { TEMPLATE } from "../format/template.ts";   // 推子 / 声像 / 发送「双击回默认」= 模板（16-4 A2）
 import { eqResponseDb } from "../engine/fx.ts";
 import { busLinkStates, type LinkState } from "../engine/studio.ts";
 import { SPEC_BANDS, bandHz, bandsDb, smoothBands, areaPath, xOfHz } from "./spectrum.ts";
@@ -35,7 +36,7 @@ export interface StudioHost {
   /** 去这位歌手的乐器页、落在「响度」那一行（推子旁边「乐手 −6 dB」那颗钮）。 */
   openPerformer(id: string): void;
   /** 总轨（2026-10-10 刀 3）：增益 dB + 母线限幅开关；进歌（studio.json master）。 */
-  master(): { gainDb: number; limiter: boolean };
+  master(): { gainDb: number; limiter: boolean; limiterParams: LimiterParamsV2 };
   setMasterGain(dB: number): void;
   toggleLimiter(): void;
   /** 效果全关（A/B；这次打开里有效）：插件和发送不响，推子 / 声像 / 出到 / 限幅留着。 */
@@ -102,8 +103,7 @@ const HINT = {
   out: _t("出到：这条轨的声音最后去哪——直接去总轨，或者先进一条混音轨（在那里一起过效果）"),
   send: _t("发送：推子之后再复制一份给这条混音轨——跟着这条轨的增益和声像走：推子拉低 3 dB，发过去的也低 3 dB（原声和效果的比例不变）；静音了就不发。这里的数 = 这一位进那边的量，越大那边的效果（混响 / 延迟）越多；原声照旧走「出到」"),
   busGain: _t("混音轨增益：从这条混音轨出来的总量。混响 / 延迟这类全湿的混音轨 = 那边的效果有多大，发给它的几位一起变（每位单独多少看各自的「发送」）。要是有几位是「出到」它（原声也进来），那这个推子连原声一起调"),
-  limiter: _t("限幅（总轨最后一道）：超过天花板（−0.18 dBFS）的那一小段很快压下来，不超的地方一个采样都不动，不改音色。关掉 = 超了就削波（爆音、导出的文件里也是）。一般一直开着；想看自己的混音到底多响，可以先关了看峰值"),
-  peak: _t("峰值：最近这一下最响的那个采样（dBFS）。0 dB = 满格，再大就削波；限幅开着时最多到 −0.18 dB。顶上的细线是同一个数"),
+  peak: _t("峰值：最近这一下最响的那个采样（dBFS）。0 dB = 满格，再大就削波；限幅开着时最多到天花板。顶上的细线是同一个数"),
   rms: _t("平均电平（RMS，最近 0.3 秒，推子之后，dBFS）：比峰值更接近耳朵觉得的响。几条轨摆平音量看这个；顶上的细线（峰值）看会不会爆"),
   corr: _t("左右相关（−1 到 +1）：+1 = 左右一样（单声道）；0 附近 = 很宽；小于 0 = 左右反相，手机外放 / 单声道一合就会变小、变空。背景的图：竖线 = 单声道，越圆越宽，横着 = 反相；往左上斜 = 偏左声道、往右上斜 = 偏右"),
   gr: _t("压了多少：这条轨上第一台压缩此刻把声音压低了几 dB（下面摊开的就是它）。一直压很多 = 阈值太低或比例太大"),
@@ -120,6 +120,11 @@ const GONIO_SVG = `<svg class="strip-gonio" viewBox="-1 -1 2 2" preserveAspectRa
 /** 一格的位置：哪条轨的哪一格（插件格的读写、面板和卡片上摊开的控件都按它找）。 */
 interface Target { track: string; fx: string }
 
+/** 总轨「限幅」的问号（16-4 C）：四个数照这首歌文件里写的说。 */
+function limiterHint(p: LimiterParamsV2): string {
+  return _t("限幅（总轨最后一道）：前瞻 {la} ms 看见要超过天花板（{c} dBFS = 满幅的 {lin}）的那一下，按「起」{a} ms 提前把它压下来，过了按「放」{r} ms 慢慢松开；不超的地方一个采样都不动，不改音色。输出因此晚 {la} ms（导出时扣掉）。这四个数存在这首歌里，这一版没有调节的钮。关掉 = 超了就削波（爆音、导出的文件里也是）。一般一直开着；想看自己的混音到底多响，可以先关了看峰值",
+    { la: p.lookaheadMs, c: (20 * Math.log10(p.ceiling)).toFixed(2), lin: p.ceiling, a: p.attackMs, r: p.releaseMs });
+}
 export class Studio {
   readonly el: HTMLDivElement;
   private tab: MixTab = "basic";
@@ -271,12 +276,13 @@ export class Studio {
     const stale = now - this.lastMeter > 200;   // 一阵没报了 = 当它静了
     const text = now - this.lastText > 250; if (text) this.lastText = now;
     let alive = false;
+    const hotAt = this.host.master().limiterParams.ceiling;   // 到了总轨限幅的天花板 = 标红（16-4 C：天花板是文件里的数）
     for (const el of this.el.querySelectorAll<HTMLElement>(".strip[data-id]")) {
       const id = el.dataset.id!, raw = stale ? 0 : this.target.get(id) ?? 0, want = toDb(raw), cur = this.shown.get(id) ?? -60;
       const next = want >= cur ? want : Math.max(want, cur - 30 * dt);
       this.shown.set(id, next); if (next > -59.5) alive = true;
       const bar = el.querySelector<HTMLElement>(".strip-meter > i");
-      if (bar) { bar.style.width = `${Math.max(0, Math.min(100, ((next + 60) / 60) * 100))}%`; bar.classList.toggle("hot", raw >= 0.98); bar.parentElement!.classList.toggle("hot", raw >= 0.98); }
+      if (bar) { bar.style.width = `${Math.max(0, Math.min(100, ((next + 60) / 60) * 100))}%`; bar.classList.toggle("hot", raw >= hotAt); bar.parentElement!.classList.toggle("hot", raw >= hotAt); }
       // 平均电平：均方按 0.3 s 时间常数平滑（RMS）
       const msWant = stale ? 0 : this.msTarget.get(id) ?? 0, msCur = this.msShown.get(id) ?? 0, ms = msCur + (msWant - msCur) * (1 - Math.exp(-dt / 0.3));
       this.msShown.set(id, ms); if (ms > 1e-6) alive = true;
@@ -340,7 +346,7 @@ export class Studio {
     else if (v === "fxcopy" && tg) { const sl = this.slotOf(tg); if (sl) { this.fxClip = { kind: sl.fx.kind, params: structuredClone(paramsOf(sl.fx)), from: `${this.trackName(tg.track)} · ${pluginName(sl.fx.kind)}` }; this.render(); } }
     else if (v === "fxpaste" && tg && this.fxClip) { const c = this.fxClip, sl = this.slotOf(tg); if (sl && sl.fx.kind === c.kind) { this.patch(tg, (fx) => ({ ...fx, params: structuredClone(c.params) }), _t("粘参数")); this.render(); } }   // 严格：种类不同不粘
     else if (v === "fxpastenew" && strip && this.fxClip) { const c = this.fxClip, ch = this.host.chain(strip), used = new Set(ch.map((f) => f.id)); let n = 1; while (used.has(`${c.kind}${n}`)) n++;
-      const fx: FxV2 = { id: `${c.kind}${n}`, kind: c.kind, params: structuredClone(c.params) };
+      const fx: FxV2 = { id: `${c.kind}${n}`, kind: c.kind, params: structuredClone(c.params), on: true };   // 新插的一格明写开着（16-4 A2：出声那一层照写的读开关）
       this.host.setChain(strip, [...ch, fx], _t("{strip} 粘成新的一格：{kind}", { strip: this.trackName(strip), kind: pluginName(c.kind) })); this.addFor = null; this.open = { track: strip, fx: fx.id }; this.render(); }
     else if (v === "fxproject" && tg) { this.patch(tg, (fx) => ({ ...fx, params: projectToSimple(fx.kind, this.onBus(tg.track), paramsOf(fx), !!fx.key) }), _t("改成最接近的一键")); this.render(); }
     else if (v === "fxbool" && tg) { const id = t.closest<HTMLElement>("[data-p]")!.dataset.p!; this.patch(tg, (fx) => ({ ...fx, params: this.keepShown(tg, fx, { ...paramsOf(fx), [id]: paramsOf(fx)[id] ? 0 : 1 }) }), id); this.render(); }
@@ -361,7 +367,7 @@ export class Studio {
   private onChange(e: Event): void {
     const t = e.target as HTMLButtonElement & HTMLInputElement, strip = t.closest<HTMLElement>(".strip")?.dataset.id, tg = this.targetOf(t);
     if (strip && t.dataset.out !== undefined) { this.host.setOutTo(strip, t.value); this.render(); return; }
-    if (strip && t.dataset.sendadd !== undefined && t.value) { this.host.setSends(strip, [...this.host.sends(strip), { to: t.value, gainDb: -12 }], _t("发给 {value}", { value: this.trackName(t.value) })); this.render(); return; }
+    if (strip && t.dataset.sendadd !== undefined && t.value) { this.host.setSends(strip, [...this.host.sends(strip), { to: t.value, gainDb: TEMPLATE.studio.sendGainDb }], _t("发给 {value}", { value: this.trackName(t.value) })); this.render(); return; }
     if (strip && t.classList.contains("bus-name")) { const name = t.value.trim(); if (name) this.host.renameBus(strip, name); this.render(); return; }
     if (tg && t.dataset.key !== undefined) {   // 换「被谁压」：原来是一键的样子 = 换成另一套公式（侧链不补偿）照旧是一键，「压多少」不变
       const v = t.value, bus = this.onBus(tg.track);
@@ -373,7 +379,7 @@ export class Studio {
   /** 一条轨显示的格子：歌手轨 / 混音轨没有默认 EQ 那一格 = 补一个虚的（平，不在文件里）。 */
   private slots(track: string): { fx: FxV2; virtual: boolean }[] {
     const ch = this.host.chain(track), out = ch.map((fx) => ({ fx, virtual: false }));
-    if (track !== MASTER && !ch.some((f) => f.id === DEFAULT_EQ_ID)) out.unshift({ fx: { id: DEFAULT_EQ_ID, kind: "eq", params: freshParams("eq") }, virtual: true });
+    if (track !== MASTER && !ch.some((f) => f.id === DEFAULT_EQ_ID)) out.unshift({ fx: { id: DEFAULT_EQ_ID, kind: "eq", params: freshParams("eq"), on: true }, virtual: true });
     return out;
   }
   private slotOf(tg: Target): { fx: FxV2; virtual: boolean } | null { return this.slots(tg.track).find((s) => s.fx.id === tg.fx) ?? null; }
@@ -394,7 +400,7 @@ export class Studio {
   }
   private addFx(track: string, kind: string, openPanel: boolean): void {
     const ch = this.host.chain(track), used = new Set(ch.map((f) => f.id)); let n = 1; while (used.has(`${kind}${n}`)) n++;
-    const fx: FxV2 = { id: `${kind}${n}`, kind, params: freshParams(kind, this.onBus(track)) };
+    const fx: FxV2 = { id: `${kind}${n}`, kind, params: freshParams(kind, this.onBus(track)), on: true };
     this.host.setChain(track, [...ch, fx], _t("{track} 插上{kind}", { track: this.trackName(track), kind: pluginName(kind) }));
     this.addFor = null; if (openPanel) this.open = { track, fx: fx.id }; this.render();
   }
@@ -494,7 +500,7 @@ export class Studio {
   private routeHtml(track: string): string {
     const out = this.host.outTo(track), tg = this.host.targets(track), sends = this.host.sends(track), name = (id: string) => esc(this.trackName(id));
     const outSel = row(_t("出到"), HINT.out, "", dropdownHtml([...[{ id: "master", name: _t("总轨") }, ...tg].map((x) => ({ value: x.id, label: x.name })), ...(out !== "master" && !tg.some((x) => x.id === out) ? [{ value: out, label: _t("{out}（接不上）", { out: name(out) }) }] : [])], out, { attrs: "data-out" }), "strip-row");
-    const rows = sends.map((sd) => `<div class="strip-send">${row(_t("发给 {to}", { to: this.trackName(sd.to) }), HINT.send, `<output>${dbText(sd.gainDb)}</output>`, slider({ min: -40, max: 6, step: 0.5, value: sd.gainDb, attrs: `data-send="${esc(sd.to)}"`, def: -12, defText: "−12 dB" }), "strip-row")}<button class="btn" data-v="sendx" data-to="${esc(sd.to)}" title="${_t("不再发给它")}">✕</button></div>`);
+    const rows = sends.map((sd) => `<div class="strip-send">${row(_t("发给 {to}", { to: this.trackName(sd.to) }), HINT.send, `<output>${dbText(sd.gainDb)}</output>`, slider({ min: -40, max: 6, step: 0.5, value: sd.gainDb, attrs: `data-send="${esc(sd.to)}"`, def: TEMPLATE.studio.sendGainDb, defText: dbText(TEMPLATE.studio.sendGainDb) }), "strip-row")}<button class="btn" data-v="sendx" data-to="${esc(sd.to)}" title="${_t("不再发给它")}">✕</button></div>`);
     const free = tg.filter((x) => !sends.some((sd) => sd.to === x.id));
     const add = free.length ? dropdownHtml([{ value: "", label: _t("＋ 发送到…") }, ...free.map((x) => ({ value: x.id, label: x.name }))], "", { cls: "send-add", attrs: "data-sendadd", title: _t("推子之后发一份到一条混音轨（混响 / 延迟这类放在混音轨上，几条轨共用）") }) : (tg.length ? "" : `<div class="fx-dim">${_t("还没有混音轨（顶栏「＋ 混音轨」加）")}</div>`);
     // 出到一条带全湿效果的混音轨 = 原声没了：明说（v0.10.10；user「开了混响结果铃声都哑掉了」）
@@ -584,17 +590,17 @@ export class Studio {
     this.renderBar();
     const nameDiv = (s: string) => `<div class="strip-name">${esc(s)}</div>`;
     // 发送页每张卡顶上带这条轨自己的增益推子（v0.16.82，总表第 9 条 ⑤：调平衡用；和基础页那根是同一个值）
-    const gainRow = (attrs: string, hint: string, db: number, extra = "") => row(_t("增益"), hint, `<output>${dbText(db)}</output>${extra}`, slider({ min: -24, max: 12, step: 0.5, value: db, attrs, def: 0, defText: "0 dB" }), "strip-row");
+    const gainRow = (attrs: string, hint: string, db: number, extra = "") => row(_t("增益"), hint, `<output>${dbText(db)}</output>${extra}`, slider({ min: -24, max: 12, step: 0.5, value: db, attrs, def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row");
     // 总轨
-    const masterBody = tab === "basic" ? row(_t("增益"), HINT.masterGain, `<output>${dbText(m.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") +
-        row(_t("限幅"), HINT.limiter, "", `<button class="btn cand${m.limiter ? " is-on" : ""}" data-v="limiter">${m.limiter ? _t("开着") : _t("关着（可能削波）")}</button>`, "strip-row") +
+    const masterBody = tab === "basic" ? row(_t("增益"), HINT.masterGain, `<output>${dbText(m.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m.gainDb, attrs: "data-master", def: TEMPLATE.studio.master.gainDb, defText: dbText(TEMPLATE.studio.master.gainDb) }), "strip-row") +
+        row(_t("限幅"), limiterHint(m.limiterParams), "", `<button class="btn cand${m.limiter ? " is-on" : ""}" data-v="limiter">${m.limiter ? _t("开着") : _t("关着（可能削波）")}</button>`, "strip-row") +
         row(_t("峰值"), HINT.peak, `<span class="meter-val">—</span>`, "", "strip-row") + RMS_ROW + CORR_ROW
       : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? gainRow("data-master", HINT.masterGain, m.gainDb) + `<div class="fx-dim">${_t("总轨就是输出，不再发给别处")}</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv(_t("总轨")), _t("所有声部混在一起之后"), masterBody);
     // 混音轨（自己加的路由轨，普通的轨）：排在总轨后面、歌手前面（user「你自己加的中间的路由轨也是普通的轨道，排在总轨后面，歌手前面」）
     const buses = this.host.buses(), busCards = buses.map((b, k) => {
-      const body = tab === "basic" ? row(_t("增益"), HINT.busGain, `<output>${dbText(b.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") +
-          row(_t("声像"), HINT.pan, `<output>${panText(b.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b.pan, attrs: "data-buspan", def: 0, defText: _t("中") }), "strip-row") + RMS_ROW + CORR_ROW +
+      const body = tab === "basic" ? row(_t("增益"), HINT.busGain, `<output>${dbText(b.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b.gainDb, attrs: "data-busgain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") +
+          row(_t("声像"), HINT.pan, `<output>${panText(b.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b.pan, attrs: "data-buspan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + CORR_ROW +
           `<div class="btn-row"><button class="btn cand${b.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("旁通：这条混音轨上的插件全跳过（推子 / 声像 / 出到 / 发送照旧）；再点 = 回来")}">${b.bypass ? _t("旁通中") : _t("旁通")}</button><button class="btn" data-v="busleft" title="${_t("往前挪一位")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="${_t("往后挪一位")}"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="${_t("删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）")}">${_t("删掉")}</button></div>`
         : tab === "eq" || tab === "comp" ? this.inlineHtml(b.id, tab) : tab === "send" ? gainRow("data-busgain", HINT.busGain, b.gainDb) + this.routeHtml(b.id) : this.chipsHtml(b.id);
       const name = `<input class="bus-name" value="${esc(b.name)}" title="${_t("名字（点了改）")}" />`;   // 每一页都能改名（v0.16.82，总表第 9 条 ⑥；原来只在基础页）
@@ -606,8 +612,8 @@ export class Studio {
     const strips = this.host.strips(), singers = strips.map((s, k) => {
       // 乐手自己的响度不是 0 = 推子旁边照实写出来，点它去乐器页那一行（第 14 条，2026-11-12）；是 0 = 不写
       const perf = s.performerDb ? `<button class="btn strip-perfdb" data-v="perfdb" title="${_t("这位乐手自己的响度（乐器页「响度」那一行），和推子相加：推子 {g}、乐手 {p} = 这条轨一共 {t}。点这里去乐器页改", { g: dbText(s.gainDb), p: dbText(s.performerDb), t: dbText(s.gainDb + s.performerDb) })}">${_t("乐手 {p}", { p: dbText(s.performerDb) })}</button>` : "";
-      const body = tab === "basic" ? row(_t("增益"), HINT.gain, `<output>${dbText(s.gainDb)}</output>${perf}`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") +
-          row(_t("声像"), HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: 0, defText: _t("中") }), "strip-row") + RMS_ROW +
+      const body = tab === "basic" ? row(_t("增益"), HINT.gain, `<output>${dbText(s.gainDb)}</output>${perf}`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") +
+          row(_t("声像"), HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW +
           `<div class="btn-row">` +
             `<button class="btn" data-v="partleft" title="${_t("往前挪一位（谱上这个声部也往上挪）")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="partright" title="${_t("往后挪一位（谱上这个声部也往下挪）")}"${k === strips.length - 1 ? " disabled" : ""}>›</button></div>` +
           // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删

@@ -1,4 +1,4 @@
-import type { FxV2 } from "../format/contract.ts";
+import type { FxV2, LimiterParamsV2 } from "../format/contract.ts";
 import { type Params } from "./plugins.ts";
 export interface StudioStrip {
     id: string;
@@ -29,6 +29,7 @@ export interface StudioHost {
     master(): {
         gainDb: number;
         limiter: boolean;
+        limiterParams: LimiterParamsV2;
     };
     setMasterGain(dB: number): void;
     toggleLimiter(): void;
