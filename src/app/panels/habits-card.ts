@@ -49,7 +49,9 @@ export interface HabitsCard { close(): void; readonly el: HTMLElement }
 export const CARD_HABITS = { tiles: "notation", pair: "viewInC", rows: ["middleC", "chordTagStyle"] } as const satisfies { tiles: HabitKey; pair: HabitKey; rows: readonly HabitKey[] };
 export const cardHabitKeys = (): readonly HabitKey[] => [CARD_HABITS.tiles, CARD_HABITS.pair, ...CARD_HABITS.rows];
 /** 一行小卡片：格子的基准宽、格子之间的间隔、格子里图两边留的（内边距 + 边框）。 */
-const TILE_BASE = 150, TILE_GAP = 10, TILE_INSET = 14;
+// 格子的基准宽 122（v0.17.35，统筹 dc2b1b44；user 11-13「手机可以，甚至电脑上也用这个宽度的小图…我只是要看个大概就行」）：= 390 宽手机上原来的格宽，
+//   所有设备一个尺寸；宽屏放得下就按这个宽靠左排、不拉宽（strip-layout.ts），以后谱种多了宽屏上自然多摆几格。
+const TILE_BASE = 122, TILE_GAP = 10, TILE_INSET = 14;
 
 export function openHabitsCard(d: HabitsCardDeps): HabitsCard {
   const chosen: { notation?: NotationId; viewInC?: boolean } = { ...(d.current.notation !== undefined ? { notation: d.current.notation } : {}), ...(d.current.viewInC !== undefined ? { viewInC: d.current.viewInC } : {}) };
@@ -88,7 +90,7 @@ export function openHabitsCard(d: HabitsCardDeps): HabitsCard {
     onClose: () => { if (closed) return; closed = true; d.dismissed(); } });
   shell.el.classList.add("habits-panel");
   d.rows.mount(content);
-  // 一行小卡片多宽（统筹 1dda0433）：都放得下 = 不滑、均分；放不下 = 露出来的永远是「整数格 + 半格」；被切的那一侧淡出；可见宽变了重算
+  // 一行小卡片多宽（统筹 1dda0433；v0.17.35 dc2b1b44）：都放得下 = 不滑、按基准宽靠左排；放不下 = 露出来的永远是「整数格 + 半格」；被切的那一侧淡出；可见宽变了重算
   const strip = content.querySelector<HTMLElement>(".hab-strip")!, tiles = [...strip.querySelectorAll<HTMLElement>(".hab-tile")];
   const fades = () => { const max = strip.scrollWidth - strip.clientWidth; strip.classList.toggle("fade-l", strip.scrollLeft > 1); strip.classList.toggle("fade-r", strip.scrollLeft < max - 1); };
   let laidFor = -1;

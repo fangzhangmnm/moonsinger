@@ -6365,7 +6365,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.34-2026-11-13";
+var APP_VERSION = "v0.17.35-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -35319,7 +35319,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick3(() => "layout-worker-1fedd31fe654.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-e8491519309e.mjs");
+      return pick3(() => "encode-worker-15b4c97a199e.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -46654,7 +46654,7 @@ function previewSvg(notation, measure) {
 // src/app/panels/strip-layout.ts
 function stripLayout(visible, n10, gap, base2) {
   if (n10 <= 0 || visible <= 0) return { cell: base2, scroll: false };
-  if (n10 * base2 + (n10 - 1) * gap <= visible) return { cell: (visible - (n10 - 1) * gap) / n10, scroll: false };
+  if (n10 * base2 + (n10 - 1) * gap <= visible) return { cell: base2, scroll: false };
   const k2 = Math.max(1, Math.floor((visible + gap) / (base2 + gap)));
   return { cell: (visible - k2 * gap) / (k2 + 0.5), scroll: true };
 }
@@ -46662,7 +46662,7 @@ function stripLayout(visible, n10, gap, base2) {
 // src/app/panels/habits-card.ts
 var CARD_HABITS = { tiles: "notation", pair: "viewInC", rows: ["middleC", "chordTagStyle"] };
 var cardHabitKeys = () => [CARD_HABITS.tiles, CARD_HABITS.pair, ...CARD_HABITS.rows];
-var TILE_BASE = 150;
+var TILE_BASE = 122;
 var TILE_GAP = 10;
 var TILE_INSET = 14;
 function openHabitsCard(d3) {
@@ -62899,7 +62899,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, activePerfSpec(D3.extras, curRole())?.sing ?? {});
   },
   state: () => D3.st,
-  cssHash: "5317261b3833",
+  cssHash: "9d167751043f",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -67427,4 +67427,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-13d8b8e2c2fb.mjs.map
+//# sourceMappingURL=moonsinger-df03cba23c82.mjs.map
