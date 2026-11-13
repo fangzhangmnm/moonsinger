@@ -67,8 +67,15 @@ export interface Document {
     run(c: Command, o?: CommitOpts): CommitResult;
     undo(): boolean;
     redo(): boolean;
-    /** 换歌：真相整个换掉、栈清空、脏的基线 = 现在（不叫 onState / onExtras：宿主自己按开歌的顺序重画）。整份装入不归锁管。 */
-    load(st: EditorState, extras: Extras): void;
+    /** 换歌：真相整个换掉、栈清空、脏的基线 = 现在（不叫 onState / onExtras：宿主自己按开歌的顺序重画）。整份装入不归锁管。
+     *  how = "new"：这一份是走新建那条路建出来的（见 newSong）；不写 = 打开的（文件、歌库、换回、测试装入…）。 */
+    load(st: EditorState, extras: Extras, how?: "new"): void;
+    /** 装入（或出生）之后有没有动过：任何一次真改了歌 / extras 的提交都算（内容、看法、歌名、作者栏、混音台…；光标、选区不算），撤销 / 重做也算。
+     *  第 21 条补（v0.17.38，统筹 28858491）：「一笔没动、没有家」= 还没真正建出来——宿主拿它（和 newSong、有没有家）判断改了习惯要不要照新习惯重建（main.ts untouchedNewSong，只此一处）。 */
+    touched(): boolean;
+    /** 这一份是不是走新建那条路建出来的：出生（开 app 那一首）= 是；load 点名 "new" = 是；别的装入 = 不是。动没动不影响它（归 touched）。
+     *  v0.17.39（统筹审 v0.17.38）：没有家的不只是新歌（iPad 上选的文件、别家的谱、有读不进来的东西的，打开了也没有家）——改了习惯要不要重建，宿主只许重建新建出来的。 */
+    newSong(): boolean;
     /** 改过没存？ */
     dirty(): boolean;
     /** 脏的是哪一种（见 DirtyKind）。 */

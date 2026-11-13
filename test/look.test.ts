@@ -7,7 +7,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, setPaper, setDensity, setBarNumbers, setLyricFit, type Song } from "../src/score/song.ts";
 import { setNotation, setChordTags } from "../src/score/song-view.ts";
 import { paperOf, detectPaper } from "../src/look/paper.ts";
-import { lookOf, followDefault, allDefault, chosenCount, trackLookOf, paperChoicesOf, marginRow, defaultText, LOOK_KEYS, stampLooks, type LookKey } from "../src/look/index.ts";
+import { lookOf, followDefault, allDefault, chosenCount, trackLookOf, paperChoicesOf, marginRow, defaultText, LOOK_KEYS, HABIT_KEYS, stampLooks, isHabitKey, LOOK_ROW_NAME, followOptionText, followUndoLabel, type LookKey } from "../src/look/index.ts";
 import { LOOK_OPS } from "../src/app/edit-lock-table.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
@@ -102,12 +102,26 @@ describe("新建的歌把「跟着」写成这一刻的值（stampLooks）", () 
     eq(JSON.stringify(s.paper), '{"kind":"A4"}'); eq(s.density, "compact"); eq(s.notation, "staff", "写着 staff 的不换成习惯的简谱");
     eq(stampLooks(s, { habits }, "zh", "born"), s, "再来一遍 = 原样");
   });
-  it("apply（「套用我的习惯」）：每一样写成现在的值、边距谱高写回 default；没得改 = 同一个引用；修改锁「全部」那一类认它只动了看法", () => {
-    const s0 = { ...initState().song, notation: "letters", paper: { kind: "A4" as const }, staffMm: 6, textLang: "ja" as const };
+  // v0.17.39（统筹审 v0.17.38）：「套用我的习惯」只写习惯那几样 + 谱上的字。原来每一样都写回软件的默认（这首歌选了 A4，点一下纸就变回去了）
+  it("apply（「套用我的习惯」）：只写习惯那几样 + 谱上的字；不是习惯的每一项和之前逐项相等（按 LOOK_KEYS 减 HABIT_KEYS 跑，以后加键自动盖到）；没得改 = 同一个引用；锁认它只动了看法", () => {
+    const others = LOOK_KEYS.filter((k) => !(HABIT_KEYS as readonly string[]).includes(k));
+    const odd = (k: string): unknown => (k === "paper" ? { kind: "A4" } : `x-${k}`);   // 每一项放一个和软件默认不同的值（纸张 = A4；别的放一个只有这一项的记号）
+    const s0 = { ...initState().song, notation: "letters", viewInC: false, middleC: 4, chordTagStyle: "degree", textLang: "ja", ...Object.fromEntries(others.map((k) => [k, odd(k)])) } as Song;
     const s = stampLooks(s0, { habits }, "zh", "apply");
-    eq([s.notation, JSON.stringify(s.paper), s.staffMm, s.textLang].join(","), 'jianpu,{"kind":"A5"},default,zh');
+    for (const k of others) eq(JSON.stringify(s[k]), JSON.stringify(s0[k]), `${k} 不动`);
+    eq([s.notation, s.viewInC, s.middleC, s.chordTagStyle, s.textLang].join(","), "jianpu,true,3,root,zh", "四样习惯照习惯、谱上的字 = 界面语言");
     assert(LOOK_OPS.allLooks!.verify(s0, s), "只动了看法");
     eq(stampLooks(s, { habits }, "zh", "apply"), s, "已经是现在的值 = 原样（页面设置那颗钮灰着）");
+    eq(stampLooks(s0, { habits: {} }, "zh", "apply").notation, "staff", "没设习惯的照软件的默认");
+  });
+  it("页面设置最后一格的字、撤销那一句（按 LOOK_ROW_NAME 每一行跑）：习惯那几行「跟着我的习惯」、别的行「跟着软件的默认」、边距「跟着软件」", () => {
+    for (const k of Object.keys(LOOK_ROW_NAME) as (keyof typeof LOOK_ROW_NAME)[]) {
+      const habit = (HABIT_KEYS as readonly string[]).includes(k);
+      eq(isHabitKey(k), habit, k);
+      if (k !== "marginMm") assert(followOptionText(k, { habits }).startsWith(habit ? "跟着我的习惯（现在是：" : "跟着软件的默认（现在是："), `${k}：${followOptionText(k, { habits })}`);
+      eq(followUndoLabel(k), `${LOOK_ROW_NAME[k]()}：${habit ? "跟着我的习惯" : k === "marginMm" ? "跟着软件" : "跟着软件的默认"}`, k);
+    }
+    eq(Object.keys(LOOK_ROW_NAME).length, LOOK_KEYS.length - 1, "每一项都有名字（谱高没有自己的一行）");
   });
 });
 

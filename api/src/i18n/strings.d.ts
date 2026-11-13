@@ -1309,9 +1309,6 @@ export declare const S: {
     readonly "\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002": {
         readonly en: "Only for this session; not saved in the song.";
     };
-    readonly "\u8DDF\u7740\u6211\u7684\u4E60\u60EF\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": {
-        readonly en: "Follow my habits (now: {x})";
-    };
     readonly 视图: {
         readonly en: "View";
     };
@@ -1483,8 +1480,8 @@ export declare const S: {
     readonly 谱上的字: {
         readonly en: "Text on the score";
     };
-    readonly "\u628A\u8FD9\u9996\u6B4C\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u5199\u6210\u6211\u7684\u4E60\u60EF\u73B0\u5728\u7684\u6837\u5B50\uFF08\u6CA1\u8BBE\u4E60\u60EF\u7684\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1B\u80FD\u64A4\u9500\uFF09": {
-        readonly en: "Write this song's display settings as my habits are now (where no habit is set, the software default; can be undone)";
+    readonly "\u628A\u8FD9\u9996\u6B4C\u7684{list}\u5199\u6210\u6211\u7684\u4E60\u60EF\u73B0\u5728\u7684\u6837\u5B50\uFF08\u6CA1\u8BBE\u4E60\u60EF\u7684\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF09\uFF0C\u8C31\u4E0A\u7684\u5B57\u5199\u6210\u754C\u9762\u7684\u8BED\u8A00\uFF1B\u522B\u7684\u4E0D\u52A8\u3002\u80FD\u64A4\u9500": {
+        readonly en: "Write this song's {list} as my habits are now (where no habit is set, the software default) and its score text in the interface language; nothing else changes. Can be undone";
     };
     readonly 页面设置: {
         readonly en: "Page settings";
@@ -1497,9 +1494,6 @@ export declare const S: {
     };
     readonly 套用我的习惯: {
         readonly en: "Apply my habits";
-    };
-    readonly "{what}\uFF1A\u8DDF\u7740\u6211\u7684\u4E60\u60EF": {
-        readonly en: "{what}: follow my habits";
     };
     readonly 简谱: {
         readonly en: "Numbered (jianpu)";
@@ -3141,9 +3135,6 @@ export declare const S: {
     };
     readonly "\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": {
         readonly en: "Kept on this device; you can leave any of these unpicked and change them later in Settings.";
-    };
-    readonly "\u5B57\u6BCD\u8C31\uFF1A\u73A9 tracker \u7684\u53EF\u4EE5\u5148\u7528\u8FD9\u4E2A\uFF0C\u4E0D\u5B8C\u5168\u4E00\u6837\u3002\u94A2\u7434\u5377\u5E18\u3001\u5F55\u97F3\u8FD8\u6CA1\u505A\uFF0C\u505A\u597D\u4E86\u4F1A\u52A0\u5728\u8FD9\u91CC\u3002": {
-        readonly en: "Letter notation: if you use a tracker you can start with this; it is not quite the same. Piano roll and recording are not ready yet; they will be added here when they are.";
     };
     readonly 不用: {
         readonly en: "Off";
@@ -5587,6 +5578,21 @@ export declare const S: {
     readonly "{mm} \u6BEB\u7C73": {
         readonly en: "{mm} mm";
     };
+    readonly "\u8DDF\u7740\u6211\u7684\u4E60\u60EF\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": {
+        readonly en: "Follow my habits (now: {x})";
+    };
+    readonly "\u8DDF\u7740\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": {
+        readonly en: "Software default (now: {x})";
+    };
+    readonly "{what}\uFF1A\u8DDF\u7740\u6211\u7684\u4E60\u60EF": {
+        readonly en: "{what}: follow my habits";
+    };
+    readonly "{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6": {
+        readonly en: "{what}: follow the software";
+    };
+    readonly "{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6\u7684\u9ED8\u8BA4": {
+        readonly en: "{what}: software default";
+    };
     readonly 按音高画在五条线上: {
         readonly en: "Pitches drawn on the five lines";
     };
@@ -5614,8 +5620,14 @@ export declare const S: {
     readonly "\u548C\u5F26\u8F85\u52A9\u6807\u51FA\u6765\u7684\u5B57\u5199\u6210\u7EA7\u6570\u8FD8\u662F\u6839\u97F3\u3002\u5F00\u7740\u79FB\u8C03\u8F85\u52A9\u65F6\u6839\u97F3\u7167\u6362\u5230 C \u8C03\u4E4B\u540E\u7684\u5199\uFF0C\u548C\u773C\u524D\u7684\u8C31\u5BF9\u5F97\u4E0A\u3002": {
         readonly en: "Whether chord labels are written as degrees or as roots. With the transposition aid on, roots follow the score in C, so they match what you see.";
     };
-    readonly "\u8C03\u53F7\u591A\u7684\u65F6\u5019\u628A\u8C31\u6362\u5230 C \u8C03\u6765\u753B\uFF0C\u53EA\u6539\u663E\u793A\u3001\u58F0\u97F3\u4E0D\u53D8\uFF1B\u770B\u4E94\u7EBF\u8C31\u65F6\u8D77\u4F5C\u7528\u3002\u952E\u4E0A\u7684\u5927\u5B57\u4E5F\u6309 C \u8C03\u5199\uFF0C\u5C0F\u5B57\u662F\u5B9E\u9645\u7684\u97F3\u3002": {
-        readonly en: "When there are many sharps or flats, redraws the score in C; only the display changes, the sound stays the same. Applies to the staff. The big labels on the keys are in C too; the small labels are the actual notes.";
+    readonly "\u8C03\u53F7\u91CC\u5347\u964D\u53F7\u591A\u3001\u8BFB\u7740\u8D39\u52B2\u7684\u65F6\u5019\u7528\u3002": {
+        readonly en: "For when a key signature has many sharps or flats and is hard to read.";
+    };
+    readonly "\u5F00\u4E86\u4EE5\u540E\uFF0C\u4E94\u7EBF\u8C31\u6362\u5230 C \u8C03\u6765\u753B\uFF0C\u539F\u6765\u7684\u8C03\u7167\u6837\u5199\u5728\u8C31\u4E0A\uFF0C\u6BD4\u5982\u300C1=F\u300D\u3002\u952E\u76D8\u4E0A\u6BCF\u4E2A\u952E\u7684\u5927\u5B57\u662F\u8FD9\u4E2A\u97F3\u5728\u8C31\u4E0A\u7684\u540D\u5B57\uFF0C\u5C0F\u5B57\u662F\u5B83\u5B9E\u9645\u7684\u97F3\uFF1AF \u8C03\u7684\u6B4C\u91CC\uFF0C\u5F39\u51FA\u6765\u662F F \u7684\u90A3\u4E2A\u952E\uFF0C\u5927\u5B57\u5199 C\uFF0C\u5C0F\u5B57\u5199 F\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\u3002": {
+        readonly en: "When on, staff notation is drawn in C, and the original key is still written on the score, e.g. “1=F”. On the keyboard, the big label on each key is the name the note has on the score, and the small label is the actual note: in a song in F, the key that sounds F shows a big C and a small F. Keys don't move.";
+    };
+    readonly "\u53EA\u6539\u663E\u793A\uFF0C\u58F0\u97F3\u548C\u6587\u4EF6\u90FD\u4E0D\u53D8\u3002\u7B80\u8C31\u548C\u5B57\u6BCD\u8C31\u7528\u4E0D\u4E0A\u5B83\u3002": {
+        readonly en: "Display only: the sound and the file don't change. It has no effect in numbered or letter notation.";
     };
     readonly "\u516B\u5EA6\u7684\u6570\u5B57\u4ECE\u54EA\u513F\u6570\uFF1A\u5B57\u6BCD\u8C31\u3001\u7B80\u8C31\u8C31\u5934\u3001\u952E\u4E0A\u7684\u5B57\u3001\u97F3\u57DF\u65CB\u94AE\u90FD\u7167\u5B83\u5199\u3002\u53EA\u6539\u53EB\u6CD5\uFF0C\u6587\u4EF6\u91CC\u3001\u58F0\u97F3\u91CC\u7684\u516B\u5EA6\u4E0D\u53D8\u3002": {
         readonly en: "Where the octave numbers count from: letter notation, the numbered-notation header, the key labels and the range knob all follow it. Only the naming changes; octaves in the file and in the sound stay the same.";

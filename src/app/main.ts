@@ -89,7 +89,7 @@ import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf
 import { partShow, partNameOf, roleNameIn, roleGivenName, roleInstrumentLabel, type PartShow } from "../format/part-show.ts";   // 声部显示成什么：唯一出口（12-4）
 import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES } from "../score/paper.ts";
 import { paperSizeText } from "../look/paper.ts";
-import { lookOf, stampLooks, notationName, NOTATION_NOTE, middleCLabel, MIDDLE_C_NOTE, TRANSPOSE_AID_NOTE, CHORD_TAG_STYLE_LABEL, CHORD_TAG_STYLE_NOTE, trackLookOf, followDefault, defaultText, customStaffMm, marginRow, type LookKey, type LookContext, type LookDefaults, type HabitKey, type Habits, HABIT_KEYS } from "../look/index.ts";
+import { lookOf, stampLooks, notationName, NOTATION_NOTE, middleCLabel, MIDDLE_C_NOTE, TRANSPOSE_AID_NOTE, CHORD_TAG_STYLE_LABEL, CHORD_TAG_STYLE_NOTE, trackLookOf, followDefault, defaultText, customStaffMm, marginRow, followOptionText, followUndoLabel, LOOK_ROW_NAME, type LookKey, type LookContext, type LookDefaults, type HabitKey, type Habits, HABIT_KEYS } from "../look/index.ts";
 import { habitsFrom, HABIT_CODEC, HABIT_DEVICE_KEY, HABITS_ASKED_KEY } from "../look/habits.ts";
 import { openHabitsCard, CARD_HABITS, cardHabitKeys, type HabitsCard, type HabitRows } from "./panels/habits-card.ts";   // 这台设备的习惯（第 18 条）   // 「现在怎么画」和「跟着软件」只问这一处（第 17 条）
 import * as docFile from "./doc-file.ts";
@@ -2275,7 +2275,8 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
     const mrow = marginRow(look);   // 边距按值带着（别家的谱、老文件）才有「边距」那一行（第 17 条 17-2 顺手）
     // 第一格「跟着软件（现在是：X）」（第 17 条 17-1）：选它 = 这一项写回跟着软件；亮着 = 这首歌没选过这一项。下拉的值用自己的记号 FOLLOW，不拿歌里的字比
     // 第 21 条（v0.17.38）：「跟着」挪到最后一格、叫「跟着我的习惯（现在是：X）」（新建的歌写具体的值，跟着只是一个不显眼的选项；user「跟default只是一个技术上的选项，用户不太会用」）
-    const fol = (key: LookKey) => [FOLLOW, _t("跟着我的习惯（现在是：{x}）", { x: defaultText(key, lookCtx()) })] as const;
+    //   v0.17.39（统筹审 v0.17.38）：只有习惯那几行叫「跟着我的习惯」，别的行叫「跟着软件的默认」（src/look followOptionText；边距那一行另有自己的「跟着软件」，见下）
+    const fol = (key: LookKey) => [FOLLOW, followOptionText(key, lookCtx())] as const;
     const cur = (key: LookKey, v: string) => (look.follows[key] ? FOLLOW : v);
     const one = D.st.song.parts[0], only1 = !!one && pv(one.id).only && D.st.song.parts.every((q) => q === one || !pv(q.id).only);
     // 看谱：谱种第一行（谱面分家第四刀，user 11-11「面板第一行放谱种」）；按 C 调看 / 中央 C / 和弦标级数 / 演奏法和表情 = 这首歌的，走修改锁的「看法」（锁着也能切、锁着期间不写文件）
@@ -2326,7 +2327,8 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
     // 「套用我的习惯」（第 21 条，v0.17.38；原来是第 17 条的「全部跟着软件」）= 壳底下那一颗：把这首歌的显示设置都写成现在的值（同新建的歌那一套），一步撤销；
     //   写了也一个都不变 = 灰着（原来「选过几项」那个判断拿掉了：新建的歌本来就都写着值）
     const all = panel.el.querySelector<HTMLButtonElement>('[data-panel-btn="alldef"]');
-    if (all) { all.disabled = stampLooks(D.st.song, lookCtx(), lang(), "apply") === D.st.song; all.title = _t("把这首歌的显示设置都写成我的习惯现在的样子（没设习惯的照软件的默认；能撤销）"); }
+    //   v0.17.39：只写习惯那几样 + 谱上的字，别的不动（stampLooks apply）；提示里的名字从 LOOK_ROW_NAME 拿，习惯多一样提示跟着多一样
+    if (all) { all.disabled = stampLooks(D.st.song, lookCtx(), lang(), "apply") === D.st.song; all.title = _t("把这首歌的{list}写成我的习惯现在的样子（没设习惯的照软件的默认），谱上的字写成界面的语言；别的不动。能撤销", { list: HABIT_KEYS.map((k) => LOOK_ROW_NAME[k]()).join(_t("、")) }); }
     showPage(page);
   };
   // 壳：标题、页签条、能滚的一层、底下两颗（全部跟着软件 / 好）；关 = 「好」/ 点外面 / Esc，都回 onClose
@@ -2350,9 +2352,10 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
   box.addEventListener("change", (e) => {
     const el = e.target as HTMLButtonElement, k = el.dataset.pg, v = el.value; if (!k || v === ODD) return;   // 「这一版不认识」那一项不是一个可选的值
     // 选「跟着软件」：这一项写回跟着软件（src/look followDefault）；按这一项原来那一类走写入口（修改锁的「看法」按类别核）
-    const FOLLOW_KEY: Record<string, LookKey> = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", cts: "chordTagStyle", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit", margin: "marginMm" };
+    const FOLLOW_KEY: Record<string, Exclude<LookKey, "staffMm">> = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", cts: "chordTagStyle", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit", margin: "marginMm" };
     if (v === FOLLOW && FOLLOW_KEY[k]) {
-      const key = FOLLOW_KEY[k]!, next = { ...D.st, song: followDefault(D.st.song, key) }, label = _t("{what}：跟着我的习惯", { what: ({ nota: _t("谱种"), inc: _t("移调辅助"), mc: _t("中央 C 叫"), ct: _t("和弦辅助"), cts: _t("和弦写法"), expr: _t("演奏法和表情"), paper: _t("纸张"), density: _t("音符密度"), bn: _t("小节号"), lyr: _t("歌词排法"), margin: _t("边距") } as Record<string, string>)[k] ?? key });
+      // 撤销那一句跟着这一格的名字分（v0.17.39；src/look followUndoLabel）
+      const key = FOLLOW_KEY[k]!, next = { ...D.st, song: followDefault(D.st.song, key) }, label = followUndoLabel(key);
       if (next !== D.st) D.commit({ st: next }, { locus: { kind: LOOK_KEY_OP[key], label } });   // 这一项走哪一类看法 = 锁那一边的表（v0.17.33）
       draw(); return;
     }

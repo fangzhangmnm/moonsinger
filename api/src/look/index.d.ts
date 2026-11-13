@@ -40,11 +40,21 @@ export declare function clefChoiceOf(paper: PaperSeg, partId: string): ClefChoic
 export declare function followDefault(song: Song, key: LookKey): Song;
 /** 第 21 条（v0.17.38，统筹 74ea9a53；user「我建议是新建时写下来，跟default只是一个技术上的选项，用户不太会用」）：把歌里「跟着」的那几项写成这一刻它等于的值。
  *  · born（新建的歌、别家的谱进门）：只换写着 "default" 的（谱上的字：写着 "ui" 的）——别家谱里从 <defaults> 认出来的纸张 / 密度是它自己的，照留；
- *  · apply（页面设置「套用我的习惯」）：每一样都写成现在的值。
+ *  · apply（页面设置「套用我的习惯」）：只写习惯那几样（HABIT_KEYS）+ 谱上的字，别的项一个不动——v0.17.39（统筹审 v0.17.38：原来连纸张、音符密度…都写回软件的默认，
+ *    这首歌里选了 A4，点一下纸就变回去了；钮的名字说的是习惯，做的比名字多）。以后习惯多一样，这颗钮跟着多写一样。
  *  值 = 有习惯的照习惯、别的照软件当时的默认（defaultsFor(ctx)——和画的时候「跟着」等于什么是同一份）；谱上的字 = 这一刻的界面语言。
- *  边距、谱高两项的 "default" 意思是「这种纸自己的」「跟着音符密度」，不是跟习惯：born 不动，apply 写回 "default"（和新建的歌一样）。
+ *  边距、谱高两项的 "default" 意思是「这种纸自己的」「跟着音符密度」，不是跟习惯：born 不动（apply 本来就不碰不是习惯的）。
  *  没变 = 原样（同一个引用）。三层读法（lookOf）不动：写着 "default" 的老歌照旧跟着。 */
 export declare function stampLooks(song: Song, ctx: LookContext, uiLang: Exclude<TextLang, "ui">, mode: "born" | "apply"): Song;
+/** 这一项有没有习惯可跟（v0.17.39；判断只此一处）：页面设置最后一格叫「跟着我的习惯」还是「跟着软件的默认」、撤销那一句、「套用我的习惯」写哪几样，都问它。 */
+export declare const isHabitKey: (k: LookKey) => boolean;
+/** 页面设置里每一行的名字（按 LookKey；谱高没有自己的一行——它跟着音符密度，见 customStaffMm）。「跟着…」那一格撤销的话、「套用我的习惯」的提示从这里拿名字（v0.17.39 从页面设置的处理函数里搬出来）。 */
+export declare const LOOK_ROW_NAME: Record<Exclude<LookKey, "staffMm">, () => string>;
+/** 页面设置最后一格「跟着…」的字（v0.17.39，统筹审 v0.17.38）：习惯那几行「跟着我的习惯（现在是：X）」；别的行没有习惯可跟 =「跟着软件的默认（现在是：X）」。
+ *  边距那一行不走这里：它的「跟着软件」意思是这张纸自己的边距（main.ts marginRow）。 */
+export declare const followOptionText: (key: LookKey, ctx: LookContext) => string;
+/** 选了「跟着…」那一格之后，撤销那一句怎么说（跟着这一格的名字分；边距 =「跟着软件」）。 */
+export declare const followUndoLabel: (key: Exclude<LookKey, "staffMm">) => string;
 /** 「全部跟着软件」：把这首歌里选过的每一项都改回 "default"（一步撤销由宿主走写入口）。都已经是 = 原样。v0.17.38 起页面设置那颗钮换成「套用我的习惯」（stampLooks apply），这个留给测试和以后。 */
 export declare function allDefault(song: Song): Song;
 /** 这首歌里选过的有几项（歌库核对 / 页面设置「全部跟着软件」亮不亮）。 */
@@ -61,7 +71,7 @@ export declare const CHORD_TAG_STYLE_LABEL: Record<ChordTagStyle, () => string>;
 /** 「和弦写法」是什么（一句；三处同一份）。 */
 export declare const CHORD_TAG_STYLE_NOTE: () => string;
 /** 「移调辅助」是什么（一句；设置「界面」页、页面设置、「初始设置」卡同一份）。后半句 = 第 19 条第 7 点的披露之一：键上的字也按 C 调写。 */
-export declare const TRANSPOSE_AID_NOTE: () => string;
+export declare const TRANSPOSE_AID_NOTE: () => readonly string[];
 /** 「中央 C 叫」是什么（一句；三处同一份）。 */
 export declare const MIDDLE_C_NOTE: () => string;
 export declare function defaultText(key: LookKey, ctx?: LookContext): string;

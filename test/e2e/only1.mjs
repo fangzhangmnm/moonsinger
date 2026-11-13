@@ -47,13 +47,17 @@ check((await p.evaluate(() => window.__moonsinger.state().song.staffMm)) === 6.5
 check((await p.$$eval(".popup-menu [data-id]", () => 0), true) && !/（[^）]*（/.test(await p.$eval('[data-pg="paper"]', (e) => e.textContent ?? "")), "纸张那一项没有括号套括号");
 await pickOnPage(p, '[data-pg="density"]', "compact"); await p.waitForTimeout(200);
 { const sg = await p.evaluate(() => { const s = window.__moonsinger.state().song; return { staffMm: s.staffMm, density: s.density }; }); check(sg.staffMm === "default" && sg.density === "compact", "选「紧凑」= 谱高回到跟着紧凑那一档", JSON.stringify(sg)); }
-// 跟着（第 17 条 17-1；第 21 条起在最后一格、叫「跟着我的习惯（现在是：X）」）：选它 = 写回 default；「套用我的习惯」（原「全部跟着软件」）= 一步写成现在的值
-check((await ddOptions(p, '[data-pg="paper"]').catch(() => [])).at(-1)?.label === "跟着我的习惯（现在是：A5）", "纸张最后一格 = 跟着我的习惯（现在是：A5）");
+// 跟着（第 17 条 17-1；第 21 条起在最后一格）：选它 = 写回 default。v0.17.39（统筹审 v0.17.38）：纸张没有习惯可跟 = 叫「跟着软件的默认（现在是：X）」；
+//   「套用我的习惯」只写习惯那几样 + 谱上的字，纸张、音符密度这些一样不动（原来全写回软件的默认）
+check((await ddOptions(p, '[data-pg="paper"]').catch(() => [])).at(-1)?.label === "跟着软件的默认（现在是：A5）", "纸张最后一格 = 跟着软件的默认（现在是：A5）（纸张没有习惯可跟）");
 await pickOnPage(p, '[data-pg="paper"]', "?follow"); await p.waitForTimeout(200);
-check((await p.evaluate(() => window.__moonsinger.state().song.paper)) === "default", "选「跟着我的习惯」= 纸张写回 default");
-await p.click('[data-panel-btn="alldef"]'); await p.waitForTimeout(200);
-{ const sg = await p.evaluate(() => { const s = window.__moonsinger.state().song; return [s.notation, s.barNumbers, s.lyricFit, JSON.stringify(s.paper), s.density, s.staffMm, s.marginMm].join(","); });
-  check(sg === 'staff,line,rhythm,{"kind":"A5"},cozy,default,default', "「套用我的习惯」= 写成现在的值（没设习惯 = 软件的默认）；谱高、边距回 default", sg); }
+check((await p.evaluate(() => window.__moonsinger.state().song.paper)) === "default", "选「跟着软件的默认」= 纸张写回 default");
+await pickOnPage(p, '[data-pg="tl"]', "en"); await p.waitForTimeout(200);   // 给「套用我的习惯」一件能写的事（谱上的字 English → 界面语言）
+const nonHabit = () => p.evaluate(() => { const s = window.__moonsinger.state().song; return JSON.stringify([s.paper, s.density, s.staffMm, s.marginMm, s.barNumbers, s.lyricFit, s.chordTags, s.expressions]); });
+{ const before = await nonHabit();
+  await p.click('[data-panel-btn="alldef"]'); await p.waitForTimeout(200);
+  const after = await nonHabit(), tl = await p.evaluate(() => window.__moonsinger.state().song.textLang);
+  check(after === before && tl === "zh", "「套用我的习惯」= 只写习惯那几样 + 谱上的字（→ 界面语言）；纸张、音符密度、谱高、边距、小节号、歌词排法…一样不动", `${before} → ${after} · ${tl}`); }
 check(await p.$eval('[data-panel-btn="alldef"]', (e) => e.disabled), "已经是现在的值 = 那颗钮灰着");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();

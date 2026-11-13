@@ -4020,7 +4020,6 @@ var S = {
   "\u8DDF\u7740\u8FD9\u9996\u6B4C\u5B58\uFF1A\u8FDB\u6B4C\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002": { en: "Saved with this song: it goes into the song, can be undone, and the exported PDF prints it this way." },
   "\u8DDF\u7740\u8FD9\u9996\u6B4C\u7684\u89C6\u56FE\u5B58\uFF1A\u5B58\u7684\u65F6\u5019\u987A\u624B\u5E26\u4E0A\uFF0C\u4E0D\u7B97\u6539\u52A8\u3001\u4E0D\u8FDB\u64A4\u9500\u3002": { en: "Saved with this song's view: it rides along when you save, but doesn't count as a change and isn't in undo." },
   "\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002": { en: "Only for this session; not saved in the song." },
-  "\u8DDF\u7740\u6211\u7684\u4E60\u60EF\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": { en: "Follow my habits (now: {x})" },
   "\u89C6\u56FE": { en: "View" },
   "\u9875\u9762\uFF08\u5206\u9875\uFF0C\u548C\u5370\u51FA\u6765\u4E00\u6837\uFF09": { en: "Page (paged, same as print)" },
   "\u8FDE\u7EED\uFF08\u4E0D\u5206\u9875\uFF09": { en: "Continuous (no page breaks)" },
@@ -4078,12 +4077,11 @@ var S = {
   "\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070": { en: "Note positions depend only on duration, so notes stay put while you type; lyrics make room: borrow space nearby \u2192 shrink the whole line a little \u2192 grey out if it still doesn't fit" },
   "\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09": { en: "Long words push notes apart (the traditional engraving rule)" },
   "\u8C31\u4E0A\u7684\u5B57": { en: "Text on the score" },
-  "\u628A\u8FD9\u9996\u6B4C\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u5199\u6210\u6211\u7684\u4E60\u60EF\u73B0\u5728\u7684\u6837\u5B50\uFF08\u6CA1\u8BBE\u4E60\u60EF\u7684\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Write this song's display settings as my habits are now (where no habit is set, the software default; can be undone)" },
+  "\u628A\u8FD9\u9996\u6B4C\u7684{list}\u5199\u6210\u6211\u7684\u4E60\u60EF\u73B0\u5728\u7684\u6837\u5B50\uFF08\u6CA1\u8BBE\u4E60\u60EF\u7684\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF09\uFF0C\u8C31\u4E0A\u7684\u5B57\u5199\u6210\u754C\u9762\u7684\u8BED\u8A00\uFF1B\u522B\u7684\u4E0D\u52A8\u3002\u80FD\u64A4\u9500": { en: "Write this song's {list} as my habits are now (where no habit is set, the software default) and its score text in the interface language; nothing else changes. Can be undone" },
   "\u9875\u9762\u8BBE\u7F6E": { en: "Page settings" },
   "\u770B\u8C31\uFF1A\u8FD9\u5F20\u7EB8\u5728\u5C4F\u5E55\u4E0A\u600E\u4E48\u770B": { en: "View: how this page looks on screen" },
   "\u7248\u9762\uFF1A\u7EB8\u5F20\u548C\u97F3\u7B26\u5BC6\u5EA6": { en: "Page: paper and note density" },
   "\u5957\u7528\u6211\u7684\u4E60\u60EF": { en: "Apply my habits" },
-  "{what}\uFF1A\u8DDF\u7740\u6211\u7684\u4E60\u60EF": { en: "{what}: follow my habits" },
   "\u7B80\u8C31": { en: "Numbered (jianpu)" },
   "\u5B57\u6BCD\u8C31": { en: "Letter names" },
   "\u4E94\u7EBF\u8C31": { en: "Staff" },
@@ -5445,6 +5443,11 @@ var S = {
   ' data-def="{def}" title="\u53CC\u51FB\u56DE {defText}"': { en: ' data-def="{def}" title="Double-click: back to {defText}"' },
   "\u4E0A {t} \xB7 \u4E0B {b} \xB7 \u5DE6 {l} \xB7 \u53F3 {r} \u6BEB\u7C73": { en: "top {t} \xB7 bottom {b} \xB7 left {l} \xB7 right {r} mm" },
   "{mm} \u6BEB\u7C73": { en: "{mm} mm" },
+  "\u8DDF\u7740\u6211\u7684\u4E60\u60EF\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": { en: "Follow my habits (now: {x})" },
+  "\u8DDF\u7740\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09": { en: "Software default (now: {x})" },
+  "{what}\uFF1A\u8DDF\u7740\u6211\u7684\u4E60\u60EF": { en: "{what}: follow my habits" },
+  "{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6": { en: "{what}: follow the software" },
+  "{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6\u7684\u9ED8\u8BA4": { en: "{what}: software default" },
   "\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A": { en: "Pitches drawn on the five lines" },
   "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09": { en: "Digits 1\u20137 (movable do)" },
   "\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C{n}\uFF09": { en: "The actual note names C D E F G A B, with sharps and flats at the upper right and the octave at the lower right (middle C = C{n})" },
@@ -6367,7 +6370,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.38-2026-11-13";
+var APP_VERSION = "v0.17.39-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -11714,17 +11717,33 @@ function followDefault(song, key) {
 function stampLooks(song, ctx2, uiLang, mode) {
   const D4 = defaultsFor(ctx2), out = {};
   for (const k2 of LOOK_KEYS) {
-    if (k2 === "marginMm" || k2 === "staffMm") {
-      if (mode === "apply" && song[k2] !== "default") out[k2] = "default";
-      continue;
-    }
-    if (mode === "born" && song[k2] !== "default") continue;
+    if (k2 === "marginMm" || k2 === "staffMm") continue;
+    if (mode === "apply" ? !isHabitKey(k2) : song[k2] !== "default") continue;
     const v = k2 === "paper" ? { kind: D4.paper } : D4[k2];
     if (JSON.stringify(song[k2]) !== JSON.stringify(v)) out[k2] = v;
   }
   if ((mode === "apply" || song.textLang === "ui") && song.textLang !== uiLang) out.textLang = uiLang;
   return Object.keys(out).length ? { ...song, ...out } : song;
 }
+var isHabitKey = (k2) => HABIT_KEYS.includes(k2);
+var LOOK_ROW_NAME = {
+  notation: () => _t("\u8C31\u79CD"),
+  viewInC: () => _t("\u79FB\u8C03\u8F85\u52A9"),
+  middleC: () => _t("\u4E2D\u592E C \u53EB"),
+  chordTags: () => _t("\u548C\u5F26\u8F85\u52A9"),
+  chordTagStyle: () => _t("\u548C\u5F26\u5199\u6CD5"),
+  expressions: () => _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5"),
+  barNumbers: () => _t("\u5C0F\u8282\u53F7"),
+  lyricFit: () => _t("\u6B4C\u8BCD\u6392\u6CD5"),
+  paper: () => _t("\u7EB8\u5F20"),
+  density: () => _t("\u97F3\u7B26\u5BC6\u5EA6"),
+  marginMm: () => _t("\u8FB9\u8DDD")
+};
+var followOptionText = (key, ctx2) => isHabitKey(key) ? _t("\u8DDF\u7740\u6211\u7684\u4E60\u60EF\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09", { x: defaultText(key, ctx2) }) : _t("\u8DDF\u7740\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09", { x: defaultText(key, ctx2) });
+var followUndoLabel = (key) => {
+  const what = LOOK_ROW_NAME[key]();
+  return isHabitKey(key) ? _t("{what}\uFF1A\u8DDF\u7740\u6211\u7684\u4E60\u60EF", { what }) : key === "marginMm" ? _t("{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6", { what }) : _t("{what}\uFF1A\u8DDF\u7740\u8F6F\u4EF6\u7684\u9ED8\u8BA4", { what });
+};
 var notationName = (id2) => ({ staff: _t("\u4E94\u7EBF\u8C31"), jianpu: _t("\u7B80\u8C31"), letters: _t("\u5B57\u6BCD\u8C31") })[id2];
 var NOTATION_NOTE = {
   staff: () => _t("\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A"),
@@ -35364,15 +35383,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-2cba3c23359e.mjs");
+      return pick3(() => "singer-worker-59308a3615c3.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-0451911f5d92.mjs");
+      return pick3(() => "layout-worker-a5720cf965b1.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-256861f32b64.mjs");
+      return pick3(() => "encode-worker-8c4f33893911.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -59650,6 +59669,7 @@ function createDocument(init2, hooks) {
   let saved = { song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: 0 };
   const locked = () => hooks.lockedWhy?.() ?? null;
   let touched = false;
+  let born = true;
   const gate2 = (kind) => hooks.writeGate?.(kind) ?? null;
   function commit(next2, o10 = {}) {
     const nextSt0 = next2.st ?? st2, nextEx = next2.extras ?? extras;
@@ -59719,14 +59739,16 @@ function createDocument(init2, hooks) {
     run: (c10, o10) => commit({ st: apply(st2, c10, hooks.now()) }, o10),
     undo: () => step(history2.past[history2.past.length - 1], _t("\u64A4\u9500"), () => undo(history2, st2, extras)),
     redo: () => step(history2.future[history2.future.length - 1], _t("\u91CD\u505A"), () => redo(history2, st2, extras)),
-    load: (s10, e10) => {
+    load: (s10, e10, how) => {
       st2 = s10;
       extras = e10;
       history2 = emptyHistory();
       saved = mark();
       touched = false;
+      born = how === "new";
     },
     touched: () => touched,
+    newSong: () => born,
     dirty: () => st2.song !== saved.song || extras.thumbnail !== saved.thumbnail || extrasKey(extras) !== saved.key || (hooks.extraDirty?.() ?? 0) !== saved.refs,
     dirtyKind: () => {
       if (extras.thumbnail !== saved.thumbnail || extrasKey(extras) !== saved.key || (hooks.extraDirty?.() ?? 0) !== saved.refs) return "content";
@@ -61250,13 +61272,13 @@ function setHabit(k2, v) {
   writeHabit(k2, v);
   habitsChanged();
 }
-var untouchedBlank = () => H2.home.kind === "none" && !D3.touched();
+var untouchedNewSong = () => D3.newSong() && H2.home.kind === "none" && !D3.touched();
 function habitsChanged() {
   habitCtx = { habits: habitsFrom(deviceKvGet) };
-  if (untouchedBlank()) {
+  if (untouchedNewSong()) {
     const h2 = H2.home;
     loadNewSong(h2.kind === "none" ? h2.pendingFolder : null, { stem: H2.stem });
-    diagNote("habits", "rebuilt the untouched blank song");
+    diagNote("habits", "rebuilt the untouched new song");
   }
   afterHabits();
 }
@@ -63861,7 +63883,7 @@ function openPaperSheet(focus) {
     const look = lookOf(D3.st.song, lookCtx()), p2 = look.paper, movable = !IN_C_APPLIES[look.notation];
     const fileMm = customStaffMm(look);
     const mrow = marginRow(look);
-    const fol = (key) => [FOLLOW, _t("\u8DDF\u7740\u6211\u7684\u4E60\u60EF\uFF08\u73B0\u5728\u662F\uFF1A{x}\uFF09", { x: defaultText(key, lookCtx()) })];
+    const fol = (key) => [FOLLOW, followOptionText(key, lookCtx())];
     const cur = (key, v) => look.follows[key] ? FOLLOW : v;
     const one = D3.st.song.parts[0], only1 = !!one && pv(one.id).only && D3.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only);
     const lookPage = (
@@ -63921,7 +63943,7 @@ function openPaperSheet(focus) {
     const all = panel.el.querySelector('[data-panel-btn="alldef"]');
     if (all) {
       all.disabled = stampLooks(D3.st.song, lookCtx(), lang(), "apply") === D3.st.song;
-      all.title = _t("\u628A\u8FD9\u9996\u6B4C\u7684\u663E\u793A\u8BBE\u7F6E\u90FD\u5199\u6210\u6211\u7684\u4E60\u60EF\u73B0\u5728\u7684\u6837\u5B50\uFF08\u6CA1\u8BBE\u4E60\u60EF\u7684\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1B\u80FD\u64A4\u9500\uFF09");
+      all.title = _t("\u628A\u8FD9\u9996\u6B4C\u7684{list}\u5199\u6210\u6211\u7684\u4E60\u60EF\u73B0\u5728\u7684\u6837\u5B50\uFF08\u6CA1\u8BBE\u4E60\u60EF\u7684\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF09\uFF0C\u8C31\u4E0A\u7684\u5B57\u5199\u6210\u754C\u9762\u7684\u8BED\u8A00\uFF1B\u522B\u7684\u4E0D\u52A8\u3002\u80FD\u64A4\u9500", { list: HABIT_KEYS.map((k2) => LOOK_ROW_NAME[k2]()).join(_t("\u3001")) });
     }
     showPage(page);
   };
@@ -63972,7 +63994,7 @@ function openPaperSheet(focus) {
     if (!k2 || v === ODD) return;
     const FOLLOW_KEY = { nota: "notation", inc: "viewInC", mc: "middleC", ct: "chordTags", cts: "chordTagStyle", expr: "expressions", paper: "paper", density: "density", bn: "barNumbers", lyr: "lyricFit", margin: "marginMm" };
     if (v === FOLLOW && FOLLOW_KEY[k2]) {
-      const key = FOLLOW_KEY[k2], next2 = { ...D3.st, song: followDefault(D3.st.song, key) }, label = _t("{what}\uFF1A\u8DDF\u7740\u6211\u7684\u4E60\u60EF", { what: { nota: _t("\u8C31\u79CD"), inc: _t("\u79FB\u8C03\u8F85\u52A9"), mc: _t("\u4E2D\u592E C \u53EB"), ct: _t("\u548C\u5F26\u8F85\u52A9"), cts: _t("\u548C\u5F26\u5199\u6CD5"), expr: _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5"), paper: _t("\u7EB8\u5F20"), density: _t("\u97F3\u7B26\u5BC6\u5EA6"), bn: _t("\u5C0F\u8282\u53F7"), lyr: _t("\u6B4C\u8BCD\u6392\u6CD5"), margin: _t("\u8FB9\u8DDD") }[k2] ?? key });
+      const key = FOLLOW_KEY[k2], next2 = { ...D3.st, song: followDefault(D3.st.song, key) }, label = followUndoLabel(key);
       if (next2 !== D3.st) D3.commit({ st: next2 }, { locus: { kind: LOOK_KEY_OP[key], label } });
       draw();
       return;
@@ -65393,7 +65415,7 @@ function putDownSong() {
 }
 function loadNewSong(pendingFolder, rebuild) {
   const song = bornSong(initState().song);
-  loadDoc(song, { home: { kind: "none", pendingFolder }, stem: rebuild?.stem ?? defaultStem(), named: false, extras: templateExtras(song), ...rebuild ? { keepPanels: true } : {} });
+  loadDoc(song, { home: { kind: "none", pendingFolder }, stem: rebuild?.stem ?? defaultStem(), named: false, extras: templateExtras(song), isNew: true, ...rebuild ? { keepPanels: true } : {} });
 }
 function loadDoc(song, o10) {
   perfApi.mixBypass = false;
@@ -65423,7 +65445,7 @@ function loadDocInner(song, o10) {
   startDynsMissing = ensureStartDyns(st0.song, st0.nextId).added.length;
   startDynsTold = false;
   encodedSnap = null;
-  D3.load(st0, o10.extras);
+  D3.load(st0, o10.extras, o10.isNew ? "new" : void 0);
   const d3 = o10.view ? unserializeDesk(o10.view) : freshDesk();
   applyDesk(d3);
   ws.mode = d3.mode;
@@ -67542,4 +67564,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-93508764a67e.mjs.map
+//# sourceMappingURL=moonsinger-0529c445c6b6.mjs.map

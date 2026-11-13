@@ -15,7 +15,7 @@ import { isPaperKind, PAPER_LABEL, DENSITIES, type Paper, type ReadPaper, type P
 import { paperOf, marginsOf, sizeOf, staffMmFor, STAFF_MM, STAFF_MM_COMPACT, paperSizeText } from "./paper.ts";
 import { isNotation, isMiddleC, isTextLang, IN_C_APPLIES, NOTATIONS, CHORD_TAG_STYLES, type SongView, type ChordsMode, type NotationId, type ChordTagStyle, type TextLang, CHORDS_MODES } from "../score/song-view.ts";
 import { _t } from "../i18n/index.ts";
-import { BASE_DEFAULTS, defaultsFor, type LookContext, type LookDefaults } from "./habits.ts";
+import { BASE_DEFAULTS, HABIT_KEYS, defaultsFor, type LookContext, type LookDefaults } from "./habits.ts";
 
 /** 能跟着软件的那几项（歌级；score.json 顶层同名的键）。arrangement 改声音（第 16 条），textLang 的 "ui" 本身就是跟界面，都不在这里。 */
 export const LOOK_KEYS = ["notation", "viewInC", "middleC", "chordTags", "chordTagStyle", "expressions", "barNumbers", "lyricFit", "paper", "density", "staffMm", "marginMm"] as const;
@@ -107,21 +107,37 @@ export function followDefault(song: Song, key: LookKey): Song {
 }
 /** 第 21 条（v0.17.38，统筹 74ea9a53；user「我建议是新建时写下来，跟default只是一个技术上的选项，用户不太会用」）：把歌里「跟着」的那几项写成这一刻它等于的值。
  *  · born（新建的歌、别家的谱进门）：只换写着 "default" 的（谱上的字：写着 "ui" 的）——别家谱里从 <defaults> 认出来的纸张 / 密度是它自己的，照留；
- *  · apply（页面设置「套用我的习惯」）：每一样都写成现在的值。
+ *  · apply（页面设置「套用我的习惯」）：只写习惯那几样（HABIT_KEYS）+ 谱上的字，别的项一个不动——v0.17.39（统筹审 v0.17.38：原来连纸张、音符密度…都写回软件的默认，
+ *    这首歌里选了 A4，点一下纸就变回去了；钮的名字说的是习惯，做的比名字多）。以后习惯多一样，这颗钮跟着多写一样。
  *  值 = 有习惯的照习惯、别的照软件当时的默认（defaultsFor(ctx)——和画的时候「跟着」等于什么是同一份）；谱上的字 = 这一刻的界面语言。
- *  边距、谱高两项的 "default" 意思是「这种纸自己的」「跟着音符密度」，不是跟习惯：born 不动，apply 写回 "default"（和新建的歌一样）。
+ *  边距、谱高两项的 "default" 意思是「这种纸自己的」「跟着音符密度」，不是跟习惯：born 不动（apply 本来就不碰不是习惯的）。
  *  没变 = 原样（同一个引用）。三层读法（lookOf）不动：写着 "default" 的老歌照旧跟着。 */
 export function stampLooks(song: Song, ctx: LookContext, uiLang: Exclude<TextLang, "ui">, mode: "born" | "apply"): Song {
   const D = defaultsFor(ctx), out: Record<string, unknown> = {};
   for (const k of LOOK_KEYS) {
-    if (k === "marginMm" || k === "staffMm") { if (mode === "apply" && song[k] !== "default") out[k] = "default"; continue; }
-    if (mode === "born" && song[k] !== "default") continue;
+    if (k === "marginMm" || k === "staffMm") continue;   // 边距、谱高：born 不动；apply 不是习惯 = 不碰
+    if (mode === "apply" ? !isHabitKey(k) : song[k] !== "default") continue;
     const v: unknown = k === "paper" ? { kind: D.paper } : D[k];
     if (JSON.stringify(song[k]) !== JSON.stringify(v)) out[k] = v;
   }
   if ((mode === "apply" || song.textLang === "ui") && song.textLang !== uiLang) out.textLang = uiLang;
   return Object.keys(out).length ? ({ ...song, ...out } as Song) : song;
 }
+/** 这一项有没有习惯可跟（v0.17.39；判断只此一处）：页面设置最后一格叫「跟着我的习惯」还是「跟着软件的默认」、撤销那一句、「套用我的习惯」写哪几样，都问它。 */
+export const isHabitKey = (k: LookKey): boolean => (HABIT_KEYS as readonly string[]).includes(k);
+/** 页面设置里每一行的名字（按 LookKey；谱高没有自己的一行——它跟着音符密度，见 customStaffMm）。「跟着…」那一格撤销的话、「套用我的习惯」的提示从这里拿名字（v0.17.39 从页面设置的处理函数里搬出来）。 */
+export const LOOK_ROW_NAME: Record<Exclude<LookKey, "staffMm">, () => string> = { notation: () => _t("谱种"), viewInC: () => _t("移调辅助"), middleC: () => _t("中央 C 叫"),
+  chordTags: () => _t("和弦辅助"), chordTagStyle: () => _t("和弦写法"), expressions: () => _t("演奏法和表情"), barNumbers: () => _t("小节号"), lyricFit: () => _t("歌词排法"),
+  paper: () => _t("纸张"), density: () => _t("音符密度"), marginMm: () => _t("边距") };
+/** 页面设置最后一格「跟着…」的字（v0.17.39，统筹审 v0.17.38）：习惯那几行「跟着我的习惯（现在是：X）」；别的行没有习惯可跟 =「跟着软件的默认（现在是：X）」。
+ *  边距那一行不走这里：它的「跟着软件」意思是这张纸自己的边距（main.ts marginRow）。 */
+export const followOptionText = (key: LookKey, ctx: LookContext): string =>
+  isHabitKey(key) ? _t("跟着我的习惯（现在是：{x}）", { x: defaultText(key, ctx) }) : _t("跟着软件的默认（现在是：{x}）", { x: defaultText(key, ctx) });
+/** 选了「跟着…」那一格之后，撤销那一句怎么说（跟着这一格的名字分；边距 =「跟着软件」）。 */
+export const followUndoLabel = (key: Exclude<LookKey, "staffMm">): string => {
+  const what = LOOK_ROW_NAME[key]();
+  return isHabitKey(key) ? _t("{what}：跟着我的习惯", { what }) : key === "marginMm" ? _t("{what}：跟着软件", { what }) : _t("{what}：跟着软件的默认", { what });
+};
 /** 「全部跟着软件」：把这首歌里选过的每一项都改回 "default"（一步撤销由宿主走写入口）。都已经是 = 原样。v0.17.38 起页面设置那颗钮换成「套用我的习惯」（stampLooks apply），这个留给测试和以后。 */
 export function allDefault(song: Song): Song {
   if (LOOK_KEYS.every((k) => song[k] === "default")) return song;
