@@ -10,6 +10,16 @@ export function percOf(bank: number, program: number, note?: number): PercInfo |
   return (note !== undefined ? PERC[`${bank}:${program}:${note}`] : undefined) ?? PERC[`${bank}:${program}`] ?? null;
 }
 
+/** 着力点表（16-4 E，统筹 2026-11-12 夜）：这位乐手每个敲的键 → 采样开头到「砸下去那一下」几秒。上场 / 开关「固定原速」的那一刻按值抄进乐手（instrument.hitSecByKey），
+ *  读老歌时门口补；出声只读乐手身上那一份。整套鼓 = 目录里这套鼓的每个键（实测没有的写 0）；固定敲一件 = 那一个键；有音高的 = null（没有这个键）。 */
+export function hitSecByKeyOf(inst: { bank: number; program: number; note?: number }): Record<string, number> | null {
+  const pk = inst.bank === 128 && inst.note === undefined ? "kit" : inst.note !== undefined ? "one" : null;
+  if (!pk) return null;
+  if (pk === "one") return { [String(inst.note)]: percOf(inst.bank, inst.program, inst.bank === 128 ? inst.note : undefined)?.hitSec ?? 0 };
+  const keys = Object.keys(PERC).filter((k) => k.startsWith("128:0:")).map((k) => Number(k.slice(6))).sort((a, b) => a - b);
+  return Object.fromEntries(keys.map((k) => [String(k), PERC[`128:0:${k}`]!.hitSec ?? 0]));
+}
+
 /** 台上那位怎么记谱：kit = 整套鼓（bank 128 没固定键：写的音高 = 敲哪个鼓，五线鼓谱）；one = 固定敲一件（鼓件 / 固定原速的音效：一线谱，写的音高不出声）；null = 有音高。 */
 export type PercKind = { kind: "kit" } | { kind: "one"; info: PercInfo; key: number };   // key = 固定敲的那个键
 export function percKindOf(inst: { bank: number; program: number; note?: number }): PercKind | null {

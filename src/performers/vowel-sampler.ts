@@ -4,7 +4,7 @@ import { registerPerformer } from "./registry.ts";
 import { HUM_KANA } from "../engine/timeline.ts";
 import type { NoteEv } from "../engine/studio.ts";
 import { TSUKUYOMI_RANGE } from "./tsukuyomi.ts";
-import { CALIBRATION_DEFAULT_DB } from "../format/performance.ts";
+import { CALIBRATION_DEFAULT_DB } from "../format/template.ts";
 
 export const vowelSampler = registerPerformer({
   guid: "b9d4e7a2-51c6-4f0b-8e3d-7a9c2f6b1d58", kind: "performer", name: "vowel-sampler", version: 1, label: _t("小月相（元音）"),
@@ -20,4 +20,8 @@ export const vowelSampler = registerPerformer({
     track: { id, kind: "vowel", kana: HUM_KANA[hum ?? "n"], notes: notes.map((n): NoteEv => ({ t0: n.t0, t1: n.t1, key: n.midi, vel: n.vel ?? info.velocity, preset: 0 })), gain, ...(chain?.length ? { chain } : {}) },
   }),
   audition: ({ kana, dyn }) => ({ inst: { kind: "vowel", kana }, key: (m) => m, vel: 1, gainDb: dyn.dB }),
+  // 元音表的满音量（16-4 B，统筹 2026-11-12 夜：元音版不加键，照实写一行只读）：表是离线预先唱好、随 app 带着的（scripts/gen-preview-vowels.mjs），生成时整张缩到峰值 0.8
+  inspector: () => [{ label: _t("元音表的满音量"), control: `<b class="ip-val">${_t("峰值 0.8（−1.9 dB）")}</b>`,
+    note: _t("元音版的声音是预先唱好、随 app 带着的一张元音表；生成那张表的时候整张缩到最响的一下 = 满幅的 0.8。这是这个库自己的满音量，这里不能调；上面「响度」那一行在它之上管这位乐手整体多响") }],
+  onInspector: () => null,
 });

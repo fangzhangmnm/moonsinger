@@ -5,7 +5,8 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { TPQ, initState, tr, type Token, type NoteTok, type Song } from "../src/score/song.ts";
 import { classicalWeights, grooveTable, grooveStyle, meterPositions, grooveWeights, grooveMapOf, grooveCategory, followOf, GROOVE_STYLES } from "../src/score/groove.ts";
 import { noteVelocities, gainSegments } from "../src/score/perform.ts";
-import { DYNAMICS_VEL, DYNAMICS_DB, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
+import { DYNAMICS_DB } from "../src/format/template.ts";
+import { gainSpec, velSpec } from "./fixtures/spec.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { toJianpu, fromJianpu } from "../src/score/clipboard.ts";
 const fs = (await import("node:fs" as string)) as { readFileSync(p: string | URL): Uint8Array };
@@ -90,16 +91,16 @@ describe("拍子轻重：每个音的权重", () => {
 });
 
 describe("拍子轻重：出声", () => {
-  const sv = { staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, dynamicsVel: { ...DYNAMICS_VEL }, dynamicsDb: { ...DYNAMICS_DB }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL };
+  const sv = velSpec(), sg = gainSpec();   // 力度那一路 / 音量那一路
   it("力度那一路：w = 1 = 一个次重音（+8），w = −0.5 = 半个弱化（−5）", () => {
     const toks = [...head(), n(), n()], V = noteVelocities(toks, undefined, sv, 80 / 127, undefined, new Map([[3, 1], [4, -0.5]]));
-    eq(Math.round(V.get(3)! * 127), 80 + MARK_DEFAULTS.stressVel); eq(Math.round(V.get(4)! * 127), 80 - 5);
+    eq(Math.round(V.get(3)! * 127), 80 + sv.stressVel); eq(Math.round(V.get(4)! * 127), 80 - 5);
   });
   it("dB 那一路（月读）：正的 = 音头加次重音的几分之几；负的 = 整个音轻；没有 = 整首在 mf 的响度（9-2）", () => {
     const toks = [...head(), n(), n()], MF = DYNAMICS_DB.mf;
-    assert((gainSegments(toks, undefined, sv) ?? []).every((x) => Math.abs(x.dB - MF) < 1e-9), "没有拍子轻重 = mf 的响度");
-    const g = gainSegments(toks, undefined, sv, undefined, new Map([[3, 1], [4, -1]]))!;
-    assert(Math.abs(g[0].dB - (MF + MARK_DEFAULTS.stressDb)) < 1e-9 && Math.abs(g.at(-1)!.dB - (MF + MARK_DEFAULTS.unstressDb)) < 1e-9, `${g[0].dB} / ${g.at(-1)!.dB}`);
+    assert((gainSegments(toks, undefined, sg) ?? []).every((x) => Math.abs(x.dB - MF) < 1e-9), "没有拍子轻重 = mf 的响度");
+    const g = gainSegments(toks, undefined, sg, undefined, new Map([[3, 1], [4, -1]]))!;
+    assert(Math.abs(g[0].dB - (MF + sg.stressDb)) < 1e-9 && Math.abs(g.at(-1)!.dB - (MF + sg.unstressDb)) < 1e-9, `${g[0].dB} / ${g.at(-1)!.dB}`);
   });
 });
 

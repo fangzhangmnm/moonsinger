@@ -3,7 +3,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, tr, setDynSel, editMarkAt, rampSource, TPQ, type Token, type EditorState } from "../src/score/song.ts";
 import { dynLevels } from "../src/score/perform.ts";
-import { DYNAMICS_VEL, MARK_DEFAULTS } from "../src/format/performance.ts";
+import { DYNAMICS_VEL, ART_TEMPLATE } from "../src/format/template.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { apply } from "../src/score/commands.ts";
 import { engrave } from "../src/render/engrave.ts";
@@ -16,7 +16,7 @@ const pin = (dir: "cresc" | "dim") => ({ kind: "hairpin", id: nid++, dir }) as T
 const note = () => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 4 }, dur: TPQ, lyric: null }) as Token;
 const line = (items: (Token | "n")[]): Token[] => [...tr(initState()).slice(0, 3), ...items.map((x) => (x === "n" ? note() : x))];
 const notes = (toks: Token[]) => toks.flatMap((t, i) => (t.kind === "note" ? [i] : []));
-const lv = (toks: Token[]) => { const L = dynLevels(toks, undefined, DYNAMICS_VEL, 80, MARK_DEFAULTS.wedgeStepVel); return notes(toks).map((i) => Math.round(L.get(i)!.at0)); };
+const lv = (toks: Token[]) => { const L = dynLevels(toks, undefined, DYNAMICS_VEL, 80, ART_TEMPLATE.velocity.wedgeStepVel); return notes(toks).map((i) => Math.round(L.get(i)!.at0)); };
 
 describe("渐到：怎么渐", () => {
   it("p · · · 渐到 f：从 p 后面第一个音起，均匀变到 f 那个音的音头", () => {
@@ -25,7 +25,7 @@ describe("渐到：怎么渐", () => {
   it("中间有手写的渐强渐弱 = 手写的说了算（渐到不起作用）", () => {
     const toks = line([dyn("p"), "n", pin("dim"), "n", dyn("f", true), "n"]);
     eq(rampSource(toks, toks.findIndex((t) => t.kind === "dyn" && (t as { ramp?: true }).ramp)), "hairpin");
-    const L = dynLevels(toks, undefined, DYNAMICS_VEL, 80, MARK_DEFAULTS.wedgeStepVel), [, nb, nc] = notes(toks);
+    const L = dynLevels(toks, undefined, DYNAMICS_VEL, 80, ART_TEMPLATE.velocity.wedgeStepVel), [, nb, nc] = notes(toks);
     assert(L.get(nb)!.at1 < 49, "按手写的渐弱往下走（音头还是 p、这个音里往下）"); eq(Math.round(L.get(nc)!.at0), 96, "到 f 突变");
   });
   it("前面没有力度记号 = 不起作用（到那儿突变）", () => {

@@ -2,7 +2,8 @@
 // user「对我也觉得分开唱复用」「月读至少拆成句级别」「开关是歌手的属性，可以有不同的粒度」。
 import { describe, it, eq } from "./runner.mjs";
 import { initState, tr, TPQ, type Token } from "../src/score/song.ts";
-import { singChunks, toLabScore, PHRASE_REST_SEC } from "../src/score/lab-score.ts";
+import { singChunks, PHRASE_REST_SEC } from "../src/score/lab-score.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
 
 let nid = 7000;
 const head = () => tr(initState()).slice(0, 3);   // ♩ = 90

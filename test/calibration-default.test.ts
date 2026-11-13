@@ -3,7 +3,7 @@
 //   老歌里明写着的数照读照写（−6 还是 −6，不换算）；出声上「没写」= 写了 0、比明写 −6 整体响 6 dB，别的一个样本都不差；
 //   src 里没有哪一处在乐手的响度上默认减 6。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { CALIBRATION_DEFAULT_DB } from "../src/format/performance.ts";
+import { CALIBRATION_DEFAULT_DB } from "../src/format/template.ts";
 import { saveMxl, openBytes, emptyExtras, withNewRole, withCalibration, activeCalibrationDb, activeId, templateExtras, type Extras } from "../src/format/project.ts";
 import { performers } from "../src/performers/index.ts";
 import { renderSong, audibleParts, type RenderDeps } from "../src/core/render.ts";

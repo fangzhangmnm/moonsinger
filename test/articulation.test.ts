@@ -7,11 +7,11 @@ import { initState, writeDegree, writeRest, writeBar, select, tr, toggleArtSel, 
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { toJianpu, fromJianpu } from "../src/score/clipboard.ts";
-import { toLabScore } from "../src/score/lab-score.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
 import { gainSegments, noteEnd } from "../src/score/perform.ts";
-import { MARK_DEFAULTS } from "../src/format/performance.ts";
-const ACCENT_SEC = MARK_DEFAULTS.accentSec;
-import { DYNAMICS_VEL, DYNAMICS_DB, ARTICULATION } from "../src/format/performance.ts";
+import { DYNAMICS_DB } from "../src/format/template.ts";
+import { gainSpec, velSpec } from "./fixtures/spec.ts";
+const ACCENT_SEC = gainSpec().accentSec;
 /** 音量曲线乘在一条声音上（原 src/audio/mix.ts applyGain 的参考实现；2026-10-09 乘法搬进录音房 src/engine/studio.ts 后这里留一份对照）。 */
 function applyGain(samples: Float32Array, sr: number, at: number, segs: readonly { t0: number; t1: number; dB: number }[], smoothSec = 0.004): Float32Array {
   const out = new Float32Array(samples.length);
@@ -24,7 +24,8 @@ function applyGain(samples: Float32Array, sr: number, at: number, segs: readonly
 
 
 const deq = (a: unknown, b: unknown, msg?: string) => eq(JSON.stringify(a), JSON.stringify(b), msg);
-const SPEC = { dynamicsVel: { ...DYNAMICS_VEL }, dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb };
+const SPEC = gainSpec();
+const NE = { staccatoGate: 0.5, gapSec: 0, gapShare: 0.25, breathSec: 0.16, breathShare: 0.25 };   // noteEnd 要的数（出厂的）
 /** 四个四分音符 C D E F（光标在最后）。 */
 function four(): EditorState { let st = initState(); st = { ...st, input: { ...st.input, unit: 3 } }; for (const d of [1, 2, 3, 4]) st = writeDegree(st, d, "near"); return st; }
 const noteIdx = (st: EditorState) => tr(st).flatMap((t, i) => (t.kind === "note" ? [i] : []));
@@ -156,14 +157,14 @@ describe("修：出声的数（perform.ts / lab-score / mix）", () => {
     let st = four(); assert(flat(gainSegments(tr(st), undefined, SPEC)), "没写 = mf 的响度");
     st = select(st, noteIdx(st)[0], noteIdx(st)[0] + 1); st = setDynSel(st, "mf"); assert(flat(gainSegments(tr(st), undefined, SPEC)), "写 mf 一样");
     st = toggleArtSel(st, "staccato"); assert(flat(gainSegments(tr(st), undefined, SPEC)), "跳音给乐器 = 截短，不走曲线");
-    eq(gainSegments(tr(four()), undefined, SPEC, undefined, undefined, true), null, "按力度敲的（乐器）：力度不在曲线上 = null");
+    eq(gainSegments(tr(four()), undefined, velSpec()), null, "按力度敲的（乐器）：力度不在曲线上 = null");
   });
   it("力度 f = 40·log10(96 ÷ 127)（9-2）；重音 = 音头 ACCENT_SEC 再加 accentDb", () => {
     let st = four(); const [, b] = noteIdx(st);
     st = select(st, b, b + 1); st = setDynSel(st, "f"); st = toggleArtSel(st, "accent");
     const segs = gainSegments(tr(st), undefined, SPEC)!;
     eq(segs[0].dB, DYNAMICS_DB.mf, "第一个音 mf");
-    const acc = segs.find((s) => s.dB === DYNAMICS_DB.f + ARTICULATION.accentDb)!;
+    const acc = segs.find((s) => s.dB === DYNAMICS_DB.f + SPEC.accentDb)!;
     assert(!!acc && Math.abs(acc.t1 - acc.t0 - ACCENT_SEC) < 1e-9, "重音段"); eq(segs[segs.length - 1].dB, DYNAMICS_DB.f, "后面的音还是 f");
   });
   it("月读的跳音 = 下一个字前「^」顿一下（唱法核心认的记号；user「跳音就是顿一下」）；同一处有呼吸 = 按呼吸；后面是同一个字（连音线）= 不顿", () => {
@@ -182,8 +183,8 @@ describe("修：出声的数（perform.ts / lab-score / mix）", () => {
     deq(toLabScore(tr(st), "n").SCORE.map((e) => e.before ?? null), [null, "^", "v", null], "第二个音有呼吸 → 第三个字前按呼吸");
   });
   it("乐器 / 元音版的跳音 = 截短；呼吸 = 收短一口气（关着 = 不收）", () => {
-    eq(noteEnd(0, 1, ["staccato"], { staccatoGate: 0.5, breath: false }), 0.5);
-    eq(noteEnd(0, 1, ["breath"], { staccatoGate: 0.5, breath: true }), 1 - 0.16); eq(noteEnd(0, 1, ["breath"], { staccatoGate: 0.5, breath: false }), 1, "breath 关着（试听 / 听开头不落记号）= 不收短");
+    eq(noteEnd(0, 1, ["staccato"], { ...NE, breath: false }), 0.5);
+    eq(noteEnd(0, 1, ["breath"], { ...NE, breath: true }), 1 - 0.16); eq(noteEnd(0, 1, ["breath"], { ...NE, breath: false }), 1, "breath 关着（试听 / 听开头不落记号）= 不收短");
   });
   it("月读的呼吸 = 下一个字前「v」；没有呼吸 = 不多任何字段", () => {
     let st = four(); const plain = toLabScore(tr(st), "n");

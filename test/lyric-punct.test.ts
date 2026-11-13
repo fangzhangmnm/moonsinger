@@ -3,7 +3,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 const deq = (a: unknown, b: unknown, msg?: string) => eq(JSON.stringify(a), JSON.stringify(b), msg);
 import { splitSyllables, lyricHang, lyricCore } from "../src/score/lyrics.ts";
-import { toLabScore } from "../src/score/lab-score.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
 import { lyricIssues } from "../src/score/lyric-check.ts";
 import { initState, TPQ, type Token, type Song } from "../src/score/song.ts";
 import { setNotation } from "../src/score/song-view.ts";

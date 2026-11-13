@@ -4,7 +4,7 @@ import {
   initState, emptySong, writeDegree, writeRest, writeBar, writeKey, extend, backspace, shorter, longer, setTuplet, tapAcc,
   setCaret, select, escape, moveCaret, setInputKey, setInputScale, barFill, keyAt, TPQ, type NoteTok, type EditorState,
   headLen, writeMark, deleteMark, setMark, timeline, tempoWord, TEMPO_WORDS, transposeSel, modulateSel, selectToEdge, alterTarget, tr, songOf, scaleSelDur } from "../src/score/song.ts";
-import { toLabScore } from "../src/score/lab-score.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
 import { parseMark } from "../src/score/marks.ts";
 import { pitchName } from "../src/score/pitch.ts";
 import { deleteForward } from "../src/score/song.ts";

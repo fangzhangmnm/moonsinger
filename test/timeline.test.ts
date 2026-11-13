@@ -3,7 +3,7 @@
 import { performerOf } from "../src/performers/index.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, addPaper, addPart, TPQ, DEFAULT_BPM, type EditorState, type Token, type Song, type PaperSeg, type PartDef } from "../src/score/song.ts";
-import { emptyExtras, activePerfSpec } from "../src/format/project.ts";
+import { gainSpec, velSpec } from "./fixtures/spec.ts";
 import { buildTimeline, LEAD_IN, type PerformerInfo } from "../src/engine/timeline.ts";
 import { lightMarks } from "../src/score/perform.ts";
 
@@ -12,8 +12,9 @@ const n = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", ly: string | null = nu
 const r = (dur = TPQ): Token => ({ kind: "rest", id: nid++, dur });
 const head = (t: Token[]) => t.slice(0, 3);   // 调号 / 拍号 / 速度
 const Q = 60 / DEFAULT_BPM;   // 一个四分音符几秒
-const spec = activePerfSpec(emptyExtras(), "r");
-const info = (engine: PerformerInfo["engine"]): PerformerInfo => ({ engine, hum: "n", plugin: performerOf(engine), spec, velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0 });
+const spec = velSpec();   // SoundFont 那一路（数全抄模板）；音量那一路的用 gainSpec()
+const specOf = (engine: PerformerInfo["engine"]) => (performerOf(engine)?.dynamics === "velocity" ? velSpec() : gainSpec());
+const info = (engine: PerformerInfo["engine"]): PerformerInfo => ({ engine, hum: "n", plugin: performerOf(engine), spec: specOf(engine), velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0 });
 const two = (a: Token[], b: Token[]): { song: Song; parts: PartDef[] } => {
   let st: EditorState = initState(); st = addPaper(st);
   const [p1, p2] = st.song.papers, pid = st.song.parts[0].id;

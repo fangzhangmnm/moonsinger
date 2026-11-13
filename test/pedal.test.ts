@@ -4,7 +4,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { performerOf, performers } from "../src/performers/index.ts";
 import { initState, addPaper, TPQ, DEFAULT_BPM, PEDAL_KINDS, tr, insertPedal, pedalDownAt, annihilate, editMarkAt, moveMark, symBackspace, ensureStartDyns, type EditorState, type Token, type Song, type PaperSeg, type PartDef, type PedalTok } from "../src/score/song.ts";
-import { emptyExtras, activePerfSpec } from "../src/format/project.ts";
+import { gainSpec, velSpec } from "./fixtures/spec.ts";
 import { buildTimeline, LEAD_IN, type PerformerInfo } from "../src/engine/timeline.ts";
 import { sustainSpans, holdBySustain } from "../src/score/pedal.ts";
 import { instantiateTsf } from "../src/gm/tsf-standalone.ts";
@@ -22,8 +22,7 @@ let nid = 9100;
 const n = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", dur = TPQ, octave = 4): Token => ({ kind: "note", id: nid++, pitch: { step, alter: 0, octave }, dur, lyric: null });
 const ped = (act: PedalTok["act"], which: PedalTok["which"] = "sustain"): Token => ({ kind: "pedal", id: nid++, which, act });
 const Q = 60 / DEFAULT_BPM;
-const spec = activePerfSpec(emptyExtras(), "r");
-const info = (engine: PerformerInfo["engine"]): PerformerInfo => ({ engine, hum: "n", plugin: performerOf(engine), spec, velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0 });
+const info = (engine: PerformerInfo["engine"]): PerformerInfo => ({ engine, hum: "n", plugin: performerOf(engine), spec: performerOf(engine)?.dynamics === "velocity" ? velSpec() : gainSpec(), velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0 });
 const two = (a: Token[], b: Token[]): { song: Song; parts: PartDef[] } => {
   let st: EditorState = initState(); st = addPaper(st);
   const [p1, p2] = st.song.papers, pid = st.song.parts[0]!.id;

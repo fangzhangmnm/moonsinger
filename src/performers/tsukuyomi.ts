@@ -4,8 +4,8 @@
 //   按键试听 = 元音表（v0.10.43；user「月读预览应该是每种哼法只有一个cache」），播放照旧完全版。
 import { _t } from "../i18n/index.ts";
 import { registerPerformer } from "./registry.ts";
-import { activeSingChunk, activeSingCore, withSingChunk, withSingCore, type SingCoreKey } from "../format/project.ts";
-import { TSUKUYOMI_DEFAULTS, CALIBRATION_DEFAULT_DB } from "../format/performance.ts";
+import { activeSingChunk, activeSingCore, withSingChunk, withSingCore, activeOutputGainDb, withOutputGainDb, type SingCoreKey } from "../format/project.ts";
+import { TSUKUYOMI_DEFAULTS, CALIBRATION_DEFAULT_DB, TEMPLATE } from "../format/template.ts";   // 乐器页「高级」里标出厂值、新上场的响度问模板
 
 /** 她的音域（A3–E5）：pad 键底部的提示；元音版同。 */
 export const TSUKUYOMI_RANGE = { lo: 57, hi: 76, who: _t("小月相") } as const;
@@ -28,17 +28,21 @@ export const tsukuyomi = registerPerformer({
   connected: true, dynamics: "gain", grooveCategory: "voice", removable: false,
   // 力度深度 800（施工单 9-4 第 4 条，统筹定；user 2026-11-12「小月相要不要也用库里多数乐器的那个深度 什么乐器的逻辑最像人声？你想想」）：
   //   GS 里三个人声类音色（Concert Choir / Voice Oohs / Synth Voice）都写 800，和长笛、双簧管、小提琴一样，而且亮度不随力度变——她的力度也是只变响度
-  // 块乘多少（9-3，原来是 src/engine/timeline.ts 的 SUNG_GAIN，数不变）：唱法核心 raw 输出的补偿——刀 0 量的 raw 峰值 ≈ 0.42（うさぎ 0.419 / 団子 0.412）→ 乘到 0.89
-  //   （原整首归一化的目标；按句出块后不再整首归一化，句与句的强弱照原样）
-  chunkGain: 0.89 / 0.42,
+  // 块乘多少（16-4 B）：从此是乐手身上的 instrument.outputGainDb（模板 6.52 dB = 原来这里的常数 0.89 / 0.42 取两位小数），时间线从出声参数里拿；插件不再报
   defaultCalibrationDb: () => CALIBRATION_DEFAULT_DB,   // 现行的那一个默认（第 14 条）
-  info: ({ extras, role }) => ({ gm: null, chunk: activeSingChunk(extras, role), singOpt: activeSingCore(extras, role) }),   // 旋钮按值在候选里（乐器页「高级」）→ 进块的内容键
+  info: ({ extras, role }) => ({ gm: null, chunk: activeSingChunk(extras, role), singOpt: activeSingCore(extras, role), outputGainDb: activeOutputGainDb(extras, role) }),   // 旋钮按值在候选里（乐器页「高级」）→ 进块的内容键
   prepare: async () => { /* 引擎预热 / 模型包下载在工作道里按需做（singer.warm / 第一次唱），不在这里 */ },
   audition: ({ kana, dyn }) => ({ inst: { kind: "vowel", kana }, key: (m) => m, vel: 1, gainDb: dyn.dB }),
   /** 乐器页里她自己的行（2026-10-15 刀 5 之一，原 main.ts drawInst 里的那两段原样搬来）：「高级」折叠里的唱法核心旋钮 + 末尾的分段唱。 */
   inspector: ({ extras, role, chip }) => {
-    const cur = activeSingCore(extras, role), sc = activeSingChunk(extras, role);
+    const cur = activeSingCore(extras, role), sc = activeSingChunk(extras, role), og = activeOutputGainDb(extras, role), ogDef = TEMPLATE.lounge.tsukuyomiOutputGainDb;
+    const fmt = (d: number) => `${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(d)} dB`;
     return [
+      // 原始输出增益（16-4 B，统筹 2026-11-12 夜）：唱法核心算出来的声音进她这条轨之前乘多少；一步 0.5 dB，「默认」= 抄模板现在的值
+      { label: _t("原始输出增益"), control: `<b class="ip-val">${Number.isFinite(og) ? fmt(og) : _t("没写")}</b>` +
+          `<button class="btn" data-v="og:-0.5" title="${_t("小 0.5 dB")}">−0.5</button><button class="btn" data-v="og:0.5" title="${_t("大 0.5 dB")}">+0.5</button>` +
+          (og !== ogDef ? `<button class="btn" data-v="og:def" title="${_t("回到默认 {d}", { d: fmt(ogDef) })}">${_t("默认")}</button>` : ""),
+        note: _t("唱法核心算出来的原始声音，进她这条轨之前先乘多少。默认 {d}：量过的原始峰值约 0.42，抬到 0.89——这是这个引擎自己的满音量。上面「响度」那一行在这之上管这位乐手整体多响、和别的乐手对齐；平常调「响度」就够。改了不用重唱，每一句跟着变", { d: fmt(ogDef) }) },
       ...SING_CORE_ROWS.map((x) => ({ label: x.label, control: x.values.map((v) => chip(`core:${x.key}:${v}`, `${x.names?.[v] ?? v}${v === TSUKUYOMI_DEFAULTS[x.key] ? _t("（默认）") : ""}`, cur[x.key] === v, _t("改了用到的句子会重唱；存进歌里、能撤销"))).join(""), note: x.why, place: "adv" as const })),
       // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
       { label: _t("分段唱"), control: (([["phrase", _t("每句"), _t("在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句")], ["sheet", _t("每张纸"), _t("一张纸一段")], ["whole", _t("一整首"), _t("一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）")]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),
@@ -48,6 +52,7 @@ export const tsukuyomi = registerPerformer({
   onInspector: (v, { extras, role, hum, roleLabel }) => {
     const rn = roleLabel;
     if (v.startsWith("core:")) { const [, key, val] = v.split(":"), x = SING_CORE_ROWS.find((e) => e.key === key), n = Number(val); return x ? { extras: withSingCore(extras, role, x.key, n, hum), label: `「${rn}」${x.label}：${x.names?.[n] ?? n}` } : null; }
+    if (v.startsWith("og:")) { const d = v.slice(3), cur = activeOutputGainDb(extras, role), next = d === "def" ? null : (Number.isFinite(cur) ? cur : TEMPLATE.lounge.tsukuyomiOutputGainDb) + Number(d); const x = withOutputGainDb(extras, role, next, hum), got = activeOutputGainDb(x, role); return { extras: x, label: _t("「{rn}」原始输出增益 {db} dB", { rn, db: got.toFixed(2) }), gesture: "outgain" }; }
     if (v.startsWith("chunk:")) { const c = v.slice(6) as "phrase" | "sheet" | "whole"; return { extras: withSingChunk(extras, role, c, hum), label: _t("「{rn}」分段唱：{p}", { rn, p: c === "phrase" ? _t("每句") : c === "sheet" ? _t("每张纸") : _t("一整首") }) }; }
     return null;
   },

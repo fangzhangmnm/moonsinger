@@ -44,13 +44,13 @@ describe("音效：固定原速 / 音高对齐（project.ts + sf-key.ts）", () 
     const ex = await setup();
     eq(withSfxFixed(ex, "r2", false, "n"), ex); eq(withSfxAlign(ex, "r2", true, "n"), ex);
   });
-  it("修八度：0 = 不写字段；夹在 ±48；存 → 开留着", async () => {
+  it("修八度：夹在 ±48；存 → 开留着；0 也写成数（16-4：每个数都写进文件）", async () => {
     let ex = withTranspose(await setup(), "r2", -24, "n");
     eq(activeTranspose(ex, "r2"), -24);
     eq(activeTranspose(openBytes("x.mxl", save(ex)).extras, "r2"), -24);
     eq(activeTranspose(withTranspose(ex, "r2", 99, "n"), "r2"), 48);
     ex = withTranspose(ex, "r2", 0, "n");
-    assert(!JSON.stringify(ex.lounge.r2).includes("transpose"), "0 应该去掉字段");
+    eq(activeTranspose(ex, "r2"), 0); assert(JSON.stringify(ex.lounge.r2).includes('"transpose":0'), "0 照样写着");
   });
   it("这些开关都不碰谱：存出来的 MusicXML 谱面一样", async () => {
     const ex = await setup();

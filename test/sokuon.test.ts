@@ -2,7 +2,7 @@
 //   「我大tsu小tsu大yo小yo确实分不清」→ 打字照原样，唱的那一路兜住：っ = 前一个音节后面停这么长、下一个字前面顿一下不换气（^）；ゃ… = 前一个音节拖过这个音。
 import { describe, it, eq } from "./runner.mjs";
 import { initState, withTrack, tr, toggleArtSel, select, TPQ, type Token, type EditorState } from "../src/score/song.ts";
-import { toLabScore } from "../src/score/lab-score.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
 import { splitSyllables, ELISION } from "../src/score/lyrics.ts";
 
 let nid = 7000;

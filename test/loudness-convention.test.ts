@@ -3,16 +3,17 @@
 //   按音量走的小月相 / 元音版 = dB 表 dynamicsDb：水平就是表里那一档；渐强渐弱 / 渐到在 dB 上线性；没终点 = 走到表里的下一档（到头不动）；强后即弱压到表里的 p。
 //   按力度敲的乐器 = 力度表 dynamicsVel + wedgeStepVel（照旧在力度上线性）。存档按插件报的路分每位写哪张表。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { gainSegments, dynLevels, type PerfSpec } from "../src/score/perform.ts";
-import { DYNAMICS_VEL, DYNAMICS_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
+import { gainSegments, dynLevels } from "../src/score/perform.ts";
+import { DYNAMICS_VEL, DYNAMICS_DB } from "../src/format/template.ts";
+import { gainSpec } from "./fixtures/spec.ts";
 import { initState, tr, TPQ, DYNS, type Token, type Dyn, type Song } from "../src/score/song.ts";
-import { openBytes, saveMxl, activePerfSpec, templateExtras, type Extras } from "../src/format/project.ts";
+import { openBytes, saveMxl, activePerfSpec, perfSpecProblems, templateExtras, type Extras } from "../src/format/project.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
 const nodeMod = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
 const fs = nodeMod("node:fs");
 
 /** 小月相 / 元音版这一路（按音量走）的规格：dB 表 = 模板。 */
-const SING: PerfSpec = { ...MARK_DEFAULTS, dynamicsVel: { ...DYNAMICS_VEL }, dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb } as PerfSpec;
+const SING = gainSpec();
 let id = 9900;
 const note = (dur = TPQ, art?: string[]): Token => ({ kind: "note", id: id++, pitch: { step: "C", alter: 0, octave: 4 }, dur, lyric: null, ...(art ? { art } : {}) }) as Token;
 const dyn = (value: Dyn): Token => ({ kind: "dyn", id: id++, value }) as Token;
@@ -57,15 +58,18 @@ describe("力度 → 响度：每位乐手自己的表（16-4）", () => {
     assert(Math.abs(g[0]!.dB - DYNAMICS_DB.f) < 1.5, `音头按 f：${g[0]!.dB}`);
     assert(Math.abs(g[g.length - 1]!.dB - DYNAMICS_DB.p) < 1e-9, `之后 = 表里的 p：${g[g.length - 1]!.dB}`);
   });
-  it("按音量走的这位没带 dB 表 = 明着报错（不在出声的代码里替她补一个数）", () => {
-    let threw = ""; try { gainSegments(line([dyn("mf"), note()]), map, { ...SING, dynamicsDb: undefined }); } catch (e) { threw = (e as Error).message; }
-    assert(/dynamicsDb/.test(threw), threw);
+  it("按音量走的这位缺 dB 表 / 缺数 = 送进录音房之前查出来、写清缺哪几个（不在出声的代码里替她补一个数；统筹第 5 条）", () => {
+    eq(perfSpecProblems(SING, 1).join(","), "", "写全的 = 没毛病");
+    const bad = perfSpecProblems({ ...SING, dynamicsDb: {} as never, accentDb: undefined as never }, 1);
+    assert(bad.includes("dynamicsDb.ppp") && bad.includes("dynamicsDb.fff") && bad.includes("accentDb"), bad.join(","));
   });
-  it("带老表的照文件读：写了的档原样，缺的档（老的六档表没有 ppp / fff）= 模板", () => {
+  it("带老表的照文件读：写了的档原样，缺的档（老的六档表没有 ppp / fff）= 读文件的门口用模板补", () => {
     const song = initState().song, x: Extras = templateExtras(song), role = song.parts[0]!.role;
     const r = structuredClone(x.lounge[role]) as { candidates: Record<string, unknown>[] };
     r.candidates[0]!.dynamicsDb = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
-    const t = activePerfSpec({ ...x, lounge: { ...x.lounge, [role]: r as never } }, role).dynamicsDb;
+    const o = openBytes("x.mxl", saveMxl({ song, extras: { ...x, lounge: { ...x.lounge, [role]: r as never } }, app: "t", date: "2026-11-12T00:00:00.000Z" }));
+    const sp = activePerfSpec(o.extras, role)!; if (sp.path !== "gain") throw new Error("应该是音量那一路");
+    const t = sp.dynamicsDb;
     eq(JSON.stringify(t), JSON.stringify({ ppp: DYNAMICS_DB.ppp, pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12, fff: DYNAMICS_DB.fff }));
   });
   it("存档按插件报的力度路分（不按引擎名）：小月相写 dynamicsDb、不写 dynamicsVel / wedgeStepVel；SoundFont 写 dynamicsVel / wedgeStepVel、不写 dynamicsDb / wedgeStepDb；读不懂的引擎整份原样", () => {
@@ -74,7 +78,8 @@ describe("力度 → 响度：每位乐手自己的表（16-4）", () => {
     const both = (c: Record<string, any>) => ({ ...c, dynamicsDb: { mf: 1 }, dynamicsVel: { mf: 70 }, articulation: { ...c.articulation, wedgeStepVel: 9, wedgeStepDb: 6 } });
     r.candidates = [...r.candidates.map(both), both({ id: "c7", name: "sf", instrument: { engine: "soundfont", bank: 0, program: 0, subsetSha256: "0".repeat(64), source: { embedded: null }, origin: {} }, articulation: {} }),
       { id: "c8", name: "far", instrument: { engine: "ewql" }, dynamicsDb: { mf: 2 }, dynamicsVel: { mf: 3 }, oddKey: 1 }];
-    const z = unzipSync(saveMxl({ song, extras: { ...x, lounge: { ...x.lounge, [role]: r as never } }, app: "t", date: "2026-11-12T00:00:00.000Z" }));
+    const once = saveMxl({ song, extras: { ...x, lounge: { ...x.lounge, [role]: r as never } }, app: "t", date: "2026-11-12T00:00:00.000Z" }), o = openBytes("x.mxl", once);   // 存的时候只筛键；缺的数在读文件的门口补（16-4 A）
+    const z = unzipSync(saveMxl({ song: o.song, extras: o.extras, app: "t", date: "2026-11-12T00:00:00.000Z" }));
     const out = JSON.parse(strFromU8(z[`.moonsinger/lounge/${role}.json`]!)).candidates as Record<string, any>[], by = (cid: string) => out.find((c) => c.id === cid)!;
     for (const cid of ["c1", "c2"]) {
       const c = by(cid); assert("dynamicsDb" in c && !("dynamicsVel" in c) && !("wedgeStepVel" in c.articulation) && !("wedgeStepDb" in c.articulation), `${cid}：${Object.keys(c).join(",")} / ${Object.keys(c.articulation).join(",")}`);
@@ -89,10 +94,10 @@ describe("力度 → 响度：每位乐手自己的表（16-4）", () => {
     const bad = walk("").filter((f) => f !== "i18n/strings.ts").flatMap((f) => { const c = code(f); return [/\bvelocityDepth\b/, /\bdepthCurve\b/, /\bvelocityDb\b/, /\bSF2_VEL_DEPTH\b/, ...(f.startsWith("gm/") ? [] : [/40\s*\*\s*Math\.log10\(/])].filter((re) => re.test(c)).map((re) => `${f}：${re.source}`); });
     assert(!bad.length, `还在：${bad.join("、")}`);
   });
-  it("老文件照写的读（第 16 条，没有迁移）：第 2 版的三个样本读得开、每位乐手两张表都有八档；第 1 版的两个样本谱的扩展没有纸的表 = 读不懂、明说", () => {
+  it("老文件照写的读（第 16 条，没有迁移）：第 2 版的三个样本读得开、门口补全之后每位乐手这一路的数都写全；第 1 版的两个样本谱的扩展没有纸的表 = 读不懂、明说", () => {
     for (const dir of ["v2-2-2-1", "v2-2-2-2", "v2-2-3-2"]) {
       const o = openBytes("sample.mxl", new Uint8Array(fs.readFileSync(new URL(`fixtures/format/${dir}/sample.mxl`, import.meta.url))));
-      for (const role of Object.keys(o.extras.lounge)) { const sp = activePerfSpec(o.extras, role); assert(DYNS.every((d) => sp.dynamicsVel[d] >= 1 && sp.dynamicsVel[d] <= 127 && Number.isFinite(sp.dynamicsDb[d])), `${dir} ${role}：两张表`); }
+      for (const role of Object.keys(o.extras.lounge)) { const sp = activePerfSpec(o.extras, role); if (!sp) continue; assert(perfSpecProblems(sp, 1).length === 0 && DYNS.every((d) => Number.isFinite(sp.path === "gain" ? sp.dynamicsDb[d] : sp.dynamicsVel[d])), `${dir} ${role}：这一路的表八档都在、数都写全`); }
     }
     for (const dir of ["v1-1-1-1", "v1-1-2-1"]) {
       let threw = ""; try { openBytes("sample.mxl", new Uint8Array(fs.readFileSync(new URL(`fixtures/format/${dir}/sample.mxl`, import.meta.url)))); } catch (e) { threw = (e as Error).message; }

@@ -74,7 +74,8 @@
 - 只写现行格式里有定义的键（`ROLE_KEYS / CAND_KEYS / ART_KEYS / STUDIO_KEYS / TRACK_KEYS / FX_KEYS / MASTER_KEYS / MANIFEST_KEYS`、`KNOWN_SCORE_KEYS / KNOWN_PAPER_KEYS / KNOWN_PART_KEYS`）；那一份比这一版新（同一个大版本、小版本更大）= 不认识的原样带回（包里不认识的文件同理，看总目录）。版本记号照「写永远只写当前拍」写这一版的。退役的不写：老文件里的 mp3、phrases、声部上的 autoOttava / brokenChords。效果参数这一层不按参数表筛（主线程参数 hpAuto / syncBeats 不在引擎的参数表里）。
 - 哼的字只在乐手身上（`instrument.hum`）；歌上不再有一份、存的时候不再互相抄。
 - 歌词每个音节的 `xml:lang` = 唱的那一段的语言（`engine/timeline.ts sungLangsOf`，和唱同一个 `sungPlan`）。
-- 加了新键 / 新值的那几份小版本 +1（`contract.ts FORMAT_MINOR`：manifest 1、score 11、lounge 2、studio 2；16-4 起 lounge 3）。
+- 加了新键 / 新值的那几份小版本 +1（`contract.ts FORMAT_MINOR`：manifest 1、score 11、lounge 2、studio 2；16-4 起 lounge 3；v0.17.16 起 lounge 4）。
+- 存的时候不再补数（as-of v0.17.16，16-4 A，Claude Opus 5.5）：休息室里每位乐手的数要么是新建时从模板（`format/template.ts`）按值抄的，要么是读文件时门口补的，要么是人改的——`buildEntries` 只按键表筛、不问模板；唯一的例外是 SoundFont 不固定敲一个键的写 `note: null`。新写的键：小月相 `instrument.outputGainDb`、鼓 / 固定敲一件的 `instrument.hitSecByKey`；`articulation.rollHz` 只写数。
 - 每位乐手身上的键按它的力度路分（as-of v0.17.15）：插件报的 `dynamics` 是格式契约（引擎名走哪条路永远不变）；演奏法的键表 `ART_KEYS_BY` 按「这条路出声的代码读不读」分（守卫 `test/art-keys-by-path.test.ts` 拿真的时间线核），另一路的、哪条路都不读的（`tenutoGate`）不补不写。
 - 效果链里的两个开关（16-5，as-of v0.17.14）：EQ 的自动低切 `hpAuto`、延迟的跟速度 `syncBeats` 登记在 `engine/chain.ts HOST_PARAMS`，存的时候和别的参数一样明写；开着的那一格把这一刻算出来的数写进 `hpHz` / `timeMs`（`writeResolved`，和放的时候 `core/render.ts mixParamsOf` 里的 `resolveChain` 同一份换算：歌手轨 = 这位全曲最低的音往下大三度，混音轨 / 总轨 = 0；延迟 = 几拍 × 60000 ÷ 歌开头的速度）。乐手自己的链放的时候不换算，存的时候也不碰。
 
@@ -90,11 +91,13 @@
 | B6 画 | A8 | — | — |
 
 **B5 里 `openBytes` 读的规矩（第 16 条 16-2，as-of v0.17.11 / 2026-11-12，Claude Opus 5.5）**：文件上怎么写就怎么读——
-- 没有升级链（`src/format/migrate/` 删了）：各份 JSON 原样当现行格式读，只认现行有定义的键；缺的数由各处现行默认补（16-4 收进模板）；退役的键不理（不认识的：那一份比这一版新才原样带回，见 C4）。只拒开大版本比 app 新的、小版本更新说一次。
+- 没有升级链（`src/format/migrate/` 删了）：各份 JSON 原样当现行格式读，只认现行有定义的键；缺的数在门口按模板补（as-of v0.17.16：休息室这一块 = `project.ts completeRole / completeCandidate`，一块一个函数；录音房、谱的扩展两块下一步）；退役的键不理（不认识的：那一份比这一版新才原样带回，见 C4）。只拒开大版本比 app 新的、小版本更新说一次。
 - 不搬、不猜、不重排：声部上的老谱号 / 自动八度线键不理；纸头谱号 = 声部明写 `clef: "auto"` 才自动，否则每张纸第一个 `<clef>` 写什么就是什么；老写法 `brokenChords` 不理；合租一家不重排；老歌的声部名照文件（user 定的甲）；视图态 pad 的「1=」跟谱 / 手动只看 `auto`（老写法只写了 `fifths` 不再猜成手动，16-3）；效果的「原声」没写 = 参数表默认（`dryOf` 的「1 − 湿」删了，16-3）。
 - 断了的照实标：合租不成立 → `PartDef.hostBroken`（照没合租来画，歌手牌「合租」那一行写清，存的时候照原样写回）；声部没有乐手 / 读不懂 → 没人上场（不再当小月相；四个「不出声」的出口说原因）；混音台出到 / 发送 / 被谁压断了 → 那一页那一格写「断了」、卡片上「有 N 处断了」（判法 = `engine/studio.ts busLinkStates`，和录音房接线同一个）。
 - 别家的谱没写速度 / 调号 / 拍号 → 打开时那一串话里各一句（`headNotice`）。
 - `loadDoc` 开歌不补力度、不理顺先后（人改谱时 A6 的 normalize 照旧补）。新歌 = `templateExtras(song)`：创建那一刻每个声部的乐手按模板写进休息室。
+- **休息室的门口**（16-4 A，as-of v0.17.16，Claude Opus 5.5；统筹 2026-11-12 夜五条）：`openBytes` 里每位角色 `noteNullAsUnset` → `completeRole`：每位乐手缺的 / 类型不对的数按模板补（演奏法按力度路那一份、力度表按八档、唱法表和旋钮、SoundFont 没写力度的那一档；滚奏密度按是不是鼓 12 / 14；小月相的原始输出增益 6.52；鼓 / 固定敲一件的着力点表按目录）；写了的原样留。不补：比这一版新的那一份、读不懂的引擎、不认识的效果。补完才是「打开时的样子」：不算改过、不自动存、不进撤销、不说话（`test/read-as-written.test.ts` 守，含一份 v0.17.15 代码写的冻结样本 `test/fixtures/format/minor/lounge-3/`）。
+- **出声那一层只吃写全的**：`src/score`、`src/engine`、`src/core` 不 import 模板（`test/template.test.ts`）；`core/render.ts performerInfoOf` 送进录音房之前查一遍缺数（`perfSpecProblems` + 唱法核心的旋钮 + 按块出声的原始输出增益 + 插件自己报的，如着力点表），缺了 = 这个声部明着不出声、清单里写缺哪几个，音频线程不抛。
 
 ## 六、还随整个模型涨的点（优化时先看这里）
 
@@ -189,9 +192,9 @@
 | SoundFont：每个音的力度 | 力度记号查力度表（pp 33 … ff 112）；重音 +16、强音 +28、次重音 / 弱化 / 幽灵音、拍子轻重 | 人（乐手配置按值存，新建时抄默认表） | 乐器页「力度记号」「记号怎么演」 |
 | TinySoundFont 总增益 | 0 dB（`vendor/tsf/tsf-glue.c` `tsf_set_output(…, 0)`）= 不加不减 | 我们 | 不用看（是 0） |
 | **小月相**：唱法核心出来的原始声音 | 核心里「齐平」把每个字拉到一个水平（齐平 0.8、上限 6 dB、连续过渡） | 人（乐手配置按值存） | 乐器页「高级：唱法核心的旋钮」 |
-| 小月相：块乘多少 | × 0.89 ÷ 0.42 ≈ ×2.12（+6.5 dB）：原始峰值约 0.42 放大到 0.89 | 我们（`performers/tsukuyomi.ts` `chunkGain`） | **这一版起**乐器页「力度记号」那一行写出来 |
+| 小月相：块乘多少 | × 10^(6.52 ÷ 20) ≈ ×2.118（+6.52 dB）：原始峰值约 0.42 放大到 0.89（原来是常数 0.89 ÷ 0.42 = +6.5228 dB，差 0.0028 dB） | **v0.17.16 起是乐手身上的数** `instrument.outputGainDb`（新建抄模板 6.52；老歌门口补） | 乐器页「原始输出增益」一行（一步 0.5 dB、「默认」、撤销） |
 | 小月相：存成 16 位时缩的倍数 k、放的时候乘回 | 一缩一乘，净 ×1（只为了不削顶） | 我们 | 不用看（净 1） |
-| **元音版**：元音表 | 表生成时整张按最大峰值缩到 0.8（`scripts/gen-preview-vowels.mjs`） | 我们 | **看不见**（报统筹，见本节末） |
+| **元音版**：元音表 | 表生成时整张按最大峰值缩到 0.8（`scripts/gen-preview-vowels.mjs`） | 我们（这张表自己的满音量，统筹定不加键） | v0.17.16 起乐器页元音版「元音表的满音量」一行（只读） |
 | 元音版：每个音的包络 | 起 / 放 / 被顶掉的淡入淡出，峰值 1 | 我们 | 不改水平 |
 
 ### 2. 表情曲线（每条轨一条 dB 曲线，乘在声源后面）

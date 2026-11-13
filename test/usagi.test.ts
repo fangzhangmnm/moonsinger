@@ -5,7 +5,7 @@ import { initState, emptySong, tr } from "../src/score/song.ts";
 import { route } from "../src/keyboard/keys.ts";
 import { apply } from "../src/score/commands.ts";
 import { applyLyricLine } from "../src/score/lyrics.ts";
-import { toLabScore } from "../src/score/lab-score.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
 
 const CODE: Record<string, string> = { "|": "Enter", "-": "Minus" };
 function press(st: ReturnType<typeof initState>, keys: string) {

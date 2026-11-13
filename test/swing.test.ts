@@ -3,7 +3,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { TPQ, initState, tr, timeline, tempoMapOf, swingDelta, flattenPart, type Token, type NoteTok, type Song } from "../src/score/song.ts";
 import { swingRatio, timeMapOf } from "../src/score/groove.ts";
-import { toLabScore } from "../src/score/lab-score.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
 import { lightNotes } from "../src/engine/timeline.ts";
 
 let nid = 8800;

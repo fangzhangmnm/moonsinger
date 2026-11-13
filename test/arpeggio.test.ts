@@ -9,7 +9,7 @@ let nid = 9900;
 const P = (s: string, o: number) => ({ step: s as "C", alter: 0, octave: o });
 const chord = (extra: Partial<NoteTok> = {}): Token => ({ kind: "note", id: nid++, pitch: P("G", 4), chord: [P("E", 4), P("C", 4)], dur: TPQ, lyric: null, ...extra } as Token);
 const head = () => tr(initState()).slice(0, 3);
-const marks = { staccatoGate: 0.5, breath: true, gapSec: 0, arpeggioSec: 0.04 };
+const marks = { staccatoGate: 0.5, breath: true, gapSec: 0, gapShare: 0.25, breathSec: 0.16, breathShare: 0.25, arpeggioSec: 0.04 };
 describe("琶音", () => {
   it("SoundFont：旋律（最上面）准时落拍，下面的从低到高依次提早 arpeggioSec（v0.9.48；user「旋律音准时落拍、低音提前滚奏」）；不写 = 同时；音符表按起点排好", () => {
     const rest: Token = { kind: "rest", id: nid++, dur: TPQ };   // 前面一拍休止：和弦在 2/3 秒（♩ = 90），低音才有地方提早

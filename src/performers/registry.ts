@@ -100,9 +100,6 @@ export interface PerformerPlugin {
    *  **这个字段是格式契约的一部分**（统筹 2026-11-12 夜）：它决定歌里这位身上写哪些键、不写哪些键，所以一个引擎名走哪条路永远不变——想换路 = 换一个新的引擎名
    *  （同「键的意思永远不变」）。守卫：test/art-keys-by-path.test.ts 把现有三个引擎各走哪条路钉住。 */
   readonly dynamics: "velocity" | "gain";
-  /** 按块出声的（sound: "chunks"）块乘多少：这个引擎原始输出的满音量归它自己（9-3，2026-11-12；user「小月相有自己的normalization，normalization应该是乐器自己可以带的」）。
-   *  公共的出声代码不认识这个数（守卫：src/engine、src/core、src/score 里没有针对某个引擎的音量常数）。按音符表出声的不报。 */
-  readonly chunkGain?: number;
   /** 新上场的这位默认的「响度」（calibrationDb，dB）：插件 / 库自己报（9-3；user「是不同库之间需要调」）。library = 候选的 origin.library（SoundFont 按库；
    *  别的引擎不看）。乐器页的「默认」钮回到它。库和库之间只在这一个数上对齐；混音台的推子是这首歌的决定，不算。 */
   defaultCalibrationDb(library: string | null): number;
@@ -111,7 +108,7 @@ export interface PerformerPlugin {
   /** 能不能从休息室删掉（第一公民的两位不删；带自己字节的乐器能删）。 */
   readonly removable: boolean;
   /** 出声参数里这位自己的那部分（gm / 分段唱 / 着力点）；通用部分（力度表 / 校准 / 修八度 / 链 / 拍子轻重）胶水填。 */
-  info(ctx: InfoCtx): Pick<PerformerInfo, "gm" | "chunk" | "hitSec" | "singOpt" | "velDb">;
+  info(ctx: InfoCtx): Pick<PerformerInfo, "gm" | "chunk" | "hitSec" | "singOpt" | "velDb" | "outputGainDb" | "missing">;
   /** 出声前准备：库进录音房 / 元音表。抛错 = 这位出不了声（胶水报出来、这个声部不出声、其余照放）。 */
   prepare(ctx: PrepareCtx): Promise<void>;
   /** notes 模式：音符表 → 这位的轨（chunks 模式没有这一步，时间线自己出块）。 */

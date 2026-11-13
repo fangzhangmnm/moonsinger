@@ -3,7 +3,7 @@ import { describe, it, eq } from "./runner.mjs";
 import { nucleusStarts, wordsOf, alignEnglish } from "../src/singer/en-front.mjs";
 import { initState, writeDegree, type NoteTok, tr } from "../src/score/song.ts";
 import { applyLyricLine } from "../src/score/lyrics.ts";
-import { toLabScore } from "../src/score/lab-score.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
 
 const T = (s: string) => s.split(" ");
 const E = (kana: string, len = 1, x: Record<string, unknown> = {}) => ({ kana, notes: [[60, len]] as [number, number][], ...x });

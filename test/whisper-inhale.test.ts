@@ -2,8 +2,8 @@
 // user「x同意，做支持」「气声同意」；「不应该每个逗号都大喘气」= 换气只在明写的地方出声。谁认（只有月读）在 test/honors.test.ts 守着。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, tr, withArt, toggleInhaleBefore, toggleArtBefore, symBackspace, TPQ, type Token, type NoteTok, type EditorState } from "../src/score/song.ts";
-import { toLabScore } from "../src/score/lab-score.ts";
-import { SING_MARKS } from "../src/format/performance.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
+import { SING_MARKS } from "../src/format/template.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 
 let nid = 900;

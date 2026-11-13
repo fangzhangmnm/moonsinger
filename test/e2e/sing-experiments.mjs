@@ -45,6 +45,24 @@ check(!!o2 && o2.level === 0 && o2.levelContinuous === 0, "两个旋钮叠着", 
 // 撤销两步 = 回默认
 await p.evaluate(() => { window.__moonsinger.undo(); window.__moonsinger.undo(); }); await p.waitForTimeout(150);
 check(!(await p.evaluate(() => JSON.stringify(window.__moonsinger.extras()).includes('"levelContinuous":0'))) && (await p.$eval('.inst-page [data-v="core:level:0.8"]', (e) => e.classList.contains("is-on"))), "撤销两步 = 回默认（走 undo）");
+// 原始输出增益（16-4 B）：乐手身上的 instrument.outputGainDb；一步 0.5 dB、「默认」= 抄模板、走撤销
+const og = () => p.evaluate(() => { const m = window.__moonsinger, x = m.extras(), r = x.lounge[m.state().song.parts[0].role]; return r.candidates.find((c) => c.id === r.active).instrument.outputGainDb; });
+const ogRow = () => p.evaluate(() => [...document.querySelectorAll(".inst-page .ip-k")].find((e) => e.textContent === "原始输出增益")?.nextElementSibling?.textContent ?? "");
+check((await og()) === 6.52 && /\+6\.52 dB/.test(await ogRow()) && !(await p.$('.inst-page [data-v="og:def"]')), "原始输出增益：新歌 = +6.52 dB（写在乐手身上），在默认上就不出「默认」钮", `${await og()} ${await ogRow()}`);
+await p.$eval('.inst-page [data-v="og:0.5"]', (e) => e.click()); await p.waitForTimeout(150);
+check((await og()) === 7.02 && /\+7\.02 dB/.test(await ogRow()) && !!(await p.$('.inst-page [data-v="og:def"]')), "+0.5 = 7.02、出「默认」钮", String(await og()));
+await p.waitForTimeout(1800);   // 连着调同一行并成一步（gesture，1.5 s 内）：隔开再点「默认」，撤销才是单独的一步
+await p.$eval('.inst-page [data-v="og:def"]', (e) => e.click()); await p.waitForTimeout(150);
+check((await og()) === 6.52, "「默认」= 抄模板现在的值（6.52，照样写成数）", String(await og()));
+await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
+check((await og()) === 7.02, "撤销回到 7.02", String(await og()));
+// 乐手自己的效果链（16-4 H）：空的不显示；不空就只读列出来（关着的标出来）
+const fxRow = () => p.evaluate(() => [...document.querySelectorAll(".inst-page .ip-k")].find((e) => e.textContent === "这位自己的效果")?.nextElementSibling?.textContent ?? null);
+check((await fxRow()) === null, "乐手效果链空着 = 不显示这一行");
+await p.evaluate(() => { const m = window.__moonsinger, x = structuredClone(m.extras()), r = x.lounge[m.state().song.parts[0].role]; r.candidates.find((c) => c.id === r.active).chain = [{ id: "pf0", kind: "reverb", on: false, params: {} }, { id: "pf1", kind: "eq", params: {} }]; m.commit({ extras: x }, { locus: { kind: "lounge", label: "t" } }); });
+await p.waitForTimeout(200);
+const fr = await fxRow();
+check(!!fr && /混响（关着）/.test(fr) && /均衡/.test(fr) && !(await p.$$eval(".inst-page .ip-fx", (es) => es.some((e) => e.closest("button")))), "不空 = 列出来（关着的标出来），只读（没有钮）", String(fr));
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nsing-experiments: ${pass} passed, ${fail} failed`);

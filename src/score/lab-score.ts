@@ -12,7 +12,7 @@ import { _t } from "../i18n/index.ts";
 import { midiOf } from "./pitch.ts";
 import { type Token, type Hum, type TempoMap, TPQ, effectivePitch, isTimed, timeline, artOf } from "./song.ts";
 import { MELISMA_MARK, ELISION, isSmallKana, isSokuon, lyricCore } from "./lyrics.ts";
-import { SING_MARKS, type SingMark } from "../format/performance.ts";
+import type { SingMark } from "../format/performance.ts";
 
 export interface LabEntry { kana: string; notes: [number, number][]; rest?: number; hum?: boolean; hyph?: boolean; before?: "^" | "v" | "O"; whisper?: boolean; inhale?: boolean }   // whisper = 这个字不唱音高（气声，× 符头）；inhale = 这个字前面的换气听得见（2026-10-10 Opus 5.5）   // before = 这个字前面的记号（唱法核心：v = 换一口气，从前一个音末尾偷时间）   // hyph = 英文：这个词没完（下一条接着拼）   // hum = 没写歌词、唱「哼的字」（核心的 humNasal / humConsMin 只管这些）
 export type SingLang = "ja" | "zh" | "en";
@@ -25,7 +25,8 @@ export const HUM_SYLLABLE: Record<Hum, Record<SingLang, string>> = { la: { ja: "
 /** tokens = 一个声部（压平后的一串）；tempoMap = 第一个声部的速度表（这个声部不是第一个时给，自己串里的速度记号不算数）。 */
 /** range = 只出这一段的 token（下标 [from, to)；月读分段唱用，见 singChunks）——速度、没写音高的音照样按整串的上下文算。不给 = 整串。 */
 /** tokenEntry = 顺手记下「token 下标 → 它唱成第几条」（拖腔 / 连音线并进前一条的也记前一条；按键试听用）。 */
-export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tempoMap?: TempoMap, sing: Record<string, SingMark | null> = SING_MARKS, range?: readonly [number, number], tokenEntry?: Map<number, number>): LabScore {
+/** sing = 这位乐手的「记号 → 字前记号」表（候选按值带的，PerfSpec.sing；16-4 A 起必须给，这一层不带默认）。 */
+export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang, tempoMap: TempoMap | undefined, sing: Record<string, SingMark | null>, range?: readonly [number, number], tokenEntry?: Map<number, number>): LabScore {
   const inRange = (i: number) => !range || (i >= range[0] && i < range[1]);
   const eighth = TPQ / 2, tl = timeline(tokens, tempoMap), base = tl.find((x) => inRange(x.index))?.bpm ?? 90;
   const bpmOf = new Map(tl.map((x) => [x.index, x.bpm]));

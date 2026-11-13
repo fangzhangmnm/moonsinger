@@ -5,14 +5,15 @@ import { performerOf } from "../src/performers/index.ts";
 import { lightNotes } from "../src/engine/timeline.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, select, tr, toggleArtSel, toggleSlurSel, type EditorState, type NoteTok } from "../src/score/song.ts";
-import { toLabScore } from "../src/score/lab-score.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
 import { gainSegments, noteEnd, noteVelocity, ignoredArts, lightMarks, ALL_MARKS, type Mark } from "../src/score/perform.ts";
-import { DYNAMICS_VEL, DYNAMICS_DB, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION } from "../src/format/performance.ts";
+import { gainSpec, velSpec } from "./fixtures/spec.ts";
+import { sf2Curve } from "./fixtures/vel-curve.ts";
 
 const deq = (a: unknown, b: unknown, msg?: string) => eq(JSON.stringify(a), JSON.stringify(b), msg);
-const spec = (gapSec: number) => ({ dynamicsVel: { ...DYNAMICS_VEL }, dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, gapSec });
+const spec = (gapSec: number) => gainSpec({ gapSec });   // 音量那一路（小月相 / 元音版），数全抄模板
 /** 新建的 SoundFont 演奏者：按力度敲（力度记号 / 重音 / 强音走 MIDI 力度；9-2 起力度表人人都有，分路看插件能力）。 */
-const sfSpec = (gapSec: number) => ({ ...spec(gapSec), dynamicsVel: { ...DYNAMICS_VEL }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL });
+const sfSpec = (gapSec: number) => velSpec({ gapSec });
 /** 两个四分音符；mark = 给第一个音加的记号（连线 = 第一个连到第二个）。chord = 第一个音叠成和弦（琶音要和弦才听得出来，v0.9.45）。 */
 function two(mark?: Mark, chord = false): EditorState {
   let st = initState(); st = { ...st, input: { ...st.input, unit: 3 } };
@@ -32,7 +33,7 @@ const heard = (eng: string, gap: number) => (st: EditorState) => {
   if (eng === "tsukuyomi") return JSON.stringify([toLabScore(tr(st), "n"), gainSegments(tr(st), undefined, sp)]);   // 和 main.ts 一样：跳音进唱谱
   const f = first(st);
   if (eng === "soundfont") { const sv = sfSpec(gap), i = tr(st).indexOf(f);
-    return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sv), !!f.slur), gainSegments(tr(st), undefined, sv, undefined, undefined, true), noteVelocity(tr(st), i, f.art ?? [], sv, 80 / 127), lightNotes(tr(st), [], true, { ...lightMarks(sv), rollHz: () => 16 }).map((n) => [n.midi, n.t0])]); }   // 起点（琶音改的是它；v0.9.45）；滚奏 = 敲几下（v0.16.64：和 timeline.ts buildTimeline 一样，认滚奏的这位才带 rollHz）
+    return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sv), !!f.slur), gainSegments(tr(st), undefined, sv, undefined, undefined, sf2Curve()), noteVelocity(tr(st), i, f.art ?? [], sv, 80 / 127), lightNotes(tr(st), [], true, { ...lightMarks(sv), rollHz: () => 16 }).map((n) => [n.midi, n.t0])]); }   // 起点（琶音改的是它；v0.9.45）；滚奏 = 敲几下（v0.16.64：和 timeline.ts buildTimeline 一样，认滚奏的这位才带 rollHz）
   return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sp), !!f.slur), gainSegments(tr(st), undefined, sp)]);
 };
 
@@ -58,7 +59,7 @@ describe("谁认哪些记号（不认 = 画灰 + 明说）", () => {
 });
 
 describe("连断的底色（noteEnd）", () => {
-  const o = (gapSec: number) => ({ staccatoGate: 0.5, breath: true, gapSec });
+  const o = (gapSec: number) => ({ staccatoGate: 0.5, breath: true, gapSec, gapShare: 0.25, breathSec: 0.16, breathShare: 0.25 });
   it("不写记号的音留缝；缝最多吃掉这个音的 1/4；连线 / 保持不留；跳音照旧", () => {
     eq(noteEnd(0, 1, [], o(0.04)), 0.96);
     assert(Math.abs(noteEnd(0, 0.1, [], o(0.04)) - 0.075) < 1e-12, "短音：最多吃 1/4");
@@ -81,25 +82,25 @@ describe("力度 = MIDI velocity（SoundFont；2026-10-08 user「应该send的�
     const withFf = [...toks.slice(0, i), dyn("ff"), ...toks.slice(i)];
     eq(noteVelocity(withFf, i + 1, ["marcato"], sv, 1), 1, "112 + 28 顶到 127");
   });
-  it("没带力度表的旧演奏者（10-08 以前）= 标准表、照样按力度敲（9-2：不留「力度记号走 dB」那条旧路）；按力度敲的音量曲线不再管力度（不双算）", () => {
+  it("出厂的力度表（模板）= 照样按力度敲；按力度敲的音量曲线不再管力度（不双算）", () => {
     const st = two(), toks = tr(st), i = toks.indexOf(first(st));
     const withPp = [...toks.slice(0, i), dyn("pp"), ...toks.slice(i)];
-    eq(Math.round(noteVelocity(withPp, i + 1, [], spec(0), 0.8) * 127), DYNAMICS_VEL.pp, "pp = 标准表的力度");
-    eq(gainSegments(withPp, undefined, sfSpec(0), undefined, undefined, true), null, "按力度敲：pp 不走音量曲线");
+    eq(Math.round(noteVelocity(withPp, i + 1, [], sfSpec(0), 0.8) * 127), sfSpec(0).dynamicsVel.pp, "pp = 表里的力度");
+    eq(gainSegments(withPp, undefined, sfSpec(0), undefined, undefined, sf2Curve()), null, "按力度敲：pp 不走音量曲线");
   });
 });
 
 describe("音内的起伏：按下去就自然衰减的乐器（canSwell = false）", () => {
   it("< / <> 不认（画灰、明说）、出声不变；> 照做", () => {
     deq(ignoredArts(performerOf("soundfont"), 0.02, false), ["swellGrow", "whisper", "inhale"]);   // 气声 / 出声的换气乐器本来就不认（2026-10-10）
-    const piano = { ...sfSpec(0.02), canSwell: false }, h = (st: EditorState) => JSON.stringify(gainSegments(tr(st), undefined, piano, undefined, undefined, true));
+    const piano = { ...sfSpec(0.02), canSwell: false }, h = (st: EditorState) => JSON.stringify(gainSegments(tr(st), undefined, piano, undefined, undefined, sf2Curve()));
     eq(h(two("swellGrow")), h(two()), "< 做不到 = 出声不变");
     assert(h(two("swellFade")) !== h(two()), "> 照做");
   });
 });
 
 describe("同一道缝上连线 + 呼吸 = 呼吸算数（2026-10-08，user「我觉得应该呼吸会override连线」，两个选项里 AI 选了 2：两个都留着，出声呼吸算数）", () => {
-  const o = { staccatoGate: 0.5, breath: true, gapSec: 0.04, breathSec: 0.12, breathShare: 0.5 };
+  const o = { staccatoGate: 0.5, breath: true, gapSec: 0.04, gapShare: 0.25, breathSec: 0.12, breathShare: 0.5 };
   it("SoundFont / 元音版（noteEnd）：连线 + 呼吸 = 和只有呼吸一样断开", () => {
     eq(noteEnd(0, 1, ["breath"], o, true), noteEnd(0, 1, ["breath"], o, false));
     assert(noteEnd(0, 1, ["breath"], o, true) < 1, "连线没把呼吸吃掉");

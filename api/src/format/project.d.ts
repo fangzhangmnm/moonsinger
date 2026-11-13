@@ -1,8 +1,8 @@
 import { type Song } from "../score/song.ts";
-import { FORMAT, type Dynamic, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";
+import { FORMAT, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";
 import { FINAL_MP3_ENTRY, type FinalRecord } from "./final.ts";
 export { FINAL_MP3_ENTRY, type FinalRecord };
-import { type SingMark } from "./performance.ts";
+import type { PerfSpec } from "../score/perform.ts";
 export { FORMAT };
 export type { Hum, InstrumentV2 };
 /** 参考窗（v0.8，2026-10-08 深夜 Opus 5.5；对齐稿 ai-docs/20261008-reference-window-alignment.md）：整个目录归 @internal/reference-window
@@ -36,6 +36,8 @@ export declare const CANDIDATE_ID: {
     readonly light: "c2";
 };
 export type Engine = InstrumentV2["engine"];
+/** 门口：一位角色的每个乐手过一遍 completeCandidate（比这一版新的那一份不补，原样带着）。 */
+export declare function completeRole(r: Json): void;
 export declare const ART_KEYS_BY: {
     readonly gain: Set<string>;
     readonly velocity: Set<string>;
@@ -211,6 +213,7 @@ export interface GmCandidate {
         centsPerKey?: number;
         align?: boolean;
     };
+    hitSecByKey?: Record<string, number>;
     path: string | null;
     bytes: Uint8Array | null;
     origin: Sf2Source["origin"];
@@ -268,41 +271,18 @@ export declare function withUnpacked(extras: Extras, only?: (subsetSha256: strin
     extras: Extras;
     removed: Map<string, Uint8Array>;
 };
-/** 上场那位的力度表（力度记号 → 力度；9-2 起全体一张，没带 = 标准表 DYNAMICS_VEL）/ 跳音吃掉多少 / 重音加多少。没有角色快照或字段缺 = app 内置那份（ARTICULATION…）。 */
-export declare function activePerfSpec(extras: Extras, role: string): {
-    staccatoGate: number;
-    accentDb: number;
-    gapSec: number;
-    marcatoDb: number;
-    dynamicsVel: Record<Dynamic, number>;
-    dynamicsDb: Record<Dynamic, number>;
-    accentVel: number;
-    marcatoVel: number;
-    stressDb: number;
-    stressVel: number;
-    unstressDb: number;
-    unstressVel: number;
-    ghostDb: number;
-    ghostVel: number;
-    accentSec: number;
-    breathSec: number;
-    breathShare: number;
-    gapShare: number;
-    wedgeStepVel: number;
-    sfzDb: number;
-    sfzVel: number;
-    sfzSec: number;
-    fpSec: number;
-    swellDb: number;
-    canSwell: boolean;
-    sing: Record<string, SingMark | null>;
-    rollHz: number | null;
-};
+/** 上场那位交给出声代码的数（PerfSpec：按力度路分、每个数都必填）。内存里的乐手门口补全过 / 新建按模板抄过，这里只照写的读（不带默认）、夹到能调的范围里；
+ *  没人上场 / 读不懂的引擎 = null（不出声）。缺了的数（不该有）= NaN / undefined，送进录音房之前 perfSpecProblems 明着报出来。 */
+export declare function activePerfSpec(extras: Extras, role: string): PerfSpec | null;
+/** 送进录音房之前的那一处查（统筹 2026-11-12 夜第 5 条；core/render.ts performerInfoOf 叫它）：这位的数缺了哪些 / 不是数的有哪些（空 = 没毛病）。缺 = 明着报错，不在音频线程里抛。 */
+export declare function perfSpecProblems(sp: PerfSpec, velocity: number): string[];
 /** 连断底色能调到多大（秒）。 */
 export declare const GAP_MAX_SEC = 0.2;
-/** 改上场那位的滚奏密度（乐器页；每秒几下，ROLL_HZ_MIN … ROLL_HZ_MAX；null = 去掉、回到乐器默认）。没人上场 = 原样。v0.16.64 */
+/** 这位乐手滚奏的出厂密度（乐器页「默认」钮问它；鼓 12 / 有音高的 14，template.ts）。 */
+export declare function rollHzDefaultOf(extras: Extras, role: string): number;
+/** 改上场那位的滚奏密度（乐器页；每秒几下，ROLL_HZ_MIN … ROLL_HZ_MAX；null = 「默认」= 抄现行的出厂值，照样写成数，16-4 F）。没人上场 = 原样。v0.16.64 */
 export declare function withRollHz(extras: Extras, role: string, hz: number | null, hum: Hum): Extras;
-/** 音内起伏多深能调到哪（dB；乐器页一档 3 dB；7-N，2026-11-12）。默认 = MARK_DEFAULTS.swellDb（6）。 */
+/** 音内起伏多深能调到哪（dB；乐器页一档 3 dB；7-N，2026-11-12）。出厂值在 template.ts（6）。 */
 export declare const SWELL_DB_MIN = 3, SWELL_DB_MAX = 24;
 /** 改上场那位的音内起伏多深（articulation.swellDb，dB；字段本来就有、格式不动；null = 回到默认 6）。没人上场 = 原样。 */
 export declare function withSwellDb(extras: Extras, role: string, dB: number | null, hum: Hum): Extras;
@@ -310,7 +290,7 @@ export declare function withSwellDb(extras: Extras, role: string, dB: number | n
 export declare function withGapSec(extras: Extras, role: string, sec: number, hum: Hum): Extras;
 /** 上场那位的校准（dB；没写 = 现行的默认 CALIBRATION_DEFAULT_DB，和新建时写进去的同一个数，第 14 条）。渲染时乘在这个声部上，和录音室推子相加（推子 = 混音决定，校准 = 演奏者自己的响度）。 */
 export declare function activeCalibrationDb(extras: Extras, role: string): number;
-/** 上场那位的力度（0–1，= MIDI 力度 ÷ 127）；没写 = SOUNDFONT_DEFAULTS.velocity。 */
+/** 上场那位的力度（0–1，= MIDI 力度 ÷ 127；按力度敲的乐手身上的 defaults.velocity，门口补全过）。按音量走的乐手没有这个数（出声不读）= 1 占位。 */
 export declare function activeVelocity(extras: Extras, role: string): number;
 /** 改上场那位的力度（记到 MIDI 整数格：k / 127）。没人上场 = 原样。 */
 export declare function withVelocity(extras: Extras, role: string, v: number, hum: Hum): Extras;
@@ -320,6 +300,12 @@ export declare function withCalibration(extras: Extras, role: string, dB: number
 export declare function withSfxFixed(extras: Extras, role: string, on: boolean, hum: Hum): Extras;
 /** 月读分段唱的粒度（上场那位；没写 = 每句）。user「开关是歌手的属性，可以有不同的粒度」。 */
 export declare function activeSingChunk(extras: Extras, role: string): "phrase" | "sheet" | "whole";
+/** 小月相的原始输出乘多少（dB，16-4 B；上场那位不是小月相 / 缺了 = NaN：出声那一层报缺数，不替它补）。 */
+export declare function activeOutputGainDb(extras: Extras, role: string): number;
+/** 小月相原始输出乘多少能调到多大（dB）。 */
+export declare const OUTPUT_GAIN_MIN_DB = -24, OUTPUT_GAIN_MAX_DB = 24;
+/** 改上场那位小月相的原始输出乘多少（乐器页；null = 「默认」= 抄模板现在的值，照样写成数）。不是小月相 = 原样。 */
+export declare function withOutputGainDb(extras: Extras, role: string, db: number | null, hum: Hum): Extras;
 /** 小月相唱法核心的旋钮（存在候选 defaults 里，by value；没写 = TSUKUYOMI_DEFAULTS；2026-10-15 user「齐平和其他的也都放在高级设置里面可以持久化」）。 */
 export declare const SING_CORE_KEYS: readonly ["level", "levelContinuous", "levelMaxDb", "cleanMax", "breath"];
 export type SingCoreKey = (typeof SING_CORE_KEYS)[number];
@@ -330,7 +316,7 @@ export declare function withSingChunk(extras: Extras, role: string, v: "phrase" 
 export declare function withSfxAlign(extras: Extras, role: string, on: boolean, hum: Hum): Extras;
 /** 上场那位的移调（半音；没写 = 0）。 */
 export declare function activeTranspose(extras: Extras, role: string): number;
-/** 改上场那位的移调（夹在 ±48；0 = 去掉字段，存档不多出 0）。 */
+/** 改上场那位的移调（夹在 ±48；0 也写，16-3 起每个键都明写）。 */
 export declare function withTranspose(extras: Extras, role: string, semis: number, hum: Hum): Extras;
 /** 字节 → 歌。认 .mxl（zip）和不压缩的 .musicxml / .xml。读不了 = 抛错（错误文字直接给人看）。 */
 export declare function openBytes(name: string, bytes: Uint8Array): Opened;

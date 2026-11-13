@@ -5,7 +5,8 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, select, toggleArtSel, tr, TPQ, withTrack, type Token, type NoteTok } from "../src/score/song.ts";
 import { lightNotes } from "../src/engine/timeline.ts";
-import { lightMarks, rollDefaultHz } from "../src/score/perform.ts";
+import { lightMarks } from "../src/score/perform.ts";
+import { TEMPLATE } from "../src/format/template.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { engrave } from "../src/render/engrave.ts";
 import { spellMidi } from "../src/score/pitch.ts";
@@ -17,7 +18,7 @@ const info = { id: "P1", name: "Snare", instrumentName: "军鼓", sound: "drum.s
 let id = 9700;
 const n = (m: number, dur = TPQ, extra: Partial<NoteTok> = {}): Token => ({ kind: "note", id: id++, pitch: spellMidi(m, 0), dur, lyric: null, ...extra }) as Token;
 const head = () => { const t = tr(initState()); return t.slice(0, 3); };
-const marks = (hz?: number) => ({ staccatoGate: 0.5, breath: true, gapSec: 0, ...(hz ? { rollHz: () => hz } : {}) });
+const marks = (hz?: number) => ({ staccatoGate: 0.5, breath: true, gapSec: 0, gapShare: 0.25, breathSec: 0.16, breathShare: 0.25, arpeggioSec: 0.035, ...(hz ? { rollHz: () => hz } : {}) });
 
 describe("滚奏：放", () => {
   it("一个二分音符（120 拍 = 1 秒）每秒 16 下 = 16 下、等长、头尾接上；不认滚奏（没给 rollHz）= 照一个长音", () => {
@@ -33,15 +34,15 @@ describe("滚奏：放", () => {
     const hits = lightNotes(toks, map, true, marks(10));
     eq(hits.filter((h) => h.midi === 38).length, 10); eq(hits.filter((h) => h.midi === 36).length, 1);
   });
-  it("默认密度：鼓类一律 12（军鼓 / 镲 / 底鼓 / 别的鼓都是），有音高的 14（7-N 第二批，user「默认是均匀，12」）", () => {
-    eq([38, 40, 49, 51, 36, 45, 76].map((k) => rollDefaultHz(k)).join(","), "12,12,12,12,12,12,12"); eq(rollDefaultHz(null), 14);
+  it("出厂密度（模板）：鼓类一律 12、有音高的 14（7-N 第二批，user「默认是均匀，12」）", () => {
+    eq(`${TEMPLATE.lounge.rollHz.drum},${TEMPLATE.lounge.rollHz.pitched}`, "12,14");
   });
-  it("乐器页调过的存进演奏者（可选字段）、能回默认", () => {
+  it("乐器页调过的存进演奏者、能回默认（16-4 F：只写数，「默认」= 抄模板现在的值）", () => {
     let ex = withNewRole(emptyExtras(), "r1", "n");
-    eq(activePerfSpec(ex, "r1").rollHz, null, "没调过 = null（按乐器默认）");
-    ex = withRollHz(ex, "r1", 24, "n"); eq(activePerfSpec(ex, "r1").rollHz, 24);
-    ex = withRollHz(ex, "r1", 99, "n"); eq(activePerfSpec(ex, "r1").rollHz, 40, "封顶");
-    ex = withRollHz(ex, "r1", null, "n"); eq(activePerfSpec(ex, "r1").rollHz, null, "回默认 = 字段拿掉");
+    eq(activePerfSpec(ex, "r1")!.rollHz, 14, "新建 = 有音高的出厂密度");
+    ex = withRollHz(ex, "r1", 24, "n"); eq(activePerfSpec(ex, "r1")!.rollHz, 24);
+    ex = withRollHz(ex, "r1", 99, "n"); eq(activePerfSpec(ex, "r1")!.rollHz, 40, "封顶");
+    ex = withRollHz(ex, "r1", null, "n"); eq(activePerfSpec(ex, "r1")!.rollHz, 14, "回默认 = 写成出厂的那个数");
   });
 });
 
@@ -72,14 +73,15 @@ describe("滚奏：写谱 / MusicXML / 画", () => {
 // ── 7-N 第一批（2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「这个滚奏完全没法用啊，比如如何实现我之前手动滚奏的效果？」「没法上音内渐强」）──
 //   每一下按它敲下去那一刻的力度水平（出声同一份 dynLevels）；滚奏的音上音内起伏谁都能演（鼓也行）；音头那一组只算第一下、弱化 / 幽灵音每一下都算；
 //   dB ↔ 力度只经过 L（perform.ts VelDb：乐器 = 引擎在那个键上实际的；这里用 SF2 规范的深度曲线代替（test/fixtures/vel-curve.ts），真库的那一份在 test/sf-velcurve.test.ts 拿引擎核）。
-import { gainSegments, rollHitVelocity, noteVelocities, velocityForDb, swellByVelocity, type PerfSpec, type VelDb } from "../src/score/perform.ts";
+import { gainSegments, rollHitVelocity, noteVelocities, velocityForDb, swellByVelocity, type VelDb } from "../src/score/perform.ts";
 import { sf2Curve, sf2Db } from "./fixtures/vel-curve.ts";
 import type { Art } from "../src/score/song.ts";
 import { openBytes } from "../src/format/project.ts";
-import { MARK_DEFAULTS, DYNAMICS_VEL } from "../src/format/performance.ts";
+import { DYNAMICS_VEL } from "../src/format/template.ts";
+import { velSpec } from "./fixtures/spec.ts";
 const nodeMod7n = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
 /** 一位按力度敲的鼓（新的 SoundFont 候选的样子：标准力度表、音内起伏做不到）。 */
-const DRUM: PerfSpec = { ...MARK_DEFAULTS, staccatoGate: 0.5, accentDb: 3, dynamicsVel: { ...DYNAMICS_VEL }, accentVel: 16, marcatoVel: 28, canSwell: false } as PerfSpec;
+const DRUM = velSpec({ canSwell: false });
 const C800 = sf2Curve(800);
 /** 照 timeline.ts 的接法排一条（力度那一路）：每个音的力度 + 滚奏每一下的力度。 */
 const play = (toks: Token[], map: never, hz: number, curve: VelDb = C800, spec = DRUM) => lightNotes(toks, map, true, { ...lightMarks(spec as never), rollHz: () => hz }, (i) => noteVelocities(toks, map, spec, 80 / 127).get(i) ?? 80 / 127, rollHitVelocity(toks, map, spec, 80 / 127, undefined, undefined, curve));
@@ -112,9 +114,9 @@ describe("滚奏 7-N 第一批：每一下按当时的力度", () => {
     eq(velocityForDb(C800, 38, 80, 6), 53, "反查：33.3·log10(53/80) = −5.96 最接近 −6");
     assert(g[0] === 53 && g.every((v, k) => k === 0 || v >= g[k - 1]!) && g[g.length - 1]! <= 80 && g[g.length - 1]! > g[0]!, `< 从 53 长到 mf：${g.join(" ")}`);
     assert(b[0] === 53 && Math.max(...b) === 80, `<> 两头低、中间回到 mf：${b.join(" ")}`);
-    const gs = gainSegments([...head(), dyn("mf"), n(38, 4 * TPQ, { art: ["roll", "swellUp"] })], map1, DRUM, undefined, undefined, true, C800, true);
+    const gs = gainSegments([...head(), dyn("mf"), n(38, 4 * TPQ, { art: ["roll", "swellUp"] })], map1, DRUM, undefined, undefined, C800, true);
     assert(!gs || gs.every((s) => s.dB === 0), "力度那一路：音量曲线里不再压音内起伏（每一下的力度里已经有了）");
-    const plain = gainSegments([...head(), dyn("mf"), n(38, 4 * TPQ, { art: ["swellUp"] })], map1, DRUM, undefined, undefined, true, C800, true);
+    const plain = gainSegments([...head(), dyn("mf"), n(38, 4 * TPQ, { art: ["swellUp"] })], map1, DRUM, undefined, undefined, C800, true);
     assert(!plain, "不是滚奏的音：鼓照旧做不到音内渐强（不画灰的例外只给滚奏）");
   });
   it("力度做不出起伏的（深度 0：力度不改响度）：滚奏的音内起伏走音量曲线、每一下力度不动（不静默丢掉）", () => {
@@ -122,7 +124,7 @@ describe("滚奏 7-N 第一批：每一下按当时的力度", () => {
     assert(!swellByVelocity(C0, 38, 6) && swellByVelocity(C800, 38, 6), "深度 0 做不出、800 做得出");
     const toks = [...head(), dyn("mf"), n(38, 4 * TPQ, { art: ["roll", "swellUp"] })];
     assert(play(toks, map1, 8, C0).every((h) => Math.round(h.vel! * 127) === 80), "每一下 mf");
-    const gs = gainSegments(toks, map1, DRUM, undefined, undefined, true, C0, true)!;
+    const gs = gainSegments(toks, map1, DRUM, undefined, undefined, C0, true)!;
     assert(!!gs && Math.abs(gs[0]!.dB + 6) < 0.3 && Math.abs(gs[gs.length - 1]!.dB) < 0.3, `音量曲线从 −6 dB 长到 0：${gs[0]!.dB.toFixed(2)} … ${gs[gs.length - 1]!.dB.toFixed(2)}`);
   });
   it("音头那一组只算第一下（重音 / 强音 / 突强 / 次重音、拍子轻重）；强后即弱 = 第一下 f、后面 p；幽灵音 / 弱化每一下都算", () => {
@@ -130,11 +132,11 @@ describe("滚奏 7-N 第一批：每一下按当时的力度", () => {
     const ac = v(["accent"]); eq([ac[0], ac[1], ac[7]].join(","), "96,80,80", "重音 = 第一下 +16");
     const fp = v(["fp"]); eq([fp[0], fp[1], fp[7]].join(","), "96,49,49", "强后即弱 = f 然后 p");
     const gh = v(["ghost"]); assert(gh.every((x) => x === 52), `幽灵音每一下 −28：${gh.join(" ")}`);
-    const gs = gainSegments([...head(), dyn("mf"), n(38, 2 * TPQ, { art: ["roll", "fp"] })], map1, DRUM, undefined, undefined, true, C800, true);
+    const gs = gainSegments([...head(), dyn("mf"), n(38, 2 * TPQ, { art: ["roll", "fp"] })], map1, DRUM, undefined, undefined, C800, true);
     assert(!gs || gs.every((s) => s.dB === 0), "滚奏的强后即弱不在音量曲线里再压一遍");
   });
   it("强后即弱在不是滚奏的乐器音上：压多少 = 这件乐器的 L(p) − L(f)（深度 800：−9.74 dB；原来写死 960 = −11.68）", () => {
-    const gs = gainSegments([...head(), dyn("mf"), n(60, 4 * TPQ, { art: ["fp"] })], map1, DRUM, undefined, undefined, true, C800)!;
+    const gs = gainSegments([...head(), dyn("mf"), n(60, 4 * TPQ, { art: ["fp"] })], map1, DRUM, undefined, undefined, C800)!;
     const end = gs[gs.length - 1]!.dB, want = sf2Db(DYNAMICS_VEL.p, 800) - sf2Db(DYNAMICS_VEL.f, 800);
     assert(Math.abs(end - want) < 0.01 && Math.abs(want + 9.74) < 0.01, `${end.toFixed(2)} vs ${want.toFixed(2)}`);
   });

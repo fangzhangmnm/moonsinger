@@ -12,7 +12,7 @@ import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveCategory, followOf } from "../score/groove.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Hum } from "../format/contract.ts";
-import { activeGm, activeInstrument, activeHum, activeCalibrationDb, activeVelocity, activePerfSpec, activeTranspose, activeMaster, studioTrack, studioTracks, activeChain, activeId, type Extras, type GmCandidate } from "../format/project.ts";
+import { activeGm, activeInstrument, activeHum, activeCalibrationDb, activeVelocity, activePerfSpec, perfSpecProblems, activeTranspose, activeMaster, studioTrack, studioTracks, activeChain, activeId, type Extras, type GmCandidate } from "../format/project.ts";
 import { performerOf } from "../performers/index.ts";
 import { buildTimeline, LEAD_IN, type Timeline, type PerformerInfo } from "../engine/timeline.ts";
 import { resolveChain, lowestMidiOf, songBpm } from "../engine/chain.ts";
@@ -73,7 +73,13 @@ export function audibleParts(song: Song, pv: PartAudible): PartDef[] {
 export function performerInfoOf(extras: Extras, part: PartDef, banks: BankLookup): PerformerInfo {
   const role = part.role, eng = (activeInstrument(extras, role)?.engine ?? "unknown") as PerformerInfo["engine"], plugin = performerOf(eng), cat = grooveCategory(plugin?.grooveCategory ?? null, activeGm(extras, role));
   const own = plugin ? plugin.info({ extras, role, presetIndex: (s, b, p) => banks.presetIndex(s, b, p), velCurve: (s, b, p) => banks.velCurve(s, b, p) }) : { gm: null, chunk: "phrase" as const };   // 这位自己的那部分（gm / 分段唱 / 着力点）归插件
-  return { engine: eng, hum: activeHum(extras, role), plugin, spec: activePerfSpec(extras, role), velocity: activeVelocity(extras, role), transpose: activeTranspose(extras, role), follow: (s) => followOf(s, cat), chain: activeChain(extras, role), ...own };
+  const spec = activePerfSpec(extras, role), velocity = activeVelocity(extras, role);
+  // 送进录音房之前查一遍（统筹 2026-11-12 夜第 5 条）：这位的数缺了 / 不是数 = 这个声部明着不出声、写清缺哪几个（时间线报进「不出声」那张清单），不在音频线程里抛
+  const missing = [...(plugin && spec ? perfSpecProblems(spec, velocity) : plugin ? ["articulation"] : []), ...((own as { missing?: string[] }).missing ?? [])];   // 插件自己那份缺的（着力点表…）一起报
+  for (const [k, v] of Object.entries((own as { singOpt?: Record<string, unknown> }).singOpt ?? {})) if (!Number.isFinite(v as number)) missing.push(`defaults.${k}`);   // 唱法核心的旋钮也一样：缺了不交给核心自己的默认
+  if (plugin?.sound === "chunks" && !Number.isFinite((own as { outputGainDb?: number }).outputGainDb)) missing.push("instrument.outputGainDb");   // 按块出声的：块乘多少（16-4 B）
+  const { missing: _m, ...ownRest } = own as typeof own & { missing?: string[] };
+  return { engine: eng, hum: activeHum(extras, role), plugin, spec, velocity, transpose: activeTranspose(extras, role), follow: (s) => followOf(s, cat), chain: activeChain(extras, role), ...ownRest, ...(missing.length ? { missing } : {}) };
 }
 /** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
 export async function prepareParts(parts: readonly PartDef[], extras: Extras, deps: Pick<RenderDeps, "engine" | "sounds">): Promise<PrepareError[]> {

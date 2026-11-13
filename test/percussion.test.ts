@@ -6,7 +6,7 @@ import { percOf, percKindOf } from "../src/gm/percussion.ts";
 import { engrave, type PartView, type Prim } from "../src/render/engrave.ts";
 import { PERC_CLEF, PERC_HEAD } from "../src/render/smufl.ts";
 import { initState, addPart, addPaper, setPartHost, setFocus, headLen, TPQ, DEFAULT_BPM, type Token, type EditorState, type PartDef, type Song } from "../src/score/song.ts";
-import { emptyExtras, activePerfSpec } from "../src/format/project.ts";
+import { velSpec } from "./fixtures/spec.ts";
 import { buildTimeline, LEAD_IN, type PerformerInfo } from "../src/engine/timeline.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 
@@ -121,7 +121,7 @@ describe("鼓谱：着力点", () => {
     let st = initState(); st = addPaper(st);
     const pid = st.song.parts[0].id, pp = st.song.papers[0];
     const songX: Song = { ...st.song, papers: [{ ...pp, tracks: { [pid]: [...pp.tracks[pid].slice(0, headLen(pp.tracks[pid])), key(60), key(60)] } }, ...st.song.papers.slice(1)] };
-    const spec = activePerfSpec(emptyExtras(), "r"), Q = 60 / DEFAULT_BPM;
+    const spec = velSpec(), Q = 60 / DEFAULT_BPM;
     const info = (hit?: (k: number) => number): PerformerInfo => ({ engine: "soundfont", hum: "n", plugin: performerOf("soundfont"), spec, velocity: 0.8, transpose: 0, gm: { sha: "S", presetIndex: 3, note: 60 }, chunk: "phrase", follow: () => 0, ...(hit ? { hitSec: hit } : {}) });
     const b = (i: PerformerInfo) => buildTimeline({ song: songX, order: songX.papers.map((p) => p.id), parts: songX.parts as PartDef[], info: () => i, singOpt: { leadIn: LEAD_IN } });
     const plain = b(info()), rev = b(info(() => REV.hitSec!));

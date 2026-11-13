@@ -1,9 +1,8 @@
 import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type Hum } from "../score/song.ts";
-import { rollHitVelocity, type PerfSpec, type VelDb } from "../score/perform.ts";
+import { rollHitVelocity, lightMarks, type PerfSpec, type VelDb } from "../score/perform.ts";
 import { type GrooveStyle } from "../score/groove.ts";
 import { type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
 import { type SfxInfo } from "../gm/sf-key.ts";
-import type { SingMark } from "../format/performance.ts";
 import type { FxV2 } from "../format/contract.ts";
 import type { TrackSpec } from "./studio.ts";
 import type { PerformerPlugin } from "../performers/registry.ts";
@@ -22,10 +21,10 @@ export interface PerformerInfo {
     hum: Hum;
     /** 上场那位的插件；null = 还没有人上场（认不出的引擎也算；ADR-0004）。出声方式 / 叠音 / 唱不唱字都问它。 */
     plugin: PerformerPlugin | null;
-    spec: PerfSpec & {
-        gapSec: number;
-        sing: Record<string, SingMark | null>;
-    };
+    /** 这位的数（每个都必填，按力度路分）；没人上场 = null。core/render.ts performerInfoOf 送进来之前查过缺不缺：缺了的写在 missing 里。 */
+    spec: PerfSpec | null;
+    /** 这位身上缺的 / 不是数的键（门口没补上；不该有）：有 = 这个声部不出声，「不出声」清单里写清缺哪几个。 */
+    missing?: string[];
     velocity: number;
     transpose: number;
     gm: {
@@ -44,6 +43,8 @@ export interface PerformerInfo {
     hitSec?: (key: number) => number;
     /** 这位自己的唱法参数（小月相：候选 defaults 里的旋钮，乐器页「高级」；2026-10-15）：盖在 TimelineInput.singOpt 上，一起进块的内容键。 */
     singOpt?: Record<string, unknown>;
+    /** 按块出声的（小月相）：唱法核心原始输出进轨之前乘多少（dB，乐手身上的 instrument.outputGainDb；16-4 B）。 */
+    outputGainDb?: number;
     /** 按力度敲的乐器：引擎在敲的键上实际的 L（写的音高 × 力度 → dB；perform.ts VelDb，7-N）。准备声音时从库的字节算（录音房载库时），没载好 = 没有（这个声部本来就不出声）。
      *  按音量走力度的（小月相 / 元音版）不给——她们的力度就是候选身上的 dB 表（PerfSpec.dynamicsDb，16-4）。 */
     velDb?: VelDb;
@@ -122,11 +123,7 @@ export declare function songLangOf(tokens: readonly Token[], hum: Hum): SingLang
 /** 滚奏一下的力度（7-N）：perform.ts rollHitVelocity 给的那个函数。 */
 export type RollVel = ReturnType<typeof rollHitVelocity>;
 /** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。marks = 修的记号怎么落到这一路上（跳音截短、呼吸处收短一口气）；不给 = 照谱满长。 */
-export declare function lightNotes(tokens: Token[], tempoMap: TempoMap, poly?: boolean, marks?: {
-    staccatoGate: number;
-    breath: boolean;
-    gapSec: number;
-    arpeggioSec?: number; /** 滚奏每秒几下（按敲的键 / 音高）；没给 = 这位不认滚奏，照一个长音放。 */
+export declare function lightNotes(tokens: Token[], tempoMap: TempoMap, poly?: boolean, marks?: ReturnType<typeof lightMarks> & {
     rollHz?: (midi: number) => number;
 }, velOf?: (index: number, art: readonly string[]) => number, rollVel?: RollVel): {
     midi: number;

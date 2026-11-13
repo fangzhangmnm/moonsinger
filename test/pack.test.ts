@@ -3,7 +3,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array };
 import { saveMxl, openBytes, emptyExtras, withSf2Candidate, withActive, activeGm, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, CANDIDATE_ID, type Extras } from "../src/format/project.ts";
-import { CALIBRATION_DEFAULT_DB } from "../src/format/performance.ts";
+import { CALIBRATION_DEFAULT_DB } from "../src/format/template.ts";
 import { performerOf } from "../src/performers/index.ts";
 const SF_CAL = performerOf("soundfont")!.defaultCalibrationDb(null);   // 新上场的 SoundFont 乐器默认的响度 = 插件按库报的（9-3）
 import { unzipSync } from "../vendor/fflate/fflate.esm.js";

@@ -145,7 +145,7 @@
             "ghostVel": "number",
             "marcatoDb": "number",
             "marcatoVel": "number",
-            "rollHz": "null",
+            "rollHz": "number",
             "sfzDb": "number",
             "sfzSec": "number",
             "sfzVel": "number",
@@ -238,12 +238,16 @@
             "bank": "number",
             "chunk": "string",
             "engine": "string",
+            "hitSecByKey": {
+              "60": "number"
+            },
             "hum": "string",
             "model": {
               "pack": "string",
               "sha256": "string"
             },
             "note": "number",
+            "outputGainDb": "number",
             "program": "number",
             "sfx": {
               "align": "boolean",

@@ -3,7 +3,7 @@ import { describe, it, eq } from "./runner.mjs";
 import { splitSyllables, applyLyricLine } from "../src/score/lyrics.ts";
 import { initState, writeDegree, setCaret, writeBar, extend, TPQ, type NoteTok, tr, firstTrack } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
-import { toLabScore } from "../src/score/lab-score.ts";
+import { toLabScore } from "./fixtures/lab-score.ts";
 const H = 3;   // 谱头三个记号
 
 describe("lyrics", () => {
@@ -59,7 +59,7 @@ describe("lyrics", () => {
 
 // 一个音上几个字（「+」= elision；user「日语歌词需支持一个音对应两个假名 也许不一定两个，然后中文也一样」→ 点头）。edited by Claude Opus 5.5 2026-10-07
 import { splitSyllables as _split, lyricShow, ELISION, distributeFrom as _dist } from "../src/score/lyrics.ts";
-import { toLabScore as _lab } from "../src/score/lab-score.ts";
+import { toLabScore as _lab } from "./fixtures/lab-score.ts";
 import { saveMxl as _save, openBytes as _open, emptyExtras as _ex } from "../src/format/project.ts";
 import { initState as _init, writePitch as _wp, TPQ as _Q } from "../src/score/song.ts";
 describe("一个音上几个字（+）", () => {

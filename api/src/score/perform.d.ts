@@ -1,36 +1,48 @@
 import { type Token, type TempoMap, type Dyn } from "./song.ts";
-import { ROLL_HZ_MIN, ROLL_HZ_MAX } from "../format/performance.ts";
-export interface PerfSpec {
+import { ROLL_HZ_MIN, ROLL_HZ_MAX, type SingMark } from "../format/performance.ts";
+/** 交给出声代码的这位的数（第 16 条 16-4 A，统筹 2026-11-12 夜）：每个都必填——读文件的门口补全、新建按模板抄（format/template.ts），出声的代码不带默认、不 import 模板。
+ *  按这位的力度路分（插件报的 dynamics；哪一路有哪些键 = format/project.ts ART_KEYS_BY，守卫 test/art-keys-by-path.test.ts）。缺了 = 送进录音房之前明着报错（format/project.ts perfSpecProblems）。 */
+export interface PerfCommon {
     staccatoGate: number;
-    accentDb: number;
-    marcatoDb?: number;
-    /** 记号怎么解读的其余的数（候选 articulation by value；没给 = MARK_DEFAULTS）。 */
-    accentSec?: number;
-    breathSec?: number;
-    breathShare?: number;
-    gapShare?: number;
-    wedgeStepVel?: number;
-    sfzDb?: number;
-    sfzVel?: number;
-    sfzSec?: number;
-    fpSec?: number;
-    swellDb?: number;
-    canSwell?: boolean;
-    stressDb?: number;
-    stressVel?: number;
-    unstressDb?: number;
-    unstressVel?: number;
-    ghostDb?: number;
-    ghostVel?: number;
-    /** 力度记号 → 力度（1–127；按力度敲的乐器用：按值带的，没带的那一档 = 模板）。重音 / 强音按力度加多少。 */
-    dynamicsVel: Record<Dyn, number>;
-    accentVel?: number;
-    marcatoVel?: number;
-    /** 力度记号 → dB（八档；按音量走力度的小月相 / 元音版用：按值带的，没带的那一档 = 模板。第 16 条 16-4，统筹 2026-11-12 夜：这张表就是她的力度，程序里没有公式和深度）。 */
-    dynamicsDb?: Record<Dyn, number>;
-    /** 滚奏每秒敲几下（v0.16.64；演奏者自己的，没写 = 按乐器的默认，rollDefaultHz）。 */
-    rollHz?: number | null;
+    gapSec: number;
+    gapShare: number;
+    breathSec: number;
+    breathShare: number;
+    fpSec: number;
+    swellDb: number;
+    canSwell: boolean;
+    arpeggioSec: number;
+    /** 滚奏每秒几下（16-4 F 起只写数）。 */
+    rollHz: number;
+    /** 小月相：谱上的记号 → 唱法核心的字前记号（别的乐手身上没有 = 空）。 */
+    sing: Record<string, SingMark | null>;
 }
+/** 按音量走力度的（小月相 / 元音版）：力度 = dB 表；重音那一组是 dB。 */
+export interface GainSpec extends PerfCommon {
+    path: "gain";
+    dynamicsDb: Record<Dyn, number>;
+    accentDb: number;
+    marcatoDb: number;
+    accentSec: number;
+    sfzDb: number;
+    sfzSec: number;
+    stressDb: number;
+    unstressDb: number;
+    ghostDb: number;
+}
+/** 按力度敲的（SoundFont）：力度 = MIDI 力度表；重音那一组是力度格；没终点的渐强渐弱走 wedgeStepVel。 */
+export interface VelSpec extends PerfCommon {
+    path: "velocity";
+    dynamicsVel: Record<Dyn, number>;
+    accentVel: number;
+    marcatoVel: number;
+    wedgeStepVel: number;
+    sfzVel: number;
+    stressVel: number;
+    unstressVel: number;
+    ghostVel: number;
+}
+export type PerfSpec = GainSpec | VelSpec;
 /** 音量曲线的一段：t0–t1（秒，谱的时钟）这段多少 dB；-Infinity = 静音。 */
 export interface GainSeg {
     t0: number;
@@ -56,15 +68,15 @@ export declare function swellByVelocity(curve: VelDb, midi: number, D: number): 
  *  rolls = 这位认滚奏（7-N）：滚奏的音是靠连着敲撑起来的长音——音内起伏谁都能演（不看 canSwell）；按力度敲的这一路，强后即弱和（做得出来的）音内起伏
  *  已经在每一下的力度里（rollHitVelocity），这里不再压一遍。
  *  groove = 拍子轻重（下标 → 权重，src/score/groove.ts；已乘过幅度和跟多少）：正的 = 按次重音的量在音头加，负的 = 按弱化的量整个音轻下去（写了音头记号的音不在里面）。 */
-export declare function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity?: boolean, curve?: VelDb, rolls?: boolean): GainSeg[] | null;
+export declare function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, curve?: VelDb, rolls?: boolean): GainSeg[] | null;
 /** 轻量版 / SoundFont 一个音的结束时刻（秒）：跳音截到 staccatoGate；呼吸（只给元音版）= 收短一口气的空当（同唱法核心的 v：至多 0.16 s / 25%）。 */
 export declare function noteEnd(t0: number, t1: number, art: readonly string[], o: {
     staccatoGate: number;
     breath: boolean;
-    gapSec?: number;
-    gapShare?: number;
-    breathSec?: number;
-    breathShare?: number;
+    gapSec: number;
+    gapShare: number;
+    breathSec: number;
+    breathShare: number;
 }, slur?: boolean): number;
 /** 渐强渐弱的终点：同一张纸里（bounds = 每张纸在这一串里从第几个起；不给 = 整串一张），后面第一个力度记号 / 下一个渐强渐弱 / 纸尾。 */
 export declare function hairpinEnd(tokens: Token[], i: number, bounds?: readonly number[]): {
@@ -87,9 +99,9 @@ export declare function dynLevels(tokens: Token[], map: TempoMap | undefined, ta
 export declare function dynOverridden(tokens: Token[], bounds?: readonly number[]): Set<number>;
 /** 一个音的 MIDI 力度（0–1，= 力度 ÷ 127；按力度敲的演奏者这一路）：前面最近的力度记号查表，没有记号 = 演奏者的默认力度（defaultVel，乐器页的旋钮）；
  *  再加重音 / 强音。9-2 起人人有表（没带 = 标准表），10-08 以前的旧 SoundFont 候选也这样敲。2026-10-08 user「应该send的就是velocity！」「力度就是velocity」。 */
-export declare function noteVelocity(tokens: Token[], index: number, art: readonly string[], spec: PerfSpec, defaultVel: number): number;
+export declare function noteVelocity(tokens: Token[], index: number, art: readonly string[], spec: VelSpec, defaultVel: number): number;
 /** 一整条的每个音的力度（index → 0–1）：力度记号 + 渐强渐弱（dynLevels，取音头）+ 重音 / 强音 + 拍子轻重（groove，同 gainSegments）。只给按力度敲的演奏者（调用方按插件的 dynamics 能力分）。 */
-export declare function noteVelocities(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>): Map<number, number>;
+export declare function noteVelocities(tokens: Token[], map: TempoMap | undefined, spec: VelSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>): Map<number, number>;
 /** 滚奏一下的力度（7-N，2026-11-12；user「这个滚奏完全没法用啊，比如如何实现我之前手动滚奏的效果？」「没法上音内渐强」）——只给按力度敲的演奏者（timeline.ts 按插件能力分路）。
  *  · 力度水平 = 出声已经在用的那一份 dynLevels：这一下落在哪个 token（连音线连过去的几段各用各的），按它在那一段里的进度在 at0 → at1 之间线性取——
  *    所以「一个滚奏长音 + 渐强渐弱 / 渐到」和手写的一串音逐下相同（插值不改：力度表的数值线性走，同 lvl）。
@@ -97,7 +109,7 @@ export declare function noteVelocities(tokens: Token[], map: TempoMap | undefine
  *  · 音内起伏（< > <>）：形状照旧（写的力度是最高点），fr = 这一下在整个滚奏音里的进度；低 D dB 按这件乐器在这个键上实际的 L 反查力度（velocityForDb）；
  *    力度做不出来的（swellByVelocity 为假）这里不动、音量曲线做。
  *  返回 0–1（同 noteVel）。 */
-export declare function rollHitVelocity(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, curve?: VelDb): (hit: {
+export declare function rollHitVelocity(tokens: Token[], map: TempoMap | undefined, spec: VelSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, curve?: VelDb): (hit: {
     index: number;
     t: number;
     seg: {
@@ -127,14 +139,7 @@ export declare function ignoredArts(p: HonorsOf | null | undefined, gapSec?: num
 export declare function whyIgnored(p: HonorsOf | null | undefined, m: Mark): "engine" | "gap" | "sung" | "decay";
 /** 元音版 / SoundFont 这一路（lightNotes）怎么落修的记号：跳音截到 staccatoGate、呼吸收短一口气（两种引擎一样；月读不走这条，走唱谱 + 音量曲线）。
  *  main.ts 的出声和 test/honors.test.ts 都从这里取，不各写一份。 */
-export declare function lightMarks(spec: {
-    staccatoGate: number;
-    gapSec?: number;
-    gapShare?: number;
-    breathSec?: number;
-    breathShare?: number;
-    arpeggioSec?: number;
-}): {
+export declare function lightMarks(spec: PerfCommon): {
     staccatoGate: number;
     breath: boolean;
     gapSec: number;
@@ -143,9 +148,5 @@ export declare function lightMarks(spec: {
     breathSec: number;
     breathShare: number;
 };
-/** 滚奏默认每秒几下：鼓类（整套鼓的每一件、固定敲一件的）一律 12，有音高的（定音鼓 / 弦乐的颤音）14（7-N 第二批，2026-11-12；user「然后其他类似的乐器也这么做？
- *  然后默认是均匀，12」「10–14 同意」「理想的情况是比我的稍微密一点」——手写的那段是每秒 9.33 下。原来军鼓 20、镲 14、底鼓 12、别的鼓 16）。演奏者没写 rollHz 时用，乐器页能调。 */
-export declare const ROLL_HZ_DRUM = 12, ROLL_HZ_PITCHED = 14;
-/** key = 敲的是哪个鼓键（整套鼓 = 写的音、固定敲一件 = 那一件的键）；null = 有音高的乐器。 */
-export declare function rollDefaultHz(key: number | null): number;
+/** 滚奏每秒几下的出厂值（鼓 12 / 有音高的 14）在 format/template.ts：每位乐手身上只写数（16-4 F），出声只读这一个数。 */
 export { ROLL_HZ_MIN, ROLL_HZ_MAX };

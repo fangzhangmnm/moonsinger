@@ -8,8 +8,10 @@ import { performerOf } from "../src/performers/index.ts";
 import { initState, TPQ, type Token } from "../src/score/song.ts";
 import { templateExtras, activePerfSpec, saveMxl, ART_KEYS_BY, type Extras } from "../src/format/project.ts";
 import { buildTimeline, type PerformerInfo } from "../src/engine/timeline.ts";
-import { ALL_MARKS } from "../src/score/perform.ts";
+import { ALL_MARKS, type PerfSpec } from "../src/score/perform.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
+import { velSpec } from "./fixtures/spec.ts";
+import { TEMPLATE } from "../src/format/template.ts";
 
 let nid = 61000;
 const n = (step: string, oct: number, dur: number, art?: string[], extra: Record<string, unknown> = {}): Token => ({ kind: "note", id: nid++, pitch: { step, alter: 0, octave: oct }, dur, lyric: "ら", ...(art ? { art } : {}), ...extra }) as Token;
@@ -25,21 +27,22 @@ const song = { ...st0.song, papers: [{ ...p1, tracks: { [pid]: [...p1.tracks[pid
 const ENGINES = { gain: ["tsukuyomi", "vowel-sampler"], velocity: ["soundfont"] } as const;
 /** 这一路上「什么记号都认、能叠音」的乐手：拿这条路的真插件改 honors / poly（只按力度路分）。 */
 const fullOf = (engine: string) => ({ ...performerOf(engine)!, honors: [...ALL_MARKS], poly: true, connected: false });
-const play = (engine: string, spec: PerformerInfo["spec"], full: boolean): string => {
+const play = (engine: string, spec: PerfSpec, full: boolean): string => {
   const info = (): PerformerInfo => ({ engine: engine as PerformerInfo["engine"], hum: "n", plugin: full ? fullOf(engine) : performerOf(engine), spec, velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0, velDb: (_m, v) => 40 * Math.log10(Math.max(1, v) / 127) });
   const t = buildTimeline({ song, order: [p1.id], parts: st0.song.parts, info, singOpt: {} });
   return JSON.stringify([t.tracks, t.chunks.map((c) => c.score)]);
 };
-const base = { ...activePerfSpec(templateExtras(song), role), rollHz: 10 } as PerformerInfo["spec"];
+/** 每条路一份写全的规格（音量那一路 = 新歌的小月相；力度那一路 = 模板的 SoundFont 那一份）。 */
+const BASE = { gain: { ...activePerfSpec(templateExtras(song), role)!, rollHz: 10 }, velocity: velSpec({ rollHz: 10 }) } as Record<"gain" | "velocity", PerfSpec>;
 const ALL_ART = [...new Set([...ART_KEYS_BY.gain, ...ART_KEYS_BY.velocity, "tenutoGate"])];
 /** 改一下值：开关取反；缝试大一点（缝的上限要缝比「这个音长度的几分之几」大才起作用）；数乘一下再挪一点。 */
 const bumped = (k: string, s: Record<string, any>): Record<string, any> => {
-  if (k === "dynamicsDb" || k === "dynamicsVel") return { ...s, [k]: { ...s[k], mf: s[k].mf - 3 } };
+  if (k === "dynamicsDb" || k === "dynamicsVel") { const t = s[k] ?? TEMPLATE.lounge[k]; return { ...s, [k]: { ...t, mf: t.mf - 3 } }; }   // 另一路的表：这一路的规格里没有，补一张再改
   const v = s[k], next = typeof v === "boolean" ? !v : k === "rollHz" ? 23 : k === "gapSec" ? 0.05 : typeof v === "number" ? (v === 0 ? 0.07 : v * 0.73 + (v < 1 ? 0.01 : 1)) : 0.3;
   return { ...s, [k]: next };
 };
 const reads = (path: "gain" | "velocity", k: string): boolean => ENGINES[path].some((e) => [false, true].some((full) => {
-  const s0 = { ...base, gapSec: k === "gapShare" ? 0.2 : k === "gapSec" ? 0.04 : base.gapSec } as Record<string, any>;
+  const base = BASE[path], s0 = { ...base, gapSec: k === "gapShare" ? 0.2 : k === "gapSec" ? 0.04 : base.gapSec } as Record<string, any>;
   return play(e, s0 as never, full) !== play(e, bumped(k, s0) as never, full);
 }));
 

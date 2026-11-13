@@ -9,7 +9,7 @@ import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type
 import { midiOf } from "../score/pitch.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { scriptLang } from "../score/lang.ts";
-import { gainSegments, noteEnd, noteVelocities, rollHitVelocity, NO_CURVE, lightMarks, rollDefaultHz, ROLL_HZ_MIN, ROLL_HZ_MAX, type PerfSpec, type VelDb } from "../score/perform.ts";
+import { gainSegments, noteEnd, noteVelocities, rollHitVelocity, NO_CURVE, lightMarks, ROLL_HZ_MIN, ROLL_HZ_MAX, type PerfSpec, type VelDb } from "../score/perform.ts";
 import { grooveWeights, grooveMapOf, followOf, timeMapOf, type GrooveStyle } from "../score/groove.ts";
 import { toLabScore, singChunks, type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
 import { playSegments } from "../score/repeats.ts";
@@ -35,7 +35,10 @@ export interface PerformerInfo {
   hum: Hum;
   /** 上场那位的插件；null = 还没有人上场（认不出的引擎也算；ADR-0004）。出声方式 / 叠音 / 唱不唱字都问它。 */
   plugin: PerformerPlugin | null;
-  spec: PerfSpec & { gapSec: number; sing: Record<string, SingMark | null> };
+  /** 这位的数（每个都必填，按力度路分）；没人上场 = null。core/render.ts performerInfoOf 送进来之前查过缺不缺：缺了的写在 missing 里。 */
+  spec: PerfSpec | null;
+  /** 这位身上缺的 / 不是数的键（门口没补上；不该有）：有 = 这个声部不出声，「不出声」清单里写清缺哪几个。 */
+  missing?: string[];
   velocity: number;
   transpose: number;
   gm: { sha: string; presetIndex: number; note?: number; sfx?: SfxInfo } | null;
@@ -49,6 +52,8 @@ export interface PerformerInfo {
   hitSec?: (key: number) => number;
   /** 这位自己的唱法参数（小月相：候选 defaults 里的旋钮，乐器页「高级」；2026-10-15）：盖在 TimelineInput.singOpt 上，一起进块的内容键。 */
   singOpt?: Record<string, unknown>;
+  /** 按块出声的（小月相）：唱法核心原始输出进轨之前乘多少（dB，乐手身上的 instrument.outputGainDb；16-4 B）。 */
+  outputGainDb?: number;
   /** 按力度敲的乐器：引擎在敲的键上实际的 L（写的音高 × 力度 → dB；perform.ts VelDb，7-N）。准备声音时从库的字节算（录音房载库时），没载好 = 没有（这个声部本来就不出声）。
    *  按音量走力度的（小月相 / 元音版）不给——她们的力度就是候选身上的 dB 表（PerfSpec.dynamicsDb，16-4）。 */
   velDb?: VelDb;
@@ -126,7 +131,7 @@ export function songLangOf(tokens: readonly Token[], hum: Hum): SingLang {
 /** 滚奏一下的力度（7-N）：perform.ts rollHitVelocity 给的那个函数。 */
 export type RollVel = ReturnType<typeof rollHitVelocity>;
 /** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。marks = 修的记号怎么落到这一路上（跳音截短、呼吸处收短一口气）；不给 = 照谱满长。 */
-export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: { staccatoGate: number; breath: boolean; gapSec: number; arpeggioSec?: number; /** 滚奏每秒几下（按敲的键 / 音高）；没给 = 这位不认滚奏，照一个长音放。 */ rollHz?: (midi: number) => number; }, velOf?: (index: number, art: readonly string[]) => number, rollVel?: RollVel): { midi: number; t0: number; t1: number; vel?: number }[] {
+export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: ReturnType<typeof lightMarks> & { /** 滚奏每秒几下（按敲的键 / 音高）；没给 = 这位不认滚奏，照一个长音放。 */ rollHz?: (midi: number) => number; }, velOf?: (index: number, art: readonly string[]) => number, rollVel?: RollVel): { midi: number; t0: number; t1: number; vel?: number }[] {
   type N = { midi: number; t0: number; t1: number; vel?: number; roll?: true; segs?: { index: number; t0: number; t1: number }[] };   // segs = 滚奏音的每一段（连音线连过去的几段；7-N：每一下按落在哪一段取力度）
   const notes: N[] = [];
   let open = new Map<number, N>();   // 上一个音正在响的各音高（连音线按音高接；力度跟第一段）
@@ -137,7 +142,7 @@ export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, ma
     // 琶音（v0.9.45；v0.9.48 改：user「建议改为旋律音准时落拍、低音提前滚奏，错开间隔35ms」）：最上面的（旋律）准时落拍，下面的从低到高依次提早 arpeggioSec
     //   （最多摊到这个音一半长；连过来的那段不再错开）。歌开头那个和弦 = 低音在 0 之前滚上来（v0.16.1，user 11-07 选 A「允许在 0 之前开始滚」；原来钳在 0 = 第一个和弦合成一下，
     //   那是 v0.9.48 AI 顺手定的、不是 user 拍的）：时间线从最早的音起（同月读的辅音、鼓的着力点），第一拍照旧在 0
-    const arp = poly && ps.length > 1 && (tok.art ?? []).includes("arpeggio") && !tok.tie ? Math.min(marks?.arpeggioSec ?? 0.035, ((t1 - t0) * 0.5) / (ps.length - 1)) : 0;
+    const arp = poly && ps.length > 1 && marks && (tok.art ?? []).includes("arpeggio") && !tok.tie ? Math.min(marks.arpeggioSec, ((t1 - t0) * 0.5) / (ps.length - 1)) : 0;
     const rank = arp ? new Map([...ps].map((q) => midiOf(q)).sort((a, b) => a - b).map((m, k) => [m, k] as const)) : null;
     for (const p of ps) {
       const midi = midiOf(p), prev = tok.tie ? open.get(midi) : undefined;
@@ -179,37 +184,37 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const { tokens, starts } = flat(part.id), bounds = starts.map((s) => s.index), tl = timeline(tokens, map);
     if (tl.length) total = Math.max(total, tl[tl.length - 1].t1);
     const info = inp.info(part);
-    if (!info.plugin) { unplayable.push({ part: part.id, why: _t("还没有人上场") }); continue; }
+    if (!info.plugin || !info.spec) { unplayable.push({ part: part.id, why: _t("还没有人上场") }); continue; }
+    if (info.missing?.length) { unplayable.push({ part: part.id, why: _t("这位乐手身上缺这几个数，没有出声：{keys}", { keys: info.missing.join("、") }) }); continue; }
     const groove = grooveWeights(tokens, bounds, gmap, info.follow);
-    const byVel = info.plugin.dynamics === "velocity";   // 按力度敲（乐器）/ 按音量曲线（小月相 / 元音版）= 插件的能力（9-2：不再看「有没有力度表」）
+    const sp = info.spec, byVel = sp.path === "velocity";   // 按力度敲（乐器）/ 按音量曲线（小月相 / 元音版）= 插件报的路，规格跟着它分（16-4 A）
     // L（dB ↔ 力度只经过它，7-N）：按力度敲的 = 引擎在敲的键上实际的（准备声音时从库算；没载好 = 没有，这个声部本来就不出声，不换算）
     const curve: VelDb = byVel ? info.velDb ?? NO_CURVE : NO_CURVE;   // 按力度敲的 = 引擎在敲的键上实际的 L；按音量走的不用（她们的力度就是 dB 表，16-4）
     const rolls = info.plugin.honors.includes("roll");
-    const gain: GainSeg[] | null = gainSegments(tokens, map, info.spec, bounds, groove, byVel, curve, rolls);
+    const gain: GainSeg[] | null = gainSegments(tokens, map, sp, bounds, groove, curve, rolls);
     if (info.plugin.sound === "chunks") {   // 慢引擎：按句出块（谁唱由 worker 按插件定；现在只有小月相）
       const plan = sungPlan(tokens, map, bounds, info.chunk, info.hum);   // 段 + 每段的语言（画灰也走它）
       const noteAt = (a: number) => tl.find((x) => x.index >= a && x.tok.kind === "note")?.t0 ?? 0;
       const clips: TrackSpec & { kind: "clips" } = { id: part.id, kind: "clips", clips: [], gain, ...(info.chain?.length ? { chain: info.chain } : {}) };
       for (const [k, [a, b]] of plan.ranges.entries()) {
-        const lang = plan.langs[k], te = new Map<number, number>(), score = toLabScore(tokens, info.hum, lang, map, info.spec.sing, [a, b], te);
+        const lang = plan.langs[k], te = new Map<number, number>(), score = toLabScore(tokens, info.hum, lang, map, sp.sing, [a, b], te);
         if (!score.SCORE.length) continue;
         const entryOf = new Map<number, number>(); for (const [i, e] of te) entryOf.set(tokens[i].id, e);
         const first = noteAt(a), last = tl.filter((x) => x.index >= a && x.index < b && x.tok.kind === "note").reduce((m, x) => Math.max(m, x.t1), first);
         const opt = { ...inp.singOpt, ...(info.singOpt ?? {}) };   // 歌级的哼的参数 + 这位自己的旋钮（候选里按值存的）
         const key = JSON.stringify(["tsukuyomi-chunk", score, opt]), t0 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
-        clips.clips.push({ key, t0, dur, gain: info.plugin.chunkGain ?? 1, end: last });   // 块乘多少 = 这位的插件报（9-3：满音量归引擎自己，公共代码不认识这个数）
+        clips.clips.push({ key, t0, dur, gain: 10 ** (info.outputGainDb! / 20), end: last });   // 块乘多少 = 这位乐手身上写的（16-4 B；缺了 = 送进来之前就报了缺数、到不了这里）
         chunks.push({ part: part.id, key, score, lang, opt, t0, dur, end: last, entryOf });
         from = Math.min(from, t0); to = Math.max(to, t0 + dur);
       }
       tracks.push(clips);
       continue;
     }
-    const vels = byVel ? noteVelocities(tokens, map, info.spec, info.velocity, bounds, groove) : null;   // 按音量曲线的：每个音一样的力度（力度记号在曲线上）
-    // 滚奏的密度（v0.16.64）：演奏者写了 = 它；没写 = 按乐器（固定敲一件 = 那一件的键、整套鼓 = 写的音、有音高的 = null）。这位不认滚奏（honors 里没有）= 照一个长音放
-    const percKey = (m: number): number | null => (info.gm?.note !== undefined ? info.gm.note : info.hitSec ? m : null);
-    const rollHz = info.plugin.honors.includes("roll") ? (m: number) => info.spec.rollHz ?? rollDefaultHz(percKey(m)) : undefined;
-    const rollVel = rollHz && byVel ? rollHitVelocity(tokens, map, info.spec, info.velocity, bounds, groove, curve) : undefined;   // 滚奏的每一下按当时的力度水平（7-N；按音量曲线的照旧）
-    const notes0 = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(info.spec), ...(rollHz ? { rollHz } : {}) }, (i) => vels?.get(i) ?? info.velocity, rollVel);
+    const vels = sp.path === "velocity" ? noteVelocities(tokens, map, sp, info.velocity, bounds, groove) : null;   // 按音量曲线的：每个音一样的力度（力度记号在曲线上）
+    // 滚奏的密度（v0.16.64）：这位身上写的那个数（16-4 F 起只写数：新上场 / 门口按是不是鼓从模板抄）。这位不认滚奏（honors 里没有）= 照一个长音放
+    const rollHz = info.plugin.honors.includes("roll") ? () => sp.rollHz : undefined;
+    const rollVel = rollHz && sp.path === "velocity" ? rollHitVelocity(tokens, map, sp, info.velocity, bounds, groove, curve) : undefined;   // 滚奏的每一下按当时的力度水平（7-N；按音量曲线的照旧）
+    const notes0 = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(sp), ...(rollHz ? { rollHz } : {}) }, (i) => vels?.get(i) ?? info.velocity, rollVel);
     // 踏板（11-1）：键按多久 = 谱上的延音踏板 → 照写的时值（score/pedal.ts）。这位不认踏板 = 照写的（记号画灰、明说）
     const notes = info.plugin.pedals?.includes("sustain") ? holdBySustain(notes0, sustainSpans(tokens, map, bounds)) : notes0;
     // 快引擎：音符表 → 这位的轨，怎么拼归插件（元音版 / SoundFont 的键 / 着力点都在它自己那里；ADR-0004）

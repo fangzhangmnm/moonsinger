@@ -4,7 +4,8 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, tr, withArt, swellOf, TPQ, type Token, type NoteTok } from "../src/score/song.ts";
 import { dynLevels, noteVelocities, gainSegments } from "../src/score/perform.ts";
 import { sf2Curve } from "./fixtures/vel-curve.ts";
-import { DYNAMICS_VEL, DYNAMICS_DB, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
+import { DYNAMICS_VEL, DYNAMICS_DB } from "../src/format/template.ts";
+import { gainSpec, velSpec } from "./fixtures/spec.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 
 let nid = 500;
@@ -12,8 +13,7 @@ const note = (art?: NoteTok["art"]) => ({ kind: "note", id: nid++, pitch: { step
 const dyn = (v: "mf" | "f") => ({ kind: "dyn", id: nid++, value: v }) as Token;
 const line = (items: Token[]) => [...tr(initState()).slice(0, 3), ...items];
 const notes = (toks: Token[]) => toks.flatMap((t, i) => (t.kind === "note" ? [i] : []));
-const db = { dynamicsVel: { ...DYNAMICS_VEL }, dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS };
-const vel = { ...db, dynamicsVel: { ...DYNAMICS_VEL }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL };
+const db = gainSpec(), vel = velSpec();   // 音量那一路（dB）/ 力度那一路（力度格），数全抄模板
 /** 响度（9-2：全体一条，40·log10(力度 ÷ 127)）：mf / f / p 各在哪。 */
 const MF = DYNAMICS_DB.mf, F = DYNAMICS_DB.f, Pp = DYNAMICS_DB.p;
 
@@ -34,7 +34,7 @@ describe("强后即弱 fp", () => {
   it("乐器：音头按 f 的力度弹，音量曲线在 fpSec 里压到 p；月读 / 元音版：音量从 f 落到 p", () => {
     const toks = line([dyn("mf"), note(["fp"]), note()]), [a] = notes(toks);
     eq(Math.round(noteVelocities(toks, undefined, vel, 80 / 127).get(a)! * 127), 96, "音头 = f");
-    const gv = gainSegments(toks, undefined, vel, undefined, undefined, true, sf2Curve())!; assert(gv.at(0)!.dB > gv.find((x) => x.t0 >= MARK_DEFAULTS.fpSec - 1e-9)!.dB, "乐器：压下去");
+    const gv = gainSegments(toks, undefined, vel, undefined, undefined, sf2Curve())!; assert(gv.at(0)!.dB > gv.find((x) => x.t0 >= vel.fpSec - 1e-9)!.dB, "乐器：压下去");
     const g = gainSegments(toks, undefined, db)!; assert(Math.abs(g[0].dB - F) < 1.5 && g.some((x) => Math.abs(x.dB - Pp) < 1e-9), "dB：从 f 落到 p");
   });
 });
@@ -43,9 +43,9 @@ describe("突强 sfz", () => {
   it("dB 那一路：音头高 sfzDb，sfzSec 里落回当下；力度那一路：+sfzVel", () => {
     const toks = line([dyn("mf"), note(["sfz"]), note()]), [a] = notes(toks);
     const g = gainSegments(toks, undefined, db)!;
-    assert(g[0].dB > MF + 6 && g[0].dB <= MF + MARK_DEFAULTS.sfzDb, `音头 ${g[0].dB}`);
-    eq(g.filter((x) => x.t0 >= MARK_DEFAULTS.sfzSec - 1e-9 && x.t1 <= 60 / 90 + 1e-9).every((x) => Math.abs(x.dB - MF) < 1e-9), true, "落回 mf 的响度");
-    eq(Math.round(noteVelocities(toks, undefined, vel, 80 / 127).get(a)! * 127), 80 + MARK_DEFAULTS.sfzVel);
+    assert(g[0].dB > MF + 6 && g[0].dB <= MF + db.sfzDb, `音头 ${g[0].dB}`);
+    eq(g.filter((x) => x.t0 >= db.sfzSec - 1e-9 && x.t1 <= 60 / 90 + 1e-9).every((x) => Math.abs(x.dB - MF) < 1e-9), true, "落回 mf 的响度");
+    eq(Math.round(noteVelocities(toks, undefined, vel, 80 / 127).get(a)! * 127), 80 + vel.sfzVel);
   });
 });
 
@@ -70,7 +70,7 @@ describe("音内的起伏（< / > / <>）", () => {
     eq(JSON.stringify(back.map((t) => swellOf(t) ?? null)), `[null,null,"<>"]`);
   });
   it("dB 那一路：包络只往下乘（写的力度 = 最高点；user「鼓包改」）：< 从 mf − swellDb 长到 mf；<> 两头低 swellDb、中间 mf；能和 fp 叠（fp 之后长回 f，不超过）", () => {
-    const D = MARK_DEFAULTS.swellDb, maxOf = (g: { dB: number }[]) => Math.max(...g.map((x) => x.dB));
+    const D = db.swellDb, maxOf = (g: { dB: number }[]) => Math.max(...g.map((x) => x.dB));
     const up = gainSegments(line([note()].map((t) => ({ ...(t as NoteTok), art: ["swellUp" as const] }))), undefined, db)!;
     assert(up[0].dB < MF - D + 0.6 && up.at(-1)!.dB > MF - 0.6 && maxOf(up) <= MF + 1e-9, `< ${up[0].dB} → ${up.at(-1)!.dB}（最高 ${maxOf(up)}）`);
     const bump = gainSegments(line([{ ...(note() as NoteTok), art: ["swellBoth" as const] }]), undefined, db)!, mid = bump[Math.floor(bump.length / 2)].dB;
@@ -91,14 +91,14 @@ describe("强度的阶梯：幽灵音 < 弱化 < 不写 < 次重音 < 重音 < �
   it("力度那一路（SoundFont）：一级一级往上", () => {
     const ladder = ["ghost", "unstress", null, "stress", "accent", "marcato"] as const;
     const toks = line([dyn("mf"), ...ladder.map((a) => note(a ? [a] : undefined))]), V = noteVelocities(toks, undefined, vel, 80 / 127), xs = notes(toks).map((i) => Math.round(V.get(i)! * 127));
-    eq(JSON.stringify(xs), JSON.stringify([80 + MARK_DEFAULTS.ghostVel, 80 + MARK_DEFAULTS.unstressVel, 80, 80 + MARK_DEFAULTS.stressVel, 80 + ACCENT_VEL, 80 + MARCATO_VEL]));
+    eq(JSON.stringify(xs), JSON.stringify([80 + vel.ghostVel, 80 + vel.unstressVel, 80, 80 + vel.stressVel, 80 + vel.accentVel, 80 + vel.marcatoVel]));
     for (let k = 1; k < xs.length; k++) assert(xs[k] > xs[k - 1], `第 ${k} 级比前一级重`);
   });
   it("dB 那一路（月读 / 元音版）：弱化 / 幽灵音整个音轻下去，次重音音头加一点", () => {
     const g = (a?: NoteTok["art"]) => gainSegments(line([note(a)]), undefined, db)!;
-    assert(g(["ghost"]).every((x) => Math.abs(x.dB - (MF + MARK_DEFAULTS.ghostDb)) < 1e-9), "幽灵音：整个音 mf 的响度 + ghostDb");
-    assert(g(["unstress"]).every((x) => Math.abs(x.dB - (MF + MARK_DEFAULTS.unstressDb)) < 1e-9), "弱化：整个音 mf 的响度 + unstressDb");
-    assert(Math.abs(g(["stress"])[0].dB - (MF + MARK_DEFAULTS.stressDb)) < 1e-9, "次重音：音头");
+    assert(g(["ghost"]).every((x) => Math.abs(x.dB - (MF + db.ghostDb)) < 1e-9), "幽灵音：整个音 mf 的响度 + ghostDb");
+    assert(g(["unstress"]).every((x) => Math.abs(x.dB - (MF + db.unstressDb)) < 1e-9), "弱化：整个音 mf 的响度 + unstressDb");
+    assert(Math.abs(g(["stress"])[0].dB - (MF + db.stressDb)) < 1e-9, "次重音：音头");
   });
   it("MusicXML：<stress/> / <unstress/> / 括号符头 往返", () => {
     const info = { id: "P1", name: "V", instrumentName: "月读", sound: "voice.vocals", program: 55 };

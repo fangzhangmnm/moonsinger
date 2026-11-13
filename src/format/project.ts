@@ -15,7 +15,7 @@ import { partNames, currentLabelOf } from "./part-show.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
 import { DEFAULT_BPM, swellOf, withArt, SWELL_ART, type Swell, type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, type PartLook, CLEFS, flattenPart, familyOrder, headClefOf, withLooks, headLen } from "../score/song.ts";
 import { resolveSongLooks, displayStates, withAutoOttava, type ResolvedLook } from "../score/clef.ts";
-import { percKindOf } from "../gm/percussion.ts";
+import { percKindOf, hitSecByKeyOf } from "../gm/percussion.ts";
 import { songPlayOrder } from "../score/arrange.ts";
 import { sungLangsOf } from "../engine/timeline.ts";
 import { FX_KINDS } from "../engine/fx.ts";
@@ -28,7 +28,9 @@ import { FINAL_MP3_ENTRY, contentFingerprint, type FinalRecord, type Fingerprint
 export { FINAL_MP3_ENTRY, type FinalRecord };
 import { badIds, isSafeId, safePartIds, safeView, type IdKind } from "./ids.ts";
 import { sha256HexSync } from "./sha256-sync.ts";
-import { DYNAMICS_VEL, DYNAMICS_DB, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, MARK_DEFAULTS, ROLL_HZ_MIN, ROLL_HZ_MAX, SING_MARKS, type SingMark, ARTICULATION, SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS, CALIBRATION_DEFAULT_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
+import { ROLL_HZ_MIN, ROLL_HZ_MAX, type SingMark, SOUNDFONT_SPEC } from "./performance.ts";
+import { TEMPLATE, templateCandidate, DYNAMICS_VEL, DYNAMICS_DB, CALIBRATION_DEFAULT_DB } from "./template.ts";
+import type { PerfSpec, PerfCommon } from "../score/perform.ts";
 export { FORMAT };
 export type { Hum, InstrumentV2 };
 const MIMETYPE = "application/vnd.recordare.musicxml";
@@ -63,39 +65,51 @@ export const withThumbnail = (extras: Extras, png: Uint8Array | null): Extras =>
  *  显示名 2026-10-13 起叫「小月相」/「小月相（元音）」（W-28，家规「共享叫法」）；旧歌里按值存着的「月读」原样留着——打开时迁移还是显示时换，等 user 定。 */
 export const CANDIDATE_ID = { full: "c1", light: "c2" } as const;
 export type Engine = InstrumentV2["engine"];
-/** 新建乐手的模板里共有的那几样（by value）。path = 这位的力度走哪条路：gain（小月相 / 元音版）= dB 表 dynamicsDb；velocity = 力度表 dynamicsVel；演奏法只放这一路有定义的键（ART_KEYS_BY）。 */
-const common = (calibrationDb: number, path: DynPath = "velocity") => ({ calibrationDb, chain: [] as unknown[], ...(path === "gain" ? { dynamicsDb: { ...DYNAMICS_DB } } : { dynamicsVel: { ...DYNAMICS_VEL } }), articulation: artDefaultsFor(path) });
+/** 新建乐手的模板里共有的那几样（by value；数 = template.ts）。path = 这位的力度走哪条路：gain = dB 表 dynamicsDb；velocity = 力度表 dynamicsVel；演奏法只放这一路有定义的键。 */
+const common = (calibrationDb: number, path: DynPath = "velocity") => ({ calibrationDb, chain: [] as unknown[], ...(path === "gain" ? { dynamicsDb: { ...DYNAMICS_DB } } : { dynamicsVel: { ...DYNAMICS_VEL } }), articulation: { ...TEMPLATE.lounge.articulation[path] } });
 /** 这位乐手的力度走哪条路：插件自己报的能力（registry.ts dynamics），不按引擎名分。注册表里没有 = null = 读不懂的引擎（存的时候整份原样带着、不补不筛）。
  *  注册表由会存档的各个入口装上（app 主线程、encode-worker.ts、core/render.ts 都 import performers/index.ts；test/run.mjs 也是）。 */
 type DynPath = "gain" | "velocity";
 const dynPathOf = (c: Json): DynPath | null => performerOf(instrumentOf(c)?.engine)?.dynamics ?? null;
-/** 演奏法每个键的默认（一张；按路挑这一路有定义的那几个，artDefaultsFor）。canSwell 没写 = 能；rollHz null = 按乐器（F 那一刀改成只写数）。 */
-const ART_DEFAULTS: Record<string, unknown> = { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS, canSwell: true, rollHz: null };
-const artDefaultsFor = (path: DynPath): Json => Object.fromEntries([...ART_KEYS_BY[path]].map((k) => [k, ART_DEFAULTS[k]]));
-/** 存的时候把一位乐手缺的数按现行默认写全（第 16 条 16-3，2026-11-12）：写了的原样不动，只补没写的；补的值 = 读的时候没写时用的那个（activePerfSpec / activeSingCore /
- *  activeSingChunk / activeTranspose / activeVelocity 同一张表），所以存完声音不变。不认识的引擎 / 键原样带着。
- *  力度那一张表按这位的路补（16-4）：按音量走的补 dB 表 dynamicsDb（只补缺的档：老的六档表缺 ppp / fff = 用模板的），按力度敲的补力度表 dynamicsVel；另一张不补、存的时候不写。 */
+/** 这位是不是鼓（滚奏的出厂密度按它分：鼓 12 / 有音高的 14，template.ts）：整套鼓（bank 128）或者固定敲一个键（鼓件 / 音效固定原速）。 */
+const isDrumCand = (c: Json): boolean => { const i = c.instrument as Json | undefined; return !!i && i.engine === "soundfont" && (i.bank === 128 || typeof i.note === "number"); };
+/** 休息室这一块的门口（第 16 条 16-4 A，统筹 2026-11-12 夜「v0.17.15 收」）：读文件时把一位乐手缺的数按模板补进内存——写了的、对得上类型的原样留，
+ *  没写的和写坏了（类型不对）的换成模板的（「怪值照转码」）。只有这一个函数问模板（另外两处 = 新建、界面上的「默认」）；存的时候不再补。
+ *  不补的：读不懂的引擎（整份原样）、比这一版新的那一份（openBytes 不叫它）。补的顺序照原来存的时候补的：演奏法在后面接着、力度表 / 唱法表 / 旋钮按模板的先后。
+ *  滚奏每秒几下（16-4 F）：没写或者写的不是数（老歌的 null = 按乐器）= 按这位是不是鼓从模板抄。不固定敲一个键的 SoundFont：内存里照旧是没有 note（写文件时写 null）。 */
 function completeCandidate(c0: Json): Json {
   const c: Json = { ...c0 }, eng = instrumentOf(c)?.engine, path = dynPathOf(c);
-  if (!path) return c;   // 读不懂的引擎：整份原样
-  const a = { ...((c.articulation ?? {}) as Json) };
-  const fill = (k: string, v: unknown) => { if (!(k in a)) a[k] = v; };
-  for (const [k, v] of Object.entries(artDefaultsFor(path))) fill(k, v);   // 只补这一路有定义的键（另一路的、哪条路都不读的不补）
+  if (!path || (eng !== "tsukuyomi" && eng !== "vowel-sampler" && eng !== "soundfont")) return c;   // 读不懂的引擎：整份原样
+  const T = templateCandidate(eng), num = (v: unknown) => typeof v === "number" && Number.isFinite(v);
+  const a = { ...((c.articulation && typeof c.articulation === "object" ? c.articulation : {}) as Json) };
+  for (const [k, v] of Object.entries(T.articulation as Json)) {
+    const want = k === "rollHz" ? (isDrumCand(c) ? TEMPLATE.lounge.rollHz.drum : TEMPLATE.lounge.rollHz.pitched) : v;
+    if (!(k in a)) a[k] = want; else if (typeof v === "boolean" ? typeof a[k] !== "boolean" : !num(a[k])) a[k] = want;
+  }
   c.articulation = a;
-  if (path === "gain") c.dynamicsDb = { ...DYNAMICS_DB, ...((c.dynamicsDb ?? {}) as Json) }; else c.dynamicsVel = { ...DYNAMICS_VEL, ...((c.dynamicsVel ?? {}) as Json) };
-  if (!("calibrationDb" in c)) c.calibrationDb = CALIBRATION_DEFAULT_DB;
+  const table = (got: unknown, t: Json): Json => { const g = (got && typeof got === "object" ? got : {}) as Json, o: Json = { ...t }; for (const k of Object.keys(g)) if (num(g[k])) o[k] = g[k]; return o; };
+  if (path === "gain") c.dynamicsDb = table(c.dynamicsDb, T.dynamicsDb as Json); else c.dynamicsVel = table(c.dynamicsVel, T.dynamicsVel as Json);
+  if (!num(c.calibrationDb)) c.calibrationDb = T.calibrationDb;
   if (!Array.isArray(c.chain)) c.chain = [];
-  if (!("transpose" in c)) c.transpose = 0;
+  if (!Number.isInteger(c.transpose)) c.transpose = T.transpose;
   if (eng === "tsukuyomi") {
-    c.sing = { ...SING_MARKS, ...((c.sing ?? {}) as Json) };
-    c.defaults = { ...TSUKUYOMI_DEFAULTS, ...((c.defaults ?? {}) as Json) };
+    c.sing = { ...(T.sing as Json), ...((c.sing && typeof c.sing === "object" ? c.sing : {}) as Json) };
+    c.defaults = table(c.defaults, T.defaults as Json);
     const i = c.instrument as Json; if (i.chunk !== "sheet" && i.chunk !== "whole" && i.chunk !== "phrase") c.instrument = { ...i, chunk: "phrase" };
+    if (!num((c.instrument as Json).outputGainDb)) c.instrument = { ...(c.instrument as Json), outputGainDb: (T.instrument as Json).outputGainDb };   // 16-4 B
   }
   if (eng === "soundfont") {
-    c.defaults = { ...SOUNDFONT_DEFAULTS, ...((c.defaults ?? {}) as Json) };
-    const i = c.instrument as Json; if (i.note === undefined) c.instrument = { ...i, note: null };   // 不固定敲一个键也明写 null（统筹 2026-11-12 夜清单；读的时候 null = 没写，见 openBytes）
+    c.defaults = table(c.defaults, T.defaults as Json);
+    // 着力点（16-4 E）：鼓 / 固定敲一件的没写（或缺几个键）= 按目录补；有音高的不补（写了的原样留着，出声照写的读）
+    const i = c.instrument as Json, want = hitSecByKeyOf({ bank: Number(i.bank), program: Number(i.program), ...(typeof i.note === "number" ? { note: i.note } : {}) });
+    if (want) c.instrument = { ...i, hitSecByKey: table(i.hitSecByKey, want) };
   }
   return c;
+}
+/** 门口：一位角色的每个乐手过一遍 completeCandidate（比这一版新的那一份不补，原样带着）。 */
+export function completeRole(r: Json): void {
+  if (newerThanMe(r, "lounge") || !Array.isArray(r.candidates)) return;
+  r.candidates = (r.candidates as Json[]).map((c) => (c && typeof c === "object" ? completeCandidate(c) : c));
 }
 /** 读进来的那一份乐手：SoundFont 的 note: null（不固定敲一个键）在内存里 = 没有这个键（程序各处按「有没有 note」判固定；就地改）。 */
 function noteNullAsUnset(role: Json): void {
@@ -110,11 +124,13 @@ function withCurrentLabels(c: unknown): void {
 }
 /** 新角色的官方 id（MusicXML <instrument-sound>）= 目录里人声那个概念的。 */
 const DEFAULT_SOUND = DEFAULT_CONCEPT.ids.musicxml ?? "voice.vocals";
+/** 出厂的人声乐手按值抄模板（template.ts；哼的字照这一位给的）。 */
+const voiceFrom = (engine: "tsukuyomi" | "vowel-sampler", id: string, hum: Hum): Json => { const t = templateCandidate(engine); (t.instrument as Json).hum = hum; return { id, ...t }; };
 /** 新建角色：从 app 内置预设 by value 拷进歌（契约 §8；之后 app 升级改了预设也不影响这首歌）。名字不写 = 没起（12-4）。 */
 function defaultRole(hum: Hum, id: string): Json {
   return { version: FORMAT.lounge, id, sound: DEFAULT_SOUND, concept: structuredClone(DEFAULT_CONCEPT), active: CANDIDATE_ID.full, candidates: [   // 没起名字、乐器 = 目录里的人声（12-4）
-    { id: CANDIDATE_ID.full, name: _t("小月相"), instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(CALIBRATION_DEFAULT_DB, "gain"), sing: structuredClone(SING_MARKS), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
-    { id: CANDIDATE_ID.light, name: _t("小月相（元音）"), instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(CALIBRATION_DEFAULT_DB, "gain"), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) },
+    voiceFrom("tsukuyomi", CANDIDATE_ID.full, hum),
+    voiceFrom("vowel-sampler", CANDIDATE_ID.light, hum),
   ] };
 }
 const cands = (role: Json | undefined): Json[] => ((role?.candidates as Json[] | undefined) ?? []);
@@ -216,8 +232,8 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   const lounge: Record<string, Json> = { ...a.extras.lounge };
   for (const part of song.parts) {
     if (!a.extras.lounge[part.role]) continue;   // 这个声部没有乐手（读不到 / 读不懂）= 断了：照原样不写，不替它造一位（第 16 条）
-    const role = structuredClone(a.extras.lounge[part.role]);
-    if (Array.isArray(role.candidates)) role.candidates = (role.candidates as Json[]).map((c) => (c && typeof c === "object" ? completeCandidate(c) : c));   // 缺的数写全（16-3）
+    const role = structuredClone(a.extras.lounge[part.role]);   // 内存里已经是写全的（门口 completeRole 补过 / 新建按模板抄的）；存的时候不再问模板（统筹第 3 条）
+    for (const c of cands(role)) { const i = c.instrument as Json | undefined; if (i?.engine === "soundfont" && i.note === undefined) c.instrument = { ...i, note: null }; }   // 不固定敲一个键也明写 null（内存里 = 没有这个键）
     { const nw = newerThanMe(role, "lounge");   // 只写有定义的键（版本不比自己新）
       for (const k of Object.keys(role)) if (!nw && !ROLE_KEYS.has(k)) delete role[k];
       if (Array.isArray(role.candidates)) role.candidates = (role.candidates as Json[]).map((c) => {
@@ -587,6 +603,7 @@ export interface GmCandidate {
   id: string; name: string; bank: number; program: number;
   note?: number;                       // 每个音都敲这个键：鼓件 / 音效固定原速
   sfx?: { key: number; midi?: number; centsPerKey?: number; align?: boolean };   // 音效（上场时从目录按值抄的原速键 / 音高锚点；src/gm/sf-key.ts）
+  hitSecByKey?: Record<string, number>;   // 着力点（16-4 E；乐手身上按值存的那一份，出声只读它）
   path: string | null;                 // 字节在歌里的路径；null = 弱引用（歌里不带声音）
   bytes: Uint8Array | null;            // 歌里带的字节；null = 弱引用，或强引用但文件里少了那块
   origin: Sf2Source["origin"];
@@ -597,7 +614,7 @@ export function gmCandidates(extras: Extras, role: string): GmCandidate[] {
   return cands(extras.lounge[role]).flatMap((c) => {
     const i = instrumentOf(c); if (i?.engine !== "soundfont") return [];
     const s = i.source;
-    return [{ id: String(c.id), name: String(c.name ?? ""), bank: i.bank, program: i.program, ...(i.note !== undefined ? { note: i.note } : {}), ...(i.sfx ? { sfx: i.sfx } : {}), path: s.embedded, bytes: s.embedded ? extras.sounds[s.embedded] ?? null : null, origin: s.origin, subsetSha256: s.subsetSha256 }];
+    return [{ id: String(c.id), name: String(c.name ?? ""), bank: i.bank, program: i.program, ...(i.note !== undefined ? { note: i.note } : {}), ...(i.sfx ? { sfx: i.sfx } : {}), ...(i.hitSecByKey ? { hitSecByKey: i.hitSecByKey } : {}), path: s.embedded, bytes: s.embedded ? extras.sounds[s.embedded] ?? null : null, origin: s.origin, subsetSha256: s.subsetSha256 }];
   });
 }
 /** 现在上场的 SoundFont 候选（上场的不是它 = null）。 */
@@ -619,8 +636,11 @@ export function withSf2Candidate(extras: Extras, role: string, c: Sf2CandidateAr
   const list = cands(r);
   const n = Math.max(0, ...list.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n}`;
   const embed = c.embed !== false, path = embed ? `${SOUNDS}${c.sha256}.sf2` : null;
-  const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), ...(c.sfx ? { sfx: { ...c.sfx } } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
-  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(c.calibrationDb), articulation: { ...artDefaultsFor("velocity"), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)), ...(c.canSwell === false ? { canSwell: false } : {}) }, dynamicsVel: { ...DYNAMICS_VEL }, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  const hit = hitSecByKeyOf(c);   // 着力点：和 note / sfx 一起从目录按值抄（16-4 E）
+  const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), ...(c.sfx ? { sfx: { ...c.sfx } } : {}), ...(hit ? { hitSecByKey: hit } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
+  const T = templateCandidate("soundfont"), art: Json = { ...(T.articulation as Json), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)), ...(c.canSwell === false ? { canSwell: false } : {}) };   // 缝 / 能不能音内渐强 = 调用方从目录那一行按值给
+  if (c.bank === 128 || c.note !== undefined) art.rollHz = TEMPLATE.lounge.rollHz.drum;   // 鼓（整套 / 固定敲一件）：滚奏的出厂密度是鼓那一档
+  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, calibrationDb: c.calibrationDb, chain: [], dynamicsVel: T.dynamicsVel, articulation: art, defaults: T.defaults, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC), transpose: T.transpose });
   r.candidates = list; r.active = id;
   return { ...extras, lounge: { ...extras.lounge, [role]: r }, sounds: path ? { ...extras.sounds, [path]: c.subset } : extras.sounds };
 }
@@ -695,47 +715,50 @@ export function withUnpacked(extras: Extras, only?: (subsetSha256: string) => bo
 }
 
 // ── 演奏规格（修的记号怎么出声：上场那位 by value 带着的力度表 + 演奏法；src/score/perform.ts 用；2026-10-08 by Claude Opus 5.5）──
-/** 上场那位的力度表（力度记号 → 力度；9-2 起全体一张，没带 = 标准表 DYNAMICS_VEL）/ 跳音吃掉多少 / 重音加多少。没有角色快照或字段缺 = app 内置那份（ARTICULATION…）。 */
-export function activePerfSpec(extras: Extras, role: string): { staccatoGate: number; accentDb: number; gapSec: number;
-  marcatoDb: number; dynamicsVel: Record<Dynamic, number>; dynamicsDb: Record<Dynamic, number>; accentVel: number; marcatoVel: number;
-  stressDb: number; stressVel: number; unstressDb: number; unstressVel: number; ghostDb: number; ghostVel: number;
-  accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepVel: number; sfzDb: number; sfzVel: number; sfzSec: number; fpSec: number; swellDb: number; canSwell: boolean; sing: Record<string, SingMark | null>; rollHz: number | null } {
-  const c = activeCandidate(extras, role), a = (c?.articulation ?? {}) as Partial<Record<string, number>>;
-  const num = (v: unknown, dflt: number) => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
-  // 力度表：每一档写了照写的读，没写的那一档 = 现行默认表那一格（第 16 条：不再按这位自己的间隔往外推 ppp / fff——那是猜）
-  const ladder = (got: Partial<Record<string, number>>, dflt: Record<Dynamic, number>, clamp: (v: number) => number = (v) => v): Record<Dynamic, number> => {
-    const o = {} as Record<Dynamic, number>;
-    for (const k of ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const) o[k] = clamp(num(got[k], dflt[k]));
-    return o;
-  };
-  return { staccatoGate: Math.max(0.05, Math.min(1, num(a.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a.accentDb, ARTICULATION.accentDb), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num(a.gapSec, 0))),
-    marcatoDb: num(a.marcatoDb, MARCATO_DB), accentVel: num(a.accentVel, ACCENT_VEL), marcatoVel: num(a.marcatoVel, MARCATO_VEL),
-    accentSec: Math.max(0, num(a.accentSec, MARK_DEFAULTS.accentSec)), breathSec: Math.max(0, num(a.breathSec, MARK_DEFAULTS.breathSec)), breathShare: Math.max(0, Math.min(1, num(a.breathShare, MARK_DEFAULTS.breathShare))),
-    gapShare: Math.max(0, Math.min(1, num(a.gapShare, MARK_DEFAULTS.gapShare))), wedgeStepVel: num(a.wedgeStepVel, MARK_DEFAULTS.wedgeStepVel),
-    sfzDb: num(a.sfzDb, MARK_DEFAULTS.sfzDb), sfzVel: num(a.sfzVel, MARK_DEFAULTS.sfzVel), sfzSec: Math.max(0.01, num(a.sfzSec, MARK_DEFAULTS.sfzSec)), fpSec: Math.max(0.01, num(a.fpSec, MARK_DEFAULTS.fpSec)),
-    swellDb: num(a.swellDb, MARK_DEFAULTS.swellDb), canSwell: (a as Json).canSwell !== false,
-    stressDb: num(a.stressDb, MARK_DEFAULTS.stressDb), stressVel: num(a.stressVel, MARK_DEFAULTS.stressVel), unstressDb: num(a.unstressDb, MARK_DEFAULTS.unstressDb),
-    unstressVel: num(a.unstressVel, MARK_DEFAULTS.unstressVel), ghostDb: num(a.ghostDb, MARK_DEFAULTS.ghostDb), ghostVel: num(a.ghostVel, MARK_DEFAULTS.ghostVel),
-    sing: { ...SING_MARKS, ...((c?.sing ?? {}) as Record<string, SingMark | null>) },
-    rollHz: typeof a.rollHz === "number" && Number.isFinite(a.rollHz) ? Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, a.rollHz)) : null,   // 滚奏每秒几下（v0.16.64）；没写 = 按乐器默认
-    dynamicsVel: c?.dynamicsVel ? ladder(c.dynamicsVel as Partial<Record<string, number>>, DYNAMICS_VEL, (v) => Math.max(1, Math.min(127, v))) : { ...DYNAMICS_VEL },   // 按力度敲的用；没带的那一档 = 模板（不外推）
-    dynamicsDb: ladder((c?.dynamicsDb ?? {}) as Partial<Record<string, number>>, DYNAMICS_DB) };   // 按音量走的用（16-4）：每档写了照写的读，没写的那一档 = 模板
+/** 上场那位交给出声代码的数（PerfSpec：按力度路分、每个数都必填）。内存里的乐手门口补全过 / 新建按模板抄过，这里只照写的读（不带默认）、夹到能调的范围里；
+ *  没人上场 / 读不懂的引擎 = null（不出声）。缺了的数（不该有）= NaN / undefined，送进录音房之前 perfSpecProblems 明着报出来。 */
+export function activePerfSpec(extras: Extras, role: string): PerfSpec | null {
+  const c = activeCandidate(extras, role), path = c ? dynPathOf(c) : null; if (!c || !path) return null;
+  const a = ((c.articulation ?? {}) as Record<string, number>), clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+  const common: PerfCommon = { staccatoGate: clamp(a.staccatoGate, 0.05, 1), gapSec: clamp(a.gapSec, 0, GAP_MAX_SEC), gapShare: clamp(a.gapShare, 0, 1), breathSec: Math.max(0, a.breathSec), breathShare: clamp(a.breathShare, 0, 1),
+    fpSec: Math.max(0.01, a.fpSec), swellDb: a.swellDb, canSwell: (a as unknown as Json).canSwell as boolean, arpeggioSec: a.arpeggioSec, rollHz: clamp(a.rollHz, ROLL_HZ_MIN, ROLL_HZ_MAX),
+    sing: ((c.sing ?? {}) as Record<string, SingMark | null>) };   // 唱法记号表只有小月相身上有；别的乐手 = 空（出声不读）
+  if (path === "gain") return { path, ...common, dynamicsDb: { ...(c.dynamicsDb as Record<Dynamic, number>) }, accentDb: a.accentDb, marcatoDb: a.marcatoDb, accentSec: Math.max(0, a.accentSec),
+    sfzDb: a.sfzDb, sfzSec: Math.max(0.01, a.sfzSec), stressDb: a.stressDb, unstressDb: a.unstressDb, ghostDb: a.ghostDb };
+  const dv = (c.dynamicsVel ?? {}) as Record<Dynamic, number>;
+  return { path, ...common, dynamicsVel: Object.fromEntries(DYN_KEYS.map((d) => [d, clamp(dv[d], 1, 127)])) as Record<Dynamic, number>, accentVel: a.accentVel, marcatoVel: a.marcatoVel,
+    wedgeStepVel: a.wedgeStepVel, sfzVel: a.sfzVel, stressVel: a.stressVel, unstressVel: a.unstressVel, ghostVel: a.ghostVel };
+}
+const DYN_KEYS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const;
+/** 送进录音房之前的那一处查（统筹 2026-11-12 夜第 5 条；core/render.ts performerInfoOf 叫它）：这位的数缺了哪些 / 不是数的有哪些（空 = 没毛病）。缺 = 明着报错，不在音频线程里抛。 */
+export function perfSpecProblems(sp: PerfSpec, velocity: number): string[] {
+  const bad: string[] = [];
+  for (const [k, v] of Object.entries(sp)) {
+    if (k === "path" || k === "sing") continue;
+    if (k === "canSwell") { if (typeof v !== "boolean") bad.push(k); continue; }
+    if (k === "dynamicsDb" || k === "dynamicsVel") { for (const d of DYN_KEYS) if (!Number.isFinite((v as Record<string, number>)?.[d])) bad.push(`${k}.${d}`); continue; }
+    if (!Number.isFinite(v as number)) bad.push(k);
+  }
+  if (sp.path === "velocity" && !Number.isFinite(velocity)) bad.push("defaults.velocity");
+  return bad;
 }
 /** 连断底色能调到多大（秒）。 */
 export const GAP_MAX_SEC = 0.2;
-/** 改上场那位的滚奏密度（乐器页；每秒几下，ROLL_HZ_MIN … ROLL_HZ_MAX；null = 去掉、回到乐器默认）。没人上场 = 原样。v0.16.64 */
+/** 这位乐手滚奏的出厂密度（乐器页「默认」钮问它；鼓 12 / 有音高的 14，template.ts）。 */
+export function rollHzDefaultOf(extras: Extras, role: string): number { const c = activeCandidate(extras, role); return c && isDrumCand(c) ? TEMPLATE.lounge.rollHz.drum : TEMPLATE.lounge.rollHz.pitched; }
+/** 改上场那位的滚奏密度（乐器页；每秒几下，ROLL_HZ_MIN … ROLL_HZ_MAX；null = 「默认」= 抄现行的出厂值，照样写成数，16-4 F）。没人上场 = 原样。v0.16.64 */
 export function withRollHz(extras: Extras, role: string, hz: number | null, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
-  const { rollHz: _old, ...rest } = (c.articulation ?? {}) as Json;
-  c.articulation = hz === null ? rest : { ...rest, rollHz: Math.round(Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, hz))) };
+  const v = hz === null ? (isDrumCand(c) ? TEMPLATE.lounge.rollHz.drum : TEMPLATE.lounge.rollHz.pitched) : Math.round(Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, hz)));
+  c.articulation = { ...((c.articulation ?? {}) as Json), rollHz: v };
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
-/** 音内起伏多深能调到哪（dB；乐器页一档 3 dB；7-N，2026-11-12）。默认 = MARK_DEFAULTS.swellDb（6）。 */
+/** 音内起伏多深能调到哪（dB；乐器页一档 3 dB；7-N，2026-11-12）。出厂值在 template.ts（6）。 */
 export const SWELL_DB_MIN = 3, SWELL_DB_MAX = 24;
 /** 改上场那位的音内起伏多深（articulation.swellDb，dB；字段本来就有、格式不动；null = 回到默认 6）。没人上场 = 原样。 */
 export function withSwellDb(extras: Extras, role: string, dB: number | null, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
-  c.articulation = { ...((c.articulation ?? {}) as Json), swellDb: dB === null ? MARK_DEFAULTS.swellDb : Math.round(Math.max(SWELL_DB_MIN, Math.min(SWELL_DB_MAX, dB))) };
+  c.articulation = { ...((c.articulation ?? {}) as Json), swellDb: dB === null ? TEMPLATE.lounge.articulation.gain.swellDb : Math.round(Math.max(SWELL_DB_MIN, Math.min(SWELL_DB_MAX, dB))) };   // null = 「默认」= 抄模板现在的值
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
 /** 改上场那位的连断底色（乐器页；秒，0 … GAP_MAX_SEC，记到毫秒）。没人上场 = 原样。 */
@@ -751,10 +774,11 @@ export function activeCalibrationDb(extras: Extras, role: string): number { cons
 // ── 力度（候选的 defaults.velocity：没画曲线的音用的默认数，by value；SoundFont = MIDI 力度 ÷ 127）──
 //   2026-10-08 Opus 5.5；user「接啊，但是接的不是mp mf，而就是力度的这个旋钮」：渲染 / pad 试弹读这一个数（原来写死 0.8，候选里存的没人读）。
 //   GS 很多音色按力度换录音层（仓鼠 v11 velLayers 实测）= 音色会变，不只是响度；谱上的 mp / mf 照旧只改音量。
-/** 上场那位的力度（0–1，= MIDI 力度 ÷ 127）；没写 = SOUNDFONT_DEFAULTS.velocity。 */
+/** 上场那位的力度（0–1，= MIDI 力度 ÷ 127；按力度敲的乐手身上的 defaults.velocity，门口补全过）。按音量走的乐手没有这个数（出声不读）= 1 占位。 */
 export function activeVelocity(extras: Extras, role: string): number {
-  const c = activeCandidate(extras, role), v = Number(((c?.defaults ?? {}) as Json).velocity ?? SOUNDFONT_DEFAULTS.velocity);
-  return Number.isFinite(v) ? Math.max(1 / 127, Math.min(1, v)) : SOUNDFONT_DEFAULTS.velocity;
+  const c = activeCandidate(extras, role); if (!c || dynPathOf(c) !== "velocity") return 1;
+  const v = Number(((c.defaults ?? {}) as Json).velocity);
+  return Math.max(1 / 127, Math.min(1, v));   // 缺了 = NaN，perfSpecProblems 报
 }
 /** 改上场那位的力度（记到 MIDI 整数格：k / 127）。没人上场 = 原样。 */
 export function withVelocity(extras: Extras, role: string, v: number, hum: Hum): Extras {
@@ -774,6 +798,7 @@ export function withSfxFixed(extras: Extras, role: string, on: boolean, hum: Hum
   const r = roleOf(extras, role, hum), i = instrumentOf(cands(r).find((x) => x.id === r.active));
   if (i?.engine !== "soundfont" || !i.sfx) return extras;
   if (on) i.note = i.sfx.key; else delete i.note;
+  const hit = hitSecByKeyOf(i); if (hit) i.hitSecByKey = hit; else delete i.hitSecByKey;   // 着力点跟着 note 从目录重抄（16-4 E）：固定 = 那一个键；按写的音变调 = 有音高，没有这个键
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
 /** 月读分段唱的粒度（上场那位；没写 = 每句）。user「开关是歌手的属性，可以有不同的粒度」。 */
@@ -781,13 +806,27 @@ export function activeSingChunk(extras: Extras, role: string): "phrase" | "sheet
   const i = activeInstrument(extras, role);
   return i?.engine === "tsukuyomi" && (i.chunk === "sheet" || i.chunk === "whole") ? i.chunk : "phrase";
 }
+/** 小月相的原始输出乘多少（dB，16-4 B；上场那位不是小月相 / 缺了 = NaN：出声那一层报缺数，不替它补）。 */
+export function activeOutputGainDb(extras: Extras, role: string): number {
+  const i = activeInstrument(extras, role);
+  return i?.engine === "tsukuyomi" && typeof i.outputGainDb === "number" && Number.isFinite(i.outputGainDb) ? i.outputGainDb : NaN;
+}
+/** 小月相原始输出乘多少能调到多大（dB）。 */
+export const OUTPUT_GAIN_MIN_DB = -24, OUTPUT_GAIN_MAX_DB = 24;
+/** 改上场那位小月相的原始输出乘多少（乐器页；null = 「默认」= 抄模板现在的值，照样写成数）。不是小月相 = 原样。 */
+export function withOutputGainDb(extras: Extras, role: string, db: number | null, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active), i = instrumentOf(c);
+  if (!c || i?.engine !== "tsukuyomi") return extras;
+  const v = db === null ? TEMPLATE.lounge.tsukuyomiOutputGainDb : Math.round(Math.max(OUTPUT_GAIN_MIN_DB, Math.min(OUTPUT_GAIN_MAX_DB, db)) * 100) / 100;
+  c.instrument = { ...i, outputGainDb: v };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
 /** 小月相唱法核心的旋钮（存在候选 defaults 里，by value；没写 = TSUKUYOMI_DEFAULTS；2026-10-15 user「齐平和其他的也都放在高级设置里面可以持久化」）。 */
 export const SING_CORE_KEYS = ["level", "levelContinuous", "levelMaxDb", "cleanMax", "breath"] as const;
 export type SingCoreKey = (typeof SING_CORE_KEYS)[number];
 export function activeSingCore(extras: Extras, role: string): Record<SingCoreKey, number> {
-  const c = activeCandidate(extras, role), d = (c?.defaults ?? {}) as Record<string, unknown>, out = { ...TSUKUYOMI_DEFAULTS } as Record<SingCoreKey, number>;
-  if (instrumentOf(c)?.engine === "tsukuyomi") for (const k of SING_CORE_KEYS) if (typeof d[k] === "number") out[k] = d[k] as number;
-  return out;
+  const c = activeCandidate(extras, role), d = (instrumentOf(c)?.engine === "tsukuyomi" ? c?.defaults ?? {} : TEMPLATE.lounge.tsukuyomiDefaults) as Record<string, number>;   // 不是小月相 = 乐器页「高级」那一行显示出厂值（不出声）
+  return Object.fromEntries(SING_CORE_KEYS.map((k) => [k, d[k]])) as Record<SingCoreKey, number>;
 }
 export function withSingCore(extras: Extras, role: string, key: SingCoreKey, value: number, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active);
@@ -798,7 +837,7 @@ export function withSingCore(extras: Extras, role: string, key: SingCoreKey, val
 export function withSingChunk(extras: Extras, role: string, v: "phrase" | "sheet" | "whole", hum: Hum): Extras {
   const r = roleOf(extras, role, hum), i = instrumentOf(cands(r).find((x) => x.id === r.active));
   if (i?.engine !== "tsukuyomi") return extras;
-  if (v === "phrase") delete i.chunk; else i.chunk = v;
+  i.chunk = v;   // 每句也明写
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
 /** 音高对齐开 / 关（只在没固定原速、原速时听得出音高时有意义）。 */
@@ -811,11 +850,11 @@ export function withSfxAlign(extras: Extras, role: string, on: boolean, hum: Hum
 // ── 修八度 / 移调（候选的 transpose，半音；2026-10-08 by Claude Opus 5.5；user「修八度和移调的音色级别的选项…大部分情况不应该动，是worst case兜底」）──
 /** 上场那位的移调（半音；没写 = 0）。 */
 export function activeTranspose(extras: Extras, role: string): number { const v = Number(activeCandidate(extras, role)?.transpose ?? 0); return Number.isInteger(v) ? v : 0; }
-/** 改上场那位的移调（夹在 ±48；0 = 去掉字段，存档不多出 0）。 */
+/** 改上场那位的移调（夹在 ±48；0 也写，16-3 起每个键都明写）。 */
 export function withTranspose(extras: Extras, role: string, semis: number, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
   const t = Math.max(-48, Math.min(48, Math.round(semis)));
-  if (t) c.transpose = t; else delete c.transpose;
+  c.transpose = t;
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
 
@@ -880,7 +919,6 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   };
   newer(_t("总目录"), manifest, "manifest");
   extras.manifest = manifest;
-  const rawLounge: Record<string, string> = {};   // 指纹用：文件里的原文（读进来的和写出去的同一份字符串）
   let scoreExt: Json | null = null;
   if (files[`${DIR}score.json`]) {
     const s0 = parse(`${DIR}score.json`); known.add(`${DIR}score.json`); newer(_t("谱的扩展"), s0, "score");
@@ -888,7 +926,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   }
   for (const p of Object.keys(files)) {
     const m = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p);
-    if (m) { const r = parse(p); newer(_t("休息室「{name}」", { name: r.name ?? m[1] }), r, "lounge"); rawLounge[m[1]] = fpTextOf(r); noteNullAsUnset(r); extras.lounge[m[1]] = r; known.add(p); }   // 角色名照文件（第 16 条，user 定的甲：老歌里存着的名字照显示，不判起没起）
+    if (m) { const r = parse(p); newer(_t("休息室「{name}」", { name: r.name ?? m[1] }), r, "lounge"); noteNullAsUnset(r); completeRole(r); extras.lounge[m[1]] = r; known.add(p); }   // 角色名照文件（第 16 条，user 定的甲：老歌里存着的名字照显示，不判起没起）
   }
   if (files[`${DIR}studio.json`]) { const s = parse(`${DIR}studio.json`); known.add(`${DIR}studio.json`); newer(_t("录音房"), s, "studio"); extras.studio = s; }
   for (const p of Object.keys(files)) if (p.startsWith(SOUNDS) && !p.endsWith("/")) { extras.sounds[p] = files[p]; known.add(p); }   // 嵌的音源字节（整份留着；存档只写还引用着的）

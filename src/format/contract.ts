@@ -113,7 +113,13 @@ export type FormatFile = keyof typeof FORMAT;
  *  **力度路是契约**（统筹 2026-11-12 夜「v0.17.13 收」）：每位乐手身上写哪些键，看它的引擎插件报的 dynamics（音量 gain / 力度 velocity）——所以一个引擎名走哪条路永远不变，
  *    想换路 = 换一个新的引擎名。现在：tsukuyomi = gain、vowel-sampler = gain、soundfont = velocity（守卫钉住）。演奏法的键按路分见 CandidateV2.articulation。
  *  旧读者（小版本更小）照小版本的规矩：能开能改能存、提示一次。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 11, lounge: 3, studio: 2 };   // lounge 3（9-2）起小版本从 0 数
+/** lounge minor 4（第 16 条 16-4 A / B / E / F，2026-11-12 夜，统筹「v0.17.13 收」「v0.17.15 收」）：新加两个键、一个键不再写 null——
+ *  ① 小月相 instrument.outputGainDb（dB）：唱法核心原始输出进她那条轨之前乘多少（新建 = 模板 6.52；原来是插件里的常数 0.89 / 0.42 = 6.5228 dB）。
+ *  ② SoundFont instrument.hitSecByKey：鼓 / 固定敲一件的着力点表（键 → 秒；整套鼓 = 目录里每个键、0 也写）。出声只读这一份（原来每次放都查目录）。
+ *  ③ articulation.rollHz 只写数（老的 null = 按乐器，门口按鼓 12 / 有音高 14 补成数）。
+ *  老文件（lounge ≤ 3）缺的这几样 = 读文件的门口按模板 / 目录补，不说话、不算改过；存的时候写。
+ *  旧读者（lounge 3）读到：outputGainDb / hitSecByKey 是不认识的键（照它自己的常数 / 目录放，值一样）；rollHz 是数 = 当成调过的（值就是默认那一档）；提示一次。 */
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 11, lounge: 4, studio: 2 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
@@ -281,12 +287,15 @@ export interface CandidateV2 {
   articulation: { staccatoGate?: number; accentDb?: number; gapSec?: number; marcatoDb?: number; accentVel?: number; marcatoVel?: number;
     accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; /* wedgeStepVel：只有按力度敲的写；wedgeStepDb 不再有定义（16-4） */ wedgeStepVel?: number;
     sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number; swellDb?: number;
-    /** 能不能在一个音里面变强（2026-10-08 加，可选）：false = 按下去就自然衰减（钢琴 / 吉他 / 打击）——音内渐强 / 鼓起画灰、明说；音内渐弱照做。没写 = 能。
+    /** 能不能在一个音里面变强（2026-10-08 加，可选）：false = 按下去就自然衰减（钢琴 / 吉他 / 打击）——音内渐强 / 鼓起画灰、明说；音内渐弱照做。没写 = 读文件的门口按模板补（能）。
      *  SoundFont 新候选按仓鼠 v11 的 sustain（sustained = 能）by value 抄进来。 */
-    canSwell?: boolean };
-  //   2026-10-08 加（可选，不升版本；Claude Opus 5.5；user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）：上面这些 = 记号怎么解读的数，没写 = performance.ts MARK_DEFAULTS
+    canSwell?: boolean;
+    /** 滚奏每秒几下（16-4 F，lounge minor 4 起只写数）。老文件的 null（= 按乐器）/ 没写 = 读文件的门口按这位是不是鼓补（鼓 12、有音高的 14，format/template.ts），存的时候写数。 */
+    rollHz?: number };
+  //   2026-10-08 加（可选，不升版本；Claude Opus 5.5；user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）：上面这些 = 记号怎么解读的数；
+  //   16-4 A 起（2026-11-12 夜）：没写 = 读文件的门口按模板（format/template.ts）补、存的时候写，出声那一层只吃写全的（原来是「没写 = performance.ts MARK_DEFAULTS」）
   //   2026-10-08 深夜再加（可选，不升版本；Opus 5.5）：stressDb / stressVel（次重音）、unstressDb / unstressVel（弱化）、ghostDb / ghostVel（幽灵音）——强度的其余几级。
-  /** 2026-10-08 加（可选）：月读——谱上的记号变成唱法核心哪个字前记号（^ / v / O）、放在这个字还是下一个字前面；没写 = performance.ts SING_MARKS。 */
+  /** 2026-10-08 加（可选）：月读——谱上的记号变成唱法核心哪个字前记号（^ / v / O）、放在这个字还是下一个字前面；没写 = 读文件的门口按模板补（16-4 A）。 */
   sing?: Record<string, { mark: "^" | "v" | "O"; at: "this" | "next" } | null>;   // 跳音 / 保持吃掉多长（0–1）；重音加多少 dB；
   //   gapSec（2026-10-08 加，可选，不升版本；Claude Opus 5.5）= 连断的底色：不写记号的音之间留多大缝（秒）；连线 / 保持 = 不留；没写 = 0
   /** 跟着演奏者走的效果（琴箱 / 音箱 / 琶音器；留位）。现状（统筹 2026-11-12 夜）：没有编辑入口，歌库里 0 首不空；这条链上 EQ 的自动低切 / 延迟的跟速度放的时候不换算
@@ -301,9 +310,16 @@ export type InstrumentV2 =
   | { engine: "tsukuyomi"; model: { pack: string; sha256: string }; hum: Hum;        // 月读完整：piper（时长接管）+ WORLD；model = 家族模型包（packId = manifest 的 sha256）
       /** 2026-10-08 深夜加（可选，不升版本；Opus 5.5）：分段唱——"phrase" 每句（在休止处切）/ "sheet" 每张纸 / "whole" 一整首；没写 = phrase。
        *  user「开关是歌手的属性，可以有不同的粒度」；src/score/lab-score.ts singChunks。 */
-      chunk?: "phrase" | "sheet" | "whole" }
+      chunk?: "phrase" | "sheet" | "whole";
+      /** 2026-11-12 加（16-4 B；lounge 小版本 +1）：唱法核心原始输出进她那条轨之前乘多少，dB（新建 = 模板 6.52 = 20·log10(0.89 ÷ 0.42)）。
+       *  这是这个引擎自己的满音量；乐手的「响度」calibrationDb 在它之上另算。读到没写 = 门口按模板补，存的时候写。 */
+      outputGainDb?: number }
   | { engine: "vowel-sampler"; table: "builtin"; hum: Hum }                            // 月读元音版（轻量）：app 随带的元音表（assets/preview/）
-  | { engine: "soundfont"; bank: number; program: number; note?: number; source: Sf2Source;   // SoundFont 2 的一个预设（TinySoundFont 出声）；note = 每个音都敲这个键：鼓件（2026-10-07 加，可选）/ 音效固定原速（2026-10-08）
+  | { engine: "soundfont"; bank: number; program: number; note?: number; source: Sf2Source;
+      /** 2026-11-12 加（16-4 E；lounge 小版本 +1）：着力点——敲的键号（字符串）→ 采样开头到「砸下去那一下」几秒；放的时候这个键提前这么多秒开始，砸在写的那一拍。
+       *  整套鼓（bank 128、不固定敲一个键）= 音乐目录里这套鼓的每个键都写（实测没有的写 0）；固定敲一件（note）= 那一个键；有音高的乐器没有这个键。
+       *  上场、开关「固定原速」的那一刻和 note / sfx 一起从目录按值抄；老歌没写 = 读文件的门口按目录补，存的时候写。表里没列的键 = 不提前。 */
+      hitSecByKey?: Record<string, number>;   // SoundFont 2 的一个预设（TinySoundFont 出声）；note = 每个音都敲这个键：鼓件（2026-10-07 加，可选）/ 音效固定原速（2026-10-08）
       /** 2026-10-08 加（可选，不升版本；Claude Opus 5.5）：音效（GS GM 116–128）上场时从目录按值抄的——key = 原速键、midi = 原速时听到的最强频率（有音高才有）、
        *  centsPerKey = 每键几音分；align = 关掉固定原速后按写的音反算键（src/gm/sf-key.ts）。user「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」。 */
       sfx?: { key: number; midi?: number; centsPerKey?: number; align?: boolean } }

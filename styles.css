@@ -986,6 +986,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .ip-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ip-val { min-width: 4.2em; font-size: 15px; }
 .ip-v .ip-note { margin-top: 4px; }
+.ip-fx.is-off { opacity: 0.55; }   /* 乐手自己的效果链里关着的那一格（16-4 H，只读列出） */
 /* 空白处的小菜单（长按 / 右键；2026-10-08 by Claude Fable 5.1）：和轨的小卡同一种非模态卡，竖着一列 */
 .ctx-menu { width: auto; min-width: 150px; max-width: 220px; display: flex; flex-direction: column; gap: 2px; padding: 6px; }
 .ctx-menu .ctx-item { justify-content: flex-start; height: 36px; padding: 0 12px; font-size: 14px; border-color: transparent; background: transparent; }

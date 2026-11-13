@@ -3511,6 +3511,18 @@ export declare const S: {
     readonly "\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u8FD9\u4E2A\u5E93\u7684\u9ED8\u8BA4\u662F {d}\u3002\u5E93\u548C\u5E93\u4E4B\u95F4\u5C31\u5728\u8FD9\u4E00\u4E2A\u6570\u4E0A\u5BF9\u9F50\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u4E5F\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u662F\u8FD9\u9996\u6B4C\u7684\u51B3\u5B9A\uFF0C\u53E6\u7B97": {
         readonly en: "This performer's own volume: this library's default is {d}. Libraries are matched to each other on this one number, and stacked parts don't hit the ceiling and get squashed; the mixer fader is a decision for this song and is separate";
     };
+    readonly 这位自己的效果: {
+        readonly en: "This performer’s own effects";
+    };
+    readonly "\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u7684\u300C{k}\u300D": {
+        readonly en: "“{k}” (not known to this version)";
+    };
+    readonly "\uFF08\u5173\u7740\uFF09": {
+        readonly en: " (off)";
+    };
+    readonly "\u8DDF\u7740\u8FD9\u4F4D\u6F14\u594F\u8005\u8D70\u7684\u6548\u679C\uFF08\u7434\u7BB1\u3001\u97F3\u7BB1\u8FD9\u4E00\u7C7B\uFF09\uFF1A\u51FA\u58F0\u65F6\u6392\u5728\u6DF7\u97F3\u53F0\u4E0A\u8FD9\u6761\u8F68\u7684\u6548\u679C\u524D\u9762\uFF1B\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u5C31\u6362\u6210\u90A3\u4E00\u4F4D\u8EAB\u4E0A\u7684\u3002\u8FD9\u91CC\u53EA\u5217\u51FA\u6765\uFF0C\u8FD9\u4E00\u7248\u4E0D\u80FD\u5728\u8FD9\u91CC\u6539": {
+        readonly en: "Effects that travel with this performer (the instrument body, an amp and the like): in the sound they come before this track’s effects on the mixer; when someone else takes the stage, theirs are used instead. Listed here only — this version can’t edit them here.";
+    };
     readonly "\u7F1D\u5C0F 10 ms\uFF08\u66F4\u8FDE\uFF09": {
         readonly en: "Gap 10 ms smaller (more legato)";
     };
@@ -3555,9 +3567,6 @@ export declare const S: {
     };
     readonly "\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}": {
         readonly en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}";
-    };
-    readonly "\u5531\u51FA\u6765\u7684\u6BCF\u4E00\u53E5\u5148\u4E58 \u00D7{k}\uFF08{db} dB\uFF09\uFF1A\u5531\u6CD5\u6838\u5FC3\u539F\u59CB\u8F93\u51FA\u7684\u8865\u507F\uFF0C\u6211\u4EEC\u6309\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\uFF08\u7EA6 0.42\uFF09\u653E\u5927\u5230 0.89 \u5B9A\u7684\u6570\u3002": {
-        readonly en: "Each sung phrase is first multiplied by ×{k} ({db} dB): compensation for the singing core's raw output, a number we set by scaling the measured raw peak (about 0.42) up to 0.89.";
     };
     readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": {
         readonly en: "Dynamic markings → loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers — only loudness changes: {table}";
@@ -4093,6 +4102,9 @@ export declare const S: {
     readonly 还没有人上场: {
         readonly en: "Nobody on stage yet";
     };
+    readonly "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": {
+        readonly en: "This performer is missing these numbers, so it makes no sound: {keys}";
+    };
     readonly "\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0": {
         readonly en: "“{label}” can't sound from a note list";
     };
@@ -4264,12 +4276,6 @@ export declare const S: {
     readonly "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09": {
         readonly en: "Tsukuyomi-chan Corpus Terms of Use (derived model)";
     };
-    readonly 小月相: {
-        readonly en: "Tsukuyomi-chan";
-    };
-    readonly "\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09": {
-        readonly en: "Tsukuyomi-chan (vowels)";
-    };
     readonly "\u9EA6\u514B\u98CE {t}": {
         readonly en: "Mic {t}";
     };
@@ -4371,6 +4377,12 @@ export declare const S: {
     };
     readonly "\u300C{name}\u300D\u7684\u58F0\u97F3\uFF08{path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u4E00\u8D77\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C{name2}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": {
         readonly en: "The sound of “{name}” ({path}) didn't come with this song, so nobody is on stage. Tap “{name2}” at the front of the score to change “Who performs”.";
+    };
+    readonly 小月相: {
+        readonly en: "Tsukuyomi-chan";
+    };
+    readonly "\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09": {
+        readonly en: "Tsukuyomi-chan (vowels)";
     };
     readonly "XML \u8BFB\u4E0D\u61C2\uFF08\u7B2C {i} \u884C\uFF09\uFF1A{what}": {
         readonly en: "Can't read the XML (line {i}): {what}";
@@ -5482,6 +5494,21 @@ export declare const S: {
     readonly "\u5C0F\u6708\u76F8\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09": {
         readonly en: "Tsukuyomi-chan herself (つくよみちゃん; loads about 65 MB the first time)";
     };
+    readonly 原始输出增益: {
+        readonly en: "Raw output gain";
+    };
+    readonly 没写: {
+        readonly en: "not set";
+    };
+    readonly "\u5C0F 0.5 dB": {
+        readonly en: "0.5 dB quieter";
+    };
+    readonly "\u5927 0.5 dB": {
+        readonly en: "0.5 dB louder";
+    };
+    readonly "\u5531\u6CD5\u6838\u5FC3\u7B97\u51FA\u6765\u7684\u539F\u59CB\u58F0\u97F3\uFF0C\u8FDB\u5979\u8FD9\u6761\u8F68\u4E4B\u524D\u5148\u4E58\u591A\u5C11\u3002\u9ED8\u8BA4 {d}\uFF1A\u91CF\u8FC7\u7684\u539F\u59CB\u5CF0\u503C\u7EA6 0.42\uFF0C\u62AC\u5230 0.89\u2014\u2014\u8FD9\u662F\u8FD9\u4E2A\u5F15\u64CE\u81EA\u5DF1\u7684\u6EE1\u97F3\u91CF\u3002\u4E0A\u9762\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\u5728\u8FD9\u4E4B\u4E0A\u7BA1\u8FD9\u4F4D\u4E50\u624B\u6574\u4F53\u591A\u54CD\u3001\u548C\u522B\u7684\u4E50\u624B\u5BF9\u9F50\uFF1B\u5E73\u5E38\u8C03\u300C\u54CD\u5EA6\u300D\u5C31\u591F\u3002\u6539\u4E86\u4E0D\u7528\u91CD\u5531\uFF0C\u6BCF\u4E00\u53E5\u8DDF\u7740\u53D8": {
+        readonly en: "How much the singing core’s raw output is multiplied by before it enters her track. Default {d}: the measured raw peak is about 0.42, lifted to 0.89 — this is the engine’s own full scale. The “Loudness” row above sets how loud this performer is overall on top of that, to match other performers; adjusting “Loudness” is usually enough. Changing this needs no re-singing; every phrase follows.";
+    };
     readonly "\uFF08\u9ED8\u8BA4\uFF09": {
         readonly en: " (default)";
     };
@@ -5515,11 +5542,23 @@ export declare const S: {
     readonly "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF": {
         readonly en: "Sing in segments: each is released after singing, repeated segments / unchanged lines reuse last time's; cuts fall at rests / sheet boundaries, with one volume for the whole song at the end";
     };
+    readonly "\u300C{rn}\u300D\u539F\u59CB\u8F93\u51FA\u589E\u76CA {db} dB": {
+        readonly en: "“{rn}” raw output gain {db} dB";
+    };
     readonly "\u300C{rn}\u300D\u5206\u6BB5\u5531\uFF1A{p}": {
         readonly en: "“{rn}” sing in segments: {p}";
     };
     readonly "\u5C0F\u6708\u76F8\u7684\u5143\u97F3\u91C7\u6837\uFF1A\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1": {
         readonly en: "Tsukuyomi-chan's vowel samples: instant response, runs on any device";
+    };
+    readonly 元音表的满音量: {
+        readonly en: "Vowel table full scale";
+    };
+    readonly "\u5CF0\u503C 0.8\uFF08\u22121.9 dB\uFF09": {
+        readonly en: "peak 0.8 (−1.9 dB)";
+    };
+    readonly "\u5143\u97F3\u7248\u7684\u58F0\u97F3\u662F\u9884\u5148\u5531\u597D\u3001\u968F app \u5E26\u7740\u7684\u4E00\u5F20\u5143\u97F3\u8868\uFF1B\u751F\u6210\u90A3\u5F20\u8868\u7684\u65F6\u5019\u6574\u5F20\u7F29\u5230\u6700\u54CD\u7684\u4E00\u4E0B = \u6EE1\u5E45\u7684 0.8\u3002\u8FD9\u662F\u8FD9\u4E2A\u5E93\u81EA\u5DF1\u7684\u6EE1\u97F3\u91CF\uFF0C\u8FD9\u91CC\u4E0D\u80FD\u8C03\uFF1B\u4E0A\u9762\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\u5728\u5B83\u4E4B\u4E0A\u7BA1\u8FD9\u4F4D\u4E50\u624B\u6574\u4F53\u591A\u54CD": {
+        readonly en: "The vowel version plays a vowel table that was sung in advance and ships with the app; when that table was generated, the whole table was scaled so its loudest sample is 0.8 of full scale. This is this library’s own full scale and can’t be adjusted here; the “Loudness” row above sets how loud this performer is overall on top of it.";
     };
     readonly 这个浏览器不让双击打开的网页用存储: {
         readonly en: "This browser doesn't let pages opened by double-click use storage";
