@@ -1,29 +1,29 @@
-export declare const INSTRUMENTS_VERSION = 15;
+export declare const INSTRUMENTS_VERSION = 16;
 export declare const INSTRUMENT_FILES: {
     readonly concepts: {
-        readonly file: "vendor/instruments/instruments-v15.json";
-        readonly bytes: 317869;
-        readonly sha256: "4340e7b473321f2abc5f861066244cf60bdccfc5288fdc37e111b763d8aa7139";
+        readonly file: "vendor/instruments/instruments-v16.json";
+        readonly bytes: 327672;
+        readonly sha256: "676b9c2372ae80fa6cc4cc30ba16c1539a16247789ccfd0b78c032414941b465";
     };
     readonly gmMap: {
-        readonly file: "vendor/instruments/gm-map-v15.json";
+        readonly file: "vendor/instruments/gm-map-v16.json";
         readonly bytes: 434160;
-        readonly sha256: "41cd2fe8ece13b2d5f6baa867796f3894d94e592c67e9432a7f15bda2f1aa921";
+        readonly sha256: "76cd490654dded61b5996846ea5b88801805f0d9422f1abb81b2f9c78993f8bb";
     };
     readonly icons: {
-        readonly file: "vendor/instruments/instrument-icons-20261107-v15.svg";
+        readonly file: "vendor/instruments/instrument-icons-20261113-v16.svg";
         readonly bytes: 139014;
-        readonly sha256: "a94929205faabf3403223cea2ff6b69ebc2443f7b19d164434125552ecd138f0";
+        readonly sha256: "0ef2d1ace2522d369740e0b300fdb5c966de3bb3bd33998506e07a98e1abb02f";
     };
     readonly iconCredits: {
-        readonly file: "vendor/instruments/icon-credits-v15.json";
+        readonly file: "vendor/instruments/icon-credits-v16.json";
         readonly bytes: 20670;
-        readonly sha256: "ac545e5c65df0dc99e499329a6d066faaa932c6ebfef935347be8cdeace76592";
+        readonly sha256: "3174f2b4340806fb67a51228aecfae2afe342ca70b313261825e00aa269fbc42";
     };
     readonly licenses: {
-        readonly file: "vendor/instruments/LICENSES-chosen-v15.md";
+        readonly file: "vendor/instruments/LICENSES-chosen-v16.md";
         readonly bytes: 145790;
-        readonly sha256: "4fafc7fdd1ba7b07113d6a34f9589406de78edafa93ebbe2edcbc15c190b89d9";
+        readonly sha256: "edd6244d484905834110560e38d3b0dbfe7b79a790115a67e68bfc58025b18f6";
     };
 };
 /** 图标署名（第三方图标，随 app vendor；设置里显示）。modified = 派生图标（--tile）改了什么（CC-BY 要求注明改动；v4 起）。 */

@@ -13,5 +13,5 @@ export interface PercInfo {
         en: string;
     };
 }
-export declare const PERC_VERSION = 15;
+export declare const PERC_VERSION = 16;
 export declare const PERC: Record<string, PercInfo>;

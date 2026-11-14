@@ -1540,8 +1540,8 @@ export declare const S: {
     readonly 不出声: {
         readonly en: "Silent";
     };
-    readonly 留住音: {
-        readonly en: "Keep the notes";
+    readonly 自然衰减: {
+        readonly en: "Natural decay";
     };
     readonly "{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220": {
         readonly en: "{p}{p2}: empty lyric slots don't open a box; lyrics already written can still be tapped to edit or delete";
@@ -1972,23 +1972,23 @@ export declare const S: {
     readonly "\u623F\u5B50\uFF1A\u7B2C {p} \u904D\u8D70\u8FD9\u91CC": {
         readonly en: "Ending: take this on pass {p}";
     };
-    readonly "\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09": {
-        readonly en: "Press (keep notes ringing)";
+    readonly "\u8E29\u4E0B\uFF08\u63A5\u7740\u54CD\uFF09": {
+        readonly en: "Press (keeps ringing)";
     };
     readonly "\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09": {
         readonly en: "Lift (stop the notes)";
     };
-    readonly "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09": {
-        readonly en: "Change pedal (stop, then keep again)";
+    readonly "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u63A5\u7740\u54CD\uFF09": {
+        readonly en: "Change pedal (stop, then keep ringing)";
     };
-    readonly "\u8E29\u4E0B\uFF08\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09": {
-        readonly en: "Press (keep the keys held at this moment)";
+    readonly "\u8E29\u4E0B\uFF08\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": {
+        readonly en: "Press (notes held at this moment keep ringing)";
     };
-    readonly "\u62AC\u8D77\uFF08\u653E\u5F00\u7559\u4F4F\u7684\u97F3\uFF09": {
-        readonly en: "Lift (let go of the held notes)";
+    readonly "\u62AC\u8D77\uFF08\u653E\u5F00\u63A5\u7740\u54CD\u7684\u90A3\u51E0\u4E2A\u97F3\uFF09": {
+        readonly en: "Release (let go of the notes kept ringing)";
     };
-    readonly "\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09": {
-        readonly en: "Change pedal (let go, then keep the keys held at this moment)";
+    readonly "\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u8BA9\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": {
+        readonly en: "Change pedal (let go, then keep the notes held at this moment ringing)";
     };
     readonly "\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09": {
         readonly en: "Press (play a little softer)";
@@ -2008,8 +2008,8 @@ export declare const S: {
     readonly 弱音踏板: {
         readonly en: "Soft pedal";
     };
-    readonly "\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7559\u4F4F\u97F3\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": {
-        readonly en: "This player keeps the notes when no pedal is written, so the pedal is already down here: this press has no effect (greyed)";
+    readonly "\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u662F\u81EA\u7136\u8870\u51CF\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": {
+        readonly en: "This performer uses natural decay when no pedal mark is written, so the pedal is already down here: this press has no effect (greyed)";
     };
     readonly "\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": {
         readonly en: "The pedal is already down here: this press does nothing (greyed)";
@@ -2029,8 +2029,8 @@ export declare const S: {
     readonly "\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09": {
         readonly en: " (from the note before the cursor)";
     };
-    readonly "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7559\u4F4F\u97F3\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": {
-        readonly en: "No effect (greyed): this player keeps the notes when no pedal is written, so the pedal is already down here";
+    readonly "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u662F\u81EA\u7136\u8870\u51CF\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": {
+        readonly en: "No effect (greyed): this performer uses natural decay when no pedal mark is written, so the pedal is already down here";
     };
     readonly "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": {
         readonly en: "No effect (greyed): the pedal is already down here";
@@ -3544,8 +3544,8 @@ export declare const S: {
     readonly 缺的数: {
         readonly en: "Missing values";
     };
-    readonly "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A": {
-        readonly en: "These values on this performer are missing or not numbers: it makes no sound (it is on the “not sounding” list) and key audition is silent too; gaps between notes, dynamic marks and how marks are played are not computed from it and are hidden for now";
+    readonly "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A\u3002\u8981\u8BA9\u5B83\u51FA\u58F0\uFF1A\u70B9\u4E0A\u9762\u300C\u6362\u4E50\u5668\u2026\u300D\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u65B0\u4E0A\u573A\u7684\u90A3\u4E00\u4F4D\u6309\u73B0\u5728\u7684\u9ED8\u8BA4\u5199\u5168": {
+        readonly en: "These values on this performer are missing or not numbers: it makes no sound (it is on the “not sounding” list) and key audition is silent too; gaps between notes, dynamic marks and how marks are played are not computed from it and are hidden for now. To make it sound: tap “Change instrument…” above and put another performer on stage; the new one is written in full from the current defaults";
     };
     readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": {
         readonly en: "Dynamic markings → loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers — only loudness changes: {table}";
@@ -3897,6 +3897,9 @@ export declare const S: {
     };
     readonly "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u8BFB\u4E0D\u61C2": {
         readonly en: "No one is performing yet: this part’s performer cannot be read";
+    };
+    readonly "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": {
+        readonly en: "This performer is missing these numbers, so it makes no sound: {keys}";
     };
     readonly "\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u88AB\u4F60\u5220\u4E86\u7684\u5E93\u5728\u6E05\u5355\u91CC\u80FD\u88C5\u56DE\u6765\uFF1B\u522B\u7684\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": {
         readonly en: "Tap the number on the corner of |▶ for the list; a library you deleted can be put back from there. For the others, tap the part name at the front of the score to change “Who performs”.";
@@ -4377,9 +4380,6 @@ export declare const S: {
     };
     readonly 还没有人上场: {
         readonly en: "Nobody on stage yet";
-    };
-    readonly "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": {
-        readonly en: "This performer is missing these numbers, so it makes no sound: {keys}";
     };
     readonly "\u6DF7\u97F3\u53F0\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": {
         readonly en: "These numbers are missing on the mixer, so it made no sound: {keys}";
@@ -5560,8 +5560,8 @@ export declare const S: {
     readonly 踏板: {
         readonly en: "Pedal";
     };
-    readonly "\u8E0F\u677F\uFF08\u7559\u4E0D\u7559\u4F4F\u97F3\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A": {
-        readonly en: "Pedal (keep notes ringing or not): press / lift / change from the note before the cursor; the choices follow whether the pedal is down there. With a selection = hold that passage. Tap a pedal mark on the score to change or delete it; long-press and drag to move it";
+    readonly "\u8E0F\u677F\uFF08\u97F3\u63A5\u7740\u54CD\u8FD8\u662F\u6B62\u4F4F\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A": {
+        readonly en: "Pedal (notes keep ringing or stop): press / release / change from the note before the cursor; the labels follow whether the pedal is down there now; with a selection = hold the pedal through it. Tap a pedal mark on the score to change or delete it; long-press and drag to move it";
     };
     readonly "\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868": {
         readonly en: "Grand staff: move this note to the other staff";
@@ -5794,8 +5794,8 @@ export declare const S: {
     readonly "\u91C7\u6837\u5F00\u5934\u5230\u300C\u7838\u4E0B\u53BB\u90A3\u4E00\u4E0B\u300D\u6709\u591A\u8FDC\uFF1A\u653E\u7684\u65F6\u5019\u63D0\u524D\u8FD9\u4E48\u591A\u5F00\u59CB\uFF0C\u8BA9\u7838\u4E0B\u53BB\u90A3\u4E00\u4E0B\u843D\u5728\u5199\u7684\u90A3\u4E00\u62CD\u4E0A\uFF08\u53CD\u5411\u9572\u8FD9\u7C7B\u6700\u660E\u663E\uFF09\u3002\u6309\u6BCF\u4E2A\u6572\u7684\u952E\u6309\u503C\u8BB0\u5728\u8FD9\u4F4D\u8EAB\u4E0A\uFF0C\u6570\u662F\u6253\u51FB\u4E50\u8868\u91CC\u5B9E\u6D4B\u7684": {
         readonly en: "How far the hit is from the start of the sample: playback starts this much earlier so the hit lands on the written beat (most obvious with reverse cymbals). Stored by value on this performer for each key struck; the numbers are measured in the percussion table";
     };
-    readonly 不留: {
-        readonly en: "Don't keep";
+    readonly 到点释放: {
+        readonly en: "Release at note end";
     };
     readonly "\u81EA\u5DF1\u7684\u97F3\u6E90\u6587\u4EF6\uFF0C\u76EE\u5F55\u4E0D\u8BA4\u8BC6\u5B83": {
         readonly en: "Your own sound file: the catalog does not know it";
@@ -5803,14 +5803,14 @@ export declare const S: {
     readonly 目录里没有标成自己一直响: {
         readonly en: "Not marked in the catalog as ringing on by itself";
     };
-    readonly "\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u5C31\u8E29\u7740\uFF1A\u5199\u7684\u7ED3\u5C3E\u5230\u4E86\u4E5F\u4E0D\u505C\uFF0C\u54CD\u5230\u540C\u4E00\u4E2A\u97F3\u518D\u5F39\u3001\u5199\u4E86\u62AC\u8D77\u6216\u8FD9\u4E00\u6BB5\u7ED3\u675F\uFF1B\u9760\u8FD9\u4E2A\u7559\u4F4F\u7684\u97F3\u91CC\uFF0C\u8DF3\u97F3\u7167\u5199\u7684\u677E": {
-        readonly en: "Sustain pedal is down at the start of every section: notes keep sounding past their written end, until the same key is played again, a lift is written, or the section ends; staccato notes held only by this still stop as written";
+    readonly "\u5199\u7684\u65F6\u503C\u5230\u4E86\u4E0D\u677E\u952E\uFF08= \u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u5C31\u8E29\u7740\uFF09\uFF1A\u97F3\u987A\u7740\u5305\u7EDC\u7684\u8870\u51CF\u6BB5\u54CD\u5230\u505C\uFF1B\u540C\u4E00\u4E2A\u97F3\u518D\u5F39\u3001\u5199\u4E86\u62AC\u8D77\u6216\u8FD9\u4E00\u6BB5\u7ED3\u675F\u624D\u6536\u3002\u8DF3\u97F3\u7167\u5199\u7684\u677E": {
+        readonly en: "The key is not let go when the written length ends (= the sustain pedal is down at the start of each section): the note rings through the envelope's decay; it stops when the same note is played again, a pedal release is written, or the section ends. Staccato notes still stop as written";
     };
-    readonly "\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF1A\u7167\u5199\u7684\u65F6\u503C\u505C\uFF08\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709\uFF09": {
-        readonly en: "Sustain pedal is up at the start of every section: notes stop at their written length (the instrument's own release still sounds)";
+    readonly "\u5199\u7684\u65F6\u503C\u5230\u4E86\u5C31\u677E\u952E\uFF08= \u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF09\uFF1A\u8FDB\u5165\u5305\u7EDC\u7684\u91CA\u653E\u6BB5\uFF0C\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709": {
+        readonly en: "The key is let go when the written length ends (= the sustain pedal is up at the start of each section): the envelope's release stage follows, so the instrument's own fade-out is still there";
     };
-    readonly "\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}": {
-        readonly en: "Used when no pedal is written. Factory: {side} — {why}";
+    readonly "\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u5B83\u5B9A\u7684\u662F\u4EC0\u4E48\u65F6\u5019\u677E\u952E\uFF1B\u5305\u7EDC\uFF08\u8D77\u97F3\u3001\u8870\u51CF\u3001\u91CA\u653E\uFF09\u662F\u97F3\u8272\u5E93\u5199\u7684\uFF0C\u8FD9\u91CC\u4E0D\u6539\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}": {
+        readonly en: "Used where no pedal mark is written. It decides when the key is let go; the envelope (attack, decay, release) comes from the sound library and is not changed here. Factory setting: {side} — {why}";
     };
     readonly "\u4E0D\u56FA\u5B9A\u539F\u901F\uFF08\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF09": {
         readonly en: "Not fixed speed (transposes by the written note)";
@@ -6058,8 +6058,8 @@ export declare const S: {
     readonly "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C": {
         readonly en: "Pedal down: keys you let go keep sounding until the next pedal change or lift";
     };
-    readonly "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38": {
-        readonly en: "Keys held at the moment of pressing keep sounding; later notes play as usual";
+    readonly "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u63A5\u7740\u54CD\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38": {
+        readonly en: "Notes held when it is pressed keep ringing; notes played after that behave as usual";
     };
     readonly "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3002\u97F3\u8272\u53D8\u4E0D\u53D8\u770B\u8FD9\u4EF6\u4E50\u5668\u7684\u97F3\u8272\u5E93": {
         readonly en: "Press: play a little softer. Whether the tone changes depends on the instrument's sound library";

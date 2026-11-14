@@ -4097,7 +4097,7 @@ var S = {
   "\u72EC\u594F": { en: "Solo" },
   "\u53EA\u770B\u5B83": { en: "Only this" },
   "\u4E0D\u51FA\u58F0": { en: "Silent" },
-  "\u7559\u4F4F\u97F3": { en: "Keep the notes" },
+  "\u81EA\u7136\u8870\u51CF": { en: "Natural decay" },
   "{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220": { en: "{p}{p2}: empty lyric slots don't open a box; lyrics already written can still be tapped to edit or delete" },
   "\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC": { en: " (vowel version) only hums" },
   "\u4E0D\u5531\u6B4C\u8BCD": { en: " doesn't sing lyrics" },
@@ -4241,26 +4241,26 @@ var S = {
   "\u7EC8\u6B62\u7EBF": { en: "Final bar" },
   "\u7EC8\u6B62\u7EBF\uFF08\u7EC6 + \u7C97\uFF09\uFF1A\u66F2\u5B50 / \u8FD9\u4E00\u6BB5\u5230\u8FD9\u513F\u7ED3\u675F": { en: "Final bar (thin + thick): the piece / this section ends here" },
   "\u623F\u5B50\uFF1A\u7B2C {p} \u904D\u8D70\u8FD9\u91CC": { en: "Ending: take this on pass {p}" },
-  "\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09": { en: "Press (keep notes ringing)" },
+  "\u8E29\u4E0B\uFF08\u63A5\u7740\u54CD\uFF09": { en: "Press (keeps ringing)" },
   "\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09": { en: "Lift (stop the notes)" },
-  "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09": { en: "Change pedal (stop, then keep again)" },
-  "\u8E29\u4E0B\uFF08\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09": { en: "Press (keep the keys held at this moment)" },
-  "\u62AC\u8D77\uFF08\u653E\u5F00\u7559\u4F4F\u7684\u97F3\uFF09": { en: "Lift (let go of the held notes)" },
-  "\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09": { en: "Change pedal (let go, then keep the keys held at this moment)" },
+  "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u63A5\u7740\u54CD\uFF09": { en: "Change pedal (stop, then keep ringing)" },
+  "\u8E29\u4E0B\uFF08\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": { en: "Press (notes held at this moment keep ringing)" },
+  "\u62AC\u8D77\uFF08\u653E\u5F00\u63A5\u7740\u54CD\u7684\u90A3\u51E0\u4E2A\u97F3\uFF09": { en: "Release (let go of the notes kept ringing)" },
+  "\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u8BA9\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": { en: "Change pedal (let go, then keep the notes held at this moment ringing)" },
   "\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09": { en: "Press (play a little softer)" },
   "\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09": { en: "Lift (back to the written loudness)" },
   "\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09": { en: "Change pedal (means nothing for the soft pedal: stays pressed)" },
   "\u5EF6\u97F3\u8E0F\u677F": { en: "Sustain pedal" },
   "\u6301\u97F3\u8E0F\u677F": { en: "Sostenuto pedal" },
   "\u5F31\u97F3\u8E0F\u677F": { en: "Soft pedal" },
-  "\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7559\u4F4F\u97F3\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "This player keeps the notes when no pedal is written, so the pedal is already down here: this press has no effect (greyed)" },
+  "\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u662F\u81EA\u7136\u8870\u51CF\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "This performer uses natural decay when no pedal mark is written, so the pedal is already down here: this press has no effect (greyed)" },
   "\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "The pedal is already down here: this press does nothing (greyed)" },
   "\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740\uFF1A\u8FD9\u4E2A\u62AC\u8D77\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09": { en: "The pedal isn't down here: this lift does nothing (greyed)" },
   "\u8E0F\u677F\u8BB0\u53F7\u6302\u5728\u97F3\u4E0A\uFF1A\u8FD9\u5F20\u7EB8\u4E0A\u5149\u6807\u9644\u8FD1\u8FD8\u6CA1\u6709\u97F3": { en: "Pedal marks hang on notes: there are no notes near the cursor on this sheet yet" },
   "\u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\uFF08\u9009\u533A\u5F00\u5934\u8E29\u4E0B\u3001\u7ED3\u5C3E\u62AC\u8D77\uFF09": { en: "Hold this passage (press at the start of the selection, lift at its end)" },
   "\u8FD9\u4E2A\u97F3\u4E0A\u5DF2\u7ECF\u6709\u4E86\uFF1A\u518D\u70B9 = \u53BB\u6389": { en: "Already on this note: tap again to remove" },
   "\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09": { en: " (from the note before the cursor)" },
-  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7559\u4F4F\u97F3\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": { en: "No effect (greyed): this player keeps the notes when no pedal is written, so the pedal is already down here" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u662F\u81EA\u7136\u8870\u51CF\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": { en: "No effect (greyed): this performer uses natural decay when no pedal mark is written, so the pedal is already down here" },
   "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740": { en: "No effect (greyed): the pedal is already down here" },
   "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740": { en: "No effect (greyed): the pedal isn't down here" },
   "\u8FD9\u91CC\u4E4B\u524D\u6CA1\u8E29\u7740\uFF0C\u6362\u8E0F\u677F = \u8E29\u4E0B": { en: "The pedal wasn't down before this, so a change = a press" },
@@ -4765,7 +4765,7 @@ var S = {
   "\u6DF1\u4E00\u70B9\uFF08+3 dB\uFF09": { en: "Deeper (+3 dB)" },
   "\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}": { en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}" },
   "\u7F3A\u7684\u6570": { en: "Missing values" },
-  "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A": { en: "These values on this performer are missing or not numbers: it makes no sound (it is on the \u201Cnot sounding\u201D list) and key audition is silent too; gaps between notes, dynamic marks and how marks are played are not computed from it and are hidden for now" },
+  "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A\u3002\u8981\u8BA9\u5B83\u51FA\u58F0\uFF1A\u70B9\u4E0A\u9762\u300C\u6362\u4E50\u5668\u2026\u300D\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u65B0\u4E0A\u573A\u7684\u90A3\u4E00\u4F4D\u6309\u73B0\u5728\u7684\u9ED8\u8BA4\u5199\u5168": { en: "These values on this performer are missing or not numbers: it makes no sound (it is on the \u201Cnot sounding\u201D list) and key audition is silent too; gaps between notes, dynamic marks and how marks are played are not computed from it and are hidden for now. To make it sound: tap \u201CChange instrument\u2026\u201D above and put another performer on stage; the new one is written in full from the current defaults" },
   "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": { en: "Dynamic markings \u2192 loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers \u2014 only loudness changes: {table}" },
   "\u529B\u5EA6\u8BB0\u53F7 \u2192 MIDI \u529B\u5EA6\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{table}": { en: "Dynamics \u2192 MIDI velocity (accent +{accentVel}, marcato +{marcatoVel}; other marks under \u201CHow marks are played\u201D below): {table}" },
   "\u8BB0\u53F7\u600E\u4E48\u5531": { en: "How marks are sung" },
@@ -4883,6 +4883,7 @@ var S = {
   "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u6587\u4EF6\u91CC\u6CA1\u6709": { en: "No one is performing yet: the file has no performer for this part" },
   "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF0C\u8FD9\u4E00\u7248\u8BA4\u4E0D\u51FA\uFF09": { en: "Nobody on stage yet (the other software's original instrument isn't recognized by this version)" },
   "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF1A\u8FD9\u4E2A\u58F0\u90E8\u7684\u4E50\u624B\u8BFB\u4E0D\u61C2": { en: "No one is performing yet: this part\u2019s performer cannot be read" },
+  "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": { en: "This performer is missing these numbers, so it makes no sound: {keys}" },
   "\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u88AB\u4F60\u5220\u4E86\u7684\u5E93\u5728\u6E05\u5355\u91CC\u80FD\u88C5\u56DE\u6765\uFF1B\u522B\u7684\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "Tap the number on the corner of |\u25B6 for the list; a library you deleted can be put back from there. For the others, tap the part name at the front of the score to change \u201CWho performs\u201D." },
   "\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\uFF0C\u6E05\u5355\u91CC\u80FD\u88C5\u56DE\u6765\u3002": { en: "Tap the number on the corner of |\u25B6; you can put it back from the list." },
   "\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "Tap the number on the corner of |\u25B6 for the list, and tap the part name at the front of the score to change \u201CWho performs\u201D." },
@@ -5043,7 +5044,6 @@ var S = {
   "\u589E\u76CA": { en: "Gain" },
   "{kind}\uFF1A\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6": { en: "{kind}: not recognized by this version" },
   "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A": { en: "Nobody on stage yet" },
-  "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": { en: "This performer is missing these numbers, so it makes no sound: {keys}" },
   "\u6DF7\u97F3\u53F0\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}": { en: "These numbers are missing on the mixer, so it made no sound: {keys}" },
   "\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0": { en: "\u201C{label}\u201D can't sound from a note list" },
   "\u8BD5\u542C\u5143\u97F3\u8868\uFF1A{Error}\uFF08\u5148\u8DD1 node scripts/gen-preview-vowels.mjs\uFF1F\uFF09": { en: "Audition vowel table: {Error} (run node scripts/gen-preview-vowels.mjs first?)" },
@@ -5437,7 +5437,7 @@ var S = {
   "\u53CD\u590D": { en: "Repeat" },
   "\u8C31\u5185\u53CD\u590D / \u8DF3\u8F6C\uFF1A|: :|\u3001\u623F\u5B50 1. 2.\u3001Segno / Coda / D.C. / D.S. / Fine\u2026\uFF08\u70B9\u5F00\u9009\uFF1B\u63D2\u5728\u5149\u6807\u5904\uFF0C\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\uFF09\u3002\u4E0D\u8DE8\u7EB8\uFF1B\u653E\u7684\u65F6\u5019\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C": { en: "Score repeats / jumps: |: :|, endings 1. 2., Segno / Coda / D.C. / D.S. / Fine\u2026 (tap to choose; inserted at the cursor, next to a barline = turns it into a repeat). Doesn't cross sheets; playback only looks at this sheet's top part" },
   "\u8E0F\u677F": { en: "Pedal" },
-  "\u8E0F\u677F\uFF08\u7559\u4E0D\u7559\u4F4F\u97F3\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A": { en: "Pedal (keep notes ringing or not): press / lift / change from the note before the cursor; the choices follow whether the pedal is down there. With a selection = hold that passage. Tap a pedal mark on the score to change or delete it; long-press and drag to move it" },
+  "\u8E0F\u677F\uFF08\u97F3\u63A5\u7740\u54CD\u8FD8\u662F\u6B62\u4F4F\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A": { en: "Pedal (notes keep ringing or stop): press / release / change from the note before the cursor; the labels follow whether the pedal is down there now; with a selection = hold the pedal through it. Tap a pedal mark on the score to change or delete it; long-press and drag to move it" },
   "\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868": { en: "Grand staff: move this note to the other staff" },
   "{who}\u7684\u97F3\u57DF\u91CC": { en: "Within {who}'s range" },
   "\u77ED\u4E00\u6B65": { en: "Shorter" },
@@ -5515,12 +5515,12 @@ var S = {
   "\u5F52\u96F6": { en: "Reset" },
   "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3": { en: "Rarely needed: a fallback when a sound is itself off by octaves (e.g. GS Guitar Harmonics is two octaves high); once fixed, what you write is what sounds" },
   "\u91C7\u6837\u5F00\u5934\u5230\u300C\u7838\u4E0B\u53BB\u90A3\u4E00\u4E0B\u300D\u6709\u591A\u8FDC\uFF1A\u653E\u7684\u65F6\u5019\u63D0\u524D\u8FD9\u4E48\u591A\u5F00\u59CB\uFF0C\u8BA9\u7838\u4E0B\u53BB\u90A3\u4E00\u4E0B\u843D\u5728\u5199\u7684\u90A3\u4E00\u62CD\u4E0A\uFF08\u53CD\u5411\u9572\u8FD9\u7C7B\u6700\u660E\u663E\uFF09\u3002\u6309\u6BCF\u4E2A\u6572\u7684\u952E\u6309\u503C\u8BB0\u5728\u8FD9\u4F4D\u8EAB\u4E0A\uFF0C\u6570\u662F\u6253\u51FB\u4E50\u8868\u91CC\u5B9E\u6D4B\u7684": { en: "How far the hit is from the start of the sample: playback starts this much earlier so the hit lands on the written beat (most obvious with reverse cymbals). Stored by value on this performer for each key struck; the numbers are measured in the percussion table" },
-  "\u4E0D\u7559": { en: "Don't keep" },
+  "\u5230\u70B9\u91CA\u653E": { en: "Release at note end" },
   "\u81EA\u5DF1\u7684\u97F3\u6E90\u6587\u4EF6\uFF0C\u76EE\u5F55\u4E0D\u8BA4\u8BC6\u5B83": { en: "Your own sound file: the catalog does not know it" },
   "\u76EE\u5F55\u91CC\u6CA1\u6709\u6807\u6210\u81EA\u5DF1\u4E00\u76F4\u54CD": { en: "Not marked in the catalog as ringing on by itself" },
-  "\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u5C31\u8E29\u7740\uFF1A\u5199\u7684\u7ED3\u5C3E\u5230\u4E86\u4E5F\u4E0D\u505C\uFF0C\u54CD\u5230\u540C\u4E00\u4E2A\u97F3\u518D\u5F39\u3001\u5199\u4E86\u62AC\u8D77\u6216\u8FD9\u4E00\u6BB5\u7ED3\u675F\uFF1B\u9760\u8FD9\u4E2A\u7559\u4F4F\u7684\u97F3\u91CC\uFF0C\u8DF3\u97F3\u7167\u5199\u7684\u677E": { en: "Sustain pedal is down at the start of every section: notes keep sounding past their written end, until the same key is played again, a lift is written, or the section ends; staccato notes held only by this still stop as written" },
-  "\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF1A\u7167\u5199\u7684\u65F6\u503C\u505C\uFF08\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709\uFF09": { en: "Sustain pedal is up at the start of every section: notes stop at their written length (the instrument's own release still sounds)" },
-  "\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}": { en: "Used when no pedal is written. Factory: {side} \u2014 {why}" },
+  "\u5199\u7684\u65F6\u503C\u5230\u4E86\u4E0D\u677E\u952E\uFF08= \u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u5C31\u8E29\u7740\uFF09\uFF1A\u97F3\u987A\u7740\u5305\u7EDC\u7684\u8870\u51CF\u6BB5\u54CD\u5230\u505C\uFF1B\u540C\u4E00\u4E2A\u97F3\u518D\u5F39\u3001\u5199\u4E86\u62AC\u8D77\u6216\u8FD9\u4E00\u6BB5\u7ED3\u675F\u624D\u6536\u3002\u8DF3\u97F3\u7167\u5199\u7684\u677E": { en: "The key is not let go when the written length ends (= the sustain pedal is down at the start of each section): the note rings through the envelope's decay; it stops when the same note is played again, a pedal release is written, or the section ends. Staccato notes still stop as written" },
+  "\u5199\u7684\u65F6\u503C\u5230\u4E86\u5C31\u677E\u952E\uFF08= \u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF09\uFF1A\u8FDB\u5165\u5305\u7EDC\u7684\u91CA\u653E\u6BB5\uFF0C\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709": { en: "The key is let go when the written length ends (= the sustain pedal is up at the start of each section): the envelope's release stage follows, so the instrument's own fade-out is still there" },
+  "\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u5B83\u5B9A\u7684\u662F\u4EC0\u4E48\u65F6\u5019\u677E\u952E\uFF1B\u5305\u7EDC\uFF08\u8D77\u97F3\u3001\u8870\u51CF\u3001\u91CA\u653E\uFF09\u662F\u97F3\u8272\u5E93\u5199\u7684\uFF0C\u8FD9\u91CC\u4E0D\u6539\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}": { en: "Used where no pedal mark is written. It decides when the key is let go; the envelope (attack, decay, release) comes from the sound library and is not changed here. Factory setting: {side} \u2014 {why}" },
   "\u4E0D\u56FA\u5B9A\u539F\u901F\uFF08\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF09": { en: "Not fixed speed (transposes by the written note)" },
   "\u300C{rn}\u300D\u97F3\u9AD8\u5BF9\u9F50{on}": { en: "\u201C{rn}\u201D pitch align{on}" },
   "\u300C{rn}\u300D\u4FEE\u516B\u5EA6 / \u79FB\u8C03 {next} \u534A\u97F3": { en: "\u201C{rn}\u201D octave fix / transpose {next} semitones" },
@@ -5603,7 +5603,7 @@ var S = {
   "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting softer from here until the next dynamic mark" },
   "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A": { en: "Change evenly from the previous dynamic mark to this one" },
   "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C": { en: "Pedal down: keys you let go keep sounding until the next pedal change or lift" },
-  "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38": { en: "Keys held at the moment of pressing keep sounding; later notes play as usual" },
+  "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u63A5\u7740\u54CD\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38": { en: "Notes held when it is pressed keep ringing; notes played after that behave as usual" },
   "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3002\u97F3\u8272\u53D8\u4E0D\u53D8\u770B\u8FD9\u4EF6\u4E50\u5668\u7684\u97F3\u8272\u5E93": { en: "Press: play a little softer. Whether the tone changes depends on the instrument's sound library" },
   "{src} \u8F7D\u8FDB\u6765\u4E86\uFF0C\u4F46\u91CC\u9762\u6CA1\u6709\u300C{key}\u300D": { en: "{src} loaded, but \u201C{key}\u201D isn't in it" },
   "\u5907\u7528\u7248\u6587\u4EF6\u5939\u91CC\u5C11\u4E86 {src}\uFF08\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u8BFB\uFF09": { en: "{src} is missing from the standalone folder (or the browser won't let it be read)" },
@@ -6379,7 +6379,7 @@ var SIGNS = {
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   // 踏板（11-1）：这一位最下面那条谱下面最外一道；线 / 尖 / 钩 = 共用挂件 ornaments layPedals 画（五线谱的名字 = Bravura 字形，数字行 = 细斜体字，同力度）
   "pedal:sustain": { id: "pedal:sustain", name: (l10) => _tIn(l10, "\u5EF6\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\uFF1A\u4E4B\u540E\u677E\u5F00\u7684\u952E\u5148\u4E0D\u505C\uFF0C\u5230\u6362\u8E0F\u677F\u6216\u62AC\u8D77\u624D\u505C"), lane: "pedal", draw: { staff: G("\uE650"), jianpu: T("Ped."), letters: T("Ped.") } },
-  "pedal:sostenuto": { id: "pedal:sostenuto", name: (l10) => _tIn(l10, "\u6301\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u7559\u4F4F\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38"), lane: "pedal", draw: { staff: G("\uE659"), jianpu: T("Sost."), letters: T("Sost.") } },
+  "pedal:sostenuto": { id: "pedal:sostenuto", name: (l10) => _tIn(l10, "\u6301\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\u90A3\u4E00\u523B\u6309\u7740\u7684\u952E\u63A5\u7740\u54CD\uFF0C\u540E\u9762\u5F39\u7684\u7167\u5E38"), lane: "pedal", draw: { staff: G("\uE659"), jianpu: T("Sost."), letters: T("Sost.") } },
   "pedal:soft": { id: "pedal:soft", name: (l10) => _tIn(l10, "\u5F31\u97F3\u8E0F\u677F"), says: (l10) => _tIn(l10, "\u8E29\u4E0B\uFF1A\u5F39\u5F97\u8F7B\u4E00\u70B9\u3002\u97F3\u8272\u53D8\u4E0D\u53D8\u770B\u8FD9\u4EF6\u4E50\u5668\u7684\u97F3\u8272\u5E93"), lane: "pedal", draw: { staff: T("una corda"), jianpu: T("una corda"), letters: T("una corda") } }
   // 字 + 同延音的线和钩（统筹 11-12）
 };
@@ -6391,7 +6391,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.42-2026-11-13";
+var APP_VERSION = "v0.17.43-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -21240,7 +21240,7 @@ var Pad = class {
       cell2("ottava", `<span class="smufl">\uE511</span>`, _t("\u516B\u5EA6\u7EBF"), _t("\u516B\u5EA6\u7EBF\uFF1A\u4ECE\u5149\u6807\u5904\u8D77\u8C31\u4E0A\u753B\u4F4E\uFF088va / 15ma\uFF09\u6216\u753B\u9AD8\uFF088vb\uFF09\uFF1B\u6709\u9009\u533A = \u8FD9\u4E00\u6BB5\uFF1B\u300C\u7ED3\u675F\u300D= \u5230\u8FD9\u513F\u6536\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8")),
       cell2("groove", `<span class="big it">${_t("\u98CE\u683C")}</span>`, _t("\u62CD\u5B50\u8F7B\u91CD"), _t("\u98CE\u683C\u8BB0\u53F7\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u5728\u5C0F\u8282\u91CC\u7684\u4F4D\u7F6E\u8F7B\u4E00\u70B9 / \u91CD\u4E00\u70B9\uFF08\u53E4\u5178 / \u6D41\u884C / \u534E\u5C14\u5179 / \u8FDB\u884C\u66F2\u2026\u70B9\u5F00\u9009\uFF09\uFF1B\u6574\u5F20\u7EB8\u7684\u58F0\u90E8\u4E00\u8D77\u542C\uFF0C\u5404\u4EBA\u8DDF\u591A\u5C11\u6309\u4E50\u5668")),
       cell2("repeat", `<span class="big">:|</span>`, _t("\u53CD\u590D"), _t("\u8C31\u5185\u53CD\u590D / \u8DF3\u8F6C\uFF1A|: :|\u3001\u623F\u5B50 1. 2.\u3001Segno / Coda / D.C. / D.S. / Fine\u2026\uFF08\u70B9\u5F00\u9009\uFF1B\u63D2\u5728\u5149\u6807\u5904\uFF0C\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\uFF09\u3002\u4E0D\u8DE8\u7EB8\uFF1B\u653E\u7684\u65F6\u5019\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C")),
-      cell2("pedal", `<span class="smufl">\uE650</span>`, _t("\u8E0F\u677F"), _t("\u8E0F\u677F\uFF08\u7559\u4E0D\u7559\u4F4F\u97F3\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A")),
+      cell2("pedal", `<span class="smufl">\uE650</span>`, _t("\u8E0F\u677F"), _t("\u8E0F\u677F\uFF08\u97F3\u63A5\u7740\u54CD\u8FD8\u662F\u6B62\u4F4F\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A")),
       ...this.host.staves() === 2 ? [cell2("staff", `<span class="big">\u21C5</span>`, _t("\u6362\u8C31\u8868"), _t("\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868"))] : []
     ];
     const byId = new Map(items.map((h2) => [/data-sym="([^"]+)"/.exec(h2)[1], h2]));
@@ -35343,15 +35343,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-4ba6c2252bd5.mjs");
+      return pick3(() => "singer-worker-6f5fcd28e5e9.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-7bb911c39b04.mjs");
+      return pick3(() => "layout-worker-4de98081b20f.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-134b5db17e90.mjs");
+      return pick3(() => "encode-worker-24331534c4f4.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -37410,14 +37410,254 @@ function abbrOf(r10, named, label, l10) {
 init_fflate_esm();
 
 // src/gm/ring.gen.ts
-var RING_FREE = {};
+var RING_FREE = {
+  "0:9": {
+    "zh": "\u91D1\u5C5E\u7247\u6572\u4E86\u4E00\u76F4\u54CD\uFF0C\u7434\u4E0A\u6CA1\u6709\u6B62\u97F3\u7684\u4E1C\u897F\uFF0C\u8981\u7528\u624B\u6309\u3002",
+    "en": "Struck metal bars ring on; nothing on the instrument stops them except the hand."
+  },
+  "0:10": {
+    "zh": "\u7C27\u7247\u62E8\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u6709\u6B62\u97F3\u7684\u4E1C\u897F\u3002",
+    "en": "Plucked comb teeth ring until they die away; nothing damps them."
+  },
+  "0:12": {
+    "zh": "\u6CA1\u6709\u5236\u97F3\u5668\uFF0C\u6572\u4E86\u54CD\u5230\u8870\u5B8C\u3002",
+    "en": "No dampers; each stroke rings until it dies away."
+  },
+  "0:13": {
+    "zh": "\u6CA1\u6709\u5236\u97F3\u5668\uFF0C\u6572\u4E86\u54CD\u5230\u8870\u5B8C\uFF08\u5F88\u77ED\uFF09\u3002",
+    "en": "No dampers; each stroke rings until it dies away (briefly)."
+  },
+  "0:14": {
+    "zh": "\u5199\u6CD5\u4E0A\u51E0\u4E4E\u90FD\u8BA9\u5B83\u54CD\uFF08\u4E0D\u7BA1\u65F6\u503C\uFF0C\u6216\u5199\u300C\u8BA9\u5B83\u54CD\u300D\uFF09\u3002",
+    "en": 'Almost always written to ring regardless of note length, or marked "let ring".'
+  },
+  "0:15": {
+    "zh": "\u6572\u5F26\u540E\u5F26\u81EA\u5DF1\u632F\uFF0C\u7434\u4E0A\u6CA1\u6709\u5236\u97F3\u5668\u3002",
+    "en": "Struck strings vibrate freely; the instrument has no dampers."
+  },
+  "0:46": {
+    "zh": "\u62E8\u4E86\u5F26\u4E00\u76F4\u54CD\uFF0C\u8981\u7528\u624B\u638C\u8D34\u4F4F\u5F26\u624D\u505C\uFF1B\u8C31\u4E0A\u8981\u6B62\u4F1A\u4E13\u95E8\u5199\u3002",
+    "en": "Plucked strings ring on until the player damps them with the palm; stopping is written explicitly."
+  },
+  "0:47": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u4E00\u76F4\u54CD\uFF0C\u6B62\u97F3\u8981\u7528\u624B\u6309\u9F13\u76AE\uFF0C\u8C31\u4E0A\u4F1A\u4E13\u95E8\u5199\u3002",
+    "en": "The struck head rings on; stopping takes a hand on the head and is written explicitly."
+  },
+  "0:107": {
+    "zh": "\u62E8\u5F26\u540E\u4E00\u76F4\u54CD\uFF0C\u6B62\u97F3\u8981\u53E6\u4E00\u53EA\u624B\u6309\u5F26\uFF0C\u662F\u7279\u610F\u7684\u52A8\u4F5C\u3002",
+    "en": "Plucked strings ring on; stopping takes a deliberate press of the other hand."
+  },
+  "0:108": {
+    "zh": "\u5F39\u7247\u62E8\u4E86\u4E00\u76F4\u54CD\uFF0C\u8981\u624B\u6307\u6309\u4F4F\u624D\u505C\u3002",
+    "en": "Plucked tines ring on until a finger holds them."
+  },
+  "0:112": {
+    "zh": "\u6302\u7740\u6572\uFF0C\u54CD\u5230\u81EA\u5DF1\u505C\u3002",
+    "en": "Hung and struck; rings until it dies away by itself."
+  },
+  "0:113": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\u3002",
+    "en": "Rings until it dies away by itself."
+  },
+  "0:114": {
+    "zh": "\u9F13\u9762\u6572\u4E86\u4E00\u76F4\u54CD\uFF0C\u6CA1\u6709\u6B62\u97F3\u673A\u6784\uFF0C\u6B62\u8981\u7528\u624B\u6309\u9F13\u9762\u3002",
+    "en": "The struck pan rings on; there is no damping mechanism, only the hand on the surface."
+  },
+  "0:115": {
+    "zh": "\u6572\u4E86\u4E00\u4E0B\u5C31\u5B8C\u3002",
+    "en": "Each stroke is over at once."
+  },
+  "0:116": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "0:117": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "0:118": {
+    "zh": "\u4E00\u4E0B\u4E00\u4E0B\u7684\u9F13\u58F0\uFF0C\u54CD\u5230\u97F3\u8272\u81EA\u5DF1\u8870\u5B8C\u3002",
+    "en": "Each hit sounds until the sample dies away by itself."
+  },
+  "0:119": {
+    "zh": "\u6572\u4E86\u4E00\u76F4\u54CD\uFF0C\u7528\u624B\u6390\u4F4F\u624D\u505C\uFF08\u6390\u4F4F\u6709\u4E13\u95E8\u7684\u8BB0\u53F7\uFF09\u3002",
+    "en": "Rings on after a stroke until choked by hand (choking has its own mark)."
+  },
+  "128:0:35": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:36": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:37": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:38": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:39": {
+    "zh": "\u62CD\u4E00\u4E0B\u5C31\u5B8C\u3002",
+    "en": "Each clap is over at once."
+  },
+  "128:0:40": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:41": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:42": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF1B\u5F00\u5408\u7531\u811A\u8E0F\u7684\u5199\u6CD5\u7BA1\uFF0C\u4E0D\u9760\u677E\u952E\u3002",
+    "en": "Rings until it dies away; open and closed sounds come from the pedal, not from letting go."
+  },
+  "128:0:43": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:44": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF1B\u5F00\u5408\u7531\u811A\u8E0F\u7684\u5199\u6CD5\u7BA1\uFF0C\u4E0D\u9760\u677E\u952E\u3002",
+    "en": "Rings until it dies away; open and closed sounds come from the pedal, not from letting go."
+  },
+  "128:0:45": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:46": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF1B\u5F00\u5408\u7531\u811A\u8E0F\u7684\u5199\u6CD5\u7BA1\uFF0C\u4E0D\u9760\u677E\u952E\u3002",
+    "en": "Rings until it dies away; open and closed sounds come from the pedal, not from letting go."
+  },
+  "128:0:47": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:48": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:49": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF1B\u8981\u6390\u4F4F\u662F\u7279\u610F\u7684\u52A8\u4F5C\u3002",
+    "en": "Rings until it dies away; choking it is a deliberate act."
+  },
+  "128:0:50": {
+    "zh": "\u9F13\u76AE\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "The struck head dies away on its own; nobody holds it to stop the sound."
+  },
+  "128:0:51": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF1B\u8981\u6390\u4F4F\u662F\u7279\u610F\u7684\u52A8\u4F5C\u3002",
+    "en": "Rings until it dies away; choking it is a deliberate act."
+  },
+  "128:0:52": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF1B\u8981\u6390\u4F4F\u662F\u7279\u610F\u7684\u52A8\u4F5C\u3002",
+    "en": "Rings until it dies away; choking it is a deliberate act."
+  },
+  "128:0:53": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF1B\u8981\u6390\u4F4F\u662F\u7279\u610F\u7684\u52A8\u4F5C\u3002",
+    "en": "Rings until it dies away; choking it is a deliberate act."
+  },
+  "128:0:54": {
+    "zh": "\u6572\u4E86\u3001\u6447\u4E86\u54CD\u5230\u81EA\u5DF1\u505C\u3002",
+    "en": "Struck or shaken, it sounds until it stops by itself."
+  },
+  "128:0:55": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF1B\u8981\u6390\u4F4F\u662F\u7279\u610F\u7684\u52A8\u4F5C\u3002",
+    "en": "Rings until it dies away; choking it is a deliberate act."
+  },
+  "128:0:56": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\u3002",
+    "en": "Rings until it dies away by itself."
+  },
+  "128:0:57": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF1B\u8981\u6390\u4F4F\u662F\u7279\u610F\u7684\u52A8\u4F5C\u3002",
+    "en": "Rings until it dies away; choking it is a deliberate act."
+  },
+  "128:0:58": {
+    "zh": "\u6572\u4E00\u4E0B\u98A4\u5230\u81EA\u5DF1\u505C\u3002",
+    "en": "One strike rattles until it stops by itself."
+  },
+  "128:0:59": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\uFF1B\u8981\u6390\u4F4F\u662F\u7279\u610F\u7684\u52A8\u4F5C\u3002",
+    "en": "Rings until it dies away; choking it is a deliberate act."
+  },
+  "128:0:60": {
+    "zh": "\u624B\u62CD\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF1B\u95F7\u97F3\u662F\u53E6\u4E00\u79CD\u62CD\u6CD5\uFF0C\u4E0D\u9760\u677E\u952E\u3002",
+    "en": "Hand strokes die away on their own; muted tones are a separate stroke, not letting go."
+  },
+  "128:0:61": {
+    "zh": "\u624B\u62CD\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF1B\u95F7\u97F3\u662F\u53E6\u4E00\u79CD\u62CD\u6CD5\uFF0C\u4E0D\u9760\u677E\u952E\u3002",
+    "en": "Hand strokes die away on their own; muted tones are a separate stroke, not letting go."
+  },
+  "128:0:62": {
+    "zh": "\u624B\u62CD\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF1B\u95F7\u97F3\u662F\u53E6\u4E00\u79CD\u62CD\u6CD5\uFF0C\u4E0D\u9760\u677E\u952E\u3002",
+    "en": "Hand strokes die away on their own; muted tones are a separate stroke, not letting go."
+  },
+  "128:0:63": {
+    "zh": "\u624B\u62CD\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF1B\u95F7\u97F3\u662F\u53E6\u4E00\u79CD\u62CD\u6CD5\uFF0C\u4E0D\u9760\u677E\u952E\u3002",
+    "en": "Hand strokes die away on their own; muted tones are a separate stroke, not letting go."
+  },
+  "128:0:64": {
+    "zh": "\u624B\u62CD\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF1B\u95F7\u97F3\u662F\u53E6\u4E00\u79CD\u62CD\u6CD5\uFF0C\u4E0D\u9760\u677E\u952E\u3002",
+    "en": "Hand strokes die away on their own; muted tones are a separate stroke, not letting go."
+  },
+  "128:0:65": {
+    "zh": "\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "Strokes die away on their own; nobody holds it to stop the sound."
+  },
+  "128:0:66": {
+    "zh": "\u6572\u4E86\u81EA\u5DF1\u8870\u5B8C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u5B83\u8BA9\u5B83\u505C\u3002",
+    "en": "Strokes die away on their own; nobody holds it to stop the sound."
+  },
+  "128:0:67": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\u3002",
+    "en": "Rings until it dies away by itself."
+  },
+  "128:0:68": {
+    "zh": "\u6572\u4E86\u54CD\u5230\u81EA\u5DF1\u8870\u5B8C\u3002",
+    "en": "Rings until it dies away by itself."
+  },
+  "128:0:69": {
+    "zh": "\u522E\u4E00\u4E0B\u3001\u6447\u4E00\u4E0B\u5C31\u5B8C\u3002",
+    "en": "Each scrape or shake is over at once."
+  },
+  "128:0:70": {
+    "zh": "\u6447\u4E00\u4E0B\u5C31\u5B8C\u3002",
+    "en": "Each shake is over at once."
+  },
+  "128:0:75": {
+    "zh": "\u4E24\u6839\u6728\u68D2\u5BF9\u6572\uFF0C\u4E00\u4E0B\u5C31\u5B8C\u3002",
+    "en": "Two sticks struck together; each click is over at once."
+  },
+  "128:0:76": {
+    "zh": "\u6572\u4E86\u4E00\u4E0B\u5C31\u5B8C\u3002",
+    "en": "Each stroke is over at once."
+  },
+  "128:0:77": {
+    "zh": "\u6572\u4E86\u4E00\u4E0B\u5C31\u5B8C\u3002",
+    "en": "Each stroke is over at once."
+  },
+  "128:0:80": {
+    "zh": "\u6572\u4E86\u4E00\u76F4\u54CD\uFF0C\u8981\u7528\u624B\u63E1\u4F4F\u624D\u505C\uFF08\u8C31\u4E0A\u5E38\u5199\u300C\u8BA9\u5B83\u54CD\u300D\uFF09\u3002",
+    "en": 'Rings on after a stroke until the hand grips it (scores often say "let ring").'
+  },
+  "128:0:81": {
+    "zh": "\u6572\u4E86\u4E00\u76F4\u54CD\uFF0C\u8981\u7528\u624B\u63E1\u4F4F\u624D\u505C\uFF08\u8C31\u4E0A\u5E38\u5199\u300C\u8BA9\u5B83\u54CD\u300D\uFF09\u3002",
+    "en": 'Rings on after a stroke until the hand grips it (scores often say "let ring").'
+  }
+};
 
 // src/gm/library-ids.ts
 var GS_LIBRARY_ID = "generaluser-gs-2.0.3";
 
 // src/gm/ring.ts
+var RING_FREE_KITS = [0, 1, 2, 8, 16, 24, 25, 26, 32, 40, 48];
+var KIT_WHY = { zh: "\u6574\u5957\u9F13\uFF1A\u6BCF\u4E00\u4EF6\uFF08\u9F13\u3001\u9572\u3001\u5C0F\u6253\u51FB\u4E50\uFF09\u6572\u4E86\u90FD\u54CD\u5230\u81EA\u5DF1\u505C\uFF0C\u6CA1\u4EBA\u4F1A\u6309\u4F4F\u8BA9\u5B83\u505C\uFF1B\u4E00\u4E2A\u9ED8\u8BA4\u7BA1\u5168\u5957\u3002", en: "Whole drum kit: every piece (drums, cymbals, small percussion) rings until it dies away by itself; nobody holds it to stop the sound. One default covers the whole kit." };
 function ringFactory(src) {
   if (src.library !== GS_LIBRARY_ID) return { pedal: "up", reason: "own", why: null };
+  if (src.bank === 128 && src.note === void 0) return RING_FREE_KITS.includes(src.program) ? { pedal: "down", reason: "free", why: KIT_WHY } : { pedal: "up", reason: "unmarked", why: null };
   const w2 = RING_FREE[`${src.bank}:${src.program}${src.note !== void 0 ? `:${src.note}` : ""}`];
   return w2 ? { pedal: "down", reason: "free", why: w2 } : { pedal: "up", reason: "unmarked", why: null };
 }
@@ -42687,29 +42927,29 @@ var vowelSampler = registerPerformer({
 // src/gm/instruments.gen.ts
 var INSTRUMENT_FILES = {
   "concepts": {
-    "file": "vendor/instruments/instruments-v15.json",
-    "bytes": 317869,
-    "sha256": "4340e7b473321f2abc5f861066244cf60bdccfc5288fdc37e111b763d8aa7139"
+    "file": "vendor/instruments/instruments-v16.json",
+    "bytes": 327672,
+    "sha256": "676b9c2372ae80fa6cc4cc30ba16c1539a16247789ccfd0b78c032414941b465"
   },
   "gmMap": {
-    "file": "vendor/instruments/gm-map-v15.json",
+    "file": "vendor/instruments/gm-map-v16.json",
     "bytes": 434160,
-    "sha256": "41cd2fe8ece13b2d5f6baa867796f3894d94e592c67e9432a7f15bda2f1aa921"
+    "sha256": "76cd490654dded61b5996846ea5b88801805f0d9422f1abb81b2f9c78993f8bb"
   },
   "icons": {
-    "file": "vendor/instruments/instrument-icons-20261107-v15.svg",
+    "file": "vendor/instruments/instrument-icons-20261113-v16.svg",
     "bytes": 139014,
-    "sha256": "a94929205faabf3403223cea2ff6b69ebc2443f7b19d164434125552ecd138f0"
+    "sha256": "0ef2d1ace2522d369740e0b300fdb5c966de3bb3bd33998506e07a98e1abb02f"
   },
   "iconCredits": {
-    "file": "vendor/instruments/icon-credits-v15.json",
+    "file": "vendor/instruments/icon-credits-v16.json",
     "bytes": 20670,
-    "sha256": "ac545e5c65df0dc99e499329a6d066faaa932c6ebfef935347be8cdeace76592"
+    "sha256": "3174f2b4340806fb67a51228aecfae2afe342ca70b313261825e00aa269fbc42"
   },
   "licenses": {
-    "file": "vendor/instruments/LICENSES-chosen-v15.md",
+    "file": "vendor/instruments/LICENSES-chosen-v16.md",
     "bytes": 145790,
-    "sha256": "4fafc7fdd1ba7b07113d6a34f9589406de78edafa93ebbe2edcbc15c190b89d9"
+    "sha256": "edd6244d484905834110560e38d3b0dbfe7b79a790115a67e68bfc58025b18f6"
   }
 };
 var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
@@ -43094,15 +43334,15 @@ var soundfont = registerPerformer({
       const cur = activePedalDefault(extras, role);
       if (active && cur) {
         const f2 = ringFactory({ library: active.origin.library ?? null, bank: active.bank, program: active.program, ...active.note !== void 0 ? { note: active.note } : {} });
-        const side = f2.pedal === "down" ? _t("\u7559\u4F4F\u97F3") : _t("\u4E0D\u7559");
+        const side = f2.pedal === "down" ? _t("\u81EA\u7136\u8870\u51CF") : _t("\u5230\u70B9\u91CA\u653E");
         const why2 = f2.reason === "free" ? lang() === "zh" ? f2.why.zh : f2.why.en : f2.reason === "own" ? _t("\u81EA\u5DF1\u7684\u97F3\u6E90\u6587\u4EF6\uFF0C\u76EE\u5F55\u4E0D\u8BA4\u8BC6\u5B83") : _t("\u76EE\u5F55\u91CC\u6CA1\u6709\u6807\u6210\u81EA\u5DF1\u4E00\u76F4\u54CD");
         rows.push({
           id: "pedal",
-          value: cur === "down" ? _t("\u7559\u4F4F\u97F3") : _t("\u4E0D\u7559"),
+          value: cur === "down" ? _t("\u81EA\u7136\u8870\u51CF") : _t("\u5230\u70B9\u91CA\u653E"),
           label: _t("\u4F59\u97F3"),
           // 行名在那一栏里放得下（统筹审 11-3：「没写踏板记号时」折成两行，挪进说明开头）
-          control: chip2("pedal:down", _t("\u7559\u4F4F\u97F3"), cur === "down", _t("\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u5C31\u8E29\u7740\uFF1A\u5199\u7684\u7ED3\u5C3E\u5230\u4E86\u4E5F\u4E0D\u505C\uFF0C\u54CD\u5230\u540C\u4E00\u4E2A\u97F3\u518D\u5F39\u3001\u5199\u4E86\u62AC\u8D77\u6216\u8FD9\u4E00\u6BB5\u7ED3\u675F\uFF1B\u9760\u8FD9\u4E2A\u7559\u4F4F\u7684\u97F3\u91CC\uFF0C\u8DF3\u97F3\u7167\u5199\u7684\u677E")) + chip2("pedal:up", _t("\u4E0D\u7559"), cur === "up", _t("\u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF1A\u7167\u5199\u7684\u65F6\u503C\u505C\uFF08\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709\uFF09")),
-          note: esc14(_t("\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}", { side, why: why2 }))
+          control: chip2("pedal:down", _t("\u81EA\u7136\u8870\u51CF"), cur === "down", _t("\u5199\u7684\u65F6\u503C\u5230\u4E86\u4E0D\u677E\u952E\uFF08= \u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u5C31\u8E29\u7740\uFF09\uFF1A\u97F3\u987A\u7740\u5305\u7EDC\u7684\u8870\u51CF\u6BB5\u54CD\u5230\u505C\uFF1B\u540C\u4E00\u4E2A\u97F3\u518D\u5F39\u3001\u5199\u4E86\u62AC\u8D77\u6216\u8FD9\u4E00\u6BB5\u7ED3\u675F\u624D\u6536\u3002\u8DF3\u97F3\u7167\u5199\u7684\u677E")) + chip2("pedal:up", _t("\u5230\u70B9\u91CA\u653E"), cur === "up", _t("\u5199\u7684\u65F6\u503C\u5230\u4E86\u5C31\u677E\u952E\uFF08= \u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF09\uFF1A\u8FDB\u5165\u5305\u7EDC\u7684\u91CA\u653E\u6BB5\uFF0C\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709")),
+          note: esc14(_t("\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u5B83\u5B9A\u7684\u662F\u4EC0\u4E48\u65F6\u5019\u677E\u952E\uFF1B\u5305\u7EDC\uFF08\u8D77\u97F3\u3001\u8870\u51CF\u3001\u91CA\u653E\uFF09\u662F\u97F3\u8272\u5E93\u5199\u7684\uFF0C\u8FD9\u91CC\u4E0D\u6539\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}", { side, why: why2 }))
         });
       }
     }
@@ -43124,7 +43364,7 @@ var soundfont = registerPerformer({
     }
     if (v === "pedal:down" || v === "pedal:up") {
       const p2 = v.slice(6);
-      return { extras: withPedalDefault(extras, role, p2, hum), label: _t("\u300C{rn}\u300D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\uFF1A{p}", { rn: rn2, p: p2 === "down" ? _t("\u7559\u4F4F\u97F3") : _t("\u4E0D\u7559") }), silence: true };
+      return { extras: withPedalDefault(extras, role, p2, hum), label: _t("\u300C{rn}\u300D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\uFF1A{p}", { rn: rn2, p: p2 === "down" ? _t("\u81EA\u7136\u8870\u51CF") : _t("\u5230\u70B9\u91CA\u653E") }), silence: true };
     }
     if (v.startsWith("vel:")) {
       const next2 = activeVelocity(extras, role) + Number(v.slice(4)) / 127;
@@ -43464,6 +43704,10 @@ function createPerformance(host2) {
         return [{ part: p2.id, role: p2.role, label: labels2[k2], kind: "unknown", why: why2 }];
       }
       if (plugin.sound === "chunks" && host2.libRemoved("voice")) return [{ part: p2.id, role: p2.role, label: labels2[k2], kind: "removed", why: removedWhy("voice"), lib: "voice" }];
+      {
+        const chk = perfSpecOf(extras(), p2.role);
+        if (chk && !chk.ok) return [{ part: p2.id, role: p2.role, label: labels2[k2], kind: "unplayable", why: _t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u7F3A\u8FD9\u51E0\u4E2A\u6570\uFF0C\u6CA1\u6709\u51FA\u58F0\uFF1A{keys}", { keys: chk.problems.join("\u3001") }) }];
+      }
       const e10 = prepErrs.get(p2.id);
       return e10 && e10.cand === activeId(extras(), p2.role) ? [{ part: p2.id, role: p2.role, label: labels2[k2], kind: e10.kind, why: e10.why, ...e10.lib ? { lib: e10.lib } : {} }] : [];
     });
@@ -45340,7 +45584,7 @@ function createInstSettings(el2, h2) {
       "swell",
       (x2) => spX(x2, (s23) => `${s23.swellDb} dB`)
     ))(sp2.swellDb) : "") + ownMain.map(rowOf).join("") + // 规格缺数（更新版本写的怪值、手改坏的文件；v0.17.42）：依赖规格的几行不画，这一行标出来缺哪几个
-    (bad ? row2(_t("\u7F3A\u7684\u6570"), `<b class="ip-val ip-bad">${esc8(bad.join(_t("\u3001")))}</b>`, _t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A")) : "") + // 力度记号那张表（16-6：两条路同一行；表类的行 = 现在的默认那一排摆在当前那一排下面、格子对齐，统筹补的第三条）
+    (bad ? row2(_t("\u7F3A\u7684\u6570"), `<b class="ip-val ip-bad">${esc8(bad.join(_t("\u3001")))}</b>`, _t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A\u3002\u8981\u8BA9\u5B83\u51FA\u58F0\uFF1A\u70B9\u4E0A\u9762\u300C\u6362\u4E50\u5668\u2026\u300D\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u65B0\u4E0A\u573A\u7684\u90A3\u4E00\u4F4D\u6309\u73B0\u5728\u7684\u9ED8\u8BA4\u5199\u5168")) : "") + // 力度记号那张表（16-6：两条路同一行；表类的行 = 现在的默认那一排摆在当前那一排下面、格子对齐，统筹补的第三条）
     //   按音量走的（小月相 / 元音版）= 她身上的八个 dB（v0.9.23，方便和乐器的那张对比）；按力度敲的 = 八个 MIDI 力度 + 这件乐器在那个键上的响度 + 第几份录音
     (sp2?.path === "gain" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), dynCtl(sp2.dynamicsDb, 0.5, (x2) => `${x2 > 0 ? "+" : ""}${x2} dB`), _t(
       "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}",
@@ -46695,7 +46939,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "69b98db0ac719605" : "dev";
+var CORE_HASH = true ? "3650ef79c18f6bc6" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -64222,7 +64466,7 @@ function partViews() {
   const labels2 = labelsNow(), mutes = lyricMutes(), tl2 = scoreTextLang(), looks = partLooks();
   return D3.st.song.parts.map((p2, k2) => {
     const held = activePedalDefault(D3.extras, p2.role) === "down" && !!performerOf(activeInstrument(D3.extras, p2.role)?.engine)?.pedals?.includes("sustain");
-    const v = pv(p2.id), badges = [v.muted ? _t("\u9759\u97F3") : "", v.solo ? _t("\u72EC\u594F") : "", v.only ? _t("\u53EA\u770B\u5B83") : "", issueParts.has(p2.id) ? _t("\u4E0D\u51FA\u58F0") : "", held ? _t("\u7559\u4F4F\u97F3") : ""].filter(Boolean);
+    const v = pv(p2.id), badges = [v.muted ? _t("\u9759\u97F3") : "", v.solo ? _t("\u72EC\u594F") : "", v.only ? _t("\u53EA\u770B\u5B83") : "", issueParts.has(p2.id) ? _t("\u4E0D\u51FA\u58F0") : "", held ? _t("\u81EA\u7136\u8870\u51CF") : ""].filter(Boolean);
     const eng = activeInstrument(D3.extras, p2.role)?.engine ?? "unknown", plug = performerOf(eng);
     const lm2 = mutes.get(p2.id);
     const ly2 = plug?.lyrics, noLyrics = ly2 === "hum" || ly2 === "none" ? _t("{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220", { p: labels2[k2], p2: ly2 === "hum" ? _t("\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC") : _t("\u4E0D\u5531\u6B4C\u8BCD") }) : "";
@@ -64907,8 +65151,8 @@ function openRepeatMenu() {
   );
 }
 var PEDAL_ACT_LABEL = {
-  sustain: { down: _t("\u8E29\u4E0B\uFF08\u7559\u4F4F\u97F3\uFF09"), up: _t("\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u63A5\u7740\u7559\uFF09") },
-  sostenuto: { down: _t("\u8E29\u4E0B\uFF08\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09"), up: _t("\u62AC\u8D77\uFF08\u653E\u5F00\u7559\u4F4F\u7684\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u7559\u4F4F\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\uFF09") },
+  sustain: { down: _t("\u8E29\u4E0B\uFF08\u63A5\u7740\u54CD\uFF09"), up: _t("\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u63A5\u7740\u54CD\uFF09") },
+  sostenuto: { down: _t("\u8E29\u4E0B\uFF08\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09"), up: _t("\u62AC\u8D77\uFF08\u653E\u5F00\u63A5\u7740\u54CD\u7684\u90A3\u51E0\u4E2A\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u8BA9\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09") },
   // 持音只放开它留住的那几个（统筹审 11-2：「止音」说大了）
   soft: { down: _t("\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09"), up: _t("\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09") }
 };
@@ -64925,7 +65169,7 @@ function disclosePedal(which, idle) {
     info(why2);
     return;
   }
-  if (idle === "already") info(pedalStart(which) ? _t("\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7559\u4F4F\u97F3\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09") : _t("\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09"));
+  if (idle === "already") info(pedalStart(which) ? _t("\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u662F\u81EA\u7136\u8870\u51CF\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09") : _t("\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740\uFF1A\u8FD9\u4E2A\u8E29\u4E0B\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09"));
   else if (idle === "notDown") info(_t("\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740\uFF1A\u8FD9\u4E2A\u62AC\u8D77\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09"));
 }
 function openPedalMenu() {
@@ -64960,7 +65204,7 @@ function openPedalMarkMenu(i10, at3) {
   const toks = tr(D3.st), t10 = toks[i10];
   if (!t10 || t10.kind !== "pedal") return;
   const before = pedalDownAt(toks, i10, t10.which, pedalStart(t10.which)), why2 = pedalIgnoredWhy(t10.which);
-  const idle = t10.act === "down" && before ? pedalStart(t10.which) && !toks.slice(0, i10).some((x2) => x2.kind === "pedal" && x2.which === t10.which) ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7559\u4F4F\u97F3\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740") : _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740") : t10.act === "up" && !before ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740") : t10.act === "change" && !before ? _t("\u8FD9\u91CC\u4E4B\u524D\u6CA1\u8E29\u7740\uFF0C\u6362\u8E0F\u677F = \u8E29\u4E0B") : "";
+  const idle = t10.act === "down" && before ? pedalStart(t10.which) && !toks.slice(0, i10).some((x2) => x2.kind === "pedal" && x2.which === t10.which) ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u662F\u81EA\u7136\u8870\u51CF\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740") : _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740") : t10.act === "up" && !before ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740") : t10.act === "change" && !before ? _t("\u8FD9\u91CC\u4E4B\u524D\u6CA1\u8E29\u7740\uFF0C\u6362\u8E0F\u677F = \u8E29\u4E0B") : "";
   ctxMenu(
     "pedal-menu",
     `<div class="ctx-hint ctx-what">${esc13(PEDAL_NAME[t10.which])}\uFF1A${esc13(SIGNS[`pedal:${t10.which}`].says(lang()))}</div>` + (idle ? `<div class="ctx-hint">${esc13(idle)}</div>` : "") + (why2 ? `<div class="ctx-hint">${esc13(why2)}</div>` : "") + [...PEDAL_ACTS[t10.which], ...PEDAL_ACTS[t10.which].includes(t10.act) ? [] : [t10.act]].map((a10) => `<button class="btn ctx-item${t10.act === a10 ? " is-on" : ""}" data-v="act:${a10}">${esc13(PEDAL_ACT_LABEL[t10.which][a10])}</button>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u4E2A\u8E0F\u677F\u8BB0\u53F7")}</button>`,
@@ -67675,4 +67919,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-13222027d112.mjs.map
+//# sourceMappingURL=moonsinger-b399f665a0fe.mjs.map
