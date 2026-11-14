@@ -5432,3 +5432,15 @@ user 2026-11-13 夜：「看一下你现在还有什么任务没做，不要偷�
     - 写歌仓进歌库会放下手里的歌（store.mjs 第 122 行守着），正常走不出「打开中」——user 在哪儿看到的没查（别的 app？或者某条不经 onOpened 的路）。不属于这一批，留着。
   - 统筹 19:5x 最终版（盖过前面「推几次、推之前跑什么」）：今晚两波两个版——第一波 = 1、2、3 一个版；第二波 = 4 一个版，写完直接推、推完报文件和函数名。推前只跑 check；整套测试推完放后台跑，红的记单子按原因归类一次修，今晚只修打不开 / 丢东西的；毛病进「攒着的」。
 - 2026-11-13 · **v0.17.45**（第一波：三样一版）：① 简谱下音域旋钮看得出八度：`pad.ts rangeFace` 简谱字带八度点（4̣–5̇），悬停提示带音名「4–5（F3–G5）」，窄了照旧两行；样式 `.rw` / `.kf-dg` / `.jp-dots`。② 踏板菜单长字：`main.ts PEDAL_ACT_LABEL` 持音三行、弱音「换踏板」改短，菜单每行一行字（220 像素宽）；英文同步。③ 歌库卡片「打开中」不压文件名：图库包 0.9.3（库仓本机 226de2e、标签 v0.9.3，没推 GitHub）——角标从压在名字右端改成浮在那一行右边，名字让开、太长打省略号；写歌仓收包 + 手动拷 `vendor/internal-css/gallery.css`（这份是拷的，不随包进来；README 记了一行）。截图（统筹看）：`b45/range-ipad.png`、`b45/range-phone-top.png`、`b45/pedal-menu-sost.png`、`b45/active-tag-after.png` / `active-tag-before.png`（旧样式下角标压字 38 像素，新的 0）。推前 check 1947 绿；没跑界面自动化测试。
+  - 整套 E2E（33bdedca，后台）：6 分 18 秒，126 过 1 红。**红的单子（按原因）**：测试期望过期 1 = `test/e2e/pedal.mjs` 第 28 行查持音「踩下」那行有「这一刻按着」——第一波第 2 样把它改成「踩下（按着的音接着响）」，期望改成查「按着的音」，单跑 19/19（随 v0.17.46 提交）。app 打不开 / 丢数据：0。
+- 2026-11-13 · **v0.17.46**（第二波 = 第 4 样：看谱的四样习惯、「初始设置问过了」、界面语言跟着歌库走；施工单 20-2 / 20-3）：
+  - 新文件 `src/app/account-prefs.ts`：`createAccountPrefs(device, keys)` → `write / bind / connect(cloudKnown) / unbind / onRemote / bound`；`ACCOUNT_SHELF = "synced-user-preference"`（库存成 `.moonsinger/synced-user-preference.json`）；`ACCOUNT_KEYS` = 四样习惯的设备键 + `habits-asked` + `lang`。收藏夹里的值 = 设备键值里同一个字，「没选」写空字；不是字 = 读不懂，两边都不动、报出来（不自愈）。
+  - 规则甲（`connect`）：歌库没有这一项 + 设备选了 = 存进歌库（只在这一次确实问到了歌库那头时；离线 = 只照歌库已有的）；歌库有、不一样 = 照歌库改设备；一样 = 不动。之后人改的（`write`）设备和歌库一起写；别处改了拉下来（收藏夹 onChange）= 照着改设备、回调；自己写的不回声。
+  - `src/app-store.ts`：`onStoreLifecycle(h)`（attached / disposing）+ `announce(s)`（两种 attachStore 都叫）；`disposeStore` 先叫 disposing 再拆库。导出 `type Collection`。
+  - `src/app/main.ts`：`connectAccount(s)`（建收藏夹 → bind → reconcileWithRemote → 按结果判 cloudKnown → connect → 黑匣子 `[account-prefs]` 一行 → `afterAccountAdopt` + `tellAccount`）、`flushAccount()`（换库 / 登出前、改语言重载前、pagehide）、`afterAccountAdopt(keys)`（习惯变了 = habitsChanged）、`tellAccount(r)`（一条提示：存进了 / 照歌库换了 / 读不懂，按界面上的名字说；语言照歌库换了 = 另一条带「重新载入」）。写习惯 / 问过了 / 卡上和设置里的语言都走 `acct.write`。`src/i18n/index.ts` 的 `saveLang` 去掉。设置「初始设置」那句「习惯本身不进歌、不同步」改成「不进歌；连着歌库时跟着歌库走」。
+  - 测试：`test/account-prefs.test.ts` 10 条（没库 / 规则甲几种 / 离线不往里存 / 读不懂 / 接上后写 / 别处改了不回声 / 换库 / 登出）。check 1957 绿。真浏览器冒烟（无头、文件夹歌库）：设备先选简谱 → 进歌库弹「这台设备的谱种存进了歌库，换设备也照这个」，黑匣子 `connect synced: pushed habit-notation,habits-asked`，没有页面错误；「问过了」没有界面名字，不提。没测：两台设备真接同一个网盘歌库。
+  - 仓里 `CLAUDE.md` 持久层白名单「（库内）@internal/store」那一行补上这份收藏夹。库没动、没升。
+  - **攒着的**（不修）：
+    - 接上歌库那一下是离线的：设备上选了、歌库里还没有的，不存进去，要等下一次在线开 app 才存。
+    - 收藏夹本机写有 400 毫秒的合并窗口：改完一项马上关 app，这一下可能没落进本机那份，下次开时照歌库旧的值把设备改回去（pagehide 里 flush 了，但不保证跑完）。
+    - 开 app 时照歌库换了界面语言，要重新载入才生效（提示里有钮）。

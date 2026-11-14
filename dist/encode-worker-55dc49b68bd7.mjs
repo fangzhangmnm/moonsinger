@@ -181,6 +181,14 @@ var S = {
   "\u91CD\u542F\u58F0\u97F3": { en: "Restart audio" },
   "\u58F0\u97F3\u91CD\u542F\u4E86": { en: "Audio restarted" },
   "\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00": { en: "Rebuilt, but the audio device has not come up yet: press again, or close the app and reopen it" },
+  "\u754C\u9762\u8BED\u8A00": { en: "Interface language" },
+  "\u3001": { en: ", " },
+  "\u8FD9\u53F0\u8BBE\u5907\u7684{names}\u5B58\u8FDB\u4E86\u6B4C\u5E93\uFF0C\u6362\u8BBE\u5907\u4E5F\u7167\u8FD9\u4E2A\u3002": { en: "Saved this device's {names} to your library; other devices will follow it." },
+  "\u7167\u6B4C\u5E93\u91CC\u5B58\u7684\u6362\u4E86\uFF1A{names}\u3002": { en: "Switched to what your library has: {names}." },
+  "\u6B4C\u5E93\u91CC\u5B58\u7684{names}\u8BFB\u4E0D\u61C2\uFF08\u53EF\u80FD\u662F\u66F4\u65B0\u7684\u7248\u672C\u5B58\u7684\uFF09\uFF0C\u8FD9\u53F0\u8BBE\u5907\u7167\u81EA\u5DF1\u7684\u3002": { en: "Your library's {names} can't be read (maybe saved by a newer version); this device keeps its own." },
+  "\u6B4C\u5E93\u91CC\u5B58\u7684\u754C\u9762\u8BED\u8A00\u662F {l}\uFF0C\u91CD\u65B0\u8F7D\u5165\u540E\u6362\u3002": { en: "Your library's interface language is {l}; it changes after a reload." },
+  "\u8DDF\u7CFB\u7EDF": { en: "System" },
+  "\u91CD\u65B0\u8F7D\u5165": { en: "Reload" },
   "\u5176\u4ED6\u7EB8": { en: "Other sheets" },
   "\u65B0\u7684\u4E00\u6BB5": { en: "New section" },
   "\u9690\u85CF\u7740\u7684\uFF08\u70B9 = \u653E\u51FA\u6765\uFF09": { en: "Hidden (tap = show)" },
@@ -197,7 +205,6 @@ var S = {
   "\u6E10\u5F3A / \u6E10\u5F31": { en: "crescendo / diminuendo" },
   "\u8E0F\u677F\u8BB0\u53F7": { en: "pedal marks" },
   "\u6539\u5230\u4E86\u6CA1\u663E\u793A\u7684{what}\uFF08\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\uFF09": { en: "You changed hidden {what} (articulations & dynamics are hidden right now; undo brings them back)" },
-  "\u3001": { en: ", " },
   "\u5199\u4E0A\u4E86\uFF0C\u4F46\u73B0\u5728\u6CA1\u663E\u793A\uFF1A{what}\uFF08\u9875\u9762\u8BBE\u7F6E \u2192\u300C\u770B\u8C31\u300D\u91CC\u6253\u5F00\uFF09": { en: "Written, but hidden right now: {what} (turn them on under Page settings \u203A Reading)" },
   "\u6CA1\u6709\u53EF\u64A4\u9500\u7684": { en: "Nothing to undo" },
   "\u6CA1\u6709\u53EF\u91CD\u505A\u7684": { en: "Nothing to redo" },
@@ -295,8 +302,7 @@ var S = {
   "\u4E2D\u592E C \u53EB": { en: "Middle C is" },
   "\u521D\u59CB\u8BBE\u7F6E": { en: "Initial setup" },
   "\u6253\u5F00\u2026": { en: "Open\u2026" },
-  "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": { en: "This device's habits: new songs are written with them (and then stay that way); songs set to \u201CFollow my habits\u201D in Page settings change with them. The habits themselves are not saved in songs and do not sync." },
-  "\u8DDF\u7CFB\u7EDF": { en: "System" },
+  "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\uFF1B\u8FDE\u7740\u6B4C\u5E93\u65F6\u8DDF\u7740\u6B4C\u5E93\u8D70\uFF08\u8FDB\u540C\u4E00\u4E2A\u6B4C\u5E93\u7684\u8BBE\u5907\u7528\u540C\u4E00\u4EFD\uFF09\u3002": { en: "This device's habits: new songs are written with them (and then the song stays that way); songs whose page settings say \u201Cfollow my habits\u201D change with them. Habits are not stored in songs; when connected to a song library, they follow the library (every device using the same library shares one set)." },
   "MIDI \u952E\u76D8": { en: "MIDI keyboard" },
   "\u8FDE\u63A5": { en: "Connect" },
   "\u7248\u672C": { en: "Version" },
@@ -4516,7 +4522,7 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/version.ts
-var APP_VERSION = "v0.17.45-2026-11-13";
+var APP_VERSION = "v0.17.46-2026-11-13";
 
 // src/format/performance.ts
 var REPO = "https://github.com/fangzhangmnm/moonsinger";
@@ -7704,4 +7710,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-8a0c2ef892cd.mjs.map
+//# sourceMappingURL=encode-worker-55dc49b68bd7.mjs.map

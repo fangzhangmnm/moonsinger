@@ -547,6 +547,30 @@ export declare const S: {
     readonly "\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00": {
         readonly en: "Rebuilt, but the audio device has not come up yet: press again, or close the app and reopen it";
     };
+    readonly 界面语言: {
+        readonly en: "Interface language";
+    };
+    readonly "\u3001": {
+        readonly en: ", ";
+    };
+    readonly "\u8FD9\u53F0\u8BBE\u5907\u7684{names}\u5B58\u8FDB\u4E86\u6B4C\u5E93\uFF0C\u6362\u8BBE\u5907\u4E5F\u7167\u8FD9\u4E2A\u3002": {
+        readonly en: "Saved this device's {names} to your library; other devices will follow it.";
+    };
+    readonly "\u7167\u6B4C\u5E93\u91CC\u5B58\u7684\u6362\u4E86\uFF1A{names}\u3002": {
+        readonly en: "Switched to what your library has: {names}.";
+    };
+    readonly "\u6B4C\u5E93\u91CC\u5B58\u7684{names}\u8BFB\u4E0D\u61C2\uFF08\u53EF\u80FD\u662F\u66F4\u65B0\u7684\u7248\u672C\u5B58\u7684\uFF09\uFF0C\u8FD9\u53F0\u8BBE\u5907\u7167\u81EA\u5DF1\u7684\u3002": {
+        readonly en: "Your library's {names} can't be read (maybe saved by a newer version); this device keeps its own.";
+    };
+    readonly "\u6B4C\u5E93\u91CC\u5B58\u7684\u754C\u9762\u8BED\u8A00\u662F {l}\uFF0C\u91CD\u65B0\u8F7D\u5165\u540E\u6362\u3002": {
+        readonly en: "Your library's interface language is {l}; it changes after a reload.";
+    };
+    readonly 跟系统: {
+        readonly en: "System";
+    };
+    readonly 重新载入: {
+        readonly en: "Reload";
+    };
     readonly 其他纸: {
         readonly en: "Other sheets";
     };
@@ -594,9 +618,6 @@ export declare const S: {
     };
     readonly "\u6539\u5230\u4E86\u6CA1\u663E\u793A\u7684{what}\uFF08\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\uFF09": {
         readonly en: "You changed hidden {what} (articulations & dynamics are hidden right now; undo brings them back)";
-    };
-    readonly "\u3001": {
-        readonly en: ", ";
     };
     readonly "\u5199\u4E0A\u4E86\uFF0C\u4F46\u73B0\u5728\u6CA1\u663E\u793A\uFF1A{what}\uFF08\u9875\u9762\u8BBE\u7F6E \u2192\u300C\u770B\u8C31\u300D\u91CC\u6253\u5F00\uFF09": {
         readonly en: "Written, but hidden right now: {what} (turn them on under Page settings › Reading)";
@@ -889,11 +910,8 @@ export declare const S: {
     readonly "\u6253\u5F00\u2026": {
         readonly en: "Open…";
     };
-    readonly "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": {
-        readonly en: "This device's habits: new songs are written with them (and then stay that way); songs set to “Follow my habits” in Page settings change with them. The habits themselves are not saved in songs and do not sync.";
-    };
-    readonly 跟系统: {
-        readonly en: "System";
+    readonly "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\uFF1B\u8FDE\u7740\u6B4C\u5E93\u65F6\u8DDF\u7740\u6B4C\u5E93\u8D70\uFF08\u8FDB\u540C\u4E00\u4E2A\u6B4C\u5E93\u7684\u8BBE\u5907\u7528\u540C\u4E00\u4EFD\uFF09\u3002": {
+        readonly en: "This device's habits: new songs are written with them (and then the song stays that way); songs whose page settings say \"follow my habits\" change with them. Habits are not stored in songs; when connected to a song library, they follow the library (every device using the same library shares one set).";
     };
     readonly "MIDI \u952E\u76D8": {
         readonly en: "MIDI keyboard";

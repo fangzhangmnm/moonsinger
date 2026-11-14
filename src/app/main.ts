@@ -11,7 +11,7 @@ import { dropdownHtml, mountDropdowns, setDropdown, inDropdownList, keyForList, 
 import { iconHtml } from "../ui/icon.ts";
 import { installTouchTips } from "../ui/touch-tip.ts";
 import { conceptName, zhOnly } from "../gm/catalog-i18n.ts";
-import { _t, lang, langChosen, saveLang, applyDocumentLang, LANG_NAME, type Lang } from "../i18n/index.ts";
+import { _t, lang, langChosen, applyDocumentLang, LANG_NAME, type Lang } from "../i18n/index.ts";
 import { SIGNS } from "../render/signs.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
@@ -96,7 +96,8 @@ import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：@internal/store（接缝 src/app-store.ts）+ @internal/gallery（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ──
-import { isCached, attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, disposeStore, cloudAvailable, hasHome, hasCloudHome, folderHome, folderOnline, setFolderOnline, homeOnline, noteCloudAccount, cloudAccountKnown, forgetLegacyAttach, legacyLibraryExists, openLegacyLibrary, readFromFolder, withStemTail, cloudReachable, type Store, type StoreHome } from "../app-store.ts";
+import { isCached, attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, disposeStore, cloudAvailable, hasHome, hasCloudHome, folderHome, folderOnline, setFolderOnline, homeOnline, noteCloudAccount, cloudAccountKnown, forgetLegacyAttach, legacyLibraryExists, openLegacyLibrary, readFromFolder, withStemTail, cloudReachable, onStoreLifecycle, type Store, type StoreHome, type Collection } from "../app-store.ts";
+import { createAccountPrefs, ACCOUNT_SHELF, type ConnectReport } from "./account-prefs.ts";
 import { planReturn, neverUploadedIds, isOpenDocAutosaveOnly, stillLocalIds, type ReturnPlan } from "./cloud-return.ts";
 import { canPickFolder, pickFolderHome, folderPermission, lastFolderHome, touchFolderHome, clearFolderHome, type GalleryEntry } from "../library-home.ts";
 import { moveSongs, moveKindOf, moveFinished, moveSay, type SongToMove } from "./move-songs.ts";
@@ -612,9 +613,55 @@ const KV_LOOP_EDITOR = "loop-editor";
  *  值：auto-follow = "1" / "0"；turn-lead = 秒数（只认菜单上那几档，别的值不理）。 */
 const KV_AUTO_FOLLOW = "auto-follow", KV_TURN_LEAD = "turn-lead";
 /** 这台设备的习惯（施工单第 18 条第三版；src/look/habits.ts）：看什么谱、要不要移调辅助、中央 C 叫 C 几，设备键值里各记各的（habit-notation / habit-transpose-aid / habit-middle-c），
- *  不同步、不进歌。歌里某一项是「跟着软件」时照它；没选 = 软件的默认。读一次记在这里，设置里 / 卡上改了换一份（lookOf 一帧调很多次，不每次读设备）。 */
+ *  不进歌；有歌库 = 跟着歌库走（src/app/account-prefs.ts，设备键值是副本，v0.17.46）。歌里某一项是「跟着软件」时照它；没选 = 软件的默认。读一次记在这里，设置里 / 卡上改了换一份（lookOf 一帧调很多次，不每次读设备）。 */
 let habitCtx: LookContext = { habits: habitsFrom(deviceKvGet) };
 const lookCtx = (): LookContext => habitCtx;
+/** 跟着歌库走的几样（v0.17.46，施工单 20-2 / 20-3；规矩和分叉在 src/app/account-prefs.ts）：四样习惯、「初始设置问过了」、界面语言。
+ *  没歌库 = 只在设备键值里；有歌库 = 歌库（库的收藏夹 synced-user-preference）说了算、设备键值是副本——读的地方照旧读设备键值，写一律走 acct.write。
+ *  接法：库建好（app-store onStoreLifecycle）→ 装好收藏夹本机那份就接上（这之后人改的都进歌库）→ 问一次歌库那头 → 规则甲 → 说一声；库要拆 = 先断开，设备上留着最后的值。 */
+const acct = createAccountPrefs({ get: deviceKvGet, set: deviceKvSet });
+let acctShelf: Collection | null = null;
+/** 收藏夹排着的本机写先落盘（换语言要整页重载：不落盘，重载回来歌库那份还是旧的、会把刚选的换回去）。没接歌库 = 马上好。 */
+const flushAccount = (): Promise<unknown> => (acctShelf ? acctShelf.flushLocal().catch((e) => { reportError(e, "warning"); }) : Promise.resolve());
+onStoreLifecycle({ attached: (s) => { void connectAccount(s); }, disposing: () => { acct.unbind(); acctShelf = null; } });
+async function connectAccount(s: Store): Promise<void> {
+  const live = () => hasStore() && requireStore() === s;   // 这期间换了库 / 拆了 = 不接
+  const shelf = s.collection(ACCOUNT_SHELF);
+  try { await shelf.init(); } catch (e) { reportError(e, "warning"); return; }
+  if (!live()) return;
+  acctShelf = shelf; acct.bind(shelf);
+  const r = await shelf.reconcileWithRemote().catch((e: unknown) => ({ status: "error", error: e }));
+  if (!live()) return;
+  const known = r.status === "synced" || r.status === "unchanged";   // 问到了歌库那头（离线 / 出错 = 只照歌库里已有的，不往里存）
+  const rep = acct.connect(known);
+  diagNote("account-prefs", `connect ${r.status}: pushed ${rep.pushed.join(",") || "-"} · adopted ${rep.adopted.join(",") || "-"}${rep.unreadable.length ? ` · unreadable ${rep.unreadable.join(",")}` : ""}`);
+  afterAccountAdopt(rep.adopted); tellAccount(rep);
+}
+acct.onRemote((keys) => { diagNote("account-prefs", `remote: ${keys.join(",")}`); afterAccountAdopt(keys); tellAccount({ pushed: [], adopted: keys, unreadable: [] }); });
+addEventListener("pagehide", () => { void flushAccount(); });
+/** 照歌库改了设备副本之后：习惯变了 = 走习惯的唯一出口（谱面、键上的字、没动过的空白歌重建）；语言要整页重载才换，见 tellAccount。 */
+function afterAccountAdopt(keys: readonly string[]): void {
+  if (keys.some((k) => (Object.values(HABIT_DEVICE_KEY) as string[]).includes(k))) habitsChanged();
+}
+/** 说一声：存进了歌库的、照歌库换了的、歌库里读不懂的（「问过了」不提）。界面语言和这一页的不一样 = 另一条带「重新载入」。 */
+function tellAccount(r: ConnectReport): void {
+  const name = (k: string): string | null => {
+    if (k === "lang") return _t("界面语言");
+    const hk = (HABIT_KEYS as readonly HabitKey[]).find((h) => HABIT_DEVICE_KEY[h] === k);
+    return hk ? LOOK_ROW_NAME[hk]() : null;
+  };
+  const names = (ks: readonly string[]) => ks.map(name).filter((x): x is string => !!x).join(_t("、"));
+  const parts: string[] = [];
+  if (names(r.pushed)) parts.push(_t("这台设备的{names}存进了歌库，换设备也照这个。", { names: names(r.pushed) }));
+  if (names(r.adopted.filter((k) => k !== "lang"))) parts.push(_t("照歌库里存的换了：{names}。", { names: names(r.adopted.filter((k) => k !== "lang")) }));
+  if (names(r.unreadable)) parts.push(_t("歌库里存的{names}读不懂（可能是更新的版本存的），这台设备照自己的。", { names: names(r.unreadable) }));
+  if (parts.length) showNotice({ id: "account-prefs", level: "info", text: parts.join(" "), autoHideMs: 6000 });
+  const want = langChosen();
+  if (r.adopted.includes("lang")) {
+    showNotice({ id: "account-lang", level: "info", text: _t("歌库里存的界面语言是 {l}，重新载入后换。", { l: want ? LANG_NAME[want] : _t("跟系统") }),
+      actions: [{ label: _t("重新载入"), primary: true, onClick: () => { closeNotice("account-lang"); location.reload(); } }] });
+  }
+}
 /** 第 21 条（v0.17.38，统筹 74ea9a53）：一首歌生出来的那一刻（新建 / 别家的谱进门）把「跟着」的那几项写成这一刻的值——有习惯的照习惯、别的照软件当时的默认、谱上的字 = 界面语言；
  *  边距、谱高照旧 "default"。之后这首歌就一直是这个样（改了习惯不跟着变）；页面设置里选「跟着我的习惯」的才跟。 */
 const bornSong = (s: Song): Song => stampLooks(s, habitCtx, lang(), "born");
@@ -634,7 +681,7 @@ function habitsChanged(): void {
   afterHabits();
 }
 function writeHabit<K extends HabitKey>(k: K, v: LookDefaults[K] | undefined): void {
-  deviceKvSet(HABIT_DEVICE_KEY[k], v === undefined ? null : HABIT_CODEC[k].write(v));
+  acct.write(HABIT_DEVICE_KEY[k], v === undefined ? null : HABIT_CODEC[k].write(v));
   diagNote("habits", `${k} → ${v === undefined ? "none" : String(v)}`);
 }
 /** 第一次打开问一次（第 18 条；卡 = src/app/panels/habits-card.ts）：这台设备没问过 = 等前面的东西走了再出——同步的冲突面 / 闸、有新版本的条、
@@ -671,10 +718,10 @@ function cardLangRow(from: "boot" | "settings"): { html: string; mount(root: HTM
       root.querySelector<HTMLButtonElement>('[data-set="cardlang"]')?.addEventListener("change", (e) => {
         const v = (e.currentTarget as HTMLButtonElement).value, next = v === "auto" ? null : (v as Lang);
         if (next === langChosen()) return;
-        saveLang(next); diagNote("habits", `lang → ${v} (card, ${from})`);
+        acct.write("lang", next); diagNote("habits", `lang → ${v} (card, ${from})`);
         const h: Record<string, string> = {}, d = draft();
         for (const k of HABIT_KEYS) { const x = d[k]; if (x !== undefined) h[k] = (HABIT_CODEC[k].write as (y: unknown) => string)(x); }
-        const u = new URL(location.href); u.searchParams.set(CARD_DRAFT_PARAM, JSON.stringify({ f: from, h })); location.replace(u.toString());
+        const u = new URL(location.href); u.searchParams.set(CARD_DRAFT_PARAM, JSON.stringify({ f: from, h })); void flushAccount().then(() => location.replace(u.toString()));
       });
     },
   };
@@ -687,8 +734,8 @@ function openHabitsCardNow(from: "boot" | "settings" = "boot", current?: Habits)
   ui.open({ k: "sheet", close });
   habitsCard = openHabitsCard({ measure: view.rawMeasure, current: current ?? habitCtx.habits ?? {}, rows: cardRows, lang: cardLangRow(from),
     // 「好」只写卡上摆着的那几样（cardHabitKeys；v0.17.30 收跟进第 1 条：不在卡上的那一样不被清成没选）
-    done: (c) => { gone(); for (const k of cardHabitKeys()) writeHabit(k, c[k]); deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", `ok (${from})`); habitsChanged(); back(); },
-    later: () => { gone(); if (from === "boot") deviceKvSet(HABITS_ASKED_KEY, "1"); diagNote("habits", `later (${from})`); back(); },
+    done: (c) => { gone(); for (const k of cardHabitKeys()) writeHabit(k, c[k]); acct.write(HABITS_ASKED_KEY, "1"); diagNote("habits", `ok (${from})`); habitsChanged(); back(); },
+    later: () => { gone(); if (from === "boot") acct.write(HABITS_ASKED_KEY, "1"); diagNote("habits", `later (${from})`); back(); },
     dismissed: () => { gone(); diagNote("habits", `dismissed (${from})`); back(); } });
 }
 const KV_PRIMER = "audio-primer", IS_IOS = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -1552,7 +1599,7 @@ function habitRowHtml(k: HabitKey, h: Habits): string {
 /** 设置「界面」页：「初始设置」那一行（打开那张卡）+ 每样习惯一行。 */
 function habitRowsHtml(): string {
   const h = habitCtx.habits ?? {};
-  return setItem(_t("初始设置"), `<button class="btn" data-v="habits:card">${_t("打开…")}</button>`, _t("这台设备的习惯：新建的歌照它写下来（之后这首歌就一直是这个样）；页面设置里写着「跟着我的习惯」的歌跟着它变。习惯本身不进歌、不同步。")) +
+  return setItem(_t("初始设置"), `<button class="btn" data-v="habits:card">${_t("打开…")}</button>`, _t("这台设备的习惯：新建的歌照它写下来（之后这首歌就一直是这个样）；页面设置里写着「跟着我的习惯」的歌跟着它变。习惯本身不进歌；连着歌库时跟着歌库走（进同一个歌库的设备用同一份）。")) +
     HABIT_KEYS.map((k) => habitRowHtml(k, h)).join("");
 }
 /** 读几行习惯下拉现在选着的（「没选」/ 认不出 = 不在里面）。 */
@@ -1627,7 +1674,7 @@ function openSettings(): void {
     const el = e.target as HTMLButtonElement, k = el.dataset.set;
     if ((e.target as HTMLElement).id === "impIn") { void importPacks(e.target as HTMLInputElement); return; }
     if (!k) return;
-    if (k === "lang") { saveLang(el.value === "auto" ? null : (el.value as Lang)); location.reload(); }
+    if (k === "lang") { acct.write("lang", el.value === "auto" ? null : (el.value as Lang)); void flushAccount().then(() => location.reload()); }
     else if (k.startsWith("habit:")) { onHabitRow(k.slice(6) as HabitKey, el.value); return; }
     else if (k === "feel") { feelAlways = el.value === "on"; deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null); diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`); }
     else if (k === "primer") { const on = el.value === "on"; setPrimer(on); deviceKvSet(KV_PRIMER, on ? null : "0"); }

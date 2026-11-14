@@ -10,7 +10,7 @@
 //     · node（单测 / 命令行渲染）/ AudioWorklet：中文原文，不查表
 //   图标不翻（图标就是图标），只翻它的 tooltip。字串里不要写英文双引号：很多条落在 title="…" 里，用 “ ”。
 import { S, type Lang, type Key } from "./strings.ts";
-import { deviceKvGet, deviceKvSet } from "../device-kv.ts";
+import { deviceKvGet } from "../device-kv.ts";
 
 export type { Lang, Key } from "./strings.ts";
 export const LANGS: readonly Lang[] = ["zh", "en"];
@@ -36,8 +36,7 @@ let _lang: Lang | null = null;
 export function lang(): Lang { return (_lang ??= detect()); }
 /** 人有没有在设置里选过（没选过 = 跟系统）。 */
 export function langChosen(): Lang | null { return valid(deviceKvGet("lang")); }
-/** 存下选择。重载由调用方做（要先把手上的歌落盘）。null = 回到跟系统。 */
-export function saveLang(l: Lang | null): void { deviceKvSet("lang", l); }
+// 存选择不在这里：界面语言跟着歌库走（v0.17.46），写一律经 src/app/account-prefs.ts（设备键值 `lang` 是副本，这里只读）。
 
 /** {n} = 参数；{n|song|songs} = 按 n 是不是 1 挑单复数（只有英文用，中文没有复数）。 */
 function fill(raw: string, params?: Record<string, unknown>): string {

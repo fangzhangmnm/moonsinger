@@ -5,7 +5,7 @@
 //   store **懒建**（attachStore）：没进过歌库的设备 = 无地模式（v0.3.0），不开 IDB、不载 MSAL（user 2026-10-01「用户有意图才弄」）；
 //   进过一次（device-kv storeAttached）以后开局就建，且**先建 store 再 initAuth**（CatsUp 2026-09-22 教训：没建 store 时库的报错是 no-op，登录回跳失败人看不到）。
 import { createStore, createOneDriveProvider, createFolderProvider, requestStoragePersistence, isCached, isDirty, withStemTail, wipeAppNamespace, scanAppNamespace, WipeConsentError, DEFAULT_GRAPH_TIMEOUTS } from "@internal/store";
-import type { Store, OneDriveAuth, CloudProvider, GraphTransportOptions } from "@internal/store";
+import type { Store, OneDriveAuth, CloudProvider, GraphTransportOptions, Collection } from "@internal/store";
 import { APP_ID, CLIENT_ID, AUTHORITY, SCOPES, MSAL_URL } from "./config.ts";
 import { DOC_KINDS } from "./identifiers.ts";
 import { storeUI } from "./store-ui.ts";
@@ -112,14 +112,20 @@ export function attachStore(home: StoreHome = { kind: "cloud" }): Store {
     if (!home.entry.handle) throw new Error("folder home has no handle");
     _signedIn = () => true;   // 文件夹 = 本地即在线；权限掉了 = isOnline 假（WeebPaint 同）
     _store = buildStore({ provider: createFolderProvider(home.entry.handle as unknown as Parameters<typeof createFolderProvider>[0]) as unknown as CloudProvider, signedIn: () => true, isOnline: () => _folderOnline, databaseId: home.entry.dbId });
-    return _store;
+    return announce(_store);
   }
   const inj = injectedCloud();
   _signedIn = inj ? () => (globalThis as { __moonsingerCloudSignedIn?: boolean }).__moonsingerCloudSignedIn === true : () => od.auth.isSignedIn();
   _store = buildStore({ provider: inj ?? od.provider, signedIn: () => _signedIn(), isOnline: cloudOnline });   // isOnline：2026-11-03 闸门：选了「离线继续」= 库一条网都不打（家族设计稿 cloud-gate §3；store 2.2.4 起 collection 也认）
   deviceKvSet(KV_ATTACHED, "1");
-  return _store;
+  return announce(_store);
 }
+/** 库建好 / 要拆时通知（跟着歌库走的设置用：src/app/account-prefs.ts，main.ts 接；v0.17.46）。拆的通知在 dispose **之前**：之后再碰收藏夹库会抛。 */
+export interface StoreLifecycle { attached(s: Store): void; disposing(): void }
+const _lifecycle: StoreLifecycle[] = [];
+/** 登记一个（登记时库已经建好 = 马上补一次 attached）。 */
+export function onStoreLifecycle(h: StoreLifecycle): void { _lifecycle.push(h); if (_store) h.attached(_store); }
+function announce(s: Store): Store { for (const h of _lifecycle) { try { h.attached(s); } catch (e) { console.error("store lifecycle (attached) failed", e); } } return s; }
 /** 问云端一次（闸门「离线继续」期间静默再试用）：真走一趟网，名字不存在 = 云端答了 null，也算通；不通 = 抛。**不经 store**：选了离线时 store 不出网。同 WeebPaint。 */
 export async function cloudReachable(): Promise<void> { await (injectedCloud() ?? od.provider).getItemByPath(".reachable-probe"); }
 /** 旧的「只在浏览器里」的歌库的库名（默认 databaseId：以前没登录也能建的就是它）。 */
@@ -146,11 +152,15 @@ export function requireStore(): Store {
   if (!_store) throw new Error("store not attached yet (call attachStore() first)");
   return _store;
 }
-export async function disposeStore(): Promise<void> { const s = _store; _store = null; _home = null; _folderOnline = true; if (s) await s.dispose(); }
+export async function disposeStore(): Promise<void> {
+  const s = _store;
+  if (s) for (const h of _lifecycle) { try { h.disposing(); } catch (e) { console.error("store lifecycle (disposing) failed", e); } }
+  _store = null; _home = null; _folderOnline = true; if (s) await s.dispose();
+}
 /** 拆库（退出登录 / 离开文件夹，同 WeebPaint「主动断开 = 卸库 + 退出登录」）：放掉 store 对象 + 这台设备不再开局就建 store。**IDB 里的歌不删**——再连上同一个家就接上。 */
 export async function detachStore(): Promise<void> { await disposeStore(); deviceKvSet(KV_ATTACHED, null); }
 
 export { requestStoragePersistence, isCached, isDirty, withStemTail };
 /** 还原出厂（src/app/factory-reset.ts）用的库口子：深清本 appId 的全部命名空间 / 无痕扫残留（同 WeebPaint：maintenance 面经接缝）。2026-10-21 */
 export { wipeAppNamespace, scanAppNamespace, WipeConsentError };
-export type { Store, OneDriveAuth };
+export type { Store, OneDriveAuth, Collection };

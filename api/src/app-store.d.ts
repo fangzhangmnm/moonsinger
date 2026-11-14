@@ -1,5 +1,5 @@
 import { requestStoragePersistence, isCached, isDirty, withStemTail, wipeAppNamespace, scanAppNamespace, WipeConsentError } from "@internal/store";
-import type { Store, OneDriveAuth } from "@internal/store";
+import type { Store, OneDriveAuth, Collection } from "@internal/store";
 import type { GalleryEntry } from "./library-home.ts";
 /** 这个部署方式有没有网盘（家族规则书 §2：itch / 备用版没有）。开关的唯一来源 = deployment-policy；宿主的灰入口也读它。 */
 export declare const cloudAvailable: () => boolean;
@@ -35,6 +35,13 @@ export declare const hasHome: () => boolean;
 export declare const homeOnline: () => boolean;
 /** 建 store（幂等）。第一次要在用户手势里调（attach 的时候顺便 requestStoragePersistence）。 */
 export declare function attachStore(home?: StoreHome): Store;
+/** 库建好 / 要拆时通知（跟着歌库走的设置用：src/app/account-prefs.ts，main.ts 接；v0.17.46）。拆的通知在 dispose **之前**：之后再碰收藏夹库会抛。 */
+export interface StoreLifecycle {
+    attached(s: Store): void;
+    disposing(): void;
+}
+/** 登记一个（登记时库已经建好 = 马上补一次 attached）。 */
+export declare function onStoreLifecycle(h: StoreLifecycle): void;
 /** 问云端一次（闸门「离线继续」期间静默再试用）：真走一趟网，名字不存在 = 云端答了 null，也算通；不通 = 抛。**不经 store**：选了离线时 store 不出网。同 WeebPaint。 */
 export declare function cloudReachable(): Promise<void>;
 /** 这台设备上有没有旧库的 IndexedDB（只看名字，不开库）。浏览器不给列举 = 看 storeAttached。 */
@@ -52,4 +59,4 @@ export declare function detachStore(): Promise<void>;
 export { requestStoragePersistence, isCached, isDirty, withStemTail };
 /** 还原出厂（src/app/factory-reset.ts）用的库口子：深清本 appId 的全部命名空间 / 无痕扫残留（同 WeebPaint：maintenance 面经接缝）。2026-10-21 */
 export { wipeAppNamespace, scanAppNamespace, WipeConsentError };
-export type { Store, OneDriveAuth };
+export type { Store, OneDriveAuth, Collection };

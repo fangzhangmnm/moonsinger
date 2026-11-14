@@ -3766,6 +3766,14 @@ var S = {
   "\u91CD\u542F\u58F0\u97F3": { en: "Restart audio" },
   "\u58F0\u97F3\u91CD\u542F\u4E86": { en: "Audio restarted" },
   "\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00": { en: "Rebuilt, but the audio device has not come up yet: press again, or close the app and reopen it" },
+  "\u754C\u9762\u8BED\u8A00": { en: "Interface language" },
+  "\u3001": { en: ", " },
+  "\u8FD9\u53F0\u8BBE\u5907\u7684{names}\u5B58\u8FDB\u4E86\u6B4C\u5E93\uFF0C\u6362\u8BBE\u5907\u4E5F\u7167\u8FD9\u4E2A\u3002": { en: "Saved this device's {names} to your library; other devices will follow it." },
+  "\u7167\u6B4C\u5E93\u91CC\u5B58\u7684\u6362\u4E86\uFF1A{names}\u3002": { en: "Switched to what your library has: {names}." },
+  "\u6B4C\u5E93\u91CC\u5B58\u7684{names}\u8BFB\u4E0D\u61C2\uFF08\u53EF\u80FD\u662F\u66F4\u65B0\u7684\u7248\u672C\u5B58\u7684\uFF09\uFF0C\u8FD9\u53F0\u8BBE\u5907\u7167\u81EA\u5DF1\u7684\u3002": { en: "Your library's {names} can't be read (maybe saved by a newer version); this device keeps its own." },
+  "\u6B4C\u5E93\u91CC\u5B58\u7684\u754C\u9762\u8BED\u8A00\u662F {l}\uFF0C\u91CD\u65B0\u8F7D\u5165\u540E\u6362\u3002": { en: "Your library's interface language is {l}; it changes after a reload." },
+  "\u8DDF\u7CFB\u7EDF": { en: "System" },
+  "\u91CD\u65B0\u8F7D\u5165": { en: "Reload" },
   "\u5176\u4ED6\u7EB8": { en: "Other sheets" },
   "\u65B0\u7684\u4E00\u6BB5": { en: "New section" },
   "\u9690\u85CF\u7740\u7684\uFF08\u70B9 = \u653E\u51FA\u6765\uFF09": { en: "Hidden (tap = show)" },
@@ -3782,7 +3790,6 @@ var S = {
   "\u6E10\u5F3A / \u6E10\u5F31": { en: "crescendo / diminuendo" },
   "\u8E0F\u677F\u8BB0\u53F7": { en: "pedal marks" },
   "\u6539\u5230\u4E86\u6CA1\u663E\u793A\u7684{what}\uFF08\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\uFF09": { en: "You changed hidden {what} (articulations & dynamics are hidden right now; undo brings them back)" },
-  "\u3001": { en: ", " },
   "\u5199\u4E0A\u4E86\uFF0C\u4F46\u73B0\u5728\u6CA1\u663E\u793A\uFF1A{what}\uFF08\u9875\u9762\u8BBE\u7F6E \u2192\u300C\u770B\u8C31\u300D\u91CC\u6253\u5F00\uFF09": { en: "Written, but hidden right now: {what} (turn them on under Page settings \u203A Reading)" },
   "\u6CA1\u6709\u53EF\u64A4\u9500\u7684": { en: "Nothing to undo" },
   "\u6CA1\u6709\u53EF\u91CD\u505A\u7684": { en: "Nothing to redo" },
@@ -3880,8 +3887,7 @@ var S = {
   "\u4E2D\u592E C \u53EB": { en: "Middle C is" },
   "\u521D\u59CB\u8BBE\u7F6E": { en: "Initial setup" },
   "\u6253\u5F00\u2026": { en: "Open\u2026" },
-  "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002": { en: "This device's habits: new songs are written with them (and then stay that way); songs set to \u201CFollow my habits\u201D in Page settings change with them. The habits themselves are not saved in songs and do not sync." },
-  "\u8DDF\u7CFB\u7EDF": { en: "System" },
+  "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\uFF1B\u8FDE\u7740\u6B4C\u5E93\u65F6\u8DDF\u7740\u6B4C\u5E93\u8D70\uFF08\u8FDB\u540C\u4E00\u4E2A\u6B4C\u5E93\u7684\u8BBE\u5907\u7528\u540C\u4E00\u4EFD\uFF09\u3002": { en: "This device's habits: new songs are written with them (and then the song stays that way); songs whose page settings say \u201Cfollow my habits\u201D change with them. Habits are not stored in songs; when connected to a song library, they follow the library (every device using the same library shares one set)." },
   "MIDI \u952E\u76D8": { en: "MIDI keyboard" },
   "\u8FDE\u63A5": { en: "Connect" },
   "\u7248\u672C": { en: "Version" },
@@ -6224,9 +6230,6 @@ function lang() {
 function langChosen() {
   return valid(deviceKvGet("lang"));
 }
-function saveLang(l10) {
-  deviceKvSet("lang", l10);
-}
 function fill(raw, params) {
   if (!params) return raw;
   return raw.replace(/\{(\w+)(?:\|([^|}]*)\|([^}]*))?\}/g, (m2, k2, one, many) => {
@@ -6407,7 +6410,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.45-2026-11-13";
+var APP_VERSION = "v0.17.46-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -35430,15 +35433,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-a8a492405390.mjs");
+      return pick3(() => "singer-worker-f6e87b39d4ac.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-a794ec4ba0ca.mjs");
+      return pick3(() => "layout-worker-a125e0d30e56.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-8a0c2ef892cd.mjs");
+      return pick3(() => "encode-worker-55dc49b68bd7.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -48202,13 +48205,28 @@ function attachStore(home = { kind: "cloud" }) {
     if (!home.entry.handle) throw new Error("folder home has no handle");
     _signedIn = () => true;
     _store = buildStore({ provider: createFolderProvider(home.entry.handle), signedIn: () => true, isOnline: () => _folderOnline, databaseId: home.entry.dbId });
-    return _store;
+    return announce(_store);
   }
   const inj = injectedCloud();
   _signedIn = inj ? () => globalThis.__moonsingerCloudSignedIn === true : () => od.auth.isSignedIn();
   _store = buildStore({ provider: inj ?? od.provider, signedIn: () => _signedIn(), isOnline: cloudOnline });
   deviceKvSet(KV_ATTACHED, "1");
-  return _store;
+  return announce(_store);
+}
+var _lifecycle = [];
+function onStoreLifecycle(h2) {
+  _lifecycle.push(h2);
+  if (_store) h2.attached(_store);
+}
+function announce(s10) {
+  for (const h2 of _lifecycle) {
+    try {
+      h2.attached(s10);
+    } catch (e10) {
+      console.error("store lifecycle (attached) failed", e10);
+    }
+  }
+  return s10;
 }
 async function cloudReachable() {
   await (injectedCloud() ?? od.provider).getItemByPath(".reachable-probe");
@@ -48238,6 +48256,13 @@ function requireStore() {
 }
 async function disposeStore() {
   const s10 = _store;
+  if (s10) for (const h2 of _lifecycle) {
+    try {
+      h2.disposing();
+    } catch (e10) {
+      console.error("store lifecycle (disposing) failed", e10);
+    }
+  }
   _store = null;
   _home = null;
   _folderOnline = true;
@@ -48246,6 +48271,83 @@ async function disposeStore() {
 async function detachStore() {
   await disposeStore();
   deviceKvSet(KV_ATTACHED, null);
+}
+
+// src/app/account-prefs.ts
+var ACCOUNT_SHELF = "synced-user-preference";
+var ACCOUNT_KEYS = [...Object.values(HABIT_DEVICE_KEY), HABITS_ASKED_KEY, "lang"];
+var NONE = "";
+function createAccountPrefs(device, keys = ACCOUNT_KEYS) {
+  let shelf = null, unsub = () => {
+  }, remoteCb = null;
+  const known = new Set(keys);
+  const accountOf = (s10, k2) => {
+    const e10 = s10.getEntry(k2);
+    if (e10 === void 0) return void 0;
+    return typeof e10.value === "string" ? e10.value === NONE ? null : e10.value : { bad: true };
+  };
+  const adopt = (s10, ids) => {
+    const out = [];
+    for (const k2 of ids) {
+      if (!known.has(k2)) continue;
+      const a10 = accountOf(s10, k2);
+      if (a10 === void 0 || typeof a10 === "object" && a10 !== null) continue;
+      if (a10 !== device.get(k2)) {
+        device.set(k2, a10);
+        out.push(k2);
+      }
+    }
+    return out;
+  };
+  return {
+    write(key, value) {
+      device.set(key, value);
+      if (shelf && known.has(key)) shelf.setItem(key, value ?? NONE);
+    },
+    bind(s10) {
+      unsub();
+      shelf = s10;
+      unsub = s10.onChange((ids) => {
+        if (shelf !== s10) return;
+        const ch2 = adopt(s10, ids);
+        if (ch2.length) remoteCb?.(ch2);
+      });
+    },
+    connect(cloudKnown) {
+      const r10 = { pushed: [], adopted: [], unreadable: [] };
+      const s10 = shelf;
+      if (!s10) return r10;
+      for (const k2 of keys) {
+        const a10 = accountOf(s10, k2), d3 = device.get(k2);
+        if (a10 === void 0) {
+          if (cloudKnown && d3 !== null) {
+            s10.setItem(k2, d3);
+            r10.pushed.push(k2);
+          }
+          continue;
+        }
+        if (typeof a10 === "object" && a10 !== null) {
+          r10.unreadable.push(k2);
+          continue;
+        }
+        if (a10 !== d3) {
+          device.set(k2, a10);
+          r10.adopted.push(k2);
+        }
+      }
+      return r10;
+    },
+    unbind() {
+      unsub();
+      unsub = () => {
+      };
+      shelf = null;
+    },
+    onRemote(cb2) {
+      remoteCb = cb2;
+    },
+    bound: () => shelf != null
+  };
 }
 
 // src/app/cloud-return.ts
@@ -54662,7 +54764,7 @@ function createSongPlayer(deps = {}) {
     const d3 = A2().duration;
     A2().currentTime = Math.max(0, Number.isFinite(d3) ? Math.min(to2, d3) : to2);
   }
-  function announce() {
+  function announce2() {
     if (!ms || !track) return;
     setMetadata();
     setAction("play", () => resume());
@@ -54733,7 +54835,7 @@ function createSongPlayer(deps = {}) {
   function wire(audio) {
     audio.addEventListener("playing", () => {
       if (!track) return;
-      if (!announced) announce();
+      if (!announced) announce2();
       setPlaybackState("playing");
       pushPosition();
       planJump();
@@ -61679,6 +61781,73 @@ var KV_AUTO_FOLLOW = "auto-follow";
 var KV_TURN_LEAD = "turn-lead";
 var habitCtx = { habits: habitsFrom(deviceKvGet) };
 var lookCtx = () => habitCtx;
+var acct = createAccountPrefs({ get: deviceKvGet, set: deviceKvSet });
+var acctShelf = null;
+var flushAccount = () => acctShelf ? acctShelf.flushLocal().catch((e10) => {
+  reportError(e10, "warning");
+}) : Promise.resolve();
+onStoreLifecycle({ attached: (s10) => {
+  void connectAccount(s10);
+}, disposing: () => {
+  acct.unbind();
+  acctShelf = null;
+} });
+async function connectAccount(s10) {
+  const live = () => hasStore() && requireStore() === s10;
+  const shelf = s10.collection(ACCOUNT_SHELF);
+  try {
+    await shelf.init();
+  } catch (e10) {
+    reportError(e10, "warning");
+    return;
+  }
+  if (!live()) return;
+  acctShelf = shelf;
+  acct.bind(shelf);
+  const r10 = await shelf.reconcileWithRemote().catch((e10) => ({ status: "error", error: e10 }));
+  if (!live()) return;
+  const known = r10.status === "synced" || r10.status === "unchanged";
+  const rep = acct.connect(known);
+  diagNote("account-prefs", `connect ${r10.status}: pushed ${rep.pushed.join(",") || "-"} \xB7 adopted ${rep.adopted.join(",") || "-"}${rep.unreadable.length ? ` \xB7 unreadable ${rep.unreadable.join(",")}` : ""}`);
+  afterAccountAdopt(rep.adopted);
+  tellAccount(rep);
+}
+acct.onRemote((keys) => {
+  diagNote("account-prefs", `remote: ${keys.join(",")}`);
+  afterAccountAdopt(keys);
+  tellAccount({ pushed: [], adopted: keys, unreadable: [] });
+});
+addEventListener("pagehide", () => {
+  void flushAccount();
+});
+function afterAccountAdopt(keys) {
+  if (keys.some((k2) => Object.values(HABIT_DEVICE_KEY).includes(k2))) habitsChanged();
+}
+function tellAccount(r10) {
+  const name = (k2) => {
+    if (k2 === "lang") return _t("\u754C\u9762\u8BED\u8A00");
+    const hk = HABIT_KEYS.find((h2) => HABIT_DEVICE_KEY[h2] === k2);
+    return hk ? LOOK_ROW_NAME[hk]() : null;
+  };
+  const names = (ks) => ks.map(name).filter((x2) => !!x2).join(_t("\u3001"));
+  const parts = [];
+  if (names(r10.pushed)) parts.push(_t("\u8FD9\u53F0\u8BBE\u5907\u7684{names}\u5B58\u8FDB\u4E86\u6B4C\u5E93\uFF0C\u6362\u8BBE\u5907\u4E5F\u7167\u8FD9\u4E2A\u3002", { names: names(r10.pushed) }));
+  if (names(r10.adopted.filter((k2) => k2 !== "lang"))) parts.push(_t("\u7167\u6B4C\u5E93\u91CC\u5B58\u7684\u6362\u4E86\uFF1A{names}\u3002", { names: names(r10.adopted.filter((k2) => k2 !== "lang")) }));
+  if (names(r10.unreadable)) parts.push(_t("\u6B4C\u5E93\u91CC\u5B58\u7684{names}\u8BFB\u4E0D\u61C2\uFF08\u53EF\u80FD\u662F\u66F4\u65B0\u7684\u7248\u672C\u5B58\u7684\uFF09\uFF0C\u8FD9\u53F0\u8BBE\u5907\u7167\u81EA\u5DF1\u7684\u3002", { names: names(r10.unreadable) }));
+  if (parts.length) showNotice({ id: "account-prefs", level: "info", text: parts.join(" "), autoHideMs: 6e3 });
+  const want = langChosen();
+  if (r10.adopted.includes("lang")) {
+    showNotice({
+      id: "account-lang",
+      level: "info",
+      text: _t("\u6B4C\u5E93\u91CC\u5B58\u7684\u754C\u9762\u8BED\u8A00\u662F {l}\uFF0C\u91CD\u65B0\u8F7D\u5165\u540E\u6362\u3002", { l: want ? LANG_NAME[want] : _t("\u8DDF\u7CFB\u7EDF") }),
+      actions: [{ label: _t("\u91CD\u65B0\u8F7D\u5165"), primary: true, onClick: () => {
+        closeNotice("account-lang");
+        location.reload();
+      } }]
+    });
+  }
+}
 var bornSong = (s10) => stampLooks(s10, habitCtx, lang(), "born");
 var songOfOpened = (o10) => o10.ours ? o10.song : bornSong(o10.song);
 function setHabit(k2, v) {
@@ -61696,7 +61865,7 @@ function habitsChanged() {
   afterHabits();
 }
 function writeHabit(k2, v) {
-  deviceKvSet(HABIT_DEVICE_KEY[k2], v === void 0 ? null : HABIT_CODEC[k2].write(v));
+  acct.write(HABIT_DEVICE_KEY[k2], v === void 0 ? null : HABIT_CODEC[k2].write(v));
   diagNote("habits", `${k2} \u2192 ${v === void 0 ? "none" : String(v)}`);
 }
 var habitsCard = null;
@@ -61743,7 +61912,7 @@ function cardLangRow(from) {
       root.querySelector('[data-set="cardlang"]')?.addEventListener("change", (e10) => {
         const v = e10.currentTarget.value, next2 = v === "auto" ? null : v;
         if (next2 === langChosen()) return;
-        saveLang(next2);
+        acct.write("lang", next2);
         diagNote("habits", `lang \u2192 ${v} (card, ${from})`);
         const h2 = {}, d3 = draft();
         for (const k2 of HABIT_KEYS) {
@@ -61752,7 +61921,7 @@ function cardLangRow(from) {
         }
         const u2 = new URL(location.href);
         u2.searchParams.set(CARD_DRAFT_PARAM, JSON.stringify({ f: from, h: h2 }));
-        location.replace(u2.toString());
+        void flushAccount().then(() => location.replace(u2.toString()));
       });
     }
   };
@@ -61780,14 +61949,14 @@ function openHabitsCardNow(from = "boot", current2) {
     done: (c10) => {
       gone();
       for (const k2 of cardHabitKeys()) writeHabit(k2, c10[k2]);
-      deviceKvSet(HABITS_ASKED_KEY, "1");
+      acct.write(HABITS_ASKED_KEY, "1");
       diagNote("habits", `ok (${from})`);
       habitsChanged();
       back();
     },
     later: () => {
       gone();
-      if (from === "boot") deviceKvSet(HABITS_ASKED_KEY, "1");
+      if (from === "boot") acct.write(HABITS_ASKED_KEY, "1");
       diagNote("habits", `later (${from})`);
       back();
     },
@@ -63062,15 +63231,15 @@ function askOver(host2, title, msg, okLabel, danger = false) {
   });
 }
 function habitRowHtml(k2, h2) {
-  const NONE = "none", none = [NONE, _t("\u6CA1\u9009\uFF08\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1A{x}\uFF09", { x: defaultText(k2, {}) })];
-  if (k2 === "notation") return setItem(_t("\u4E60\u60EF\u770B\u7684\u8C31"), setSel("habit:notation", [none, ...NOTATIONS.map((id2) => [id2, notationName(id2)])], h2.notation ?? NONE), _t("\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002"));
-  if (k2 === "viewInC") return setItem(_t("\u79FB\u8C03\u8F85\u52A9"), setSel("habit:viewInC", [none, ["off", _t("\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09")], ["on", _t("\u6309 C \u8C03\u770B")]], h2.viewInC === void 0 ? NONE : h2.viewInC ? "on" : "off"), TRANSPOSE_AID_NOTE().map((p2) => `<p>${esc13(p2)}</p>`).join(""));
-  if (k2 === "chordTagStyle") return setItem(_t("\u548C\u5F26\u5199\u6CD5"), setSel("habit:chordTagStyle", [none, ...CHORD_TAG_STYLES.map((v) => [v, CHORD_TAG_STYLE_LABEL[v]()])], h2.chordTagStyle ?? NONE), CHORD_TAG_STYLE_NOTE());
-  return setItem(_t("\u4E2D\u592E C \u53EB"), setSel("habit:middleC", [none, ...MIDDLE_C_NAMES.map((n10) => [String(n10), middleCLabel(n10)])], h2.middleC === void 0 ? NONE : String(h2.middleC)), MIDDLE_C_NOTE());
+  const NONE2 = "none", none = [NONE2, _t("\u6CA1\u9009\uFF08\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1A{x}\uFF09", { x: defaultText(k2, {}) })];
+  if (k2 === "notation") return setItem(_t("\u4E60\u60EF\u770B\u7684\u8C31"), setSel("habit:notation", [none, ...NOTATIONS.map((id2) => [id2, notationName(id2)])], h2.notation ?? NONE2), _t("\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002"));
+  if (k2 === "viewInC") return setItem(_t("\u79FB\u8C03\u8F85\u52A9"), setSel("habit:viewInC", [none, ["off", _t("\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09")], ["on", _t("\u6309 C \u8C03\u770B")]], h2.viewInC === void 0 ? NONE2 : h2.viewInC ? "on" : "off"), TRANSPOSE_AID_NOTE().map((p2) => `<p>${esc13(p2)}</p>`).join(""));
+  if (k2 === "chordTagStyle") return setItem(_t("\u548C\u5F26\u5199\u6CD5"), setSel("habit:chordTagStyle", [none, ...CHORD_TAG_STYLES.map((v) => [v, CHORD_TAG_STYLE_LABEL[v]()])], h2.chordTagStyle ?? NONE2), CHORD_TAG_STYLE_NOTE());
+  return setItem(_t("\u4E2D\u592E C \u53EB"), setSel("habit:middleC", [none, ...MIDDLE_C_NAMES.map((n10) => [String(n10), middleCLabel(n10)])], h2.middleC === void 0 ? NONE2 : String(h2.middleC)), MIDDLE_C_NOTE());
 }
 function habitRowsHtml() {
   const h2 = habitCtx.habits ?? {};
-  return setItem(_t("\u521D\u59CB\u8BBE\u7F6E"), `<button class="btn" data-v="habits:card">${_t("\u6253\u5F00\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u540C\u6B65\u3002")) + HABIT_KEYS.map((k2) => habitRowHtml(k2, h2)).join("");
+  return setItem(_t("\u521D\u59CB\u8BBE\u7F6E"), `<button class="btn" data-v="habits:card">${_t("\u6253\u5F00\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\uFF1B\u8FDE\u7740\u6B4C\u5E93\u65F6\u8DDF\u7740\u6B4C\u5E93\u8D70\uFF08\u8FDB\u540C\u4E00\u4E2A\u6B4C\u5E93\u7684\u8BBE\u5907\u7528\u540C\u4E00\u4EFD\uFF09\u3002")) + HABIT_KEYS.map((k2) => habitRowHtml(k2, h2)).join("");
 }
 function readHabitRows(root, keys) {
   const out = {};
@@ -63130,8 +63299,8 @@ function openSettings() {
     }
     if (!k2) return;
     if (k2 === "lang") {
-      saveLang(el2.value === "auto" ? null : el2.value);
-      location.reload();
+      acct.write("lang", el2.value === "auto" ? null : el2.value);
+      void flushAccount().then(() => location.reload());
     } else if (k2.startsWith("habit:")) {
       onHabitRow(k2.slice(6), el2.value);
       return;
@@ -68019,4 +68188,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6170beae0e3b.mjs.map
+//# sourceMappingURL=moonsinger-1670094424c3.mjs.map

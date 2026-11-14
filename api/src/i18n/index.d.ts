@@ -7,8 +7,6 @@ export declare const LANG_NAME: Record<Lang, string>;
 export declare function lang(): Lang;
 /** 人有没有在设置里选过（没选过 = 跟系统）。 */
 export declare function langChosen(): Lang | null;
-/** 存下选择。重载由调用方做（要先把手上的歌落盘）。null = 回到跟系统。 */
-export declare function saveLang(l: Lang | null): void;
 /** 界面文案。key = 中文原文（{名字} 是参数）；表里没有 = tsc 报错。 */
 export declare function _t(key: Key, params?: Record<string, unknown>): string;
 /** 指定语言的文案（不读这一页的当前语言）：排版这类「同样的输入出同样的结果」的纯函数用，语言由调用方明着传进来（谱面分家施工单 1b-3，2026-11-11 Claude Opus 5.5）。 */
