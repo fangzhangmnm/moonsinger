@@ -893,6 +893,15 @@ body.listen-mode .lit-grip, body.doc-locked .lit-grip { display: none; }
   display: grid; place-items: center; border: 0; border-radius: calc(10px / var(--ov-z, 1)); background: var(--accent); color: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); touch-action: none; cursor: pointer; }
 .sel-more svg { width: calc(20px / var(--ov-z, 1)); height: calc(20px / var(--ov-z, 1)); }
 .sel-more[hidden] { display: none; }
+/* 点亮的字下面那两颗小钮（v0.17.57）：左 = 合 / ←（往前一个音），右 = →（往后一个音）。摆在亮框正下方居中，屏幕上 40 × 32 px、不随谱面缩放（--ov-z 抵掉）；
+   走不动的那颗画灰（照样能点：点了说为什么）。只在编辑器里画、不印；听模式不画；修改锁锁着 = 灰、不接点。 */
+.syl-steps { position: absolute; z-index: 6; display: flex; gap: calc(4px / var(--ov-z, 1)); margin-top: calc(4px / var(--ov-z, 1)); transform: translateX(-50%); touch-action: none; }
+.syl-steps[hidden] { display: none; }
+.syl-step { width: calc(40px / var(--ov-z, 1)); height: calc(32px / var(--ov-z, 1)); margin: 0; padding: 0; display: grid; place-items: center; border: 0; border-radius: calc(8px / var(--ov-z, 1));
+  background: var(--accent); color: #fff; font-size: calc(16px / var(--ov-z, 1)); line-height: 1; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); touch-action: none; cursor: pointer; }
+.syl-step.off { background: color-mix(in srgb, var(--accent) 30%, var(--panel)); color: var(--muted); box-shadow: none; }
+body.listen-mode .syl-steps { display: none; }
+body.doc-locked .syl-steps { pointer-events: none; opacity: .4; }
 .sel-bar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0, 0, 0, .08); white-space: nowrap; max-width: calc(100% - 16px); overflow-x: auto; }
 .sel-bar .btn { height: 30px; min-width: 30px; padding: 0 8px; font-size: 13px; }
 .sel-bar .sel-n { color: var(--muted); font-size: 12px; padding: 0 4px; }
@@ -1190,7 +1199,7 @@ body.doc-locked .inst-page .ip-defbtn { opacity: .45; }
 body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不画光标 */
 /* 印出来的样子（v0.16.74，`__moonsinger.printLook(on)`；带谱视频工具用，2026-11-09 带谱视频会话提的）：编辑器的东西全藏（覆盖层、缩放读数、上面的条、光标、选区带和它旁边的小钮、两端把手——v0.17.56 补上后两样）、
  * 注解藏（和 PDF 的 SKIP 同一张名单：ann / selbox / caret / in-span）、强调色不上（上面那几条强调色规则都带 body:not(.print-look)）。只改看的样子，不改排版。 */
-body.print-look #bar, body.print-look .zoom-reset, body.print-look .score-overlay, body.print-look #score .ann, body.print-look .selbox, body.print-look .sel-more, body.print-look .sel-handle, body.print-look .staff-svg .caret, body.print-look .ink-caret { display: none !important; }
+body.print-look #bar, body.print-look .zoom-reset, body.print-look .score-overlay, body.print-look #score .ann, body.print-look .selbox, body.print-look .sel-more, body.print-look .syl-steps, body.print-look .sel-handle, body.print-look .staff-svg .caret, body.print-look .ink-caret { display: none !important; }
 /* 模式（2026-10-10）：顶栏的分段钮；「听」亮着用播放色 */
 /* 模式不再把别的层调淡（v0.10.38，见下） */
 /* （v0.10.38 拿掉：「词」里记号变淡、「符」里歌词变淡——user「词模式下符号没必要灰色」；音 / 符现在是同一个模式，歌词也不淡） */

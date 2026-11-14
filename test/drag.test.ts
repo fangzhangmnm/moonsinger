@@ -2,7 +2,7 @@
 // user「歌词的合能不能也改成长按拖动。不然每次点文本框是超级麻烦的」；AI 提的手势（往左拖到前一个音 = 合，往右拖到后一个音 = 分开、空出来的音变成拖腔）user 说开工。
 import { describe, it, eq } from "./runner.mjs";
 import { initState, tr, withTrack, moveMark, editMarkAt, TPQ, type Token, type EditorState, type NoteTok } from "../src/score/song.ts";
-import { moveSyllable, MELISMA_MARK, ELISION } from "../src/score/lyrics.ts";
+import { moveSyllable, syllableSteps, MELISMA_MARK, ELISION } from "../src/score/lyrics.ts";
 
 let nid = 500;
 const n = (lyric: string | null): Token => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 4 }, dur: TPQ, lyric });
@@ -70,6 +70,22 @@ describe("拖歌词：往前（合 / 早一个音起）", () => {
     const st = song([n("我"), n("爱"), n(null)]);
     const r1 = moveSyllable(st, at(st, 1), 1), r2 = moveSyllable(r1.st, r1.at, -1);
     eq(lyr(r2.st), `我 爱 ${L}`);
+  });
+});
+
+describe("字下面的两颗小钮（v0.17.57：「词」里的字不再拖，点亮之后用小钮挪；syllableSteps 说每颗做什么）", () => {
+  it("前一个音有字 = 左钮写「合」；后面有空着的音 = 右钮能走", () => {
+    const st = song([n("我"), n("爱"), n(null)]);
+    eq(JSON.stringify(syllableSteps(st, at(st, 1))), JSON.stringify({ left: "merge", right: true }));
+  });
+  it("前一个音空着 / 是拖腔 = 左钮写「←」（早一个音起）", () => {
+    const st = song([n("我"), n(L), n("爱"), n(null)]);
+    eq(syllableSteps(st, at(st, 2)).left, "move");
+  });
+  it("走不动的那颗画灰：句首往前 = null；后面没有空位 = 右钮不能走（和 moveSyllable 的 done = 0 一致）", () => {
+    const st = song([n("我"), n("爱"), n("你")]);
+    eq(syllableSteps(st, at(st, 0)).left, null); eq(syllableSteps(st, at(st, 1)).right, false);
+    eq(moveSyllable(st, at(st, 0), -1).done, 0); eq(moveSyllable(st, at(st, 1), 1).done, 0);
   });
 });
 

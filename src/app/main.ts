@@ -3336,7 +3336,7 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
     (grooveHasPhase(style) ? `<div class="ctx-row ctx-phase"><button class="btn ctx-chip${t.shift ? "" : " is-on"}" data-v="shift:0" title="${_t("一轮的第一小节是三击那边（前句），从这个记号那一小节起数")}">3-2</button><button class="btn ctx-chip${t.shift ? " is-on" : ""}" data-v="shift:1" title="${_t("错开一小节：两小节对调，第一小节是两击那边")}">${_t("2-3（错开一小节）")}</button></div>` : "") +
     hints.map((h) => `<div class="ctx-hint">${esc(h)}</div>`).join("") + `<div class="ctx-sep"></div>` +
     `<button class="btn ctx-item danger" data-v="del" title="${_t("去掉这个风格记号（这儿起回到前一个风格；这张纸开头 = 不加）")}">${_t("删除")}</button>` +
-    `<div class="ctx-hint">${_t("只管这张纸：从这个音到这张纸结尾（或下一个风格记号）。长按拖 = 挪到别的音上")}</div>`;
+    `<div class="ctx-hint">${_t("只管这张纸：从这个音到这张纸结尾（或下一个风格记号）。亮着框时拖它 = 挪到别的音上（手指拖框边的把手）")}</div>`;
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
@@ -3399,7 +3399,7 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
     // 挪到这一段结尾（7-N）：「到这里为止变到这个力度」——一直滚 / 渐强到这张纸结束、后面没有音可以挂的时候用；已经在结尾 = 不给
     (t.kind === "dyn" && !markAtEnd(toks, i) ? `<button class="btn ctx-item" data-v="toEnd" title="${_t("挪到这一段最后一个音后面：渐强渐弱 / 渐到一直走到这一段结束")}">${_t("挪到这一段结尾")}</button>` : "") +
     `<button class="btn ctx-item danger" data-v="del" title="${t.kind === "dyn" ? _t("去掉这个力度记号（后面的音回到前一个力度记号）") : _t("去掉这个渐强 / 渐弱")}">${_t("删除")}</button>` +
-    `<div class="ctx-hint">${t.kind === "dyn" ? _t("长按拖 = 挪到别的音上（最后一个音的右边 = 这一段结尾）") : _t("长按拖 = 挪到别的音上")}</div>`;
+    `<div class="ctx-hint">${t.kind === "dyn" ? _t("亮着框时拖它 = 挪到别的音上（最后一个音的右边 = 这一段结尾；手指拖框边的把手）") : _t("亮着框时拖它 = 挪到别的音上（手指拖框边的把手）")}</div>`;
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;

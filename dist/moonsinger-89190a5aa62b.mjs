@@ -4339,7 +4339,7 @@ var S = {
   "\u9519\u5F00\u4E00\u5C0F\u8282\uFF1A\u4E24\u5C0F\u8282\u5BF9\u8C03\uFF0C\u7B2C\u4E00\u5C0F\u8282\u662F\u4E24\u51FB\u90A3\u8FB9": { en: "Offset by a bar: the two bars swap, the first bar is the two-hit side" },
   "2-3\uFF08\u9519\u5F00\u4E00\u5C0F\u8282\uFF09": { en: "2-3 (offset by a bar)" },
   "\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09": { en: "Remove this style mark (from here it returns to the previous style; at the start of a sheet = none)" },
-  "\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A": { en: "This sheet only: from this note to the end of the sheet (or the next style mark). Long-press and drag = move to another note" },
+  "\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u4EAE\u7740\u6846\u65F6\u62D6\u5B83 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u624B\u6307\u62D6\u6846\u8FB9\u7684\u628A\u624B\uFF09": { en: "This sheet only: from this note to the end of the sheet (or the next style mark). Drag it while it is highlighted = move to another note (with a finger, drag the handle on the box)" },
   "\u6539\u6210 {d}": { en: "Change to {d}" },
   "\u6E10\u5F3A": { en: "Crescendo" },
   "\u6E10\u5F31": { en: "Diminuendo" },
@@ -4360,8 +4360,8 @@ var S = {
   "\u632A\u5230\u8FD9\u4E00\u6BB5\u7ED3\u5C3E": { en: "Move to the end of this section" },
   "\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09": { en: "Remove this dynamic (later notes return to the previous one)" },
   "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31": { en: "Remove this crescendo / diminuendo" },
-  "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF09": { en: "Long-press and drag = move it to another note (right of the last note = the end of this section)" },
-  "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A": { en: "Long-press and drag = move to another note" },
+  "\u4EAE\u7740\u6846\u65F6\u62D6\u5B83 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF1B\u624B\u6307\u62D6\u6846\u8FB9\u7684\u628A\u624B\uFF09": { en: "Drag it while it is highlighted = move it to another note (right of the last note = the end of this section; with a finger, drag the handle on the box)" },
+  "\u4EAE\u7740\u6846\u65F6\u62D6\u5B83 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u624B\u6307\u62D6\u6846\u8FB9\u7684\u628A\u624B\uFF09": { en: "Drag it while it is highlighted = move to another note (with a finger, drag the handle on the box)" },
   "\u987A\u624B\u53BB\u6389\u4E86 {n} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u8BB0\u53F7\uFF08\u529B\u5EA6 / \u6E10\u5F3A\u6E10\u5F31 / \u8E0F\u677F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {n} marks that no longer govern any note (dynamics / hairpins / pedals; undo brings them back)" },
   "\u7EC8\u70B9\u6539\u6210\u4E86 {d}\uFF08\u53D1\u5939\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09": { en: "End changed to {d} (the dynamic after the hairpin)" },
   "\u5728\u4E0B\u4E00\u6761\u6E10\u5F3A\u6E10\u5F31\u524D\u9762\u653E\u4E86 {d}": { en: "Put {d} before the next hairpin" },
@@ -5495,7 +5495,7 @@ var S = {
   "\u53CD\u590D": { en: "Repeat" },
   "\u8C31\u5185\u53CD\u590D / \u8DF3\u8F6C\uFF1A|: :|\u3001\u623F\u5B50 1. 2.\u3001Segno / Coda / D.C. / D.S. / Fine\u2026\uFF08\u70B9\u5F00\u9009\uFF1B\u63D2\u5728\u5149\u6807\u5904\uFF0C\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\uFF09\u3002\u4E0D\u8DE8\u7EB8\uFF1B\u653E\u7684\u65F6\u5019\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C": { en: "Score repeats / jumps: |: :|, endings 1. 2., Segno / Coda / D.C. / D.S. / Fine\u2026 (tap to choose; inserted at the cursor, next to a barline = turns it into a repeat). Doesn't cross sheets; playback only looks at this sheet's top part" },
   "\u8E0F\u677F": { en: "Pedal" },
-  "\u8E0F\u677F\uFF08\u97F3\u63A5\u7740\u54CD\u8FD8\u662F\u6B62\u4F4F\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A": { en: "Pedal (notes keep ringing or stop): press / release / change from the note before the cursor; the labels follow whether the pedal is down there now; with a selection = hold the pedal through it. Tap a pedal mark on the score to change or delete it; long-press and drag to move it" },
+  "\u8E0F\u677F\uFF08\u97F3\u63A5\u7740\u54CD\u8FD8\u662F\u6B62\u4F4F\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u4EAE\u7740\u6846\u65F6\u62D6\u5B83\u80FD\u632A": { en: "Pedal (notes keep ringing or stop): press / release / change from the note before the cursor; the labels follow whether the pedal is down there now; with a selection = hold the pedal through it. Tap a pedal mark on the score to change or delete it; drag it while it is highlighted to move it" },
   "\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868": { en: "Grand staff: move this note to the other staff" },
   "{who}\u7684\u97F3\u57DF\u91CC": { en: "Within {who}'s range" },
   "\u77ED\u4E00\u6B65": { en: "Shorter" },
@@ -5912,6 +5912,8 @@ var S = {
   "\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83": { en: "Nobody in the catalog can perform it yet" },
   "\u5408": { en: "Join" },
   "\u8FD9\u4E2A\u5B57\u5E76\u8FDB\u524D\u4E00\u4E2A\u97F3\uFF08\u4E00\u4E2A\u97F3\u4E0A\u51E0\u4E2A\u5B57\uFF09\uFF1B\u8FD9\u4E00\u53E5\u540E\u9762\u7684\u5B57\u5F80\u524D\u632A\u4E00\u4E2A\u97F3": { en: "Merges this syllable into the previous note (several syllables on one note); later syllables in this phrase shift forward one note" },
+  "\u8FD9\u4E2A\u5B57\u65E9\u4E00\u4E2A\u97F3\u8D77": { en: "Start this syllable one note earlier" },
+  "\u8FD9\u4E2A\u5B57\u665A\u4E00\u4E2A\u97F3\u8D77\uFF08\u540E\u9762\u7684\u5B57\u88AB\u63A8\u7740\u8D70\uFF09": { en: "Start this syllable one note later (the syllables after it get pushed along)" },
   "\u6324\u4E86\uFF1A\u6309\u8282\u594F\u6392\uFF0C\u8FD9\u4E2A\u5B57\u653E\u4E0D\u4E0B\uFF08\u7EB8\u7684\u8BBE\u7F6E\u91CC\u6362\u6210\u300C\u6309\u6B4C\u8BCD\u300D= \u628A\u97F3\u63A8\u5F00\uFF09": { en: "Crowded: laid out by rhythm, this syllable doesn't fit (in sheet settings, \u201CBy lyrics\u201D pushes notes apart)" },
   "\u65E0\u5347\u964D": { en: "No accidentals" },
   "\u6309\u8FD9\u4E2A\u901F\u5EA6\u6446\uFF1A\u6446\u5230\u4E00\u5934 = \u4E00\u62CD": { en: "Swinging at this tempo: one end of the swing = one beat" },
@@ -6485,7 +6487,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.56-2026-11-14";
+var APP_VERSION = "v0.17.57-2026-11-14";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -11639,6 +11641,10 @@ function moveSyllable(st2, i10, k2) {
   }
   return { st: cur, at: at3, done: done2 };
 }
+function syllableSteps(st2, i10) {
+  const l10 = stepLeft(st2, i10);
+  return { left: l10 ? l10.merged ? "merge" : "move" : null, right: !!stepRight(st2, i10) };
+}
 function nextLyricSlot(tokens, i10) {
   for (let j2 = i10 + 1; j2 < tokens.length; j2++) if (lyricSlot(tokens[j2])) return j2;
   return -1;
@@ -11798,6 +11804,7 @@ function onMove(o10) {
 function onTap(o10) {
   if (o10.target === "blank") return "caret";
   if (o10.target === "mark" && o10.lit) return "menu";
+  if (o10.target === "lyric" && o10.lit) return "edit";
   return "light";
 }
 var TAP_SELECTS = true;
@@ -11806,9 +11813,12 @@ function wantsGrip(o10) {
 }
 function onHold(o10) {
   if (o10.target === "note") return o10.inSel ? "keep" : "select";
-  if (o10.target === "art") return "light";
-  if (o10.target === "mark") return "menu";
-  return "blankMenu";
+  if (o10.target === "blank") return "blankMenu";
+  const t10 = onTap({ target: o10.target, lit: !!o10.lit });
+  return t10 === "caret" ? "blankMenu" : t10;
+}
+function wantsSylButtons(o10) {
+  return o10.target === "lyric" && o10.lit;
 }
 function onSecondary(o10) {
   if (o10.target === "note") return o10.inSel ? "menu" : "selectMenu";
@@ -19055,6 +19065,43 @@ var ScoreView = class {
       if (e10.detail === 0) openFromBtn();
     });
     this.ink.appendChild(this.selBtn);
+    this.sylEl = document.createElement("div");
+    this.sylEl.className = "syl-steps";
+    this.sylEl.hidden = true;
+    for (const k2 of [-1, 1]) {
+      const b3 = document.createElement("button");
+      b3.type = "button";
+      b3.className = "syl-step";
+      b3.dataset.step = String(k2);
+      b3.tabIndex = -1;
+      let down = null;
+      b3.addEventListener("pointerdown", (e10) => {
+        e10.preventDefault();
+        e10.stopPropagation();
+        down = { id: e10.pointerId, x: e10.clientX, y: e10.clientY };
+        try {
+          b3.setPointerCapture(e10.pointerId);
+        } catch {
+        }
+      });
+      b3.addEventListener("pointerup", (e10) => {
+        const d3 = down;
+        down = null;
+        if (!d3 || d3.id !== e10.pointerId) return;
+        e10.stopPropagation();
+        const r10 = b3.getBoundingClientRect();
+        if (Math.hypot(e10.clientX - d3.x, e10.clientY - d3.y) <= 10 && e10.clientX >= r10.left && e10.clientX <= r10.right && e10.clientY >= r10.top && e10.clientY <= r10.bottom) this.sylStep(k2);
+      });
+      b3.addEventListener("pointercancel", () => {
+        down = null;
+      });
+      b3.addEventListener("click", (e10) => {
+        e10.stopPropagation();
+        if (e10.detail === 0) this.sylStep(k2);
+      });
+      this.sylEl.appendChild(b3);
+    }
+    this.ink.appendChild(this.sylEl);
     watchPointers();
     el2.addEventListener("pointerleave", (e10) => {
       if (caps(pointerOf(e10)).hover && this.hover) {
@@ -19188,8 +19235,6 @@ var ScoreView = class {
     return true;
   }
   lift = null;
-  selDrag = null;
-  // 「词」里长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）
   handles;
   // 亮框（选中规则单行这一版，v0.17.48；设计 = ai-docs/20261113-selection-rules-design.md 第五节）。user 同意的一句话：亮着框的就是选中的，选中的才能拖，点空白取消。
   //   三种来源：鼠标悬浮（hover，临时，移开就灭）/ 点一下（lit，留住）/ 拉框、拖把手（= 选区，照旧画淡蓝带子）。
@@ -19926,6 +19971,8 @@ var ScoreView = class {
   selEls = [];
   /** 选区旁的小钮（手指 / 笔叫菜单用）和它该在的地方（纸面坐标：带子最后一行的右上角；sys = 那一行的行号）。 */
   selBtn;
+  /** 点亮的字下面那两颗小钮（左 = 合 / ←，右 = →；v0.17.57）。 */
+  sylEl;
   selBtnAt = null;
   /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
    *  休止没有音高：d = NaN（笔 / 鼠标按住拖只改时值、不出声）。 */
@@ -20419,7 +20466,7 @@ var ScoreView = class {
       this.armPress(e10, p2, grab2 || art4 ? null : this.noteAt(p2.x, p2.y, true), grab2);
       if (this.press) {
         if (art4) this.press.art = art4;
-        if (grab2?.kind === "mark") this.press.lit = this.litIs(grab2.system, grab2.index, "mark");
+        if (grab2) this.press.lit = this.litIs(grab2.system, grab2.index, grab2.kind);
       }
       return;
     }
@@ -20428,7 +20475,7 @@ var ScoreView = class {
     if (grab) {
       this.el.setPointerCapture(e10.pointerId);
       this.armPress(e10, p2, null, grab);
-      if (grab.kind === "mark" && this.press) this.press.lit = isLit({ pointer: ptr, sticky: this.litIs(grab.system, grab.index, "mark"), inSel: false, hovered: true });
+      if (this.press) this.press.lit = grab.kind === "mark" ? isLit({ pointer: ptr, sticky: this.litIs(grab.system, grab.index, "mark"), inSel: false, hovered: true }) : this.litIs(grab.system, grab.index, "lyric");
       return;
     }
     if (this.tap(p2.x, p2.y, e10.shiftKey, e10.pointerId, false, false)) return;
@@ -20487,9 +20534,8 @@ var ScoreView = class {
       clearTimeout(this.press.timer);
       this.press = null;
     }
-    this.selDrag = null;
   }
-  /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 光标放到那里 + 小菜单（粘贴 / 插记号 / 全选…；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」）。 */
+  /** 长按到点：按在音上 = 选中它；字 / 记号 / 演奏法 = 和点一下一样；空白处 = 光标放到那里 + 小菜单（粘贴 / 插记号 / 全选…；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」）。 */
   longPress() {
     const pr = this.press;
     if (!pr || pr.moved) return;
@@ -20501,34 +20547,17 @@ var ScoreView = class {
       return;
     }
     if (caps(pr.ptr).dragScrolls) this.el.focus({ preventScroll: true });
-    if (pr.grab?.kind === "lyric") {
-      this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, caps(pr.ptr).coarse);
-      return;
-    }
-    if (pr.hit && this.rules.lyrics) {
-      this.selectHeld(pr.pid, pr.hit);
-      return;
-    }
-    const target = pr.grab ? "mark" : pr.art ? "art" : pr.hit ? "note" : "blank";
-    switch (onHold({ target, inSel: !!pr.hit && this.inSelection(pr.hit) })) {
-      case "menu": {
-        const g3 = pr.grab, dh = this.layout?.dyns.find((d3) => d3.index === g3.index && d3.system === g3.system);
-        this.lyrics.commitAndClose();
-        this.marks.commitAndClose();
-        this.finger = null;
-        this.box = null;
-        this.boxEl.hidden = true;
-        if (dh) {
-          this.markMenu(dh);
-          this.lightAt(dh.system, dh.index, "mark", pr.ptr);
-        }
-        return;
-      }
+    const target = pr.grab ? pr.grab.kind : pr.art ? "art" : pr.hit ? "note" : "blank";
+    switch (onHold({ target, inSel: !!pr.hit && this.inSelection(pr.hit), lit: !!pr.lit })) {
       case "light":
+      case "menu":
+      case "edit":
         this.finger = null;
         this.box = null;
         this.boxEl.hidden = true;
-        this.tapArt(pr.art, pr.ptr);
+        if (pr.grab?.kind === "mark") this.tapMark(pr.grab, !!pr.lit, pr.ptr);
+        else if (pr.grab) this.tapLyric(pr.grab, !!pr.lit, pr.ptr, pr.x, pr.y);
+        else if (pr.art) this.tapArt(pr.art, pr.ptr);
         return;
       case "select":
         this.holdNote(pr.pid, pr.hit, pr.ptr, false);
@@ -20563,22 +20592,6 @@ var ScoreView = class {
       this.host.set(select(st1, hit2.index, hit2.index + 1));
       this.lightAt(hit2.system, hit2.index, "note", ptr);
     }
-    this.tell({ kind: "staff" });
-    this.host.sound?.audition(hit2.index, true);
-    this.holdPid = pid;
-  }
-  /** 长按选中按着的那个音（不抬手接着拖 = 扩选）。 */
-  selectHeld(pid, hit2) {
-    this.lyrics.commitAndClose();
-    this.marks.commitAndClose();
-    this.finger = null;
-    if (this.drag) {
-      this.host.sound?.release();
-      this.drag = null;
-    }
-    const st0 = this.host.get(), st2 = this.onTrack(hit2) ? st0 : this.focusRow(st0, hit2.system);
-    this.host.set(select(st2, hit2.index, hit2.index + 1));
-    this.selDrag = { pid, anchor: hit2.index };
     this.tell({ kind: "staff" });
     this.host.sound?.audition(hit2.index, true);
     this.holdPid = pid;
@@ -20656,7 +20669,7 @@ var ScoreView = class {
     if (t10?.kind !== "note") return false;
     if (!t10.lyric && this.noLyricsHere(row2.part)) return false;
     this.host.set(this.focusRow(this.host.get(), hit2.system, this.host.get().caret));
-    this.lyrics.openAt(hit2.index);
+    this.openLyric(hit2.index);
     this.tell({ kind: "text" });
     return true;
   }
@@ -20760,7 +20773,7 @@ var ScoreView = class {
     this.tell({ kind: "staff" });
     this.tell({ kind: "mark", index: h2.index, at: { x: (b3.left + b3.right) / 2, y: b3.bottom } });
   }
-  /** 拿起来（长按到点 / 笔鼠标按住动了）：收起编辑框、停掉滚动，记下这条 track 上能落的音。编辑框收起时可能改了谱（贴字 / 插句号）= 按原位置重新找一次。 */
+  /** 拿起来一个记号（亮着框的笔 / 鼠标按住动了、手指拖把手；字不能拖，v0.17.57）：收起编辑框、停掉滚动，记下这条 track 上能落的音和休止。编辑框收起时可能改了谱（贴字 / 插句号）= 按原位置重新找一次。 */
   startLift(grab0, pid, x2, y2, cx2, cy2, finger) {
     const hadEditor = this.lyrics.open || this.marks.open;
     this.lyrics.commitAndClose();
@@ -20773,24 +20786,19 @@ var ScoreView = class {
       this.drag = null;
     }
     const grab = hadEditor ? this.grabAt(x2, y2, finger) : grab0;
-    if (!grab || !this.layout) return;
+    if (!grab || grab.kind !== "mark" || !this.layout) return;
     if (!this.onTrack(grab)) this.host.set(this.focusRow(this.host.get(), grab.system));
     const L2 = this.layout, st0 = this.host.get(), toks = tr(st0), seen = /* @__PURE__ */ new Set();
-    const spots = [...L2.notes.map((n10) => ({ ...n10, rest: false })), ...grab.kind === "mark" ? L2.rests.map((r10) => ({ ...r10, rest: true })) : []];
-    const targets = spots.filter((n10) => this.onTrack(n10) && (grab.kind === "mark" || lyricSlot(toks[n10.index])) && !seen.has(n10.index) && (seen.add(n10.index), true)).map((n10) => ({ idx: n10.index, x: grab.kind === "lyric" ? n10.x + n10.w / 2 : n10.x, system: n10.system })).sort((a10, b3) => a10.idx - b3.idx);
-    if (grab.kind === "mark" && toks[grab.index]?.kind === "dyn" && targets.length) {
+    const spots = [...L2.notes.map((n10) => ({ ...n10, rest: false })), ...L2.rests.map((r10) => ({ ...r10, rest: true }))];
+    const targets = spots.filter((n10) => this.onTrack(n10) && !seen.has(n10.index) && (seen.add(n10.index), true)).map((n10) => ({ idx: n10.index, x: n10.x, system: n10.system })).sort((a11, b3) => a11.idx - b3.idx);
+    if (toks[grab.index]?.kind === "dyn" && targets.length) {
       const lastIdx = targets[targets.length - 1].idx, ln3 = spots.find((s10) => s10.index === lastIdx && this.onTrack(s10));
       if (ln3) targets.push({ idx: toks.length, x: ln3.x + ln3.w, system: ln3.system });
     }
-    let src;
-    if (grab.kind === "lyric") src = targets.findIndex((t10) => t10.idx === grab.index);
-    else {
-      let a10 = grab.index + 1;
-      while (a10 < toks.length && toks[a10].kind !== "note" && toks[a10].kind !== "rest") a10++;
-      src = targets.findIndex((t10) => t10.idx >= a10);
-    }
-    if (grab.kind === "lyric" && src < 0) return;
-    this.lift = { pid, grab, st0, targets, src, cur: src, x0: x2, y0: y2, cx: cx2, cy: cy2, moved: false, short: false, removed: 0, dx: src >= 0 ? x2 - targets[src].x : 0 };
+    let a10 = grab.index + 1;
+    while (a10 < toks.length && toks[a10].kind !== "note" && toks[a10].kind !== "rest") a10++;
+    const src = targets.findIndex((t10) => t10.idx >= a10);
+    this.lift = { pid, grab, st0, targets, src, cur: src, x0: x2, y0: y2, cx: cx2, cy: cy2, moved: false, removed: 0, dx: src >= 0 ? x2 - targets[src].x : 0 };
     this.el.classList.add("lifting");
     this.hot = /* @__PURE__ */ new Set([toks[grab.index].id]);
     this.render();
@@ -20814,18 +20822,11 @@ var ScoreView = class {
     });
     if (best < 0 || best === f2.cur) return;
     f2.cur = best;
-    if (f2.grab.kind === "lyric") {
-      const want = best - f2.src, r10 = moveSyllable(f2.st0, f2.grab.index, want);
-      f2.short = want > 0 ? r10.done < want : r10.done === 0 && want < 0;
-      this.hot = /* @__PURE__ */ new Set([tr(r10.st)[r10.at].id]);
-      this.host.set(r10.st, { gesture: "lift" });
-    } else {
-      const r10 = f2.targets[best].idx >= tr(f2.st0).length ? moveMarkToEnd(f2.st0, f2.grab.index) : moveMark(f2.st0, f2.grab.index, f2.targets[best].idx);
-      f2.removed = r10.removed;
-      this.host.set(r10.st, { gesture: "lift" });
-    }
+    const r10 = f2.targets[best].idx >= tr(f2.st0).length ? moveMarkToEnd(f2.st0, f2.grab.index) : moveMark(f2.st0, f2.grab.index, f2.targets[best].idx);
+    f2.removed = r10.removed;
+    this.host.set(r10.st, { gesture: "lift" });
   }
-  /** 松手：没动 = 歌词 → 选中这个音（同长按音；再拖把手扩选），记号 → 小菜单；动了 = 已经挪好了，挪不动 / 顶掉了别的说一声。 */
+  /** 松手：没动 = 小菜单（从把手拿起来的不开）；动了 = 已经挪好了，顶掉了别的说一声。 */
   endLift() {
     const f2 = this.lift;
     this.lift = null;
@@ -20833,19 +20834,15 @@ var ScoreView = class {
     this.hot = null;
     this.render();
     if (!f2.moved) {
-      if (f2.grab.kind === "lyric") this.host.set(select(this.host.get(), f2.grab.index, f2.grab.index + 1));
-      else if (!f2.grip) this.tell({ kind: "mark", index: f2.grab.index, at: { x: f2.cx, y: f2.cy } });
+      if (!f2.grip) this.tell({ kind: "mark", index: f2.grab.index, at: { x: f2.cx, y: f2.cy } });
       return;
     }
-    if (f2.grab.kind === "mark") {
-      const id2 = tr(f2.st0)[f2.grab.index]?.id;
-      if (id2 !== void 0) {
-        this.lit = { paper: f2.st0.at.paper, part: f2.st0.at.part, id: id2, target: "mark", ck: caretKey(this.host.get()), grip: !!f2.grip };
-        this.drawLit();
-      }
+    const id2 = tr(f2.st0)[f2.grab.index]?.id;
+    if (id2 !== void 0) {
+      this.lit = { paper: f2.st0.at.paper, part: f2.st0.at.part, id: id2, target: "mark", ck: caretKey(this.host.get()), grip: !!f2.grip };
+      this.drawLit();
     }
-    if (f2.grab.kind === "lyric" && f2.short) this.host.notice?.(f2.cur > f2.src ? _t("\u540E\u9762\u6CA1\u6709\u7A7A\u7740\u7684\u97F3\u4E86\uFF0C\u5B57\u53EA\u80FD\u632A\u5230\u8FD9\u513F") : _t("\u524D\u9762\u9694\u7740\u53E5\u53F7\uFF08\u6216\u8005\u6CA1\u6709\u97F3\u4E86\uFF09\uFF0C\u5B57\u632A\u4E0D\u8FC7\u53BB"));
-    if (f2.grab.kind === "mark" && f2.removed) this.host.notice?.(_t("\u987A\u624B\u53BB\u6389\u4E86 {n} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u8BB0\u53F7\uFF08\u529B\u5EA6 / \u6E10\u5F3A\u6E10\u5F31 / \u8E0F\u677F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { n: f2.removed }));
+    if (f2.removed) this.host.notice?.(_t("\u987A\u624B\u53BB\u6389\u4E86 {n} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u8BB0\u53F7\uFF08\u529B\u5EA6 / \u6E10\u5F3A\u6E10\u5F31 / \u8E0F\u677F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { n: f2.removed }));
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
   noteAt(x2, y2, finger = false) {
@@ -21021,7 +21018,7 @@ var ScoreView = class {
       }
       if (ly2) {
         this.host.set(this.focusRow(this.host.get(), ly2.system, this.host.get().caret));
-        this.lyrics.openAt(ly2.index);
+        this.openLyric(ly2.index);
         this.tell({ kind: "text" });
         return true;
       }
@@ -21061,6 +21058,61 @@ var ScoreView = class {
     if (!this.onTrack(dh)) this.host.set(this.focusRow(this.host.get(), dh.system, this.host.get().caret));
     this.tell({ kind: "staff" });
     this.lightAt(dh.system, dh.index, "mark", ptr);
+  }
+  /** 轻点「词」里有字的字（v0.17.57，设计稿第八节第 2 条；user 2026-11-14「词的合并用拖动合并，其实相当难操作，我们还是改成小按钮，就选中之后改成小按钮」）：
+   *  没亮 = 亮框 + 字下面两颗小钮（合 / ← 和 →，drawLit 摆、sylStep 做）；亮着再点 = 歌词框改字。光标不动（只换到那条谱、取消选区）。
+   *  歌词框开着时点别的字 = 先收框、再让这个字亮框（不直接开）；收框可能改了谱（插句号）= 按原位置重新找一次。记号框开着 = 这一下只收框。 */
+  tapLyric(g0, lit, ptr, x2, y2) {
+    const wasMark = this.marks.open, wasLyric = this.lyrics.open;
+    this.lyrics.commitAndClose();
+    this.marks.commitAndClose();
+    if (wasMark) {
+      this.tell({ kind: "staff" });
+      return;
+    }
+    if (wasLyric) this.layoutNow();
+    const g3 = wasLyric ? this.grabAt(x2, y2, caps(ptr).coarse) : g0;
+    if (!g3 || g3.kind !== "lyric") {
+      this.tell({ kind: "staff" });
+      return;
+    }
+    const st0 = this.host.get(), st1 = this.onTrack(g3) ? st0 : this.focusRow(st0, g3.system, st0.caret);
+    if (onTap({ target: "lyric", lit: lit && !wasLyric }) === "edit") {
+      if (st1 !== st0) this.host.set(st1);
+      this.openLyric(g3.index);
+      this.tell({ kind: "text" });
+      return;
+    }
+    this.host.set(st1.sel ? setCaret(st1, st1.caret) : st1);
+    this.tell({ kind: "staff" });
+    this.lightAt(g3.system, g3.index, "lyric", ptr);
+  }
+  /** 开歌词框：点亮着的字先灭（框开着 = 字下面的两颗小钮让给框自己的「合」）。 */
+  openLyric(index) {
+    if (this.lit?.target === "lyric") {
+      this.lit = null;
+      this.drawLit();
+    }
+    this.lyrics.openAt(index);
+  }
+  /** 点了字下面的一颗小钮（k = −1 左：合 / ←；+1 右：→）：moveSyllable 走一步（同原来挪字的那套算法），一下 = 撤销里的一步；亮框和小钮跟着字走（下一次画的时候摆）。
+   *  走不动（钮画灰）= 说为什么，谱不动。 */
+  sylStep(k2) {
+    const f2 = this.lit;
+    if (!f2 || f2.target !== "lyric") return;
+    const st2 = this.host.get();
+    if (st2.at.paper !== f2.paper || st2.at.part !== f2.part) return;
+    const index = tr(st2).findIndex((t10) => t10.id === f2.id);
+    if (index < 0) return;
+    const r10 = moveSyllable(st2, index, k2);
+    if (!r10.done) {
+      this.host.notice?.(k2 > 0 ? _t("\u540E\u9762\u6CA1\u6709\u7A7A\u7740\u7684\u97F3\u4E86\uFF0C\u5B57\u53EA\u80FD\u632A\u5230\u8FD9\u513F") : _t("\u524D\u9762\u9694\u7740\u53E5\u53F7\uFF08\u6216\u8005\u6CA1\u6709\u97F3\u4E86\uFF09\uFF0C\u5B57\u632A\u4E0D\u8FC7\u53BB"));
+      return;
+    }
+    this.host.set(r10.st);
+    const now2 = this.host.get(), id2 = tr(r10.st)[r10.at]?.id;
+    if (now2 !== st2 && id2 !== void 0) this.lit = { ...f2, id: id2, ck: caretKey(now2) };
+    this.drawLit();
   }
   /** 轻点演奏法（v0.17.48，设计稿第五节第 7 条）：光标到它那个音后面、它亮框、说一句它是什么 / 怎么改。 */
   tapArt(a10, ptr) {
@@ -21208,6 +21260,7 @@ var ScoreView = class {
       return !!r10 && r10.paper === o10.paper && r10.part === o10.part && !L2.virtual[`${r10.paper}:${r10.part}`];
     };
     if (o10.target === "mark") return L2.dyns.filter((d3) => d3.index === index && rowOk(d3.system)).map((d3) => ({ x: d3.x, y: d3.y, w: d3.w, h: d3.h }));
+    if (o10.target === "lyric") return L2.lyrics.filter((h2) => h2.index === index && rowOk(h2.system)).map((h2) => this.lyricBox(o10.id, h2)).filter((b3) => !!b3);
     if (o10.target === "art") {
       const q2 = L2.sp * 0.15;
       return this.artBoxes().filter((a10) => a10.index === index && rowOk(a10.system) && (!o10.art || a10.arts.includes(o10.art))).map((a10) => ({ x: a10.x - q2, y: a10.y - q2, w: a10.w + 2 * q2, h: a10.h + 2 * q2 }));
@@ -21225,6 +21278,50 @@ var ScoreView = class {
       }
     }
     return [...by.values()].map((e10) => ({ x: e10.x0, y: e10.y0, w: e10.x1 - e10.x0, h: e10.y1 - e10.y0 }));
+  }
+  /** 这个字所在那一行歌词最低的字底（谱面坐标；找不到 = −∞）。字下面那两颗小钮摆在它下面：不盖这一行的任何字——按节奏排时挤到第二行的字也算
+   *  （统筹转 user 2026-11-14：「这个小钮的位置不能干扰写词…它遮下面的东西比如下一行铺子倒无所谓，但是不能干扰写词」）。 */
+  lyricRowBottom(o10) {
+    const L2 = this.layout, svg = this.staffSvg();
+    if (!L2 || !svg) return -Infinity;
+    const index = trackOf(this.host.get().song, o10.paper, o10.part).findIndex((t10) => t10.id === o10.id);
+    let bottom = -Infinity;
+    for (const h2 of L2.lyrics) {
+      const r10 = L2.systems[h2.system];
+      if (h2.index !== index || !r10 || r10.paper !== o10.paper || r10.part !== o10.part) continue;
+      for (const el2 of svg.querySelectorAll(`g[data-sys="${h2.system}"] text.lyric`)) {
+        try {
+          const bb = el2.getBBox();
+          if (bb.width || bb.height) bottom = Math.max(bottom, bb.y + bb.height);
+        } catch {
+        }
+      }
+    }
+    return bottom;
+  }
+  /** 一个字画出来的框（亮框 = 字的样子外放 0.2 个间距）：谱上 data-tok = 这个音的那几个 text.lyric 里离点击锚点（字中心、基线）最近的那个；横向压窄（matrix）照算。 */
+  lyricBox(id2, h2) {
+    const svg = this.staffSvg(), L2 = this.layout;
+    if (!svg || !L2) return null;
+    let best = null, bd = Infinity;
+    for (const el2 of svg.querySelectorAll(`text.lyric[data-tok="${id2}"]`)) {
+      let b3;
+      try {
+        b3 = el2.getBBox();
+      } catch {
+        continue;
+      }
+      if (!b3.width && !b3.height) continue;
+      const m2 = el2.transform.baseVal.consolidate()?.matrix, a10 = m2 ? m2.a : 1, e10 = m2 ? m2.e : 0;
+      const box = { x: a10 * b3.x + e10, y: b3.y, w: a10 * b3.width, h: b3.height }, d3 = Math.abs(box.x + box.w / 2 - h2.x) + Math.abs(box.y + box.h - h2.y);
+      if (d3 < bd) {
+        bd = d3;
+        best = box;
+      }
+    }
+    if (!best) return null;
+    const q2 = L2.sp * 0.2;
+    return { x: best.x - q2, y: best.y - q2, w: best.w + 2 * q2, h: best.h + 2 * q2 };
   }
   /** 画亮框（ink 层的 div；不进排版）+ 手指的把手。点亮的那个在光标一挪 / 有了选区时灭（只选了它自己不灭，selKillsLit）。 */
   drawLit() {
@@ -21244,12 +21341,13 @@ var ScoreView = class {
       }
       return bs;
     };
-    let grip = null;
+    let grip = null, syl = null;
     if (L2) {
       if (this.hover && !(this.lit && same(this.lit, this.hover))) paint(this.hover, "lit-box hover");
       if (this.lit) {
         const bs = paint(this.lit, "lit-box"), b3 = bs[bs.length - 1];
         if (this.lit.grip && b3) grip = this.lit.target === "note" ? { x: b3.x + b3.w / 2, y: b3.y + b3.h + GRIP_OUT } : { x: b3.x + b3.w + GRIP_OUT, y: b3.y + b3.h / 2 };
+        if (b3 && wantsSylButtons({ target: this.lit.target, lit: true })) syl = { x: b3.x + b3.w / 2, y: Math.max(b3.y + b3.h, this.lyricRowBottom(this.lit) + L2.sp * 0.2) };
       }
     }
     if (grip && this.lit) {
@@ -21257,6 +21355,25 @@ var ScoreView = class {
       this.gripEl.className = `lit-grip ${this.lit.target}`;
       this.gripEl.hidden = false;
     } else this.gripEl.hidden = true;
+    this.placeSylSteps(syl);
+  }
+  /** 字下面那两颗小钮（v0.17.57）：摆在亮框正下方居中（at = 框底边中点）；左钮按前一个音有没有字写「合」/「←」，走不动的画灰（点了说为什么，sylStep）。屏幕上的大小不随谱面缩放（styles.css 用 --ov-z 抵掉）。 */
+  placeSylSteps(at3) {
+    const f2 = this.lit, st2 = this.host.get();
+    const index = at3 && f2 && !this.lyrics.open && st2.at.paper === f2.paper && st2.at.part === f2.part ? tr(st2).findIndex((t10) => t10.id === f2.id) : -1;
+    this.sylEl.hidden = index < 0;
+    if (index < 0 || !at3) return;
+    const can = syllableSteps(st2, index), [lb2, rb2] = [...this.sylEl.children];
+    const left = can.left === "merge" ? _t("\u5408") : "\u2190";
+    lb2.textContent = left;
+    lb2.classList.toggle("off", !can.left);
+    lb2.title = can.left === "merge" ? _t("\u8FD9\u4E2A\u5B57\u5E76\u8FDB\u524D\u4E00\u4E2A\u97F3\uFF08\u4E00\u4E2A\u97F3\u4E0A\u51E0\u4E2A\u5B57\uFF09\uFF1B\u8FD9\u4E00\u53E5\u540E\u9762\u7684\u5B57\u5F80\u524D\u632A\u4E00\u4E2A\u97F3") : _t("\u8FD9\u4E2A\u5B57\u65E9\u4E00\u4E2A\u97F3\u8D77");
+    lb2.setAttribute("aria-label", lb2.title);
+    rb2.textContent = "\u2192";
+    rb2.classList.toggle("off", !can.right);
+    rb2.title = _t("\u8FD9\u4E2A\u5B57\u665A\u4E00\u4E2A\u97F3\u8D77\uFF08\u540E\u9762\u7684\u5B57\u88AB\u63A8\u7740\u8D70\uFF09");
+    rb2.setAttribute("aria-label", rb2.title);
+    Object.assign(this.sylEl.style, { left: `${at3.x}px`, top: `${at3.y}px` });
   }
   /** 手指按在把手上：音 = 上下拖改音高（同笔拖音，出声）；记号 = 拿起来左右挪（同长按拖）。之后的 move / up 冒泡到谱面，走原来那几条。 */
   gripDown(e10) {
@@ -21391,13 +21508,8 @@ var ScoreView = class {
         this.drag = null;
         this.box = { pid: e10.pointerId, x0: pr.x, y0: pr.y, moved: false, st0, row: this.rowAt(pr.y) };
       };
-      if (pr.grab?.kind === "mark") {
-        if (onMove({ pointer: pr.ptr, target: "mark", lit: !!pr.lit, canDrag: this.rules.symbols }) === "lift") {
-          pr.fired = true;
-          this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false);
-        } else toBox();
-      } else if (pr.grab) {
-        if (!caps(pr.ptr).hover) {
+      if (pr.grab) {
+        if (onMove({ pointer: pr.ptr, target: pr.grab.kind, lit: !!pr.lit, canDrag: pr.grab.kind === "mark" && this.rules.symbols }) === "lift") {
           pr.fired = true;
           this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false);
         } else toBox();
@@ -21405,13 +21517,6 @@ var ScoreView = class {
     }
     if (this.lift && e10.pointerId === this.lift.pid) {
       this.dragLift(this.local(e10));
-      return;
-    }
-    if (this.selDrag && e10.pointerId === this.selDrag.pid) {
-      const idx = this.noteNear(this.local(e10));
-      if (idx < 0) return;
-      const st3 = this.host.get(), a10 = Math.min(idx, this.selDrag.anchor), b3 = Math.max(idx, this.selDrag.anchor) + 1;
-      if (!st3.sel || st3.sel.from !== a10 || st3.sel.to !== b3) this.host.set(select(st3, a10, b3));
       return;
     }
     if (this.touches.has(e10.pointerId)) {
@@ -21531,13 +21636,11 @@ var ScoreView = class {
     if (pr && e10.pointerId === pr.pid) {
       this.press = null;
       clearTimeout(pr.timer);
-      const extended = !!this.selDrag;
-      this.selDrag = null;
       const ptr = pr.ptr;
       if (pr.grab && !pr.moved && !pr.fired) {
         this.finger = null;
         if (pr.grab.kind === "mark") this.tapMark(pr.grab, !!pr.lit, ptr);
-        else this.tap(pr.x, pr.y, pr.shift, caps(ptr).dragScrolls ? null : pr.pid);
+        else this.tapLyric(pr.grab, !!pr.lit, ptr, pr.x, pr.y);
         return;
       }
       if (pr.grab && !caps(ptr).dragScrolls) return;
@@ -21548,7 +21651,7 @@ var ScoreView = class {
         this.tapArt(pr.art, ptr);
         return;
       }
-      if (pr.fired || extended) {
+      if (pr.fired) {
         this.finger = null;
         if (this.drag) {
           this.host.sound?.release();
@@ -22350,7 +22453,7 @@ var Pad = class {
       cell2("ottava", `<span class="smufl">\uE511</span>`, _t("\u516B\u5EA6\u7EBF"), _t("\u516B\u5EA6\u7EBF\uFF1A\u4ECE\u5149\u6807\u5904\u8D77\u8C31\u4E0A\u753B\u4F4E\uFF088va / 15ma\uFF09\u6216\u753B\u9AD8\uFF088vb\uFF09\uFF1B\u6709\u9009\u533A = \u8FD9\u4E00\u6BB5\uFF1B\u300C\u7ED3\u675F\u300D= \u5230\u8FD9\u513F\u6536\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8")),
       cell2("groove", `<span class="big it">${_t("\u98CE\u683C")}</span>`, _t("\u62CD\u5B50\u8F7B\u91CD"), _t("\u98CE\u683C\u8BB0\u53F7\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u5728\u5C0F\u8282\u91CC\u7684\u4F4D\u7F6E\u8F7B\u4E00\u70B9 / \u91CD\u4E00\u70B9\uFF08\u53E4\u5178 / \u6D41\u884C / \u534E\u5C14\u5179 / \u8FDB\u884C\u66F2\u2026\u70B9\u5F00\u9009\uFF09\uFF1B\u6574\u5F20\u7EB8\u7684\u58F0\u90E8\u4E00\u8D77\u542C\uFF0C\u5404\u4EBA\u8DDF\u591A\u5C11\u6309\u4E50\u5668")),
       cell2("repeat", `<span class="big">:|</span>`, _t("\u53CD\u590D"), _t("\u8C31\u5185\u53CD\u590D / \u8DF3\u8F6C\uFF1A|: :|\u3001\u623F\u5B50 1. 2.\u3001Segno / Coda / D.C. / D.S. / Fine\u2026\uFF08\u70B9\u5F00\u9009\uFF1B\u63D2\u5728\u5149\u6807\u5904\uFF0C\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\uFF09\u3002\u4E0D\u8DE8\u7EB8\uFF1B\u653E\u7684\u65F6\u5019\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C")),
-      cell2("pedal", `<span class="smufl">\uE650</span>`, _t("\u8E0F\u677F"), _t("\u8E0F\u677F\uFF08\u97F3\u63A5\u7740\u54CD\u8FD8\u662F\u6B62\u4F4F\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A")),
+      cell2("pedal", `<span class="smufl">\uE650</span>`, _t("\u8E0F\u677F"), _t("\u8E0F\u677F\uFF08\u97F3\u63A5\u7740\u54CD\u8FD8\u662F\u6B62\u4F4F\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u4EAE\u7740\u6846\u65F6\u62D6\u5B83\u80FD\u632A")),
       cell2("staff", `<span class="big">\u21C5</span>`, _t("\u6362\u8C31\u8868"), _t("\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868"))
       // 不是大谱表也不藏（A 类，v0.17.43）
     ];
@@ -36545,15 +36648,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-71ff973d3ed7.mjs");
+      return pick3(() => "singer-worker-9eb2093d5926.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-369d3f9bc6e1.mjs");
+      return pick3(() => "layout-worker-77f44b037ce0.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-acc5d36848d6.mjs");
+      return pick3(() => "encode-worker-3f44856306c5.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -48283,7 +48386,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "7735aeb5dc644375" : "dev";
+var CORE_HASH = true ? "991927f71e6e8c93" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -65191,7 +65294,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "7d5ec6260e83",
+  cssHash: "00598387310d",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -67224,7 +67327,7 @@ function openGrooveMenu(i10, at3) {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu groove-menu";
   box.setAttribute("role", "menu");
-  box.innerHTML = `<div class="ctx-hint ctx-what">${_t("\u98CE\u683C = \u62CD\u5B50\u8F7B\u91CD\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u843D\u5728\u5C0F\u8282\u91CC\u7684\u54EA\u4E00\u62CD\u8F7B\u4E00\u70B9\u6216\u91CD\u4E00\u70B9\uFF08\u50CF\u9F13\u624B\u7684\u5F8B\u52A8\uFF09\uFF1B\u5199\u4E86\u91CD\u97F3 / \u5F31\u5316\u7684\u97F3\u7167\u5199\u7684\u6765\u3002")}</div><div class="ctx-row ctx-groove">${chips}</div>` + (t10.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") + (grooveHasPhase(style) ? `<div class="ctx-row ctx-phase"><button class="btn ctx-chip${t10.shift ? "" : " is-on"}" data-v="shift:0" title="${_t("\u4E00\u8F6E\u7684\u7B2C\u4E00\u5C0F\u8282\u662F\u4E09\u51FB\u90A3\u8FB9\uFF08\u524D\u53E5\uFF09\uFF0C\u4ECE\u8FD9\u4E2A\u8BB0\u53F7\u90A3\u4E00\u5C0F\u8282\u8D77\u6570")}">3-2</button><button class="btn ctx-chip${t10.shift ? " is-on" : ""}" data-v="shift:1" title="${_t("\u9519\u5F00\u4E00\u5C0F\u8282\uFF1A\u4E24\u5C0F\u8282\u5BF9\u8C03\uFF0C\u7B2C\u4E00\u5C0F\u8282\u662F\u4E24\u51FB\u90A3\u8FB9")}">${_t("2-3\uFF08\u9519\u5F00\u4E00\u5C0F\u8282\uFF09")}</button></div>` : "") + hints.map((h3) => `<div class="ctx-hint">${esc14(h3)}</div>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${_t("\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09")}">${_t("\u5220\u9664")}</button><div class="ctx-hint">${_t("\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A")}</div>`;
+  box.innerHTML = `<div class="ctx-hint ctx-what">${_t("\u98CE\u683C = \u62CD\u5B50\u8F7B\u91CD\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u843D\u5728\u5C0F\u8282\u91CC\u7684\u54EA\u4E00\u62CD\u8F7B\u4E00\u70B9\u6216\u91CD\u4E00\u70B9\uFF08\u50CF\u9F13\u624B\u7684\u5F8B\u52A8\uFF09\uFF1B\u5199\u4E86\u91CD\u97F3 / \u5F31\u5316\u7684\u97F3\u7167\u5199\u7684\u6765\u3002")}</div><div class="ctx-row ctx-groove">${chips}</div>` + (t10.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") + (grooveHasPhase(style) ? `<div class="ctx-row ctx-phase"><button class="btn ctx-chip${t10.shift ? "" : " is-on"}" data-v="shift:0" title="${_t("\u4E00\u8F6E\u7684\u7B2C\u4E00\u5C0F\u8282\u662F\u4E09\u51FB\u90A3\u8FB9\uFF08\u524D\u53E5\uFF09\uFF0C\u4ECE\u8FD9\u4E2A\u8BB0\u53F7\u90A3\u4E00\u5C0F\u8282\u8D77\u6570")}">3-2</button><button class="btn ctx-chip${t10.shift ? " is-on" : ""}" data-v="shift:1" title="${_t("\u9519\u5F00\u4E00\u5C0F\u8282\uFF1A\u4E24\u5C0F\u8282\u5BF9\u8C03\uFF0C\u7B2C\u4E00\u5C0F\u8282\u662F\u4E24\u51FB\u90A3\u8FB9")}">${_t("2-3\uFF08\u9519\u5F00\u4E00\u5C0F\u8282\uFF09")}</button></div>` : "") + hints.map((h3) => `<div class="ctx-hint">${esc14(h3)}</div>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${_t("\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09")}">${_t("\u5220\u9664")}</button><div class="ctx-hint">${_t("\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u4EAE\u7740\u6846\u65F6\u62D6\u5B83 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u624B\u6307\u62D6\u6846\u8FB9\u7684\u628A\u624B\uFF09")}</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at3.y + 6;
@@ -67316,7 +67419,7 @@ function openMarkMenu(i10, at3) {
     return `<div class="ctx-sep"></div><div class="ctx-k ctx-to">${_t("\u53D8\u5230")}</div><div class="ctx-row ctx-dyn"><button class="btn ctx-chip${endDyn ? "" : " is-on"}" data-v="to:step"${blocked ? " disabled" : ""} title="${esc14(_t("\u6CA1\u5199\u7EC8\u70B9\uFF1A\u7167\u65B9\u5411\u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\uFF09"))}">${_t("\u8D70\u4E00\u6863")}</button>${chips}</div>` + (blocked ? `<div class="ctx-hint">${_t("\u7EC8\u70B9\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u7BA1\u7740\u540E\u9762\u7684\u97F3\uFF1A\u8FD9\u91CC\u4E0D\u53BB\u6389\u5B83\uFF08\u8981\u6539\u5B83\u5C31\u70B9\u5B83\uFF09")}</div>` : "");
   })();
   box.innerHTML = `<div class="ctx-hint ctx-what">${esc14(what)}</div>${offWhy}<div class="ctx-row ctx-dyn">${row2}</div>${rampRow}${toRow}<div class="ctx-sep"></div>` + // 挪到这一段结尾（7-N）：「到这里为止变到这个力度」——一直滚 / 渐强到这张纸结束、后面没有音可以挂的时候用；已经在结尾 = 不给
-  (t10.kind === "dyn" && !markAtEnd(toks, i10) ? `<button class="btn ctx-item" data-v="toEnd" title="${_t("\u632A\u5230\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\uFF1A\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u4E00\u76F4\u8D70\u5230\u8FD9\u4E00\u6BB5\u7ED3\u675F")}">${_t("\u632A\u5230\u8FD9\u4E00\u6BB5\u7ED3\u5C3E")}</button>` : "") + `<button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? _t("\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09") : _t("\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31")}">${_t("\u5220\u9664")}</button><div class="ctx-hint">${t10.kind === "dyn" ? _t("\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF09") : _t("\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A")}</div>`;
+  (t10.kind === "dyn" && !markAtEnd(toks, i10) ? `<button class="btn ctx-item" data-v="toEnd" title="${_t("\u632A\u5230\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\uFF1A\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u4E00\u76F4\u8D70\u5230\u8FD9\u4E00\u6BB5\u7ED3\u675F")}">${_t("\u632A\u5230\u8FD9\u4E00\u6BB5\u7ED3\u5C3E")}</button>` : "") + `<button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? _t("\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09") : _t("\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31")}">${_t("\u5220\u9664")}</button><div class="ctx-hint">${t10.kind === "dyn" ? _t("\u4EAE\u7740\u6846\u65F6\u62D6\u5B83 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF1B\u624B\u6307\u62D6\u6846\u8FB9\u7684\u628A\u624B\uFF09") : _t("\u4EAE\u7740\u6846\u65F6\u62D6\u5B83 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u624B\u6307\u62D6\u6846\u8FB9\u7684\u628A\u624B\uFF09")}</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at3.y + 6;
@@ -69776,4 +69879,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-acf16de3d4c6.mjs.map
+//# sourceMappingURL=moonsinger-89190a5aa62b.mjs.map

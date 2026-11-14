@@ -3,7 +3,7 @@
 // 写成表：每一行 = 一格，「想做的事 · 指针 · 期望」。改规矩 = 改表里那一行。
 import { describe, it, eq } from "./runner.mjs";
 import { caps, pointerOf, lastPointer, notePointer, type Pointer } from "../src/ui/pointer.ts";
-import { isLit, onMove, onTap, onHold, onSecondary, wantsGrip, wantsSelButton, type Target } from "../src/ui/press-rules.ts";
+import { isLit, onMove, onTap, onHold, onSecondary, wantsGrip, wantsSelButton, wantsSylButtons, type Target } from "../src/ui/press-rules.ts";
 import { placeMenu } from "../src/ui/menu-place.ts";
 
 const P: Pointer[] = ["mouse", "pen", "touch"];
@@ -43,7 +43,11 @@ describe("同一件事各怎么做（press-rules，设计稿第四节 + 第二�
     ["长按没选中的音", "touch", () => onHold({ target: "note", inSel: false }), "select"],
     ["长按已经选中的音 = 不变", "touch", () => onHold({ target: "note", inSel: true }), "keep"],
     ["长按演奏法 = 和点一下一样", "pen", () => onHold({ target: "art", inSel: false }), "light"],
-    ["长按记号 = 它的小菜单", "touch", () => onHold({ target: "mark", inSel: false }), "menu"],
+    // 长按不再拿起来拖（v0.17.57，设计稿第八节）：在能选中的东西上长按 = 和点一下一样；只有空白处是菜单（手指的右键）
+    ["长按没亮的记号 = 亮框（同点一下）", "touch", () => onHold({ target: "mark", inSel: false, lit: false }), "light"],
+    ["长按亮着的记号 = 它的小菜单（同点一下）", "touch", () => onHold({ target: "mark", inSel: false, lit: true }), "menu"],
+    ["长按没亮的字 = 亮框（同点一下）", "touch", () => onHold({ target: "lyric", inSel: false, lit: false }), "light"],
+    ["长按亮着的字 = 歌词框（同点一下）", "pen", () => onHold({ target: "lyric", inSel: false, lit: true }), "edit"],
     ["长按空白 = 空白菜单", "touch", () => onHold({ target: "blank", inSel: false }), "blankMenu"],
     // 改音高、挪记号：鼠标、笔亮着框的直接拖；手指拖 = 滚动，拖框边的把手
     ["拖亮着的音", "mouse", () => onMove({ pointer: "mouse", target: "note", lit: true, canDrag: true }), "drag"],
@@ -52,6 +56,14 @@ describe("同一件事各怎么做（press-rules，设计稿第四节 + 第二�
     ["拖亮着的记号", "pen", () => onMove({ pointer: "pen", target: "mark", lit: true, canDrag: true }), "lift"],
     ["亮着的音旁出把手", "touch", () => wantsGrip({ pointer: "touch", target: "note", canDrag: true }), true],
     ["亮着的音旁出把手", "pen", () => wantsGrip({ pointer: "pen", target: "note", canDrag: true }), false],
+    // 「词」里的字不能拖（v0.17.57）：鼠标、笔按住拖 = 拉框，手指 = 滚动；不出把手，挪字用字下面的两颗小钮
+    ["拖亮着的字", "mouse", () => onMove({ pointer: "mouse", target: "lyric", lit: true, canDrag: true }), "box"],
+    ["拖亮着的字", "pen", () => onMove({ pointer: "pen", target: "lyric", lit: true, canDrag: true }), "box"],
+    ["拖亮着的字", "touch", () => onMove({ pointer: "touch", target: "lyric", lit: true, canDrag: true }), "scroll"],
+    ["亮着的字旁出把手", "touch", () => wantsGrip({ pointer: "touch", target: "lyric", canDrag: true }), false],
+    ["亮着的字下面画两颗小钮", "touch", () => wantsSylButtons({ target: "lyric", lit: true }), true],
+    ["没亮的字：不画小钮", "mouse", () => wantsSylButtons({ target: "lyric", lit: false }), false],
+    ["亮着的记号：不画字的小钮", "touch", () => wantsSylButtons({ target: "mark", lit: true }), false],
     // 拉框选一段：鼠标、笔从空白按下拖；手指没有（拖 = 滚动）
     ["空白处按下拖", "mouse", () => onMove({ pointer: "mouse", target: "blank", lit: false, canDrag: true }), "box"],
     ["空白处按下拖", "pen", () => onMove({ pointer: "pen", target: "blank", lit: false, canDrag: true }), "box"],
@@ -69,12 +81,18 @@ describe("同一件事各怎么做（press-rules，设计稿第四节 + 第二�
     // 菜单：记号——点亮再点（鼠标悬浮着就算亮着 = 一下就开）
     ["点亮着的记号", "touch", () => onTap({ target: "mark", lit: true }), "menu"],
     ["点没亮的记号", "touch", () => onTap({ target: "mark", lit: false }), "light"],
+    // 「词」里有字的字：点一下亮框，亮着再点 = 歌词框（三种指针一样；字没有悬浮）
+    ["点没亮的字", "mouse", () => onTap({ target: "lyric", lit: false }), "light"],
+    ["点亮着的字", "touch", () => onTap({ target: "lyric", lit: true }), "edit"],
     // 回到光标接着写：点空白
     ["点空白", "touch", () => onTap({ target: "blank", lit: false }), "caret"],
   ];
   for (const [what, p, f, want] of rows) it(`${what} · ${p}`, () => eq(f(), want));
   it("哪一种长按都不开选区菜单：onHold 对音 / 休止只会给 select / keep", () => {
     for (const inSel of [true, false]) eq(["select", "keep"].includes(onHold({ target: "note" as Target, inSel })), true);
+  });
+  it("长按记号 / 演奏法 / 字 = 和点一下一样（v0.17.57：长按不再拿起来拖）", () => {
+    for (const target of ["mark", "art", "lyric"] as Target[]) for (const lit of [true, false]) eq(onHold({ target, inSel: false, lit }), onTap({ target, lit }), `${target} lit=${lit}`);
   });
 });
 

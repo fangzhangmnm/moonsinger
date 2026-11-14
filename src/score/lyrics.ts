@@ -186,6 +186,13 @@ export function moveSyllable(st: EditorState, i: number, k: number): { st: Edito
   }
   return { st: cur, at, done };
 }
+/** 点亮的字下面那两颗小钮（v0.17.57；user 2026-11-14「词的合并用拖动合并，其实相当难操作，我们还是改成小按钮，就选中之后改成小按钮」）：
+ *  left = 左钮做什么（merge = 前一个音有字 =「合」；move = 前一个音空着 / 拖腔 =「←」早一个音起；null = 走不动：前面隔着句号或者没有音了）；
+ *  right = 右钮「→」走不走得动（后面这一句里还有空着的音）。点了 = moveSyllable(st, i, −1 / +1)，同一套算法。 */
+export function syllableSteps(st: EditorState, i: number): { left: "merge" | "move" | null; right: boolean } {
+  const l = stepLeft(st, i);
+  return { left: l ? (l.merged ? "merge" : "move") : null, right: !!stepRight(st, i) };
+}
 /** 下一个能放歌词的音（跳过休止、小节线、调号、tie 音）；没有 = -1。 */
 export function nextLyricSlot(tokens: Token[], i: number): number { for (let j = i + 1; j < tokens.length; j++) if (lyricSlot(tokens[j])) return j; return -1; }
 export function prevLyricSlot(tokens: Token[], i: number): number { for (let j = i - 1; j >= 0; j--) if (lyricSlot(tokens[j])) return j; return -1; }

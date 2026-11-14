@@ -16,6 +16,9 @@
 // 长按拖（2026-10-08 Opus 5.5；user「歌词的合能不能也改成长按拖动。不然每次点文本框是超级麻烦的」，AI 提的整套手势 user 说开工）：
 //   歌词：长按一个字（笔 / 鼠标按住直接拖）往左拖到前一个音 = 合 / 早一个音起，往右 = 晚一个音起（空出来的音变成拖腔）；原地松手 = 选中这个音。轻点照旧开歌词框。
 //   力度记号 / 渐强渐弱：轻点 = 小菜单（改 / 删）；长按拖 = 挪到别的音上（从那个音起）；原地松手 = 小菜单。拖的时候谱上实时就是挪过去的样子（undo 一步）。
+// v0.17.57 起长按不再拖（设计稿 ai-docs/20261114-pointer-rules-design.md 第八节，取代上面三行的手势；user 2026-11-14「拖只有一种，点一下拖中同意」「词的合并用拖动合并，其实相当难操作，我们还是改成小按钮」）：
+//   拖只有一种 = 先点一下选中（亮框），再拖（鼠标、笔直接拖亮着的，手指拖把手）；长按只剩手指的右键（空白处的菜单），在字 / 记号上长按 = 和点一下一样。
+//   「词」里的字：点一下 = 亮框 + 字下面两颗小钮（合 / ← 往前一个音、→ 往后一个音，moveSyllable 同一套算法）；亮着再点 = 歌词框；字整个不能拖。「词」里长按音 = 选中它（不再接着拖扩选，扩选用两端的把手）。
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
@@ -25,12 +28,12 @@ import type { ScreenRect } from "./menu-place.ts";
 import { lineSp, spMm, STAFF_MM, pageGeoOf, textScaleOf } from "../look/paper.ts";   // 纸的数（第 17 条 17-2）
 import { CONT_MARGIN, REFLOW_MARGIN } from "../look/frame.ts";   // 连续 / 按屏宽折行的边距（第 17 条 17-2）
 import { type EditorState, type NoteTok, type Song, type Art, setCaret, setCaretLead, setFocus, select, singleSel, tapTimed, setNote, setPitches, setDur, keyAt, tr, TPQ, moveMark, moveMarkToEnd, trackOf, isTimed, shownAccAt, ART_NAME } from "../score/song.ts";
-import { isLit, onMove, onTap, onHold, onSecondary, wantsGrip, wantsSelButton, TAP_SELECTS, type Target } from "./press-rules.ts";
+import { isLit, onMove, onTap, onHold, onSecondary, wantsGrip, wantsSelButton, wantsSylButtons, TAP_SELECTS, type Target } from "./press-rules.ts";
 import { caps, pointerOf, deviceCoarse, lastPointer, watchPointers, type Pointer } from "./pointer.ts";
 import { tickOf } from "../score/repeats.ts";
 import { enterMulti, normalize as normalizeMulti } from "../score/multi.ts";   // 选了好几行（v0.17.49，设计稿第六节）   // 谁亮框、谁能拖（选中规则单行这一版，v0.17.48）
 import { SIGNS } from "../render/signs.ts";   // 记号表（两种谱共用）：演奏法的字形 → 是哪一种、它是什么意思
-import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
+import { moveSyllable, syllableSteps, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, keySpell, diatonicIndex, type Pitch } from "../score/pitch.ts";
 import { drawnPitch, stepsToC, trackInC } from "../score/view-in-c.ts";
 import { lookOf, type LookContext } from "../look/index.ts";   // 「现在怎么画」只问这一处（第 17 条）
@@ -141,7 +144,7 @@ export interface ScoreViewHost {
   onAnchors?(L: Layout): void;
 }
 
-/** 按下去的是能拿起来拖的东西：歌词的一个字 / 力度记号 / 渐强渐弱（index = token 下标，system = 那一行）。 */
+/** 按下去的是能点亮的东西：「词」里有字的字（只能点：亮框 + 字下面两颗小钮，v0.17.57）/ 力度记号 / 渐强渐弱（亮着还能拖）（index = token 下标，system = 那一行）。 */
 type Grab = { kind: "lyric" | "mark"; index: number; system: number };
 /** 一个演奏法记号的点击框（px，纸面坐标）+ 它是哪个音的、是哪几种（v0.17.48）。 */
 type ArtBox = { index: number; system: number; x: number; y: number; w: number; h: number; arts: Art[]; mute: boolean };
@@ -202,8 +205,7 @@ export class ScoreView {
   setSpan(sp: { from: number; to: number } | null): void { this.span = sp; this.render(); }
   /** 开这条 track 上第 index 个 token（力度 / 渐强渐弱 / 风格记号）的小菜单（刚插进去的风格记号用）；谱上没画出来 = false。 */
   menuFor(index: number): boolean { const h = this.layout?.dyns.find((d) => d.index === index && this.onTrack(d)); if (!h) return false; this.markMenu(h); return true; }
-  private lift: null | { pid: number; grab: Grab; st0: EditorState; targets: { idx: number; x: number; system: number }[]; src: number; cur: number; x0: number; y0: number; cx: number; cy: number; moved: boolean; short: boolean; removed: number; dx: number; /** 从手指的把手拿起来的（原地松手 = 什么都不做）。 */ grip?: boolean } = null;
-  private selDrag: null | { pid: number; anchor: number } = null;   // 「词」里长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）
+  private lift: null | { pid: number; grab: Grab; st0: EditorState; targets: { idx: number; x: number; system: number }[]; src: number; cur: number; x0: number; y0: number; cx: number; cy: number; moved: boolean; removed: number; dx: number; /** 从手指的把手拿起来的（原地松手 = 什么都不做）。 */ grip?: boolean } = null;
   private handles: { start: HTMLDivElement; end: HTMLDivElement };
   // 亮框（选中规则单行这一版，v0.17.48；设计 = ai-docs/20261113-selection-rules-design.md 第五节）。user 同意的一句话：亮着框的就是选中的，选中的才能拖，点空白取消。
   //   三种来源：鼠标悬浮（hover，临时，移开就灭）/ 点一下（lit，留住）/ 拉框、拖把手（= 选区，照旧画淡蓝带子）。
@@ -284,6 +286,23 @@ export class ScoreView {
     this.selBtn.addEventListener("pointercancel", () => { selBtnDown = null; });
     this.selBtn.addEventListener("click", (e) => { e.stopPropagation(); if (e.detail === 0) openFromBtn(); });
     this.ink.appendChild(this.selBtn);
+    // 点亮的字下面那两颗小钮（v0.17.57；左 = 合 / ←，右 = →）：同上，自己判点（谱面上单指按下被拦，不靠浏览器的 click）
+    this.sylEl = document.createElement("div"); this.sylEl.className = "syl-steps"; this.sylEl.hidden = true;
+    for (const k of [-1, 1] as const) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "syl-step"; b.dataset.step = String(k); b.tabIndex = -1;   // 不抢焦点（按下拦住默认动作，同歌词框的「合」）
+      let down: { id: number; x: number; y: number } | null = null;
+      b.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); down = { id: e.pointerId, x: e.clientX, y: e.clientY }; try { b.setPointerCapture(e.pointerId); } catch { /* ignore */ } });
+      b.addEventListener("pointerup", (e) => {
+        const d = down; down = null; if (!d || d.id !== e.pointerId) return;
+        e.stopPropagation();
+        const r = b.getBoundingClientRect();
+        if (Math.hypot(e.clientX - d.x, e.clientY - d.y) <= 10 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) this.sylStep(k);
+      });
+      b.addEventListener("pointercancel", () => { down = null; });
+      b.addEventListener("click", (e) => { e.stopPropagation(); if (e.detail === 0) this.sylStep(k); });
+      this.sylEl.appendChild(b);
+    }
+    this.ink.appendChild(this.sylEl);
     watchPointers();
     el.addEventListener("pointerleave", (e) => { if (caps(pointerOf(e)).hover && this.hover) { this.hover = null; this.drawLit(); } });
     this.lyrics = new LyricEditor(this.ink, { get: () => host.get(), set: (n, o) => host.set(n, o), lyricHint: (i) => host.look.lyricHint?.(i) ?? null, lyricReading: (i) => host.look.lyricReading?.(i) ?? null }, () => this.layoutNow(), () => this.render());
@@ -808,6 +827,8 @@ export class ScoreView {
   private selEls: HTMLDivElement[] = [];
   /** 选区旁的小钮（手指 / 笔叫菜单用）和它该在的地方（纸面坐标：带子最后一行的右上角；sys = 那一行的行号）。 */
   private selBtn!: HTMLButtonElement;
+  /** 点亮的字下面那两颗小钮（左 = 合 / ←，右 = →；v0.17.57）。 */
+  private sylEl!: HTMLDivElement;
   private selBtnAt: { sys: number; x: number; y: number } | null = null;
 
   /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
@@ -1155,18 +1176,18 @@ export class ScoreView {
       }
       if (this.touches.size > 2) return;
       this.finger = { pid: e.pointerId, y0: e.clientY, top0: this.el.scrollTop, x: p.x, y: p.y, moved: false, shift: e.shiftKey, x0: e.clientX, left0: this.el.scrollLeft };
-      const grab = this.grabAt(p.x, p.y, true);   // 按在字 / 力度记号上：轻点 = 亮框（亮着再点 = 小菜单）；长按 = 小菜单（字：拿起来，「词」照旧）；动了照旧是滚动
+      const grab = this.grabAt(p.x, p.y, true);   // 按在字 / 力度记号上：轻点 = 亮框（亮着再点 = 记号的小菜单 / 字的歌词框）；长按 = 同轻点；动了照旧是滚动
       const art = grab ? null : this.artAt(p.x, p.y, true);   // 演奏法（跳音、重音…）：轻点 = 亮框 + 一句说明
       this.armPress(e, p, grab || art ? null : this.noteAt(p.x, p.y, true), grab);   // 手指：按指尖大小找音
-      if (this.press) { if (art) this.press.art = art; if (grab?.kind === "mark") this.press.lit = this.litIs(grab.system, grab.index, "mark"); }
+      if (this.press) { if (art) this.press.art = art; if (grab) this.press.lit = this.litIs(grab.system, grab.index, grab.kind); }
       return;
     }
     e.preventDefault();
     const grab = this.grabAt(p.x, p.y, false);
-    if (grab) {   // 笔 / 鼠标按在字 / 力度记号上：亮着框（鼠标悬浮着 = 亮）动了 = 拿起来挪，没亮 = 拉框；原地松手 = 亮框 / 亮着 = 小菜单；长按 = 小菜单
+    if (grab) {   // 笔 / 鼠标按在字 / 力度记号上：记号亮着框（鼠标悬浮着 = 亮）动了 = 拿起来挪，没亮 = 拉框；字动了 = 拉框（字不能拖）；原地松手 / 长按 = 亮框 / 亮着 = 小菜单（字 = 歌词框）
       this.el.setPointerCapture(e.pointerId);
       this.armPress(e, p, null, grab);
-      if (grab.kind === "mark" && this.press) this.press.lit = isLit({ pointer: ptr, sticky: this.litIs(grab.system, grab.index, "mark"), inSel: false, hovered: true });
+      if (this.press) this.press.lit = grab.kind === "mark" ? isLit({ pointer: ptr, sticky: this.litIs(grab.system, grab.index, "mark"), inSel: false, hovered: true }) : this.litIs(grab.system, grab.index, "lyric");   // 字没有悬浮这回事
       return;
     }
     if (this.tap(p.x, p.y, e.shiftKey, e.pointerId, false, false)) return;   // 记号 / 歌词行 / 纸上的小钮（不含音符）；谱头放宽的那一圈松手才算（boxTap）
@@ -1212,27 +1233,23 @@ export class ScoreView {
     this.press = pr;
   }
   /** 名字下面的大钮（点一下 = 隐藏 / 静音；长按 / 右键 = 只看 / 独奏）。 */
-  private cancelPress(): void { if (this.press) { clearTimeout(this.press.timer); this.press = null; } this.selDrag = null; }
-  /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 光标放到那里 + 小菜单（粘贴 / 插记号 / 全选…；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」）。 */
+  private cancelPress(): void { if (this.press) { clearTimeout(this.press.timer); this.press = null; } }
+  /** 长按到点：按在音上 = 选中它；字 / 记号 / 演奏法 = 和点一下一样；空白处 = 光标放到那里 + 小菜单（粘贴 / 插记号 / 全选…；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」）。 */
   private longPress(): void {
     const pr = this.press; if (!pr || pr.moved) return;
     pr.fired = true;
     if (!this.rules.edit || this.roGesture) { this.finger = null; this.lockTap = null; this.listenMenu(pr.x, pr.y, pr.cx, pr.cy); return; }   // 听模式 / 合租叠起来的那一行：长按 = 小菜单
     if (caps(pr.ptr).dragScrolls) this.el.focus({ preventScroll: true });   // 手指按下时没抢焦点（见 down），长按到点才抢
-    // 长按（表在 press-rules.ts onHold；v0.17.55 起选中不弹菜单，设计稿 ai-docs/20261114-pointer-rules-design.md 第二节第 3 条）：
-    //   音 / 休止 = 只选中它（和点一下一样）、已经在选区里 = 不变，按着的时候听见它；演奏法 = 和点一下一样；记号 = 它的小菜单；空白 = 空白菜单。「词」里照旧（字 = 拿起来挪，音 = 选中接着拖扩选）
-    if (pr.grab?.kind === "lyric") { this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, caps(pr.ptr).coarse); return; }
-    if (pr.hit && this.rules.lyrics) { this.selectHeld(pr.pid, pr.hit); return; }
-    const target: Target = pr.grab ? "mark" : pr.art ? "art" : pr.hit ? "note" : "blank";
-    switch (onHold({ target, inSel: !!pr.hit && this.inSelection(pr.hit) })) {
-      case "menu": {
-        const g = pr.grab!, dh = this.layout?.dyns.find((d) => d.index === g.index && d.system === g.system);
-        this.lyrics.commitAndClose(); this.marks.commitAndClose();
+    // 长按（表在 press-rules.ts onHold；v0.17.55 起选中不弹菜单，设计稿 ai-docs/20261114-pointer-rules-design.md 第二节第 3 条；v0.17.57 起不再拿起来拖，第八节）：
+    //   音 / 休止 = 只选中它（和点一下一样；「词」里也是）、已经在选区里 = 不变，按着的时候听见它；字 / 记号 / 演奏法 = 和点一下一样；空白 = 空白菜单（手指的右键）
+    const target: Target = pr.grab ? pr.grab.kind : pr.art ? "art" : pr.hit ? "note" : "blank";
+    switch (onHold({ target, inSel: !!pr.hit && this.inSelection(pr.hit), lit: !!pr.lit })) {
+      case "light": case "menu": case "edit":
         this.finger = null; this.box = null; this.boxEl.hidden = true;
-        if (dh) { this.markMenu(dh); this.lightAt(dh.system, dh.index, "mark", pr.ptr); }
+        if (pr.grab?.kind === "mark") this.tapMark(pr.grab, !!pr.lit, pr.ptr);
+        else if (pr.grab) this.tapLyric(pr.grab, !!pr.lit, pr.ptr, pr.x, pr.y);
+        else if (pr.art) this.tapArt(pr.art, pr.ptr);
         return;
-      }
-      case "light": this.finger = null; this.box = null; this.boxEl.hidden = true; this.tapArt(pr.art!, pr.ptr); return;
       case "select": this.holdNote(pr.pid, pr.hit!, pr.ptr, false); return;
       case "keep": this.holdNote(pr.pid, pr.hit!, pr.ptr, true); return;
       case "blankMenu": this.blankPress(pr.x, pr.y, pr.cx, pr.cy); return;
@@ -1256,17 +1273,6 @@ export class ScoreView {
     }
     this.tell({ kind: "staff" });
     this.host.sound?.audition(hit.index, true); this.holdPid = pid;
-  }
-  /** 长按选中按着的那个音（不抬手接着拖 = 扩选）。 */
-  private selectHeld(pid: number, hit: HitNote): void {
-    this.lyrics.commitAndClose(); this.marks.commitAndClose();
-    this.finger = null;   // 手指：长按之后不再当滚动
-    if (this.drag) { this.host.sound?.release(); this.drag = null; }   // 笔：按住出声到此为止
-    const st0 = this.host.get(), st = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
-    this.host.set(select(st, hit.index, hit.index + 1));
-    this.selDrag = { pid, anchor: hit.index };
-    this.tell({ kind: "staff" });
-    this.host.sound?.audition(hit.index, true); this.holdPid = pid;   // 按住音 = 听见它（2026-10-10 user「按住音的时候应该能听到preview」），抬手停
   }
   /** 点在叠起来的那一行上：光标去这一家在这一行的那位（主人 / 在场打头的那位），落在点的那个时刻（点在音上 = 它后面，同平常点音）→ 整家拆开。 */
   private expandFamilyAt(x: number, y: number): void {
@@ -1315,7 +1321,7 @@ export class ScoreView {
     const L = this.layout, row = L?.systems[hit.system]; if (!L || !row) return false;
     const t = trackOf(this.host.get().song, row.paper, row.part)[hit.index]; if (t?.kind !== "note") return false;
     if (!t.lyric && this.noLyricsHere(row.part)) return false;   // 不唱字的声部：空着的不开框（照常放光标）
-    this.host.set(this.focusRow(this.host.get(), hit.system, this.host.get().caret)); this.lyrics.openAt(hit.index); this.tell({ kind: "text" });
+    this.host.set(this.focusRow(this.host.get(), hit.system, this.host.get().caret)); this.openLyric(hit.index); this.tell({ kind: "text" });
     return true;
   }
   /** 听模式的长按 / 右键：点在音 / 休止上 = 它；空白 = 那一行光标会落的位置。不改光标、不改谱，只告诉宿主开小菜单。 */
@@ -1392,30 +1398,28 @@ export class ScoreView {
     this.tell({ kind: "staff" });
     this.tell({ kind: "mark", index: h.index, at: { x: (b.left + b.right) / 2, y: b.bottom } });
   }
-  /** 拿起来（长按到点 / 笔鼠标按住动了）：收起编辑框、停掉滚动，记下这条 track 上能落的音。编辑框收起时可能改了谱（贴字 / 插句号）= 按原位置重新找一次。 */
+  /** 拿起来一个记号（亮着框的笔 / 鼠标按住动了、手指拖把手；字不能拖，v0.17.57）：收起编辑框、停掉滚动，记下这条 track 上能落的音和休止。编辑框收起时可能改了谱（贴字 / 插句号）= 按原位置重新找一次。 */
   private startLift(grab0: Grab, pid: number, x: number, y: number, cx: number, cy: number, finger: boolean): void {
     const hadEditor = this.lyrics.open || this.marks.open;
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     this.finger = null; this.box = null; this.boxEl.hidden = true;
     if (this.drag) { this.host.sound?.release(); this.drag = null; }
     const grab = hadEditor ? this.grabAt(x, y, finger) : grab0;
-    if (!grab || !this.layout) return;
+    if (!grab || grab.kind !== "mark" || !this.layout) return;
     if (!this.onTrack(grab)) this.host.set(this.focusRow(this.host.get(), grab.system));
     const L = this.layout, st0 = this.host.get(), toks = tr(st0), seen = new Set<number>();
-    // 落点：歌词 = 能放字的音；记号 = 音和休止（user 2026-10-08「力度符号应该能拖动到休止符上」）
-    const spots = [...L.notes.map((n) => ({ ...n, rest: false })), ...(grab.kind === "mark" ? L.rests.map((r) => ({ ...r, rest: true })) : [])];
-    const targets = spots.filter((n) => this.onTrack(n) && (grab.kind === "mark" || lyricSlot(toks[n.index])) && !seen.has(n.index) && (seen.add(n.index), true))
-      .map((n) => ({ idx: n.index, x: grab.kind === "lyric" ? n.x + n.w / 2 : n.x, system: n.system })).sort((a, b) => a.idx - b.idx);
+    // 落点 = 音和休止（user 2026-10-08「力度符号应该能拖动到休止符上」）
+    const spots = [...L.notes.map((n) => ({ ...n, rest: false })), ...L.rests.map((r) => ({ ...r, rest: true }))];
+    const targets = spots.filter((n) => this.onTrack(n) && !seen.has(n.index) && (seen.add(n.index), true))
+      .map((n) => ({ idx: n.index, x: n.x, system: n.system })).sort((a, b) => a.idx - b.idx);
     // 力度记号还能落在这一段最后一个音的右边（7-N：「到这里为止变到这个力度」；idx = 串长 = 「结尾」这个落点）
-    if (grab.kind === "mark" && toks[grab.index]?.kind === "dyn" && targets.length) {
+    if (toks[grab.index]?.kind === "dyn" && targets.length) {
       const lastIdx = targets[targets.length - 1]!.idx, ln = spots.find((s) => s.index === lastIdx && this.onTrack(s));
       if (ln) targets.push({ idx: toks.length, x: ln.x + ln.w, system: ln.system });
     }
-    let src: number;
-    if (grab.kind === "lyric") src = targets.findIndex((t) => t.idx === grab.index);
-    else { let a = grab.index + 1; while (a < toks.length && toks[a].kind !== "note" && toks[a].kind !== "rest") a++; src = targets.findIndex((t) => t.idx >= a); }
-    if (grab.kind === "lyric" && src < 0) return;
-    this.lift = { pid, grab, st0, targets, src, cur: src, x0: x, y0: y, cx, cy, moved: false, short: false, removed: 0, dx: src >= 0 ? x - targets[src].x : 0 };
+    let a = grab.index + 1; while (a < toks.length && toks[a].kind !== "note" && toks[a].kind !== "rest") a++;
+    const src = targets.findIndex((t) => t.idx >= a);
+    this.lift = { pid, grab, st0, targets, src, cur: src, x0: x, y0: y, cx, cy, moved: false, removed: 0, dx: src >= 0 ? x - targets[src].x : 0 };
     this.el.classList.add("lifting");
     this.hot = new Set([toks[grab.index].id]); this.render();   // 拿起来那一刻就亮（强调色）：知道抓住了
     this.tell({ kind: "staff" });
@@ -1431,31 +1435,18 @@ export class ScoreView {
     f.targets.forEach((t, k) => { if (t.system !== sys) return; const d = Math.abs(t.x - (p.x - f.dx)); if (d < bd) { bd = d; best = k; } });
     if (best < 0 || best === f.cur) return;
     f.cur = best;
-    if (f.grab.kind === "lyric") {
-      const want = best - f.src, r = moveSyllable(f.st0, f.grab.index, want);
-      f.short = want > 0 ? r.done < want : r.done === 0 && want < 0;
-      this.hot = new Set([tr(r.st)[r.at].id]);   // 字挪到哪个音，亮的就跟到哪个音
-      this.host.set(r.st, { gesture: "lift" });
-    } else {
-      const r = f.targets[best].idx >= tr(f.st0).length ? moveMarkToEnd(f.st0, f.grab.index) : moveMark(f.st0, f.grab.index, f.targets[best].idx);
-      f.removed = r.removed;
-      this.host.set(r.st, { gesture: "lift" });
-    }
+    const r = f.targets[best].idx >= tr(f.st0).length ? moveMarkToEnd(f.st0, f.grab.index) : moveMark(f.st0, f.grab.index, f.targets[best].idx);
+    f.removed = r.removed;
+    this.host.set(r.st, { gesture: "lift" });
   }
-  /** 松手：没动 = 歌词 → 选中这个音（同长按音；再拖把手扩选），记号 → 小菜单；动了 = 已经挪好了，挪不动 / 顶掉了别的说一声。 */
+  /** 松手：没动 = 小菜单（从把手拿起来的不开）；动了 = 已经挪好了，顶掉了别的说一声。 */
   private endLift(): void {
     const f = this.lift!; this.lift = null; this.el.classList.remove("lifting"); this.hot = null; this.render();
-    if (!f.moved) {
-      if (f.grab.kind === "lyric") this.host.set(select(this.host.get(), f.grab.index, f.grab.index + 1));
-      else if (!f.grip) this.tell({ kind: "mark", index: f.grab.index, at: { x: f.cx, y: f.cy } });
-      return;
-    }
-    if (f.grab.kind === "mark") {   // 挪过去的记号接着亮着（v0.17.48：选中的才拖得动，拖完还是选中的）
-      const id = tr(f.st0)[f.grab.index]?.id;
-      if (id !== undefined) { this.lit = { paper: f.st0.at.paper, part: f.st0.at.part, id, target: "mark", ck: caretKey(this.host.get()), grip: !!f.grip }; this.drawLit(); }
-    }
-    if (f.grab.kind === "lyric" && f.short) this.host.notice?.(f.cur > f.src ? _t("后面没有空着的音了，字只能挪到这儿") : _t("前面隔着句号（或者没有音了），字挪不过去"));
-    if (f.grab.kind === "mark" && f.removed) this.host.notice?.(_t("顺手去掉了 {n} 个不再管任何音的记号（力度 / 渐强渐弱 / 踏板；撤销能找回来）", { n: f.removed }));
+    if (!f.moved) { if (!f.grip) this.tell({ kind: "mark", index: f.grab.index, at: { x: f.cx, y: f.cy } }); return; }
+    // 挪过去的记号接着亮着（v0.17.48：选中的才拖得动，拖完还是选中的）
+    const id = tr(f.st0)[f.grab.index]?.id;
+    if (id !== undefined) { this.lit = { paper: f.st0.at.paper, part: f.st0.at.part, id, target: "mark", ck: caretKey(this.host.get()), grip: !!f.grip }; this.drawLit(); }
+    if (f.removed) this.host.notice?.(_t("顺手去掉了 {n} 个不再管任何音的记号（力度 / 渐强渐弱 / 踏板；撤销能找回来）", { n: f.removed }));
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
   private noteAt(x: number, y: number, finger = false): HitNote | null {
@@ -1566,7 +1557,7 @@ export class ScoreView {
         const t = trackOf(this.host.get().song, lyRow.paper, lyRow.part)[ly.index];
         if (t?.kind === "note" && !t.lyric) return false;   // 不唱字的声部：空着的歌词位不开框（照常放光标）
       }
-      if (ly) { this.host.set(this.focusRow(this.host.get(), ly.system, this.host.get().caret)); this.lyrics.openAt(ly.index); this.tell({ kind: "text" }); return true; }
+      if (ly) { this.host.set(this.focusRow(this.host.get(), ly.system, this.host.get().caret)); this.openLyric(ly.index); this.tell({ kind: "text" }); return true; }
     }
     // 2. 音符：不在这里（轻点 / 长按 / 拖在 down / up / longPress 里分）
     void shift; void pid;
@@ -1595,6 +1586,45 @@ export class ScoreView {
     if (!this.onTrack(dh)) this.host.set(this.focusRow(this.host.get(), dh.system, this.host.get().caret));
     this.tell({ kind: "staff" });
     this.lightAt(dh.system, dh.index, "mark", ptr);
+  }
+  /** 轻点「词」里有字的字（v0.17.57，设计稿第八节第 2 条；user 2026-11-14「词的合并用拖动合并，其实相当难操作，我们还是改成小按钮，就选中之后改成小按钮」）：
+   *  没亮 = 亮框 + 字下面两颗小钮（合 / ← 和 →，drawLit 摆、sylStep 做）；亮着再点 = 歌词框改字。光标不动（只换到那条谱、取消选区）。
+   *  歌词框开着时点别的字 = 先收框、再让这个字亮框（不直接开）；收框可能改了谱（插句号）= 按原位置重新找一次。记号框开着 = 这一下只收框。 */
+  private tapLyric(g0: Grab, lit: boolean, ptr: Pointer, x: number, y: number): void {
+    const wasMark = this.marks.open, wasLyric = this.lyrics.open;
+    this.lyrics.commitAndClose(); this.marks.commitAndClose();
+    if (wasMark) { this.tell({ kind: "staff" }); return; }
+    if (wasLyric) this.layoutNow();
+    const g = wasLyric ? this.grabAt(x, y, caps(ptr).coarse) : g0;
+    if (!g || g.kind !== "lyric") { this.tell({ kind: "staff" }); return; }
+    const st0 = this.host.get(), st1 = this.onTrack(g) ? st0 : this.focusRow(st0, g.system, st0.caret);
+    if (onTap({ target: "lyric", lit: lit && !wasLyric }) === "edit") {
+      if (st1 !== st0) this.host.set(st1);
+      this.openLyric(g.index); this.tell({ kind: "text" });
+      return;
+    }
+    this.host.set(st1.sel ? setCaret(st1, st1.caret) : st1);
+    this.tell({ kind: "staff" });
+    this.lightAt(g.system, g.index, "lyric", ptr);
+  }
+  /** 开歌词框：点亮着的字先灭（框开着 = 字下面的两颗小钮让给框自己的「合」）。 */
+  private openLyric(index: number): void {
+    if (this.lit?.target === "lyric") { this.lit = null; this.drawLit(); }
+    this.lyrics.openAt(index);
+  }
+  /** 点了字下面的一颗小钮（k = −1 左：合 / ←；+1 右：→）：moveSyllable 走一步（同原来挪字的那套算法），一下 = 撤销里的一步；亮框和小钮跟着字走（下一次画的时候摆）。
+   *  走不动（钮画灰）= 说为什么，谱不动。 */
+  private sylStep(k: -1 | 1): void {
+    const f = this.lit; if (!f || f.target !== "lyric") return;
+    const st = this.host.get(); if (st.at.paper !== f.paper || st.at.part !== f.part) return;
+    const index = tr(st).findIndex((t) => t.id === f.id); if (index < 0) return;
+    const r = moveSyllable(st, index, k);
+    if (!r.done) { this.host.notice?.(k > 0 ? _t("后面没有空着的音了，字只能挪到这儿") : _t("前面隔着句号（或者没有音了），字挪不过去")); return; }
+    this.host.set(r.st);
+    // 身份从算出来的那一份取：提交时宿主可能顺手改串（纸头补力度 = 下标全挪一格），下标不可靠、id 可靠
+    const now = this.host.get(), id = tr(r.st)[r.at]?.id;
+    if (now !== st && id !== undefined) this.lit = { ...f, id, ck: caretKey(now) };   // 没改成（锁着）= 照旧亮在原来那个字上
+    this.drawLit();
   }
   /** 轻点演奏法（v0.17.48，设计稿第五节第 7 条）：光标到它那个音后面、它亮框、说一句它是什么 / 怎么改。 */
   private tapArt(a: ArtBox, ptr: Pointer): void {
@@ -1692,6 +1722,7 @@ export class ScoreView {
     const index = trackOf(this.host.get().song, o.paper, o.part).findIndex((t) => t.id === o.id); if (index < 0) return [];
     const rowOk = (s: number) => { const r = L.systems[s]; return !!r && r.paper === o.paper && r.part === o.part && !L.virtual[`${r.paper}:${r.part}`]; };
     if (o.target === "mark") return L.dyns.filter((d) => d.index === index && rowOk(d.system)).map((d) => ({ x: d.x, y: d.y, w: d.w, h: d.h }));
+    if (o.target === "lyric") return L.lyrics.filter((h) => h.index === index && rowOk(h.system)).map((h) => this.lyricBox(o.id, h)).filter((b): b is NonNullable<typeof b> => !!b);
     if (o.target === "art") { const q = L.sp * 0.15; return this.artBoxes().filter((a) => a.index === index && rowOk(a.system) && (!o.art || a.arts.includes(o.art))).map((a) => ({ x: a.x - q, y: a.y - q, w: a.w + 2 * q, h: a.h + 2 * q })); }   // 画 = 笔 / 鼠标的点击框（墨迹外放 0.15 个间距，artAt）
     const sp = L.sp, by = new Map<number, { x0: number; x1: number; y0: number; y1: number }>();
     for (const h of this.hits) {
@@ -1700,6 +1731,35 @@ export class ScoreView {
       if (!e) by.set(h.system, { x0, x1, y0, y1 }); else { e.x0 = Math.min(e.x0, x0); e.x1 = Math.max(e.x1, x1); e.y0 = Math.min(e.y0, y0); e.y1 = Math.max(e.y1, y1); }
     }
     return [...by.values()].map((e) => ({ x: e.x0, y: e.y0, w: e.x1 - e.x0, h: e.y1 - e.y0 }));
+  }
+  /** 这个字所在那一行歌词最低的字底（谱面坐标；找不到 = −∞）。字下面那两颗小钮摆在它下面：不盖这一行的任何字——按节奏排时挤到第二行的字也算
+   *  （统筹转 user 2026-11-14：「这个小钮的位置不能干扰写词…它遮下面的东西比如下一行铺子倒无所谓，但是不能干扰写词」）。 */
+  private lyricRowBottom(o: NonNullable<ScoreView["hover"]>): number {
+    const L = this.layout, svg = this.staffSvg(); if (!L || !svg) return -Infinity;
+    const index = trackOf(this.host.get().song, o.paper, o.part).findIndex((t) => t.id === o.id);
+    let bottom = -Infinity;
+    for (const h of L.lyrics) {
+      const r = L.systems[h.system]; if (h.index !== index || !r || r.paper !== o.paper || r.part !== o.part) continue;
+      for (const el of svg.querySelectorAll<SVGTextElement>(`g[data-sys="${h.system}"] text.lyric`)) {
+        try { const bb = el.getBBox(); if (bb.width || bb.height) bottom = Math.max(bottom, bb.y + bb.height); } catch { /* ignore */ }
+      }
+    }
+    return bottom;
+  }
+  /** 一个字画出来的框（亮框 = 字的样子外放 0.2 个间距）：谱上 data-tok = 这个音的那几个 text.lyric 里离点击锚点（字中心、基线）最近的那个；横向压窄（matrix）照算。 */
+  private lyricBox(id: number, h: LyricHit): { x: number; y: number; w: number; h: number } | null {
+    const svg = this.staffSvg(), L = this.layout; if (!svg || !L) return null;
+    let best: { x: number; y: number; w: number; h: number } | null = null, bd = Infinity;
+    for (const el of svg.querySelectorAll<SVGTextElement>(`text.lyric[data-tok="${id}"]`)) {
+      let b: DOMRect; try { b = el.getBBox(); } catch { continue; }
+      if (!b.width && !b.height) continue;
+      const m = el.transform.baseVal.consolidate()?.matrix, a = m ? m.a : 1, e = m ? m.e : 0;
+      const box = { x: a * b.x + e, y: b.y, w: a * b.width, h: b.height }, d = Math.abs(box.x + box.w / 2 - h.x) + Math.abs(box.y + box.h - h.y);
+      if (d < bd) { bd = d; best = box; }
+    }
+    if (!best) return null;
+    const q = L.sp * 0.2;
+    return { x: best.x - q, y: best.y - q, w: best.w + 2 * q, h: best.h + 2 * q };
   }
   /** 画亮框（ink 层的 div；不进排版）+ 手指的把手。点亮的那个在光标一挪 / 有了选区时灭（只选了它自己不灭，selKillsLit）。 */
   private drawLit(): void {
@@ -1712,7 +1772,7 @@ export class ScoreView {
       for (const b of bs) { const d = document.createElement("div"); d.className = cls; Object.assign(d.style, { left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`, height: `${b.h}px` }); this.ink.appendChild(d); this.litEls.push(d); }
       return bs;
     };
-    let grip: { x: number; y: number } | null = null;
+    let grip: { x: number; y: number } | null = null, syl: { x: number; y: number } | null = null;
     if (L) {
       if (this.hover && !(this.lit && same(this.lit, this.hover))) paint(this.hover, "lit-box hover");
       if (this.lit) {
@@ -1721,10 +1781,27 @@ export class ScoreView {
         //   音 = 框正下方（上下拖；框已经包住这个音在这一行的所有符头，正下方是它自己那一列——只有它的符干 / 和弦名；原来放框右边，音挨得紧时压到下一个音）；
         //   记号 = 框右边（左右拖；力度那几道都在谱上面、那一道里没有符头；原来放框下面 = 正好压在谱上最高的音上）
         if (this.lit.grip && b) grip = this.lit.target === "note" ? { x: b.x + b.w / 2, y: b.y + b.h + GRIP_OUT } : { x: b.x + b.w + GRIP_OUT, y: b.y + b.h / 2 };
+        if (b && wantsSylButtons({ target: this.lit.target, lit: true })) syl = { x: b.x + b.w / 2, y: Math.max(b.y + b.h, this.lyricRowBottom(this.lit) + L.sp * 0.2) };
       }
     }
     if (grip && this.lit) { Object.assign(this.gripEl.style, { left: `${grip.x}px`, top: `${grip.y}px` }); this.gripEl.className = `lit-grip ${this.lit.target}`; this.gripEl.hidden = false; }
     else this.gripEl.hidden = true;
+    this.placeSylSteps(syl);
+  }
+  /** 字下面那两颗小钮（v0.17.57）：摆在亮框正下方居中（at = 框底边中点）；左钮按前一个音有没有字写「合」/「←」，走不动的画灰（点了说为什么，sylStep）。屏幕上的大小不随谱面缩放（styles.css 用 --ov-z 抵掉）。 */
+  private placeSylSteps(at: { x: number; y: number } | null): void {
+    const f = this.lit, st = this.host.get();
+    const index = at && f && !this.lyrics.open && st.at.paper === f.paper && st.at.part === f.part ? tr(st).findIndex((t) => t.id === f.id) : -1;
+    this.sylEl.hidden = index < 0;
+    if (index < 0 || !at) return;
+    const can = syllableSteps(st, index), [lb, rb] = [...this.sylEl.children] as HTMLButtonElement[];
+    const left = can.left === "merge" ? _t("合") : "←";
+    lb.textContent = left; lb.classList.toggle("off", !can.left);
+    lb.title = can.left === "merge" ? _t("这个字并进前一个音（一个音上几个字）；这一句后面的字往前挪一个音") : _t("这个字早一个音起");
+    lb.setAttribute("aria-label", lb.title);
+    rb.textContent = "→"; rb.classList.toggle("off", !can.right);
+    rb.title = _t("这个字晚一个音起（后面的字被推着走）"); rb.setAttribute("aria-label", rb.title);
+    Object.assign(this.sylEl.style, { left: `${at.x}px`, top: `${at.y}px` });
   }
   /** 手指按在把手上：音 = 上下拖改音高（同笔拖音，出声）；记号 = 拿起来左右挪（同长按拖）。之后的 move / up 冒泡到谱面，走原来那几条。 */
   private gripDown(e: PointerEvent): void {
@@ -1809,26 +1886,16 @@ export class ScoreView {
     if (this.lockTap && e.pointerId === this.lockTap.pid) { const p = this.local(e); if (Math.hypot(p.x - this.lockTap.x, p.y - this.lockTap.y) > 6) { this.lockTap.moved = true; if (this.press?.pid === e.pointerId) { this.press.moved = true; clearTimeout(this.press.timer); } } return; }
     const pr = this.press;
     if (pr && e.pointerId === pr.pid && !pr.moved && !pr.fired) { const p = this.local(e); if (Math.hypot(p.x - pr.x, p.y - pr.y) > (caps(pr.ptr).coarse ? 10 : 6)) { pr.moved = true; clearTimeout(pr.timer); } }   // 手指抖一点也算轻点
-    // 笔 / 鼠标按下之后动了（v0.17.48，表在 press-rules.ts）：亮着框的记号 = 拿起来挪；没亮的记号 / 演奏法 / 没亮的音 = 和空白一样拉框。字（「词」）照旧：笔直接拿起来，鼠标拉框
+    // 笔 / 鼠标按下之后动了（v0.17.48，表在 press-rules.ts）：亮着框的记号 = 拿起来挪；没亮的记号 / 字（字不能拖，v0.17.57）/ 演奏法 / 没亮的音 = 和空白一样拉框
     if (pr && e.pointerId === pr.pid && pr.moved && !pr.fired && !caps(pr.ptr).dragScrolls && !this.box && !this.lift) {
       const toBox = () => { const st0 = this.host.get(); this.cancelPress(); this.drag = null; this.box = { pid: e.pointerId, x0: pr.x, y0: pr.y, moved: false, st0, row: this.rowAt(pr.y) }; };
-      if (pr.grab?.kind === "mark") {
-        if (onMove({ pointer: pr.ptr, target: "mark", lit: !!pr.lit, canDrag: this.rules.symbols }) === "lift") { pr.fired = true; this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false); }
+      if (pr.grab) {
+        if (onMove({ pointer: pr.ptr, target: pr.grab.kind, lit: !!pr.lit, canDrag: pr.grab.kind === "mark" && this.rules.symbols }) === "lift") { pr.fired = true; this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false); }
         else toBox();
-      } else if (pr.grab) {
-        // 「词」里拖字：这里借了 caps().hover 来分「笔直接拿起来 / 鼠标拉框」，其实问的不是悬停，是「这种指针短按就拖算不算框选」——
-        //   那是 v0.9.39 只对鼠标说过的一条（user「框选是普通短按拖动」），没有正式定成表里的规矩。统筹的建议是三种指针都先长按再拿，已经问了 user，没回之前不动（v0.17.56 记）。
-        if (!caps(pr.ptr).hover) { pr.fired = true; this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false); } else toBox();
       }
       else if (pr.boxOnMove) toBox();
     }
     if (this.lift && e.pointerId === this.lift.pid) { this.dragLift(this.local(e)); return; }
-    if (this.selDrag && e.pointerId === this.selDrag.pid) {   // 长按之后接着拖 = 扩选到指针下面的音
-      const idx = this.noteNear(this.local(e)); if (idx < 0) return;
-      const st = this.host.get(), a = Math.min(idx, this.selDrag.anchor), b = Math.max(idx, this.selDrag.anchor) + 1;
-      if (!st.sel || st.sel.from !== a || st.sel.to !== b) this.host.set(select(st, a, b));
-      return;
-    }
     if (this.touches.has(e.pointerId)) {
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (this.pinch && this.touches.size === 2) { this.pinchMove(); return; }
@@ -1896,16 +1963,15 @@ export class ScoreView {
     const pr = this.press;
     if (pr && e.pointerId === pr.pid) {
       this.press = null; clearTimeout(pr.timer);
-      const extended = !!this.selDrag; this.selDrag = null;
       const ptr = pr.ptr;
-      if (pr.grab && !pr.moved && !pr.fired) {   // 轻点字 / 记号（手指 / 笔 / 鼠标同一条）：记号 = 亮框（亮着 = 小菜单）；字 = 歌词框
+      if (pr.grab && !pr.moved && !pr.fired) {   // 轻点字 / 记号（手指 / 笔 / 鼠标同一条）：没亮 = 亮框；亮着 = 记号的小菜单 / 字的歌词框
         this.finger = null;
-        if (pr.grab.kind === "mark") this.tapMark(pr.grab, !!pr.lit, ptr); else this.tap(pr.x, pr.y, pr.shift, caps(ptr).dragScrolls ? null : pr.pid);
+        if (pr.grab.kind === "mark") this.tapMark(pr.grab, !!pr.lit, ptr); else this.tapLyric(pr.grab, !!pr.lit, ptr, pr.x, pr.y);
         return;
       }
       if (pr.grab && !caps(ptr).dragScrolls) return;
       if (pr.art && !pr.moved && !pr.fired) { this.finger = null; this.box = null; this.boxEl.hidden = true; this.tapArt(pr.art, ptr); return; }
-      if (pr.fired || extended) { this.finger = null; if (this.drag) { this.host.sound?.release(); this.drag = null; } this.box = null; this.boxEl.hidden = true; return; }   // 长按选过了：抬手到此为止
+      if (pr.fired) { this.finger = null; if (this.drag) { this.host.sound?.release(); this.drag = null; } this.box = null; this.boxEl.hidden = true; return; }   // 长按选过了：抬手到此为止
       if (pr.hit && !pr.moved) {   // 轻点在音上
         this.finger = null; this.box = null;
         if (this.drag) { this.host.sound?.release(); this.drag = null; }

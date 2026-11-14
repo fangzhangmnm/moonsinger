@@ -2266,8 +2266,8 @@ export declare const S: {
     readonly "\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09": {
         readonly en: "Remove this style mark (from here it returns to the previous style; at the start of a sheet = none)";
     };
-    readonly "\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A": {
-        readonly en: "This sheet only: from this note to the end of the sheet (or the next style mark). Long-press and drag = move to another note";
+    readonly "\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u4EAE\u7740\u6846\u65F6\u62D6\u5B83 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u624B\u6307\u62D6\u6846\u8FB9\u7684\u628A\u624B\uFF09": {
+        readonly en: "This sheet only: from this note to the end of the sheet (or the next style mark). Drag it while it is highlighted = move to another note (with a finger, drag the handle on the box)";
     };
     readonly "\u6539\u6210 {d}": {
         readonly en: "Change to {d}";
@@ -2329,11 +2329,11 @@ export declare const S: {
     readonly "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31": {
         readonly en: "Remove this crescendo / diminuendo";
     };
-    readonly "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF09": {
-        readonly en: "Long-press and drag = move it to another note (right of the last note = the end of this section)";
+    readonly "\u4EAE\u7740\u6846\u65F6\u62D6\u5B83 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF1B\u624B\u6307\u62D6\u6846\u8FB9\u7684\u628A\u624B\uFF09": {
+        readonly en: "Drag it while it is highlighted = move it to another note (right of the last note = the end of this section; with a finger, drag the handle on the box)";
     };
-    readonly "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A": {
-        readonly en: "Long-press and drag = move to another note";
+    readonly "\u4EAE\u7740\u6846\u65F6\u62D6\u5B83 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u624B\u6307\u62D6\u6846\u8FB9\u7684\u628A\u624B\uFF09": {
+        readonly en: "Drag it while it is highlighted = move to another note (with a finger, drag the handle on the box)";
     };
     readonly "\u987A\u624B\u53BB\u6389\u4E86 {n} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u8BB0\u53F7\uFF08\u529B\u5EA6 / \u6E10\u5F3A\u6E10\u5F31 / \u8E0F\u677F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": {
         readonly en: "Also removed {n} marks that no longer govern any note (dynamics / hairpins / pedals; undo brings them back)";
@@ -5734,8 +5734,8 @@ export declare const S: {
     readonly 踏板: {
         readonly en: "Pedal";
     };
-    readonly "\u8E0F\u677F\uFF08\u97F3\u63A5\u7740\u54CD\u8FD8\u662F\u6B62\u4F4F\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A": {
-        readonly en: "Pedal (notes keep ringing or stop): press / release / change from the note before the cursor; the labels follow whether the pedal is down there now; with a selection = hold the pedal through it. Tap a pedal mark on the score to change or delete it; long-press and drag to move it";
+    readonly "\u8E0F\u677F\uFF08\u97F3\u63A5\u7740\u54CD\u8FD8\u662F\u6B62\u4F4F\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u4EAE\u7740\u6846\u65F6\u62D6\u5B83\u80FD\u632A": {
+        readonly en: "Pedal (notes keep ringing or stop): press / release / change from the note before the cursor; the labels follow whether the pedal is down there now; with a selection = hold the pedal through it. Tap a pedal mark on the score to change or delete it; drag it while it is highlighted to move it";
     };
     readonly "\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868": {
         readonly en: "Grand staff: move this note to the other staff";
@@ -6984,6 +6984,12 @@ export declare const S: {
     };
     readonly "\u8FD9\u4E2A\u5B57\u5E76\u8FDB\u524D\u4E00\u4E2A\u97F3\uFF08\u4E00\u4E2A\u97F3\u4E0A\u51E0\u4E2A\u5B57\uFF09\uFF1B\u8FD9\u4E00\u53E5\u540E\u9762\u7684\u5B57\u5F80\u524D\u632A\u4E00\u4E2A\u97F3": {
         readonly en: "Merges this syllable into the previous note (several syllables on one note); later syllables in this phrase shift forward one note";
+    };
+    readonly 这个字早一个音起: {
+        readonly en: "Start this syllable one note earlier";
+    };
+    readonly "\u8FD9\u4E2A\u5B57\u665A\u4E00\u4E2A\u97F3\u8D77\uFF08\u540E\u9762\u7684\u5B57\u88AB\u63A8\u7740\u8D70\uFF09": {
+        readonly en: "Start this syllable one note later (the syllables after it get pushed along)";
     };
     readonly "\u6324\u4E86\uFF1A\u6309\u8282\u594F\u6392\uFF0C\u8FD9\u4E2A\u5B57\u653E\u4E0D\u4E0B\uFF08\u7EB8\u7684\u8BBE\u7F6E\u91CC\u6362\u6210\u300C\u6309\u6B4C\u8BCD\u300D= \u628A\u97F3\u63A8\u5F00\uFF09": {
         readonly en: "Crowded: laid out by rhythm, this syllable doesn't fit (in sheet settings, “By lyrics” pushes notes apart)";
