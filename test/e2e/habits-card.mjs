@@ -47,7 +47,8 @@ const fresh = async () => { const ctx = await b.newContext({ viewport: { width: 
   const k1 = await kv(p);
   check(k1["habits-asked"] === "1" && k1["habit-notation"] === "jianpu" && k1["habit-transpose-aid"] === "on" && k1["habit-middle-c"] === "3" && k1["habit-chord-tag-style"] === "root", "「好」= 选了的记进设备、记「问过了」（含和弦写法）", JSON.stringify(k1));
   check((await rowKind(p)) === "jianpu", "后面那首一笔没动的空白歌照新习惯重建、马上按简谱排（第 21 条补）", await rowKind(p));
-  check(await p.$eval('.pad-key[data-midi="60"] .kf-big', (e) => e.textContent === "C3").catch(() => false), "键上的字照中央 C 的叫法：中央 C 写 C3");
+  // v0.17.43 起简谱下大字 = 纸上的数字、小字 = 实际音名，中央 C 的叫法看小字
+  check(await p.$eval('.pad-key[data-midi="60"] .kf-small', (e) => e.textContent === "C3").catch(() => false), "键上的音名照中央 C 的叫法：中央 C 写 C3（简谱下在小字）");
   await p.reload(); await p.waitForTimeout(3000);
   check(!(await p.$(".habits-card")), "问过了 = 重新载入不再出");
   check((await rowKind(p)) === "jianpu", "重新载入：习惯还在（照简谱排）");

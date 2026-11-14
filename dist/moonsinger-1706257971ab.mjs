@@ -6407,7 +6407,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.43-2026-11-13";
+var APP_VERSION = "v0.17.44-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -35437,7 +35437,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick3(() => "layout-worker-5e7cfe14782a.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-12239489df9e.mjs");
+      return pick3(() => "encode-worker-e37a2f9c4f82.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -62231,6 +62231,7 @@ function plugNudge(why2) {
   clearTimeout(plugNudgeT);
   plugNudgeT = window.setTimeout(() => padEl.querySelector(".impro-pad")?.classList.remove("nudge"), 450);
 }
+var bootReady = false;
 var padHost = createPadHost(padEl, {
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
   state: () => D3.st,
@@ -62309,7 +62310,7 @@ function inCAtCursor() {
   return lookOf(D3.st.song, lookCtx()).inCActive && !notationOfRole(curRole()).perc;
 }
 function jianpuBaseAtCursor() {
-  if (lookOf(D3.st.song, lookCtx()).notation !== "jianpu" || notationOfRole(curRole()).perc) return null;
+  if (!bootReady || lookOf(D3.st.song, lookCtx()).notation !== "jianpu" || notationOfRole(curRole()).perc) return null;
   const h2 = view.head(), s10 = h2 ? view.layoutNow().systems[h2.system] : null;
   return s10 && typeof s10.octBase === "number" ? s10.octBase : null;
 }
@@ -67918,6 +67919,7 @@ await document.fonts.load(`40px Bravura`).catch(() => void 0);
   const z2 = deviceKvGet(KV_ZOOM);
   view.restoreZoom(z2 === null ? null : Number(z2));
 }
+bootReady = true;
 view.render();
 pad3.render();
 renderTitle();
@@ -68016,4 +68018,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-68666f77565d.mjs.map
+//# sourceMappingURL=moonsinger-1706257971ab.mjs.map

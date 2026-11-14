@@ -967,6 +967,8 @@ function plugNudge(why: NoWrite): void {
   b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge");
   clearTimeout(plugNudgeT); plugNudgeT = window.setTimeout(() => padEl.querySelector(".impro-pad")?.classList.remove("nudge"), 450);
 }
+/** 开机就位（v0.17.43 补）：模块顶层全部声明完、开机末尾第一次画谱之前置真。之前键盘画第一遍时不去排版（排版用到的东西在文件后面才声明 = 简谱习惯的设备开机就崩过）；只有开机末尾那一次 pad.render() 之后才按排版写键上的数字。 */
+let bootReady = false;
 const padHost = createPadHost(padEl, {
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
   state: () => D.st, middleC: () => lookOf(D.st.song, lookCtx()).middleC, inC: () => inCAtCursor(), jianpuBase: () => jianpuBaseAtCursor(), digitRows: () => lookOf(D.st.song, lookCtx()).notation !== "staff", tempoOwnerHere: () => { const pp = D.st.song.papers.find((x) => x.id === D.st.at.paper); return !pp || tempoOwner(D.st.song, pp) === D.st.at.part; }, update: (n, gesture) => { if (inputGate.may(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
@@ -994,7 +996,7 @@ const pad = padHost.pad;
 function inCAtCursor(): boolean { return lookOf(D.st.song, lookCtx()).inCActive && !notationOfRole(curRole()).perc; }
 /** 简谱时键上的大字写纸上的数字（v0.17.43）：光标那一行的八度基准（排版算的，键上的点和纸上一样）；不是简谱（五线谱 / 字母谱）、打击乐的行 = null。 */
 function jianpuBaseAtCursor(): number | null {
-  if (lookOf(D.st.song, lookCtx()).notation !== "jianpu" || notationOfRole(curRole()).perc) return null;
+  if (!bootReady || lookOf(D.st.song, lookCtx()).notation !== "jianpu" || notationOfRole(curRole()).perc) return null;
   const h = view.head(), s = h ? view.layoutNow().systems[h.system] : null;
   return s && typeof s.octBase === "number" ? s.octBase : null;
 }
@@ -4745,7 +4747,8 @@ document.addEventListener("visibilitychange", () => {
 });
 
 await document.fonts.load(`40px Bravura`).catch(() => undefined);
-{ const z = deviceKvGet(KV_ZOOM); view.restoreZoom(z === null ? null : Number(z)); }   // 这台设备记住的缩放（物理倍数；2026-10-21 user「缩放跨会话记住，按设备存」）——第一帧就按它排
+{ const z = deviceKvGet(KV_ZOOM); view.restoreZoom(z === null ? null : Number(z)); }
+bootReady = true;   // 到这儿模块顶层全声明完了：下面第一次画键盘就按排版写简谱键上的数字   // 这台设备记住的缩放（物理倍数；2026-10-21 user「缩放跨会话记住，按设备存」）——第一帧就按它排
 view.render();
 pad.render();
 renderTitle();
