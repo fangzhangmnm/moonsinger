@@ -6192,6 +6192,9 @@ var S = {
   "\u62F7\u8F68\u8BBE\u7F6E": { en: "Copy track" },
   "\u628A\u62F7\u7684\u8F68\u8BBE\u7F6E\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u6574\u4EFD\u76D6\u5230\u8FD9\u6761\u8F68\u4E0A\uFF1B\u540D\u5B57\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500": { en: "Replaces this track's settings with the copied ones (from \u201C{from}\u201D); the name stays; can be undone" },
   "\u7C98\u8F68\u8BBE\u7F6E": { en: "Paste track" },
+  "\u62F7": { en: "Copy" },
+  // 混音台卡片上的「拷 / 粘」（v0.17.56，朗读名 = 上面两条）
+  "\u7C98": { en: "Paste" },
   "\u62F7\u7684\u300C{from}\u300D\u662F\u6B4C\u624B\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6B4C\u624B\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a singer track; it only pastes onto singer tracks" },
   "\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a bus; it only pastes onto buses" },
   "\u9009\u533A\u83DC\u5355": { en: "Selection menu" }
@@ -6482,7 +6485,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.55-2026-11-14";
+var APP_VERSION = "v0.17.56-2026-11-14";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -19102,8 +19105,8 @@ var ScoreView = class {
       const p2 = this.local(e10);
       this.cancelPress();
       const dh = this.rules.symbols ? this.dynHitAt(p2.x, p2.y, false) : null, hit2 = dh ? null : this.noteAt(p2.x, p2.y);
-      const st0 = this.host.get(), inMulti = !!(hit2 && st0.multi && this.inMultiBlock(hit2));
-      switch (onSecondary({ target: dh ? "mark" : hit2 ? "note" : "blank", inSel: !!hit2 && (inMulti || this.inSelection(hit2)) })) {
+      const st0 = this.host.get();
+      switch (onSecondary({ target: dh ? "mark" : hit2 ? "note" : "blank", inSel: !!hit2 && this.inSelection(hit2) })) {
         case "markMenu":
           this.lyrics.commitAndClose();
           this.marks.commitAndClose();
@@ -20538,9 +20541,10 @@ var ScoreView = class {
         return;
     }
   }
-  /** 这个音 / 休止在不在现在的选区里（单行的选区）。 */
+  /** 这个音 / 休止在不在现在的选区里：单行的选区，或者选了好几行的那一块（v0.17.56 收成一处：长按、右键都问它）。 */
   inSelection(hit2) {
-    const cur = this.host.get().sel;
+    const st2 = this.host.get(), cur = st2.sel;
+    if (st2.multi && this.inMultiBlock(hit2)) return true;
     return !!(cur && this.onTrack(hit2) && hit2.index >= cur.from && hit2.index < cur.to);
   }
   /** 长按音 / 休止（v0.17.55）：只选中它、亮框（和点一下选中一样；keep = 已经在选区里 = 选区不动）；按着的时候听见它，抬手停。不开菜单。 */
@@ -36541,15 +36545,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-436683b697e5.mjs");
+      return pick3(() => "singer-worker-71ff973d3ed7.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-1e241a7c010a.mjs");
+      return pick3(() => "layout-worker-369d3f9bc6e1.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-1fcd218f43e8.mjs");
+      return pick3(() => "encode-worker-acc5d36848d6.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -47552,13 +47556,13 @@ var Studio2 = class {
   fxClip = null;
   /** 拷的一条轨的设置（v0.17.54）：kind = 歌手轨 / 混音轨（只在同一类之间粘）。和拷参数一样：这次打开的界面里有效、没有快捷键。 */
   trackClip = null;
-  /** 基础页卡片上「拷轨设置 / 粘轨设置」那一行。没拷过 = 只有拷；拷的是另一类 = 粘灰着（点了说为什么）。 */
-  trackClipRow(kind) {
-    const c10 = this.trackClip, copy = `<button class="btn" data-v="trackcopy" title="${_t("\u62F7\u8FD9\u6761\u8F68\u7684\u8BBE\u7F6E\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u6574\u6761\u6548\u679C\u94FE\uFF08\u6BCF\u4E00\u683C\u8FDE\u5F00\u5173\u548C\u88AB\u8C01\u538B\uFF09\u3001\u53D1\u9001\u3001\u51FA\u5230\u3001\u65C1\u901A\u3002\u4E0D\u62F7\u540D\u5B57\u3001\u9759\u97F3\u72EC\u594F\u3001\u4E50\u624B\u90A3\u4E00\u5C42")}">${_t("\u62F7\u8F68\u8BBE\u7F6E")}</button>`;
-    if (!c10) return `<div class="btn-row strip-clip">${copy}</div>`;
+  /** 基础页卡片上「拷 / 粘」两颗钮（v0.17.56 起并进卡片最后那一排：歌手 = ‹ › 那一排，混音轨 = 旁通那一排；统筹「别让混音台变高」）。
+   *  钮上只写一个字，朗读名写全（aria-label），悬停说明照旧（title）。没拷过 = 只有拷；拷的是另一类 = 粘灰着（点了说为什么）。 */
+  trackClipBtns(kind) {
+    const c10 = this.trackClip, copy = `<button class="btn" data-v="trackcopy" aria-label="${esc10(_t("\u62F7\u8F68\u8BBE\u7F6E"))}" title="${esc10(_t("\u62F7\u8FD9\u6761\u8F68\u7684\u8BBE\u7F6E\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u6574\u6761\u6548\u679C\u94FE\uFF08\u6BCF\u4E00\u683C\u8FDE\u5F00\u5173\u548C\u88AB\u8C01\u538B\uFF09\u3001\u53D1\u9001\u3001\u51FA\u5230\u3001\u65C1\u901A\u3002\u4E0D\u62F7\u540D\u5B57\u3001\u9759\u97F3\u72EC\u594F\u3001\u4E50\u624B\u90A3\u4E00\u5C42"))}">${_t("\u62F7")}</button>`;
+    if (!c10) return copy;
     const same = c10.kind === kind;
-    const paste = `<button class="btn${same ? "" : " is-off"}" data-v="trackpaste" title="${esc10(same ? _t("\u628A\u62F7\u7684\u8F68\u8BBE\u7F6E\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u6574\u4EFD\u76D6\u5230\u8FD9\u6761\u8F68\u4E0A\uFF1B\u540D\u5B57\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500", { from: c10.held.from }) : this.clipKindWhy(c10))}">${_t("\u7C98\u8F68\u8BBE\u7F6E")}</button>`;
-    return `<div class="btn-row strip-clip">${copy}${paste}</div>`;
+    return copy + `<button class="btn${same ? "" : " is-off"}" data-v="trackpaste" aria-label="${esc10(_t("\u7C98\u8F68\u8BBE\u7F6E"))}" title="${esc10(same ? _t("\u628A\u62F7\u7684\u8F68\u8BBE\u7F6E\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u6574\u4EFD\u76D6\u5230\u8FD9\u6761\u8F68\u4E0A\uFF1B\u540D\u5B57\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500", { from: c10.held.from }) : this.clipKindWhy(c10))}">${_t("\u7C98")}</button>`;
   }
   clipKindWhy(c10) {
     return c10.kind === "mic" ? _t("\u62F7\u7684\u300C{from}\u300D\u662F\u6B4C\u624B\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6B4C\u624B\u8F68\u4E0A", { from: c10.held.from }) : _t("\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A", { from: c10.held.from });
@@ -48255,7 +48259,7 @@ ${tg2.fx}`);
     const masterBody = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: TEMPLATE.studio.master.gainDb, defText: dbText(TEMPLATE.studio.master.gainDb) }), "strip-row") + row(_t("\u9650\u5E45"), limiterHint(m2.limiterParams), "", `<button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter">${m2.limiter ? _t("\u5F00\u7740") : _t("\u5173\u7740\uFF08\u53EF\u80FD\u524A\u6CE2\uFF09")}</button>`, "strip-row") + row(_t("\u5CF0\u503C"), HINT2.peak, `<span class="meter-val">\u2014</span>`, "", "strip-row") + RMS_ROW + CORR_ROW : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? gainRow("data-master", HINT2.masterGain, m2.gainDb) + `<div class="fx-dim">${_t("\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904")}</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv(_t("\u603B\u8F68")), _t("\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E"), masterBody);
     const buses = this.host.buses(), busCards = buses.map((b3, k2) => {
-      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.busGain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="btn-row"><button class="btn cand${b3.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765")}">${b3.bypass ? _t("\u65C1\u901A\u4E2D") : _t("\u65C1\u901A")}</button><button class="btn" data-v="busleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D")}"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="${_t("\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389")}</button></div>` + this.trackClipRow("bus") : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? gainRow("data-busgain", HINT2.busGain, b3.gainDb) + this.routeHtml(b3.id) : this.chipsHtml(b3.id);
+      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.busGain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="btn-row strip-tools"><button class="btn cand${b3.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765")}">${b3.bypass ? _t("\u65C1\u901A\u4E2D") : _t("\u65C1\u901A")}</button><button class="btn" data-v="busleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D")}"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="${_t("\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389")}</button>${this.trackClipBtns("bus")}</div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? gainRow("data-busgain", HINT2.busGain, b3.gainDb) + this.routeHtml(b3.id) : this.chipsHtml(b3.id);
       const name = `<input class="bus-name" value="${esc10(b3.name)}" title="${_t("\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09")}" />`;
       const ms = `<span class="strip-ms"><button class="btn${b3.muted ? " is-on mute" : ""}" data-v="busmute" title="${_t("\u9759\u97F3\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u51FA\u58F0\u3001\u4E5F\u4E0D\u5F80\u4E0B\u53D1\uFF08\u53D1\u7ED9\u5B83\u7684\u90A3\u51E0\u4F4D\u539F\u58F0\u7167\u65E7\uFF09")}">${_t("\u9759")}</button></span>`;
       return this.card(b3.id, ` bus${b3.bypass ? " bypassed" : ""}`, `<div class="strip-head">${name}${ms}</div>${this.brokenLine(b3.id)}`, b3.bypass ? _t("\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09") : _t("\u6DF7\u97F3\u8F68"), body2);
@@ -48264,7 +48268,7 @@ ${tg2.fx}`);
       const perf = s10.performerDb ? `<button class="btn strip-perfdb" data-v="perfdb" title="${_t("\u8FD9\u4F4D\u4E50\u624B\u81EA\u5DF1\u7684\u54CD\u5EA6\uFF08\u4E50\u5668\u9875\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\uFF09\uFF0C\u548C\u63A8\u5B50\u76F8\u52A0\uFF1A\u63A8\u5B50 {g}\u3001\u4E50\u624B {p} = \u8FD9\u6761\u8F68\u4E00\u5171 {t}\u3002\u70B9\u8FD9\u91CC\u53BB\u4E50\u5668\u9875\u6539", { g: dbText(s10.gainDb), p: dbText(s10.performerDb), t: dbText(s10.gainDb + s10.performerDb) })}">${_t("\u4E50\u624B {p}", { p: dbText(s10.performerDb) })}</button>` : "";
       const perfDiff = s10.performerDiffs ? `<button class="btn strip-perfdiff" data-v="perfdiff" title="${_t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u6709 {n} \u5904\u548C\u73B0\u5728\u7684\u9ED8\u8BA4\u4E0D\u4E00\u6837\uFF08\u54CD\u5EA6\u53E6\u7B97\uFF09\u3002\u70B9\u8FD9\u91CC\u53BB\u4E50\u5668\u9875\u770B\u662F\u54EA\u51E0\u5904", { n: s10.performerDiffs })}">${_t("\u4E50\u624B {n} \u5904\u4E0D\u540C", { n: s10.performerDiffs })}</button>` : "";
       const perfRow = perf || perfDiff ? `<div class="strip-perf">${perf}${perfDiff}</div>` : "";
-      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + perfRow + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + `<div class="btn-row"><button class="btn" data-v="partleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09")}"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + this.trackClipRow("mic") + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + perfRow + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + `<div class="btn-row strip-tools"><button class="btn" data-v="partleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09")}"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button>${this.trackClipBtns("mic")}</div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
       (s10.refs ? `<div class="strip-refs">${_t("\u5728 {refs} \u5F20\u7EB8\u4E0A", { refs: s10.refs })}</div>` : `<div class="strip-refs">${_t("\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709")} <button class="btn cand danger" data-v="delpart" title="${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8")}</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? gainRow("data-gain", HINT2.gain, s10.gainDb) + perfRow + this.routeHtml(s10.id) : this.chipsHtml(s10.id);
       const ms = `<span class="strip-ms"><button class="btn${s10.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09")}">${_t("\u9759")}</button><button class="btn${s10.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09")}">${_t("\u72EC")}</button></span>`;
       return this.card(s10.id, "", `<div class="strip-head">${nameDiv(s10.name)}${ms}</div>${this.brokenLine(s10.id)}`, s10.performer, body2, s10.color);
@@ -65187,7 +65191,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "c038fc9659c3",
+  cssHash: "7d5ec6260e83",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -69772,4 +69776,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-d90644331aa2.mjs.map
+//# sourceMappingURL=moonsinger-acf16de3d4c6.mjs.map

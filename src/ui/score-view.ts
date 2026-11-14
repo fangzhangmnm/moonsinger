@@ -314,8 +314,8 @@ export class ScoreView {
       e.preventDefault();
       const p = this.local(e); this.cancelPress();
       const dh = this.rules.symbols ? this.dynHitAt(p.x, p.y, false) : null, hit = dh ? null : this.noteAt(p.x, p.y);
-      const st0 = this.host.get(), inMulti = !!(hit && st0.multi && this.inMultiBlock(hit));
-      switch (onSecondary({ target: dh ? "mark" : hit ? "note" : "blank", inSel: !!hit && (inMulti || this.inSelection(hit)) })) {
+      const st0 = this.host.get();
+      switch (onSecondary({ target: dh ? "mark" : hit ? "note" : "blank", inSel: !!hit && this.inSelection(hit) })) {
         case "markMenu": this.lyrics.commitAndClose(); this.marks.commitAndClose(); this.markMenu(dh!); this.lightAt(dh!.system, dh!.index, "mark", ptr); return;   // + 亮框
         case "blankMenu": this.blankPress(p.x, p.y, e.clientX, e.clientY); return;
         case "selectMenu": { const st1 = this.onTrack(hit!) ? st0 : this.focusRow(st0, hit!.system); this.host.set(select(st1, hit!.index, hit!.index + 1)); break; }
@@ -1238,9 +1238,10 @@ export class ScoreView {
       case "blankMenu": this.blankPress(pr.x, pr.y, pr.cx, pr.cy); return;
     }
   }
-  /** 这个音 / 休止在不在现在的选区里（单行的选区）。 */
+  /** 这个音 / 休止在不在现在的选区里：单行的选区，或者选了好几行的那一块（v0.17.56 收成一处：长按、右键都问它）。 */
   private inSelection(hit: HitNote): boolean {
-    const cur = this.host.get().sel;
+    const st = this.host.get(), cur = st.sel;
+    if (st.multi && this.inMultiBlock(hit)) return true;
     return !!(cur && this.onTrack(hit) && hit.index >= cur.from && hit.index < cur.to);
   }
   /** 长按音 / 休止（v0.17.55）：只选中它、亮框（和点一下选中一样；keep = 已经在选区里 = 选区不动）；按着的时候听见它，抬手停。不开菜单。 */
@@ -1814,7 +1815,11 @@ export class ScoreView {
       if (pr.grab?.kind === "mark") {
         if (onMove({ pointer: pr.ptr, target: "mark", lit: !!pr.lit, canDrag: this.rules.symbols }) === "lift") { pr.fired = true; this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false); }
         else toBox();
-      } else if (pr.grab) { if (!caps(pr.ptr).hover) { pr.fired = true; this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false); } else toBox(); }
+      } else if (pr.grab) {
+        // 「词」里拖字：这里借了 caps().hover 来分「笔直接拿起来 / 鼠标拉框」，其实问的不是悬停，是「这种指针短按就拖算不算框选」——
+        //   那是 v0.9.39 只对鼠标说过的一条（user「框选是普通短按拖动」），没有正式定成表里的规矩。统筹的建议是三种指针都先长按再拿，已经问了 user，没回之前不动（v0.17.56 记）。
+        if (!caps(pr.ptr).hover) { pr.fired = true; this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false); } else toBox();
+      }
       else if (pr.boxOnMove) toBox();
     }
     if (this.lift && e.pointerId === this.lift.pid) { this.dragLift(this.local(e)); return; }

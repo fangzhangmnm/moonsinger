@@ -2931,6 +2931,9 @@ var S = {
   "\u62F7\u8F68\u8BBE\u7F6E": { en: "Copy track" },
   "\u628A\u62F7\u7684\u8F68\u8BBE\u7F6E\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u6574\u4EFD\u76D6\u5230\u8FD9\u6761\u8F68\u4E0A\uFF1B\u540D\u5B57\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500": { en: "Replaces this track's settings with the copied ones (from \u201C{from}\u201D); the name stays; can be undone" },
   "\u7C98\u8F68\u8BBE\u7F6E": { en: "Paste track" },
+  "\u62F7": { en: "Copy" },
+  // 混音台卡片上的「拷 / 粘」（v0.17.56，朗读名 = 上面两条）
+  "\u7C98": { en: "Paste" },
   "\u62F7\u7684\u300C{from}\u300D\u662F\u6B4C\u624B\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6B4C\u624B\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a singer track; it only pastes onto singer tracks" },
   "\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a bus; it only pastes onto buses" },
   "\u9009\u533A\u83DC\u5355": { en: "Selection menu" }
@@ -10046,4 +10049,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-1e241a7c010a.mjs.map
+//# sourceMappingURL=layout-worker-369d3f9bc6e1.mjs.map

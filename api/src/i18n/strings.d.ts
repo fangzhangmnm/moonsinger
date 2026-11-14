@@ -7825,6 +7825,12 @@ export declare const S: {
     readonly 粘轨设置: {
         readonly en: "Paste track";
     };
+    readonly 拷: {
+        readonly en: "Copy";
+    };
+    readonly 粘: {
+        readonly en: "Paste";
+    };
     readonly "\u62F7\u7684\u300C{from}\u300D\u662F\u6B4C\u624B\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6B4C\u624B\u8F68\u4E0A": {
         readonly en: "The copy from “{from}” is a singer track; it only pastes onto singer tracks";
     };

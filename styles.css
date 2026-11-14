@@ -102,6 +102,10 @@ body:has(:is(.offer:not([hidden]), .wbe-panel)) .notice-stack { top: calc(var(--
 /* 一排按钮只用这一个类（7-R）：按格子排、每个钮一样高；放不下时整个钮换到下一格（格子对齐，不参差）。--btn-cell = 一格至少多宽（默认够放四个汉字 / 一个英文词） */
 .btn-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--btn-cell, 4.6em), 1fr)); grid-auto-rows: 1fr; gap: 6px; }
 .btn-row > .btn { min-width: 0; width: 100%; }
+/* 混音台卡片最后那一排（v0.17.56：‹ › 拷 粘 / 旁通 ‹ › 删掉 拷 粘）：一个字的钮不要四个汉字那么宽的格子——格子窄一点、两个字的钮占两格；
+ * auto-fit = 一排放得下几个就摊满整排（不留空格子）。放不下照旧整颗换到下一格。统筹「别让混音台变高」：iPad mini 横屏卡片窄，原来的格子一排只放两颗 */
+.btn-row.strip-tools { --btn-cell: 2.4em; grid-template-columns: repeat(auto-fit, minmax(var(--btn-cell), 1fr)); }
+.btn-row.strip-tools > [data-v="busbypass"], .btn-row.strip-tools > [data-v="delbus"] { grid-column: span 2; }
 @media (hover: hover) { .btn:hover { background: #f7f6f2; } }   /* 只给真的会悬停的（鼠标）：iPad 点过的钮会一直粘着 hover 变灰（user「点了之后按下的灰色没有自动消失」；同 gallery 0.6.3） */
 .btn.is-on { background: var(--accent-soft); border-color: #b8cde8; color: var(--accent); }
 .btn:disabled { opacity: .35; cursor: default; }
@@ -1184,9 +1188,9 @@ body.doc-locked .inst-page .ip-defbtn { opacity: .45; }
 .start-mark { position: absolute; width: 0; border-left: 2px dashed var(--start); pointer-events: none; }
 .start-mark::before { content: ""; position: absolute; left: -2px; top: -2px; width: 10px; height: 8px; background: var(--start); clip-path: polygon(0 0, 100% 50%, 0 100%); }
 body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不画光标 */
-/* 印出来的样子（v0.16.74，`__moonsinger.printLook(on)`；带谱视频工具用，2026-11-09 带谱视频会话提的）：编辑器的东西全藏（覆盖层、缩放读数、上面的条、光标、选区带）、
+/* 印出来的样子（v0.16.74，`__moonsinger.printLook(on)`；带谱视频工具用，2026-11-09 带谱视频会话提的）：编辑器的东西全藏（覆盖层、缩放读数、上面的条、光标、选区带和它旁边的小钮、两端把手——v0.17.56 补上后两样）、
  * 注解藏（和 PDF 的 SKIP 同一张名单：ann / selbox / caret / in-span）、强调色不上（上面那几条强调色规则都带 body:not(.print-look)）。只改看的样子，不改排版。 */
-body.print-look #bar, body.print-look .zoom-reset, body.print-look .score-overlay, body.print-look #score .ann, body.print-look .selbox, body.print-look .staff-svg .caret, body.print-look .ink-caret { display: none !important; }
+body.print-look #bar, body.print-look .zoom-reset, body.print-look .score-overlay, body.print-look #score .ann, body.print-look .selbox, body.print-look .sel-more, body.print-look .sel-handle, body.print-look .staff-svg .caret, body.print-look .ink-caret { display: none !important; }
 /* 模式（2026-10-10）：顶栏的分段钮；「听」亮着用播放色 */
 /* 模式不再把别的层调淡（v0.10.38，见下） */
 /* （v0.10.38 拿掉：「词」里记号变淡、「符」里歌词变淡——user「词模式下符号没必要灰色」；音 / 符现在是同一个模式，歌词也不淡） */
@@ -1333,7 +1337,7 @@ body.doc-locked .inst-page .ip-pad { pointer-events: auto; opacity: 1; }
 body.doc-locked .studio :is(.studio-strips, .fx-panel, .mix-menu) :is(input, select, button, textarea) { pointer-events: none; opacity: .55; }
 body.doc-locked .studio .strip-ms button { pointer-events: auto; opacity: 1; }
 body.doc-locked .studio :is(.strip-perfdb, .strip-perfdiff) { pointer-events: auto; opacity: 1; }   /* 「乐手 −6 dB」「乐手 N 处不同」只是去乐器页（16-6） */
-body.doc-locked .studio .strip-clip [data-v="trackcopy"] { pointer-events: auto; opacity: 1; }   /* 拷轨设置只是读（锁着也能拷，同复制）；粘 = 改混音，锁着照灰（v0.17.54） */
+body.doc-locked .studio .strip-tools [data-v="trackcopy"] { pointer-events: auto; opacity: 1; }   /* 拷轨设置只是读（锁着也能拷，同复制）；粘 = 改混音，锁着照灰（v0.17.54） */
 /* 修改锁：界面那一层补齐（v0.16.99；设计稿第三节「推子、乐器、谱都不收改动」）。改内容的控件变淡、点不动；
    看的（展开一行、进乐器页看、返回、好）和「隐藏 / 显示曲段」（看法，user 11-09）照常。写入口和库照旧各拦一层。 */
 body.doc-locked [data-ov="add"] { pointer-events: none; opacity: .4; }

@@ -2613,6 +2613,8 @@ export const S = {
   "拷轨设置": { en: "Copy track" },
   "把拷的轨设置（来自「{from}」）整份盖到这条轨上；名字不动；能撤销": { en: "Replaces this track's settings with the copied ones (from “{from}”); the name stays; can be undone" },
   "粘轨设置": { en: "Paste track" },
+  "拷": { en: "Copy" },   // 混音台卡片上的「拷 / 粘」（v0.17.56，朗读名 = 上面两条）
+  "粘": { en: "Paste" },
   "拷的「{from}」是歌手轨，只能粘到歌手轨上": { en: "The copy from “{from}” is a singer track; it only pastes onto singer tracks" },
   "拷的「{from}」是混音轨，只能粘到混音轨上": { en: "The copy from “{from}” is a bus; it only pastes onto buses" },
   "选区菜单": { en: "Selection menu" },

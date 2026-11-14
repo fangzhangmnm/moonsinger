@@ -145,8 +145,9 @@ export declare class Studio {
     private fxClip;
     /** 拷的一条轨的设置（v0.17.54）：kind = 歌手轨 / 混音轨（只在同一类之间粘）。和拷参数一样：这次打开的界面里有效、没有快捷键。 */
     private trackClip;
-    /** 基础页卡片上「拷轨设置 / 粘轨设置」那一行。没拷过 = 只有拷；拷的是另一类 = 粘灰着（点了说为什么）。 */
-    private trackClipRow;
+    /** 基础页卡片上「拷 / 粘」两颗钮（v0.17.56 起并进卡片最后那一排：歌手 = ‹ › 那一排，混音轨 = 旁通那一排；统筹「别让混音台变高」）。
+     *  钮上只写一个字，朗读名写全（aria-label），悬停说明照旧（title）。没拷过 = 只有拷；拷的是另一类 = 粘灰着（点了说为什么）。 */
+    private trackClipBtns;
     private clipKindWhy;
     private clipBtns;
     /** 压缩页：每条轨最近 COMP_HIST 段（~21 ms 一段）的 [进峰值, 出峰值, 压了多少 dB]。 */
