@@ -1,1 +1,3 @@
 workbench-elements.css ← @internal/workbench-elements 0.4.1（2026-11-13 收：一项一行窄宽度下控件换到名字下面一行，名字不被盖住；pull-package.sh 0.4.1 走的本地 release 产物，库仓本机标签 v0.4.1、没推）；之前 0.3.0（2026-11-12 收：多了浮窗的壳、下拉标准件 .select-field*；本机收货，库没打标签——pull-package.sh 只认有标签的版本，照它的步骤手动收）；原 0.1.2（notice / popup-menu 的样式；包只用 var()，token 值在 styles.css）。收货时随包一起更新（pull-package 后手动拷，同 CatsUp vendor/internal-css/）。2026-10-07 Claude Opus 5.5
+
+gallery.css ← @internal/gallery 0.9.3（2026-11-13 收：卡片上「打开中」的角标不再压住文件名——浮在名字那一行右边，名字让开、太长打省略号；pull-package.sh 0.9.3 走的本地 release 产物，库仓本机标签 v0.9.3、没推）。收货时随包一起更新：pull-package 后从 node_modules/@internal/gallery/src/gallery.css 手动拷过来。2026-11-13 Claude Opus 5.5（MoonSinger小弟）

@@ -4244,12 +4244,12 @@ var S = {
   "\u8E29\u4E0B\uFF08\u63A5\u7740\u54CD\uFF09": { en: "Press (keeps ringing)" },
   "\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09": { en: "Lift (stop the notes)" },
   "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u63A5\u7740\u54CD\uFF09": { en: "Change pedal (stop, then keep ringing)" },
-  "\u8E29\u4E0B\uFF08\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": { en: "Press (notes held at this moment keep ringing)" },
-  "\u62AC\u8D77\uFF08\u653E\u5F00\u63A5\u7740\u54CD\u7684\u90A3\u51E0\u4E2A\u97F3\uFF09": { en: "Release (let go of the notes kept ringing)" },
-  "\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u8BA9\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": { en: "Change pedal (let go, then keep the notes held at this moment ringing)" },
+  "\u8E29\u4E0B\uFF08\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": { en: "Press (held notes keep ringing)" },
+  "\u62AC\u8D77\uFF08\u653E\u5F00\u90A3\u51E0\u4E2A\u97F3\uFF09": { en: "Release (let those notes go)" },
+  "\u6362\u8E0F\u677F\uFF08\u6362\u6210\u6B64\u523B\u6309\u7740\u7684\u97F3\uFF09": { en: "Change pedal (switch to the notes held now)" },
   "\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09": { en: "Press (play a little softer)" },
   "\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09": { en: "Lift (back to the written loudness)" },
-  "\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09": { en: "Change pedal (means nothing for the soft pedal: stays pressed)" },
+  "\u6362\u8E0F\u677F\uFF08\u5F31\u97F3\u7167\u65E7\u8E29\u7740\uFF09": { en: "Change pedal (the soft pedal stays down)" },
   "\u5EF6\u97F3\u8E0F\u677F": { en: "Sustain pedal" },
   "\u6301\u97F3\u8E0F\u677F": { en: "Sostenuto pedal" },
   "\u5F31\u97F3\u8E0F\u677F": { en: "Soft pedal" },
@@ -6407,7 +6407,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.44-2026-11-13";
+var APP_VERSION = "v0.17.45-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -20871,6 +20871,7 @@ var ACC_ORDER = [2, 1, -1, -2];
 var ACC_GLYPH2 = ["\uE264", "\uE260", "", "\uE262", "\uE263"];
 var faceHtml = (f2) => "name" in f2 ? `<span class="kf-nm">${escHtml(f2.name)}</span>` : `<span class="kf-dg">${octDots(Math.max(0, f2.oct))}<span class="num"><span class="acc">${escHtml(f2.acc ?? "")}</span>${escHtml(f2.deg)}</span>${octDots(Math.max(0, -f2.oct))}</span>`;
 var faceText = (f2) => "name" in f2 ? f2.name : `${f2.acc ?? ""}${f2.deg}`;
+var rangeFace = (f2) => "name" in f2 ? escHtml(f2.name) : faceHtml(f2);
 var escHtml = (t10) => t10.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
 var keyIdOf = (b3) => {
   const d3 = b3.dataset;
@@ -20975,14 +20976,14 @@ var Pad = class {
   }
   /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
   spanText(shift, rows) {
-    const lo2 = this.baseAt(shift, rows), hi = lo2 + rows * this.cols - 1, m2 = this.host.music;
-    return `${faceText(m2.cell(lo2).big)}\u2013${faceText(m2.cell(hi).big)}`;
+    const lo2 = this.baseAt(shift, rows), hi = lo2 + rows * this.cols - 1, m2 = this.host.music, a10 = m2.cell(lo2), z2 = m2.cell(hi);
+    const big = `${faceText(a10.big)}\u2013${faceText(z2.big)}`;
+    return "name" in a10.big ? big : `${big}\uFF08${faceText(a10.small)}\u2013${faceText(z2.small)}\uFF09`;
   }
   /** 同上，画在旋钮 / 滚轮里：放得下就一行「F3–G5」；太窄就两行，下面那行是低的那头（user「也许上下两个吧，下面是lower bound」）。 */
   spanHtml(shift, rows, narrow) {
-    if (!narrow) return this.spanText(shift, rows);
-    const lo2 = this.baseAt(shift, rows), hi = lo2 + rows * this.cols - 1, m2 = this.host.music;
-    return `<span class="rg"><span>${faceText(m2.cell(hi).big)}</span><span>${faceText(m2.cell(lo2).big)}</span></span>`;
+    const lo2 = this.baseAt(shift, rows), hi = lo2 + rows * this.cols - 1, m2 = this.host.music, a10 = rangeFace(m2.cell(lo2).big), z2 = rangeFace(m2.cell(hi).big);
+    return narrow ? `<span class="rg"><span>${z2}</span><span>${a10}</span></span>` : `<span class="rw">${a10}<span>\u2013</span>${z2}</span>`;
   }
   /** 音域旋钮窄到一行写不下（手机 / 桌面的窄 pad）。 */
   rangeNarrow() {
@@ -35429,15 +35430,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-fd448c61a6b8.mjs");
+      return pick3(() => "singer-worker-a8a492405390.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-5e7cfe14782a.mjs");
+      return pick3(() => "layout-worker-a794ec4ba0ca.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-e37a2f9c4f82.mjs");
+      return pick3(() => "encode-worker-8a0c2ef892cd.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -63470,7 +63471,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "ecdb2197e16d",
+  cssHash: "42d9aa52022e",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -65250,9 +65251,9 @@ function openRepeatMenu() {
 }
 var PEDAL_ACT_LABEL = {
   sustain: { down: _t("\u8E29\u4E0B\uFF08\u63A5\u7740\u54CD\uFF09"), up: _t("\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u63A5\u7740\u54CD\uFF09") },
-  sostenuto: { down: _t("\u8E29\u4E0B\uFF08\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09"), up: _t("\u62AC\u8D77\uFF08\u653E\u5F00\u63A5\u7740\u54CD\u7684\u90A3\u51E0\u4E2A\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u8BA9\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09") },
-  // 持音只放开它留住的那几个（统筹审 11-2：「止音」说大了）
-  soft: { down: _t("\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09"), up: _t("\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09") }
+  // 持音只放开它留住的那几个（统筹审 11-2：「止音」说大了）。v0.17.45 缩短（统筹：理顺、不靠折行顶着，意思不变）：这一节上面那行已经说了持音是什么，括号里只说这一下的效果
+  sostenuto: { down: _t("\u8E29\u4E0B\uFF08\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09"), up: _t("\u62AC\u8D77\uFF08\u653E\u5F00\u90A3\u51E0\u4E2A\u97F3\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u6362\u6210\u6B64\u523B\u6309\u7740\u7684\u97F3\uFF09") },
+  soft: { down: _t("\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09"), up: _t("\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09"), change: _t("\u6362\u8E0F\u677F\uFF08\u5F31\u97F3\u7167\u65E7\u8E29\u7740\uFF09") }
 };
 var PEDAL_ACTS = { sustain: ["down", "up", "change"], sostenuto: ["down", "up", "change"], soft: ["down", "up"] };
 var PEDAL_NAME = { sustain: _t("\u5EF6\u97F3\u8E0F\u677F"), sostenuto: _t("\u6301\u97F3\u8E0F\u677F"), soft: _t("\u5F31\u97F3\u8E0F\u677F") };
@@ -68018,4 +68019,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1706257971ab.mjs.map
+//# sourceMappingURL=moonsinger-6170beae0e3b.mjs.map

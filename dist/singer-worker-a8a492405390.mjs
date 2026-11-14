@@ -671,12 +671,12 @@ var S = {
   "\u8E29\u4E0B\uFF08\u63A5\u7740\u54CD\uFF09": { en: "Press (keeps ringing)" },
   "\u62AC\u8D77\uFF08\u6B62\u97F3\uFF09": { en: "Lift (stop the notes)" },
   "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u63A5\u7740\u54CD\uFF09": { en: "Change pedal (stop, then keep ringing)" },
-  "\u8E29\u4E0B\uFF08\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": { en: "Press (notes held at this moment keep ringing)" },
-  "\u62AC\u8D77\uFF08\u653E\u5F00\u63A5\u7740\u54CD\u7684\u90A3\u51E0\u4E2A\u97F3\uFF09": { en: "Release (let go of the notes kept ringing)" },
-  "\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u8BA9\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": { en: "Change pedal (let go, then keep the notes held at this moment ringing)" },
+  "\u8E29\u4E0B\uFF08\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": { en: "Press (held notes keep ringing)" },
+  "\u62AC\u8D77\uFF08\u653E\u5F00\u90A3\u51E0\u4E2A\u97F3\uFF09": { en: "Release (let those notes go)" },
+  "\u6362\u8E0F\u677F\uFF08\u6362\u6210\u6B64\u523B\u6309\u7740\u7684\u97F3\uFF09": { en: "Change pedal (switch to the notes held now)" },
   "\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09": { en: "Press (play a little softer)" },
   "\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09": { en: "Lift (back to the written loudness)" },
-  "\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09": { en: "Change pedal (means nothing for the soft pedal: stays pressed)" },
+  "\u6362\u8E0F\u677F\uFF08\u5F31\u97F3\u7167\u65E7\u8E29\u7740\uFF09": { en: "Change pedal (the soft pedal stays down)" },
   "\u5EF6\u97F3\u8E0F\u677F": { en: "Sustain pedal" },
   "\u6301\u97F3\u8E0F\u677F": { en: "Sostenuto pedal" },
   "\u5F31\u97F3\u8E0F\u677F": { en: "Soft pedal" },
@@ -10876,4 +10876,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-fd448c61a6b8.mjs.map
+//# sourceMappingURL=singer-worker-a8a492405390.mjs.map

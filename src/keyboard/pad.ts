@@ -98,8 +98,10 @@ const ACC_GLYPH = ["\uE264", "\uE260", "", "\uE262", "\uE263"];
 /** 一行键上的字（KeyFace → HTML；字由宿主给，这里只排版：名字 = 一串字，级数 = 高低点 + 升降号 + 数字）。 */
 const faceHtml = (f: KeyFace): string => ("name" in f ? `<span class="kf-nm">${escHtml(f.name)}</span>`
   : `<span class="kf-dg">${octDots(Math.max(0, f.oct))}<span class="num"><span class="acc">${escHtml(f.acc ?? "")}</span>${escHtml(f.deg)}</span>${octDots(Math.max(0, -f.oct))}</span>`);
-/** 一行键上的字的纯文本（音域旋钮写最低、最高两个键的大字用）。 */
+/** 一行键上的字的纯文本（音域旋钮的提示字用）。 */
 const faceText = (f: KeyFace): string => ("name" in f ? f.name : `${f.acc ?? ""}${f.deg}`);
+/** 音域旋钮 / 滚轮上写的一头：名字照写；简谱的级数带八度点（同键上的画法，v0.17.45：只写「4–5」看不出是哪个八度）。 */
+const rangeFace = (f: KeyFace): string => ("name" in f ? escHtml(f.name) : faceHtml(f));
 const escHtml = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 /** 一颗键的 id（没意义的键用，见 PadHost.offWhy）。 */
 const keyIdOf = (b: Element): string | null => { const d = (b as HTMLElement).dataset;
@@ -230,14 +232,14 @@ export class Pad {
   }
   /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
   private spanText(shift: number, rows: number): string {
-    const lo = this.baseAt(shift, rows), hi = lo + rows * this.cols - 1, m = this.host.music;
-    return `${faceText(m.cell(lo).big)}–${faceText(m.cell(hi).big)}`;   // 最低、最高两个键的大字（第 19 条：K4 跟着键上的大字）
+    const lo = this.baseAt(shift, rows), hi = lo + rows * this.cols - 1, m = this.host.music, a = m.cell(lo), z = m.cell(hi);
+    const big = `${faceText(a.big)}–${faceText(z.big)}`;   // 最低、最高两个键的大字（第 19 条：K4 跟着键上的大字）
+    return "name" in a.big ? big : `${big}（${faceText(a.small)}–${faceText(z.small)}）`;   // 大字是简谱数字 = 括上小字（实际音名），纯文本里画不出八度点
   }
   /** 同上，画在旋钮 / 滚轮里：放得下就一行「F3–G5」；太窄就两行，下面那行是低的那头（user「也许上下两个吧，下面是lower bound」）。 */
   private spanHtml(shift: number, rows: number, narrow: boolean): string {
-    if (!narrow) return this.spanText(shift, rows);
-    const lo = this.baseAt(shift, rows), hi = lo + rows * this.cols - 1, m = this.host.music;
-    return `<span class="rg"><span>${faceText(m.cell(hi).big)}</span><span>${faceText(m.cell(lo).big)}</span></span>`;
+    const lo = this.baseAt(shift, rows), hi = lo + rows * this.cols - 1, m = this.host.music, a = rangeFace(m.cell(lo).big), z = rangeFace(m.cell(hi).big);
+    return narrow ? `<span class="rg"><span>${z}</span><span>${a}</span></span>` : `<span class="rw">${a}<span>–</span>${z}</span>`;
   }
   /** 音域旋钮窄到一行写不下（手机 / 桌面的窄 pad）。 */
   private rangeNarrow(): boolean { const b = this.el.querySelector<HTMLElement>(".k-range"); return !!b && b.clientWidth < NARROW; }

@@ -244,7 +244,8 @@
    其余 badge 保持 --ink-soft 灰。 */
 .gallery-tile-state-icon.b-conflictBoth { color: var(--warn); }
 .gallery-tile-state-icon.b-newerOnCloud { color: var(--accent); }
-/* 「编辑中」角标叠在第 1 行（name）右侧，可压住右端文字（用户：可重叠）。0.2.1：文字从 CSS content 搬进模板走 i18n（gal.tile.active；WXHW 改「打开中」） */
+/* 「编辑中」角标在第 1 行（name）右侧。0.2.1：文字从 CSS content 搬进模板走 i18n（gal.tile.active；WXHW 改「打开中」）。
+   0.9.3：不再压住名字（MoonSinger 统筹 2026-11-13「『打开中』的标记压住文件名」）——角标浮在右边，名字（overflow:hidden 自成一块）自动让开、太长打省略号。 */
 /* 0.6.1：加密的文档卡片左上角一把大锁（覆盖层之上、名字行之下），解锁与否都显示——一眼分出加密和不加密
    （WXHW user 2026-09-30「gallery里面加密和不加密也需要有辨识度。左上角加一把大锁？」）。宿主可改位置 / 大小；列表布局不画。 */
 .gallery-tile-lockmark {
@@ -307,15 +308,15 @@
 .gallery-marks-text { font-size: 12px; }
 .gallery-breadcrumb.gallery-marks-bar .gallery-marks-toggle { border: 1px solid var(--line, #ccc); border-radius: 14px; padding: 2px 12px; margin-right: 8px; }
 .gallery-tile-active-tag {
-  position: absolute; right: 6px; top: 8px;
+  float: right;   /* 0.9.3：浮在名字那一行右边（原来 absolute 压在名字右端）；它在模板里排在名字前面，名字那一块让开它 */
   pointer-events: none;
-  font-size: 10px;
+  font-size: 10px; line-height: 15px;
+  margin: 1px 0 0 6px;
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   border-radius: 3px;
-  padding: 1px 6px;
-  margin-left: 6px;
-  vertical-align: middle;
+  padding: 0 6px;
+  white-space: nowrap;
 }
 .gallery-empty {
   flex: 1;
@@ -485,7 +486,7 @@
 .gallery-grid.list .gallery-tile.folder .gallery-tile-thumb svg { width: 26px; height: 26px; }
 .gallery-grid.list .gallery-tile-name-row { grid-area: name; padding: 0; min-width: 0; }
 .gallery-grid.list .gallery-tile-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 14px; line-height: 1.3; }
-.gallery-grid.list .gallery-tile-active-tag { position: static; display: inline-block; margin: 0 0 2px; }
+.gallery-grid.list .gallery-tile-active-tag { float: none; position: static; display: inline-block; margin: 0 0 2px; }
 .gallery-grid.list .gallery-tile-menu-btn { grid-area: menu; position: static; background: transparent; border-color: transparent; color: var(--ink-soft); backdrop-filter: none; -webkit-backdrop-filter: none; }
 .gallery-grid.list .gallery-tile-menu-popup { right: 12px; top: 40px; }
 .gallery-grid.list .gallery-tile-menu-popup.up { top: auto; bottom: 40px; }

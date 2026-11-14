@@ -1981,14 +1981,14 @@ export declare const S: {
     readonly "\u6362\u8E0F\u677F\uFF08\u5148\u6B62\u97F3\u3001\u518D\u63A5\u7740\u54CD\uFF09": {
         readonly en: "Change pedal (stop, then keep ringing)";
     };
-    readonly "\u8E29\u4E0B\uFF08\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": {
-        readonly en: "Press (notes held at this moment keep ringing)";
+    readonly "\u8E29\u4E0B\uFF08\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": {
+        readonly en: "Press (held notes keep ringing)";
     };
-    readonly "\u62AC\u8D77\uFF08\u653E\u5F00\u63A5\u7740\u54CD\u7684\u90A3\u51E0\u4E2A\u97F3\uFF09": {
-        readonly en: "Release (let go of the notes kept ringing)";
+    readonly "\u62AC\u8D77\uFF08\u653E\u5F00\u90A3\u51E0\u4E2A\u97F3\uFF09": {
+        readonly en: "Release (let those notes go)";
     };
-    readonly "\u6362\u8E0F\u677F\uFF08\u5148\u653E\u5F00\uFF0C\u518D\u8BA9\u8FD9\u4E00\u523B\u6309\u7740\u7684\u97F3\u63A5\u7740\u54CD\uFF09": {
-        readonly en: "Change pedal (let go, then keep the notes held at this moment ringing)";
+    readonly "\u6362\u8E0F\u677F\uFF08\u6362\u6210\u6B64\u523B\u6309\u7740\u7684\u97F3\uFF09": {
+        readonly en: "Change pedal (switch to the notes held now)";
     };
     readonly "\u8E29\u4E0B\uFF08\u5F39\u5F97\u8F7B\u4E00\u70B9\uFF09": {
         readonly en: "Press (play a little softer)";
@@ -1996,8 +1996,8 @@ export declare const S: {
     readonly "\u62AC\u8D77\uFF08\u56DE\u5230\u539F\u6765\u7684\u8F7B\u91CD\uFF09": {
         readonly en: "Lift (back to the written loudness)";
     };
-    readonly "\u6362\u8E0F\u677F\uFF08\u5BF9\u5F31\u97F3\u6CA1\u6709\u610F\u601D\uFF1A\u7167\u65E7\u8E29\u7740\uFF09": {
-        readonly en: "Change pedal (means nothing for the soft pedal: stays pressed)";
+    readonly "\u6362\u8E0F\u677F\uFF08\u5F31\u97F3\u7167\u65E7\u8E29\u7740\uFF09": {
+        readonly en: "Change pedal (the soft pedal stays down)";
     };
     readonly 延音踏板: {
         readonly en: "Sustain pedal";
