@@ -9,8 +9,8 @@ export declare const TPQ = 1680;
 export declare const BEAT = 1680;
 export declare const WHOLE: number;
 /** 长短六档（plain 值）：三十二分 · 十六分 · 八分 · 四分 · 二分 · 全音符（user「长的话最多全音符同意，再有需求用连音」）。 */
-export declare const LADDER: readonly [number, number, number, 1680, number, number];
-export declare const DEFAULT_UNIT = 2;
+/** 接下来写的长短默认 = 八分（user「默认可以是八分音符吗」）。长短旋钮上有哪几档 = note-values.ts lenSteps（跟光标处的拍号）。 */
+export declare const DEFAULT_LEN: number;
 /** 连音：n 个占 m 个的位置 → 每个 × m/n（三连 ×⅔、五连 ×⅘、六连 ×⅔（4 拍分 6）、七连 ×4/7）。 */
 export declare const TUPLET: Record<number, [number, number]>;
 /** 数据上的时值下限 / 上限（下限 = 三十二分七连音；上限 = 四个全音符，再长用连音线）。 */
@@ -286,7 +286,7 @@ export declare const NEW_SONG_HEAD: Readonly<{
 /** 输入状态（不进数据）：写的时候下一个音长什么样。 */
 export type Acc = -2 | -1 | 0 | 1 | 2;
 export interface InputState {
-    unit: number;
+    len: number;
     tuplet: 0 | 3 | 5 | 6 | 7;
     acc: Acc;
     accMode: "off" | "once" | "lock";
@@ -594,10 +594,12 @@ export declare function extend(st: EditorState, half?: boolean): EditorState;
  *  写的时候 = 撤回本次输入记录的最后一笔（写的时候吃掉的休止原样放回去，后面不挪），记录空了就删光标前一个 token。 */
 export declare function backspace(st: EditorState): EditorState;
 export declare function deleteForward(st: EditorState): EditorState;
-/** 长短基线直接设成第几档（pad 的长短旋钮点开选）。 */
-export declare function setUnit(st: EditorState, unit: number): EditorState;
-/** 长短 = 输入档位（接下来写的长短；到头不动）。有选区也一样——选区里写 = 替换模式按这一档吃（键盘只管打谱；
- *  整组改时值 = 选区菜单 scaleSelDur / setSelDur；2026-10-08 user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单」）。 */
+/** 长短基线直接设成这么长（pad 的长短旋钮 / 滚轮、/2）。带附点的档不连音：连音顺手去掉（说一句归宿主）。 */
+export declare function setLen(st: EditorState, len: number): EditorState;
+/** 光标这里（这个声部、光标处的拍号）长短旋钮上的档（短 → 长）。 */
+export declare function lenStepsAt(st: EditorState): number[];
+/** 长短 = 输入档位（接下来写的长短；沿光标这里的档走一档，不在表上 = 往那个方向最近的一档；到头不动）。有选区也一样——
+ *  整组改时值 = 选区菜单 scaleSelDur / setSelDur；2026-10-08 user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单」。 */
 export declare function shorter(st: EditorState): EditorState;
 export declare function longer(st: EditorState): EditorState;
 /** 选区菜单「÷2 / ×2」：选中的音 / 休止都乘这个数（超出全音符 / 三十二分的那个不动）。 */
@@ -614,10 +616,8 @@ export declare function setAccState(st: EditorState, acc: Acc, mode: InputState[
 export declare function setInputKey(st: EditorState, fifths: number): EditorState;
 /** pad 的调式：只管 pad 上排哪些音。 */
 export declare function setInputScale(st: EditorState, id: string): EditorState;
-/** 选中的音 / 休止全部改成这一档（选区菜单「都改成 ♪」= pad 长短旋钮现在那一档；连音跟 pad 现在的连音设置）。 */
-export declare function setSelDur(st: EditorState, unit: number): EditorState;
-/** 选中的音 / 休止现在是哪一档（都一样才有；长短不一 / 不是整档 / 没选 = null）：选区菜单显示用。 */
-export declare function selUnit(st: EditorState): number | null;
+/** 选中的音 / 休止全部改成长短旋钮现在那一档（选区菜单「都改成 ♪」；连音跟 pad 现在的连音设置）。 */
+export declare function setSelDur(st: EditorState): EditorState;
 export declare const stepTarget: (st: EditorState, steps: number) => EditorState;
 export declare const alterTarget: (st: EditorState, d: number) => EditorState;
 export declare const octaveTarget: (st: EditorState, d: number) => EditorState;

@@ -4667,14 +4667,19 @@ var S = {
   "\u51FA\u58F0\u7684\u6362\u6C14\u6302\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "An audible breath goes after a note (before the cursor is a rest, or no note yet)" },
   "\u97F3\u5185\u7684\u8D77\u4F0F\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A swell must go on a note (before the cursor is a rest, or no note yet)" },
   "{p}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "{p} goes from one note to the next (before the cursor is a rest, or no note yet)" },
+  "\u5E26\u9644\u70B9\u7684\u957F\u77ED\u4E0D\u8FDE\u97F3\uFF1A\u8FDE\u97F3\u5173\u6389\u4E86": { en: "Dotted lengths have no tuplets: tuplet turned off" },
   "\u952E\u4E0A\u6309 C \u8C03\u5199": { en: "Keys in C" },
   "\u79FB\u8C03\u8F85\u52A9\u5F00\u7740\uFF1A\u952E\u4E0A\u7684\u5927\u5B57\u662F\u8FD9\u4E2A\u97F3\u5728\u8C31\u4E0A\uFF08\u6362\u5230 C \u8C03\uFF09\u753B\u6210\u7684\u540D\u5B57\uFF0C\u5C0F\u5B57\u662F\u5B9E\u9645\u7684\u97F3\uFF1B\u300C1=\u300D\u5199\u7684\u662F\u5B9E\u9645\u7684\u8C03": { en: "Transposition aid is on: the big label on each key is the name this note is drawn as on the score (in C); the small label is the actual note; 1= shows the actual key" },
   "\u8DDF\u8C31": { en: "Follow score" },
   "\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7": { en: "Uses the key signature here" },
+  "{n} \u8FDE\u97F3": { en: "{n}-tuplet" },
   "\u624B\u52A8": { en: "Manual" },
   "\u624B\u52A8\uFF1A\u952E\u76D8\u6309 {pad} \u6392\uFF0C\u548C\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF081={k}\uFF09\u4E0D\u4E00\u6837\u3002\u70B9\u5F00\u300C1=\u300D\uFF0C\u8C03\u5F0F\u90A3\u4E00\u5217\u6700\u4E0A\u9762\u7684\u300C\u8DDF\u8C31\u300D= \u56DE\u5230\u8DDF\u7740\u8C31\u8D70": { en: "Manual: the keyboard is laid out in {pad}, which differs from the key signature here (1={k}). Open \u201C1=\u201D and pick \u201CFollow score\u201D at the top of the mode column to follow the score again" },
   "{name}\uFF08\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF09": { en: "{name} (follows the key signature here)" },
   "{name}\uFF08\u624B\u52A8\uFF09": { en: "{name} (manual)" },
+  "\uFF08{tuplet} \u8FDE\u97F3\uFF09": { en: " ({tuplet}-tuplet)" },
+  "\u4E0D\u8FDE": { en: "No tuplet" },
+  "\u5E26\u9644\u70B9\u7684\u957F\u77ED\u4E0D\u8FDE\u97F3\uFF1A\u8981\u8FDE\u97F3\uFF0C\u5148\u6362\u4E00\u4E2A\u4E0D\u5E26\u9644\u70B9\u7684\u957F\u77ED": { en: "Dotted lengths have no tuplets: to use one, first pick a length without a dot" },
   "\u5B58\u5728\u4F60\u7684\u6B4C\u5E93\u91CC\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": { en: "Saved in your library. You can leave any of these unpicked and change them later in Settings." },
   "\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u767B\u5F55\u540E\u8DDF\u7740\u4F60\uFF1B\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": { en: "Kept on this device; follows you once you sign in. You can leave any of these unpicked and change them later in Settings." },
   "\u4E0D\u7528": { en: "Off" },
@@ -5382,13 +5387,6 @@ var S = {
   "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438\uFF08\u9759\u9ED8 / \u8F7B\u5438 / \u6DF1\u5438\uFF09\u3001\u6C14\u58F0": { en: "Strength (ghost / unstressed / stress / accent / marcato / sfz / fp), tenuto / staccato / slur / breath (silent / soft / deep), whisper" },
   "ppp\u2026fff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F": { en: "ppp\u2026fff, crescendo / diminuendo, ramp, swells" },
   "\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09\u3001\u53CD\u590D\u3001\u8E0F\u677F": { en: "Key / time / clef / octave lines / tempo, style (beat weights), repeats, pedals" },
-  "\u4E09\u5341\u4E8C\u5206": { en: "Thirty-second" },
-  "\u5341\u516D\u5206": { en: "Sixteenth" },
-  "\u516B\u5206": { en: "Eighth" },
-  "\u56DB\u5206": { en: "Quarter" },
-  "\u4E8C\u5206": { en: "Half" },
-  "\u5168\u97F3\u7B26": { en: "Whole" },
-  "{n} \u8FDE\u97F3": { en: "{n}-tuplet" },
   "\u7B26\u53F7\u683C\u5F00\u7740\uFF1A\u8FD9\u4E00\u9762\u53EA\u5199\u8BB0\u53F7\uFF1B\u70B9\u300C\u97F3\u300D\u6362\u56DE\u97F3\u952E\u5199\u97F3": { en: "The symbol keys are showing: this side only writes marks; tap \u201CNotes\u201D to switch back" },
   "\u5149\u6807\u5DE6\u79FB\uFF08{p}\uFF09": { en: "Cursor left ({p})" },
   "\u5149\u6807\u53F3\u79FB\uFF08{p}\uFF09": { en: "Cursor right ({p})" },
@@ -5497,12 +5495,10 @@ var S = {
   "\u957F\u4E00\u6B65": { en: "Longer" },
   "{name}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1\u6362\u8C03 / \u70B9\u5F00\u9009\u8C03\u548C\u8C03\u5F0F": { en: "{name}: hold and slide up or down to change key / tap to pick key and mode" },
   "\u957F\u77ED\u57FA\u7EBF\uFF1A{p}{tuplet}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009": { en: "Note length: {p}{tuplet} \u2014 hold and slide up / down, or tap to choose" },
-  "\uFF08{tuplet} \u8FDE\u97F3\uFF09": { en: " ({tuplet}-tuplet)" },
   "\u97F3\u57DF {rowShift}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684": { en: "Range {rowShift}: hold and slide up / down, or tap to choose \u2014 like pushing a sheet of paper: pushing up shows lower notes" },
   "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09": { en: "The pad's key (circle of fifths)" },
   "\u957F\u77ED\u57FA\u7EBF": { en: "Note length" },
   "\u97F3\u57DF\u7A97\u53E3": { en: "Range window" },
-  "\u4E0D\u8FDE": { en: "No tuplet" },
   "\u8FDE\u97F3": { en: "Tuplets" },
   "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3": { en: "Mode: which notes the pad lays out" },
   ' data-def="{def}" title="\u53CC\u51FB\u56DE {defText}"': { en: ' data-def="{def}" title="Double-click: back to {defText}"' },
@@ -5722,6 +5718,14 @@ var S = {
   "\u8FD9\u4E00\u6BB5\u6309\u65E5\u8BED\u5531\uFF1A\u5B57\u6BCD / \u6570\u5B57 / \u7B26\u53F7\u5FF5\u4E0D\u51C6\u2014\u2014\u5199\u6210\u5047\u540D": { en: "This segment is sung in Japanese: letters / digits / symbols aren't read reliably \u2014 write them in kana" },
   "\u8FD9\u4E00\u6BB5\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57": { en: "This segment is sung in Chinese: one character per note" },
   "\u8FD9\u4E00\u6BB5\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD": { en: "This segment is sung in English: use Latin letters" },
+  "\u4E09\u5341\u4E8C\u5206": { en: "Thirty-second" },
+  "\u5341\u516D\u5206": { en: "Sixteenth" },
+  "\u516B\u5206": { en: "Eighth" },
+  "\u56DB\u5206": { en: "Quarter" },
+  "\u4E8C\u5206": { en: "Half" },
+  "\u5168\u97F3\u7B26": { en: "Whole" },
+  "{n} \u4E2A\u56DB\u5206": { en: "{n} quarters" },
+  "\u9644\u70B9{name}": { en: "Dotted {name}" },
   "\u8212\u9002": { en: "Comfortable" },
   "\u97F3\u7B26\u5927\uFF0C\u4E00\u9875\u653E\u5F97\u5C11": { en: "Big notes, fewer per page" },
   "\u7D27\u51D1": { en: "Compact" },
@@ -6445,7 +6449,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.50-2026-11-13";
+var APP_VERSION = "v0.17.51-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -6900,11 +6904,80 @@ function navWhy(song, paper, partId, t10) {
   return null;
 }
 
+// src/score/note-values.ts
+var PLAIN = [
+  { name: "32nd", den: 32, glyph: "\uE1DB", label: () => _t("\u4E09\u5341\u4E8C\u5206") },
+  { name: "16th", den: 16, glyph: "\uE1D9", label: () => _t("\u5341\u516D\u5206") },
+  { name: "eighth", den: 8, glyph: "\uE1D7", label: () => _t("\u516B\u5206") },
+  { name: "quarter", den: 4, glyph: "\uE1D5", label: () => _t("\u56DB\u5206") },
+  { name: "half", den: 2, glyph: "\uE1D3", label: () => _t("\u4E8C\u5206") },
+  { name: "whole", den: 1, glyph: "\uE1D2", label: () => _t("\u5168\u97F3\u7B26") }
+];
+var DOT_GLYPH = "\uE1E7";
+var DOTTED = "dotted-";
+var plainLen = (k2) => WHOLE / PLAIN[k2].den;
+function lenShape(len) {
+  for (let k2 = 0; k2 < PLAIN.length; k2++) {
+    if (plainLen(k2) === len) return { base: k2, dotted: false };
+    if (plainLen(k2) * 1.5 === len) return { base: k2, dotted: true };
+  }
+  return null;
+}
+function lenName(len) {
+  const s10 = lenShape(len);
+  return s10 ? (s10.dotted ? DOTTED : "") + PLAIN[s10.base].name : null;
+}
+function lenOfName(name) {
+  if (typeof name !== "string") return null;
+  const dotted = name.startsWith(DOTTED), k2 = PLAIN.findIndex((p2) => p2.name === (dotted ? name.slice(DOTTED.length) : name));
+  return k2 < 0 ? null : plainLen(k2) * (dotted ? 1.5 : 1);
+}
+var LEN_NAMES = [...PLAIN.map((p2) => p2.name), ...PLAIN.map((p2) => DOTTED + p2.name)];
+function lenGlyph(len) {
+  const s10 = lenShape(len);
+  return s10 ? PLAIN[s10.base].glyph + (s10.dotted ? DOT_GLYPH : "") : "";
+}
+function lenLabel(len) {
+  const s10 = lenShape(len);
+  if (!s10) return _t("{n} \u4E2A\u56DB\u5206", { n: +(len / TPQ).toFixed(3) });
+  return s10.dotted ? _t("\u9644\u70B9{name}", { name: PLAIN[s10.base].label() }) : PLAIN[s10.base].label();
+}
+function lenSteps(beats, beatType) {
+  const bar2 = beats * WHOLE / beatType, compound = beats % 3 === 0 && beats >= 6, beat = compound ? 3 * WHOLE / beatType : WHOLE / beatType;
+  const out = /* @__PURE__ */ new Set();
+  for (let k2 = 0; k2 < PLAIN.length; k2++) {
+    const L2 = plainLen(k2);
+    if (L2 > bar2) continue;
+    if (compound && L2 > beat && L2 % beat !== 0) continue;
+    out.add(L2);
+  }
+  if (compound && lenShape(beat)) out.add(beat);
+  const barShape = lenShape(bar2);
+  if (barShape?.dotted) out.add(bar2);
+  if (compound && beats === 12 && lenShape(bar2 / 2)) out.add(bar2 / 2);
+  if (!out.size) out.add(plainLen(0));
+  return [...out].sort((a10, b3) => a10 - b3);
+}
+function lenChoices(steps, cur) {
+  return steps.includes(cur) ? steps.slice() : [...steps, cur].sort((a10, b3) => a10 - b3);
+}
+function stepLen(steps, cur, dir) {
+  if (dir < 0) {
+    for (let i10 = steps.length - 1; i10 >= 0; i10--) if (steps[i10] < cur) return steps[i10];
+    return null;
+  }
+  for (const s10 of steps) if (s10 > cur) return s10;
+  return null;
+}
+function halfLen(len) {
+  const h2 = len / 2;
+  return Number.isInteger(h2) && h2 >= plainLen(0) ? h2 : null;
+}
+
 // src/score/song.ts
 var TPQ = 1680;
 var WHOLE = TPQ * 4;
-var LADDER = [TPQ / 8, TPQ / 4, TPQ / 2, TPQ, TPQ * 2, WHOLE];
-var DEFAULT_UNIT = 2;
+var DEFAULT_LEN = TPQ / 2;
 var TUPLET = { 3: [2, 3], 5: [4, 5], 6: [4, 6], 7: [4, 7] };
 var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
@@ -6980,7 +7053,7 @@ function emptySong(m2 = {}) {
   return { ...NEW_SONG_LOOK, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m2) } }] };
 }
 function initInput() {
-  return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", inputAuto: true };
+  return { len: DEFAULT_LEN, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", inputAuto: true };
 }
 function maxId(song) {
   let m2 = 0;
@@ -7145,7 +7218,7 @@ function beatTicks(beats, beatType) {
 var inputKey = (st2) => st2.input.inputAuto ? keyAt(tr(st2), st2.sel ? st2.sel.from : st2.caret) : st2.input.inputFifths;
 var inputScaleOf = (st2) => st2.input.inputAuto ? "major" : st2.input.inputScale;
 function unitDur(input) {
-  const plain2 = LADDER[input.unit];
+  const plain2 = input.len;
   if (!input.tuplet) return plain2;
   const [m2, n10] = TUPLET[input.tuplet];
   return plain2 * m2 / n10;
@@ -7978,14 +8051,21 @@ function deleteForward(st2) {
   nt2.splice(i10, 1);
   return afterDelete(leave(st2), nt2, { caret: st2.caret });
 }
-function setUnit(st2, unit) {
-  return { ...st2, input: { ...st2.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) } };
+function setLen(st2, len) {
+  if (!(len > 0) || !Number.isInteger(len)) return st2;
+  return { ...st2, input: { ...st2.input, len, tuplet: lenShape(len)?.dotted ? 0 : st2.input.tuplet } };
+}
+function lenStepsAt(st2) {
+  const t10 = timeAt(tr(st2), st2.sel ? st2.sel.from : st2.caret);
+  return lenSteps(t10.beats, t10.beatType);
 }
 function shorter(st2) {
-  return st2.input.unit > 0 ? { ...st2, input: { ...st2.input, unit: st2.input.unit - 1 } } : st2;
+  const n10 = stepLen(lenStepsAt(st2), st2.input.len, -1);
+  return n10 === null ? st2 : setLen(st2, n10);
 }
 function longer(st2) {
-  return st2.input.unit < LADDER.length - 1 ? { ...st2, input: { ...st2.input, unit: st2.input.unit + 1 } } : st2;
+  const n10 = stepLen(lenStepsAt(st2), st2.input.len, 1);
+  return n10 === null ? st2 : setLen(st2, n10);
 }
 function scaleSelDur(st2, f2) {
   return mapSelDur(st2, (d3) => d3 * f2);
@@ -8001,7 +8081,7 @@ function toggleSelDot(st2) {
   return mapSelDur(st2, (d3) => allDotted ? d3 * 2 / 3 : plain2(d3) ? d3 * 1.5 : d3);
 }
 function setTuplet(st2, n10) {
-  return { ...st2, input: { ...st2.input, tuplet: n10 } };
+  return n10 && lenShape(st2.input.len)?.dotted ? st2 : { ...st2, input: { ...st2.input, tuplet: n10 } };
 }
 function tapAcc(st2, acc, now2) {
   if (st2.sel) return mapSelPitch(st2, (p2) => alterBy(p2, acc));
@@ -8024,8 +8104,8 @@ function firstNoteIn(st2) {
   for (let i10 = st2.sel.from; i10 < st2.sel.to; i10++) if (tr(st2)[i10].kind === "note") return i10;
   return -1;
 }
-function setSelDur(st2, unit) {
-  const d3 = unitDur({ ...st2.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) });
+function setSelDur(st2) {
+  const d3 = unitDur(st2.input);
   return mapSelDur(st2, () => d3);
 }
 function mapSelDur(st2, f2) {
@@ -10890,7 +10970,7 @@ function apply(st2, c10, now2 = Date.now()) {
     case "respell":
       return respellSel(st2);
     case "seldur":
-      return setSelDur(st2, st2.input.unit);
+      return setSelDur(st2);
     // 选区菜单「都改成 ♪」= 长短旋钮现在那一档
     case "selscale":
       return scaleSelDur(st2, c10.f);
@@ -18186,18 +18266,39 @@ function openDrum(anchor, cols, o10) {
   };
   setTimeout(() => document.addEventListener("pointerdown", outside, true), 0);
   addEventListener("keydown", esc15, true);
+  const offs = cols.map((c10) => c10.off), colEls = [];
+  const markOff = (ci2) => {
+    const col = colEls[ci2], why2 = offs[ci2];
+    col.classList.toggle("is-off", !!why2);
+    col.title = why2 ?? cols[ci2].title ?? "";
+  };
   const wheels = cols.map((c10, ci2) => {
     const col = document.createElement("div");
     col.className = "drum-col";
     col.style.width = `${c10.width}px`;
-    if (c10.title) col.title = c10.title;
+    colEls.push(col);
+    markOff(ci2);
+    const stop = (e10) => {
+      const why2 = offs[ci2];
+      if (!why2) return;
+      e10.preventDefault();
+      e10.stopPropagation();
+      if (e10.type === "pointerdown") o10.onOff?.(ci2, why2);
+    };
+    col.addEventListener("pointerdown", stop, true);
+    col.addEventListener("wheel", stop, { capture: true, passive: false });
     box.appendChild(col);
     return mountWheel(col, { items: c10.items, index: c10.index, loop: c10.loop, onChange: (i10) => o10.onChange(ci2, i10), onPick: () => close() });
   });
   const handle = {
     close,
     setItems: (ci2, items) => wheels[ci2]?.setItems(items),
-    setIndex: (ci2, i10) => wheels[ci2]?.scrollTo(i10)
+    setIndex: (ci2, i10) => wheels[ci2]?.scrollTo(i10),
+    setOff: (ci2, why2) => {
+      if (!colEls[ci2]) return;
+      offs[ci2] = why2;
+      markOff(ci2);
+    }
   };
   current = handle;
   return handle;
@@ -21630,20 +21731,8 @@ var MOVE = 6;
 var STACK = 150;
 var NARROW = 96;
 var TIGHT2 = 130;
-var UNITS = [0, 1, 2, 3, 4, 5];
-var TUP = [0, 3, 5, 6, 7];
 var SHIFTS = [4, 3, 2, 1, 0, -1, -2, -3, -4];
 var octDots = (n10) => n10 > 0 ? `<span class="jp-dots">${"<i></i>".repeat(n10)}</span>` : `<span class="jp-dots"></span>`;
-var UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];
-var UNIT_NAME = [_t("\u4E09\u5341\u4E8C\u5206"), _t("\u5341\u516D\u5206"), _t("\u516B\u5206"), _t("\u56DB\u5206"), _t("\u4E8C\u5206"), _t("\u5168\u97F3\u7B26")];
-function tupletMark(n10, unit) {
-  const S3 = 7, M2 = 1.5, HY = 25, TOP2 = 11.5, hx = (i10) => M2 + 3 + i10 * S3, sx2 = (i10) => hx(i10) + 2.35;
-  const W3 = hx(n10 - 1) + 3 + M2, hollow = unit >= 4, beams = Math.max(0, 3 - unit), cx2 = W3 / 2, by = 4.5;
-  const heads = Array.from({ length: n10 }, (_2, i10) => `<ellipse class="${hollow ? "ho" : "fi"}" cx="${hx(i10)}" cy="${HY}" rx="${unit === 5 ? 3 : 2.6}" ry="1.85" transform="rotate(-20 ${hx(i10)} ${HY})"/>`).join("");
-  const stems = unit <= 4 ? Array.from({ length: n10 }, (_2, i10) => `<line x1="${sx2(i10)}" y1="${HY - 0.5}" x2="${sx2(i10)}" y2="${TOP2}"/>`).join("") : "";
-  const beam = Array.from({ length: beams }, (_2, k2) => `<rect x="${sx2(0) - 0.45}" y="${TOP2 + k2 * 3}" width="${sx2(n10 - 1) - sx2(0) + 0.9}" height="1.8"/>`).join("");
-  return `<svg class="tupsvg" viewBox="0 0 ${W3} 28.5" width="${(W3 * 32 / 28.5).toFixed(1)}" height="32" aria-label="${_t("{n} \u8FDE\u97F3", { n: n10 })}"><path class="br" d="M${M2} ${by + 2.5}V${by}H${cx2 - 3.6}M${cx2 + 3.6} ${by}H${W3 - M2}V${by + 2.5}"/><text x="${cx2}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(59520 + n10)}</text>${stems}${beam}${heads}</svg>`;
-}
 var Pad = class {
   constructor(el2, host2) {
     this.el = el2;
@@ -22213,8 +22302,9 @@ ${x2.title}`).join("");
     }
     const u2 = q2(".k-unit .kl");
     if (u2) {
-      u2.innerHTML = `<span class="smufl">${UNIT_GLYPH[v.unit]}</span>${v.tuplet ? `<sup>${v.tuplet}</sup>` : ""}`;
-      u2.parentElement.title = _t("\u957F\u77ED\u57FA\u7EBF\uFF1A{p}{tuplet}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009", { p: UNIT_NAME[v.unit], tuplet: v.tuplet ? _t("\uFF08{tuplet} \u8FDE\u97F3\uFF09", { tuplet: v.tuplet }) : "" });
+      const lc3 = this.host.music.lenChoices();
+      u2.innerHTML = lc3.face;
+      u2.parentElement.title = _t("\u957F\u77ED\u57FA\u7EBF\uFF1A{p}{tuplet}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009", { p: lc3.name, tuplet: "" });
     }
     q2(".impro-pad")?.classList.toggle("is-on", this.host.isImpro());
     const r10 = q2(".k-range .kl");
@@ -22276,7 +22366,10 @@ ${x2.title}`).join("");
       const kc = this.host.music.keyChoices();
       return { items: kc.items, index: kc.index, title: _t("pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09"), set: (i10) => this.host.onPick("key", i10), loop: true };
     }
-    if (knob === "unit") return { items: UNITS.map((u2) => `<span class="smufl">${UNIT_GLYPH[u2]}</span>`), index: Math.max(0, UNITS.indexOf(v.unit)), title: _t("\u957F\u77ED\u57FA\u7EBF"), set: (i10) => this.host.onUnit(UNITS[i10]) };
+    if (knob === "unit") {
+      const lc3 = this.host.music.lenChoices();
+      return { items: lc3.items, index: lc3.index, title: _t("\u957F\u77ED\u57FA\u7EBF"), set: (i10) => this.host.onUnit(i10) };
+    }
     const rows = this.rows();
     return {
       items: SHIFTS.map((sh2) => this.spanHtml(sh2, rows, narrow)),
@@ -22381,18 +22474,24 @@ ${x2.title}`).join("");
   openDrumFor(knob, anchor) {
     const w2 = anchor.getBoundingClientRect().width;
     if (knob === "unit") {
-      const v2 = this.host.view();
+      const lc3 = this.host.music.lenChoices();
       const [wu, wt] = w2 >= 142 ? [w2 - Math.round(w2 * 0.55) - 2, Math.round(w2 * 0.55)] : [56, 84];
-      const tups = (u2) => TUP.map((n10) => n10 ? tupletMark(n10, u2) : `<span class="plain">${_t("\u4E0D\u8FDE")}</span>`);
+      const tc2 = this.host.music.tupletChoices(lc3.index);
       const h2 = openDrum(anchor, [
-        { items: UNITS.map((u2) => `<span class="smufl">${UNIT_GLYPH[u2]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u2]}</small>` : ""}`), index: Math.max(0, UNITS.indexOf(v2.unit)), width: wu, title: _t("\u957F\u77ED\u57FA\u7EBF") },
-        { items: tups(v2.unit), index: Math.max(0, TUP.indexOf(v2.tuplet)), width: wt, title: _t("\u8FDE\u97F3") }
-      ], { onChange: (c10, i10) => {
-        if (c10 === 0) {
-          this.host.onUnit(UNITS[i10]);
-          h2.setItems(1, tups(UNITS[i10]));
-        } else this.host.onTuplet(TUP[i10]);
-      } });
+        { items: lc3.items.map((x2, i10) => `${x2}${wu >= 100 ? `<small>${lc3.names[i10]}</small>` : ""}`), index: lc3.index, width: wu, title: _t("\u957F\u77ED\u57FA\u7EBF") },
+        { items: tc2.items, index: tc2.index, width: wt, title: _t("\u8FDE\u97F3"), off: tc2.off }
+      ], {
+        onChange: (c10, i10) => {
+          if (c10 === 0) {
+            this.host.onUnit(i10);
+            const t10 = this.host.music.tupletChoices(i10);
+            h2.setItems(1, t10.items);
+            h2.setOff(1, t10.off);
+            h2.setIndex(1, t10.index);
+          } else this.host.onTuplet(i10);
+        },
+        onOff: (_c, why2) => this.host.onOff?.(why2)
+      });
       return;
     }
     if (knob === "key") {
@@ -22526,6 +22625,16 @@ function outsideKey(sc2, f2, keySig) {
   const inKey = pcsOf(scaleById("major"), keySig);
   return [...pcsOf(sc2, f2)].some((pc2) => !inKey.has(pc2));
 }
+var TUP = [0, 3, 5, 6, 7];
+function tupletMark(n10, base2) {
+  const S3 = 7, M2 = 1.5, HY = 25, TOP2 = 11.5, hx = (i10) => M2 + 3 + i10 * S3, sx2 = (i10) => hx(i10) + 2.35;
+  const W3 = hx(n10 - 1) + 3 + M2, hollow = base2 >= 4, beams = Math.max(0, 3 - base2), cx2 = W3 / 2, by = 4.5;
+  const heads = Array.from({ length: n10 }, (_2, i10) => `<ellipse class="${hollow ? "ho" : "fi"}" cx="${hx(i10)}" cy="${HY}" rx="${base2 === 5 ? 3 : 2.6}" ry="1.85" transform="rotate(-20 ${hx(i10)} ${HY})"/>`).join("");
+  const stems = base2 <= 4 ? Array.from({ length: n10 }, (_2, i10) => `<line x1="${sx2(i10)}" y1="${HY - 0.5}" x2="${sx2(i10)}" y2="${TOP2}"/>`).join("") : "";
+  const beam = Array.from({ length: beams }, (_2, k2) => `<rect x="${sx2(0) - 0.45}" y="${TOP2 + k2 * 3}" width="${sx2(n10 - 1) - sx2(0) + 0.9}" height="1.8"/>`).join("");
+  return `<svg class="tupsvg" viewBox="0 0 ${W3} 28.5" width="${(W3 * 32 / 28.5).toFixed(1)}" height="32" aria-label="${_t("{n} \u8FDE\u97F3", { n: n10 })}"><path class="br" d="M${M2} ${by + 2.5}V${by}H${cx2 - 3.6}M${cx2 + 3.6} ${by}H${W3 - M2}V${by + 2.5}"/><text x="${cx2}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(59520 + n10)}</text>${stems}${beam}${heads}</svg>`;
+}
+var lenFace = (len) => `<span class="smufl">${lenGlyph(len)}</span>`;
 function createPadMusic(get, middleC, inC = () => false, jianpuBase = () => null) {
   const f2 = () => inputKey(get()), sc2 = () => scaleById(inputScaleOf(get()));
   const keySig = (st2) => keyAt(tr(st2), st2.sel ? st2.sel.from : st2.caret);
@@ -22568,6 +22677,29 @@ function createPadMusic(get, middleC, inC = () => false, jianpuBase = () => null
       const st2 = get(), toks = tr(st2), i10 = st2.sel ? st2.sel.from : st2.caret, t10 = timeAt(toks, i10);
       return { key: KEY_LABEL[keyAt(toks, i10)] ?? "?", beats: t10.beats, beatType: t10.beatType, bpm: tempoAt(toks, i10) };
     },
+    lenChoices: () => {
+      const st2 = get(), ls2 = lenChoices(lenStepsAt(st2), st2.input.len), tp2 = st2.input.tuplet;
+      return {
+        items: ls2.map(lenFace),
+        names: ls2.map(lenLabel),
+        index: Math.max(0, ls2.indexOf(st2.input.len)),
+        face: lenFace(st2.input.len) + (tp2 ? `<sup>${tp2}</sup>` : ""),
+        name: lenLabel(st2.input.len) + (tp2 ? _t("\uFF08{tuplet} \u8FDE\u97F3\uFF09", { tuplet: tp2 }) : "")
+      };
+    },
+    tupletChoices: (i10) => {
+      const st2 = get(), L2 = lenChoices(lenStepsAt(st2), st2.input.len)[i10] ?? st2.input.len, sh2 = lenShape(L2);
+      return {
+        items: TUP.map((n10) => n10 ? tupletMark(n10, sh2?.base ?? 2) : `<span class="plain">${_t("\u4E0D\u8FDE")}</span>`),
+        index: Math.max(0, TUP.indexOf(st2.input.tuplet)),
+        ...sh2?.dotted ? { off: _t("\u5E26\u9644\u70B9\u7684\u957F\u77ED\u4E0D\u8FDE\u97F3\uFF1A\u8981\u8FDE\u97F3\uFF0C\u5148\u6362\u4E00\u4E2A\u4E0D\u5E26\u9644\u70B9\u7684\u957F\u77ED") } : {}
+      };
+    },
+    lenAt: (i10) => {
+      const st2 = get();
+      return lenChoices(lenStepsAt(st2), st2.input.len)[i10] ?? st2.input.len;
+    },
+    tupletAt: (i10) => TUP[i10] ?? 0,
     pitchAt,
     fifthsAt: (i10) => KNOB_KEYS[i10],
     scaleIdAt: (i10) => i10 === 0 ? "auto" : SCALES[i10 - 1].id
@@ -35457,7 +35589,7 @@ function createPadHost(padEl2, g3) {
   const pad4 = new Pad(padEl2, {
     view: () => {
       const s10 = st2(), i10 = singleSel(s10), t10 = i10 >= 0 ? tr(s10)[i10] : null;
-      return { unit: s10.input.unit, tuplet: s10.input.tuplet, acc: s10.input.acc, accMode: s10.input.accMode, one: i10 >= 0, hasSel: !!s10.sel, chord: t10?.kind === "note" ? allPitches(t10).map(midiOf) : [] };
+      return { acc: s10.input.acc, accMode: s10.input.accMode, one: i10 >= 0, hasSel: !!s10.sel, chord: t10?.kind === "note" ? allPitches(t10).map(midiOf) : [] };
     },
     music,
     isImpro: padImpro,
@@ -35479,12 +35611,13 @@ function createPadHost(padEl2, g3) {
       g3.sound.down(np2, id2);
     },
     onKey: (id2, mods) => padKey(id2, mods),
-    onUnit: (u2) => {
+    onUnit: (i10) => {
       g3.half.knobTurned();
-      g3.update(setUnit(st2(), u2));
+      const s02 = st2(), nx2 = setLen(s02, music.lenAt(i10));
+      if (s02.input.tuplet && !nx2.input.tuplet) g3.info(_t("\u5E26\u9644\u70B9\u7684\u957F\u77ED\u4E0D\u8FDE\u97F3\uFF1A\u8FDE\u97F3\u5173\u6389\u4E86"));
+      g3.update(nx2);
     },
-    // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）
-    onTuplet: (n10) => g3.update(setTuplet(st2(), n10)),
+    onTuplet: (i10) => g3.update(setTuplet(st2(), music.tupletAt(i10))),
     onPick: (knob, i10) => g3.update(knob === "key" ? setInputKey(st2(), music.fifthsAt(i10)) : setInputScale(st2(), music.scaleIdAt(i10))),
     autoBars: () => g3.autoBars.get(),
     staves: () => g3.staves(),
@@ -36177,15 +36310,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-56cf3b541600.mjs");
+      return pick3(() => "singer-worker-02b0a728f88d.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-dfd09a77c6ab.mjs");
+      return pick3(() => "layout-worker-92d5255f1639.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-19659b35e67b.mjs");
+      return pick3(() => "encode-worker-d622905db6e2.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -39435,7 +39568,6 @@ function performers() {
 }
 
 // src/score/desk.ts
-var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 var freshPad = () => ({ auto: true, fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
 var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
 var FINDER_MODES = ["year", "style", "family", "hs"];
@@ -39468,7 +39600,7 @@ function serializeDesk(d3) {
     paper: d3.paper,
     parts,
     mp3: d3.mp3,
-    pad: { auto: pd.auto, fifths: pd.fifths, scale: pd.scale, unit: pd.unit, tuplet: pd.tuplet, low: pd.low },
+    pad: { auto: pd.auto, fifths: pd.fifths, scale: pd.scale, ...pd.unit !== null ? { unit: pd.unit } : {}, tuplet: pd.tuplet, low: pd.low },
     ref: d3.ref ? { open: d3.ref.open, left: d3.ref.left, top: d3.ref.top, width: d3.ref.width, height: d3.ref.height } : null,
     mode: d3.mode,
     finder: serializeFinderMemo(d3.finder)
@@ -39499,7 +39631,7 @@ function unserializeDesk(json) {
     if (Number.isInteger(q2.fifths) && Math.abs(q2.fifths) <= 7) d3.pad.fifths = q2.fifths;
     if (q2.auto === false) d3.pad.auto = false;
     if (typeof q2.scale === "string" && SCALES.some((sc2) => sc2.id === q2.scale)) d3.pad.scale = q2.scale;
-    if (PAD_UNITS.includes(q2.unit)) d3.pad.unit = q2.unit;
+    if (typeof q2.unit === "string" && LEN_NAMES.includes(q2.unit)) d3.pad.unit = q2.unit;
     if (q2.tuplet === 3 || q2.tuplet === 5 || q2.tuplet === 6 || q2.tuplet === 7) d3.pad.tuplet = q2.tuplet;
     if (Number.isInteger(q2.low) && q2.low >= 0 && q2.low <= 127) d3.pad.low = q2.low;
   }
@@ -47823,7 +47955,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "55d321a3ea7538bb" : "dev";
+var CORE_HASH = true ? "280e5c790057baf0" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -63308,11 +63440,13 @@ var halfShifted = false;
 function setHalf(next2) {
   const was = latchOn(half), on2 = latchOn(next2);
   if (!was && on2) {
-    halfShifted = D3.st.input.unit > 0;
-    if (halfShifted) update(setUnit(D3.st, D3.st.input.unit - 1));
+    const h2 = halfLen(D3.st.input.len);
+    halfShifted = h2 !== null;
+    if (h2 !== null) update(setLen(D3.st, h2));
   } else if (was && !on2 && halfShifted) {
     halfShifted = false;
-    update(setUnit(D3.st, D3.st.input.unit + 1));
+    const d3 = D3.st.input.len * 2;
+    if (d3 <= Math.max(WHOLE, ...lenStepsAt(D3.st))) update(setLen(D3.st, d3));
   }
   half = next2;
   pad3.showHalf(next2.mode);
@@ -64667,7 +64801,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "728d9b26a8a5",
+  cssHash: "900d4e666231",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -66818,7 +66952,15 @@ function openMarkMenu(i10, at3) {
     scoreEl.focus();
   });
 }
-var UNIT_SMUFL = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];
+function padUnitName(len) {
+  const n10 = lenName(len);
+  if (n10 === null) reportError(`[desk] pad length ${len} has no note-value name; not saved`, "log");
+  return n10;
+}
+function padLenOf(unit, tuplet) {
+  const len = lenOfName(unit) ?? DEFAULT_LEN;
+  return { len, tuplet: lenShape(len)?.dotted ? 0 : tuplet };
+}
 var KEY_CIRCLE_MENU = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
 function selBarAnchor() {
   const r10 = document.querySelector('.sel-bar [data-v="transpose"]')?.getBoundingClientRect();
@@ -66840,7 +66982,7 @@ function openSelMenu(at3) {
       return;
     }
     box.innerHTML = `<div class="ctx-row"><span class="ctx-k">${_t("\u79FB\u8C03")}</span>${chip2("tr:1", _t("\u2191 \u534A\u97F3"))}${chip2("tr:-1", _t("\u2193 \u534A\u97F3"))}${chip2("tr:2", _t("\u2191 \u5168\u97F3"))}${chip2("tr:-2", _t("\u2193 \u5168\u97F3"))}${chip2("oct:1", _t("\u2191 \u516B\u5EA6"))}${chip2("oct:-1", _t("\u2193 \u516B\u5EA6"))}</div>` + // 打击乐的行（7-R）：转调 / 按调号拼写都是从调号推出来的，灰着、点了说为什么；移调的半音 / 全音 / 八度留着
-    (perc ? item("keys", _t("\u8F6C\u8C03\u2026"), NO_KEY_WHY(), "is-off") + item("respell", _t("\u6309\u8C03\u53F7\u62FC\u5199"), NO_KEY_WHY(), "is-off") : item("keys", _t("\u8F6C\u8C03\u2026"), _t("\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362")) + item("respell", _t("\u6309\u8C03\u53F7\u62FC\u5199"), _t("\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8"))) + `<div class="ctx-row"><span class="ctx-k">${_t("\u65F6\u503C")}</span>${chip2("short", "\xF72")}${chip2("long", "\xD72")}${chip2("seldur", `${_t("\u90FD\u6539\u6210")} <span class="smufl">${UNIT_SMUFL[D3.st.input.unit]}</span>`, _t("\u90FD\u6539\u6210\u957F\u77ED\u65CB\u94AE\u73B0\u5728\u90A3\u4E00\u6863"))}</div><div class="ctx-row"><span class="ctx-k">${_t("\u6E05\u6389\u8BB0\u53F7")}</span>${chip2("clr:phrase", _t("\u66F2\u7EA7"), _t("\u529B\u5EA6\u5B57\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6E10\u5230\u3001\u98CE\u683C\uFF08\u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\u524D\u9762\u6302\u7740\u7684\u4E5F\u7B97\uFF09"))}${chip2("clr:note", _t("\u97F3\u7EA7"), _t("\u6F14\u594F\u6CD5\u3001\u97F3\u5934\uFF08\u91CD\u97F3 / \u7A81\u5F3A\u2026\uFF09\u3001\u97F3\u5185\u8D77\u4F0F\u3001\u8FDE\u7EBF\u3001\u547C\u5438\u3001\u6C14\u58F0"))}${chip2("clr:all", _t("\u90FD\u6E05"), _t("\u66F2\u7EA7 + \u97F3\u7EA7\uFF1B\u97F3\u3001\u6B4C\u8BCD\u3001\u8C03\u53F7\u62CD\u53F7\u901F\u5EA6\u3001\u53CD\u590D\u4E0D\u52A8"))}</div><div class="ctx-sep"></div>` + item("copy", _t("\u590D\u5236")) + item("cut", _t("\u526A\u5207")) + (clip ? item("paste", _t("\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09")) : "") + item("delete", _t("\u5220\u6389"), "", "danger");
+    (perc ? item("keys", _t("\u8F6C\u8C03\u2026"), NO_KEY_WHY(), "is-off") + item("respell", _t("\u6309\u8C03\u53F7\u62FC\u5199"), NO_KEY_WHY(), "is-off") : item("keys", _t("\u8F6C\u8C03\u2026"), _t("\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362")) + item("respell", _t("\u6309\u8C03\u53F7\u62FC\u5199"), _t("\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8"))) + `<div class="ctx-row"><span class="ctx-k">${_t("\u65F6\u503C")}</span>${chip2("short", "\xF72")}${chip2("long", "\xD72")}${chip2("seldur", `${_t("\u90FD\u6539\u6210")} <span class="smufl">${lenGlyph(D3.st.input.len)}</span>`, _t("\u90FD\u6539\u6210\u957F\u77ED\u65CB\u94AE\u73B0\u5728\u90A3\u4E00\u6863"))}</div><div class="ctx-row"><span class="ctx-k">${_t("\u6E05\u6389\u8BB0\u53F7")}</span>${chip2("clr:phrase", _t("\u66F2\u7EA7"), _t("\u529B\u5EA6\u5B57\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6E10\u5230\u3001\u98CE\u683C\uFF08\u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\u524D\u9762\u6302\u7740\u7684\u4E5F\u7B97\uFF09"))}${chip2("clr:note", _t("\u97F3\u7EA7"), _t("\u6F14\u594F\u6CD5\u3001\u97F3\u5934\uFF08\u91CD\u97F3 / \u7A81\u5F3A\u2026\uFF09\u3001\u97F3\u5185\u8D77\u4F0F\u3001\u8FDE\u7EBF\u3001\u547C\u5438\u3001\u6C14\u58F0"))}${chip2("clr:all", _t("\u90FD\u6E05"), _t("\u66F2\u7EA7 + \u97F3\u7EA7\uFF1B\u97F3\u3001\u6B4C\u8BCD\u3001\u8C03\u53F7\u62CD\u53F7\u901F\u5EA6\u3001\u53CD\u590D\u4E0D\u52A8"))}</div><div class="ctx-sep"></div>` + item("copy", _t("\u590D\u5236")) + item("cut", _t("\u526A\u5207")) + (clip ? item("paste", _t("\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09")) : "") + item("delete", _t("\u5220\u6389"), "", "danger");
   };
   draw("main");
   document.body.append(box);
@@ -67034,7 +67176,7 @@ var deskNow = () => ({
   parts: Object.fromEntries(partView),
   mp3: mp3Quality,
   mode: ws.mode,
-  pad: { auto: D3.st.input.inputAuto, fifths: D3.st.input.inputFifths, scale: D3.st.input.inputScale, unit: PAD_UNITS[D3.st.input.unit], tuplet: D3.st.input.tuplet, low: pad3.rangeLow() },
+  pad: { auto: D3.st.input.inputAuto, fifths: D3.st.input.inputFifths, scale: D3.st.input.inputScale, unit: padUnitName(D3.st.input.len), tuplet: D3.st.input.tuplet, low: pad3.rangeLow() },
   ref: refHost.panel(),
   finder: finder.memo("song")
 });
@@ -67044,7 +67186,7 @@ function applyDesk(d3) {
   scrollFlow = d3.scroll;
   mp3Quality = d3.mp3;
   finder.restore("song", d3.finder);
-  D3.commit({ st: { ...D3.st, input: { ...D3.st.input, inputAuto: d3.pad.auto, inputFifths: d3.pad.fifths, inputScale: d3.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d3.pad.unit)), tuplet: d3.pad.tuplet } } }, { silent: true, undo: false });
+  D3.commit({ st: { ...D3.st, input: { ...D3.st.input, inputAuto: d3.pad.auto, inputFifths: d3.pad.fifths, inputScale: d3.pad.scale, ...padLenOf(d3.pad.unit, d3.pad.tuplet) } } }, { silent: true, undo: false });
   partView.clear();
   for (const [id2, p2] of Object.entries(d3.parts)) partView.set(id2, { ...freshPartView(), ...p2 });
   if (d3.paper && d3.paper !== D3.st.at.paper) {
@@ -69223,4 +69365,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a55aaa188a78.mjs.map
+//# sourceMappingURL=moonsinger-010043d41dd5.mjs.map

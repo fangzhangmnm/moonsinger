@@ -1,13 +1,12 @@
-/** 时值存 MusicXML 的音符类型名（不存 LADDER 下标：下标哪天变了老文件就错）；顺序 = song.ts LADDER。 */
-export type PadUnit = "32nd" | "16th" | "eighth" | "quarter" | "half" | "whole";
-export declare const PAD_UNITS: readonly PadUnit[];
+/** 时值存音符类型名（MusicXML 的六个名字，带附点的前面加 dotted-，如 dotted-quarter；不存档的下标：档跟拍号变）。名字表和换算只在 note-values.ts。 */
+export type PadUnit = string;
 /** pad 的状态。low = 音域窗口最低那个键的 MIDI（换个行数 / 键位的设备也落在差不多的音域）；null = 默认那一档。 */
 /** auto = 「1=」跟谱（v0.16.9；新歌默认）。第 16 条起文件里明写 auto（原来靠有没有写 fifths 来判、没写 = 跟谱）；没写 auto = 跟谱。 */
 export interface PadDesk {
     auto: boolean;
     fifths: number;
-    scale: string;
-    unit: PadUnit;
+    scale: string; /** null = 这个长短没有名字（存的时候这一项不写，读回来 = 默认）。 */
+    unit: PadUnit | null;
     tuplet: 0 | 3 | 5 | 6 | 7;
     low: number | null;
 }
@@ -95,8 +94,8 @@ export interface DeskJson {
 export interface PadJson {
     auto: boolean;
     fifths: number;
-    scale: string;
-    unit: PadUnit;
+    scale: string; /** 没有名字的长短不写（不猜一个近的）。 */
+    unit?: PadUnit;
     tuplet: 0 | 3 | 5 | 6 | 7;
     low: number | null;
 }

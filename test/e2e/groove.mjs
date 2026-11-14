@@ -8,7 +8,7 @@ const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.l
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
-await p.evaluate(() => { const m = window.__moonsinger, st = m.state(); m.set({ ...st, input: { ...st.input, unit: 3 } }); });   // 四分音符
+await p.evaluate(() => { const m = window.__moonsinger, st = m.state(); m.set({ ...st, input: { ...st.input, len: 1680 } }); });   // 四分音符
 for (let i = 0; i < 4; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); }
 await p.evaluate(() => { const m = window.__moonsinger, st = m.state(); m.set({ ...st, caret: 3 }); });   // 光标到最前面 = 放在第一个音上
 await p.click('.pad-head [data-kbswitch]'); await p.waitForTimeout(100); await p.click('.pad-head [data-sympage="mark"]'); await p.waitForTimeout(100);

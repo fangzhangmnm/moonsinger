@@ -40,8 +40,9 @@ describe("desk（视图态顺手捞进文件）", () => {
 });
 
 // pad 的状态跟着歌走（2026-10-08 Opus 5.5；user「学一下weebpaint的editorstate，键盘的状态之类的也应该持久化，比如1=几，时值. shift可以不用持久化」）
-import { freshPad, PAD_UNITS } from "../src/score/desk.ts";
-import { LADDER, TPQ, DEFAULT_UNIT, initInput } from "../src/score/song.ts";
+import { freshPad } from "../src/score/desk.ts";
+import { TPQ, DEFAULT_LEN, initInput } from "../src/score/song.ts";
+import { LEN_NAMES, lenName, lenOfName } from "../src/score/note-values.ts";
 describe("desk：pad 的状态", () => {
   it("每一项都写：跟谱也写 auto: true、手动写 auto: false，1= 照写", () => {
     eq(JSON.stringify(serializeDesk(freshDesk()).pad), JSON.stringify(freshPad()));
@@ -63,10 +64,23 @@ describe("desk：pad 的状态", () => {
     eq(JSON.stringify(p), JSON.stringify(freshPad()));
     eq(unserializeDesk({ pad: { fifths: 9, unit: "half" } }).pad.unit, "half");
   });
-  it("时值名和 LADDER 一一对上（存名字不存下标）；默认 = 八分 = initInput", () => {
+  it("往返：带附点的时值（v0.17.51：dotted-quarter 这类名字，不加新键）", () => {
+    const d = freshDesk(); d.pad = { ...freshPad(), unit: "dotted-quarter" };
+    const back = unserializeDesk(JSON.parse(JSON.stringify(serializeDesk(d)))).pad;
+    eq(back.unit, "dotted-quarter"); eq(lenOfName(back.unit), TPQ * 1.5);
+    eq(unserializeDesk({ pad: { unit: "dotted-eighth-ish" } }).pad.unit, freshPad().unit, "不认识的 = 默认");
+  });
+  it("没有名字的长短：这一项不写（读回来 = 默认），别的照写", () => {
+    const d = freshDesk(); d.pad = { ...freshPad(), unit: null, fifths: 3, auto: false };
+    const j = serializeDesk(d).pad; eq("unit" in j, false); eq(j.fifths, 3);
+    eq(unserializeDesk({ pad: j }).pad.unit, freshPad().unit);
+  });
+  it("时值名和长度一一对上（存名字不存下标）；默认 = 八分 = initInput", () => {
     const want = [TPQ / 8, TPQ / 4, TPQ / 2, TPQ, TPQ * 2, TPQ * 4];
-    eq(JSON.stringify([...LADDER]), JSON.stringify(want)); eq(PAD_UNITS.length, LADDER.length);
-    eq(PAD_UNITS[DEFAULT_UNIT], freshPad().unit); eq(initInput().inputScale, freshPad().scale); eq(initInput().inputFifths, freshPad().fifths); eq(initInput().inputAuto, freshPad().auto);
+    eq(JSON.stringify(LEN_NAMES.map(lenOfName)), JSON.stringify([...want, ...want.map((x) => x * 1.5)]));
+    for (const n of LEN_NAMES) eq(lenName(lenOfName(n)!), n);
+    eq(lenName(TPQ / 3), null, "三连音的八分没有名字");
+    eq(lenName(DEFAULT_LEN), freshPad().unit); eq(initInput().len, DEFAULT_LEN); eq(initInput().inputScale, freshPad().scale); eq(initInput().inputFifths, freshPad().fifths); eq(initInput().inputAuto, freshPad().auto);
   });
 });
 

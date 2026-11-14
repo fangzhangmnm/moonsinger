@@ -18,7 +18,7 @@
 import { _t } from "../i18n/index.ts";
 import { type Pitch, alterBy, keySpell, midiOf } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
-import { type EditorState, type Token, type NoteTok, ART_NAME, allPitches, singleSel, writePitch, soundingPitch, setNote, setUnit, setTuplet, setInputKey, setInputScale, tr, keyAt, toggleChordPitch, dynMarkAt, markAnchor } from "../score/song.ts";
+import { type EditorState, type Token, type NoteTok, ART_NAME, allPitches, singleSel, writePitch, soundingPitch, setNote, setLen, setTuplet, setInputKey, setInputScale, tr, keyAt, toggleChordPitch, dynMarkAt, markAnchor } from "../score/song.ts";
 import type { Mark } from "../score/perform.ts";
 import { Pad, type HintRange } from "../keyboard/pad.ts";
 import { chordHead, chordBothAfterMs, chordVerdict, monoClash, type ChordWhy } from "../keyboard/chords.ts";
@@ -287,7 +287,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
   const pad = new Pad(padEl, {
     view: () => {
       const s = st(), i = singleSel(s), t = i >= 0 ? tr(s)[i] : null;
-      return { unit: s.input.unit, tuplet: s.input.tuplet, acc: s.input.acc, accMode: s.input.accMode, one: i >= 0, hasSel: !!s.sel, chord: t?.kind === "note" ? allPitches(t as NoteTok).map(midiOf) : [] };   // 叠亮着：和弦里已有的音高亮（v0.16.5）
+      return { acc: s.input.acc, accMode: s.input.accMode, one: i >= 0, hasSel: !!s.sel, chord: t?.kind === "note" ? allPitches(t as NoteTok).map(midiOf) : [] };   // 叠亮着：和弦里已有的音高亮（v0.16.5）
     },
     music,
     isImpro: padImpro,
@@ -307,8 +307,12 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
       g.sound.down(np, id);
     },
     onKey: (id, mods) => padKey(id, mods),
-    onUnit: (u) => { g.half.knobTurned(); g.update(setUnit(st(), u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）
-    onTuplet: (n) => g.update(setTuplet(st(), n)),
+    onUnit: (i) => {   // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）
+      g.half.knobTurned(); const s0 = st(), nx = setLen(s0, music.lenAt(i));
+      if (s0.input.tuplet && !nx.input.tuplet) g.info(_t("带附点的长短不连音：连音关掉了"));   // 带附点的档清掉连音，说一句
+      g.update(nx);
+    },
+    onTuplet: (i) => g.update(setTuplet(st(), music.tupletAt(i))),
     onPick: (knob, i) => g.update(knob === "key" ? setInputKey(st(), music.fifthsAt(i)) : setInputScale(st(), music.scaleIdAt(i))),
     autoBars: () => g.autoBars.get(),
     staves: () => g.staves(),

@@ -7,13 +7,13 @@
 //   同 WeebPaint 的笔 / dial 跟着画走；此前这里写的是「pad 是独立设备，换歌不换它」，按 user 这句改了）。升降 / 叠 / 减半（Shift 类）不存；pad 的行 / 列 / 首调绝对（跟屏幕走）不在这里。
 // 这个模块只管「一个对象 ↔ 文件里的 JSON」；变量本身仍住在 main.ts（viewScope / pageFlow / partView），存时 deskNow() 聚一下、开时 applyDesk() 散回去——不搬家，少改线。
 import { SCALES } from "./scales.ts";
-/** 时值存 MusicXML 的音符类型名（不存 LADDER 下标：下标哪天变了老文件就错）；顺序 = song.ts LADDER。 */
-export type PadUnit = "32nd" | "16th" | "eighth" | "quarter" | "half" | "whole";
-export const PAD_UNITS: readonly PadUnit[] = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
+import { LEN_NAMES } from "./note-values.ts";
+/** 时值存音符类型名（MusicXML 的六个名字，带附点的前面加 dotted-，如 dotted-quarter；不存档的下标：档跟拍号变）。名字表和换算只在 note-values.ts。 */
+export type PadUnit = string;
 /** pad 的状态。low = 音域窗口最低那个键的 MIDI（换个行数 / 键位的设备也落在差不多的音域）；null = 默认那一档。 */
 /** auto = 「1=」跟谱（v0.16.9；新歌默认）。第 16 条起文件里明写 auto（原来靠有没有写 fifths 来判、没写 = 跟谱）；没写 auto = 跟谱。 */
-export interface PadDesk { auto: boolean; fifths: number; scale: string; unit: PadUnit; tuplet: 0 | 3 | 5 | 6 | 7; low: number | null }
-export const freshPad = (): PadDesk => ({ auto: true, fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });   // 同 song.ts initInput（八分 = DEFAULT_UNIT）
+export interface PadDesk { auto: boolean; fifths: number; scale: string; /** null = 这个长短没有名字（存的时候这一项不写，读回来 = 默认）。 */ unit: PadUnit | null; tuplet: 0 | 3 | 5 | 6 | 7; low: number | null }
+export const freshPad = (): PadDesk => ({ auto: true, fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });   // 同 song.ts initInput（八分 = DEFAULT_LEN）
 export interface PartViewState { hidden: boolean; only: boolean; muted: boolean; solo: boolean }
 export const freshPartView = (): PartViewState => ({ hidden: false, only: false, muted: false, solo: false });
 /** mp3 = 导出歌声的音质（导出面板里选的；2026-10-08 by Claude Opus 5.5，user「音质配置就是应该也跟着吧」——跟这首歌走、存时顺手带、不标脏、不进 undo）。 */
@@ -51,13 +51,13 @@ export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, scrol
 /** 文件里的形状：每一项都明写（第 16 条 16-3，2026-11-12）。读的时候各项各自宽容：不认识 / 越界 = 那一项默认。 */
 export interface DeskJson { scope: "all" | "segment"; pageFlow: boolean; scroll: boolean; paper: string | null; parts: Record<string, { hidden: boolean; only: boolean; muted: boolean; solo: boolean }>; mp3: "standard" | "small"; pad: PadJson; ref: { open: boolean; left: number; top: number; width: number; height: number } | null; mode: Desk["mode"]; finder: FinderMemoJson }
 /** pad 在文件里的形状：每一项都明写；跟谱 / 手动 = auto（第 16 条：原来靠有没有写 fifths 来判，一个键带了两个意思）。 */
-export interface PadJson { auto: boolean; fifths: number; scale: string; unit: PadUnit; tuplet: 0 | 3 | 5 | 6 | 7; low: number | null }
+export interface PadJson { auto: boolean; fifths: number; scale: string; /** 没有名字的长短不写（不猜一个近的）。 */ unit?: PadUnit; tuplet: 0 | 3 | 5 | 6 | 7; low: number | null }
 export function serializeDesk(d: Desk): DeskJson {
   const parts: DeskJson["parts"] = {};
   for (const [id, p] of Object.entries(d.parts)) parts[id] = { hidden: p.hidden, only: p.only, muted: p.muted, solo: p.solo };
   const pd = d.pad;
   return { scope: d.scope, pageFlow: d.pageFlow && !d.scroll, scroll: d.scroll, paper: d.paper, parts, mp3: d.mp3,
-    pad: { auto: pd.auto, fifths: pd.fifths, scale: pd.scale, unit: pd.unit, tuplet: pd.tuplet, low: pd.low },
+    pad: { auto: pd.auto, fifths: pd.fifths, scale: pd.scale, ...(pd.unit !== null ? { unit: pd.unit } : {}), tuplet: pd.tuplet, low: pd.low },
     ref: d.ref ? { open: d.ref.open, left: d.ref.left, top: d.ref.top, width: d.ref.width, height: d.ref.height } : null, mode: d.mode, finder: serializeFinderMemo(d.finder) };
 }
 /** 读文件里的（宽容：不是对象 / 字段不认识 = 当默认；别家 / 更新版写的多余字段不管）。 */
@@ -84,7 +84,7 @@ export function unserializeDesk(json: unknown): Desk {
     if (Number.isInteger(q.fifths) && Math.abs(q.fifths as number) <= 7) d.pad.fifths = q.fifths as number;
     if (q.auto === false) d.pad.auto = false;   // 跟谱 / 手动只看 auto（第 16 条：没写 = 默认跟谱；不再拿有没有写 fifths 来判）
     if (typeof q.scale === "string" && SCALES.some((sc) => sc.id === q.scale)) d.pad.scale = q.scale;   // 调式照写的读
-    if (PAD_UNITS.includes(q.unit as PadUnit)) d.pad.unit = q.unit as PadUnit;
+    if (typeof q.unit === "string" && LEN_NAMES.includes(q.unit)) d.pad.unit = q.unit;   // 六个音符名或带 dotted- 的
     if (q.tuplet === 3 || q.tuplet === 5 || q.tuplet === 6 || q.tuplet === 7) d.pad.tuplet = q.tuplet;
     if (Number.isInteger(q.low) && (q.low as number) >= 0 && (q.low as number) <= 127) d.pad.low = q.low as number;
   }

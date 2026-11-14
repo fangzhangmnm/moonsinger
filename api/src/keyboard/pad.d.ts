@@ -56,6 +56,20 @@ export interface PadMusic {
             index: number;
         };
     };
+    /** 长短旋钮（档归宿主：跟光标处的拍号，带不带附点、几档都是宿主算的）：每一档的字（短 → 长）+ 人话名 + 现在是第几档 + 旋钮面上的字 + 人话名（提示用）。 */
+    lenChoices(): {
+        items: string[];
+        names: string[];
+        index: number;
+        face: string;
+        name: string;
+    };
+    /** 长短点开时并着的连音那一列，跟着长短那一列的第 i 档：每一项的字 + 现在是第几项；off = 这一档不能连音（字 = 为什么，点那一列说出来、那一列灰着）。 */
+    tupletChoices(i: number): {
+        items: string[];
+        index: number;
+        off?: string;
+    };
     /** 「⋯」里插记号钮上的现值：调号（人话调名）/ 拍号 / 速度。 */
     marksHere(): {
         key: string;
@@ -66,8 +80,6 @@ export interface PadMusic {
 }
 /** 谱的输入态里键盘要看的那几样（宿主每次给快照）。 */
 export interface PadView {
-    unit: number;
-    tuplet: number;
     acc: number;
     accMode: "off" | "once" | "lock";
     one: boolean;
@@ -106,8 +118,9 @@ export interface PadHost {
     onKey(id: string, mods: {
         ramp: boolean;
     }): void;
-    onUnit(unit: number): void;
-    onTuplet(n: 0 | 3 | 5 | 6 | 7): void;
+    /** 长短旋钮 / 滚轮选了第 i 档、连音那一列选了第 i 项（多长、几连音归 music）。 */
+    onUnit(i: number): void;
+    onTuplet(i: number): void;
     /** 「1=」旋钮 / 滚轮选了第 i 档（哪个调 / 哪个调式归 music）。 */
     onPick(knob: "key" | "scale", i: number): void;
     onAutoBars(on: boolean): void;

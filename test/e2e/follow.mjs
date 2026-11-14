@@ -7,7 +7,7 @@ const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.l
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 520 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
-await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, input: { ...s.input, unit: 1 } }); });   // 十六分：音多、行多、放得快
+await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, input: { ...s.input, len: 420 } }); });   // 十六分：音多、行多、放得快
 for (let i = 0; i < 80; i++) { await p.click(`.pad-key[data-k] >> nth=${i % 5}`); await p.waitForTimeout(10); }
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), pp = s.song.papers[0], pid = s.at.part; m.set({ ...s, song: { ...s.song, papers: [{ ...pp, tracks: { ...pp.tracks, [pid]: pp.tracks[pid].map((t) => (t.kind === "tempo" ? { ...t, bpm: 100 } : t)) } }] } }); });   // ♩ = 100：一行放 ~2.5 s（比翻谱提前量 1.5 s 长，像真的歌）
 await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: new Float32Array(22050 * 12), sr: 22050 }); });

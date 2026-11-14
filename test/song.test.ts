@@ -87,8 +87,8 @@ describe("song（改：选中）", () => {
     eq(JSON.stringify(st.sel), JSON.stringify({ from: H + 1, to: H + 2 }), "选区一直在它身上");
   });
   it("有选区按长短 = 只改输入档位（谱不动）；整组改时值走选区菜单 scaleSelDur", () => {
-    let st = select(base(), H, H + 2); st = longer(st); eq(show(st), "C4/1 D4/1 E4/1 F4/1"); eq(st.input.unit, 3);
-    st = scaleSelDur(st, 2); eq(show(st), "C4/2 D4/2 E4/1 F4/1"); eq(st.input.unit, 3);
+    let st = select(base(), H, H + 2); st = longer(st); eq(show(st), "C4/1 D4/1 E4/1 F4/1"); eq(st.input.len, 1680);
+    st = scaleSelDur(st, 2); eq(show(st), "C4/2 D4/2 E4/1 F4/1"); eq(st.input.len, 1680);
   });
   it("选中按 ♯ = 选中的音直接升半音", () => {
     let st = select(base(), H + 2, H + 3); st = tapAcc(st, 1, 0); eq(show(st), "C4/1 D4/1 E#4/1 F4/1");

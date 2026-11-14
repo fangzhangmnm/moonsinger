@@ -61,12 +61,15 @@ export interface PadMusic {
   keyChoices(): { items: string[]; index: number; name: string; tags?: readonly { text: string; title: string }[] };
   /** 「1=」点开的两列滚轮：调 / 调式（拨了一列，键盘重读一遍、把另一列挪到宿主给的现值）。 */
   keyDrum(): { keys: { items: string[]; index: number }; scales: { items: string[]; index: number } };
+  /** 长短旋钮（档归宿主：跟光标处的拍号，带不带附点、几档都是宿主算的）：每一档的字（短 → 长）+ 人话名 + 现在是第几档 + 旋钮面上的字 + 人话名（提示用）。 */
+  lenChoices(): { items: string[]; names: string[]; index: number; face: string; name: string };
+  /** 长短点开时并着的连音那一列，跟着长短那一列的第 i 档：每一项的字 + 现在是第几项；off = 这一档不能连音（字 = 为什么，点那一列说出来、那一列灰着）。 */
+  tupletChoices(i: number): { items: string[]; index: number; off?: string };
   /** 「⋯」里插记号钮上的现值：调号（人话调名）/ 拍号 / 速度。 */
   marksHere(): { key: string; beats: number; beatType: number; bpm: number };
 }
 /** 谱的输入态里键盘要看的那几样（宿主每次给快照）。 */
 export interface PadView {
-  unit: number; tuplet: number;                 // 长短基线 / 连音（旋钮上的字）
   acc: number; accMode: "off" | "once" | "lock";   // 升降 Shift 的状态（键上亮法 + 音键小字）
   one: boolean;      // 只选了一个（叠亮着；⌫ = 短一步、— = 长一步）
   hasSel: boolean;   // 有选区（头那排的重建签名）
@@ -114,29 +117,11 @@ const MOVE = 6;         // px：按下旋钮挪过这么远才算「滑」；没
 const STACK = 150;      // px：「1=」旋钮比这窄 = 调和调式名分两行写
 const NARROW = 96;      // px：音域旋钮比这窄 = 一行写不下「F♯3–G♯5」，改两行
 const TIGHT = 130;      // px：音域旋钮比这窄 = 一行字和 ⇅ 挤在一起，这一个不画 ⇅（另外两个旋钮上有，手势一样）
-const UNITS = [0, 1, 2, 3, 4, 5];          // 长短，短的在上：三十二分 … 全音符——往上推 = 变长 = 变慢（user 2026-10-07「音符时长的滚动方向翻一下，往上推是变慢」）
-const TUP = [0, 3, 5, 6, 7] as const;      // 连音：不连 / 3 / 5 / 6 / 7
 const SHIFTS = [4, 3, 2, 1, 0, -1, -2, -3, -4];   // 音域窗口，高的在上
 /** 简谱的八度点：真的小圆点（数字上方 = 高八度、下方 = 低八度，多个横排）。 */
 const octDots = (n: number) => (n > 0 ? `<span class="jp-dots">${"<i></i>".repeat(n)}</span>` : `<span class="jp-dots"></span>`);
-/** Bravura 的整个音符字形（SMuFL 预组合音符，符干朝上）：三十二分 … 全音符。 */
-const UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];   // SMuFL note32ndUp / 16thUp / 8thUp / QuarterUp / HalfUp / Whole（写成转义，免得编辑器吞掉私用区字符）
 /** 插记号按钮上的音乐符号（Bravura；SMuFL timeSig0–9 = U+E080–E089、metNoteQuarterUp）。写成转义，免得编辑器吞掉私用区字符。 */
 const QUARTER = "\uECA5", TS = (n: number) => String.fromCodePoint(0xe080 + n);   // QUARTER = metNoteQuarterUp（速度记号里用的小号音符）
-const UNIT_NAME = [_t("三十二分"), _t("十六分"), _t("八分"), _t("四分"), _t("二分"), _t("全音符")];
-/** 连音的样子 = 真画一组 n 个小蝌蚪，跟着长短基线变：三十二分 3 道横梁、十六分 2 道、八分 1 道、四分只有符干、二分空心、全音符空心没符干；
- *  上面一道括号，中间是连音数字（Bravura tuplet0–9 = U+E880–E889）。user「三联我是说画具体的小蝌蚪」「三联五联的小蝌蚪应该跟着base时值adaptive的变」。 */
-function tupletMark(n: number, unit: number): string {
-  const S = 7, M = 1.5, HY = 25, TOP = 11.5, hx = (i: number) => M + 3 + i * S, sx = (i: number) => hx(i) + 2.35;
-  const W = hx(n - 1) + 3 + M, hollow = unit >= 4, beams = Math.max(0, 3 - unit), cx = W / 2, by = 4.5;
-  const heads = Array.from({ length: n }, (_, i) =>
-    `<ellipse class="${hollow ? "ho" : "fi"}" cx="${hx(i)}" cy="${HY}" rx="${unit === 5 ? 3 : 2.6}" ry="1.85" transform="rotate(-20 ${hx(i)} ${HY})"/>`).join("");
-  const stems = unit <= 4 ? Array.from({ length: n }, (_, i) => `<line x1="${sx(i)}" y1="${HY - 0.5}" x2="${sx(i)}" y2="${TOP}"/>`).join("") : "";
-  const beam = Array.from({ length: beams }, (_, k) => `<rect x="${sx(0) - 0.45}" y="${TOP + k * 3}" width="${sx(n - 1) - sx(0) + 0.9}" height="1.8"/>`).join("");
-  return `<svg class="tupsvg" viewBox="0 0 ${W} 28.5" width="${((W * 32) / 28.5).toFixed(1)}" height="32" aria-label="${_t("{n} 连音", { n })}">` +
-    `<path class="br" d="M${M} ${by + 2.5}V${by}H${cx - 3.6}M${cx + 3.6} ${by}H${W - M}V${by + 2.5}"/>` +
-    `<text x="${cx}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(0xe880 + n)}</text>${stems}${beam}${heads}</svg>`;
-}
 export interface PadHost {
   view(): PadView;                         // 谱的输入态快照（长短 / 连音 / 升降 / 只选了一个）
   music: PadMusic;                         // 音乐知识（注入）：第 k 级是什么、旋钮的档
@@ -160,8 +145,9 @@ export interface PadHost {
   onAlter(id: string, alt: -1 | 0 | 1): void;   // 按着的这根手指滑过门槛：刚写的音（弹 = 正在响的音）升 / 降 / 还原
   /** 写字键 / 符号格 / 「⋯」里的记号：按键 id（PAD_KEY_IDS），翻译成命令 / 插记号 / 开菜单归宿主；mods.ramp = 「渐到」亮着。 */
   onKey(id: string, mods: { ramp: boolean }): void;
-  onUnit(unit: number): void;
-  onTuplet(n: 0 | 3 | 5 | 6 | 7): void;
+  /** 长短旋钮 / 滚轮选了第 i 档、连音那一列选了第 i 项（多长、几连音归 music）。 */
+  onUnit(i: number): void;
+  onTuplet(i: number): void;
   /** 「1=」旋钮 / 滚轮选了第 i 档（哪个调 / 哪个调式归 music）。 */
   onPick(knob: "key" | "scale", i: number): void;
   onAutoBars(on: boolean): void;
@@ -612,7 +598,7 @@ export class Pad {
       if (tg) { const t = kc.tags ?? []; tg.hidden = !t.length; tg.innerHTML = t.map((x) => `<em class="k-tag">${escHtml(x.text)}</em>`).join(""); }   // 角上的小标：「手动」「键上按 C 调写」（字和什么时候挂归宿主）
     }
     const u = q(".k-unit .kl");
-    if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[v.unit]}</span>${v.tuplet ? `<sup>${v.tuplet}</sup>` : ""}`; u.parentElement!.title = _t("长短基线：{p}{tuplet}——按住上下滑 / 点开选", { p: UNIT_NAME[v.unit], tuplet: v.tuplet ? _t("（{tuplet} 连音）", { tuplet: v.tuplet }) : "" }); }   // 长短旋钮 = 接下来写的长短（有选区也一样：替换模式按它吃；整组改时值在选区菜单里）
+    if (u) { const lc = this.host.music.lenChoices(); u.innerHTML = lc.face; u.parentElement!.title = _t("长短基线：{p}{tuplet}——按住上下滑 / 点开选", { p: lc.name, tuplet: "" }); }   // 长短旋钮 = 接下来写的长短（有选区也一样：替换模式按它吃；整组改时值在选区菜单里）
     q(".impro-pad")?.classList.toggle("is-on", this.host.isImpro());   // 「弹」亮不亮（键盘快捷键 / 找人视图也会改它）
     const r = q(".k-range .kl");
     if (r) { const nr = this.rangeNarrow(); r.parentElement!.classList.toggle("narrow", nr); r.parentElement!.classList.toggle("tight", r.parentElement!.clientWidth < TIGHT); r.innerHTML = this.spanHtml(this.rowShift, this.rows(), nr); r.parentElement!.title = _t("音域 {rowShift}：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的", { rowShift: this.spanText(this.rowShift, this.rows()) }); }
@@ -656,7 +642,7 @@ export class Pad {
       const kc = this.host.music.keyChoices();
       return { items: kc.items, index: kc.index, title: _t("pad 的调（五度圈）"), set: (i) => this.host.onPick("key", i), loop: true };
     }
-    if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(v.unit)), title: _t("长短基线"), set: (i) => this.host.onUnit(UNITS[i]) };
+    if (knob === "unit") { const lc = this.host.music.lenChoices(); return { items: lc.items, index: lc.index, title: _t("长短基线"), set: (i) => this.host.onUnit(i) }; }
     const rows = this.rows();   // 音域：高的在上（一张纸：往上推 = 看下面更低的）
     return { items: SHIFTS.map((sh) => this.spanHtml(sh, rows, narrow)), index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), title: _t("音域窗口"),
       set: (i) => { this.rowShift = SHIFTS[i]; this.render(); } };
@@ -734,14 +720,15 @@ export class Pad {
   private openDrumFor(knob: string, anchor: HTMLElement): void {
     const w = anchor.getBoundingClientRect().width;
     if (knob === "unit") {
-      const v = this.host.view();
+      const lc = this.host.music.lenChoices();
       // 宽的旋钮：两列分它的宽度（user「能不能共用原来的宽度」），连音那列占一半多一点；窄的：长短 56 + 连音 84
       const [wu, wt] = w >= 142 ? [w - Math.round(w * 0.55) - 2, Math.round(w * 0.55)] : [56, 84];   // 2 = 两列之间的缝
-      const tups = (u: number) => TUP.map((n) => (n ? tupletMark(n, u) : `<span class="plain">${_t("不连")}</span>`));
+      const tc = this.host.music.tupletChoices(lc.index);   // 连音那一列跟着长短那一列（字、灰不灰都归 music）
       const h: DrumHandle = openDrum(anchor, [
-        { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u]}</small>` : ""}`), index: Math.max(0, UNITS.indexOf(v.unit)), width: wu, title: _t("长短基线") },
-        { items: tups(v.unit), index: Math.max(0, TUP.indexOf(v.tuplet as 0 | 3 | 5 | 6 | 7)), width: wt, title: _t("连音") },
-      ], { onChange: (c, i) => { if (c === 0) { this.host.onUnit(UNITS[i]); h.setItems(1, tups(UNITS[i])); } else this.host.onTuplet(TUP[i]); } });
+        { items: lc.items.map((x, i) => `${x}${wu >= 100 ? `<small>${lc.names[i]}</small>` : ""}`), index: lc.index, width: wu, title: _t("长短基线") },
+        { items: tc.items, index: tc.index, width: wt, title: _t("连音"), off: tc.off },
+      ], { onChange: (c, i) => { if (c === 0) { this.host.onUnit(i); const t = this.host.music.tupletChoices(i); h.setItems(1, t.items); h.setOff(1, t.off); h.setIndex(1, t.index); } else this.host.onTuplet(i); },
+        onOff: (_c, why) => this.host.onOff?.(why) });
       return;
     }
     if (knob === "key") {   // 两列：调（五度圈）+ 调式（user「1=F能不能也做成两个的滚轮，右边可以换调性」）

@@ -45,7 +45,7 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
     case "delete": return deleteForward(st);
     case "transpose": return transposeSel(st, c.semis);
     case "respell": return respellSel(st);
-    case "seldur": return setSelDur(st, st.input.unit);   // 选区菜单「都改成 ♪」= 长短旋钮现在那一档
+    case "seldur": return setSelDur(st);   // 选区菜单「都改成 ♪」= 长短旋钮现在那一档
     case "selscale": return scaleSelDur(st, c.f);          // 选区菜单「÷2 / ×2」
     case "modulate": return modulateSel(st, c.fifths);
     case "seledge": return selectToEdge(st, c.d);

@@ -1406,14 +1406,19 @@ var S = {
   "\u51FA\u58F0\u7684\u6362\u6C14\u6302\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "An audible breath goes after a note (before the cursor is a rest, or no note yet)" },
   "\u97F3\u5185\u7684\u8D77\u4F0F\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A swell must go on a note (before the cursor is a rest, or no note yet)" },
   "{p}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "{p} goes from one note to the next (before the cursor is a rest, or no note yet)" },
+  "\u5E26\u9644\u70B9\u7684\u957F\u77ED\u4E0D\u8FDE\u97F3\uFF1A\u8FDE\u97F3\u5173\u6389\u4E86": { en: "Dotted lengths have no tuplets: tuplet turned off" },
   "\u952E\u4E0A\u6309 C \u8C03\u5199": { en: "Keys in C" },
   "\u79FB\u8C03\u8F85\u52A9\u5F00\u7740\uFF1A\u952E\u4E0A\u7684\u5927\u5B57\u662F\u8FD9\u4E2A\u97F3\u5728\u8C31\u4E0A\uFF08\u6362\u5230 C \u8C03\uFF09\u753B\u6210\u7684\u540D\u5B57\uFF0C\u5C0F\u5B57\u662F\u5B9E\u9645\u7684\u97F3\uFF1B\u300C1=\u300D\u5199\u7684\u662F\u5B9E\u9645\u7684\u8C03": { en: "Transposition aid is on: the big label on each key is the name this note is drawn as on the score (in C); the small label is the actual note; 1= shows the actual key" },
   "\u8DDF\u8C31": { en: "Follow score" },
   "\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7": { en: "Uses the key signature here" },
+  "{n} \u8FDE\u97F3": { en: "{n}-tuplet" },
   "\u624B\u52A8": { en: "Manual" },
   "\u624B\u52A8\uFF1A\u952E\u76D8\u6309 {pad} \u6392\uFF0C\u548C\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF081={k}\uFF09\u4E0D\u4E00\u6837\u3002\u70B9\u5F00\u300C1=\u300D\uFF0C\u8C03\u5F0F\u90A3\u4E00\u5217\u6700\u4E0A\u9762\u7684\u300C\u8DDF\u8C31\u300D= \u56DE\u5230\u8DDF\u7740\u8C31\u8D70": { en: "Manual: the keyboard is laid out in {pad}, which differs from the key signature here (1={k}). Open \u201C1=\u201D and pick \u201CFollow score\u201D at the top of the mode column to follow the score again" },
   "{name}\uFF08\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF09": { en: "{name} (follows the key signature here)" },
   "{name}\uFF08\u624B\u52A8\uFF09": { en: "{name} (manual)" },
+  "\uFF08{tuplet} \u8FDE\u97F3\uFF09": { en: " ({tuplet}-tuplet)" },
+  "\u4E0D\u8FDE": { en: "No tuplet" },
+  "\u5E26\u9644\u70B9\u7684\u957F\u77ED\u4E0D\u8FDE\u97F3\uFF1A\u8981\u8FDE\u97F3\uFF0C\u5148\u6362\u4E00\u4E2A\u4E0D\u5E26\u9644\u70B9\u7684\u957F\u77ED": { en: "Dotted lengths have no tuplets: to use one, first pick a length without a dot" },
   "\u5B58\u5728\u4F60\u7684\u6B4C\u5E93\u91CC\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": { en: "Saved in your library. You can leave any of these unpicked and change them later in Settings." },
   "\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u767B\u5F55\u540E\u8DDF\u7740\u4F60\uFF1B\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": { en: "Kept on this device; follows you once you sign in. You can leave any of these unpicked and change them later in Settings." },
   "\u4E0D\u7528": { en: "Off" },
@@ -2121,13 +2126,6 @@ var S = {
   "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438\uFF08\u9759\u9ED8 / \u8F7B\u5438 / \u6DF1\u5438\uFF09\u3001\u6C14\u58F0": { en: "Strength (ghost / unstressed / stress / accent / marcato / sfz / fp), tenuto / staccato / slur / breath (silent / soft / deep), whisper" },
   "ppp\u2026fff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F": { en: "ppp\u2026fff, crescendo / diminuendo, ramp, swells" },
   "\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09\u3001\u53CD\u590D\u3001\u8E0F\u677F": { en: "Key / time / clef / octave lines / tempo, style (beat weights), repeats, pedals" },
-  "\u4E09\u5341\u4E8C\u5206": { en: "Thirty-second" },
-  "\u5341\u516D\u5206": { en: "Sixteenth" },
-  "\u516B\u5206": { en: "Eighth" },
-  "\u56DB\u5206": { en: "Quarter" },
-  "\u4E8C\u5206": { en: "Half" },
-  "\u5168\u97F3\u7B26": { en: "Whole" },
-  "{n} \u8FDE\u97F3": { en: "{n}-tuplet" },
   "\u7B26\u53F7\u683C\u5F00\u7740\uFF1A\u8FD9\u4E00\u9762\u53EA\u5199\u8BB0\u53F7\uFF1B\u70B9\u300C\u97F3\u300D\u6362\u56DE\u97F3\u952E\u5199\u97F3": { en: "The symbol keys are showing: this side only writes marks; tap \u201CNotes\u201D to switch back" },
   "\u5149\u6807\u5DE6\u79FB\uFF08{p}\uFF09": { en: "Cursor left ({p})" },
   "\u5149\u6807\u53F3\u79FB\uFF08{p}\uFF09": { en: "Cursor right ({p})" },
@@ -2236,12 +2234,10 @@ var S = {
   "\u957F\u4E00\u6B65": { en: "Longer" },
   "{name}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1\u6362\u8C03 / \u70B9\u5F00\u9009\u8C03\u548C\u8C03\u5F0F": { en: "{name}: hold and slide up or down to change key / tap to pick key and mode" },
   "\u957F\u77ED\u57FA\u7EBF\uFF1A{p}{tuplet}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009": { en: "Note length: {p}{tuplet} \u2014 hold and slide up / down, or tap to choose" },
-  "\uFF08{tuplet} \u8FDE\u97F3\uFF09": { en: " ({tuplet}-tuplet)" },
   "\u97F3\u57DF {rowShift}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684": { en: "Range {rowShift}: hold and slide up / down, or tap to choose \u2014 like pushing a sheet of paper: pushing up shows lower notes" },
   "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09": { en: "The pad's key (circle of fifths)" },
   "\u957F\u77ED\u57FA\u7EBF": { en: "Note length" },
   "\u97F3\u57DF\u7A97\u53E3": { en: "Range window" },
-  "\u4E0D\u8FDE": { en: "No tuplet" },
   "\u8FDE\u97F3": { en: "Tuplets" },
   "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3": { en: "Mode: which notes the pad lays out" },
   ' data-def="{def}" title="\u53CC\u51FB\u56DE {defText}"': { en: ' data-def="{def}" title="Double-click: back to {defText}"' },
@@ -2461,6 +2457,14 @@ var S = {
   "\u8FD9\u4E00\u6BB5\u6309\u65E5\u8BED\u5531\uFF1A\u5B57\u6BCD / \u6570\u5B57 / \u7B26\u53F7\u5FF5\u4E0D\u51C6\u2014\u2014\u5199\u6210\u5047\u540D": { en: "This segment is sung in Japanese: letters / digits / symbols aren't read reliably \u2014 write them in kana" },
   "\u8FD9\u4E00\u6BB5\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57": { en: "This segment is sung in Chinese: one character per note" },
   "\u8FD9\u4E00\u6BB5\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD": { en: "This segment is sung in English: use Latin letters" },
+  "\u4E09\u5341\u4E8C\u5206": { en: "Thirty-second" },
+  "\u5341\u516D\u5206": { en: "Sixteenth" },
+  "\u516B\u5206": { en: "Eighth" },
+  "\u56DB\u5206": { en: "Quarter" },
+  "\u4E8C\u5206": { en: "Half" },
+  "\u5168\u97F3\u7B26": { en: "Whole" },
+  "{n} \u4E2A\u56DB\u5206": { en: "{n} quarters" },
+  "\u9644\u70B9{name}": { en: "Dotted {name}" },
   "\u8212\u9002": { en: "Comfortable" },
   "\u97F3\u7B26\u5927\uFF0C\u4E00\u9875\u653E\u5F97\u5C11": { en: "Big notes, fewer per page" },
   "\u7D27\u51D1": { en: "Compact" },
@@ -3024,10 +3028,22 @@ function navWhy(song, paper, partId, t) {
   return null;
 }
 
+// src/score/note-values.ts
+var PLAIN = [
+  { name: "32nd", den: 32, glyph: "\uE1DB", label: () => _t("\u4E09\u5341\u4E8C\u5206") },
+  { name: "16th", den: 16, glyph: "\uE1D9", label: () => _t("\u5341\u516D\u5206") },
+  { name: "eighth", den: 8, glyph: "\uE1D7", label: () => _t("\u516B\u5206") },
+  { name: "quarter", den: 4, glyph: "\uE1D5", label: () => _t("\u56DB\u5206") },
+  { name: "half", den: 2, glyph: "\uE1D3", label: () => _t("\u4E8C\u5206") },
+  { name: "whole", den: 1, glyph: "\uE1D2", label: () => _t("\u5168\u97F3\u7B26") }
+];
+var DOTTED = "dotted-";
+var LEN_NAMES = [...PLAIN.map((p) => p.name), ...PLAIN.map((p) => DOTTED + p.name)];
+
 // src/score/song.ts
 var TPQ = 1680;
 var WHOLE = TPQ * 4;
-var LADDER = [TPQ / 8, TPQ / 4, TPQ / 2, TPQ, TPQ * 2, WHOLE];
+var DEFAULT_LEN = TPQ / 2;
 var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
 var NAV_LABEL = { segno: "Segno", coda: "Coda", fine: "Fine", toCoda: "To Coda", dc: "D.C.", dcFine: "D.C. al Fine", dcCoda: "D.C. al Coda", ds: "D.S.", dsFine: "D.S. al Fine", dsCoda: "D.S. al Coda" };
@@ -9981,4 +9997,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-dfd09a77c6ab.mjs.map
+//# sourceMappingURL=layout-worker-92d5255f1639.mjs.map

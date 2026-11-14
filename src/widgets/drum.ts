@@ -9,11 +9,11 @@
 // · 一根滚轮可以并几列（长短 + 连音）：每列各滚各的。
 // · loop 列 = 环（五度圈；user「五度圈应该是一个环吧」）：内容摆 LOOP_COPIES 份，从中间那份开始；滚停了悄悄挪回中间那份（看起来一样），一直转都转不到头。
 
-export interface DrumColumn { items: string[]; index: number; width: number; title?: string; loop?: boolean }   // items = 每格的 HTML；loop = 首尾相接
-export interface DrumOpts { onChange(col: number, index: number): void; onClose?(): void }
+export interface DrumColumn { items: string[]; index: number; width: number; title?: string; loop?: boolean; off?: string }   // items = 每格的 HTML；loop = 首尾相接；off = 这一列灰着（字 = 为什么：点它 / 滚它 = onOff，不选）
+export interface DrumOpts { onChange(col: number, index: number): void; onClose?(): void; onOff?(col: number, why: string): void }
 /** setItems：换某一列的内容（位置不变）——长短一变，连音那列的小蝌蚪跟着变（user「三联五联的小蝌蚪应该跟着base时值adaptive的变」）。
  *  setIndex：把某一列滚到第 i 格、不回报 onChange（拨了一列、宿主那边另一列的现值跟着变了：「1=」拨了调 = 调式那列从「跟谱」挪到大调，v0.16.9）。 */
-export interface DrumHandle { close(): void; setItems(col: number, items: string[]): void; setIndex(col: number, i: number): void }
+export interface DrumHandle { close(): void; setItems(col: number, items: string[]): void; setIndex(col: number, i: number): void; setOff(col: number, why?: string): void }
 
 const ROW = 44, VISIBLE = 5;   // 每格高、看得见几格（中间那格 = 选中）
 const LOOP_COPIES = 7, RECENTER_MS = 140;   // 环：摆几份；滚停了多久挪回中间那份
@@ -49,10 +49,15 @@ export function openDrum(anchor: HTMLElement, cols: DrumColumn[], o: DrumOpts): 
   setTimeout(() => document.addEventListener("pointerdown", outside, true), 0);   // 打开它的那一下不算「点外面」
   addEventListener("keydown", esc, true);
 
+  const offs = cols.map((c) => c.off), colEls: HTMLElement[] = [];
+  const markOff = (ci: number) => { const col = colEls[ci], why = offs[ci]; col.classList.toggle("is-off", !!why); col.title = why ?? cols[ci].title ?? ""; };
   const wheels = cols.map((c, ci) => {
     const col = document.createElement("div");
     col.className = "drum-col"; col.style.width = `${c.width}px`;
-    if (c.title) col.title = c.title;
+    colEls.push(col); markOff(ci);
+    // 灰着的一列：按下 / 滚 = 说为什么，不进滚轮（不选、不滚）
+    const stop = (e: Event) => { const why = offs[ci]; if (!why) return; e.preventDefault(); e.stopPropagation(); if (e.type === "pointerdown") o.onOff?.(ci, why); };
+    col.addEventListener("pointerdown", stop, true); col.addEventListener("wheel", stop, { capture: true, passive: false });
     box.appendChild(col);
     return mountWheel(col, { items: c.items, index: c.index, loop: c.loop, onChange: (i) => o.onChange(ci, i), onPick: () => close() });   // 点一格 = 立刻选中、立刻收起（不等动画）
   });
@@ -60,6 +65,7 @@ export function openDrum(anchor: HTMLElement, cols: DrumColumn[], o: DrumOpts): 
     close,
     setItems: (ci, items) => wheels[ci]?.setItems(items),
     setIndex: (ci, i) => wheels[ci]?.scrollTo(i),
+    setOff: (ci, why) => { if (!colEls[ci]) return; offs[ci] = why; markOff(ci); },
   };
   current = handle;
   return handle;

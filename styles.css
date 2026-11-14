@@ -404,6 +404,7 @@ body:not(.print-look) .staff-svg .part-name.focus { fill: var(--accent); }      
 .drum-col { position: relative; height: 100%; overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; touch-action: pan-y; scrollbar-width: none; }
 .drum-col::-webkit-scrollbar { display: none; }
 .drum-col + .drum-col { border-left: 1px solid var(--line); }
+.drum-col.is-off { opacity: 0.38; overflow-y: hidden; }   /* 灰着的一列（如带附点的长短不连音）：点了说为什么、不滚 */
 .drum-item { height: 44px; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 16px; color: var(--ink); white-space: nowrap; }
 .drum-item.on { color: var(--accent); font-weight: 600; }
 .drum-item small { font-size: 11px; color: var(--muted); font-weight: 400; }

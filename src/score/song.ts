@@ -20,6 +20,7 @@ import { type PaperKind, type Density, type PaperChoice, type Margins } from "./
 import { latchDown, latchWrite, LATCH_OFF } from "../keyboard/latch.ts";   // 升降 Shift 的那条规则和 /2、渐到同一份（编辑状态机第 2 期，2026-10-15）
 import { type Dir, type Pitch, type Step, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell, keyAlter } from "./pitch.ts";
 import { expandPaper } from "./repeats.ts";
+import { lenShape, lenSteps, stepLen } from "./note-values.ts";   // 长短旋钮的档（只在函数里用：note-values.ts 也 import 这里，顶层谁都不拿对方的值算东西）
 import type { GrooveStyle } from "./grooves.gen.ts";
 /** 一种风格出声用的五样（16-4 D：score.json grooves 按值存；插风格记号的那一刻从现行预设抄，src/score/groove.ts withGrooveData）。名字不抄（显示照现行的表）。 */
 export type GrooveData = Pick<GrooveStyle, "meters" | "phase" | "fallback" | "follow" | "swing">;   // 谱内反复（循环 import：repeats.ts 只在函数里用 song.ts 的东西，加载顺序无所谓）
@@ -30,8 +31,8 @@ export const TPQ = 1680;
 export const BEAT = TPQ;
 export const WHOLE = TPQ * 4;
 /** 长短六档（plain 值）：三十二分 · 十六分 · 八分 · 四分 · 二分 · 全音符（user「长的话最多全音符同意，再有需求用连音」）。 */
-export const LADDER = [TPQ / 8, TPQ / 4, TPQ / 2, TPQ, TPQ * 2, WHOLE] as const;
-export const DEFAULT_UNIT = 2;   // 八分（user「默认可以是八分音符吗」）
+/** 接下来写的长短默认 = 八分（user「默认可以是八分音符吗」）。长短旋钮上有哪几档 = note-values.ts lenSteps（跟光标处的拍号）。 */
+export const DEFAULT_LEN = TPQ / 2;
 /** 连音：n 个占 m 个的位置 → 每个 × m/n（三连 ×⅔、五连 ×⅘、六连 ×⅔（4 拍分 6）、七连 ×4/7）。 */
 export const TUPLET: Record<number, [number, number]> = { 3: [2, 3], 5: [4, 5], 6: [4, 6], 7: [4, 7] };
 /** 数据上的时值下限 / 上限（下限 = 三十二分七连音；上限 = 四个全音符，再长用连音线）。 */
@@ -239,7 +240,7 @@ export const NEW_SONG_HEAD: Readonly<{ fifths: number; minor: boolean; beats: nu
 /** 输入状态（不进数据）：写的时候下一个音长什么样。 */
 export type Acc = -2 | -1 | 0 | 1 | 2;
 export interface InputState {
-  unit: number;                       // LADDER 下标
+  len: number;                        // 接下来写的长短（tick，不带连音；带附点的档 = 1.5 倍；档在 note-values.ts，v0.17.51 前存的是档的下标）
   tuplet: 0 | 3 | 5 | 6 | 7;          // 0 = 不连音；锁定式
   acc: Acc;                           // ♯ / ♭ Shift（pad 的升降键还能 𝄪 / 𝄫 = ±2）
   accMode: "off" | "once" | "lock";   // 点一下只管下一个音，连点两下锁住（user「double tap shift is "capslock"」）
@@ -301,7 +302,7 @@ export function emptySong(m: { fifths?: number; beats?: number; beatType?: numbe
 export function songOf(tokens: Token[], rest: Partial<Omit<Song, "parts" | "papers">> = {}): Song {
   return { ...NEW_SONG_LOOK, ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
 }
-export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", inputAuto: true }; }
+export function initInput(): InputState { return { len: DEFAULT_LEN, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", inputAuto: true }; }
 /** 整首歌最大的 token id（新 id 从它后面编；所有纸、所有声部一起算，id 全歌唯一）。 */
 export function maxId(song: Song): number { let m = 0; for (const p of song.papers) for (const ts of Object.values(p.tracks)) for (const t of ts) m = Math.max(m, t.id); return m; }
 /** 第一条有内容的 track（第一张纸上第一个在场的声部）。 */
@@ -464,7 +465,7 @@ export const inputKey = (st: EditorState): number => (st.input.inputAuto ? keyAt
 export const inputScaleOf = (st: EditorState): string => (st.input.inputAuto ? "major" : st.input.inputScale);
 /** 下一个要写的音的时长 = 当前档 ×（连音比例）。 */
 export function unitDur(input: InputState): number {
-  const plain = LADDER[input.unit];
+  const plain = input.len;
   if (!input.tuplet) return plain;
   const [m, n] = TUPLET[input.tuplet];
   return (plain * m) / n;
@@ -1184,15 +1185,23 @@ export function deleteForward(st: EditorState): EditorState {
 
 // ── 输入状态（写的时候改的是下一个音） ────────────────────────────────
 
-/** 长短基线直接设成第几档（pad 的长短旋钮点开选）。 */
-export function setUnit(st: EditorState, unit: number): EditorState { return { ...st, input: { ...st.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) } }; }
-/** 长短 = 输入档位（接下来写的长短；到头不动）。有选区也一样——选区里写 = 替换模式按这一档吃（键盘只管打谱；
- *  整组改时值 = 选区菜单 scaleSelDur / setSelDur；2026-10-08 user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单」）。 */
+/** 长短基线直接设成这么长（pad 的长短旋钮 / 滚轮、/2）。带附点的档不连音：连音顺手去掉（说一句归宿主）。 */
+export function setLen(st: EditorState, len: number): EditorState {
+  if (!(len > 0) || !Number.isInteger(len)) return st;
+  return { ...st, input: { ...st.input, len, tuplet: lenShape(len)?.dotted ? 0 : st.input.tuplet } };
+}
+/** 光标这里（这个声部、光标处的拍号）长短旋钮上的档（短 → 长）。 */
+export function lenStepsAt(st: EditorState): number[] {
+  const t = timeAt(tr(st), st.sel ? st.sel.from : st.caret);
+  return lenSteps(t.beats, t.beatType);
+}
+/** 长短 = 输入档位（接下来写的长短；沿光标这里的档走一档，不在表上 = 往那个方向最近的一档；到头不动）。有选区也一样——
+ *  整组改时值 = 选区菜单 scaleSelDur / setSelDur；2026-10-08 user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单」。 */
 export function shorter(st: EditorState): EditorState {
-  return st.input.unit > 0 ? { ...st, input: { ...st.input, unit: st.input.unit - 1 } } : st;
+  const n = stepLen(lenStepsAt(st), st.input.len, -1); return n === null ? st : setLen(st, n);
 }
 export function longer(st: EditorState): EditorState {
-  return st.input.unit < LADDER.length - 1 ? { ...st, input: { ...st.input, unit: st.input.unit + 1 } } : st;
+  const n = stepLen(lenStepsAt(st), st.input.len, 1); return n === null ? st : setLen(st, n);
 }
 /** 选区菜单「÷2 / ×2」：选中的音 / 休止都乘这个数（超出全音符 / 三十二分的那个不动）。 */
 export function scaleSelDur(st: EditorState, f: 0.5 | 2): EditorState { return mapSelDur(st, (d) => d * f); }
@@ -1205,7 +1214,7 @@ export function toggleSelDot(st: EditorState): EditorState {
   return mapSelDur(st, (d) => (allDotted ? (d * 2) / 3 : plain(d) ? d * 1.5 : d));
 }
 /** 连音：设成 0 / 3 / 5 / 6 / 7（锁定式；候选由界面弹）。 */
-export function setTuplet(st: EditorState, n: InputState["tuplet"]): EditorState { return { ...st, input: { ...st.input, tuplet: n } }; }
+export function setTuplet(st: EditorState, n: InputState["tuplet"]): EditorState { return n && lenShape(st.input.len)?.dotted ? st : { ...st, input: { ...st.input, tuplet: n } }; }   // 带附点的档不连音（旋钮上那一列灰着）
 /** ♯ / ♭ Shift：关 → 一次；一次且 350 ms 内再点 → 锁；其余 → 关。有选中 = 选中的音直接升降半音。 */
 export function tapAcc(st: EditorState, acc: Exclude<Acc, 0>, now: number): EditorState {
   if (st.sel) return mapSelPitch(st, (p) => alterBy(p, acc));
@@ -1232,21 +1241,10 @@ function firstNoteIn(st: EditorState): number {
   for (let i = st.sel.from; i < st.sel.to; i++) if (tr(st)[i].kind === "note") return i;
   return -1;
 }
-/** 选中的音 / 休止全部改成这一档（选区菜单「都改成 ♪」= pad 长短旋钮现在那一档；连音跟 pad 现在的连音设置）。 */
-export function setSelDur(st: EditorState, unit: number): EditorState {
-  const d = unitDur({ ...st.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) });
+/** 选中的音 / 休止全部改成长短旋钮现在那一档（选区菜单「都改成 ♪」；连音跟 pad 现在的连音设置）。 */
+export function setSelDur(st: EditorState): EditorState {
+  const d = unitDur(st.input);
   return mapSelDur(st, () => d);
-}
-/** 选中的音 / 休止现在是哪一档（都一样才有；长短不一 / 不是整档 / 没选 = null）：选区菜单显示用。 */
-export function selUnit(st: EditorState): number | null {
-  if (!st.sel) return null;
-  let u: number | null = null;
-  for (let i = st.sel.from; i < st.sel.to; i++) {
-    const t = tr(st)[i]; if (!isTimed(t)) continue;
-    const k = LADDER.indexOf(t.dur as (typeof LADDER)[number]); if (k < 0) return null;
-    if (u === null) u = k; else if (u !== k) return null;
-  }
-  return u;
 }
 function mapSelDur(st: EditorState, f: (d: number) => number): EditorState {
   if (!st.sel) return st;

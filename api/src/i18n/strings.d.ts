@@ -3250,6 +3250,9 @@ export declare const S: {
     readonly "{p}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": {
         readonly en: "{p} goes from one note to the next (before the cursor is a rest, or no note yet)";
     };
+    readonly "\u5E26\u9644\u70B9\u7684\u957F\u77ED\u4E0D\u8FDE\u97F3\uFF1A\u8FDE\u97F3\u5173\u6389\u4E86": {
+        readonly en: "Dotted lengths have no tuplets: tuplet turned off";
+    };
     readonly "\u952E\u4E0A\u6309 C \u8C03\u5199": {
         readonly en: "Keys in C";
     };
@@ -3262,6 +3265,9 @@ export declare const S: {
     readonly 跟着谱上这里的调号: {
         readonly en: "Uses the key signature here";
     };
+    readonly "{n} \u8FDE\u97F3": {
+        readonly en: "{n}-tuplet";
+    };
     readonly 手动: {
         readonly en: "Manual";
     };
@@ -3273,6 +3279,15 @@ export declare const S: {
     };
     readonly "{name}\uFF08\u624B\u52A8\uFF09": {
         readonly en: "{name} (manual)";
+    };
+    readonly "\uFF08{tuplet} \u8FDE\u97F3\uFF09": {
+        readonly en: " ({tuplet}-tuplet)";
+    };
+    readonly 不连: {
+        readonly en: "No tuplet";
+    };
+    readonly "\u5E26\u9644\u70B9\u7684\u957F\u77ED\u4E0D\u8FDE\u97F3\uFF1A\u8981\u8FDE\u97F3\uFF0C\u5148\u6362\u4E00\u4E2A\u4E0D\u5E26\u9644\u70B9\u7684\u957F\u77ED": {
+        readonly en: "Dotted lengths have no tuplets: to use one, first pick a length without a dot";
     };
     readonly "\u5B58\u5728\u4F60\u7684\u6B4C\u5E93\u91CC\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": {
         readonly en: "Saved in your library. You can leave any of these unpicked and change them later in Settings.";
@@ -5395,27 +5410,6 @@ export declare const S: {
     readonly "\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09\u3001\u53CD\u590D\u3001\u8E0F\u677F": {
         readonly en: "Key / time / clef / octave lines / tempo, style (beat weights), repeats, pedals";
     };
-    readonly 三十二分: {
-        readonly en: "Thirty-second";
-    };
-    readonly 十六分: {
-        readonly en: "Sixteenth";
-    };
-    readonly 八分: {
-        readonly en: "Eighth";
-    };
-    readonly 四分: {
-        readonly en: "Quarter";
-    };
-    readonly 二分: {
-        readonly en: "Half";
-    };
-    readonly 全音符: {
-        readonly en: "Whole";
-    };
-    readonly "{n} \u8FDE\u97F3": {
-        readonly en: "{n}-tuplet";
-    };
     readonly "\u7B26\u53F7\u683C\u5F00\u7740\uFF1A\u8FD9\u4E00\u9762\u53EA\u5199\u8BB0\u53F7\uFF1B\u70B9\u300C\u97F3\u300D\u6362\u56DE\u97F3\u952E\u5199\u97F3": {
         readonly en: "The symbol keys are showing: this side only writes marks; tap “Notes” to switch back";
     };
@@ -5740,9 +5734,6 @@ export declare const S: {
     readonly "\u957F\u77ED\u57FA\u7EBF\uFF1A{p}{tuplet}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009": {
         readonly en: "Note length: {p}{tuplet} — hold and slide up / down, or tap to choose";
     };
-    readonly "\uFF08{tuplet} \u8FDE\u97F3\uFF09": {
-        readonly en: " ({tuplet}-tuplet)";
-    };
     readonly "\u97F3\u57DF {rowShift}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684": {
         readonly en: "Range {rowShift}: hold and slide up / down, or tap to choose — like pushing a sheet of paper: pushing up shows lower notes";
     };
@@ -5754,9 +5745,6 @@ export declare const S: {
     };
     readonly 音域窗口: {
         readonly en: "Range window";
-    };
-    readonly 不连: {
-        readonly en: "No tuplet";
     };
     readonly 连音: {
         readonly en: "Tuplets";
@@ -6414,6 +6402,30 @@ export declare const S: {
     };
     readonly "\u8FD9\u4E00\u6BB5\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD": {
         readonly en: "This segment is sung in English: use Latin letters";
+    };
+    readonly 三十二分: {
+        readonly en: "Thirty-second";
+    };
+    readonly 十六分: {
+        readonly en: "Sixteenth";
+    };
+    readonly 八分: {
+        readonly en: "Eighth";
+    };
+    readonly 四分: {
+        readonly en: "Quarter";
+    };
+    readonly 二分: {
+        readonly en: "Half";
+    };
+    readonly 全音符: {
+        readonly en: "Whole";
+    };
+    readonly "{n} \u4E2A\u56DB\u5206": {
+        readonly en: "{n} quarters";
+    };
+    readonly "\u9644\u70B9{name}": {
+        readonly en: "Dotted {name}";
     };
     readonly 舒适: {
         readonly en: "Comfortable";

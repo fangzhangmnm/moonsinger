@@ -3,7 +3,7 @@
 //   user「加一个时长替换模式，类似override…吃掉后面的旋律线」「然后不能写出选区边界」「有选区 = 替换、无选区 = 插入」
 //   「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单，键盘只做纯粹的打谱」
 import { describe, it, eq, assert } from "./runner.mjs";
-import { initState, select, setCaret, moveCaret, deleteForward, setSelDur, scaleSelDur, selUnit, writePitch, writeRest, backspace, extend, stackPitch, setUnit, shorter, tr, headLen, TPQ, songOf, type EditorState, type NoteTok, type Token } from "../src/score/song.ts";
+import { initState, select, setCaret, moveCaret, deleteForward, setSelDur, scaleSelDur, writePitch, writeRest, backspace, extend, stackPitch, setLen, shorter, tr, headLen, TPQ, songOf, type EditorState, type NoteTok, type Token } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
 
 const E = TPQ / 2, H = 3;
@@ -18,20 +18,15 @@ function song(items: (["C" | "D" | "E" | "F" | "G" | "A" | "B", number, string?]
   for (const it of items) toks.push((it === "|" ? { kind: "bar", id: id++ } : { kind: "note", pitch: P(it[0]), dur: it[1] * E, lyric: it[2] ?? null, id: id++ }) as Token);
   return initState(songOf(toks, { title: "" }));
 }
-const unit = (st: EditorState, u: number) => setUnit(st, u);   // 2 = 八分、3 = 四分、4 = 二分
+const unit = (st: EditorState, u: number) => setLen(st, (TPQ / 8) * 2 ** u);   // 2 = 八分、3 = 四分、4 = 二分（长短旋钮原来的第几档）
 
 describe("选区菜单：整组改时值", () => {
   it("setSelDur：选中的都改成那一档；选区留着；没选 = 原样", () => {
     let st = select(song([["C", 1], ["D", 1], ["E", 1], ["F", 1]]), H, H + 3);
-    st = setSelDur(st, 3);
+    st = setSelDur(unit(st, 3));
     eq(show(st), "C4/2 D4/2 E4/2 F4/1");
     eq(JSON.stringify(st.sel), JSON.stringify({ from: H, to: H + 3 }));
-    const clear = { ...st, sel: null }; eq(setSelDur(clear, 1), clear);
-  });
-  it("selUnit：都一样才报；长短不一 / 没选 = null", () => {
-    const st = song([["C", 1], ["D", 1]]);
-    eq(selUnit(select(st, H, H + 2)), 2); eq(selUnit(st), null);
-    let m = scaleSelDur(select(st, H, H + 1), 0.5); m = select(m, H, H + 2); eq(selUnit(m), null);
+    const clear = unit({ ...st, sel: null }, 1); eq(setSelDur(clear), clear);
   });
 });
 

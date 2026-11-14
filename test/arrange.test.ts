@@ -78,7 +78,7 @@ describe("循环放（loopPlan / loopWindow）", () => {
   });
   it("循环区间 = 第二遍（谱上的秒）：前奏 3 拍 + 循环段 2 拍，速度 90 → 第二遍从 (3+2)×⅔ 秒到 (3+4)×⅔ 秒", async () => {
     const { initState, writeDegree, addPaper, setPaperName, setArrangement, flattenPart, tempoMapOf } = await import("../src/score/song.ts");
-    let st = initState(); st = { ...st, input: { ...st.input, unit: 3 } };
+    let st = initState(); st = { ...st, input: { ...st.input, len: 1680 } };
     for (const d of [1, 2, 3]) st = writeDegree(st, d, "near");
     st = setPaperName(st, st.song.papers[0].id, "前奏"); st = addPaper(st); st = setPaperName(st, st.song.papers[1].id, "B");
     st = { ...st, at: { ...st.at, paper: st.song.papers[1].id }, caret: 3 };

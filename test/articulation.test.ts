@@ -28,7 +28,7 @@ const deq = (a: unknown, b: unknown, msg?: string) => eq(JSON.stringify(a), JSON
 const SPEC = gainSpec();
 const NE = { staccatoGate: 0.5, gapSec: 0, gapShare: 0.25, breathSec: 0.16, breathShare: 0.25 };   // noteEnd 要的数（出厂的）
 /** 四个四分音符 C D E F（光标在最后）。 */
-function four(): EditorState { let st = initState(); st = { ...st, input: { ...st.input, unit: 3 } }; for (const d of [1, 2, 3, 4]) st = writeDegree(st, d, "near"); return st; }
+function four(): EditorState { let st = initState(); st = { ...st, input: { ...st.input, len: 1680 } }; for (const d of [1, 2, 3, 4]) st = writeDegree(st, d, "near"); return st; }
 const noteIdx = (st: EditorState) => tr(st).flatMap((t, i) => (t.kind === "note" ? [i] : []));
 const meta = { software: "test", date: "2026-10-08" };
 const info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };
@@ -95,8 +95,8 @@ describe("修：MusicXML（musicxml.ts）", () => {
     eq(Object.keys(r.dropped).length, 0);
   });
   it("跨小节线被拆开的音：跳音在第一段、呼吸在最后一段，读回来并成一个音", () => {
-    let st = initState(); st = { ...st, input: { ...st.input, unit: 4 } };   // 二分
-    st = writeDegree(st, 1, "near"); st = { ...st, input: { ...st.input, unit: 5 } }; st = writeDegree(st, 2, "near");   // 二分 + 全音符 = 跨过第一条小节线
+    let st = initState(); st = { ...st, input: { ...st.input, len: 3360 } };   // 二分
+    st = writeDegree(st, 1, "near"); st = { ...st, input: { ...st.input, len: 6720 } }; st = writeDegree(st, 2, "near");   // 二分 + 全音符 = 跨过第一条小节线
     const i = noteIdx(st)[1]; st = select(st, i, i + 1); st = toggleArtSel(st, "staccato"); st = toggleArtSel(st, "breath");
     const w = writeMusicXml({ paper: A5_PAPER, parts: [{ info, tokens: tr(st) }] }, meta);
     const pieces = [...w.xml.matchAll(/<note id="n\d+(-2)?">[\s\S]*?<\/note>/g)].map((m) => m[0]).filter((x) => x.includes("<step>D</step>"));

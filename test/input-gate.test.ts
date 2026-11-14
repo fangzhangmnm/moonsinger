@@ -6,7 +6,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { noWrite, writesScore, stepLocus, createInputGate, keyOwner, PLUG_LOCI, type KeyFacts, type NoWrite, type KeyOwner } from "../src/app/input-gate.ts";
 import { BINDINGS } from "../src/keyboard/keys.ts";
 import { apply } from "../src/score/commands.ts";
-import { initState, withTrack, tr, TPQ, setUnit, type Token, type EditorState } from "../src/score/song.ts";
+import { initState, withTrack, tr, TPQ, setLen, type Token, type EditorState } from "../src/score/song.ts";
 import { emptyHistory, record, type LocusKind } from "../src/score/history.ts";
 import { emptyExtras } from "../src/format/project.ts";
 
@@ -33,7 +33,7 @@ describe("键盘总闸：现在能不能往谱上写（三个原因现算成一�
   for (const why of ["locked", "picking", "unplugged"] as NoWrite[]) it(`${why}：会改谱的一下被挡（安静 + 回调一次），只动光标 / 选中 / 输入状态的照常`, () => {
     const { g, blocked } = rig({ [why]: true });
     eq(g.why(), why);
-    const rest = apply(W, { k: "rest" }, 0), left = apply(W, { k: "caret", d: -1 }, 0), sel = apply(W, { k: "selext", d: -1 }, 0), unit = setUnit(W, TPQ / 2), sharp = apply(W, { k: "acc", acc: 1 }, 0);
+    const rest = apply(W, { k: "rest" }, 0), left = apply(W, { k: "caret", d: -1 }, 0), sel = apply(W, { k: "selext", d: -1 }, 0), unit = setLen(W, TPQ), sharp = apply(W, { k: "acc", acc: 1 }, 0);
     assert(writesScore(W, rest) && !writesScore(W, left) && !writesScore(W, sel) && !writesScore(W, unit) && !writesScore(W, sharp), "（前提）休止改谱；挪光标 / 选中 / 时值旋钮 / 升降锁不改");
     eq(g.may(W, rest), false); eq(blocked.join(), `${why}/score`);
     eq(g.may(W, left), true); eq(g.may(W, sel), true); eq(g.may(W, unit), true); eq(g.may(W, sharp), true); eq(g.may(W, W), true);

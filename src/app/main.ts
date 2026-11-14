@@ -16,7 +16,7 @@ import { SIGNS } from "../render/signs.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
-import { trackOf, PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type PedalTok, setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setPaper, setCredits, setTitle, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
+import { trackOf, PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type PedalTok, setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setPaper, setCredits, setTitle, setRights, tapAcc, setAccState, setLen, lenStepsAt, DEFAULT_LEN, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
 import { textLangIn, setTextLang, TEXT_LANGS, type TextLang, setViewInC, setChordTags, setNotation, setMiddleC, setExpressions, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, NOTATIONS, CHORD_TAG_STYLES, setChordTagStyle, type ChordTagStyle, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { foldedMarks, type FoldedMark } from "../render/expressions.ts";   // 演奏法和表情不显示时改到 / 写上了它们：轻轻说一句（7-G）
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
@@ -141,7 +141,8 @@ import { createInputGate, keyOwner, type NoWrite } from "./input-gate.ts";
 import { monoDown, monoUp, type MonoHeld } from "./mono-voice.ts";
 import { createEncoder } from "../format/encode-client.ts";
 import { runFactoryReset } from "./factory-reset.ts";
-import { freshDesk, freshPartView, serializeDesk, unserializeDesk, serializeFinderMemo, unserializeFinderMemo, PAD_UNITS, type Desk, type PartViewState } from "../score/desk.ts";
+import { lenName, lenOfName, lenGlyph, lenShape, halfLen } from "../score/note-values.ts";
+import { freshDesk, freshPartView, serializeDesk, unserializeDesk, serializeFinderMemo, unserializeFinderMemo, type Desk, type PartViewState } from "../score/desk.ts";
 import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
 import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongLooks, type ResolvedLook } from "../score/clef.ts";
 import type { ClefHit } from "../render/engrave.ts";
@@ -1034,13 +1035,14 @@ let autoBars = true;
 /** /2 = 和 Shift 一个逻辑（user「或者/2是类似shift，因为accessibility的issue可能按住不方便，而是和键盘shift的逻辑一样」）：
  *  点一下 = 凑满一份原来的时值再回去（= 两个减半的音 / 休止 / 拉长；user 点头 AI 的答：只管一个会留半拍窟窿，节奏是成对凑整拍的）；
  *  中途挪了光标或拨了长短旋钮 = 取消；350 ms 内连点两下 = 锁住（再点一下解开）；按住写 = 按住期间写的都减半、松手回去。
- *  减半 = 临时把长短基线往短挪一档（旋钮上看得见）；已经最短（三十二分）就不挪；回去 = 挪回一档（中间拨过旋钮 = 照拨过的再挪回一档）。 */
+ *  减半 = 临时把长短基线减成一半（旋钮上看得见；带附点的减半还是带附点的）；已经最短（三十二分）就不减；回去 = 乘回两倍（中间拨过旋钮 = 照拨过的乘两倍，
+ *  乘出来比全音符和这里最长的一档都长 = 不乘）。v0.17.51 前是「往短挪一档 / 挪回一档」，六档时和现在一样。 */
 //   锁的规则 = src/keyboard/latch.ts（和升降、渐到同一份，2026-10-15）；这里只剩它的副作用：开 = 长短基线往短挪一档，关 = 挪回来。
 let half: Latch = LATCH_OFF, halfShifted = false;
 function setHalf(next: Latch): void {
   const was = latchOn(half), on = latchOn(next);
-  if (!was && on) { halfShifted = D.st.input.unit > 0; if (halfShifted) update(setUnit(D.st, D.st.input.unit - 1)); }
-  else if (was && !on && halfShifted) { halfShifted = false; update(setUnit(D.st, D.st.input.unit + 1)); }
+  if (!was && on) { const h = halfLen(D.st.input.len); halfShifted = h !== null; if (h !== null) update(setLen(D.st, h)); }
+  else if (was && !on && halfShifted) { halfShifted = false; const d = D.st.input.len * 2; if (d <= Math.max(WHOLE, ...lenStepsAt(D.st))) update(setLen(D.st, d)); }
   half = next; pad.showHalf(next.mode);
 }
 function halfKey(down: boolean): void { setHalf(down ? latchDown(half, performance.now(), 2) : latchUp(half)); }   // uses = 2：两个减半的 = 一份原来的
@@ -3375,7 +3377,16 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
 }
 /** 选区菜单（2026-10-08 by Claude Opus 5.5；user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单，键盘只做纯粹的打谱」）：
  *  选区条「操作…」/ 长按选区里的音 / 右键选中的音 → 开在那里。移调、时值点了不收（可以连着点）；转调先换成调的列表；其余点了就收。 */
-const UNIT_SMUFL = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];   // 同 pad 的长短旋钮
+/** 键盘的长短进文件 = 时值名（note-values.ts lenName；带附点 = dotted-…）。没有名字的长短 = 这一项不写、记进黑匣子（不猜一个近的；正常走不到）。 */
+function padUnitName(len: number): string | null {
+  const n = lenName(len); if (n === null) reportError(`[desk] pad length ${len} has no note-value name; not saved`, "log");
+  return n;
+}
+/** 读回来：不认识的名字 = 默认（八分）；带附点的档不连音（手改过的文件里写了也不认）。 */
+function padLenOf(unit: string | null, tuplet: InputState["tuplet"]): { len: number; tuplet: InputState["tuplet"] } {
+  const len = lenOfName(unit) ?? DEFAULT_LEN;
+  return { len, tuplet: lenShape(len)?.dotted ? 0 : tuplet };
+}
 const KEY_CIRCLE_MENU = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
 function selBarAnchor(): { x: number; y: number } {
   const r = document.querySelector<HTMLElement>('.sel-bar [data-v="transpose"]')?.getBoundingClientRect();
@@ -3401,7 +3412,7 @@ function openSelMenu(at: { x: number; y: number }): void {
       (perc ? item("keys", _t("转调…"), NO_KEY_WHY(), "is-off") + item("respell", _t("按调号拼写"), NO_KEY_WHY(), "is-off")
         : item("keys", _t("转调…"), _t("整段转到另一个调：音按两个主音之间的音程挪，调号跟着换")) +
           item("respell", _t("按调号拼写"), _t("音高不变：调内的音换成调号里的写法（A♭ 在五个升号的调里 = G♯），调外的不动"))) +
-      `<div class="ctx-row"><span class="ctx-k">${_t("时值")}</span>${chip("short", "÷2")}${chip("long", "×2")}${chip("seldur", `${_t("都改成")} <span class="smufl">${UNIT_SMUFL[D.st.input.unit]}</span>`, _t("都改成长短旋钮现在那一档"))}</div>` +
+      `<div class="ctx-row"><span class="ctx-k">${_t("时值")}</span>${chip("short", "÷2")}${chip("long", "×2")}${chip("seldur", `${_t("都改成")} <span class="smufl">${lenGlyph(D.st.input.len)}</span>`, _t("都改成长短旋钮现在那一档"))}</div>` +
       `<div class="ctx-row"><span class="ctx-k">${_t("清掉记号")}</span>${chip("clr:phrase", _t("曲级"), _t("力度字、渐强渐弱、渐到、风格（选区第一个音前面挂着的也算）"))}${chip("clr:note", _t("音级"), _t("演奏法、音头（重音 / 突强…）、音内起伏、连线、呼吸、气声"))}${chip("clr:all", _t("都清"), _t("曲级 + 音级；音、歌词、调号拍号速度、反复不动"))}</div>` +
       `<div class="ctx-sep"></div>` + item("copy", _t("复制")) + item("cut", _t("剪切")) + (clip ? item("paste", _t("粘贴（替换选中的）")) : "") + item("delete", _t("删掉"), "", "danger");
   };
@@ -3489,11 +3500,11 @@ const instPage = createInstSettings(instEl, {
 function drawInst(): void { instPage.draw(); }
 /** 视图态（desk，src/score/desk.ts）：存时聚一下（bytesNow）、开歌时散回去（loadDoc）。变量本身仍住这里（viewScope / pageFlow / partView）。 */
 const deskNow = (): Desk => ({ scope: viewScope, pageFlow, scroll: scrollFlow, paper: D.st.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality, mode: ws.mode,
-  pad: { auto: D.st.input.inputAuto, fifths: D.st.input.inputFifths, scale: D.st.input.inputScale, unit: PAD_UNITS[D.st.input.unit], tuplet: D.st.input.tuplet, low: pad.rangeLow() }, ref: refHost.panel(), finder: finder.memo("song") });   // pad 的状态跟着歌走（同 WeebPaint editor-state）
+  pad: { auto: D.st.input.inputAuto, fifths: D.st.input.inputFifths, scale: D.st.input.inputScale, unit: padUnitName(D.st.input.len), tuplet: D.st.input.tuplet, low: pad.rangeLow() }, ref: refHost.panel(), finder: finder.memo("song") });   // pad 的状态跟着歌走（同 WeebPaint editor-state）
 function applyDesk(d: Desk): void {
   viewScope = d.scope; pageFlow = d.pageFlow; scrollFlow = d.scroll; mp3Quality = d.mp3;
   finder.restore("song", d.finder);   // 乐器目录在这首歌里翻到哪（新歌 = 按年代、全收着、在顶上）
-  D.commit({ st: { ...D.st, input: { ...D.st.input, inputAuto: d.pad.auto, inputFifths: d.pad.fifths, inputScale: d.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d.pad.unit)), tuplet: d.pad.tuplet } } }, { silent: true, undo: false });   // 视图态 / 输入态：只换真相，不重画（调用方自己画）
+  D.commit({ st: { ...D.st, input: { ...D.st.input, inputAuto: d.pad.auto, inputFifths: d.pad.fifths, inputScale: d.pad.scale, ...padLenOf(d.pad.unit, d.pad.tuplet) } } }, { silent: true, undo: false });   // 视图态 / 输入态：只换真相，不重画（调用方自己画）
   partView.clear(); for (const [id, p] of Object.entries(d.parts)) partView.set(id, { ...freshPartView(), ...p });
   if (d.paper && d.paper !== D.st.at.paper) {
     const paper = D.st.song.papers.find((p) => p.id === d.paper), part = paper?.tracks[D.st.at.part] ? D.st.at.part : D.st.song.parts.find((p) => paper?.tracks[p.id])?.id;

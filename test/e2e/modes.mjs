@@ -74,10 +74,10 @@ await p.click("#score text.part-name", { button: "right" }); await p.waitForTime
 check(!!(await p.$(".track-card:not(.ctx-menu)")), "右键歌手名 = 开歌手牌");
 await p.keyboard.press("Escape"); await p.mouse.click(1080, 880); await p.waitForTimeout(150);
 // 5. 旋钮吃鼠标滚轮（长短）
-const unit0 = await p.evaluate(() => window.__moonsinger.state().input.unit);
+const unit0 = await p.evaluate(() => window.__moonsinger.state().input.len);
 const knob = await p.locator('[data-knob="unit"]').boundingBox();
 await p.mouse.move(knob.x + knob.width / 2, knob.y + knob.height / 2); await p.mouse.wheel(0, 120); await p.waitForTimeout(150);
-const unit1 = await p.evaluate(() => window.__moonsinger.state().input.unit);
+const unit1 = await p.evaluate(() => window.__moonsinger.state().input.len);
 check(unit1 !== unit0, "滚轮拨「长短」旋钮", `${unit0} → ${unit1}`);
 // 滚轮在音键上 = 挪一排（和音域旋钮一样；v0.10.23，user「鼠标滚轮可以滚动音符键盘以及其他键盘的row」）
 { const lab = () => p.$$eval(".pad-key[data-k] .kf-big", (es) => es.map((e) => e.textContent).join(","));

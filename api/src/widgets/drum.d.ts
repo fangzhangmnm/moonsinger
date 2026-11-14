@@ -4,10 +4,12 @@ export interface DrumColumn {
     width: number;
     title?: string;
     loop?: boolean;
+    off?: string;
 }
 export interface DrumOpts {
     onChange(col: number, index: number): void;
     onClose?(): void;
+    onOff?(col: number, why: string): void;
 }
 /** setItems：换某一列的内容（位置不变）——长短一变，连音那列的小蝌蚪跟着变（user「三联五联的小蝌蚪应该跟着base时值adaptive的变」）。
  *  setIndex：把某一列滚到第 i 格、不回报 onChange（拨了一列、宿主那边另一列的现值跟着变了：「1=」拨了调 = 调式那列从「跟谱」挪到大调，v0.16.9）。 */
@@ -15,6 +17,7 @@ export interface DrumHandle {
     close(): void;
     setItems(col: number, items: string[]): void;
     setIndex(col: number, i: number): void;
+    setOff(col: number, why?: string): void;
 }
 /** 在 anchor（旋钮）那里展开：选中带对着旋钮（旋钮在最下面一排时放不下，就整根往上挪）。同时只开一根，再开会先收起旧的。 */
 export declare function openDrum(anchor: HTMLElement, cols: DrumColumn[], o: DrumOpts): DrumHandle;

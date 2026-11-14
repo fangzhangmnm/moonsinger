@@ -7,7 +7,7 @@ import { paperOf as paperOfA5 } from "../src/look/paper.ts"; const A5_PAPER = pa
 
 const meta = { software: "test", date: "2026-10-08" };
 const info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };
-function four(): EditorState { let st = initState(); st = { ...st, input: { ...st.input, unit: 3 } }; for (const d of [1, 2, 3, 4]) st = writeDegree(st, d, "near"); return st; }
+function four(): EditorState { let st = initState(); st = { ...st, input: { ...st.input, len: 1680 } }; for (const d of [1, 2, 3, 4]) st = writeDegree(st, d, "near"); return st; }
 const noteIdx = (st: EditorState) => tr(st).flatMap((t, i) => (t.kind === "note" ? [i] : []));
 const slurs = (st: EditorState) => noteIdx(st).map((i) => !!(tr(st)[i] as NoteTok).slur);
 

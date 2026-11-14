@@ -12,7 +12,7 @@ const p = await (await b.newContext({ viewport: { width: 1100, height: 760 } }))
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
 await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); m.setMode("notes"); }, XML); await p.waitForTimeout(500);
 const track = () => p.evaluate(() => { const s = window.__moonsinger.state(); return JSON.stringify(s.song.papers[0].tracks[s.at.part]); });
-const st = () => p.evaluate(() => { const s = window.__moonsinger.state(); return { caret: s.caret, sel: s.sel, unit: s.input.unit }; });
+const st = () => p.evaluate(() => { const s = window.__moonsinger.state(); return { caret: s.caret, sel: s.sel, unit: s.input.len }; });
 const press = async (k) => { await p.keyboard.press(k); await p.waitForTimeout(60); };
 const plugOn = () => p.evaluate(() => ({ btn: !!document.querySelector("#padPanel .impro-pad.is-on"), panel: document.getElementById("padPanel").classList.contains("is-unplugged") }));
 // 光标放在中间（第 3 个音后面），焦点给谱

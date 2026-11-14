@@ -90,6 +90,7 @@ import "./clipboard.test.ts";
 import "./chord.test.ts";
 import "./history.test.ts";
 import "./desk.test.ts";
+import "./note-values.test.ts";
 import "./studio.test.ts";
 import "./resource-watch.test.ts";
 import "./whisper-inhale.test.ts";

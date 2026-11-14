@@ -6,7 +6,8 @@ import { HOME, diatonicIndex, tonicStepIndex, noteName, alterBy, midiOf, KEY_LAB
 import { toDegree } from "../score/degree.ts";
 import { drawnPitch } from "../score/view-in-c.ts";
 import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
-import { type EditorState, inputKey, inputScaleOf, keyAt, timeAt, tempoAt, tr } from "../score/song.ts";
+import { type EditorState, type InputState, inputKey, inputScaleOf, keyAt, timeAt, tempoAt, tr, lenStepsAt } from "../score/song.ts";
+import { lenChoices, lenGlyph, lenLabel, lenShape } from "../score/note-values.ts";
 import { _t } from "../i18n/index.ts";
 import type { PadMusic, PadCell, KeyFaces } from "../keyboard/pad.ts";
 
@@ -54,7 +55,29 @@ export interface PadMusicHost extends PadMusic {
   /** 旋钮 / 滚轮第 i 档 = 哪个调 / 哪个调式（调式第 0 档 = "auto" = 跟谱）。 */
   fifthsAt(i: number): number;
   scaleIdAt(i: number): string;
+  /** 长短旋钮第 i 档多长（tick）/ 连音那一列第 i 项是几连音（第 0 项 = 不连）。 */
+  lenAt(i: number): number;
+  tupletAt(i: number): InputState["tuplet"];
 }
+/** 连音：不连 / 3 / 5 / 6 / 7（长短点开时并着的那一列）。 */
+const TUP = [0, 3, 5, 6, 7] as const;
+/** 连音的样子 = 真画一组 n 个小蝌蚪，跟着长短基线变：三十二分 3 道横梁、十六分 2 道、八分 1 道、四分只有符干、二分空心、全音符空心没符干；
+ *  上面一道括号，中间是连音数字（Bravura tuplet0–9 = U+E880–E889）。user「三联我是说画具体的小蝌蚪」「三联五联的小蝌蚪应该跟着base时值adaptive的变」。
+ *  base = 六种音符里的第几种（短 → 长）。v0.17.51 从 pad.ts 搬来（键盘不知道音符长什么样，统筹 2026-11-13）。 */
+export function tupletMark(n: number, base: number): string {
+  const S = 7, M = 1.5, HY = 25, TOP = 11.5, hx = (i: number) => M + 3 + i * S, sx = (i: number) => hx(i) + 2.35;
+  const W = hx(n - 1) + 3 + M, hollow = base >= 4, beams = Math.max(0, 3 - base), cx = W / 2, by = 4.5;
+  const heads = Array.from({ length: n }, (_, i) =>
+    `<ellipse class="${hollow ? "ho" : "fi"}" cx="${hx(i)}" cy="${HY}" rx="${base === 5 ? 3 : 2.6}" ry="1.85" transform="rotate(-20 ${hx(i)} ${HY})"/>`).join("");
+  const stems = base <= 4 ? Array.from({ length: n }, (_, i) => `<line x1="${sx(i)}" y1="${HY - 0.5}" x2="${sx(i)}" y2="${TOP}"/>`).join("") : "";
+  const beam = Array.from({ length: beams }, (_, k) => `<rect x="${sx(0) - 0.45}" y="${TOP + k * 3}" width="${sx(n - 1) - sx(0) + 0.9}" height="1.8"/>`).join("");
+  return `<svg class="tupsvg" viewBox="0 0 ${W} 28.5" width="${((W * 32) / 28.5).toFixed(1)}" height="32" aria-label="${_t("{n} 连音", { n })}">` +
+    `<path class="br" d="M${M} ${by + 2.5}V${by}H${cx - 3.6}M${cx + 3.6} ${by}H${W - M}V${by + 2.5}"/>` +
+    `<text x="${cx}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(0xe880 + n)}</text>${stems}${beam}${heads}</svg>`;
+}
+/** 一个长短在键面 / 滚轮里的字：音符字形（带附点 = 后面一个附点）。 */
+export const lenFace = (len: number): string => `<span class="smufl">${lenGlyph(len)}</span>`;
+
 
 /** middleC = 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字、音域旋钮照它写。
  *  inC = 移调辅助在光标这个声部上起不起作用（五线谱、开着、不是打击乐的行；宿主判，第 19 条）：起作用 = 键上大字照谱上换到 C 调画成的名字写。 */
@@ -89,6 +112,18 @@ export function createPadMusic(get: () => EditorState, middleC: () => number, in
       const st = get(), toks = tr(st), i = st.sel ? st.sel.from : st.caret, t = timeAt(toks, i);
       return { key: KEY_LABEL[keyAt(toks, i)] ?? "?", beats: t.beats, beatType: t.beatType, bpm: tempoAt(toks, i) };
     },
+    lenChoices: () => {
+      const st = get(), ls = lenChoices(lenStepsAt(st), st.input.len), tp = st.input.tuplet;
+      return { items: ls.map(lenFace), names: ls.map(lenLabel), index: Math.max(0, ls.indexOf(st.input.len)),
+        face: lenFace(st.input.len) + (tp ? `<sup>${tp}</sup>` : ""), name: lenLabel(st.input.len) + (tp ? _t("（{tuplet} 连音）", { tuplet: tp }) : "") };
+    },
+    tupletChoices: (i) => {
+      const st = get(), L = lenChoices(lenStepsAt(st), st.input.len)[i] ?? st.input.len, sh = lenShape(L);
+      return { items: TUP.map((n) => (n ? tupletMark(n, sh?.base ?? 2) : `<span class="plain">${_t("不连")}</span>`)), index: Math.max(0, TUP.indexOf(st.input.tuplet)),
+        ...(sh?.dotted ? { off: _t("带附点的长短不连音：要连音，先换一个不带附点的长短") } : {}) };
+    },
+    lenAt: (i) => { const st = get(); return lenChoices(lenStepsAt(st), st.input.len)[i] ?? st.input.len; },
+    tupletAt: (i) => TUP[i] ?? 0,
     pitchAt,
     fifthsAt: (i) => KNOB_KEYS[i],
     scaleIdAt: (i) => (i === 0 ? "auto" : SCALES[i - 1].id),   // 第 0 档 = 跟谱（song.ts setInputScale 认 "auto"）

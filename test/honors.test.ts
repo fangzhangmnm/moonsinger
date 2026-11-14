@@ -16,7 +16,7 @@ const spec = (gapSec: number) => gainSpec({ gapSec });   // 音量那一路（�
 const sfSpec = (gapSec: number) => velSpec({ gapSec });
 /** 两个四分音符；mark = 给第一个音加的记号（连线 = 第一个连到第二个）。chord = 第一个音叠成和弦（琶音要和弦才听得出来，v0.9.45）。 */
 function two(mark?: Mark, chord = false): EditorState {
-  let st = initState(); st = { ...st, input: { ...st.input, unit: 3 } };
+  let st = initState(); st = { ...st, input: { ...st.input, len: 1680 } };
   for (const d of [1, 2]) st = writeDegree(st, d, "near");
   const notesAt = tr(st).flatMap((t, k) => (t.kind === "note" ? [k] : []));
   const i = mark === "arpeggio" || (chord && !mark) ? notesAt[1] : notesAt[0];   // 琶音挂第二个音：v0.9.48 起低音往前提早，全曲第一个音前面没地方提早

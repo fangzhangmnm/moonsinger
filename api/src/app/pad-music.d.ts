@@ -1,6 +1,6 @@
 import { type Pitch } from "../score/pitch.ts";
 import { type Scale } from "../score/scales.ts";
-import { type EditorState } from "../score/song.ts";
+import { type EditorState, type InputState } from "../score/song.ts";
 import type { PadMusic, KeyFaces } from "../keyboard/pad.ts";
 /** 五度圈，♭ 多 → C → ♯ 多；旋钮 / 滚轮里反过来放（大的在上：1=F♯ … 1=C … 1=G♭）。 */
 export declare const KEY_CIRCLE: number[];
@@ -32,7 +32,16 @@ export interface PadMusicHost extends PadMusic {
     /** 旋钮 / 滚轮第 i 档 = 哪个调 / 哪个调式（调式第 0 档 = "auto" = 跟谱）。 */
     fifthsAt(i: number): number;
     scaleIdAt(i: number): string;
+    /** 长短旋钮第 i 档多长（tick）/ 连音那一列第 i 项是几连音（第 0 项 = 不连）。 */
+    lenAt(i: number): number;
+    tupletAt(i: number): InputState["tuplet"];
 }
+/** 连音的样子 = 真画一组 n 个小蝌蚪，跟着长短基线变：三十二分 3 道横梁、十六分 2 道、八分 1 道、四分只有符干、二分空心、全音符空心没符干；
+ *  上面一道括号，中间是连音数字（Bravura tuplet0–9 = U+E880–E889）。user「三联我是说画具体的小蝌蚪」「三联五联的小蝌蚪应该跟着base时值adaptive的变」。
+ *  base = 六种音符里的第几种（短 → 长）。v0.17.51 从 pad.ts 搬来（键盘不知道音符长什么样，统筹 2026-11-13）。 */
+export declare function tupletMark(n: number, base: number): string;
+/** 一个长短在键面 / 滚轮里的字：音符字形（带附点 = 后面一个附点）。 */
+export declare const lenFace: (len: number) => string;
 /** middleC = 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字、音域旋钮照它写。
  *  inC = 移调辅助在光标这个声部上起不起作用（五线谱、开着、不是打击乐的行；宿主判，第 19 条）：起作用 = 键上大字照谱上换到 C 调画成的名字写。 */
 export declare function createPadMusic(get: () => EditorState, middleC: () => number, inC?: () => boolean, jianpuBase?: () => number | null): PadMusicHost;
