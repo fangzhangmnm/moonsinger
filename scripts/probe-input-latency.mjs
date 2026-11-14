@@ -1,9 +1,10 @@
 // scripts/probe-input-latency.mjs —— 量「琴键（MIDI）按下 → engine.auditionOn（声音交给音频线程）」在主线程上要等多久。created 2026-10-17 by Claude Opus 5.5
 //   三种：空歌写音 / 现造的大歌（1204 个 token）写音 + 四个键隔 20 ms 的快弹（含排队等主线程）/ 大歌开着「弹」只响不写。假的 Web MIDI 装进页面。
-//   跑：npm run build → npm run serve（8710）→ node scripts/probe-input-latency.mjs（MS_E2E_BASE 可改地址）。结果与分道方案：ai-docs/20261017-input-latency-probe.md
+//   跑：npm run build → npm run serve（8710）→ node scripts/probe-input-latency.mjs（MS_E2E_BASE 可改地址；MS_PROBE_W / MS_PROBE_H 改窗口，默认 1100 × 900）。结果与分道方案：ai-docs/20261017-input-latency-probe.md
 import { chromium } from "../test/e2e/pw.mjs";
 const b = await chromium.launch();
-const ctx = await b.newContext({ viewport: { width: 1100, height: 900 } });
+const W = Number(process.env.MS_PROBE_W ?? 1100), H = Number(process.env.MS_PROBE_H ?? 900);   // MS_PROBE_W=1920 MS_PROBE_H=1080 = 键盘浮在右下角的那种（v0.17.52）
+const ctx = await b.newContext({ viewport: { width: W, height: H } });
 await ctx.addInitScript(() => {
   const port = { id: "f", name: "Fake", state: "connected", type: "input", onmidimessage: null };
   const access = { inputs: new Map([[port.id, port]]), onstatechange: null };
