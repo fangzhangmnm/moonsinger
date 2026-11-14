@@ -564,6 +564,16 @@ export function singleSel(st: EditorState): number {
   for (let i = st.sel.from; i < st.sel.to; i++) if (isTimed(tk[i])) { if (k >= 0) return -1; k = i; }
   return k;
 }
+/** 收起「只选了一个」= 光标到它后面接着写。「叠」键再按一下、再点一下已经选中的这一个（v0.17.54）都走这一处。没选 = 原样。 */
+export function releaseSingle(st: EditorState): EditorState { return st.sel ? setCaret(st, st.sel.to) : st; }
+/** 轻点一个音 / 休止（下标 i）之后，编辑状态落到哪（v0.17.54，设计稿 ai-docs/20261113-selection-rules-design.md 第五节「乙」；
+ *  user 2026-11-13「点一下音再按音键，是接着写，还是改它本身 应该是改吧」）：
+ *  · selects（乙）：已经「只选了它这一个」= 收成它后面的光标（releaseSingle，同「叠」键再按）；否则 = 选中它这一个（之后按键照「只选了一个」那一列 = 改它）。
+ *  · !selects（甲，v0.17.53 及以前）：光标到它后面。退回甲 = src/ui/press-rules.ts 的 TAP_SELECTS 改成 false，这里不动。 */
+export function tapTimed(st: EditorState, i: number, selects: boolean): EditorState {
+  if (!selects) return setCaret(st, i + 1);
+  return singleSel(st) === i ? releaseSingle(st) : select(st, i, i + 1);
+}
 /** 从 i 起吃掉紧挨着的休止，最多 need 那么长。只吃休止：碰到音 / 人插的「|」就停；中间不占时值的记号原样留着（keep，按原来的顺序）。
  *  吃一半的休止留下剩的那截（也在 keep 里）；剩的那截不是合法时值 = 这个休止不吃。end = 吃到哪（不含）。 */
 function eatRests(tk: Token[], i: number, need: number): { got: number; end: number; keep: Token[] } {

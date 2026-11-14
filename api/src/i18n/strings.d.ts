@@ -7759,5 +7759,77 @@ export declare const S: {
     readonly 独: {
         readonly en: "S";
     };
+    readonly "\u6B4C\u624B\u8F68\u548C\u6DF7\u97F3\u8F68\u4E4B\u95F4\u4E0D\u7C98\uFF1A\u62F7\u7684\u662F\u300C{from}\u300D": {
+        readonly en: "Singer tracks and buses don't paste onto each other: the copy is from “{from}”";
+    };
+    readonly 这条轨不在了: {
+        readonly en: "This track is gone";
+    };
+    readonly "\u7C98\u8F68\u8BBE\u7F6E\u5230 {to}": {
+        readonly en: "Paste track settings onto {to}";
+    };
+    readonly "{n} \u4E2A\u6548\u679C": {
+        readonly en: "{n} effects";
+    };
+    readonly "\u53D1\u9001\u7ED9{list}": {
+        readonly en: "sends to {list}";
+    };
+    readonly 没有发送: {
+        readonly en: "no sends";
+    };
+    readonly "\u51FA\u5230\u300C{n}\u300D": {
+        readonly en: "out to “{n}”";
+    };
+    readonly "\u300C{n}\u300D": {
+        readonly en: "“{n}”";
+    };
+    readonly "\u522B\u7684\u6B4C\u91CC\u7684\uFF0C\u4E0D\u7C98": {
+        readonly en: "from another song, not pasted";
+    };
+    readonly 那条轨变了: {
+        readonly en: "that track has changed";
+    };
+    readonly 那条轨不在了: {
+        readonly en: "that track is gone";
+    };
+    readonly 就是它自己: {
+        readonly en: "it is this very track";
+    };
+    readonly 会接成环: {
+        readonly en: "would make a loop";
+    };
+    readonly "\u53D1\u9001\u7ED9\u300C{n}\u300D": {
+        readonly en: "send to “{n}”";
+    };
+    readonly "\u88AB\u8C01\u538B\u300C{n}\u300D": {
+        readonly en: "compressed by “{n}”";
+    };
+    readonly "{what}\uFF08{why}\uFF09": {
+        readonly en: "{what} ({why})";
+    };
+    readonly "\u3002\u6CA1\u7C98\uFF1A{list}": {
+        readonly en: ". Not pasted: {list}";
+    };
+    readonly "\u628A\u300C{from}\u300D\u7684\u8F68\u8BBE\u7F6E\u7C98\u5230\u300C{to}\u300D\uFF1A{got}{dropped}": {
+        readonly en: "Pasted the track settings of “{from}” onto “{to}”: {got}{dropped}";
+    };
+    readonly "\u62F7\u8FD9\u6761\u8F68\u7684\u8BBE\u7F6E\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u6574\u6761\u6548\u679C\u94FE\uFF08\u6BCF\u4E00\u683C\u8FDE\u5F00\u5173\u548C\u88AB\u8C01\u538B\uFF09\u3001\u53D1\u9001\u3001\u51FA\u5230\u3001\u65C1\u901A\u3002\u4E0D\u62F7\u540D\u5B57\u3001\u9759\u97F3\u72EC\u594F\u3001\u4E50\u624B\u90A3\u4E00\u5C42": {
+        readonly en: "Copy this track's settings: gain, pan, the whole effect chain (each slot with its on/off and “compressed by”), sends, output, bypass. Not the name, mute/solo, or anything about the performer";
+    };
+    readonly 拷轨设置: {
+        readonly en: "Copy track";
+    };
+    readonly "\u628A\u62F7\u7684\u8F68\u8BBE\u7F6E\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u6574\u4EFD\u76D6\u5230\u8FD9\u6761\u8F68\u4E0A\uFF1B\u540D\u5B57\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500": {
+        readonly en: "Replaces this track's settings with the copied ones (from “{from}”); the name stays; can be undone";
+    };
+    readonly 粘轨设置: {
+        readonly en: "Paste track";
+    };
+    readonly "\u62F7\u7684\u300C{from}\u300D\u662F\u6B4C\u624B\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6B4C\u624B\u8F68\u4E0A": {
+        readonly en: "The copy from “{from}” is a singer track; it only pastes onto singer tracks";
+    };
+    readonly "\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A": {
+        readonly en: "The copy from “{from}” is a bus; it only pastes onto buses";
+    };
 };
 export type Key = keyof typeof S;

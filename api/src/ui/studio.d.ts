@@ -1,4 +1,5 @@
 import type { FxV2, LimiterParamsV2 } from "../format/contract.ts";
+import type { TrackClip } from "../format/project.ts";
 import { type Params } from "./plugins.ts";
 export interface StudioStrip {
     id: string;
@@ -15,6 +16,12 @@ export interface StudioStrip {
     /** 上场那位乐手身上除了「响度」以外和现在的默认不一样的有几处（16-6，performers/defaults.ts 一处算）：不是 0 = 推子旁边「乐手 N 处不同」，点了去乐器页顶上那一句。 */
     performerDiffs: number;
 }
+/** 拷下来的一条轨的设置（v0.17.54），界面拿着、粘的时候原样还给宿主：opening = 哪一次打开拷的（换了一次打开 = 连线不粘）；from = 拷的那条轨当时叫什么。 */
+export interface HeldTrack {
+    clip: TrackClip;
+    opening: number;
+    from: string;
+}
 export interface StudioHost {
     strips(): StudioStrip[];
     setGain(id: string, dB: number): void;
@@ -25,6 +32,12 @@ export interface StudioHost {
     close(): void;
     /** 删一位一张纸都不在的歌手（歌手管理；纸上不删）。 */
     deletePart(id: string): void;
+    /** 拷 / 粘一条轨的设置（v0.17.54；user 2026-11-14「做一个复制黏贴轨道的功能就行了」）：id = 歌手的编号 / 混音轨的编号（总轨不参与）。
+     *  粘 = 整份换掉增益、声像、效果链、发送、出到、旁通，一步撤销；宿主粘完说一句带名单的话（粘了什么、哪几条没粘、为什么）。 */
+    copyTrack(id: string): HeldTrack | null;
+    pasteTrack(id: string, held: HeldTrack): void;
+    /** 说一句（灰着的钮点了说为什么）。 */
+    say(text: string): void;
     /** 去这位歌手的乐器页：at = "cal" 落在「响度」那一行（推子旁边「乐手 −6 dB」那颗钮）；"sum" 落在顶上「和现在的默认不一样的有几处」那一句（「乐手 N 处不同」，16-6）。 */
     openPerformer(id: string, at: "cal" | "sum"): void;
     /** 总轨（2026-10-10 刀 3）：增益 dB + 母线限幅开关；进歌（studio.json master）。 */
@@ -130,6 +143,11 @@ export declare class Studio {
     /** 插件参数的剪贴板（v0.10.23；user「待会：效果器预设可以拷贝，类似Unity的component，尽量严格一点避免混淆。不读快捷键」）：
      *  拷 = 这一格的种类 + 全部参数（不拷开 / 关、不拷「被谁压」）；粘参数 = 只能粘到同一种插件上（覆盖参数，开关 / 被谁压照旧）；粘成新的一格 = 链尾加一格。这次打开里有效、没有快捷键。 */
     private fxClip;
+    /** 拷的一条轨的设置（v0.17.54）：kind = 歌手轨 / 混音轨（只在同一类之间粘）。和拷参数一样：这次打开的界面里有效、没有快捷键。 */
+    private trackClip;
+    /** 基础页卡片上「拷轨设置 / 粘轨设置」那一行。没拷过 = 只有拷；拷的是另一类 = 粘灰着（点了说为什么）。 */
+    private trackClipRow;
+    private clipKindWhy;
     private clipBtns;
     /** 压缩页：每条轨最近 COMP_HIST 段（~21 ms 一段）的 [进峰值, 出峰值, 压了多少 dB]。 */
     private compHist;

@@ -2584,7 +2584,31 @@ var S = {
   "\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8": { en: "Delete this part" },
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
-  "\u72EC": { en: "S" }
+  "\u72EC": { en: "S" },
+  "\u6B4C\u624B\u8F68\u548C\u6DF7\u97F3\u8F68\u4E4B\u95F4\u4E0D\u7C98\uFF1A\u62F7\u7684\u662F\u300C{from}\u300D": { en: "Singer tracks and buses don't paste onto each other: the copy is from \u201C{from}\u201D" },
+  "\u8FD9\u6761\u8F68\u4E0D\u5728\u4E86": { en: "This track is gone" },
+  "\u7C98\u8F68\u8BBE\u7F6E\u5230 {to}": { en: "Paste track settings onto {to}" },
+  "{n} \u4E2A\u6548\u679C": { en: "{n} effects" },
+  "\u53D1\u9001\u7ED9{list}": { en: "sends to {list}" },
+  "\u6CA1\u6709\u53D1\u9001": { en: "no sends" },
+  "\u51FA\u5230\u300C{n}\u300D": { en: "out to \u201C{n}\u201D" },
+  "\u300C{n}\u300D": { en: "\u201C{n}\u201D" },
+  "\u522B\u7684\u6B4C\u91CC\u7684\uFF0C\u4E0D\u7C98": { en: "from another song, not pasted" },
+  "\u90A3\u6761\u8F68\u53D8\u4E86": { en: "that track has changed" },
+  "\u90A3\u6761\u8F68\u4E0D\u5728\u4E86": { en: "that track is gone" },
+  "\u5C31\u662F\u5B83\u81EA\u5DF1": { en: "it is this very track" },
+  "\u4F1A\u63A5\u6210\u73AF": { en: "would make a loop" },
+  "\u53D1\u9001\u7ED9\u300C{n}\u300D": { en: "send to \u201C{n}\u201D" },
+  "\u88AB\u8C01\u538B\u300C{n}\u300D": { en: "compressed by \u201C{n}\u201D" },
+  "{what}\uFF08{why}\uFF09": { en: "{what} ({why})" },
+  "\u3002\u6CA1\u7C98\uFF1A{list}": { en: ". Not pasted: {list}" },
+  "\u628A\u300C{from}\u300D\u7684\u8F68\u8BBE\u7F6E\u7C98\u5230\u300C{to}\u300D\uFF1A{got}{dropped}": { en: "Pasted the track settings of \u201C{from}\u201D onto \u201C{to}\u201D: {got}{dropped}" },
+  "\u62F7\u8FD9\u6761\u8F68\u7684\u8BBE\u7F6E\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u6574\u6761\u6548\u679C\u94FE\uFF08\u6BCF\u4E00\u683C\u8FDE\u5F00\u5173\u548C\u88AB\u8C01\u538B\uFF09\u3001\u53D1\u9001\u3001\u51FA\u5230\u3001\u65C1\u901A\u3002\u4E0D\u62F7\u540D\u5B57\u3001\u9759\u97F3\u72EC\u594F\u3001\u4E50\u624B\u90A3\u4E00\u5C42": { en: "Copy this track's settings: gain, pan, the whole effect chain (each slot with its on/off and \u201Ccompressed by\u201D), sends, output, bypass. Not the name, mute/solo, or anything about the performer" },
+  "\u62F7\u8F68\u8BBE\u7F6E": { en: "Copy track" },
+  "\u628A\u62F7\u7684\u8F68\u8BBE\u7F6E\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u6574\u4EFD\u76D6\u5230\u8FD9\u6761\u8F68\u4E0A\uFF1B\u540D\u5B57\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500": { en: "Replaces this track's settings with the copied ones (from \u201C{from}\u201D); the name stays; can be undone" },
+  "\u7C98\u8F68\u8BBE\u7F6E": { en: "Paste track" },
+  "\u62F7\u7684\u300C{from}\u300D\u662F\u6B4C\u624B\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6B4C\u624B\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a singer track; it only pastes onto singer tracks" },
+  "\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a bus; it only pastes onto buses" }
 };
 
 // src/device-kv.ts
@@ -4581,7 +4605,7 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/version.ts
-var APP_VERSION = "v0.17.53-2026-11-13";
+var APP_VERSION = "v0.17.54-2026-11-14";
 
 // src/format/performance.ts
 var REPO = "https://github.com/fangzhangmnm/moonsinger";
@@ -7769,4 +7793,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-df800d699f12.mjs.map
+//# sourceMappingURL=encode-worker-abac23a687d4.mjs.map

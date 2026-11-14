@@ -452,6 +452,13 @@ export declare function writeDegree(st: EditorState, degree: number, dir: Dir, m
 export declare function writeRest(st: EditorState): EditorState;
 /** 只选了一个音 / 休止（= 改这个音）：它的下标；不是 = -1。选区里不占时值的记号不算。 */
 export declare function singleSel(st: EditorState): number;
+/** 收起「只选了一个」= 光标到它后面接着写。「叠」键再按一下、再点一下已经选中的这一个（v0.17.54）都走这一处。没选 = 原样。 */
+export declare function releaseSingle(st: EditorState): EditorState;
+/** 轻点一个音 / 休止（下标 i）之后，编辑状态落到哪（v0.17.54，设计稿 ai-docs/20261113-selection-rules-design.md 第五节「乙」；
+ *  user 2026-11-13「点一下音再按音键，是接着写，还是改它本身 应该是改吧」）：
+ *  · selects（乙）：已经「只选了它这一个」= 收成它后面的光标（releaseSingle，同「叠」键再按）；否则 = 选中它这一个（之后按键照「只选了一个」那一列 = 改它）。
+ *  · !selects（甲，v0.17.53 及以前）：光标到它后面。退回甲 = src/ui/press-rules.ts 的 TAP_SELECTS 改成 false，这里不动。 */
+export declare function tapTimed(st: EditorState, i: number, selects: boolean): EditorState;
 /** 曲级记号（力度字 / 渐强渐弱 / 风格）跟着它后面那个音（复制、清记号都这么算）。 */
 /** 挂在后面那个音上的记号（力度 / 渐强渐弱 / 风格 / 踏板）：它们记在音的前面、管的是那个音起。一处定义——空纸写音落在它们后面、插小节线让到它们后面、
  *  复制带上第一个音身上的、符号退格先删、清掉曲级记号、打开时理顺纸头那一串，都按这一份（2026-11-12 踏板加进来时，四处各抄一份的漏了一处）。 */

@@ -16,7 +16,7 @@ import { SIGNS } from "../render/signs.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
-import { trackOf, PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type PedalTok, setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setPaper, setCredits, setTitle, setRights, tapAcc, setAccState, setLen, lenStepsAt, DEFAULT_LEN, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
+import { trackOf, PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type PedalTok, setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setPaper, setCredits, setTitle, setRights, tapAcc, setAccState, setLen, lenStepsAt, DEFAULT_LEN, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select, releaseSingle } from "../score/song.ts";
 import { textLangIn, setTextLang, TEXT_LANGS, type TextLang, setViewInC, setChordTags, setNotation, setMiddleC, setExpressions, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, NOTATIONS, CHORD_TAG_STYLES, setChordTagStyle, type ChordTagStyle, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { foldedMarks, type FoldedMark } from "../render/expressions.ts";   // 演奏法和表情不显示时改到 / 写上了它们：轻轻说一句（7-G）
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
@@ -59,7 +59,7 @@ import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
 import { withCastAs, candidateJson, activeCalibrationDb, templateExtras, activeHum, withHum, activePedalDefault } from "../format/project.ts";
 import type { CandidateV2, Sf2Source } from "../format/contract.ts";
-import { contentFingerprintOf, moveBus, saveMxl, openBytes, emptyExtras, roleSound, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, perfSpecOf, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
+import { contentFingerprintOf, moveBus, saveMxl, openBytes, emptyExtras, roleSound, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, perfSpecOf, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, copyTrackSettings, pasteTrackSettings, type PasteDrop, type Extras, type Engine } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, hairpinDead, dynLevels, type Mark } from "../score/perform.ts";
 import { navWhy } from "../score/repeats.ts";
@@ -168,6 +168,8 @@ function noteStartDynsFilled(_n: number): void {
   info(_t("这首歌有 {n} 处纸开头没写力度：这一下改谱时补上了那里本来生效的那个（听起来不变），存的时候一起写进文件", { n: startDynsMissing }));
 }
 // 第 21 条（v0.17.38）：新建的歌把「跟着」的那几项写成这一刻的值（src/look stampLooks born）；开 app 时这一份在习惯那几行之前建，直接从设备读习惯
+/** 第几次打开（每次载入一首歌 +1，含重新打开同一首、重建空白歌）：混音台拷轨设置的剪贴板记着它，换了一次打开 = 连线一条都不粘（v0.17.54，统筹 2026-11-14「不按名字去对别的歌里的轨——那是猜」）。 */
+let openings = 0;
 const D = createDocument(((st) => ({ st, extras: templateExtras(st.song) }))(initState(stampLooks(initState().song, { habits: habitsFrom(deviceKvGet) }, lang(), "born"))), {
   now: () => performance.now(), normalize: (next) => { const n = withStartDyns(next), g = withGrooveData(n.song); return g === n.song ? n : { ...n, song: g }; },   // 风格记号用到的拍子表：插 / 换风格的那一刻抄进歌（16-4 D）
   onState: (prev, next, moved) => afterState(prev, next, moved, true), onExtras: (prev, next, locus) => afterExtras(prev, next, locus),
@@ -1078,7 +1080,7 @@ function halfKey(down: boolean): void { setHalf(down ? latchDown(half, performan
 function stackKey(down: boolean): void {
   if (!down) return;
   if (!canStack()) { info(_t("「{extras}」是单声乐器，这个声部叠不了音", { extras: roleLabel(curRole()) })); return; }
-  if (singleSel(D.st) >= 0) { update(setCaret(D.st, D.st.sel!.to)); return; }
+  if (singleSel(D.st) >= 0) { update(releaseSingle(D.st)); return; }   // 再按 = 回到它后面（同再点一下已选中的音，v0.17.54）
   const tk = tr(D.st); let i = -1;
   if (D.st.sel) { for (let k = D.st.sel.to - 1; k >= D.st.sel.from; k--) if (isTimed(tk[k])) { i = k; break; } }   // 选了好几个 = 改最后那个
   else i = currentIndex(D.st);
@@ -1405,6 +1407,8 @@ const BUDGET = perfApi.budget, TURN_LEADS = perfApi.TURN_LEADS;
 function typingIn(t: EventTarget | null): boolean { const el = t as HTMLElement | null; if (!el) return false; if (el.tagName === "TEXTAREA" || el.isContentEditable) return true; return el.tagName === "INPUT" && !["range", "checkbox", "radio", "button"].includes((el as HTMLInputElement).type); }
 /** 混音台上一条轨的 id → studio.json 里那条轨的 id（歌手 = 它的麦克风轨；路由轨 = 自己）。 */
 function trackKey(track: string): string { return D.st.song.parts.find((x) => x.id === track)?.mic ?? track; }
+/** 混音台里一条指向现在叫什么（拷 / 粘轨设置核对用）：歌手 = 界面上显示的名字；混音轨 = 它的名字；都不是 = null。 */
+function mixNameOf(id: string): string | null { const k = D.st.song.parts.findIndex((x) => x.id === id); if (k >= 0) return labelsNow()[k]; const t = studioTrack(D.extras, id); return t?.kind === "bus" ? t.name : null; }
 function routeName(track: string): string { if (track === "master") return _t("总轨"); const k = D.st.song.parts.findIndex((x) => x.id === track); return k >= 0 ? labelsNow()[k] : studioTrack(D.extras, track)?.name ?? track; }
 /** 听模式（2026-10-10 user「还有一个就是播放模式，锁写谱，但是可以调录音室」「我蛮需要播放欣赏的时候防误触的哈哈」）：谱锁住（轻点不跳播、长按 / 右键 = 从这儿放、拖 = 滚动），
  *  pad 收起、键盘只认空格（放 / 暂停）和 Esc（回到写）；录音室照样能开能调。 */
@@ -2329,6 +2333,22 @@ const studio = new Studio($("stage"), {
   targets: (track) => { const all = studioTracks(D.extras).filter((t) => t.kind === "bus"), key = trackKey(track), next = (id: string) => { const t = all.find((x) => x.id === id); return t ? [t.to, ...t.sends.map((x) => x.to)].filter((x) => x && x !== "master") : []; };
     const reaches = (from: string, to: string) => { const seen = new Set<string>(), stk = [from]; while (stk.length) { const x = stk.pop()!; if (x === to) return true; if (seen.has(x)) continue; seen.add(x); stk.push(...next(x)); } return false; };
     return all.filter((b) => b.id !== key && !reaches(b.id, key)).map((b) => ({ id: b.id, name: b.name })); },
+  // 拷 / 粘一条轨的设置（v0.17.54；user 2026-11-14「做一个复制黏贴轨道的功能就行了」）：纯函数在 format/project.ts，这里只接线
+  copyTrack: (id) => { const clip = copyTrackSettings(D.extras, trackKey(id), mixNameOf); return clip ? { clip, opening: openings, from: routeName(id) } : null; },
+  pasteTrack: (id, held) => {
+    const self = D.st.song.parts.some((p) => p.id === id) ? id : null;
+    const r = pasteTrackSettings(D.extras, trackKey(id), held.clip, { foreign: held.opening !== openings, nameOf: mixNameOf, singers: D.st.song.parts.map((p) => p.id), self });
+    if (!r.ok) { info(r.why === "kind" ? _t("歌手轨和混音轨之间不粘：拷的是「{from}」", { from: held.from }) : _t("这条轨不在了")); return; }
+    const to = routeName(id), rep = r.report;
+    if (!D.commit({ extras: r.extras }, { locus: { kind: "studio", label: _t("粘轨设置到 {to}", { to }) } }).ok) return;   // 修改锁锁着 = 写入口拒了（它自己说）
+    const quoted = (n: string) => _t("「{n}」", { n });
+    const got = [_t("{n} 个效果", { n: rep.fx }), rep.sends.length ? _t("发送给{list}", { list: rep.sends.map((x) => quoted(x.name)).join(_t("、")) }) : _t("没有发送"), _t("出到「{n}」", { n: rep.to ? rep.to.name : _t("总轨") })].join(_t("、"));
+    const whyOf: Record<PasteDrop["why"], string> = { foreign: _t("别的歌里的，不粘"), changed: _t("那条轨变了"), missing: _t("那条轨不在了"), self: _t("就是它自己"), cycle: _t("会接成环") };
+    const whatOf = (d: PasteDrop) => (d.what === "to" ? _t("出到「{n}」", { n: d.name }) : d.what === "send" ? _t("发送给「{n}」", { n: d.name }) : _t("被谁压「{n}」", { n: d.name }));
+    const dropped = rep.dropped.length ? _t("。没粘：{list}", { list: rep.dropped.map((d) => _t("{what}（{why}）", { what: whatOf(d), why: whyOf[d.why] })).join(_t("；")) }) : "";
+    showNotice({ id: "track-paste", level: rep.dropped.length ? "warning" : "info", text: _t("把「{from}」的轨设置粘到「{to}」：{got}{dropped}", { from: held.from, to, got, dropped }), autoHideMs: rep.dropped.length ? 9000 : 5000 });
+  },
+  say: (s) => info(s),
   /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
   deletePart: (id) => deleteSinger(id),
   openPerformer: (id, at) => { goToPartInst(id); (at === "sum" ? instEl.querySelector<HTMLElement>(".ip-diff-sum") : instEl.querySelector<HTMLElement>('[data-v="cal:-1"]')?.closest(".ip-v"))?.scrollIntoView({ block: "center" }); },   // 推子旁边「乐手 −6 dB」：去乐器页「响度」那一行（第 14 条）
@@ -3560,6 +3580,7 @@ function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extr
   lock.refresh(); lockDoor.sync(); applyWorkspace();   // 这首歌的锁态（歌库里的 = 库说了算；硬盘文件 = 这一次打开默认锁着）
 }
 function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array>; keepPanels?: boolean; isNew?: boolean }): void {
+  openings++;
   if (impro) setImpro(false);
   foldTold.gone.clear(); foldTold.added.clear();   // 「改到 / 写上了没显示的记号」每次打开各说一次（7-G）
   if (!o.keepPanels) { ui.close(); closeInstPage(); }   // 重建空白歌（第 21 条）不关：人正在设置里改习惯

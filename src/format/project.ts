@@ -493,6 +493,61 @@ export function moveBus(extras: Extras, id: string, dir: -1 | 1): Extras {
   return { ...extras, studio: { ...(extras.studio as Json), tracks } };
 }
 export function newBusId(extras: Extras): string { return nextKey(studioTracks(extras).map((t) => t.id), "b"); }
+// ── 混音台：拷 / 粘一条轨的设置（v0.17.54；user 2026-11-14「不一起抄，做一个复制黏贴轨道的功能就行了」，规矩 = 统筹同日七条 + 跨歌 / 编号核对）──────────
+/** 拷下来的一条轨的设置：studio.json 里属于「轨」的那些——增益、声像、旁通、整条通道链（每一格连开关和「被谁压」）、发送、出到。
+ *  不拷名字、编号、种类以外的东西（静音 / 独奏是视图态，乐手那一层归休息室）。kind 只用来判「同一类才粘」。
+ *  names = 拷的那一刻每条指向（出到 / 发送指着的混音轨、「被谁压」指着的歌手）叫什么：编号是「前缀 + 现有最大号 + 1」，删掉最大号那条再加会拿回同一个编号，
+ *  所以粘的时候编号还在、名字也没变才接上。不进文件（剪贴板只在这次打开的界面里）。 */
+export interface TrackClip { kind: "mic" | "bus"; gainDb: number; pan: number; bypass: boolean; chain: FxV2[]; sends: { to: string; gainDb: number }[]; to: string; names: Record<string, string> }
+/** 一条没粘的指向：what = 出到 / 发送 / 某一格的被谁压；why = 别的歌里拷的 / 那条轨变了（名字对不上）/ 那条轨不在了 / 指的就是它自己 / 会接成环。 */
+export interface PasteDrop { what: "to" | "send" | "key"; id: string; name: string; why: "foreign" | "changed" | "missing" | "self" | "cycle" }
+/** 粘完的名单：几格效果、粘上的发送（目标现在的名字）、出到哪（null = 总轨）、没粘的几条。 */
+export interface PasteReport { fx: number; sends: { id: string; name: string }[]; to: { id: string; name: string } | null; dropped: PasteDrop[] }
+/** 拷一条轨的设置。nameOf = 一条轨 / 一位歌手现在叫什么（不在 = null；界面上显示的那个名字）。没有这条轨 = null。 */
+export function copyTrackSettings(extras: Extras, trackId: string, nameOf: (id: string) => string | null): TrackClip | null {
+  const t = studioTrack(extras, trackId); if (!t) return null;
+  const names: Record<string, string> = {}, note = (id: string) => { const n = nameOf(id); if (n !== null) names[id] = n; };
+  if (t.to !== "master") note(t.to);
+  for (const s of t.sends) note(s.to);
+  for (const f of t.chain) if (typeof f.key === "string" && f.key) note(f.key);
+  return structuredClone({ kind: t.kind, gainDb: t.gainDb, pan: t.pan, bypass: t.bypass, chain: t.chain, sends: t.sends, to: t.to, names });
+}
+/** 把拷的设置整份盖到 trackId 这条轨上（名字 / 编号 / 种类不动）。只在同一类之间（歌手轨 ↔ 歌手轨、混音轨 ↔ 混音轨；总轨不在 studio.tracks 里，不参与）。
+ *  连线不许悄悄坏、也不许悄悄带（统筹 2026-11-14）——每条指向按这个顺序核，第一条不过就不粘这一条：
+ *    别的歌（或重新打开之后）拷的 = 不粘（不按名字去对别的歌里的轨）→ 指着的混音轨 / 歌手不在了 → 名字和拷的时候不一样（编号被别的轨拿走了）→ 指的就是它自己 → 会接成环（从那条走得回这条）。
+ *  出到没粘 = 退回总轨；发送没粘 = 去掉那一条；被谁压没粘 = 那一格去掉被谁压（这一格照粘）。
+ *  ctx：foreign = 拷的那次打开不是现在这次；singers = 现在这首歌的歌手编号（被谁压指着的）；self = 这条轨是哪位歌手的（混音轨 = null）。 */
+export function pasteTrackSettings(extras: Extras, trackId: string, clip: TrackClip, ctx: { foreign: boolean; nameOf: (id: string) => string | null; singers: readonly string[]; self: string | null }):
+  { ok: true; extras: Extras; report: PasteReport } | { ok: false; why: "kind" | "missing" } {
+  const target = studioTrack(extras, trackId); if (!target) return { ok: false, why: "missing" };
+  if (target.kind !== clip.kind) return { ok: false, why: "kind" };
+  const all = studioTracks(extras), buses = new Map(all.filter((t) => t.kind === "bus").map((t) => [t.id, t] as const));
+  // 环：只看别的混音轨的连线（这条轨自己的连线整份换掉）；从 x 走得到这条轨 = 接上就是环
+  const next = (id: string) => { const b = buses.get(id); return !b || b.id === trackId ? [] : [b.to, ...b.sends.map((s) => s.to)].filter((x) => x && x !== "master"); };
+  const reaches = (from: string) => { const seen = new Set<string>(), stk = [from]; while (stk.length) { const x = stk.pop()!; if (x === trackId) return true; if (seen.has(x)) continue; seen.add(x); stk.push(...next(x)); } return false; };
+  const was = (id: string) => clip.names[id] ?? id;
+  const why = (id: string, kind: "bus" | "singer"): PasteDrop["why"] | null => {
+    if (ctx.foreign) return "foreign";
+    if (kind === "bus" ? !buses.has(id) : !ctx.singers.includes(id)) return "missing";
+    if (clip.names[id] === undefined || ctx.nameOf(id) !== clip.names[id]) return "changed";
+    if (kind === "bus" ? id === trackId : id === ctx.self) return "self";
+    if (kind === "bus" && reaches(id)) return "cycle";
+    return null;
+  };
+  const dropped: PasteDrop[] = [];
+  let to = clip.to;
+  if (to !== "master") { const w = why(to, "bus"); if (w) { dropped.push({ what: "to", id: to, name: was(to), why: w }); to = "master"; } }
+  const sends = clip.sends.filter((s) => { const w = why(s.to, "bus"); if (w) dropped.push({ what: "send", id: s.to, name: was(s.to), why: w }); return !w; });
+  const chain = clip.chain.map((f) => {
+    if (typeof f.key !== "string" || !f.key) return f;
+    const w = why(f.key, "singer"); if (!w) return f;
+    dropped.push({ what: "key", id: f.key, name: was(f.key), why: w });
+    const { key: _k, ...rest } = f; return rest as FxV2;
+  });
+  const next2 = withTrack(extras, trackId, { gainDb: clip.gainDb, pan: clip.pan, bypass: clip.bypass, chain, sends, to });
+  const now = (id: string) => ({ id, name: ctx.nameOf(id) ?? id });
+  return { ok: true, extras: next2, report: { fx: chain.length, sends: sends.map((s) => now(s.to)), to: to === "master" ? null : now(to), dropped } };
+}
 /** 限幅器的四个数（16-4 C；契约 LimiterParamsV2）：天花板 = 满幅的几分之几（线性）；起 / 放 / 前瞻 = 毫秒。 */
 export type LimiterParams = import("./contract.ts").LimiterParamsV2;
 /** 总轨（studio.json master）：照写着的读（门口补全过；缺了 = NaN / 不是布尔，出声那一层查出来报缺数）。增益夹在 −24…+12。 */

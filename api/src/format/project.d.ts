@@ -127,6 +127,63 @@ export declare function withoutBus(extras: Extras, id: string): Extras;
 /** 混音轨往前 / 往后挪一位（只在混音轨之间换；歌手的麦克风轨不动，它们的顺序跟谱走）。到头 = 原样。v0.10.10，user「混音轨之间还可以排序」。 */
 export declare function moveBus(extras: Extras, id: string, dir: -1 | 1): Extras;
 export declare function newBusId(extras: Extras): string;
+/** 拷下来的一条轨的设置：studio.json 里属于「轨」的那些——增益、声像、旁通、整条通道链（每一格连开关和「被谁压」）、发送、出到。
+ *  不拷名字、编号、种类以外的东西（静音 / 独奏是视图态，乐手那一层归休息室）。kind 只用来判「同一类才粘」。
+ *  names = 拷的那一刻每条指向（出到 / 发送指着的混音轨、「被谁压」指着的歌手）叫什么：编号是「前缀 + 现有最大号 + 1」，删掉最大号那条再加会拿回同一个编号，
+ *  所以粘的时候编号还在、名字也没变才接上。不进文件（剪贴板只在这次打开的界面里）。 */
+export interface TrackClip {
+    kind: "mic" | "bus";
+    gainDb: number;
+    pan: number;
+    bypass: boolean;
+    chain: FxV2[];
+    sends: {
+        to: string;
+        gainDb: number;
+    }[];
+    to: string;
+    names: Record<string, string>;
+}
+/** 一条没粘的指向：what = 出到 / 发送 / 某一格的被谁压；why = 别的歌里拷的 / 那条轨变了（名字对不上）/ 那条轨不在了 / 指的就是它自己 / 会接成环。 */
+export interface PasteDrop {
+    what: "to" | "send" | "key";
+    id: string;
+    name: string;
+    why: "foreign" | "changed" | "missing" | "self" | "cycle";
+}
+/** 粘完的名单：几格效果、粘上的发送（目标现在的名字）、出到哪（null = 总轨）、没粘的几条。 */
+export interface PasteReport {
+    fx: number;
+    sends: {
+        id: string;
+        name: string;
+    }[];
+    to: {
+        id: string;
+        name: string;
+    } | null;
+    dropped: PasteDrop[];
+}
+/** 拷一条轨的设置。nameOf = 一条轨 / 一位歌手现在叫什么（不在 = null；界面上显示的那个名字）。没有这条轨 = null。 */
+export declare function copyTrackSettings(extras: Extras, trackId: string, nameOf: (id: string) => string | null): TrackClip | null;
+/** 把拷的设置整份盖到 trackId 这条轨上（名字 / 编号 / 种类不动）。只在同一类之间（歌手轨 ↔ 歌手轨、混音轨 ↔ 混音轨；总轨不在 studio.tracks 里，不参与）。
+ *  连线不许悄悄坏、也不许悄悄带（统筹 2026-11-14）——每条指向按这个顺序核，第一条不过就不粘这一条：
+ *    别的歌（或重新打开之后）拷的 = 不粘（不按名字去对别的歌里的轨）→ 指着的混音轨 / 歌手不在了 → 名字和拷的时候不一样（编号被别的轨拿走了）→ 指的就是它自己 → 会接成环（从那条走得回这条）。
+ *  出到没粘 = 退回总轨；发送没粘 = 去掉那一条；被谁压没粘 = 那一格去掉被谁压（这一格照粘）。
+ *  ctx：foreign = 拷的那次打开不是现在这次；singers = 现在这首歌的歌手编号（被谁压指着的）；self = 这条轨是哪位歌手的（混音轨 = null）。 */
+export declare function pasteTrackSettings(extras: Extras, trackId: string, clip: TrackClip, ctx: {
+    foreign: boolean;
+    nameOf: (id: string) => string | null;
+    singers: readonly string[];
+    self: string | null;
+}): {
+    ok: true;
+    extras: Extras;
+    report: PasteReport;
+} | {
+    ok: false;
+    why: "kind" | "missing";
+};
 /** 限幅器的四个数（16-4 C；契约 LimiterParamsV2）：天花板 = 满幅的几分之几（线性）；起 / 放 / 前瞻 = 毫秒。 */
 export type LimiterParams = import("./contract.ts").LimiterParamsV2;
 /** 总轨（studio.json master）：照写着的读（门口补全过；缺了 = NaN / 不是布尔，出声那一层查出来报缺数）。增益夹在 −24…+12。 */

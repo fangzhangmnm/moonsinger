@@ -10,6 +10,7 @@
 import { dropdownHtml, mountDropdowns } from "./dropdown.ts";
 import { _t } from "../i18n/index.ts";
 import type { FxV2, LimiterParamsV2 } from "../format/contract.ts";
+import type { TrackClip } from "../format/project.ts";
 import { TEMPLATE } from "../format/template.ts";   // 推子 / 声像 / 发送「双击回默认」= 模板（16-4 A2）
 import { eqResponseDb } from "../engine/fx.ts";
 import { busLinkStates, type LinkState } from "../engine/studio.ts";
@@ -25,6 +26,8 @@ export interface StudioStrip { id: string; name: string; performer: string; gain
   performerDb: number;
   /** 上场那位乐手身上除了「响度」以外和现在的默认不一样的有几处（16-6，performers/defaults.ts 一处算）：不是 0 = 推子旁边「乐手 N 处不同」，点了去乐器页顶上那一句。 */
   performerDiffs: number }   // refs = 在几张纸上（0 = 能删）
+/** 拷下来的一条轨的设置（v0.17.54），界面拿着、粘的时候原样还给宿主：opening = 哪一次打开拷的（换了一次打开 = 连线不粘）；from = 拷的那条轨当时叫什么。 */
+export interface HeldTrack { clip: TrackClip; opening: number; from: string }
 export interface StudioHost {
   strips(): StudioStrip[];
   setGain(id: string, dB: number): void;
@@ -35,6 +38,12 @@ export interface StudioHost {
   close(): void;
   /** 删一位一张纸都不在的歌手（歌手管理；纸上不删）。 */
   deletePart(id: string): void;
+  /** 拷 / 粘一条轨的设置（v0.17.54；user 2026-11-14「做一个复制黏贴轨道的功能就行了」）：id = 歌手的编号 / 混音轨的编号（总轨不参与）。
+   *  粘 = 整份换掉增益、声像、效果链、发送、出到、旁通，一步撤销；宿主粘完说一句带名单的话（粘了什么、哪几条没粘、为什么）。 */
+  copyTrack(id: string): HeldTrack | null;
+  pasteTrack(id: string, held: HeldTrack): void;
+  /** 说一句（灰着的钮点了说为什么）。 */
+  say(text: string): void;
   /** 去这位歌手的乐器页：at = "cal" 落在「响度」那一行（推子旁边「乐手 −6 dB」那颗钮）；"sum" 落在顶上「和现在的默认不一样的有几处」那一句（「乐手 N 处不同」，16-6）。 */
   openPerformer(id: string, at: "cal" | "sum"): void;
   /** 总轨（2026-10-10 刀 3）：增益 dB + 母线限幅开关；进歌（studio.json master）。 */
@@ -152,6 +161,19 @@ export class Studio {
   /** 插件参数的剪贴板（v0.10.23；user「待会：效果器预设可以拷贝，类似Unity的component，尽量严格一点避免混淆。不读快捷键」）：
    *  拷 = 这一格的种类 + 全部参数（不拷开 / 关、不拷「被谁压」）；粘参数 = 只能粘到同一种插件上（覆盖参数，开关 / 被谁压照旧）；粘成新的一格 = 链尾加一格。这次打开里有效、没有快捷键。 */
   private fxClip: { kind: string; params: Params; from: string } | null = null;
+  /** 拷的一条轨的设置（v0.17.54）：kind = 歌手轨 / 混音轨（只在同一类之间粘）。和拷参数一样：这次打开的界面里有效、没有快捷键。 */
+  private trackClip: { held: HeldTrack; kind: "mic" | "bus" } | null = null;
+  /** 基础页卡片上「拷轨设置 / 粘轨设置」那一行。没拷过 = 只有拷；拷的是另一类 = 粘灰着（点了说为什么）。 */
+  private trackClipRow(kind: "mic" | "bus"): string {
+    const c = this.trackClip, copy = `<button class="btn" data-v="trackcopy" title="${_t("拷这条轨的设置：增益、声像、整条效果链（每一格连开关和被谁压）、发送、出到、旁通。不拷名字、静音独奏、乐手那一层")}">${_t("拷轨设置")}</button>`;
+    if (!c) return `<div class="btn-row strip-clip">${copy}</div>`;
+    const same = c.kind === kind;
+    const paste = `<button class="btn${same ? "" : " is-off"}" data-v="trackpaste" title="${esc(same ? _t("把拷的轨设置（来自「{from}」）整份盖到这条轨上；名字不动；能撤销", { from: c.held.from }) : this.clipKindWhy(c))}">${_t("粘轨设置")}</button>`;
+    return `<div class="btn-row strip-clip">${copy}${paste}</div>`;
+  }
+  private clipKindWhy(c: { held: HeldTrack; kind: "mic" | "bus" }): string {
+    return c.kind === "mic" ? _t("拷的「{from}」是歌手轨，只能粘到歌手轨上", { from: c.held.from }) : _t("拷的「{from}」是混音轨，只能粘到混音轨上", { from: c.held.from });
+  }
   private clipBtns(tg: Target, fx: FxV2): string {
     const c = this.fxClip, here = `${this.trackName(tg.track)} · ${pluginName(fx.kind)}`;
     const copy = `<button class="btn" data-v="fxcopy" title="${_t("拷这一格的参数（种类 + 全部参数；不拷开关、不拷被谁压）")}">${_t("拷参数")}</button>`;
@@ -324,6 +346,12 @@ export class Studio {
     else if (v === "busbypass" && strip) { const b = this.host.buses().find((x) => x.id === strip); if (b) { this.host.setBusBypass(strip, !b.bypass); this.render(); } }
     else if ((v === "partleft" || v === "partright") && strip) { this.host.movePart(strip, v === "partleft" ? -1 : 1); this.render(); }
     else if (v === "delpart" && strip) this.host.deletePart(strip);
+    else if (v === "trackcopy" && strip) { const held = this.host.copyTrack(strip); if (held) { this.trackClip = { held, kind: this.host.buses().some((b) => b.id === strip) ? "bus" : "mic" }; this.render(); } }
+    else if (v === "trackpaste" && strip && this.trackClip) {
+      const c = this.trackClip, kind = this.host.buses().some((b) => b.id === strip) ? "bus" : "mic";
+      if (c.kind !== kind) this.host.say(this.clipKindWhy(c));   // 灰着的粘：说为什么，不粘
+      else { this.host.pasteTrack(strip, c.held); this.render(); }
+    }
     else if (v === "broken" && strip) {   // 去第一处断了的那一页（被谁压 = 链页、打开那一格）
       const b = this.brokenOf(strip)[0]; if (!b) return;
       this.tab = b.page; this.menuOpen = false; this.addFor = null; this.specShown.clear(); this.compHist.clear();
@@ -604,7 +632,7 @@ export class Studio {
     const buses = this.host.buses(), busCards = buses.map((b, k) => {
       const body = tab === "basic" ? row(_t("增益"), HINT.busGain, `<output>${dbText(b.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b.gainDb, attrs: "data-busgain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") +
           row(_t("声像"), HINT.pan, `<output>${panText(b.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b.pan, attrs: "data-buspan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + CORR_ROW +
-          `<div class="btn-row"><button class="btn cand${b.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("旁通：这条混音轨上的插件全跳过（推子 / 声像 / 出到 / 发送照旧）；再点 = 回来")}">${b.bypass ? _t("旁通中") : _t("旁通")}</button><button class="btn" data-v="busleft" title="${_t("往前挪一位")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="${_t("往后挪一位")}"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="${_t("删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）")}">${_t("删掉")}</button></div>`
+          `<div class="btn-row"><button class="btn cand${b.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("旁通：这条混音轨上的插件全跳过（推子 / 声像 / 出到 / 发送照旧）；再点 = 回来")}">${b.bypass ? _t("旁通中") : _t("旁通")}</button><button class="btn" data-v="busleft" title="${_t("往前挪一位")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="${_t("往后挪一位")}"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="${_t("删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）")}">${_t("删掉")}</button></div>` + this.trackClipRow("bus")
         : tab === "eq" || tab === "comp" ? this.inlineHtml(b.id, tab) : tab === "send" ? gainRow("data-busgain", HINT.busGain, b.gainDb) + this.routeHtml(b.id) : this.chipsHtml(b.id);
       const name = `<input class="bus-name" value="${esc(b.name)}" title="${_t("名字（点了改）")}" />`;   // 每一页都能改名（v0.16.82，总表第 9 条 ⑥；原来只在基础页）
       // 混音轨也能静音（不能独奏：独奏是挑歌手听；user「哦，混音轨也要mute，（不过可能不能solo了」）——钉在名字右边，同歌手卡
@@ -622,7 +650,7 @@ export class Studio {
       const body = tab === "basic" ? row(_t("增益"), HINT.gain, `<output>${dbText(s.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + perfRow +
           row(_t("声像"), HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW +
           `<div class="btn-row">` +
-            `<button class="btn" data-v="partleft" title="${_t("往前挪一位（谱上这个声部也往上挪）")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="partright" title="${_t("往后挪一位（谱上这个声部也往下挪）")}"${k === strips.length - 1 ? " disabled" : ""}>›</button></div>` +
+            `<button class="btn" data-v="partleft" title="${_t("往前挪一位（谱上这个声部也往上挪）")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="partright" title="${_t("往后挪一位（谱上这个声部也往下挪）")}"${k === strips.length - 1 ? " disabled" : ""}>›</button></div>` + this.trackClipRow("mic") +
           // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
           (s.refs ? `<div class="strip-refs">${_t("在 {refs} 张纸上", { refs: s.refs })}</div>` : `<div class="strip-refs">${_t("哪张纸上都没有")} <button class="btn cand danger" data-v="delpart" title="${_t("删掉这个声部（它的乐器设置一起删；能撤销）")}">${_t("删掉这个声部")}</button></div>`)
         : tab === "eq" || tab === "comp" ? this.inlineHtml(s.id, tab) : tab === "send" ? gainRow("data-gain", HINT.gain, s.gainDb) + perfRow + this.routeHtml(s.id) : this.chipsHtml(s.id);

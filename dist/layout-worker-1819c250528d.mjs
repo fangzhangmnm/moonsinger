@@ -2908,7 +2908,31 @@ var S = {
   "\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8": { en: "Delete this part" },
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
-  "\u72EC": { en: "S" }
+  "\u72EC": { en: "S" },
+  "\u6B4C\u624B\u8F68\u548C\u6DF7\u97F3\u8F68\u4E4B\u95F4\u4E0D\u7C98\uFF1A\u62F7\u7684\u662F\u300C{from}\u300D": { en: "Singer tracks and buses don't paste onto each other: the copy is from \u201C{from}\u201D" },
+  "\u8FD9\u6761\u8F68\u4E0D\u5728\u4E86": { en: "This track is gone" },
+  "\u7C98\u8F68\u8BBE\u7F6E\u5230 {to}": { en: "Paste track settings onto {to}" },
+  "{n} \u4E2A\u6548\u679C": { en: "{n} effects" },
+  "\u53D1\u9001\u7ED9{list}": { en: "sends to {list}" },
+  "\u6CA1\u6709\u53D1\u9001": { en: "no sends" },
+  "\u51FA\u5230\u300C{n}\u300D": { en: "out to \u201C{n}\u201D" },
+  "\u300C{n}\u300D": { en: "\u201C{n}\u201D" },
+  "\u522B\u7684\u6B4C\u91CC\u7684\uFF0C\u4E0D\u7C98": { en: "from another song, not pasted" },
+  "\u90A3\u6761\u8F68\u53D8\u4E86": { en: "that track has changed" },
+  "\u90A3\u6761\u8F68\u4E0D\u5728\u4E86": { en: "that track is gone" },
+  "\u5C31\u662F\u5B83\u81EA\u5DF1": { en: "it is this very track" },
+  "\u4F1A\u63A5\u6210\u73AF": { en: "would make a loop" },
+  "\u53D1\u9001\u7ED9\u300C{n}\u300D": { en: "send to \u201C{n}\u201D" },
+  "\u88AB\u8C01\u538B\u300C{n}\u300D": { en: "compressed by \u201C{n}\u201D" },
+  "{what}\uFF08{why}\uFF09": { en: "{what} ({why})" },
+  "\u3002\u6CA1\u7C98\uFF1A{list}": { en: ". Not pasted: {list}" },
+  "\u628A\u300C{from}\u300D\u7684\u8F68\u8BBE\u7F6E\u7C98\u5230\u300C{to}\u300D\uFF1A{got}{dropped}": { en: "Pasted the track settings of \u201C{from}\u201D onto \u201C{to}\u201D: {got}{dropped}" },
+  "\u62F7\u8FD9\u6761\u8F68\u7684\u8BBE\u7F6E\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u6574\u6761\u6548\u679C\u94FE\uFF08\u6BCF\u4E00\u683C\u8FDE\u5F00\u5173\u548C\u88AB\u8C01\u538B\uFF09\u3001\u53D1\u9001\u3001\u51FA\u5230\u3001\u65C1\u901A\u3002\u4E0D\u62F7\u540D\u5B57\u3001\u9759\u97F3\u72EC\u594F\u3001\u4E50\u624B\u90A3\u4E00\u5C42": { en: "Copy this track's settings: gain, pan, the whole effect chain (each slot with its on/off and \u201Ccompressed by\u201D), sends, output, bypass. Not the name, mute/solo, or anything about the performer" },
+  "\u62F7\u8F68\u8BBE\u7F6E": { en: "Copy track" },
+  "\u628A\u62F7\u7684\u8F68\u8BBE\u7F6E\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u6574\u4EFD\u76D6\u5230\u8FD9\u6761\u8F68\u4E0A\uFF1B\u540D\u5B57\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500": { en: "Replaces this track's settings with the copied ones (from \u201C{from}\u201D); the name stays; can be undone" },
+  "\u7C98\u8F68\u8BBE\u7F6E": { en: "Paste track" },
+  "\u62F7\u7684\u300C{from}\u300D\u662F\u6B4C\u624B\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6B4C\u624B\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a singer track; it only pastes onto singer tracks" },
+  "\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a bus; it only pastes onto buses" }
 };
 
 // src/device-kv.ts
@@ -10021,4 +10045,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-1fa7d5f68906.mjs.map
+//# sourceMappingURL=layout-worker-1819c250528d.mjs.map

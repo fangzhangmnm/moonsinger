@@ -6169,7 +6169,31 @@ var S = {
   "\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8": { en: "Delete this part" },
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
-  "\u72EC": { en: "S" }
+  "\u72EC": { en: "S" },
+  "\u6B4C\u624B\u8F68\u548C\u6DF7\u97F3\u8F68\u4E4B\u95F4\u4E0D\u7C98\uFF1A\u62F7\u7684\u662F\u300C{from}\u300D": { en: "Singer tracks and buses don't paste onto each other: the copy is from \u201C{from}\u201D" },
+  "\u8FD9\u6761\u8F68\u4E0D\u5728\u4E86": { en: "This track is gone" },
+  "\u7C98\u8F68\u8BBE\u7F6E\u5230 {to}": { en: "Paste track settings onto {to}" },
+  "{n} \u4E2A\u6548\u679C": { en: "{n} effects" },
+  "\u53D1\u9001\u7ED9{list}": { en: "sends to {list}" },
+  "\u6CA1\u6709\u53D1\u9001": { en: "no sends" },
+  "\u51FA\u5230\u300C{n}\u300D": { en: "out to \u201C{n}\u201D" },
+  "\u300C{n}\u300D": { en: "\u201C{n}\u201D" },
+  "\u522B\u7684\u6B4C\u91CC\u7684\uFF0C\u4E0D\u7C98": { en: "from another song, not pasted" },
+  "\u90A3\u6761\u8F68\u53D8\u4E86": { en: "that track has changed" },
+  "\u90A3\u6761\u8F68\u4E0D\u5728\u4E86": { en: "that track is gone" },
+  "\u5C31\u662F\u5B83\u81EA\u5DF1": { en: "it is this very track" },
+  "\u4F1A\u63A5\u6210\u73AF": { en: "would make a loop" },
+  "\u53D1\u9001\u7ED9\u300C{n}\u300D": { en: "send to \u201C{n}\u201D" },
+  "\u88AB\u8C01\u538B\u300C{n}\u300D": { en: "compressed by \u201C{n}\u201D" },
+  "{what}\uFF08{why}\uFF09": { en: "{what} ({why})" },
+  "\u3002\u6CA1\u7C98\uFF1A{list}": { en: ". Not pasted: {list}" },
+  "\u628A\u300C{from}\u300D\u7684\u8F68\u8BBE\u7F6E\u7C98\u5230\u300C{to}\u300D\uFF1A{got}{dropped}": { en: "Pasted the track settings of \u201C{from}\u201D onto \u201C{to}\u201D: {got}{dropped}" },
+  "\u62F7\u8FD9\u6761\u8F68\u7684\u8BBE\u7F6E\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u6574\u6761\u6548\u679C\u94FE\uFF08\u6BCF\u4E00\u683C\u8FDE\u5F00\u5173\u548C\u88AB\u8C01\u538B\uFF09\u3001\u53D1\u9001\u3001\u51FA\u5230\u3001\u65C1\u901A\u3002\u4E0D\u62F7\u540D\u5B57\u3001\u9759\u97F3\u72EC\u594F\u3001\u4E50\u624B\u90A3\u4E00\u5C42": { en: "Copy this track's settings: gain, pan, the whole effect chain (each slot with its on/off and \u201Ccompressed by\u201D), sends, output, bypass. Not the name, mute/solo, or anything about the performer" },
+  "\u62F7\u8F68\u8BBE\u7F6E": { en: "Copy track" },
+  "\u628A\u62F7\u7684\u8F68\u8BBE\u7F6E\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u6574\u4EFD\u76D6\u5230\u8FD9\u6761\u8F68\u4E0A\uFF1B\u540D\u5B57\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500": { en: "Replaces this track's settings with the copied ones (from \u201C{from}\u201D); the name stays; can be undone" },
+  "\u7C98\u8F68\u8BBE\u7F6E": { en: "Paste track" },
+  "\u62F7\u7684\u300C{from}\u300D\u662F\u6B4C\u624B\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6B4C\u624B\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a singer track; it only pastes onto singer tracks" },
+  "\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a bus; it only pastes onto buses" }
 };
 
 // src/device-kv.ts
@@ -6457,7 +6481,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.53-2026-11-13";
+var APP_VERSION = "v0.17.54-2026-11-14";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -7322,6 +7346,13 @@ function singleSel(st2) {
     k2 = i10;
   }
   return k2;
+}
+function releaseSingle(st2) {
+  return st2.sel ? setCaret(st2, st2.sel.to) : st2;
+}
+function tapTimed(st2, i10, selects) {
+  if (!selects) return setCaret(st2, i10 + 1);
+  return singleSel(st2) === i10 ? releaseSingle(st2) : select(st2, i10, i10 + 1);
 }
 function eatRests(tk2, i10, need) {
   let got2 = 0, j2 = i10, end = i10, kept = 0;
@@ -11732,6 +11763,7 @@ function onTap(o10) {
   if (o10.target === "mark" && o10.lit) return "menu";
   return "light";
 }
+var TAP_SELECTS = true;
 function wantsGrip(o10) {
   return o10.pointer === "touch" && o10.canDrag && (o10.target === "note" || o10.target === "mark");
 }
@@ -20844,7 +20876,7 @@ var ScoreView = class {
     }
     return false;
   }
-  /** 轻点在音上（手指 / 笔 / 鼠标）：光标放到它后面（Shift = 把选中扩到它）。 */
+  /** 轻点在音上（手指 / 笔 / 鼠标）：选中它这一个；已经只选了它 = 收成它后面的光标（v0.17.54 乙，tapTimed）。「词」照旧只放光标。Shift = 把选中扩到它。 */
   tapNote(hit2, shift, ptr) {
     this.lyrics.commitAndClose();
     this.marks.commitAndClose();
@@ -20852,7 +20884,8 @@ var ScoreView = class {
     const cur = this.onTrack(hit2) ? st2.sel : null;
     if (shift && cur) this.host.set(select(st2, Math.min(cur.from, hit2.index), Math.max(cur.to, hit2.index + 1)));
     else {
-      this.putCaret(setCaret(st2, hit2.index + 1), this.endSlotOn(hit2.system, hit2.index + 1));
+      const next2 = tapTimed(st2, hit2.index, TAP_SELECTS && !this.rules.lyrics);
+      this.putCaret(next2, !next2.sel && this.endSlotOn(hit2.system, hit2.index + 1));
       this.lightAt(hit2.system, hit2.index, "note", ptr);
     }
     this.tell({ kind: "staff" });
@@ -20895,22 +20928,28 @@ var ScoreView = class {
   /** 某样东西现在是不是「点亮的」那一个（留住的亮框；选区 / 鼠标悬浮另算）。 */
   litIs(system, index, target) {
     const f2 = this.lit, L2 = this.layout, r10 = L2?.systems[system], st2 = this.host.get();
-    if (!f2 || !r10 || f2.target !== target || st2.sel || caretKey(st2) !== f2.ck) return false;
+    if (!f2 || !r10 || f2.target !== target || this.selKillsLit(st2, f2) || caretKey(st2) !== f2.ck) return false;
     if (r10.paper !== f2.paper || r10.part !== f2.part) return false;
     return trackOf(st2.song, r10.paper, r10.part)[index]?.id === f2.id;
+  }
+  /** 有选区就灭亮框——除了「只选了它自己」（v0.17.54 乙：点一下 = 亮框 + 只选它；框留着，手指的把手也就留着）。 */
+  selKillsLit(st2, f2) {
+    if (!st2.sel) return false;
+    const i10 = singleSel(st2);
+    return !(f2.target === "note" && i10 >= 0 && st2.at.paper === f2.paper && st2.at.part === f2.part && tr(st2)[i10]?.id === f2.id);
   }
   /** 让第 system 行第 index 个东西亮框（留住）：光标 / 焦点已经放好之后调；手指点亮能拖的 = 旁边出把手。合租叠起来的行不亮。 */
   lightAt(system, index, target, ptr, art3) {
     const L2 = this.layout, r10 = L2?.systems[system];
     if (!L2 || !r10 || L2.virtual[`${r10.paper}:${r10.part}`]) return;
     const st2 = this.host.get();
-    if (st2.sel) {
+    const t10 = trackOf(st2.song, r10.paper, r10.part)[index];
+    if (!t10) return;
+    if (this.selKillsLit(st2, { paper: r10.paper, part: r10.part, id: t10.id, target })) {
       this.lit = null;
       this.drawLit();
       return;
     }
-    const t10 = trackOf(st2.song, r10.paper, r10.part)[index];
-    if (!t10) return;
     const canDrag = target === "note" ? this.rules.noteDrag && t10.kind === "note" && !!t10.pitch && !!GEOMETRY[r10.kind].pitchAxis : target === "mark" ? this.rules.symbols : false;
     this.lit = { paper: r10.paper, part: r10.part, id: t10.id, target, ...art3 ? { art: art3 } : {}, ck: caretKey(st2), grip: wantsGrip({ pointer: ptr, target, canDrag }) };
     this.hover = null;
@@ -21034,12 +21073,12 @@ var ScoreView = class {
     }
     return [...by.values()].map((e10) => ({ x: e10.x0, y: e10.y0, w: e10.x1 - e10.x0, h: e10.y1 - e10.y0 }));
   }
-  /** 画亮框（ink 层的 div；不进排版）+ 手指的把手。点亮的那个在光标一挪 / 有了选区时灭。 */
+  /** 画亮框（ink 层的 div；不进排版）+ 手指的把手。点亮的那个在光标一挪 / 有了选区时灭（只选了它自己不灭，selKillsLit）。 */
   drawLit() {
     for (const e10 of this.litEls) e10.remove();
     this.litEls = [];
     const L2 = this.layout, st2 = this.host.get();
-    if (this.lit && (st2.sel || caretKey(st2) !== this.lit.ck)) this.lit = null;
+    if (this.lit && (this.selKillsLit(st2, this.lit) || caretKey(st2) !== this.lit.ck)) this.lit = null;
     const same = (a10, b3) => a10.paper === b3.paper && a10.part === b3.part && a10.id === b3.id && a10.target === b3.target && a10.art === b3.art;
     const paint = (o10, cls) => {
       const bs = this.litBoxes(o10);
@@ -36359,15 +36398,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-5fb6f8cd3c34.mjs");
+      return pick3(() => "singer-worker-baf89c2af971.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-1fa7d5f68906.mjs");
+      return pick3(() => "layout-worker-1819c250528d.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-df800d699f12.mjs");
+      return pick3(() => "encode-worker-abac23a687d4.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -41247,6 +41286,73 @@ function moveBus(extras, id2, dir) {
 }
 function newBusId(extras) {
   return nextKey2(studioTracks(extras).map((t10) => t10.id), "b");
+}
+function copyTrackSettings(extras, trackId, nameOf2) {
+  const t10 = studioTrack(extras, trackId);
+  if (!t10) return null;
+  const names = {}, note3 = (id2) => {
+    const n10 = nameOf2(id2);
+    if (n10 !== null) names[id2] = n10;
+  };
+  if (t10.to !== "master") note3(t10.to);
+  for (const s10 of t10.sends) note3(s10.to);
+  for (const f2 of t10.chain) if (typeof f2.key === "string" && f2.key) note3(f2.key);
+  return structuredClone({ kind: t10.kind, gainDb: t10.gainDb, pan: t10.pan, bypass: t10.bypass, chain: t10.chain, sends: t10.sends, to: t10.to, names });
+}
+function pasteTrackSettings(extras, trackId, clip2, ctx2) {
+  const target = studioTrack(extras, trackId);
+  if (!target) return { ok: false, why: "missing" };
+  if (target.kind !== clip2.kind) return { ok: false, why: "kind" };
+  const all = studioTracks(extras), buses = new Map(all.filter((t10) => t10.kind === "bus").map((t10) => [t10.id, t10]));
+  const next2 = (id2) => {
+    const b3 = buses.get(id2);
+    return !b3 || b3.id === trackId ? [] : [b3.to, ...b3.sends.map((s10) => s10.to)].filter((x2) => x2 && x2 !== "master");
+  };
+  const reaches = (from) => {
+    const seen = /* @__PURE__ */ new Set(), stk = [from];
+    while (stk.length) {
+      const x2 = stk.pop();
+      if (x2 === trackId) return true;
+      if (seen.has(x2)) continue;
+      seen.add(x2);
+      stk.push(...next2(x2));
+    }
+    return false;
+  };
+  const was = (id2) => clip2.names[id2] ?? id2;
+  const why2 = (id2, kind) => {
+    if (ctx2.foreign) return "foreign";
+    if (kind === "bus" ? !buses.has(id2) : !ctx2.singers.includes(id2)) return "missing";
+    if (clip2.names[id2] === void 0 || ctx2.nameOf(id2) !== clip2.names[id2]) return "changed";
+    if (kind === "bus" ? id2 === trackId : id2 === ctx2.self) return "self";
+    if (kind === "bus" && reaches(id2)) return "cycle";
+    return null;
+  };
+  const dropped = [];
+  let to2 = clip2.to;
+  if (to2 !== "master") {
+    const w2 = why2(to2, "bus");
+    if (w2) {
+      dropped.push({ what: "to", id: to2, name: was(to2), why: w2 });
+      to2 = "master";
+    }
+  }
+  const sends = clip2.sends.filter((s10) => {
+    const w2 = why2(s10.to, "bus");
+    if (w2) dropped.push({ what: "send", id: s10.to, name: was(s10.to), why: w2 });
+    return !w2;
+  });
+  const chain = clip2.chain.map((f2) => {
+    if (typeof f2.key !== "string" || !f2.key) return f2;
+    const w2 = why2(f2.key, "singer");
+    if (!w2) return f2;
+    dropped.push({ what: "key", id: f2.key, name: was(f2.key), why: w2 });
+    const { key: _k, ...rest } = f2;
+    return rest;
+  });
+  const next22 = withTrack2(extras, trackId, { gainDb: clip2.gainDb, pan: clip2.pan, bypass: clip2.bypass, chain, sends, to: to2 });
+  const now2 = (id2) => ({ id: id2, name: ctx2.nameOf(id2) ?? id2 });
+  return { ok: true, extras: next22, report: { fx: chain.length, sends: sends.map((s10) => now2(s10.to)), to: to2 === "master" ? null : now2(to2), dropped } };
 }
 function activeMaster(extras) {
   const m2 = extras.studio?.master;
@@ -47301,6 +47407,19 @@ var Studio2 = class {
   /** 插件参数的剪贴板（v0.10.23；user「待会：效果器预设可以拷贝，类似Unity的component，尽量严格一点避免混淆。不读快捷键」）：
    *  拷 = 这一格的种类 + 全部参数（不拷开 / 关、不拷「被谁压」）；粘参数 = 只能粘到同一种插件上（覆盖参数，开关 / 被谁压照旧）；粘成新的一格 = 链尾加一格。这次打开里有效、没有快捷键。 */
   fxClip = null;
+  /** 拷的一条轨的设置（v0.17.54）：kind = 歌手轨 / 混音轨（只在同一类之间粘）。和拷参数一样：这次打开的界面里有效、没有快捷键。 */
+  trackClip = null;
+  /** 基础页卡片上「拷轨设置 / 粘轨设置」那一行。没拷过 = 只有拷；拷的是另一类 = 粘灰着（点了说为什么）。 */
+  trackClipRow(kind) {
+    const c10 = this.trackClip, copy = `<button class="btn" data-v="trackcopy" title="${_t("\u62F7\u8FD9\u6761\u8F68\u7684\u8BBE\u7F6E\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u6574\u6761\u6548\u679C\u94FE\uFF08\u6BCF\u4E00\u683C\u8FDE\u5F00\u5173\u548C\u88AB\u8C01\u538B\uFF09\u3001\u53D1\u9001\u3001\u51FA\u5230\u3001\u65C1\u901A\u3002\u4E0D\u62F7\u540D\u5B57\u3001\u9759\u97F3\u72EC\u594F\u3001\u4E50\u624B\u90A3\u4E00\u5C42")}">${_t("\u62F7\u8F68\u8BBE\u7F6E")}</button>`;
+    if (!c10) return `<div class="btn-row strip-clip">${copy}</div>`;
+    const same = c10.kind === kind;
+    const paste = `<button class="btn${same ? "" : " is-off"}" data-v="trackpaste" title="${esc10(same ? _t("\u628A\u62F7\u7684\u8F68\u8BBE\u7F6E\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u6574\u4EFD\u76D6\u5230\u8FD9\u6761\u8F68\u4E0A\uFF1B\u540D\u5B57\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500", { from: c10.held.from }) : this.clipKindWhy(c10))}">${_t("\u7C98\u8F68\u8BBE\u7F6E")}</button>`;
+    return `<div class="btn-row strip-clip">${copy}${paste}</div>`;
+  }
+  clipKindWhy(c10) {
+    return c10.kind === "mic" ? _t("\u62F7\u7684\u300C{from}\u300D\u662F\u6B4C\u624B\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6B4C\u624B\u8F68\u4E0A", { from: c10.held.from }) : _t("\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A", { from: c10.held.from });
+  }
   clipBtns(tg2, fx) {
     const c10 = this.fxClip, here = `${this.trackName(tg2.track)} \xB7 ${pluginName(fx.kind)}`;
     const copy = `<button class="btn" data-v="fxcopy" title="${_t("\u62F7\u8FD9\u4E00\u683C\u7684\u53C2\u6570\uFF08\u79CD\u7C7B + \u5168\u90E8\u53C2\u6570\uFF1B\u4E0D\u62F7\u5F00\u5173\u3001\u4E0D\u62F7\u88AB\u8C01\u538B\uFF09")}">${_t("\u62F7\u53C2\u6570")}</button>`;
@@ -47569,7 +47688,20 @@ var Studio2 = class {
       this.host.movePart(strip, v === "partleft" ? -1 : 1);
       this.render();
     } else if (v === "delpart" && strip) this.host.deletePart(strip);
-    else if (v === "broken" && strip) {
+    else if (v === "trackcopy" && strip) {
+      const held = this.host.copyTrack(strip);
+      if (held) {
+        this.trackClip = { held, kind: this.host.buses().some((b3) => b3.id === strip) ? "bus" : "mic" };
+        this.render();
+      }
+    } else if (v === "trackpaste" && strip && this.trackClip) {
+      const c10 = this.trackClip, kind = this.host.buses().some((b3) => b3.id === strip) ? "bus" : "mic";
+      if (c10.kind !== kind) this.host.say(this.clipKindWhy(c10));
+      else {
+        this.host.pasteTrack(strip, c10.held);
+        this.render();
+      }
+    } else if (v === "broken" && strip) {
       const b3 = this.brokenOf(strip)[0];
       if (!b3) return;
       this.tab = b3.page;
@@ -47980,7 +48112,7 @@ ${tg2.fx}`);
     const masterBody = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: TEMPLATE.studio.master.gainDb, defText: dbText(TEMPLATE.studio.master.gainDb) }), "strip-row") + row(_t("\u9650\u5E45"), limiterHint(m2.limiterParams), "", `<button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter">${m2.limiter ? _t("\u5F00\u7740") : _t("\u5173\u7740\uFF08\u53EF\u80FD\u524A\u6CE2\uFF09")}</button>`, "strip-row") + row(_t("\u5CF0\u503C"), HINT2.peak, `<span class="meter-val">\u2014</span>`, "", "strip-row") + RMS_ROW + CORR_ROW : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? gainRow("data-master", HINT2.masterGain, m2.gainDb) + `<div class="fx-dim">${_t("\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904")}</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv(_t("\u603B\u8F68")), _t("\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E"), masterBody);
     const buses = this.host.buses(), busCards = buses.map((b3, k2) => {
-      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.busGain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="btn-row"><button class="btn cand${b3.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765")}">${b3.bypass ? _t("\u65C1\u901A\u4E2D") : _t("\u65C1\u901A")}</button><button class="btn" data-v="busleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D")}"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="${_t("\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389")}</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? gainRow("data-busgain", HINT2.busGain, b3.gainDb) + this.routeHtml(b3.id) : this.chipsHtml(b3.id);
+      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.busGain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="btn-row"><button class="btn cand${b3.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765")}">${b3.bypass ? _t("\u65C1\u901A\u4E2D") : _t("\u65C1\u901A")}</button><button class="btn" data-v="busleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D")}"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="${_t("\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389")}</button></div>` + this.trackClipRow("bus") : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? gainRow("data-busgain", HINT2.busGain, b3.gainDb) + this.routeHtml(b3.id) : this.chipsHtml(b3.id);
       const name = `<input class="bus-name" value="${esc10(b3.name)}" title="${_t("\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09")}" />`;
       const ms = `<span class="strip-ms"><button class="btn${b3.muted ? " is-on mute" : ""}" data-v="busmute" title="${_t("\u9759\u97F3\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u51FA\u58F0\u3001\u4E5F\u4E0D\u5F80\u4E0B\u53D1\uFF08\u53D1\u7ED9\u5B83\u7684\u90A3\u51E0\u4F4D\u539F\u58F0\u7167\u65E7\uFF09")}">${_t("\u9759")}</button></span>`;
       return this.card(b3.id, ` bus${b3.bypass ? " bypassed" : ""}`, `<div class="strip-head">${name}${ms}</div>${this.brokenLine(b3.id)}`, b3.bypass ? _t("\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09") : _t("\u6DF7\u97F3\u8F68"), body2);
@@ -47989,7 +48121,7 @@ ${tg2.fx}`);
       const perf = s10.performerDb ? `<button class="btn strip-perfdb" data-v="perfdb" title="${_t("\u8FD9\u4F4D\u4E50\u624B\u81EA\u5DF1\u7684\u54CD\u5EA6\uFF08\u4E50\u5668\u9875\u300C\u54CD\u5EA6\u300D\u90A3\u4E00\u884C\uFF09\uFF0C\u548C\u63A8\u5B50\u76F8\u52A0\uFF1A\u63A8\u5B50 {g}\u3001\u4E50\u624B {p} = \u8FD9\u6761\u8F68\u4E00\u5171 {t}\u3002\u70B9\u8FD9\u91CC\u53BB\u4E50\u5668\u9875\u6539", { g: dbText(s10.gainDb), p: dbText(s10.performerDb), t: dbText(s10.gainDb + s10.performerDb) })}">${_t("\u4E50\u624B {p}", { p: dbText(s10.performerDb) })}</button>` : "";
       const perfDiff = s10.performerDiffs ? `<button class="btn strip-perfdiff" data-v="perfdiff" title="${_t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u6709 {n} \u5904\u548C\u73B0\u5728\u7684\u9ED8\u8BA4\u4E0D\u4E00\u6837\uFF08\u54CD\u5EA6\u53E6\u7B97\uFF09\u3002\u70B9\u8FD9\u91CC\u53BB\u4E50\u5668\u9875\u770B\u662F\u54EA\u51E0\u5904", { n: s10.performerDiffs })}">${_t("\u4E50\u624B {n} \u5904\u4E0D\u540C", { n: s10.performerDiffs })}</button>` : "";
       const perfRow = perf || perfDiff ? `<div class="strip-perf">${perf}${perfDiff}</div>` : "";
-      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + perfRow + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + `<div class="btn-row"><button class="btn" data-v="partleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09")}"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: TEMPLATE.studio.track.gainDb, defText: dbText(TEMPLATE.studio.track.gainDb) }), "strip-row") + perfRow + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: TEMPLATE.studio.track.pan, defText: panText(TEMPLATE.studio.track.pan) }), "strip-row") + RMS_ROW + `<div class="btn-row"><button class="btn" data-v="partleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09")}"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + this.trackClipRow("mic") + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
       (s10.refs ? `<div class="strip-refs">${_t("\u5728 {refs} \u5F20\u7EB8\u4E0A", { refs: s10.refs })}</div>` : `<div class="strip-refs">${_t("\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709")} <button class="btn cand danger" data-v="delpart" title="${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8")}</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? gainRow("data-gain", HINT2.gain, s10.gainDb) + perfRow + this.routeHtml(s10.id) : this.chipsHtml(s10.id);
       const ms = `<span class="strip-ms"><button class="btn${s10.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09")}">${_t("\u9759")}</button><button class="btn${s10.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09")}">${_t("\u72EC")}</button></span>`;
       return this.card(s10.id, "", `<div class="strip-head">${nameDiv(s10.name)}${ms}</div>${this.brokenLine(s10.id)}`, s10.performer, body2, s10.color);
@@ -48004,7 +48136,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "eec80c89589b9d17" : "dev";
+var CORE_HASH = true ? "7735aeb5dc644375" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -62184,6 +62316,7 @@ function noteStartDynsFilled(_n) {
   startDynsTold = true;
   info(_t("\u8FD9\u9996\u6B4C\u6709 {n} \u5904\u7EB8\u5F00\u5934\u6CA1\u5199\u529B\u5EA6\uFF1A\u8FD9\u4E00\u4E0B\u6539\u8C31\u65F6\u8865\u4E0A\u4E86\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\u90A3\u4E2A\uFF08\u542C\u8D77\u6765\u4E0D\u53D8\uFF09\uFF0C\u5B58\u7684\u65F6\u5019\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6", { n: startDynsMissing }));
 }
+var openings = 0;
 var D3 = createDocument(((st2) => ({ st: st2, extras: templateExtras(st2.song) }))(initState(stampLooks(initState().song, { habits: habitsFrom(deviceKvGet) }, lang(), "born"))), {
   now: () => performance.now(),
   normalize: (next2) => {
@@ -63545,7 +63678,7 @@ function stackKey(down) {
     return;
   }
   if (singleSel(D3.st) >= 0) {
-    update(setCaret(D3.st, D3.st.sel.to));
+    update(releaseSingle(D3.st));
     return;
   }
   const tk2 = tr(D3.st);
@@ -64032,6 +64165,12 @@ function typingIn(t10) {
 }
 function trackKey(track) {
   return D3.st.song.parts.find((x2) => x2.id === track)?.mic ?? track;
+}
+function mixNameOf(id2) {
+  const k2 = D3.st.song.parts.findIndex((x2) => x2.id === id2);
+  if (k2 >= 0) return labelsNow()[k2];
+  const t10 = studioTrack(D3.extras, id2);
+  return t10?.kind === "bus" ? t10.name : null;
 }
 function routeName(track) {
   if (track === "master") return _t("\u603B\u8F68");
@@ -64889,7 +65028,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "b4e070aabba9",
+  cssHash: "c959a6398fd2",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -65482,6 +65621,28 @@ var studio = new Studio2($2("stage"), {
     };
     return all.filter((b3) => b3.id !== key && !reaches(b3.id, key)).map((b3) => ({ id: b3.id, name: b3.name }));
   },
+  // 拷 / 粘一条轨的设置（v0.17.54；user 2026-11-14「做一个复制黏贴轨道的功能就行了」）：纯函数在 format/project.ts，这里只接线
+  copyTrack: (id2) => {
+    const clip2 = copyTrackSettings(D3.extras, trackKey(id2), mixNameOf);
+    return clip2 ? { clip: clip2, opening: openings, from: routeName(id2) } : null;
+  },
+  pasteTrack: (id2, held) => {
+    const self2 = D3.st.song.parts.some((p2) => p2.id === id2) ? id2 : null;
+    const r10 = pasteTrackSettings(D3.extras, trackKey(id2), held.clip, { foreign: held.opening !== openings, nameOf: mixNameOf, singers: D3.st.song.parts.map((p2) => p2.id), self: self2 });
+    if (!r10.ok) {
+      info(r10.why === "kind" ? _t("\u6B4C\u624B\u8F68\u548C\u6DF7\u97F3\u8F68\u4E4B\u95F4\u4E0D\u7C98\uFF1A\u62F7\u7684\u662F\u300C{from}\u300D", { from: held.from }) : _t("\u8FD9\u6761\u8F68\u4E0D\u5728\u4E86"));
+      return;
+    }
+    const to2 = routeName(id2), rep = r10.report;
+    if (!D3.commit({ extras: r10.extras }, { locus: { kind: "studio", label: _t("\u7C98\u8F68\u8BBE\u7F6E\u5230 {to}", { to: to2 }) } }).ok) return;
+    const quoted = (n10) => _t("\u300C{n}\u300D", { n: n10 });
+    const got2 = [_t("{n} \u4E2A\u6548\u679C", { n: rep.fx }), rep.sends.length ? _t("\u53D1\u9001\u7ED9{list}", { list: rep.sends.map((x2) => quoted(x2.name)).join(_t("\u3001")) }) : _t("\u6CA1\u6709\u53D1\u9001"), _t("\u51FA\u5230\u300C{n}\u300D", { n: rep.to ? rep.to.name : _t("\u603B\u8F68") })].join(_t("\u3001"));
+    const whyOf = { foreign: _t("\u522B\u7684\u6B4C\u91CC\u7684\uFF0C\u4E0D\u7C98"), changed: _t("\u90A3\u6761\u8F68\u53D8\u4E86"), missing: _t("\u90A3\u6761\u8F68\u4E0D\u5728\u4E86"), self: _t("\u5C31\u662F\u5B83\u81EA\u5DF1"), cycle: _t("\u4F1A\u63A5\u6210\u73AF") };
+    const whatOf = (d3) => d3.what === "to" ? _t("\u51FA\u5230\u300C{n}\u300D", { n: d3.name }) : d3.what === "send" ? _t("\u53D1\u9001\u7ED9\u300C{n}\u300D", { n: d3.name }) : _t("\u88AB\u8C01\u538B\u300C{n}\u300D", { n: d3.name });
+    const dropped = rep.dropped.length ? _t("\u3002\u6CA1\u7C98\uFF1A{list}", { list: rep.dropped.map((d3) => _t("{what}\uFF08{why}\uFF09", { what: whatOf(d3), why: whyOf[d3.why] })).join(_t("\uFF1B")) }) : "";
+    showNotice({ id: "track-paste", level: rep.dropped.length ? "warning" : "info", text: _t("\u628A\u300C{from}\u300D\u7684\u8F68\u8BBE\u7F6E\u7C98\u5230\u300C{to}\u300D\uFF1A{got}{dropped}", { from: held.from, to: to2, got: got2, dropped }), autoHideMs: rep.dropped.length ? 9e3 : 5e3 });
+  },
+  say: (s10) => info(s10),
   /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
   deletePart: (id2) => deleteSinger(id2),
   openPerformer: (id2, at3) => {
@@ -67312,6 +67473,7 @@ function loadDoc(song, o10) {
   applyWorkspace();
 }
 function loadDocInner(song, o10) {
+  openings++;
   if (impro) setImpro(false);
   foldTold.gone.clear();
   foldTold.added.clear();
@@ -69453,4 +69615,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-af012d15b262.mjs.map
+//# sourceMappingURL=moonsinger-15c6c3477977.mjs.map

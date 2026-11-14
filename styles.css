@@ -1327,6 +1327,7 @@ body.doc-locked .inst-page .ip-pad { pointer-events: auto; opacity: 1; }
 body.doc-locked .studio :is(.studio-strips, .fx-panel, .mix-menu) :is(input, select, button, textarea) { pointer-events: none; opacity: .55; }
 body.doc-locked .studio .strip-ms button { pointer-events: auto; opacity: 1; }
 body.doc-locked .studio :is(.strip-perfdb, .strip-perfdiff) { pointer-events: auto; opacity: 1; }   /* 「乐手 −6 dB」「乐手 N 处不同」只是去乐器页（16-6） */
+body.doc-locked .studio .strip-clip [data-v="trackcopy"] { pointer-events: auto; opacity: 1; }   /* 拷轨设置只是读（锁着也能拷，同复制）；粘 = 改混音，锁着照灰（v0.17.54） */
 /* 修改锁：界面那一层补齐（v0.16.99；设计稿第三节「推子、乐器、谱都不收改动」）。改内容的控件变淡、点不动；
    看的（展开一行、进乐器页看、返回、好）和「隐藏 / 显示曲段」（看法，user 11-09）照常。写入口和库照旧各拦一层。 */
 body.doc-locked [data-ov="add"] { pointer-events: none; opacity: .4; }

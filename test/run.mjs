@@ -138,6 +138,8 @@ import "./crossline.test.ts";
 import "./dyn-above.test.ts";
 import "./dyn-override.test.ts";
 import "./hairpin-dead.test.ts";
+import "./tap-select.test.ts";
+import "./track-paste.test.ts";
 import "./pdf-wysiwyg.test.ts";
 import "./repeats.test.ts";
 import "./lyric-check.test.ts";

@@ -22,8 +22,8 @@
 import { _t, workerOptions, lang } from "../i18n/index.ts";
 import { lineSp, spMm, STAFF_MM, pageGeoOf, textScaleOf } from "../look/paper.ts";   // 纸的数（第 17 条 17-2）
 import { CONT_MARGIN, REFLOW_MARGIN } from "../look/frame.ts";   // 连续 / 按屏宽折行的边距（第 17 条 17-2）
-import { type EditorState, type NoteTok, type Song, type Art, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setPitches, setDur, keyAt, tr, TPQ, moveMark, moveMarkToEnd, trackOf, isTimed, shownAccAt, ART_NAME } from "../score/song.ts";
-import { isLit, onMove, onTap, wantsGrip, type Pointer, type Target } from "./press-rules.ts";
+import { type EditorState, type NoteTok, type Song, type Art, setCaret, setCaretLead, setFocus, select, singleSel, tapTimed, setNote, setPitches, setDur, keyAt, tr, TPQ, moveMark, moveMarkToEnd, trackOf, isTimed, shownAccAt, ART_NAME } from "../score/song.ts";
+import { isLit, onMove, onTap, wantsGrip, TAP_SELECTS, type Pointer, type Target } from "./press-rules.ts";
 import { tickOf } from "../score/repeats.ts";
 import { enterMulti, normalize as normalizeMulti } from "../score/multi.ts";   // 选了好几行（v0.17.49，设计稿第六节）   // 谁亮框、谁能拖（选中规则单行这一版，v0.17.48）
 import { SIGNS } from "../render/signs.ts";   // 记号表（两种谱共用）：演奏法的字形 → 是哪一种、它是什么意思
@@ -1510,13 +1510,17 @@ export class ScoreView {
     void shift; void pid;
     return false;
   }
-  /** 轻点在音上（手指 / 笔 / 鼠标）：光标放到它后面（Shift = 把选中扩到它）。 */
+  /** 轻点在音上（手指 / 笔 / 鼠标）：选中它这一个；已经只选了它 = 收成它后面的光标（v0.17.54 乙，tapTimed）。「词」照旧只放光标。Shift = 把选中扩到它。 */
   private tapNote(hit: HitNote, shift: boolean, ptr: Pointer): void {
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     const st0 = this.host.get(), st = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
     const cur = this.onTrack(hit) ? st.sel : null;
     if (shift && cur) this.host.set(select(st, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)));
-    else { this.putCaret(setCaret(st, hit.index + 1), this.endSlotOn(hit.system, hit.index + 1)); this.lightAt(hit.system, hit.index, "note", ptr); }   // 点的是一行最后一个音 = 光标画在这一行末尾；它亮框（v0.17.48）
+    else {
+      const next = tapTimed(st, hit.index, TAP_SELECTS && !this.rules.lyrics);
+      this.putCaret(next, !next.sel && this.endSlotOn(hit.system, hit.index + 1));   // 收成光标、点的是一行最后一个音 = 光标画在这一行末尾
+      this.lightAt(hit.system, hit.index, "note", ptr);   // 它亮框（v0.17.48）
+    }
     this.tell({ kind: "staff" });
   }
   /** 轻点力度记号 / 渐强渐弱（v0.17.48）：没亮 = 亮框（光标不动，只换到那条谱）；亮着（鼠标悬浮着也算）= 它的小菜单。 */
@@ -1543,15 +1547,22 @@ export class ScoreView {
   private hitOfArt(a: ArtBox): HitNote | null { return this.hits.find((n) => n.index === a.index && n.system === a.system) ?? null; }
   /** 某样东西现在是不是「点亮的」那一个（留住的亮框；选区 / 鼠标悬浮另算）。 */
   private litIs(system: number, index: number, target: Target): boolean {
-    const f = this.lit, L = this.layout, r = L?.systems[system], st = this.host.get(); if (!f || !r || f.target !== target || st.sel || caretKey(st) !== f.ck) return false;
+    const f = this.lit, L = this.layout, r = L?.systems[system], st = this.host.get(); if (!f || !r || f.target !== target || this.selKillsLit(st, f) || caretKey(st) !== f.ck) return false;
     if (r.paper !== f.paper || r.part !== f.part) return false;
     return trackOf(st.song, r.paper, r.part)[index]?.id === f.id;
+  }
+  /** 有选区就灭亮框——除了「只选了它自己」（v0.17.54 乙：点一下 = 亮框 + 只选它；框留着，手指的把手也就留着）。 */
+  private selKillsLit(st: EditorState, f: { paper: string; part: string; id: number; target: Target }): boolean {
+    if (!st.sel) return false;
+    const i = singleSel(st);
+    return !(f.target === "note" && i >= 0 && st.at.paper === f.paper && st.at.part === f.part && tr(st)[i]?.id === f.id);
   }
   /** 让第 system 行第 index 个东西亮框（留住）：光标 / 焦点已经放好之后调；手指点亮能拖的 = 旁边出把手。合租叠起来的行不亮。 */
   private lightAt(system: number, index: number, target: Target, ptr: Pointer, art?: Art): void {
     const L = this.layout, r = L?.systems[system]; if (!L || !r || L.virtual[`${r.paper}:${r.part}`]) return;
-    const st = this.host.get(); if (st.sel) { this.lit = null; this.drawLit(); return; }
+    const st = this.host.get();
     const t = trackOf(st.song, r.paper, r.part)[index]; if (!t) return;
+    if (this.selKillsLit(st, { paper: r.paper, part: r.part, id: t.id, target })) { this.lit = null; this.drawLit(); return; }
     const canDrag = target === "note" ? this.rules.noteDrag && t.kind === "note" && !!t.pitch && !!GEOMETRY[r.kind].pitchAxis : target === "mark" ? this.rules.symbols : false;   // 把手 = 上下改音高 / 左右挪记号（休止、数字行没有音高 = 没把手）
     this.lit = { paper: r.paper, part: r.part, id: t.id, target, ...(art ? { art } : {}), ck: caretKey(st), grip: wantsGrip({ pointer: ptr, target, canDrag }) };
     this.hover = null;
@@ -1627,11 +1638,11 @@ export class ScoreView {
     }
     return [...by.values()].map((e) => ({ x: e.x0, y: e.y0, w: e.x1 - e.x0, h: e.y1 - e.y0 }));
   }
-  /** 画亮框（ink 层的 div；不进排版）+ 手指的把手。点亮的那个在光标一挪 / 有了选区时灭。 */
+  /** 画亮框（ink 层的 div；不进排版）+ 手指的把手。点亮的那个在光标一挪 / 有了选区时灭（只选了它自己不灭，selKillsLit）。 */
   private drawLit(): void {
     for (const e of this.litEls) e.remove(); this.litEls = [];
     const L = this.layout, st = this.host.get();
-    if (this.lit && (st.sel || caretKey(st) !== this.lit.ck)) this.lit = null;
+    if (this.lit && (this.selKillsLit(st, this.lit) || caretKey(st) !== this.lit.ck)) this.lit = null;
     const same = (a: NonNullable<ScoreView["hover"]>, b: NonNullable<ScoreView["hover"]>) => a.paper === b.paper && a.part === b.part && a.id === b.id && a.target === b.target && a.art === b.art;
     const paint = (o: NonNullable<ScoreView["hover"]>, cls: string) => {
       const bs = this.litBoxes(o);
@@ -1833,7 +1844,7 @@ export class ScoreView {
         this.finger = null; this.box = null;
         if (this.drag) { this.host.sound?.release(); this.drag = null; }
         if (this.rules.lyrics && !pr.shift && this.openLyricOn(pr.hit)) return;   // 「词」：点音 = 写这个音的歌词
-        this.tapNote(pr.hit, pr.shift, ptr);   // 轻点 = 亮框、光标到它后面，不响
+        this.tapNote(pr.hit, pr.shift, ptr);   // 轻点 = 亮框、选中它这一个（再点 = 收成它后面的光标），不响
         return;
       }
     }

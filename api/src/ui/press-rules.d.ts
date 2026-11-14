@@ -23,6 +23,9 @@ export declare function onTap(o: {
     target: Target;
     lit: boolean;
 }): "light" | "menu" | "caret";
+/** 轻点一个音 / 休止 = 选中它这一个（乙，v0.17.54；user 2026-11-13「点一下音再按音键，是接着写，还是改它本身 应该是改吧」，语气是试探的）；
+ *  false = 甲（光标到它后面接着写，v0.17.53 及以前）。只有这一个开关：点了之后落到哪由 src/score/song.ts tapTimed 定。「词」不管这个开关（照旧只放光标）。 */
+export declare const TAP_SELECTS = true;
 /** 手指点亮的东西旁边出不出拖的把手（音 = 上下改音高；记号 = 左右挪）。canDrag = 模式 / 修改锁让不让拖。 */
 export declare function wantsGrip(o: {
     pointer: Pointer;
