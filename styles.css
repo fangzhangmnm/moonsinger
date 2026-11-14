@@ -610,7 +610,7 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .cand-status { font-size: 12px; color: var(--muted); margin: -2px 0 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .cand-del { height: 28px; width: 28px; padding: 0; font-size: 13px; color: var(--muted); margin-left: -4px; }
 /* 找人视图开着 = 试听台：pad 只许音键出声，写字那一排和「⋯」灰掉、不响应（宿主回调里还有第二道闸） */
-.pad-panel.is-locked .pad-tools.writes .btn:not(.accshift), .pad-panel.is-locked [data-mark] { opacity: .3; pointer-events: none; }   /* 升降留着、「⋯」能开（里面的布局 / 行数 / 列数弹着玩要用）：只灰掉会碰谱的——写字键和插记号（user「...里面也许有一些需要的东西，特别是改变键盘大小」） */
+.pad-panel.is-locked .pad-tools.writes .btn:not(.accshift), .pad-panel.is-locked [data-mark] { opacity: .3; }   /* v0.17.43：点得到——pad 最外层那一道拦下来、说为什么（A 类不留点了没反应的键） */   /* 升降留着、「⋯」能开（里面的布局 / 行数 / 列数弹着玩要用）：只灰掉会碰谱的——写字键和插记号（user「...里面也许有一些需要的东西，特别是改变键盘大小」） */
 /* 平替的提供者弱化：虚线框、灰字、「顶替」小标（本尊才是实线黑字） */
 .prov.sub { border-style: dashed; background: transparent; }
 .prov.sub .prov-l b { font-weight: 500; color: var(--muted); }
@@ -878,7 +878,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .staff-svg .ottava.off { fill: var(--muted); opacity: .5; }   /* 大谱表上手写的八度线：现在不起作用（音不挪）——画灰、不印（ann），点开说明（谱面分家第五刀 5-3；真做 = 愿望单 W-73） */
 .staff-svg line.ottava-line.off { stroke: var(--muted); opacity: .5; }
 /* pad：叠音键（Shift 逻辑同 /2）；单声乐器的声部叠不了 = 灰 */
-.pad-tools .btn.stack.off { opacity: .3; pointer-events: none; }
+.pad-tools .btn.stack.off { opacity: .3; }   /* 点了说为什么（v0.17.43） */
 @container (max-width: 520px) { .pad-tools.writes .btn.stack { display: none; } }
 /* 贴右边那一档（键盘在右边一栏，窄）：写字那一排不藏键、折成两行（v0.10.34；user「横屏的时候小键盘的叠不见了。横屏的时候能显示全部widget吗」） */
 #stage[data-side="right"] .pad-tools.writes { flex-wrap: wrap; }
@@ -1368,7 +1368,9 @@ body.doc-locked .parts-mgr .pm-card :is(button, input, select):not([data-v^="mor
 /* 键盘总闸（v0.16.52，src/app/input-gate.ts）：人自己拔着（「弹」）或者歌锁着 = 会往谱上写的那一排灰掉、点不动（升降留着：只改弹出来的音）；和乐器目录里那套 .is-locked 同一个样子，
    但「弹」钮自己照样能点（再点 = 接回去）。键盘想写而写不了的时候「弹」钮晃一下。
    ← → 不灰（杂事版 v0.17.42，统筹）：只挪光标 = 读的动作，不问锁（总闸 may() 本来就放行挪光标）。选乐器时（.is-locked，谱被盖住）照旧灰。 */
-.pad-panel.is-unplugged .pad-tools.writes .btn:not(.accshift):not([data-caret]), .pad-panel.is-unplugged [data-mark] { opacity: .3; pointer-events: none; }
+.pad-panel.is-unplugged .pad-tools.writes .btn:not(.accshift):not([data-caret]), .pad-panel.is-unplugged [data-mark] { opacity: .3; }   /* 点得到、说为什么（v0.17.43） */
+/* 没意义的键（A 类，v0.17.43，统筹）：灰着、不执行（src/keyboard/pad.ts 构造里那一道拦）、位置不动、不藏；点了说一句为什么 */
+.pad-panel .pad-tools .btn.is-off, .pad-panel .pad-key.sym.is-off { opacity: .3; }
 @keyframes plug-nudge { 0%, 100% { transform: none; } 25% { transform: translateX(-3px) rotate(-6deg); } 75% { transform: translateX(3px) rotate(6deg); } }
 .pad-tools .btn.impro-pad.nudge { animation: plug-nudge .22s linear 2; }
 @media (prefers-reduced-motion: reduce) { .pad-tools .btn.impro-pad.nudge { animation: none; outline: 2px solid currentColor; } }

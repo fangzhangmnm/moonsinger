@@ -969,7 +969,7 @@ function plugNudge(why: NoWrite): void {
 }
 const padHost = createPadHost(padEl, {
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
-  state: () => D.st, middleC: () => lookOf(D.st.song, lookCtx()).middleC, inC: () => inCAtCursor(), jianpuBase: () => jianpuBaseAtCursor(), update: (n, gesture) => { if (inputGate.may(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
+  state: () => D.st, middleC: () => lookOf(D.st.song, lookCtx()).middleC, inC: () => inCAtCursor(), jianpuBase: () => jianpuBaseAtCursor(), digitRows: () => lookOf(D.st.song, lookCtx()).notation !== "staff", tempoOwnerHere: () => { const pp = D.st.song.papers.find((x) => x.id === D.st.at.paper); return !pp || tempoOwner(D.st.song, pp) === D.st.at.part; }, update: (n, gesture) => { if (inputGate.may(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
   monoRejected: () => { if (monoHinted) return; monoHinted = true; info(_t("「{who}」一次只出一个音：几乎同时按下的第二个键没写。要写和弦，给这个声部换钢琴这类乐器", { who: activeCandidateName(D.extras, curRole()) ?? roleLabel(curRole()) })); },   // 同一次打开只说一次（v0.16.35）   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
   sound: { down: (p, id) => sound.down(p, id), up: (id) => sound.up(id) }, soundTok, soundAfterWrite,
   onTouch: (ts) => feel.touch(ts),

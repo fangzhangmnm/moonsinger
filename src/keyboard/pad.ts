@@ -101,6 +101,11 @@ const faceHtml = (f: KeyFace): string => ("name" in f ? `<span class="kf-nm">${e
 /** 一行键上的字的纯文本（音域旋钮写最低、最高两个键的大字用）。 */
 const faceText = (f: KeyFace): string => ("name" in f ? f.name : `${f.acc ?? ""}${f.deg}`);
 const escHtml = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+/** 一颗键的 id（没意义的键用，见 PadHost.offWhy）。 */
+const keyIdOf = (b: Element): string | null => { const d = (b as HTMLElement).dataset;
+  return d.cmd ?? (d.caret ? "caret" : d.breath ? "breath" : d.accshift ? "accshift" : d.stack ? "stack" : d.half ? "half" : d.kbswitch ? "kbswitch" : d.staff ? "staff" : d.sym ? `sym:${d.sym}` : d.mark ? `mark:${d.mark}` : null); };
+/** 符号格那一面开着时没意义的写音键（这一面只写记号）。 */
+const WRITE_ONLY = new Set(["rest", "bar", "extend", "accshift", "stack", "half"]);
 const facesHtml = (c: KeyFaces): string => `<span class="kf kf-big">${faceHtml(c.big)}</span><span class="kf kf-small">${faceHtml(c.small)}</span>`;
 const STEP = 28;        // px：旋钮上滑这么远 = 窗里滚一整格（一次最多一格，过半格就算）
 const MOVE = 6;         // px：按下旋钮挪过这么远才算「滑」；没挪就松手 = 点（展开滚轮）
@@ -138,7 +143,11 @@ export interface PadHost {
   staves(): number;                        // 光标所在声部几张谱表（2 = 大谱表：多一个「换谱表」）
   canStack(): boolean;                     // 光标所在声部的乐器能叠音吗（单声乐器 = 不能，键灰掉）
   /** 符号格的状态：off = 台上这位不认（画灰 + 「不认」，照样能写）；on = 现在生效的那个（力度）。不给 = 都正常。 */
-  keyState?(id: string): { off?: boolean; on?: boolean } | undefined;
+  keyState?(id: string): { off?: boolean; on?: boolean; tag?: "noDraw" | "noEffect" } | undefined;   // tag（v0.17.43）：B 类小标按原因分——没给 =「不认」、noDraw =「不画」、noEffect =「无效」
+  /** 没意义的键（A 类，v0.17.43，统筹审「哪些键没意义」的表）：这颗键现在为什么没意义（null = 有意义）。灰着、不执行、位置不动、不藏；点了 = onOff 说一句（宿主管去重）。
+   *  id = keyIdOf：写字键 = data-cmd / caret / breath / accshift / stack / half；顶上 = kbswitch、⋯ 里的 staff；符号格 = sym:<格子>；⋯ 里插记号 = mark:<记号>。 */
+  offWhy?(id: string): string | null;
+  onOff?(why: string): void;
   /** 键底部细条提示的音域 = 现在谁在弹（2026-10-08 by Claude Opus 5.5；user「试弹的时候键盘上的音域没有跟进」）：宿主说；不知道 / 不接 = null 不画（键盘不认识任何演奏者，ADR-0004）。 */
   hintRange?(): HintRange;
   /** 音键按下（第 k 级，id = 哪根手指）：写（不在「弹」时）+ 响都归宿主；回 false = 这一下不收（单音乐器几乎同时按下的第二根手指）：不亮、不记滑动。 */
@@ -200,7 +209,19 @@ export class Pad {
   /** 升降键选的是哪一种（滑着换；记住，下次按还是它）。 */
   private accSel: AccSel = 1;
 
-  constructor(private el: HTMLElement, private host: PadHost) { this.render(); addEventListener("resize", () => this.render()); }
+  constructor(private el: HTMLElement, private host: PadHost) {
+    this.render(); addEventListener("resize", () => this.render());
+    // 没意义的键（A 类，v0.17.43）：在最外层先拦（捕获阶段，比每颗键自己的处理先到）——没意义 = 不交给它原来的处理；抬手那一下（click）说一句为什么。
+    //   原来 disabled / pointer-events: none 的「点了什么都不发生」都改走这里（统筹「不留点了什么都不发生的键」）。按下不 preventDefault：符号格照样能滚。
+    const gate = (e: Event) => { const b = (e.target as Element | null)?.closest?.("button"); if (!b || !this.el.contains(b)) return; const id = keyIdOf(b), why = id ? this.offOf(id) : null; if (!why) return;
+      e.stopImmediatePropagation(); if (e.type === "click") { e.preventDefault(); this.host.onOff?.(why); } };
+    this.el.addEventListener("pointerdown", gate, true); this.el.addEventListener("click", gate, true);
+  }
+  /** 这颗键现在为什么没意义：符号格开着时写音那一层的键 = 键盘自己知道；别的问宿主。退格在符号格那一面 = 符号退格（只删记号），问的是另一个 id。 */
+  private offOf(id: string): string | null {
+    if (this.symbols !== "off" && WRITE_ONLY.has(id)) return _t("符号格开着：这一面只写记号；点「音」换回音键写音");
+    return this.host.offWhy?.(this.symbols !== "off" && id === "backspace" ? "symBackspace" : id) ?? null;
+  }
 
   private rows(): number {
     if (this.rowsSetting !== "auto") return this.rowsSetting;
@@ -325,7 +346,7 @@ export class Pad {
   }
 
   /** 这一页符号格的状态签名（谁不认 / 谁亮着）：变了就重建格子。 */
-  private symStates(): string { return SYM_PAGES[this.symPage].map((id) => { const ks = this.host.keyState?.(id); return ks ? `${ks.off ? "x" : ""}${ks.on ? "o" : ""}` : ""; }).join(","); }
+  private symStates(): string { return SYM_PAGES[this.symPage].map((id) => { const ks = this.host.keyState?.(id); return ks ? `${ks.off ? "x" : ""}${ks.on ? "o" : ""}${ks.tag ?? ""}${this.host.offWhy?.(`sym:${id}`) ? "-" : ""}` : this.host.offWhy?.(`sym:${id}`) ? "-" : ""; }).join(","); }
   private cands(rows: number): string {
     const back = `<button class="btn cand" data-back="1">${_t("返回")}</button>`;
     const c = (attrs: string, label: string, on = false, title = "") => `<button class="btn cand${on ? " is-on" : ""}" ${attrs}${title ? ` title="${title}"` : ""}>${label}</button>`;
@@ -336,7 +357,7 @@ export class Pad {
       case "more": {
         // v0.16.8：插调号 / 拍号 / 速度三颗钮拿掉（user 11-07「先按照你说的归类整理」：插入入口收成符号层「记号」页 + 空白处菜单，都开谱头面板）
         return c(`data-autobars="1"`, _t("自动小节线"), this.host.autoBars(), _t("按拍号自动画小节线（只画、不进数据）；手插的「|」= 从那里重新数，弱起 = 写完弱起的音按一下「|」")) +
-          (this.host.staves() === 2 ? c(`data-staff="1"`, _t("换谱表"), false, _t("大谱表：刚写的音（或选中的）挪到另一张谱表；再按一次回到按音高自动分")) : "") +
+          c(`data-staff="1"`, _t("换谱表"), false, _t("大谱表：刚写的音（或选中的）挪到另一张谱表；再按一次回到按音高自动分")) +   // 不是大谱表也不藏：灰着、点了说为什么（A 类，v0.17.43）
           c(`data-open="layout"`, _t("布局…"), false, _t("几行几列、首调 / 绝对")) + back;
       }
       default: return "";
@@ -418,7 +439,10 @@ export class Pad {
     const cell = (id: string, big: string, label: string, title: string, state = "") => {
       // 台上这位不认（off）：照样能写，格子标出来（不静默失效）；力度：现在生效的那个亮着（on）。哪个格子写哪种记号 = 宿主的事（keyState）
       const ks = this.host.keyState?.(id) ?? {}, art = /^(art:|inhale:|swell:)|^slur$/.test(id), off = !!ks.off, on = !!ks.on;
-      return `<button class="pad-key sym${art ? " art" : ""}${off ? " ignored" : ""}${on ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id}" title="${title}${off ? _t("（台上这位不认：写在谱上画灰，出声不受影响）") : ""}">${big}<small>${label}${off ? `<span class="ign-tag">${_t("不认")}</span>` : ""}</small></button>`;
+      // B 类小标按原因分（v0.17.43，统筹）：台上这位不认 =「不认」；这种谱不画 =「不画」；写了不起作用 =「无效」。都照样能写
+      const tag = ks.tag === "noDraw" ? _t("不画") : ks.tag === "noEffect" ? _t("无效") : _t("不认");
+      const tip = ks.tag === "noDraw" ? _t("（这种谱不画它：写在谱上，切回五线谱才看得见）") : ks.tag === "noEffect" ? _t("（写在这里不起作用：写在谱上画灰）") : _t("（台上这位不认：写在谱上画灰，出声不受影响）");
+      return `<button class="pad-key sym${art ? " art" : ""}${off ? " ignored" : ""}${on ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id}" title="${title}${off ? tip : ""}">${big}<small>${label}${off ? `<span class="ign-tag">${tag}</span>` : ""}</small></button>`;
     };
     const items = [
       cell("art:arpeggio", `<span class="smufl">\uEAA9\uEAA9</span>`, _t("琶音"), _t("琶音：光标前那个和弦（有选区 = 选中的）从低到高依次奏出（和弦左边一条波浪线）；再点一次去掉")),
@@ -450,7 +474,7 @@ export class Pad {
       cell("groove", `<span class="big it">${_t("风格")}</span>`, _t("拍子轻重"), _t("风格记号：从光标前那个音起到这张纸结尾，每个音按它在小节里的位置轻一点 / 重一点（古典 / 流行 / 华尔兹 / 进行曲…点开选）；整张纸的声部一起听，各人跟多少按乐器")),
       cell("repeat", `<span class="big">:|</span>`, _t("反复"), _t("谱内反复 / 跳转：|: :|、房子 1. 2.、Segno / Coda / D.C. / D.S. / Fine…（点开选；插在光标处，挨着小节线 = 把那条改成反复的）。不跨纸；放的时候只看这张纸最上面那个声部那一行")),
       cell("pedal", `<span class="smufl">\uE650</span>`, _t("踏板"), _t("踏板（音接着响还是止住）：从光标前那个音起踩下 / 抬起 / 换踏板，字跟着那儿现在踩没踩；有选区 = 把这一段踩住。点谱上的踏板记号能改、删，长按拖能挪")),
-      ...(this.host.staves() === 2 ? [cell("staff", `<span class="big">⇅</span>`, _t("换谱表"), _t("大谱表：这个音换到另一张谱表"))] : []),
+      cell("staff", `<span class="big">⇅</span>`, _t("换谱表"), _t("大谱表：这个音换到另一张谱表")),   // 不是大谱表也不藏（A 类，v0.17.43）
     ];
     const byId = new Map(items.map((h) => [/data-sym="([^"]+)"/.exec(h)![1], h]));
     grid.innerHTML = SYM_PAGES[this.symPage].flatMap((id) => byId.get(id) ?? []).join("");
@@ -612,7 +636,9 @@ export class Pad {
     // 符号层开着 = 只写记号（user 2026-10-08「符号键盘的时候该禁用的东西都禁用」）：写音那一层的键（休止 / 小节线 / 升降 / 叠 / 减半 / 拉长）灰掉、按不动（管音键的旋钮 1= / 长短 / 音域 换成了分页标签）；
     //   ← → / 退格（符号模式的退格）/ 弹 / 收起 / ⋯ 照旧。「弹」的时候「符」灰掉（弹 = 只弹不写）
     const symOn = this.symbols !== "off";
-    this.el.querySelectorAll<HTMLButtonElement>('.writes [data-cmd="rest"], .writes [data-cmd="bar"], .writes [data-cmd="extend"], .writes [data-accshift], .writes [data-stack], .writes [data-half]').forEach((b) => { b.disabled = symOn; });
+    // 没意义的键（A 类，v0.17.43）：灰着（is-off）、不执行（构造里那一道拦）、位置不动；原因 = offOf（符号格开着的写音键 + 宿主说的）
+    void symOn;
+    this.el.querySelectorAll<HTMLElement>(".pad-tools .btn, .pad-key.sym").forEach((b) => { const id = keyIdOf(b); b.classList.toggle("is-off", !!id && !!this.offOf(id)); });
   }
 
   private on(root: HTMLElement, sel: string, fn: (b: HTMLElement) => void): void {

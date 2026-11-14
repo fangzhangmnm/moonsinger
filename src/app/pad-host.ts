@@ -18,7 +18,7 @@
 import { _t } from "../i18n/index.ts";
 import { type Pitch, alterBy, keySpell, midiOf } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
-import { type EditorState, type Token, type NoteTok, ART_NAME, allPitches, singleSel, writePitch, soundingPitch, setNote, setUnit, setTuplet, setInputKey, setInputScale, tr, keyAt, toggleChordPitch, dynMarkAt } from "../score/song.ts";
+import { type EditorState, type Token, type NoteTok, ART_NAME, allPitches, singleSel, writePitch, soundingPitch, setNote, setUnit, setTuplet, setInputKey, setInputScale, tr, keyAt, toggleChordPitch, dynMarkAt, markAnchor } from "../score/song.ts";
 import type { Mark } from "../score/perform.ts";
 import { Pad, type HintRange } from "../keyboard/pad.ts";
 import { chordHead, chordBothAfterMs, chordVerdict, monoClash, type ChordWhy } from "../keyboard/chords.ts";
@@ -36,6 +36,10 @@ export interface PadGlue {
   inC(): boolean;
   /** 简谱时光标那一行的八度基准（键上的大字写纸上的数字，v0.17.43）；不是简谱 = null。 */
   jianpuBase(): number | null;
+  /** 这首歌现在画成数字行（简谱 / 字母谱）：谱号、八度线写了不画（B 类「不画」，v0.17.43）。 */
+  digitRows(): boolean;
+  /** 光标这一行是不是这张纸上管速度 / 反复结构的那一行（最上面在场的那位）：不是 = 速度、反复写了不起作用（B 类「无效」，v0.17.43）。 */
+  tempoOwnerHere(): boolean;
   /** gesture = 撤销并步的名字（同一个名字、挨得近的几下并成一步撤销；单声乐器「后按的算数」用）。 */
   update(next: EditorState, gesture?: string): void;
   /** 写一个音并回刚写的下标（-1 = 没写成）。 */
@@ -165,6 +169,25 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     chordRoots.delete(id);
   }
 
+  // 没意义的键（A 类，v0.17.43；统筹审「哪些键没意义」的表 + 「点了说一句为什么、同一句连点不重复弹」）。← → 只挪光标、不问锁（选乐器时谱被盖住才灰）；升降只改弹出来的音，拔着也留着
+  let lastOff = "", lastOffAt = -1e9;
+  const ON_NOTE = /^sym:(art:|inhale:|slur$|dyn:|wedge:|pedal$|groove$)/;
+  function offWhy(id: string): string | null {
+    const s = st(), w = g.gate.why();
+    if (id === "accshift") return null;
+    if (id === "caret") return w === "picking" ? _t("在选乐器：谱被盖住了，回到谱再挪光标") : null;
+    if (w === "picking") return _t("在选乐器：键盘只弹不写；回到谱再写");
+    if (w === "locked") return _t("锁着：要改先点谱上面的「接着改」");
+    if (w === "unplugged") return id === "kbswitch" ? _t("「弹」开着：符号格全是写记号的，再点「弹」接回去才能用") : _t("「弹」开着：只弹不写；再点「弹」接回去");
+    const t = tr(s), i = s.sel ? s.sel.from : s.caret, before = t.slice(0, i);
+    if (id === "stack" && !g.canStack()) return _t("台上这位是单声的，叠不了");
+    if ((id === "staff" || id === "sym:staff") && g.staves() !== 2) return _t("这个声部不是大谱表，只有一张谱");
+    if (id === "extend" && !s.sel && !before.some((x) => x.kind === "note" || x.kind === "rest")) return _t("光标前面没有音可以拉长");
+    if (id === "backspace" && !s.sel && !s.lead && !before.some((x) => x.kind === "note" || x.kind === "rest" || x.kind === "bar")) return _t("光标前面没有可删的");
+    if (ON_NOTE.test(id) && !t.some((x) => x.kind === "note")) return _t("这张纸上还没有音：记号要挂在音上");
+    if (id === "sym:art:arpeggio" && !s.sel) { const a = markAnchor(s), n = a >= 0 ? t[a] : undefined; if (!(n && n.kind === "note" && n.chord?.length)) return _t("琶音只挂在和弦上：光标前那个音是单音"); }
+    return null;
+  }
   const music = createPadMusic(st, () => g.middleC(), () => g.inC(), () => g.jianpuBase());   // pad 的音乐知识（src/app/pad-music.ts）：第 k 级是什么音、「1=」的档；键盘只认 k
   /** 「弹」= 音键只响不写：顶栏开关，或找人视图 / 乐器页开着（试听台上那位）。读 finderShown() 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建。 */
   const padImpro = (): boolean => g.gate.why() !== null;   // 2026-11-09 起问总闸（以前 = 「弹」∨ 乐器目录 ∨ 乐器页，各处自己拼）
@@ -288,10 +311,19 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     staves: () => g.staves(),
     // 符号格的状态：这个格子写的记号台上这位不认 = 画灰（照样能写）；力度 = 光标处正生效的那个亮着（状态机）
     keyState: (id) => {
-      const s = st(), mk = markOfKey(id), off = !!mk && g.ignoredHere().includes(mk);
+      const s = st(), mk = markOfKey(id), ign = !!mk && g.ignoredHere().includes(mk);
       const on = id.startsWith("dyn:") && id.slice(4) === dynMarkAt(tr(s), s.sel ? s.sel.from : s.caret);
-      return off || on ? { off, on } : undefined;
+      // B 类的另两种原因（v0.17.43，统筹审「哪些键没意义」的表）：这种谱不画 = 「不画」；写了不起作用 = 「无效」
+      const tag: "noDraw" | "noEffect" | undefined = (id === "clef" || id === "ottava") && g.digitRows() ? "noDraw"
+        : id === "ottava" && g.staves() === 2 ? "noEffect"
+        : (id === "tempo" || id === "repeat") && !g.tempoOwnerHere() ? "noEffect"
+        : id === "dyn:ramp" && (() => { const a = markAnchor(s); return a >= 0 && dynMarkAt(tr(s), a) === null; })() ? "noEffect" : undefined;
+      const off = ign || !!tag;
+      return off || on ? { off, on, ...(tag ? { tag } : {}) } : undefined;
     },
+    // 没意义的键（A 类，v0.17.43）：现在为什么没意义；灰着、不执行、点了说这一句
+    offWhy: (id) => offWhy(id),
+    onOff: (why) => { const now = performance.now(); if (why === lastOff && now - lastOffAt < 4000) return; lastOff = why; lastOffAt = now; g.info(why); },
     hintRange: () => g.hintRange(),
     onAutoBars: (on) => { g.autoBars.set(on); pad.render(); },
     onHide: () => g.showPad(false),
