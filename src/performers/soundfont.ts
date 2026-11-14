@@ -140,12 +140,12 @@ export const soundfont = registerPerformer({
     { const cur = activePedalDefault(extras, role);
       if (active && cur) {
         const f = ringFactory({ library: active.origin.library ?? null, bank: active.bank, program: active.program, ...(active.note !== undefined ? { note: active.note } : {}) });
-        const side = f.pedal === "down" ? _t("留住音") : _t("不留");
+        const side = f.pedal === "down" ? _t("自然衰减") : _t("到点释放");
         const why = f.reason === "free" ? (lang() === "zh" ? f.why!.zh : f.why!.en) : f.reason === "own" ? _t("自己的音源文件，目录不认识它") : _t("目录里没有标成自己一直响");
-        rows.push({ id: "pedal", value: cur === "down" ? _t("留住音") : _t("不留"), label: _t("余音"),   // 行名在那一栏里放得下（统筹审 11-3：「没写踏板记号时」折成两行，挪进说明开头）
-          control: chip("pedal:down", _t("留住音"), cur === "down", _t("每一段开头延音踏板就踩着：写的结尾到了也不停，响到同一个音再弹、写了抬起或这一段结束；靠这个留住的音里，跳音照写的松")) +
-            chip("pedal:up", _t("不留"), cur === "up", _t("每一段开头延音踏板抬着：照写的时值停（乐器自己的收尾照样有）")),
-          note: esc(_t("没写踏板记号时用这一格。出厂：{side}——{why}", { side, why })) });
+        rows.push({ id: "pedal", value: cur === "down" ? _t("自然衰减") : _t("到点释放"), label: _t("余音"),   // 行名在那一栏里放得下（统筹审 11-3：「没写踏板记号时」折成两行，挪进说明开头）
+          control: chip("pedal:down", _t("自然衰减"), cur === "down", _t("写的时值到了不松键（= 每一段开头延音踏板就踩着）：音顺着包络的衰减段响到停；同一个音再弹、写了抬起或这一段结束才收。跳音照写的松")) +
+            chip("pedal:up", _t("到点释放"), cur === "up", _t("写的时值到了就松键（= 每一段开头延音踏板抬着）：进入包络的释放段，乐器自己的收尾照样有")),
+          note: esc(_t("没写踏板记号时用这一格。它定的是什么时候松键；包络（起音、衰减、释放）是音色库写的，这里不改。出厂：{side}——{why}", { side, why })) });
       }
     }
     return rows;
@@ -155,7 +155,7 @@ export const soundfont = registerPerformer({
     if (v === "sfx:fixed") { const on = g?.note === undefined; return { extras: withSfxFixed(extras, role, on, hum), label: `「${rn}」${on ? _t("固定原速") : _t("不固定原速（按写的音变调）")}`, silence: true }; }
     if (v === "sfx:align") { const on = !g?.sfx?.align; return { extras: withSfxAlign(extras, role, on, hum), label: _t("「{rn}」音高对齐{on}", { rn, on: on ? _t("开") : _t("关") }), silence: true }; }
     if (v.startsWith("tr:")) { const d = Number(v.slice(3)), next = d === 0 ? 0 : activeTranspose(extras, role) + d; return { extras: withTranspose(extras, role, next, hum), label: _t("「{rn}」修八度 / 移调 {next} 半音", { rn, next }), gesture: "transpose", silence: true }; }
-    if (v === "pedal:down" || v === "pedal:up") { const p = v.slice(6) as "down" | "up"; return { extras: withPedalDefault(extras, role, p, hum), label: _t("「{rn}」没写踏板记号时：{p}", { rn, p: p === "down" ? _t("留住音") : _t("不留") }), silence: true }; }
+    if (v === "pedal:down" || v === "pedal:up") { const p = v.slice(6) as "down" | "up"; return { extras: withPedalDefault(extras, role, p, hum), label: _t("「{rn}」没写踏板记号时：{p}", { rn, p: p === "down" ? _t("自然衰减") : _t("到点释放") }), silence: true }; }
     if (v.startsWith("vel:")) { const next = activeVelocity(extras, role) + Number(v.slice(4)) / 127; return { extras: withVelocity(extras, role, next, hum), label: _t("「{rn}」力度 {p}", { rn, p: Math.max(1, Math.min(127, Math.round(next * 127))) }), gesture: "vel" }; }
     return null;
   },

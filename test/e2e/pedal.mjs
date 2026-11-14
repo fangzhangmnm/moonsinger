@@ -25,7 +25,7 @@ const pick = async (v) => { await p.click(`.pedal-menu [data-v="${v}"]`); await 
 check(!!(await p.$('[data-sym="pedal"]')) || true, "开好了");
 let vs = await openMenu();
 check(vs.join(",") === "sustain:act:down,sostenuto:act:down,soft:act:down", "光标处没踩：三种踏板各一行，每行只有「踩下」（11-2 起三行）", vs.join(","));
-check(/留住音/.test(await p.$eval('.pedal-menu [data-v="sustain:act:down"]', (e) => e.textContent)) && /轻一点/.test(await p.$eval('.pedal-menu [data-v="soft:act:down"]', (e) => e.textContent)) && /这一刻按着/.test(await p.$eval('.pedal-menu [data-v="sostenuto:act:down"]', (e) => e.textContent)), "字带上各自的效果（延音 = 留住音、持音 = 留住这一刻按着的、弱音 = 弹得轻一点）");
+check(/接着响/.test(await p.$eval('.pedal-menu [data-v="sustain:act:down"]', (e) => e.textContent)) && /轻一点/.test(await p.$eval('.pedal-menu [data-v="soft:act:down"]', (e) => e.textContent)) && /这一刻按着/.test(await p.$eval('.pedal-menu [data-v="sostenuto:act:down"]', (e) => e.textContent)), "字带上各自的效果（延音 = 留住音、持音 = 留住这一刻按着的、弱音 = 弹得轻一点）");
 await pick("sustain:act:down");
 check((await shape()) === "v C D E F", "写完 C 按踩下 = 从 C 起", await shape());
 check((await p.$$eval("#score .pedal", (e) => e.length)) >= 2, "谱上画了（名字 + 线）");

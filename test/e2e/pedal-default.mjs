@@ -25,11 +25,11 @@ check((await pedalOf()) === "up", "上场写成具体的：自己的音源文件
 await openInst();
 const page = await p.$eval(".inst-page", (e) => e.textContent ?? "");
 check(!!(await p.$('.inst-page [data-v="pedal:down"]')) && !!(await p.$('.inst-page [data-v="pedal:up"].is-on')), "乐器页「没写踏板记号时」两格，「不留」亮着");
-check(page.includes("余音") && page.includes("没写踏板记号时用这一格。出厂：不留——自己的音源文件，目录不认识它"), "行名「余音」；说明 = 什么时候用这一格 + 出厂是哪一边、依据（自己的音源文件）");
+check(page.includes("余音") && page.includes("没写踏板记号时用这一格。它定的是什么时候松键") && page.includes("出厂：到点释放——自己的音源文件，目录不认识它"), "行名「余音」；说明 = 什么时候用这一格 + 出厂是哪一边、依据（自己的音源文件）");
 await p.click('.inst-page [data-v="pedal:down"]'); await p.waitForTimeout(300);
-check((await pedalOf()) === "down", "点「留住音」= 写进乐手身上（down）");
+check((await pedalOf()) === "down", "点「自然衰减」= 写进乐手身上（down）");
 await closeInst();
-check((await badges()).includes("留住音"), "声部名下面「留住音」角标", await badges());
+check((await badges()).includes("自然衰减"), "声部名下面「自然衰减」角标", await badges());
 const caretAfterNth = (k) => p.evaluate((k) => { const m = window.__moonsinger, s = m.state(), t = s.song.papers[0].tracks[s.at.part]; let c = -1, i = 0; for (; i < t.length; i++) if (t[i].kind === "note" && ++c === k) break; m.set({ ...s, sel: null, caret: i + 1 }); }, k);
 const openMenu = async () => {
   if (!(await p.$(".pad-grid.symbols"))) { await p.click(".pad-head [data-kbswitch]"); await p.waitForTimeout(80); }
@@ -47,7 +47,7 @@ const ink = () => p.evaluate(() => { const s = window.__moonsinger.state(), t = 
 const held = await ink();
 check(held.length === 2 && held.every((x) => x.n > 0 && !x.named && !x.mute), "默认留住：换踏板 / 抬起 = 实色、不画名字（这一截没有「Ped.」）", JSON.stringify(held));
 await openInst(); await p.click('.inst-page [data-v="pedal:up"]'); await p.waitForTimeout(300); await closeInst();
-check(!(await badges()).includes("留住音"), "改回「不留」：角标没了", await badges());
+check(!(await badges()).includes("自然衰减"), "改回「到点释放」：角标没了", await badges());
 const plain = await ink();
 check(plain[0]?.named && !plain[0]?.mute, "改回「不留」：同一个换踏板照常画名字（没踩就换 = 踩下）", JSON.stringify(plain));
 check(!errs.length, "没有页面错误", errs.join(" | "));

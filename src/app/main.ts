@@ -2486,7 +2486,7 @@ function partViews(): PartView[] {
   return D.st.song.parts.map((p, k) => {
     // 踏板 11-3：这位没写踏板记号时留住音 = 名字下面一个「留住音」角标（统筹「默认留住音的那一截怎么画」：这一截谱上不画，披露放在这里；只在屏幕上、不印）
     const held = activePedalDefault(D.extras, p.role) === "down" && !!performerOf(activeInstrument(D.extras, p.role)?.engine)?.pedals?.includes("sustain");
-    const v = pv(p.id), badges = [v.muted ? _t("静音") : "", v.solo ? _t("独奏") : "", v.only ? _t("只看它") : "", issueParts.has(p.id) ? _t("不出声") : "", held ? _t("留住音") : ""].filter(Boolean);   // 12-2（2026-11-12）：眼睛 / 喇叭搬进小卡以后，谱上靠名字下面的角标看得见这些状态（不印）   // 静 / 独 / 只 / 隐 现在是名字下面的四颗小钮（toggles，亮着 = 开），角标只剩「不出声」   // 不出声 = 清单里有它（§2.2½ 出口 ①）
+    const v = pv(p.id), badges = [v.muted ? _t("静音") : "", v.solo ? _t("独奏") : "", v.only ? _t("只看它") : "", issueParts.has(p.id) ? _t("不出声") : "", held ? _t("自然衰减") : ""].filter(Boolean);   // 12-2（2026-11-12）：眼睛 / 喇叭搬进小卡以后，谱上靠名字下面的角标看得见这些状态（不印）   // 静 / 独 / 只 / 隐 现在是名字下面的四颗小钮（toggles，亮着 = 开），角标只剩「不出声」   // 不出声 = 清单里有它（§2.2½ 出口 ①）
     const eng = activeInstrument(D.extras, p.role)?.engine ?? "unknown", plug = performerOf(eng);
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
@@ -2934,8 +2934,8 @@ function openRepeatMenu(): void {
 //   菜单里的字带上效果、不让人去想踏板的机械（user「我觉得有些乐器反而是你踩下去才是让它停吧」——存的、说的都是「留不留住音」）。
 /** 每种踏板的动作说成它的效果（设计第 6 节：说效果，不说踏板往哪边踩）。持音 / 弱音的字（11-2）是施工起的，统筹审。 */
 const PEDAL_ACT_LABEL: Record<PedalKind, Record<PedalTok["act"], string>> = {
-  sustain: { down: _t("踩下（留住音）"), up: _t("抬起（止音）"), change: _t("换踏板（先止音、接着留）") },
-  sostenuto: { down: _t("踩下（留住这一刻按着的音）"), up: _t("抬起（放开留住的音）"), change: _t("换踏板（先放开，再留住这一刻按着的音）") },   // 持音只放开它留住的那几个（统筹审 11-2：「止音」说大了）
+  sustain: { down: _t("踩下（接着响）"), up: _t("抬起（止音）"), change: _t("换踏板（先止音、再接着响）") },
+  sostenuto: { down: _t("踩下（这一刻按着的音接着响）"), up: _t("抬起（放开接着响的那几个音）"), change: _t("换踏板（先放开，再让这一刻按着的音接着响）") },   // 持音只放开它留住的那几个（统筹审 11-2：「止音」说大了）
   soft: { down: _t("踩下（弹得轻一点）"), up: _t("抬起（回到原来的轻重）"), change: _t("换踏板（对弱音没有意思：照旧踩着）") },
 };
 /** 菜单里给写的动作：延音、持音有「换踏板」（持音的 = 杂事版 v0.17.42，统筹：按住一个低音、上面弹分解和弦，一个低音一个记号；没踩时写 = 踩下）；
@@ -2953,7 +2953,7 @@ const pedalStart = (which: PedalKind): boolean => which === "sustain" && activeP
 function disclosePedal(which: PedalKind, idle: "already" | "notDown" | undefined): void {
   const why = pedalIgnoredWhy(which);
   if (why) { info(why); return; }
-  if (idle === "already") info(pedalStart(which) ? _t("这位没写踏板记号时留住音，这里本来就踩着：这个踩下不起作用（画灰）") : _t("这里本来就踩着：这个踩下不起作用（画灰）"));
+  if (idle === "already") info(pedalStart(which) ? _t("这位没写踏板记号时是自然衰减，这里本来就踩着：这个踩下不起作用（画灰）") : _t("这里本来就踩着：这个踩下不起作用（画灰）"));
   else if (idle === "notDown") info(_t("这里本来没踩着：这个抬起不起作用（画灰）"));
 }
 /** 符号层「踏板」：三种踏板各一行（设计第 6 节；11-2 加了持音、弱音两行）。每一行的字跟着光标前那个音那儿这一种现在踩没踩（没踩 = 踩下；踩着 = 抬起 / 换踏板）；
@@ -2988,7 +2988,7 @@ function openPedalMenu(): void {
 function openPedalMarkMenu(i: number, at: { x: number; y: number }): void {
   const toks = tr(D.st), t = toks[i]; if (!t || t.kind !== "pedal") return;
   const before = pedalDownAt(toks, i, t.which, pedalStart(t.which)), why = pedalIgnoredWhy(t.which);
-  const idle = t.act === "down" && before ? (pedalStart(t.which) && !toks.slice(0, i).some((x) => x.kind === "pedal" && x.which === t.which) ? _t("不起作用（画灰）：这位没写踏板记号时留住音，这里本来就踩着") : _t("不起作用（画灰）：这里本来就踩着")) : t.act === "up" && !before ? _t("不起作用（画灰）：这里本来没踩着") : t.act === "change" && !before ? _t("这里之前没踩着，换踏板 = 踩下") : "";
+  const idle = t.act === "down" && before ? (pedalStart(t.which) && !toks.slice(0, i).some((x) => x.kind === "pedal" && x.which === t.which) ? _t("不起作用（画灰）：这位没写踏板记号时是自然衰减，这里本来就踩着") : _t("不起作用（画灰）：这里本来就踩着")) : t.act === "up" && !before ? _t("不起作用（画灰）：这里本来没踩着") : t.act === "change" && !before ? _t("这里之前没踩着，换踏板 = 踩下") : "";
   ctxMenu("pedal-menu",
     `<div class="ctx-hint ctx-what">${esc(PEDAL_NAME[t.which])}：${esc(SIGNS[`pedal:${t.which}`].says(lang()))}</div>` +
     (idle ? `<div class="ctx-hint">${esc(idle)}</div>` : "") + (why ? `<div class="ctx-hint">${esc(why)}</div>` : "") +
