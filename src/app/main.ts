@@ -138,6 +138,8 @@ import { createEditLock, type LockStore } from "./edit-lock.ts";
 import { initEditLockDoor } from "./edit-lock-door.ts";
 import { createRenderCache, stampOf, MANIFEST_ENTRY, renderedByOldCore, type RenderMeta } from "./render-cache.ts";
 import { idbRenderStore } from "./render-cache-idb.ts";
+import { caps, lastPointer, watchPointers } from "../ui/pointer.ts";
+import { placeMenu, type ScreenRect } from "../ui/menu-place.ts";
 import { createInputGate, keyOwner, type NoWrite } from "./input-gate.ts";
 import { monoDown, monoUp, type MonoHeld } from "./mono-voice.ts";
 import { createEncoder } from "../format/encode-client.ts";
@@ -627,7 +629,7 @@ function multiVerb(v: SelVerb | "repeat"): boolean {
   }
 }
 /** 选了好几行的选区菜单：整块的几样 + 再来一遍。 */
-function openMultiMenu(at: { x: number; y: number }): void {
+function openMultiMenu(at: { x: number; y: number }, avoid: readonly ScreenRect[] = view.selRects()): void {
   ui.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu sel-menu"; box.setAttribute("role", "menu");
@@ -635,8 +637,8 @@ function openMultiMenu(at: { x: number; y: number }): void {
   box.innerHTML = item("repeat", _t("再来一遍"), _t("这一块贴到它自己后面、同样的几行（Ctrl / ⌘+D；连按 = 一遍遍往后刷）")) +
     `<div class="ctx-sep"></div>` + item("copy", _t("复制")) + item("cut", _t("剪切"), _t("复制，再把原处变成一样长的休止")) + (block || clip ? item("paste", _t("粘贴")) : "") + item("delete", _t("变成休止"), _t("每一行选中的变成一样长的休止，不合拢"), "danger");
   document.body.append(box);
-  const w = box.offsetWidth, h = box.offsetHeight, mg = 8; let y = at.y + 8; if (y + h > innerHeight - mg) y = at.y - h - 8;
-  box.style.left = `${Math.max(mg, Math.min(at.x, innerWidth - w - mg))}px`; box.style.top = `${Math.max(mg, Math.min(y, innerHeight - h - mg))}px`;
+  const q = placeMenu({ w: box.offsetWidth, h: box.offsetHeight }, at, avoid, { w: innerWidth, h: innerHeight });   // 不盖选区的带子：下面 → 上面 → 左右（v0.17.55）
+  box.style.left = `${q.x}px`; box.style.top = `${q.y}px`;
   const close = () => { box.remove(); ui.closed(close); };
   box.addEventListener("click", (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>("[data-v]"); if (!b) return; const v = b.dataset.v as SelVerb | "repeat"; if (v !== "repeat") close(); multiVerb(v); scoreEl.focus(); });
   ui.open({ k: "menu", close });
@@ -1000,12 +1002,12 @@ const view = new ScoreView(scoreEl, {
   press: (e) => {
     switch (e.kind) {
       case "staff": case "text": {   // 五线谱像文本框：点在谱上 / 打开了要打字的框
-        const aside = touchLike && e.kind === "text"; if (ws.aside !== aside) { ws.aside = aside; applyWorkspace(); }   // 鼠标键盘范式：打字不让开（没有系统键盘要上来，也就不会「点回谱上又弹出来」，v0.16.89）   // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
+        const aside = touchLike() && e.kind === "text"; if (ws.aside !== aside) { ws.aside = aside; applyWorkspace(); }   // 鼠标键盘范式：打字不让开（没有系统键盘要上来，也就不会「点回谱上又弹出来」，v0.16.89）   // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
         return;
       }
       case "part": if (stubbed(e.part)) { showPart(e.part); return; } openTrackCard(e.box); return;   // 缩成细线的（隐藏 / 别人在「只看」）：点它 = 放出来（小卡里不再有「显示」，v0.16.17）
       case "blank": openScoreMenu(e.at, e.row); return;
-      case "selection": openSelMenu(e.at); return;
+      case "selection": if (D.st.multi) openMultiMenu(e.at, e.avoid); else openSelMenu(e.at, e.avoid); return;   // 右键 / 选区旁的小钮（v0.17.55）
       case "mark": openMarkMenu(e.index, e.at); return;
       case "clef": openClefMenu(e.hit, e.at); return;
       case "header": headerPanel.open(e.paper, e.part, e.index, e.at); return;
@@ -1419,8 +1421,9 @@ const ws: WorkspaceState = { mode: "notes", collapsed: false, tryout: false };
 /** 操作范式（v0.16.89，user 11-10「我的建议是windows都不自动弹，不然难受。ipad的话应该就是有输入意图的时候弹，空歌弹。取决于操作范式」）：
  *  最近一次按下是手指 / 笔 = 触屏范式——有输入意图时键盘自己弹（换到「音 / 符」、打完字点回谱上、打开空歌）；是鼠标 = 鼠标键盘范式——键盘只手动开合，打字也不让开。
  *  还没按过 = 看主指针是不是粗的（iPad 是、电脑不是）。按设备判断不准（iPad 接触控板、触屏笔记本），所以按「这一下是怎么按的」。 */
-let touchLike = (() => { try { return matchMedia("(pointer: coarse)").matches; } catch { return false; } })();
-addEventListener("pointerdown", (e) => { touchLike = e.pointerType !== "mouse"; }, { capture: true, passive: true });
+// 最近一下是不是会带出系统键盘的指针（手指 / 笔）：键盘让不让开、换模式弹不弹键盘按它（src/ui/pointer.ts，v0.17.55 起取代原来这里自己记的 touchLike；读法一样：笔也算）
+watchPointers();
+const touchLike = (): boolean => caps(lastPointer()).softKeyboard;
 let lastEditMode: Mode = "notes";   // 从「听」回来回到哪
 const listenOn = () => ws.mode === "listen";
 function applyWorkspace(): void {
@@ -1442,7 +1445,7 @@ function setMode(m: Mode): void {
   if (m === ws.mode) return;
   ui.close(); view.lyrics.commitAndClose(); view.marks.commitAndClose();
   if (m !== "listen") lastEditMode = m;
-  ws.mode = m; ws.aside = false; if (hasKeys(m) && touchLike) ws.collapsed = false;   // 换模式：触屏范式 = 有输入意图、键盘弹出来；鼠标键盘范式 = 不动（v0.16.89）
+  ws.mode = m; ws.aside = false; if (hasKeys(m) && touchLike()) ws.collapsed = false;   // 换模式：触屏范式 = 有输入意图、键盘弹出来；鼠标键盘范式 = 不动（v0.16.89）
   applyWorkspace();
   // 进出「听」不弹提示（v0.10.10，user「然后听的时候会弹一个nudge chip，我觉得那个info是废话，不用说」）：说明在「听」钮的悬停提示里
 }
@@ -3440,7 +3443,7 @@ function selBarAnchor(): { x: number; y: number } {
   const r = document.querySelector<HTMLElement>('.sel-bar [data-v="transpose"]')?.getBoundingClientRect();
   return r ? { x: r.left, y: r.bottom } : { x: innerWidth / 2 - 100, y: 120 };
 }
-function openSelMenu(at: { x: number; y: number }): void {
+function openSelMenu(at: { x: number; y: number }, avoid: readonly ScreenRect[] = view.selRects()): void {
   const perc = isPercPart(D.st.at.part);   // 打击乐的行没有调（7-R）：转调 / 按调号拼写灰着
   if (!D.st.sel) return;
   ui.close();
@@ -3466,10 +3469,9 @@ function openSelMenu(at: { x: number; y: number }): void {
   };
   draw("main");
   document.body.append(box);
-  const place = () => {
-    const w = box.offsetWidth, h = box.offsetHeight, m = 8;
-    let y = at.y + 8; if (y + h > innerHeight - m) y = at.y - h - 8;
-    box.style.left = `${Math.max(m, Math.min(at.x, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
+  const place = () => {   // 不盖选区的带子：下面 → 上面 → 左右，都放不下才盖（v0.17.55；user 2026-11-14 iPad 截图：选中一个音，菜单盖在选区上）
+    const q = placeMenu({ w: box.offsetWidth, h: box.offsetHeight }, at, avoid, { w: innerWidth, h: innerHeight });
+    box.style.left = `${q.x}px`; box.style.top = `${q.y}px`;
   };
   place();
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !inDropdownList(e.target)) close(); };
@@ -3593,7 +3595,7 @@ function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean;
   applyDesk(d);
   // 打开 = 上次存时的模式；谱里已经有音 = 键盘先收着，点一下才开（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」「或者默认键盘是关的，点一下才会开。」）。空的新歌照旧开着键盘
   ws.mode = d.mode; if (d.mode !== "listen") lastEditMode = d.mode;
-  if (!o.keepPanels) { if (touchLike) ws.collapsed = D.st.song.papers.some((pp) => Object.values(pp.tracks).some((t) => t.some((x) => x.kind === "note")));  ws.aside = false; }   // 鼠标键盘范式：开歌不动键盘（v0.16.89）；重建空白歌 = 键盘收没收照旧（只换歌本身）
+  if (!o.keepPanels) { if (touchLike()) ws.collapsed = D.st.song.papers.some((pp) => Object.values(pp.tracks).some((t) => t.some((x) => x.kind === "note")));  ws.aside = false; }   // 鼠标键盘范式：开歌不动键盘（v0.16.89）；重建空白歌 = 键盘收没收照旧（只换歌本身）
   applyWorkspace();
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);

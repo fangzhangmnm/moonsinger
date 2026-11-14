@@ -7831,5 +7831,8 @@ export declare const S: {
     readonly "\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A": {
         readonly en: "The copy from “{from}” is a bus; it only pastes onto buses";
     };
+    readonly 选区菜单: {
+        readonly en: "Selection menu";
+    };
 };
 export type Key = keyof typeof S;

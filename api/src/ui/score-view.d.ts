@@ -1,3 +1,4 @@
+import type { ScreenRect } from "./menu-place.ts";
 import { type EditorState } from "../score/song.ts";
 import { type Pitch } from "../score/pitch.ts";
 import { type LookContext } from "../look/index.ts";
@@ -43,7 +44,8 @@ export type ScorePress =
 /** 长按 / 右键选区里的音（光标所在 track 的）：开选区菜单。 */
  | {
     kind: "selection";
-    at: At;
+    at: At; /** 选区带子在屏幕上的框：菜单别盖住（v0.17.55）。 */
+    avoid: ScreenRect[];
 }
 /** 力度记号 / 渐强渐弱点了（或长按原地松手）：开小菜单（那条 track 已经是光标所在的了）。 */
  | {
@@ -352,6 +354,9 @@ export declare class ScoreView {
     private decorated;
     private caretEl;
     private selEls;
+    /** 选区旁的小钮（手指 / 笔叫菜单用）和它该在的地方（纸面坐标：带子最后一行的右上角；sys = 那一行的行号）。 */
+    private selBtn;
+    private selBtnAt;
     /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
      *  休止没有音高：d = NaN（笔 / 鼠标按住拖只改时值、不出声）。 */
     private get hits();
@@ -372,6 +377,16 @@ export declare class ScoreView {
     /** 选区 = 淡蓝带子（user 2026-10-08「选区画成一条淡蓝的带子盖住那几个音」）：每行一条，从选中的第一个东西到最后一个（音 / 休止 / 记号），
      *  高 = 第五线上面两格到歌词行下面一点（同原来排版画的 selbox）；ink 层的 div，乘底（mix-blend-mode）压在谱上不盖墨。 */
     private drawSel;
+    /** 第 system 行第 index 个是不是在「选了好几行」的那一块里（行在里面、起点在那段时间里；ticks = 这一轮的缓存）。 */
+    private inMultiBlock;
+    /** 选区带子右端外面那颗小钮（v0.17.55；表在 press-rules.ts wantsSelButton）：手指 / 笔最近一下、有选区、能写的模式里才画。点了 = 选区菜单。
+     *  user 2026-11-14「你做一个就是浮在选区旁边的小按钮，你按一下再弹出。当然，对于鼠标来说就是右键」。屏幕上的大小不随谱面缩放变（styles.css 用 --ov-z 抵掉）。 */
+    private placeSelBtn;
+    /** 选区带子在屏幕上的框（菜单别盖住它们）。 */
+    /** 选区菜单要躲开的框（屏幕坐标）：选区的带子 + 露着的两端把手（把手伸出带子下面，菜单摆在带子下面时会盖住半个）。 */
+    selRects(): ScreenRect[];
+    /** 开选区菜单（右键、小钮都走这里）：带上带子的框，宿主摆菜单时躲开。 */
+    private openSelMenuAt;
     /** 选区两端的棒棒糖把手：第一个 / 最后一个选中的音的下面（歌词行再往下一点）。 */
     private placeHandles;
     /** 光标那一行滚进视野（软键盘弹出 / 收起时宿主调）。 */
@@ -436,8 +451,10 @@ export declare class ScoreView {
     private cancelPress;
     /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 光标放到那里 + 小菜单（粘贴 / 插记号 / 全选…；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」）。 */
     private longPress;
-    /** 长按音 / 休止（v0.17.48）：亮它 = 不在选区里就只选中它；然后开选区菜单（菜单要一个选区）；按着的时候听见它，抬手停。 */
-    private noteMenu;
+    /** 这个音 / 休止在不在现在的选区里（单行的选区）。 */
+    private inSelection;
+    /** 长按音 / 休止（v0.17.55）：只选中它、亮框（和点一下选中一样；keep = 已经在选区里 = 选区不动）；按着的时候听见它，抬手停。不开菜单。 */
+    private holdNote;
     /** 长按选中按着的那个音（不抬手接着拖 = 扩选）。 */
     private selectHeld;
     /** 点在叠起来的那一行上：光标去这一家在这一行的那位（主人 / 在场打头的那位），落在点的那个时刻（点在音上 = 它后面，同平常点音）→ 整家拆开。 */
@@ -497,8 +514,6 @@ export declare class ScoreView {
     private tapMark;
     /** 轻点演奏法（v0.17.48，设计稿第五节第 7 条）：光标到它那个音后面、它亮框、说一句它是什么 / 怎么改。 */
     private tapArt;
-    /** 这个演奏法挂在哪个音上（点击区那一条）。 */
-    private hitOfArt;
     /** 某样东西现在是不是「点亮的」那一个（留住的亮框；选区 / 鼠标悬浮另算）。 */
     private litIs;
     /** 有选区就灭亮框——除了「只选了它自己」（v0.17.54 乙：点一下 = 亮框 + 只选它；框留着，手指的把手也就留着）。 */
@@ -511,6 +526,9 @@ export declare class ScoreView {
      *  不用 getBBox：它给的是整个字体的上下伸（Bravura 很高），跳音一个点的框会从谱上面拉到谱下面、盖住底下的符头（v0.17.48 截图查出来的）。量不出来（字体还没到）才退回 getBBox。 */
     private inkBox;
     /** 演奏法各自的点击框：从画出来的 SVG 量（字形的墨迹框，inkBox）；换过组才重量。只量能写的行（叠起来的行不算）。 */
+    /** 谱本身那张 SVG = .sheet 的直接子元素 svg.staff-svg。不许用 querySelector("svg")：ink 层里还有别的 svg（选区旁小钮的图标、光标、鬼音符），
+     *  第一次画的时候谱还没有，「第一个 svg」会拿到小钮的图标、把整张谱写进它里面（v0.17.55 施工时踩到）。 */
+    private staffSvg;
     private artBoxes;
     /** 点中的演奏法（笔 / 鼠标放宽 0.15 个间距，手指 6 px）。「词」里不认。 */
     private artAt;

@@ -9,6 +9,7 @@
 //   手指：**不拦**——拖 = 滚动、第二根手指 = 捏合照旧归谱面（score-view 的 down 对 .ov-i 上的手指只管滚 / 捏、不算它自己的轻点；刀 1 之前钮画在谱里就是这个手感）。
 //     这里只判：没动（≤ 10 px，同谱面的「手指抖一点也算轻点」）就松手 = 点；按住不动到点 = 长按；动了 / 又落下一根手指 = 不算。谱面把这根手指捕获走了（滚动要用），
 //     所以手指的 move / up 在 window 上听（捕获阶段）。edited by Claude Fable 5.1 2026-11-08（审刀 1：v0.16.25 手指落在钮 / 虚线框上滚不动、捏不了；E2E overlay-touch 守）
+import { caps, pointerOf } from "./pointer.ts";
 import { _t } from "../i18n/index.ts";
 import { TEXT_FACES, textStyleOf, faceMetrics, boxTopFor, type TextStyle } from "../render/text/index.ts";
 import type { Layout } from "../render/engrave.ts";
@@ -189,7 +190,7 @@ export class ScoreOverlay {
 
   private down(e: PointerEvent): void {
     const el = (e.target as HTMLElement).closest<HTMLElement>(".ov-i"); if (!el || e.button === 2) return;
-    const touch = e.pointerType === "touch";
+    const touch = caps(pointerOf(e)).dragScrolls;   // 手指：拖 = 滚动 / 捏合归谱面（src/ui/pointer.ts）
     this.cancel();
     if (!touch) { e.preventDefault(); e.stopPropagation(); try { el.setPointerCapture(e.pointerId); } catch { /* ignore */ } }   // 手指不拦：谱面接着收到这一下（滚动 / 捏合）
     const p = { el, pid: e.pointerId, timer: 0, fired: false, touch, x: e.clientX, y: e.clientY };

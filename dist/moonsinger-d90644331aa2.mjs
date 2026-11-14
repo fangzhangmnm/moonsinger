@@ -3381,11 +3381,11 @@ function openPanelShell(opts) {
         e10.preventDefault();
         return;
       }
-      const at3 = document.activeElement, first = f2[0], last = f2[f2.length - 1];
+      const at3 = document.activeElement, first = f2[0], last2 = f2[f2.length - 1];
       if (e10.shiftKey && (at3 === first || !card.contains(at3))) {
         e10.preventDefault();
-        last.focus();
-      } else if (!e10.shiftKey && (at3 === last || !card.contains(at3))) {
+        last2.focus();
+      } else if (!e10.shiftKey && (at3 === last2 || !card.contains(at3))) {
         e10.preventDefault();
         first.focus();
       }
@@ -6193,7 +6193,8 @@ var S = {
   "\u628A\u62F7\u7684\u8F68\u8BBE\u7F6E\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u6574\u4EFD\u76D6\u5230\u8FD9\u6761\u8F68\u4E0A\uFF1B\u540D\u5B57\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500": { en: "Replaces this track's settings with the copied ones (from \u201C{from}\u201D); the name stays; can be undone" },
   "\u7C98\u8F68\u8BBE\u7F6E": { en: "Paste track" },
   "\u62F7\u7684\u300C{from}\u300D\u662F\u6B4C\u624B\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6B4C\u624B\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a singer track; it only pastes onto singer tracks" },
-  "\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a bus; it only pastes onto buses" }
+  "\u62F7\u7684\u300C{from}\u300D\u662F\u6DF7\u97F3\u8F68\uFF0C\u53EA\u80FD\u7C98\u5230\u6DF7\u97F3\u8F68\u4E0A": { en: "The copy from \u201C{from}\u201D is a bus; it only pastes onto buses" },
+  "\u9009\u533A\u83DC\u5355": { en: "Selection menu" }
 };
 
 // src/device-kv.ts
@@ -6481,7 +6482,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.54-2026-11-14";
+var APP_VERSION = "v0.17.55-2026-11-14";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -6864,12 +6865,12 @@ function sliceBySegments(tokens, segs, newId) {
     let cur = s10.t0, first = true;
     const jump = k2 > 0 && s10.t0 !== prevEnd;
     if (jump) {
-      const last = /* @__PURE__ */ new Map();
+      const last2 = /* @__PURE__ */ new Map();
       tokens.forEach((t10, i10) => {
-        if (STATE_KINDS.has(t10.kind) && ticks[i10] < s10.t0) last.set(t10.kind, t10);
+        if (STATE_KINDS.has(t10.kind) && ticks[i10] < s10.t0) last2.set(t10.kind, t10);
       });
       for (const kind of ["key", "time", "tempo", "groove", "dyn", "clef", "ottava"]) {
-        const t10 = last.get(kind);
+        const t10 = last2.get(kind);
         if (t10) out.push({ ...t10, id: newId() });
       }
       for (const which of ["sustain", "sostenuto", "soft"]) {
@@ -8505,12 +8506,12 @@ function moveMarkToEnd(st2, from) {
   if (!m2 || m2.kind !== "dyn") return { st: st2, removed: 0 };
   const nt2 = toks.slice();
   nt2.splice(from, 1);
-  let last = -1;
+  let last2 = -1;
   nt2.forEach((t10, k2) => {
-    if (isTimed(t10)) last = k2;
+    if (isTimed(t10)) last2 = k2;
   });
-  if (last < 0) return { st: st2, removed: 0 };
-  let at3 = last + 1;
+  if (last2 < 0) return { st: st2, removed: 0 };
+  let at3 = last2 + 1;
   while (at3 < nt2.length && (nt2[at3].kind === "dyn" || nt2[at3].kind === "hairpin")) at3++;
   nt2.splice(at3, 0, m2);
   if (nt2.every((t10, k2) => t10 === toks[k2])) return { st: st2, removed: 0 };
@@ -8536,11 +8537,11 @@ function setHairpinTarget(st2, i10, target) {
   let at3;
   if (endTok) at3 = j2;
   else {
-    let last = -1;
+    let last2 = -1;
     nt2.forEach((t10, k2) => {
-      if (isTimed(t10)) last = k2;
+      if (isTimed(t10)) last2 = k2;
     });
-    at3 = last + 1;
+    at3 = last2 + 1;
     while (at3 < nt2.length && (nt2[at3].kind === "dyn" || nt2[at3].kind === "hairpin")) at3++;
   }
   nt2.splice(at3, 0, dyn);
@@ -8810,7 +8811,7 @@ function removePart(st2, partId) {
 }
 function ensureStartDyns(song, nextId) {
   let id2 = nextId;
-  const added = [], last = /* @__PURE__ */ new Map();
+  const added = [], last2 = /* @__PURE__ */ new Map();
   const papers = song.papers.map((pp) => {
     let tracks = pp.tracks, changed2 = false;
     for (const part2 of song.parts) {
@@ -8831,7 +8832,7 @@ function ensureStartDyns(song, nextId) {
       if (first >= 0) {
         let at3 = first;
         while (at3 > headLen(t10) && isPhraseMark(t10[at3 - 1])) at3--;
-        tracks = { ...tracks, [part2.id]: [...t10.slice(0, at3), { kind: "dyn", id: id2++, value: last.get(part2.id) ?? "mf" }, ...t10.slice(at3)] };
+        tracks = { ...tracks, [part2.id]: [...t10.slice(0, at3), { kind: "dyn", id: id2++, value: last2.get(part2.id) ?? "mf" }, ...t10.slice(at3)] };
         changed2 = true;
         added.push({ paper: pp.id, part: part2.id, index: at3 });
       }
@@ -8839,7 +8840,7 @@ function ensureStartDyns(song, nextId) {
       for (let i10 = tt2.length - 1; i10 >= 0; i10--) {
         const k2 = tt2[i10];
         if (k2.kind === "dyn") {
-          last.set(part2.id, k2.value);
+          last2.set(part2.id, k2.value);
           break;
         }
       }
@@ -9030,20 +9031,20 @@ function setDisplayMark(st2, paperId, partId, i10, value) {
   return { ...st2, song: withTrack(st2.song, paperId, partId, nt2), ...here && value === null && st2.caret > i10 ? { caret: st2.caret - 1 } : {} };
 }
 function autoStaffs(tokens, staves) {
-  let last = 1;
+  let last2 = 1;
   return tokens.map((t10, i10) => {
     if (staves !== 2) return 1;
-    if (t10.kind === "note") last = midiOf(effectivePitch(tokens, i10)) < SPLIT_MIDI ? 2 : 1;
-    return last;
+    if (t10.kind === "note") last2 = midiOf(effectivePitch(tokens, i10)) < SPLIT_MIDI ? 2 : 1;
+    return last2;
   });
 }
 function staffOfTokens(tokens, staves) {
   const auto = autoStaffs(tokens, staves);
-  let last = 1;
+  let last2 = 1;
   return tokens.map((t10, i10) => {
     if (staves !== 2) return 1;
-    const s10 = (t10.kind === "note" || t10.kind === "rest") && t10.staff ? t10.staff : t10.kind === "note" ? auto[i10] : last;
-    last = s10;
+    const s10 = (t10.kind === "note" || t10.kind === "rest") && t10.staff ? t10.staff : t10.kind === "note" ? auto[i10] : last2;
+    last2 = s10;
     return s10;
   });
 }
@@ -10614,8 +10615,8 @@ function mergeTracks(tracks, opt2 = {}) {
       on2 = struck.length ? struck : prevChord && on2.length === prevOn.length && on2.every((e10) => prevOn.includes(e10)) ? on2 : [];
     }
     if (!on2.length) {
-      const last = out[out.length - 1];
-      if (last && last.kind === "rest" && last.id <= -1e3) out[out.length - 1] = { ...last, dur: last.dur + (b3 - a10) };
+      const last2 = out[out.length - 1];
+      if (last2 && last2.kind === "rest" && last2.id <= -1e3) out[out.length - 1] = { ...last2, dur: last2.dur + (b3 - a10) };
       else out.push({ kind: "rest", id: id2--, dur: b3 - a10 });
       prevChord = false;
       prevOn = [];
@@ -11438,15 +11439,15 @@ function splitSyllables(text2) {
   let join = false, leadJoin = false, lead = "";
   const push = (s10) => {
     if (join && s10.text !== MELISMA_MARK) {
-      const last = out[out.length - 1];
-      if (last && last.text !== MELISMA_MARK) {
-        last.text += ELISION + lead + s10.text;
-        last.hyph = s10.hyph;
+      const last2 = out[out.length - 1];
+      if (last2 && last2.text !== MELISMA_MARK) {
+        last2.text += ELISION + lead + s10.text;
+        last2.hyph = s10.hyph;
         join = false;
         lead = "";
         return;
       }
-      if (!last && leadJoin) {
+      if (!last2 && leadJoin) {
         out.push({ ...s10, text: lead + s10.text, joinPrev: true });
         join = false;
         lead = "";
@@ -11473,8 +11474,8 @@ function splitSyllables(text2) {
       continue;
     }
     if (SMALL.has(c10)) {
-      const last = out[out.length - 1];
-      if (last && last.text !== MELISMA_MARK) last.text += c10;
+      const last2 = out[out.length - 1];
+      if (last2 && last2.text !== MELISMA_MARK) last2.text += c10;
       else out.push({ text: c10, hyph: false });
       continue;
     }
@@ -11503,8 +11504,8 @@ function splitSyllables(text2) {
       continue;
     }
     if (isTrail(c10)) {
-      const last = out[out.length - 1];
-      if (last && last.text !== MELISMA_MARK) last.text += c10;
+      const last2 = out[out.length - 1];
+      if (last2 && last2.text !== MELISMA_MARK) last2.text += c10;
       else out.push({ text: c10, hyph: false });
       continue;
     }
@@ -11519,15 +11520,15 @@ function splitSyllables(text2) {
 var lyricSlot = (t10) => t10.kind === "note" && !t10.tie;
 function distributeFrom(st2, start, syl) {
   const tokens = tr(st2).slice();
-  let nextId = st2.nextId, i10 = start, last = -1;
+  let nextId = st2.nextId, i10 = start, last2 = -1;
   for (const s10 of syl) {
     while (i10 < tokens.length && !lyricSlot(tokens[i10])) i10++;
     if (i10 < tokens.length) tokens[i10] = { ...tokens[i10], lyric: s10.text, hyph: s10.hyph || void 0 };
     else tokens.push({ kind: "note", id: nextId++, pitch: null, dur: unitDur(st2.input), lyric: s10.text, hyph: s10.hyph || void 0 });
-    last = i10;
+    last2 = i10;
     i10++;
   }
-  return { st: { ...st2, song: withTrack(st2.song, st2.at.paper, st2.at.part, tokens), nextId }, last };
+  return { st: { ...st2, song: withTrack(st2.song, st2.at.paper, st2.at.part, tokens), nextId }, last: last2 };
 }
 function joinIntoPrev(st2, i10, text2) {
   const p2 = prevLyricSlot(tr(st2), i10), t10 = tr(st2)[p2];
@@ -11748,12 +11749,45 @@ var LYRIC_EDGE = 0.25;
 var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
 var REFLOW_MARGIN = { l: 0, r: 0, t: 2.4, b: 1.5 };
 
+// src/ui/pointer.ts
+var CAPS = {
+  mouse: { hover: true, secondary: true, wheel: true, dragScrolls: false, coarse: false, softKeyboard: false },
+  pen: { hover: false, secondary: false, wheel: false, dragScrolls: false, coarse: false, softKeyboard: true },
+  touch: { hover: false, secondary: false, wheel: false, dragScrolls: true, coarse: true, softKeyboard: true }
+};
+function caps(p2) {
+  return CAPS[p2];
+}
+function pointerOf(e10) {
+  return e10.pointerType === "touch" ? "touch" : e10.pointerType === "pen" ? "pen" : "mouse";
+}
+function deviceCoarse() {
+  try {
+    return matchMedia("(pointer: coarse)").matches;
+  } catch {
+    return false;
+  }
+}
+var last = null;
+function lastPointer() {
+  return last ?? (deviceCoarse() ? "touch" : "mouse");
+}
+function notePointer(e10) {
+  last = pointerOf(e10);
+}
+var watching = false;
+function watchPointers() {
+  if (watching || typeof addEventListener !== "function") return;
+  watching = true;
+  addEventListener("pointerdown", (e10) => notePointer(e10), { capture: true, passive: true });
+}
+
 // src/ui/press-rules.ts
 function isLit(o10) {
-  return o10.sticky || o10.inSel || o10.pointer === "mouse" && o10.hovered;
+  return o10.sticky || o10.inSel || caps(o10.pointer).hover && o10.hovered;
 }
 function onMove(o10) {
-  if (o10.pointer === "touch") return "scroll";
+  if (caps(o10.pointer).dragScrolls) return "scroll";
   if (o10.lit && o10.canDrag && o10.target === "note") return "drag";
   if (o10.lit && o10.canDrag && o10.target === "mark") return "lift";
   return "box";
@@ -11765,7 +11799,21 @@ function onTap(o10) {
 }
 var TAP_SELECTS = true;
 function wantsGrip(o10) {
-  return o10.pointer === "touch" && o10.canDrag && (o10.target === "note" || o10.target === "mark");
+  return caps(o10.pointer).dragScrolls && o10.canDrag && (o10.target === "note" || o10.target === "mark");
+}
+function onHold(o10) {
+  if (o10.target === "note") return o10.inSel ? "keep" : "select";
+  if (o10.target === "art") return "light";
+  if (o10.target === "mark") return "menu";
+  return "blankMenu";
+}
+function onSecondary(o10) {
+  if (o10.target === "note") return o10.inSel ? "menu" : "selectMenu";
+  if (o10.target === "mark") return "markMenu";
+  return "blankMenu";
+}
+function wantsSelButton(o10) {
+  return o10.hasSel && o10.edit && !caps(o10.pointer).secondary;
 }
 
 // src/score/multi.ts
@@ -11773,20 +11821,20 @@ var validDur2 = (d3) => Number.isInteger(d3) && d3 >= MIN_DUR && d3 <= MAX_DUR;
 var trackLen = (tokens) => tokens.reduce((s10, t10) => s10 + (isTimed(t10) ? t10.dur : 0), 0);
 function rowRange(tokens, t02, t12) {
   const ticks = tickOf(tokens), h2 = headLen(tokens);
-  let first = -1, last = -1;
+  let first = -1, last2 = -1;
   for (let i10 = h2; i10 < tokens.length; i10++) {
     const t10 = tokens[i10];
     if (!isTimed(t10)) continue;
     if (ticks[i10] >= t02 && ticks[i10] < t12) {
       if (first < 0) first = i10;
-      last = i10;
+      last2 = i10;
     } else if (ticks[i10] >= t12) break;
   }
   if (first < 0) return null;
   let a10 = first;
   while (a10 > h2 && isPhraseMark(tokens[a10 - 1])) a10--;
-  const lt2 = tokens[last];
-  return { a: a10, b: last + 1, s0: ticks[first], s1: ticks[last] + lt2.dur };
+  const lt2 = tokens[last2];
+  return { a: a10, b: last2 + 1, s0: ticks[first], s1: ticks[last2] + lt2.dur };
 }
 function normalize(song, paper, parts, t02, t12) {
   let a10 = Infinity, b3 = -Infinity;
@@ -11902,7 +11950,7 @@ function replaceSpan(tokens0, t02, src0, len, id0) {
     ({ tokens, id: id2 } = r10);
   }
   const ticks = tickOf(tokens), h2 = headLen(tokens);
-  let first = -1, last = -1, endI = tokens.length;
+  let first = -1, last2 = -1, endI = tokens.length;
   for (let i10 = h2; i10 < tokens.length; i10++) {
     const t10 = tokens[i10];
     if (!isTimed(t10)) continue;
@@ -11912,13 +11960,13 @@ function replaceSpan(tokens0, t02, src0, len, id0) {
     }
     if (ticks[i10] >= t02) {
       if (first < 0) first = i10;
-      last = i10;
+      last2 = i10;
     }
   }
   if (first < 0) first = endI;
   let a10 = first;
   while (a10 > h2 && isPhraseMark(tokens[a10 - 1])) a10--;
-  const b3 = last >= 0 ? last + 1 : a10;
+  const b3 = last2 >= 0 ? last2 + 1 : a10;
   const bones = [];
   for (let i10 = a10; i10 < b3; i10++) {
     const t10 = tokens[i10];
@@ -12652,13 +12700,13 @@ var isZero = (c10) => c10.fixed !== void 0 && c10.fixed <= EPS;
 var EPS = 1e-6;
 var lerpLog = (pts, ticks) => {
   if (ticks <= pts[0][0]) return pts[0][1];
-  const last = pts[pts.length - 1], prev = pts[pts.length - 2];
-  if (ticks >= last[0]) return last[1] + (last[1] - prev[1]) / Math.log2(last[0] / prev[0]) * Math.log2(ticks / last[0]);
+  const last2 = pts[pts.length - 1], prev = pts[pts.length - 2];
+  if (ticks >= last2[0]) return last2[1] + (last2[1] - prev[1]) / Math.log2(last2[0] / prev[0]) * Math.log2(ticks / last2[0]);
   for (let k2 = 1; k2 < pts.length; k2++) {
     const a10 = pts[k2 - 1], b3 = pts[k2];
     if (ticks <= b3[0]) return a10[1] + (b3[1] - a10[1]) * Math.log2(ticks / a10[0]) / Math.log2(b3[0] / a10[0]);
   }
-  return last[1];
+  return last2[1];
 };
 var curveOf = (m2) => {
   const t10 = typeof m2 === "object" ? m2 : m2 === true || m2 === "normal" ? DENSE : m2 === "tight" ? TIGHT : LOOSE;
@@ -12689,22 +12737,22 @@ function idealGaps(cols, endTick, o10) {
   return out;
 }
 function rodsOf(cols, o10) {
-  const rods = [], last = /* @__PURE__ */ new Map();
+  const rods = [], last2 = /* @__PURE__ */ new Map();
   let wall = null;
   cols.forEach((c10, k2) => {
     if (isZero(c10)) return;
     if (c10.fixed !== void 0) {
-      for (const l10 of last.values()) rods.push({ from: l10.col, to: k2, min: l10.right + o10.pad });
-      if (wall && !last.size) rods.push({ from: wall.col, to: k2, min: wall.right });
-      last.clear();
+      for (const l10 of last2.values()) rods.push({ from: l10.col, to: k2, min: l10.right + o10.pad });
+      if (wall && !last2.size) rods.push({ from: wall.col, to: k2, min: wall.right });
+      last2.clear();
       wall = { col: k2, right: c10.fixed };
       return;
     }
     for (const it2 of c10.items) {
-      const l10 = last.get(it2.row);
+      const l10 = last2.get(it2.row);
       if (l10) rods.push({ from: l10.col, to: k2, min: Math.max(l10.right + it2.left + o10.pad, it2.clear !== void 0 && l10.inkR !== void 0 ? l10.inkR + it2.left + it2.clear : -Infinity) });
       else if (wall) rods.push({ from: wall.col, to: k2, min: wall.right + it2.left });
-      last.set(it2.row, { col: k2, right: it2.right, ...it2.inkR !== void 0 ? { inkR: it2.inkR } : {} });
+      last2.set(it2.row, { col: k2, right: it2.right, ...it2.inkR !== void 0 ? { inkR: it2.inkR } : {} });
     }
   });
   return rods;
@@ -13502,10 +13550,10 @@ function wrapTitle(s10, w2, max2) {
     for (const ch2 of word) {
       if (cur && w2((cur + ch2).trimEnd()) > max2) {
         if (NO_LINE_START.has(ch2) && [...cur].length > 1) {
-          const cs2 = [...cur], last = cs2.pop();
+          const cs2 = [...cur], last2 = cs2.pop();
           cur = cs2.join("");
           push();
-          cur = last;
+          cur = last2;
         } else push();
       }
       cur += ch2;
@@ -13701,7 +13749,7 @@ function autoGrand(tokens, single, autoOtt, prevGrand) {
   return (one - two) / n10 > (prevGrand ? GRAND_KEEP : GRAND_GAIN);
 }
 function resolveSongLooks(song, trackLook, noAutoGrand) {
-  const out = /* @__PURE__ */ new Map(), last = /* @__PURE__ */ new Map(), lastGrand = /* @__PURE__ */ new Map();
+  const out = /* @__PURE__ */ new Map(), last2 = /* @__PURE__ */ new Map(), lastGrand = /* @__PURE__ */ new Map();
   const shared = new Set(song.parts.flatMap((p2) => p2.host ? [p2.id, p2.host] : []));
   for (const paper of song.papers) {
     const m2 = /* @__PURE__ */ new Map();
@@ -13710,11 +13758,11 @@ function resolveSongLooks(song, trackLook, noAutoGrand) {
       const toks = paper.tracks[part2.id];
       if (!toks) continue;
       const look = trackLook(paper.id, part2.id), autoOtt = look.autoOttava;
-      const hc = headClefOf(toks), c10 = hc ?? startClef(toks, void 0, last.get(part2.id) ?? null, autoOtt), ds = displayStates(toks, c10);
+      const hc = headClefOf(toks), c10 = hc ?? startClef(toks, void 0, last2.get(part2.id) ?? null, autoOtt), ds = displayStates(toks, c10);
       const grand = look.grand ? "explicit" : !shared.has(part2.id) && !noAutoGrand?.has(part2.id) && autoGrand(toks, c10, autoOtt, lastGrand.get(part2.id) ?? false) ? "auto" : null;
       const fi = toks.findIndex((t10) => t10.kind === "note"), first = hc ?? (fi >= 0 ? ds.clef[fi] ?? c10 : c10);
       m2.set(part2.id, { staves: grand ? 2 : 1, clef: c10, first, autoOtt, grand });
-      last.set(part2.id, ds.clef.length ? ds.clef[ds.clef.length - 1] : c10);
+      last2.set(part2.id, ds.clef.length ? ds.clef[ds.clef.length - 1] : c10);
       lastGrand.set(part2.id, !!grand);
     }
   }
@@ -14192,12 +14240,12 @@ function staffTracks(rows, c10) {
     shortBars += u2.shortBars;
     if (staves === 2) {
       const stf = staffOfTokens(tokens, 2);
-      let last = 1;
+      let last2 = 1;
       for (const x2 of u2.units) {
         if (x2.kind === "chunk") {
           x2.staff = stf[x2.index];
-          last = x2.staff;
-        } else if (x2.kind === "head") x2.staff = last;
+          last2 = x2.staff;
+        } else if (x2.kind === "head") x2.staff = last2;
       }
     }
     const start = staves === 2 ? "G" : vrt ? rows.startFor.get(p2.id) ?? startClef(tokens, void 0, null, true) : clefStart(p2.id) ?? "G";
@@ -14883,10 +14931,10 @@ function layDynamics(c10) {
     }
     segs.forEach(([sy2, a02, b3], i10) => {
       if (!drawable[i10]) return;
-      const row2 = c10.row(sy2), keys = [wedgeKey(index, sy2)], last = i10 === segs.length - 1;
+      const row2 = c10.row(sy2), keys = [wedgeKey(index, sy2)], last2 = i10 === segs.length - 1;
       if (i10 === 0 && k0) keys.push(k0);
-      if (last && k1) keys.push(k1);
-      if (last) tailDone = true;
+      if (last2 && k1) keys.push(k1);
+      if (last2) tailDone = true;
       if (long) {
         const writeWord = !said && b3 - a02 >= ww + P2(1);
         if (writeWord) said = true;
@@ -14899,7 +14947,7 @@ function layDynamics(c10) {
           }
           for (let x2 = a10; x2 + P2(DASH.len) <= b3; x2 += P2(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x2, y1: midY, x2: x2 + P2(DASH.len), y2: midY, w: P2(0.12), cls: mute ? "dyn-dash art-mute" : "dyn-dash" });
           dyns.push({ index, kind: "hairpin", system: row2, x: a02, y: midY - P2(1.4), w: b3 - a02, h: P2(2.8) });
-          if (last && tail) tail(base2);
+          if (last2 && tail) tail(base2);
         } });
         return;
       }
@@ -14919,7 +14967,7 @@ function layDynamics(c10) {
         }
         prims.push({ tok: tokens[index].id, t: "path", d: d3, cls: ["hairpin", ramp ? "ramp" : "", mute].filter(Boolean).join(" ") });
         dyns.push({ index, kind: "hairpin", system: row2, x: a10, y: y2 - P2(1.4), w: b3 - a10, h: P2(2.8) });
-        if (last && tail) tail(base2);
+        if (last2 && tail) tail(base2);
       } });
     });
     if (!tailDone && tail) dynItems.push({ row: c10.row(s12), x0: endX, keys: [wedgeKey(index, s12), ...k1 ? [k1] : []], ...late2 ? { late: late2 } : {}, draw: tail });
@@ -15239,17 +15287,17 @@ function caretStops(q2, o10) {
   for (const u2 of units) if (u2.kind !== "head" && u2.index >= 0 && !firstUnitOf.has(u2.index)) firstUnitOf.set(u2.index, u2);
   for (let c10 = H3; c10 <= realLen; c10++) {
     const u2 = c10 < tokens.length ? firstUnitOf.get(c10) : void 0;
-    const last = u2 ? null : [...units].reverse().find((v) => v.kind !== "head");
-    const sys = u2 ? u2.system : last ? last.system : 0, x2 = u2 ? cx2(u2) : last ? P2(last.x + last.w) : P2(o10.sysStart0);
+    const last2 = u2 ? null : [...units].reverse().find((v) => v.kind !== "head");
+    const sys = u2 ? u2.system : last2 ? last2.system : 0, x2 = u2 ? cx2(u2) : last2 ? P2(last2.x + last2.w) : P2(o10.sysStart0);
     for (let k2 = 0; k2 < q2.staves; k2++) slots.push({ caret: c10, system: rowOf(sys, k2), x: x2 });
   }
   for (let c10 = H3; c10 <= realLen; c10++) {
     const u0 = c10 < tokens.length ? firstUnitOf.get(c10) : void 0;
     let sys, x2;
     if (!u0) {
-      const last = [...units].reverse().find((v) => v.kind !== "head");
-      sys = last ? last.system : 0;
-      x2 = last ? P2(last.x + last.w) : P2(o10.sysStart0);
+      const last2 = [...units].reverse().find((v) => v.kind !== "head");
+      sys = last2 ? last2.system : 0;
+      x2 = last2 ? P2(last2.x + last2.w) : P2(o10.sysStart0);
     } else if (u0.kind === "chunk") {
       sys = u0.system;
       x2 = cx2(u0);
@@ -15843,7 +15891,7 @@ function drawStaff(c10, mine) {
     }
     const bracket = (cs2, openL, openR, num2) => {
       const row2 = RW(cs2[0]), n10 = cs2[0].ratio[0];
-      const xa = openL ? Math.min(nhX(cs2[0]) - P2(1.2), nhX(cs2[0])) : nhX(cs2[0]), last = cs2[cs2.length - 1], xb = openR ? nhX(last) + nhW(last) + P2(1.2) : nhX(last) + nhW(last);
+      const xa = openL ? Math.min(nhX(cs2[0]) - P2(1.2), nhX(cs2[0])) : nhX(cs2[0]), last2 = cs2[cs2.length - 1], xb = openR ? nhX(last2) + nhW(last2) + P2(1.2) : nhX(last2) + nhW(last2);
       const top = Math.min(...cs2.map((c11) => Math.min(c11.pitch ? yOf(row2, dIdx(c11.pitch, c11.staff, c11.index)) : yOf(row2, MID_LINE2), tipOf.get(c11) ?? Infinity)), yOf(row2, TOP_LINE2)) - P2(1.6);
       const mid = (xa + xb) / 2, gap = num2 ? P2(1) : 0;
       const left = openL ? `M${xa},${top}` : `M${xa},${top + P2(0.6)}L${xa},${top}`, right2 = openR ? `L${xb},${top}` : `L${xb},${top}L${xb},${top + P2(0.6)}`;
@@ -16695,8 +16743,8 @@ function drawJianpu(c10, mine, mode = "digits") {
     const ulOf = new Map(ul2.map((e10) => [e10.ch, e10]));
     const tupDraw = [];
     for (const { run: run2, num: num2 } of tups) {
-      const first = run2[0], last = run2[run2.length - 1], row2 = rowOf(first.system, r10, 0), x1 = P2(first.x) + Q2(0.1), x2 = last.system === first.system ? P2(last.x) + Q2(0.1 + glyphWOf(last, c10.aux[r10], q2)) : P2(c10.right), mid = (x1 + x2) / 2;
-      const Ls = Math.min(...run2.map((v) => ulOf.get(v)?.level ?? 0)), g0 = ulOf.get(first)?.group, onLine = Ls >= 1 && last.system === first.system && run2.every((v) => ulOf.get(v)?.group === g0);
+      const first = run2[0], last2 = run2[run2.length - 1], row2 = rowOf(first.system, r10, 0), x1 = P2(first.x) + Q2(0.1), x2 = last2.system === first.system ? P2(last2.x) + Q2(0.1 + glyphWOf(last2, c10.aux[r10], q2)) : P2(c10.right), mid = (x1 + x2) / 2;
+      const Ls = Math.min(...run2.map((v) => ulOf.get(v)?.level ?? 0)), g0 = ulOf.get(first)?.group, onLine = Ls >= 1 && last2.system === first.system && run2.every((v) => ulOf.get(v)?.group === g0);
       const low = Math.max(...run2.map((v) => botOf.get(v) ?? BASE_Y));
       if (onLine) tupDraw.push(() => put2(row2, { t: "text", x: mid, y: Y2(row2, low + TUP_GAP + numCap), s: num2, cls: "tuplet jp-tuplet", size: Q2(NUM_EM), anchor: "middle" }));
       else {
@@ -16926,8 +16974,8 @@ function arrangeColumns(cols, tracks, o10) {
       for (let j2 = i10 + 1; j2 <= S3; j2++) {
         const to2 = segs[j2 - 1], tight = lineW(from, to2, -o10.squeeze);
         if (tight > avail2 + 1e-6 && j2 > i10 + 1) break;
-        const nat2 = lineW(from, to2, 0), last = j2 === S3;
-        const cost = nat2 > avail2 ? 400 * ((nat2 - avail2) / avail2) ** 2 : last ? 0 : 100 * ((avail2 - nat2) / avail2) ** 2;
+        const nat2 = lineW(from, to2, 0), last2 = j2 === S3;
+        const cost = nat2 > avail2 ? 400 * ((nat2 - avail2) / avail2) ** 2 : last2 ? 0 : 100 * ((avail2 - nat2) / avail2) ** 2;
         if (best[i10] + cost + 2 < best[j2]) {
           best[j2] = best[i10] + cost + 2;
           prev[j2] = i10;
@@ -16940,8 +16988,8 @@ function arrangeColumns(cols, tracks, o10) {
   }
   let mergedLast = false;
   if (brk !== Infinity && o10.lastMerge && lineFrom.length >= 2) {
-    const k2 = lineFrom.length - 1, from = lineFrom[k2 - 1], last = lineFrom[k2], M2 = o10.lastMerge;
-    const effN = effTo(last, n10), oneBar = segs.filter((e10) => e10 > last && e10 <= effN).length <= 1, short = oneBar || lineW(last, n10, 0) < M2.short * (brk - o10.lineStart(last, false));
+    const k2 = lineFrom.length - 1, from = lineFrom[k2 - 1], last2 = lineFrom[k2], M2 = o10.lastMerge;
+    const effN = effTo(last2, n10), oneBar = segs.filter((e10) => e10 > last2 && e10 <= effN).length <= 1, short = oneBar || lineW(last2, n10, 0) < M2.short * (brk - o10.lineStart(last2, false));
     if (short && lineW(from, n10, -M2.squeeze) <= brk - o10.lineStart(from, from === 0) + 1e-6) {
       lineFrom.pop();
       mergedLast = true;
@@ -17035,21 +17083,21 @@ function engrave(song, o10) {
       }
       if (c10) ps.push(c10);
       if (latin && ps.length > 1) {
-        const last = ps.length - 1, need = 3 - [...ps[last]].length, prev = [...ps[last - 1]];
+        const last2 = ps.length - 1, need = 3 - [...ps[last2]].length, prev = [...ps[last2 - 1]];
         if (need > 0 && prev.length > need + 2) {
-          ps[last] = prev.slice(-need).join("") + ps[last];
-          ps[last - 1] = prev.slice(0, -need).join("");
+          ps[last2] = prev.slice(-need).join("") + ps[last2];
+          ps[last2 - 1] = prev.slice(0, -need).join("");
         }
-        for (let k2 = 0; k2 < last; k2++) ps[k2] += hy;
+        for (let k2 = 0; k2 < last2; k2++) ps[k2] += hy;
       }
       return ps;
     });
     const max2 = staves === 2 ? 5 : 3;
     if (out.length > max2) {
       out.length = max2;
-      let last = out[max2 - 1];
-      while (last && nameW(`${last}\u2026`) > NMAX) last = [...last].slice(0, -1).join("");
-      out[max2 - 1] = `${last}\u2026`;
+      let last2 = out[max2 - 1];
+      while (last2 && nameW(`${last2}\u2026`) > NMAX) last2 = [...last2].slice(0, -1).join("");
+      out[max2 - 1] = `${last2}\u2026`;
     }
     return out;
   };
@@ -17451,8 +17499,8 @@ function engrave(song, o10) {
     const staffEnd = Array.from({ length: nSys }, (_2, s10) => {
       const row2 = placedCols.filter((c10) => c10.system === s10);
       if (!row2.length) return right;
-      const last = row2.reduce((a10, c10) => c10.x > a10.x || c10.x === a10.x && (c10.slot > a10.slot || c10.slot === a10.slot && c10.n > a10.n) ? c10 : a10);
-      if (last.bar) return Math.min(right, last.x + 0.7);
+      const last2 = row2.reduce((a10, c10) => c10.x > a10.x || c10.x === a10.x && (c10.slot > a10.slot || c10.slot === a10.slot && c10.n > a10.n) ? c10 : a10);
+      if (last2.bar) return Math.min(right, last2.x + 0.7);
       if (s10 === nSys - 1) return right;
       if (ar2.rowFull[s10] ?? true) return right;
       return Math.min(right, Math.max(...row2.map((c10) => c10.x + c10.w)));
@@ -17460,8 +17508,8 @@ function engrave(song, o10) {
     const pageRuns = (_s, a10, b3) => {
       const out = [];
       for (let row2 = a10; row2 <= b3; row2++) {
-        const last = out.at(-1);
-        if (last && rowPage.get(row2) === rowPage.get(last[1])) last[1] = row2;
+        const last2 = out.at(-1);
+        if (last2 && rowPage.get(row2) === rowPage.get(last2[1])) last2[1] = row2;
         else out.push([row2, row2]);
       }
       return out;
@@ -17706,8 +17754,8 @@ function engrave(song, o10) {
     for (let r10 = 0; r10 < nR2; r10++) {
       if (!effStaves(r10)) continue;
       const ks = Array.from({ length: effStaves(r10) }, (_2, k2) => [r10, k2]);
-      const last = blocks.at(-1);
-      if (last && loIds.has(per[r10].p.id)) last.rows.push(...ks);
+      const last2 = blocks.at(-1);
+      if (last2 && loIds.has(per[r10].p.id)) last2.rows.push(...ks);
       else blocks.push({ r: r10, rows: ks });
     }
     const blockH = (s10, b3) => P2(b3.rows.reduce((n11, [r10, k2]) => n11 + G3[s10][r10][k2].h, 0));
@@ -18096,9 +18144,9 @@ var LyricEditor = class {
         return;
       }
     }
-    const r10 = distributeFrom(this.host.get(), this.index, syl), st2 = r10.st, last = r10.last;
+    const r10 = distributeFrom(this.host.get(), this.index, syl), st2 = r10.st, last2 = r10.last;
     this.host.set(st2, { gesture: "lyric" });
-    const nx2 = nextLyricSlot(tr(st2), last);
+    const nx2 = nextLyricSlot(tr(st2), last2);
     this.input.value = "";
     if (nx2 >= 0) {
       this.index = nx2;
@@ -18875,7 +18923,6 @@ for (const sg2 of Object.values(SIGNS)) {
     }
   }
 }
-var ptrOf = (type) => type === "mouse" ? "mouse" : type === "touch" ? "touch" : "pen";
 function artExplain(a10, mute) {
   const sg2 = SIGNS[`art:${a10}`], l10 = lang();
   const head = sg2 ? _t("{name}\uFF1A{what}", { name: sg2.name(l10), what: sg2.says(l10) }) : ART_NAME[a10];
@@ -18968,8 +19015,46 @@ var ScoreView = class {
       this.gripDown(e10);
     });
     this.ink.appendChild(this.gripEl);
+    this.selBtn = document.createElement("button");
+    this.selBtn.type = "button";
+    this.selBtn.className = "sel-more";
+    this.selBtn.hidden = true;
+    this.selBtn.title = _t("\u9009\u533A\u83DC\u5355");
+    this.selBtn.setAttribute("aria-label", _t("\u9009\u533A\u83DC\u5355"));
+    this.selBtn.innerHTML = iconHtml2("more");
+    let selBtnDown = null;
+    const openFromBtn = () => {
+      const r10 = this.selBtn.getBoundingClientRect();
+      this.openSelMenuAt({ x: r10.left, y: r10.bottom });
+    };
+    this.selBtn.addEventListener("pointerdown", (e10) => {
+      e10.preventDefault();
+      e10.stopPropagation();
+      selBtnDown = { id: e10.pointerId, x: e10.clientX, y: e10.clientY };
+      try {
+        this.selBtn.setPointerCapture(e10.pointerId);
+      } catch {
+      }
+    });
+    this.selBtn.addEventListener("pointerup", (e10) => {
+      const d3 = selBtnDown;
+      selBtnDown = null;
+      if (!d3 || d3.id !== e10.pointerId) return;
+      e10.stopPropagation();
+      const r10 = this.selBtn.getBoundingClientRect();
+      if (Math.hypot(e10.clientX - d3.x, e10.clientY - d3.y) <= 10 && e10.clientX >= r10.left && e10.clientX <= r10.right && e10.clientY >= r10.top && e10.clientY <= r10.bottom) openFromBtn();
+    });
+    this.selBtn.addEventListener("pointercancel", () => {
+      selBtnDown = null;
+    });
+    this.selBtn.addEventListener("click", (e10) => {
+      e10.stopPropagation();
+      if (e10.detail === 0) openFromBtn();
+    });
+    this.ink.appendChild(this.selBtn);
+    watchPointers();
     el2.addEventListener("pointerleave", (e10) => {
-      if (e10.pointerType === "mouse" && this.hover) {
+      if (caps(pointerOf(e10)).hover && this.hover) {
         this.hover = null;
         this.drawLit();
       }
@@ -18995,6 +19080,11 @@ var ScoreView = class {
     el2.addEventListener("pointerup", (e10) => this.up(e10));
     el2.addEventListener("contextmenu", (e10) => {
       if (e10.target.closest(".score-overlay .ov-i")) return;
+      const ptr = pointerOf(e10);
+      if (!caps(ptr).secondary) {
+        e10.preventDefault();
+        return;
+      }
       if (this.layout && this.openPartAt(this.local(e10).x, this.local(e10).y)) {
         e10.preventDefault();
         this.cancelPress();
@@ -19011,26 +19101,29 @@ var ScoreView = class {
       e10.preventDefault();
       const p2 = this.local(e10);
       this.cancelPress();
-      const dh = this.rules.symbols ? this.dynHitAt(p2.x, p2.y, false) : null;
-      if (dh) {
-        this.lyrics.commitAndClose();
-        this.marks.commitAndClose();
-        this.markMenu(dh);
-        this.lightAt(dh.system, dh.index, "mark", "mouse");
-        return;
-      }
-      const hit2 = this.noteAt(p2.x, p2.y);
-      if (!hit2) {
-        this.blankPress(p2.x, p2.y, e10.clientX, e10.clientY);
-        return;
-      }
-      const cur = this.host.get().sel;
-      if (!(cur && this.onTrack(hit2) && hit2.index >= cur.from && hit2.index < cur.to)) {
-        const st0 = this.host.get(), st1 = this.onTrack(hit2) ? st0 : this.focusRow(st0, hit2.system);
-        this.host.set(select(st1, hit2.index, hit2.index + 1));
+      const dh = this.rules.symbols ? this.dynHitAt(p2.x, p2.y, false) : null, hit2 = dh ? null : this.noteAt(p2.x, p2.y);
+      const st0 = this.host.get(), inMulti = !!(hit2 && st0.multi && this.inMultiBlock(hit2));
+      switch (onSecondary({ target: dh ? "mark" : hit2 ? "note" : "blank", inSel: !!hit2 && (inMulti || this.inSelection(hit2)) })) {
+        case "markMenu":
+          this.lyrics.commitAndClose();
+          this.marks.commitAndClose();
+          this.markMenu(dh);
+          this.lightAt(dh.system, dh.index, "mark", ptr);
+          return;
+        // + 亮框
+        case "blankMenu":
+          this.blankPress(p2.x, p2.y, e10.clientX, e10.clientY);
+          return;
+        case "selectMenu": {
+          const st1 = this.onTrack(hit2) ? st0 : this.focusRow(st0, hit2.system);
+          this.host.set(select(st1, hit2.index, hit2.index + 1));
+          break;
+        }
+        case "menu":
+          break;
       }
       this.tell({ kind: "staff" });
-      this.tell({ kind: "selection", at: { x: e10.clientX, y: e10.clientY } });
+      this.openSelMenuAt({ x: e10.clientX, y: e10.clientY });
     });
     el2.addEventListener("pointercancel", (e10) => {
       if (this.pinch && this.touches.delete(e10.pointerId) && this.touches.size < 2) this.pinchEnd();
@@ -19093,7 +19186,7 @@ var ScoreView = class {
   }
   lift = null;
   selDrag = null;
-  // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）；menu = 长按的是选区里的音、还没动：抬手 = 选区菜单，动了 = 照常扩选
+  // 「词」里长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）
   handles;
   // 亮框（选中规则单行这一版，v0.17.48；设计 = ai-docs/20261113-selection-rules-design.md 第五节）。user 同意的一句话：亮着框的就是选中的，选中的才能拖，点空白取消。
   //   三种来源：鼠标悬浮（hover，临时，移开就灭）/ 点一下（lit，留住）/ 拉框、拖把手（= 选区，照旧画淡蓝带子）。
@@ -19149,7 +19242,7 @@ var ScoreView = class {
   }
   frameAt(avail2) {
     const st2 = this.host.get(), paper = lookOf(st2.song, this.lookCtx()).paper, scale = paper.staffMm / STAFF_MM;
-    const base2 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale;
+    const base2 = (deviceCoarse() ? 11 : 10) * scale;
     const geo = pageGeoOf(paper), page = this.host.look.pages?.() ? geo : null;
     if (this.host.look.scroll?.()) return { sp: avail2 > 0 && avail2 < 420 ? Math.max(8.5 * scale, Math.min(base2, avail2 / 42 * scale)) : base2, width: Math.max(320, avail2 - (CONT_MARGIN.l + CONT_MARGIN.r) * base2), strict: false, page: null, margins: CONT_MARGIN };
     const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
@@ -19349,7 +19442,7 @@ var ScoreView = class {
     if (this.hscroll) this.sheet.style.width = `${Math.ceil(this.layout.width + this.layout.pageX.left + this.layout.pageX.right)}px`;
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;
     const parts = this.workerParts?.for === this.layout ? this.workerParts.parts : span("svg-parts", () => toSvgParts(this.layout));
-    const old = this.sheet.querySelector("svg");
+    const old = this.staffSvg();
     const prev = this.svgParts;
     let swapped = false;
     span("svg-dom", () => {
@@ -19828,6 +19921,9 @@ var ScoreView = class {
   // 上一次加过 class 的（先撤再加）
   caretEl = null;
   selEls = [];
+  /** 选区旁的小钮（手指 / 笔叫菜单用）和它该在的地方（纸面坐标：带子最后一行的右上角；sys = 那一行的行号）。 */
+  selBtn;
+  selBtnAt = null;
   /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
    *  休止没有音高：d = NaN（笔 / 鼠标按住拖只改时值、不出声）。 */
   get hits() {
@@ -19877,7 +19973,7 @@ var ScoreView = class {
   /** 写字头的蓝（cur）/ 选中（sel）/ 拖着的（hot）/ 点开的记号管的那几个音（in-span）：按 data-tok 在 SVG 元素上开关 class，不重排、不换 SVG。
    *  哪些元素吃哪个 class 照原来排版时的规矩：cur 不给歌词；hot 只给歌词 / 力度 / 风格 / 反复 / 渐强渐弱的字和线；in-span 只给符头。 */
   decorate() {
-    const svg = this.sheet.querySelector("svg");
+    const svg = this.staffSvg();
     if (!svg) return;
     if (!this.tokEls) {
       const m2 = /* @__PURE__ */ new Map();
@@ -19938,8 +20034,12 @@ var ScoreView = class {
   drawSel() {
     for (const e10 of this.selEls) e10.remove();
     this.selEls = [];
+    this.selBtnAt = null;
     const L2 = this.layout, st2 = this.host.get();
-    if (!L2 || !st2.sel && !st2.multi) return;
+    if (!L2 || !st2.sel && !st2.multi) {
+      this.placeSelBtn();
+      return;
+    }
     const sp2 = L2.sp, m2 = st2.multi;
     const rowsOf = (r10) => {
       const idx = [];
@@ -19949,18 +20049,7 @@ var ScoreView = class {
       return idx;
     };
     const ticks = /* @__PURE__ */ new Map();
-    const inMulti = (h2) => {
-      const r10 = L2.systems[h2.system];
-      if (!m2 || !r10 || r10.paper !== m2.paper || !m2.parts.includes(r10.part) || L2.virtual[`${r10.paper}:${r10.part}`]) return false;
-      const key = `${r10.paper}:${r10.part}`;
-      let tk2 = ticks.get(key);
-      if (!tk2) {
-        tk2 = tickOf(trackOf(st2.song, r10.paper, r10.part));
-        ticks.set(key, tk2);
-      }
-      const t10 = tk2[h2.index];
-      return t10 !== void 0 && t10 >= m2.t0 && t10 < m2.t1;
-    };
+    const inMulti = (h2) => this.inMultiBlock(h2, ticks);
     const acc = /* @__PURE__ */ new Map();
     const take = (h2, timed2 = true) => {
       if (m2 ? !(timed2 && inMulti(h2)) : h2.index < st2.sel.from || h2.index >= st2.sel.to || !this.onTrack(h2)) return;
@@ -19976,6 +20065,7 @@ var ScoreView = class {
     for (const h2 of this.hits) take(h2);
     for (const h2 of L2.dyns) take(h2, false);
     for (const h2 of L2.marks) take(h2, false);
+    let btn2 = null;
     for (const { a: a10, b: b3, rows } of acc.values()) {
       const top = GEOMETRY[L2.systems[rows[0]].kind].bandTop(L2.systems[rows[0]], sp2 * 0.5), bottom = L2.lyricYs[rows[rows.length - 1]] + 0.8 * sp2;
       const d3 = document.createElement("div");
@@ -19983,7 +20073,48 @@ var ScoreView = class {
       Object.assign(d3.style, { left: `${a10}px`, top: `${top}px`, width: `${b3 - a10}px`, height: `${bottom - top}px` });
       this.ink.insertBefore(d3, this.ink.firstChild);
       this.selEls.push(d3);
+      const sysN = L2.systems[rows[0]].sys;
+      if (!btn2 || sysN > btn2.sys) btn2 = { sys: sysN, x: b3, y: top };
+      else if (sysN === btn2.sys) {
+        btn2.x = Math.max(btn2.x, b3);
+        btn2.y = Math.min(btn2.y, top);
+      }
     }
+    this.selBtnAt = btn2;
+    this.placeSelBtn();
+  }
+  /** 第 system 行第 index 个是不是在「选了好几行」的那一块里（行在里面、起点在那段时间里；ticks = 这一轮的缓存）。 */
+  inMultiBlock(h2, ticks = /* @__PURE__ */ new Map()) {
+    const L2 = this.layout, st2 = this.host.get(), m2 = st2.multi, r10 = L2?.systems[h2.system];
+    if (!L2 || !m2 || !r10 || r10.paper !== m2.paper || !m2.parts.includes(r10.part) || L2.virtual[`${r10.paper}:${r10.part}`]) return false;
+    const key = `${r10.paper}:${r10.part}`;
+    let tk2 = ticks.get(key);
+    if (!tk2) {
+      tk2 = tickOf(trackOf(st2.song, r10.paper, r10.part));
+      ticks.set(key, tk2);
+    }
+    const t10 = tk2[h2.index];
+    return t10 !== void 0 && t10 >= m2.t0 && t10 < m2.t1;
+  }
+  /** 选区带子右端外面那颗小钮（v0.17.55；表在 press-rules.ts wantsSelButton）：手指 / 笔最近一下、有选区、能写的模式里才画。点了 = 选区菜单。
+   *  user 2026-11-14「你做一个就是浮在选区旁边的小按钮，你按一下再弹出。当然，对于鼠标来说就是右键」。屏幕上的大小不随谱面缩放变（styles.css 用 --ov-z 抵掉）。 */
+  placeSelBtn() {
+    const at3 = this.selBtnAt, show = !!at3 && wantsSelButton({ pointer: lastPointer(), hasSel: this.selEls.length > 0, edit: this.rules.edit });
+    this.selBtn.hidden = !show;
+    if (show) Object.assign(this.selBtn.style, { left: `${at3.x}px`, top: `${at3.y}px` });
+  }
+  /** 选区带子在屏幕上的框（菜单别盖住它们）。 */
+  /** 选区菜单要躲开的框（屏幕坐标）：选区的带子 + 露着的两端把手（把手伸出带子下面，菜单摆在带子下面时会盖住半个）。 */
+  selRects() {
+    const els = [...this.selEls, ...[this.handles.start, this.handles.end].filter((h2) => !h2.hidden)];
+    return els.map((d3) => {
+      const r10 = d3.getBoundingClientRect();
+      return { left: r10.left, top: r10.top, right: r10.right, bottom: r10.bottom };
+    });
+  }
+  /** 开选区菜单（右键、小钮都走这里）：带上带子的框，宿主摆菜单时躲开。 */
+  openSelMenuAt(at3) {
+    this.tell({ kind: "selection", at: at3, avoid: this.selRects() });
   }
   /** 选区两端的棒棒糖把手：第一个 / 最后一个选中的音的下面（歌词行再往下一点）。 */
   placeHandles() {
@@ -20223,9 +20354,10 @@ var ScoreView = class {
     return out;
   }
   down(e10) {
+    this.placeSelBtn();
     if (e10.target.closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle, .lit-grip")) return;
     if (e10.target.closest(".score-overlay .ov-i")) {
-      if (e10.pointerType !== "touch" || !this.layout) return;
+      if (!caps(pointerOf(e10)).dragScrolls || !this.layout) return;
       this.roGesture = false;
       this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
       this.el.setPointerCapture(e10.pointerId);
@@ -20245,8 +20377,9 @@ var ScoreView = class {
     const p2 = this.local(e10);
     this.roGesture = this.rules.edit && this.inSharedRow(p2.x, p2.y) && !L2.parts.some((b3) => this.inBox(b3, p2.x, p2.y));
     if (this.roGesture) this.roAt = { x: p2.x, y: p2.y };
+    const ptr = pointerOf(e10), cp2 = caps(ptr);
     if (!this.rules.edit || this.roGesture) {
-      if (e10.pointerType === "touch") {
+      if (cp2.dragScrolls) {
         this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
         this.el.setPointerCapture(e10.pointerId);
         if (this.touches.size === 2) {
@@ -20266,8 +20399,8 @@ var ScoreView = class {
       this.armPress(e10, p2, null);
       return;
     }
-    if (e10.pointerType !== "touch") this.el.focus({ preventScroll: true });
-    if (e10.pointerType === "touch") {
+    if (!cp2.dragScrolls) this.el.focus({ preventScroll: true });
+    if (cp2.dragScrolls) {
       this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
       this.el.setPointerCapture(e10.pointerId);
       if (this.touches.size === 2) {
@@ -20289,7 +20422,6 @@ var ScoreView = class {
     }
     e10.preventDefault();
     const grab = this.grabAt(p2.x, p2.y, false);
-    const ptr = e10.pointerType === "mouse" ? "mouse" : "pen";
     if (grab) {
       this.el.setPointerCapture(e10.pointerId);
       this.armPress(e10, p2, null, grab);
@@ -20342,7 +20474,7 @@ var ScoreView = class {
   /** 按下：开长按计时（0.42 s 不动 = 长按）。 */
   armPress(e10, p2, hit2, grab = null) {
     this.cancelPress();
-    const pr = { pid: e10.pointerId, type: e10.pointerType, x: p2.x, y: p2.y, cx: e10.clientX, cy: e10.clientY, hit: hit2, grab, timer: 0, shift: e10.shiftKey, moved: false, fired: false };
+    const pr = { pid: e10.pointerId, ptr: pointerOf(e10), x: p2.x, y: p2.y, cx: e10.clientX, cy: e10.clientY, hit: hit2, grab, timer: 0, shift: e10.shiftKey, moved: false, fired: false };
     pr.timer = window.setTimeout(() => this.longPress(), 420);
     this.press = pr;
   }
@@ -20365,37 +20497,54 @@ var ScoreView = class {
       this.listenMenu(pr.x, pr.y, pr.cx, pr.cy);
       return;
     }
-    if (pr.type === "touch") this.el.focus({ preventScroll: true });
+    if (caps(pr.ptr).dragScrolls) this.el.focus({ preventScroll: true });
     if (pr.grab?.kind === "lyric") {
-      this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, pr.type === "touch");
-      return;
-    }
-    if (pr.grab) {
-      const g3 = pr.grab, dh = this.layout?.dyns.find((d3) => d3.index === g3.index && d3.system === g3.system);
-      this.lyrics.commitAndClose();
-      this.marks.commitAndClose();
-      this.finger = null;
-      this.box = null;
-      this.boxEl.hidden = true;
-      if (dh) {
-        this.markMenu(dh);
-        this.lightAt(dh.system, dh.index, "mark", ptrOf(pr.type));
-      }
+      this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, caps(pr.ptr).coarse);
       return;
     }
     if (pr.hit && this.rules.lyrics) {
       this.selectHeld(pr.pid, pr.hit);
       return;
     }
-    const hit2 = pr.hit ?? (pr.art ? this.hitOfArt(pr.art) : null);
-    if (!hit2) {
-      this.blankPress(pr.x, pr.y, pr.cx, pr.cy);
-      return;
+    const target = pr.grab ? "mark" : pr.art ? "art" : pr.hit ? "note" : "blank";
+    switch (onHold({ target, inSel: !!pr.hit && this.inSelection(pr.hit) })) {
+      case "menu": {
+        const g3 = pr.grab, dh = this.layout?.dyns.find((d3) => d3.index === g3.index && d3.system === g3.system);
+        this.lyrics.commitAndClose();
+        this.marks.commitAndClose();
+        this.finger = null;
+        this.box = null;
+        this.boxEl.hidden = true;
+        if (dh) {
+          this.markMenu(dh);
+          this.lightAt(dh.system, dh.index, "mark", pr.ptr);
+        }
+        return;
+      }
+      case "light":
+        this.finger = null;
+        this.box = null;
+        this.boxEl.hidden = true;
+        this.tapArt(pr.art, pr.ptr);
+        return;
+      case "select":
+        this.holdNote(pr.pid, pr.hit, pr.ptr, false);
+        return;
+      case "keep":
+        this.holdNote(pr.pid, pr.hit, pr.ptr, true);
+        return;
+      case "blankMenu":
+        this.blankPress(pr.x, pr.y, pr.cx, pr.cy);
+        return;
     }
-    this.noteMenu(pr.pid, hit2, pr.cx, pr.cy);
   }
-  /** 长按音 / 休止（v0.17.48）：亮它 = 不在选区里就只选中它；然后开选区菜单（菜单要一个选区）；按着的时候听见它，抬手停。 */
-  noteMenu(pid, hit2, cx2, cy2) {
+  /** 这个音 / 休止在不在现在的选区里（单行的选区）。 */
+  inSelection(hit2) {
+    const cur = this.host.get().sel;
+    return !!(cur && this.onTrack(hit2) && hit2.index >= cur.from && hit2.index < cur.to);
+  }
+  /** 长按音 / 休止（v0.17.55）：只选中它、亮框（和点一下选中一样；keep = 已经在选区里 = 选区不动）；按着的时候听见它，抬手停。不开菜单。 */
+  holdNote(pid, hit2, ptr, keep2) {
     this.lyrics.commitAndClose();
     this.marks.commitAndClose();
     this.finger = null;
@@ -20405,13 +20554,12 @@ var ScoreView = class {
       this.host.sound?.release();
       this.drag = null;
     }
-    const st0 = this.host.get(), cur = st0.sel;
-    if (!(cur && this.onTrack(hit2) && hit2.index >= cur.from && hit2.index < cur.to)) {
-      const st1 = this.onTrack(hit2) ? st0 : this.focusRow(st0, hit2.system);
+    if (!keep2) {
+      const st0 = this.host.get(), st1 = this.onTrack(hit2) ? st0 : this.focusRow(st0, hit2.system);
       this.host.set(select(st1, hit2.index, hit2.index + 1));
+      this.lightAt(hit2.system, hit2.index, "note", ptr);
     }
     this.tell({ kind: "staff" });
-    this.tell({ kind: "selection", at: { x: cx2, y: cy2 } });
     this.host.sound?.audition(hit2.index, true);
     this.holdPid = pid;
   }
@@ -20458,8 +20606,8 @@ var ScoreView = class {
     const song = this.host.get().song, hostOf = (id2) => song.parts.find((p2) => p2.id === id2)?.host;
     const inFam = (id2) => id2 === fb.host || hostOf(id2) === fb.host, loose = (id2) => !hostOf(id2) && !song.parts.some((p2) => p2.host === id2);
     const order = [...new Set(L2.systems.filter((r10) => r10.paper === fb.paper).map((r10) => realPart(r10.part)))], idx = order.map((id2, i10) => inFam(id2) ? i10 : -1).filter((i10) => i10 >= 0);
-    const first = Math.min(...idx), last = Math.max(...idx);
-    const next2 = order.slice(last + 1).find(loose) ?? [...order.slice(0, first)].reverse().find(loose) ?? order.slice(last + 1)[0] ?? null;
+    const first = Math.min(...idx), last2 = Math.max(...idx);
+    const next2 = order.slice(last2 + 1).find(loose) ?? [...order.slice(0, first)].reverse().find(loose) ?? order.slice(last2 + 1)[0] ?? null;
     if (!next2) {
       this.host.notice?.(_t("\u8FD9\u5F20\u7EB8\u4E0A\u53EA\u6709\u8FD9\u4E00\u5BB6\uFF1A\u6CA1\u6709\u522B\u7684\u58F0\u90E8\u53EF\u4EE5\u632A\u8FC7\u53BB\uFF08\u5207\u5230\u300C\u542C\u300D\u5C31\u90FD\u53E0\u8D77\u6765\uFF09"));
       return;
@@ -20921,10 +21069,6 @@ var ScoreView = class {
     const art3 = a10.arts[0];
     if (art3) this.host.notice?.(artExplain(art3, a10.mute));
   }
-  /** 这个演奏法挂在哪个音上（点击区那一条）。 */
-  hitOfArt(a10) {
-    return this.hits.find((n10) => n10.index === a10.index && n10.system === a10.system) ?? null;
-  }
   /** 某样东西现在是不是「点亮的」那一个（留住的亮框；选区 / 鼠标悬浮另算）。 */
   litIs(system, index, target) {
     const f2 = this.lit, L2 = this.layout, r10 = L2?.systems[system], st2 = this.host.get();
@@ -21006,9 +21150,14 @@ var ScoreView = class {
     return b3.width || b3.height ? { x: b3.x, y: b3.y, w: b3.width, h: b3.height } : null;
   }
   /** 演奏法各自的点击框：从画出来的 SVG 量（字形的墨迹框，inkBox）；换过组才重量。只量能写的行（叠起来的行不算）。 */
+  /** 谱本身那张 SVG = .sheet 的直接子元素 svg.staff-svg。不许用 querySelector("svg")：ink 层里还有别的 svg（选区旁小钮的图标、光标、鬼音符），
+   *  第一次画的时候谱还没有，「第一个 svg」会拿到小钮的图标、把整张谱写进它里面（v0.17.55 施工时踩到）。 */
+  staffSvg() {
+    return this.sheet.querySelector(":scope > svg.staff-svg");
+  }
   artBoxes() {
     if (this.artCache) return this.artCache;
-    const L2 = this.layout, svg = this.sheet.querySelector("svg");
+    const L2 = this.layout, svg = this.staffSvg();
     if (!L2 || !svg) return [];
     const song = this.host.get().song, where = /* @__PURE__ */ new Map();
     for (const h2 of this.hits) {
@@ -21204,7 +21353,7 @@ var ScoreView = class {
     this.host.set(select(st2, Math.min(...inside), Math.max(...inside) + 1));
   }
   move(e10) {
-    if (e10.pointerType === "mouse" && e10.buttons === 0 && !this.press && !this.drag && !this.box && !this.lift && !this.handleDrag) {
+    if (caps(pointerOf(e10)).hover && e10.buttons === 0 && !this.press && !this.drag && !this.box && !this.lift && !this.handleDrag) {
       this.hoverPt = this.local(e10);
       if (!this.hoverRaf) this.hoverRaf = requestAnimationFrame(() => {
         this.hoverRaf = 0;
@@ -21226,12 +21375,12 @@ var ScoreView = class {
     const pr = this.press;
     if (pr && e10.pointerId === pr.pid && !pr.moved && !pr.fired) {
       const p3 = this.local(e10);
-      if (Math.hypot(p3.x - pr.x, p3.y - pr.y) > (pr.type === "touch" ? 10 : 6)) {
+      if (Math.hypot(p3.x - pr.x, p3.y - pr.y) > (caps(pr.ptr).coarse ? 10 : 6)) {
         pr.moved = true;
         clearTimeout(pr.timer);
       }
     }
-    if (pr && e10.pointerId === pr.pid && pr.moved && !pr.fired && pr.type !== "touch" && !this.box && !this.lift) {
+    if (pr && e10.pointerId === pr.pid && pr.moved && !pr.fired && !caps(pr.ptr).dragScrolls && !this.box && !this.lift) {
       const toBox = () => {
         const st0 = this.host.get();
         this.cancelPress();
@@ -21239,12 +21388,12 @@ var ScoreView = class {
         this.box = { pid: e10.pointerId, x0: pr.x, y0: pr.y, moved: false, st0, row: this.rowAt(pr.y) };
       };
       if (pr.grab?.kind === "mark") {
-        if (onMove({ pointer: ptrOf(pr.type), target: "mark", lit: !!pr.lit, canDrag: this.rules.symbols }) === "lift") {
+        if (onMove({ pointer: pr.ptr, target: "mark", lit: !!pr.lit, canDrag: this.rules.symbols }) === "lift") {
           pr.fired = true;
           this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false);
         } else toBox();
       } else if (pr.grab) {
-        if (pr.type === "pen") {
+        if (!caps(pr.ptr).hover) {
           pr.fired = true;
           this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false);
         } else toBox();
@@ -21257,12 +21406,6 @@ var ScoreView = class {
     if (this.selDrag && e10.pointerId === this.selDrag.pid) {
       const idx = this.noteNear(this.local(e10));
       if (idx < 0) return;
-      if (this.selDrag.menu) {
-        if (idx === this.selDrag.anchor) return;
-        this.selDrag.menu = false;
-        this.lyrics.commitAndClose();
-        this.marks.commitAndClose();
-      }
       const st3 = this.host.get(), a10 = Math.min(idx, this.selDrag.anchor), b3 = Math.max(idx, this.selDrag.anchor) + 1;
       if (!st3.sel || st3.sel.from !== a10 || st3.sel.to !== b3) this.host.set(select(st3, a10, b3));
       return;
@@ -21329,7 +21472,7 @@ var ScoreView = class {
     }
   }
   up(e10) {
-    if (e10.pointerType === "touch" && this.press && this.press.pid === e10.pointerId && !this.press.moved && !this.press.fired && !this.pinch) this.el.focus({ preventScroll: true });
+    if (caps(pointerOf(e10)).dragScrolls && this.press && this.press.pid === e10.pointerId && !this.press.moved && !this.press.fired && !this.pinch) this.el.focus({ preventScroll: true });
     if (this.touches.delete(e10.pointerId) && this.pinch && this.touches.size < 2) {
       this.pinchEnd();
       this.finger = null;
@@ -21358,9 +21501,9 @@ var ScoreView = class {
         clearTimeout(pr2.timer);
       }
       const viewTap = (x2, y2, pid) => {
-        if (e10.pointerType === "touch" && this.doubleTapZoom(x2, y2)) return;
+        if (caps(pointerOf(e10)).dragScrolls && this.doubleTapZoom(x2, y2)) return;
         const handled = this.tap(x2, y2, false, pid, true);
-        if (e10.pointerType === "touch" && !handled) this.lastTap = { t: performance.now(), x: x2, y: y2 };
+        if (caps(pointerOf(e10)).dragScrolls && !handled) this.lastTap = { t: performance.now(), x: x2, y: y2 };
       };
       if (lt2 && e10.pointerId === lt2.pid) {
         this.lockTap = null;
@@ -21386,14 +21529,14 @@ var ScoreView = class {
       clearTimeout(pr.timer);
       const extended = !!this.selDrag;
       this.selDrag = null;
-      const ptr = ptrOf(pr.type);
+      const ptr = pr.ptr;
       if (pr.grab && !pr.moved && !pr.fired) {
         this.finger = null;
         if (pr.grab.kind === "mark") this.tapMark(pr.grab, !!pr.lit, ptr);
-        else this.tap(pr.x, pr.y, pr.shift, ptr === "touch" ? null : pr.pid);
+        else this.tap(pr.x, pr.y, pr.shift, caps(ptr).dragScrolls ? null : pr.pid);
         return;
       }
-      if (pr.grab && pr.type !== "touch") return;
+      if (pr.grab && !caps(ptr).dragScrolls) return;
       if (pr.art && !pr.moved && !pr.fired) {
         this.finger = null;
         this.box = null;
@@ -21621,7 +21764,7 @@ var ScoreOverlay = class {
   down(e10) {
     const el2 = e10.target.closest(".ov-i");
     if (!el2 || e10.button === 2) return;
-    const touch = e10.pointerType === "touch";
+    const touch = caps(pointerOf(e10)).dragScrolls;
     this.cancel();
     if (!touch) {
       e10.preventDefault();
@@ -26426,9 +26569,9 @@ function createLocalCache(dbName, opts = {}) {
       let foreignOverwrite;
       if (guard === "user-save" && stored && storedRev !== (_seenRev.get(name) ?? 0)) {
         const nowTs = Date.now();
-        const last = _lastConflictBackupAt.get(name) ?? 0;
+        const last2 = _lastConflictBackupAt.get(name) ?? 0;
         let backedUp = false;
-        if (nowTs - last >= CONFLICT_BACKUP_COOLDOWN_MS) {
+        if (nowTs - last2 >= CONFLICT_BACKUP_COOLDOWN_MS) {
           await backupP.put(`${stamp()}:${name}`, { ...stored, updatedAt: nowTs });
           _lastConflictBackupAt.set(name, nowTs);
           backedUp = true;
@@ -29602,7 +29745,7 @@ function createGraph(tokenSource, opts = {}) {
     const CHUNK = 5 * 1024 * 1024;
     const total = source.size;
     let offset = 0;
-    let last = null;
+    let last2 = null;
     let uploadUrl = null;
     let resumed = false;
     if (session) {
@@ -29717,12 +29860,12 @@ function createGraph(tokenSource, opts = {}) {
         throw err2;
       }
       failures = 0;
-      last = await r10.json().then((j2) => j2).catch(() => null);
+      last2 = await r10.json().then((j2) => j2).catch(() => null);
       offset = end + 1;
       onProgress?.(offset, total);
     }
     await forget();
-    return last;
+    return last2;
   }
   async function deleteItem(itemId, eTag) {
     await graphFetch("DELETE", `/me/drive/items/${itemId}`, eTag ? { headers: { "If-Match": eTag } } : {});
@@ -32339,7 +32482,7 @@ function flattenWhiteInPlace(rgba) {
 }
 function makeThumbAdaptive(src, opts) {
   const maxBytes = opts.maxBytes ?? THUMB_MAX_BYTES, ladder = opts.ladder ?? THUMB_LADDER, colors = opts.paletteColors ?? THUMB_PALETTE_COLORS;
-  let last = null;
+  let last2 = null;
   for (const edge of ladder) {
     const { w: w2, h: h2 } = fitWithin(src.w, src.h, edge);
     const px = w2 === src.w && h2 === src.h ? new Uint8ClampedArray(src.data) : areaResampleRgba(src.data, src.w, src.h, w2, h2);
@@ -32347,14 +32490,14 @@ function makeThumbAdaptive(src, opts) {
       flattenWhiteInPlace(px);
     for (const c10 of [0, colors]) {
       const png = opts.encodePng(px, w2, h2, c10);
-      last = { png, w: w2, h: h2, colors: c10, edge };
+      last2 = { png, w: w2, h: h2, colors: c10, edge };
       if (png.length <= maxBytes)
-        return last;
+        return last2;
     }
     if (w2 === src.w && h2 === src.h && edge !== ladder[ladder.length - 1])
       continue;
   }
-  return last;
+  return last2;
 }
 
 // node_modules/@internal/gallery/dist/core/facts/facts-cache.js
@@ -34680,7 +34823,7 @@ function mountGalleryScreen(el2, d3) {
         else
           location.reload();
       }
-      const caps = reactive({ lock: false, marks: false });
+      const caps2 = reactive({ lock: false, marks: false });
       const _unlocked = reactive(/* @__PURE__ */ new Set());
       let _capStore = void 0, _unlockUnsub = null;
       function syncCaps() {
@@ -34691,9 +34834,9 @@ function mountGalleryScreen(el2, d3) {
         _unlockUnsub?.();
         _unlockUnsub = null;
         _unlocked.clear();
-        caps.lock = st2?.files.lockByDefault === true;
-        caps.marks = st2?.files.fileMarks === true;
-        if (caps.lock && st2?.files.watchUnlocks)
+        caps2.lock = st2?.files.lockByDefault === true;
+        caps2.marks = st2?.files.fileMarks === true;
+        if (caps2.lock && st2?.files.watchUnlocks)
           _unlockUnsub = st2.files.watchUnlocks((live) => {
             _unlocked.clear();
             for (const u2 of live)
@@ -34879,7 +35022,7 @@ function mountGalleryScreen(el2, d3) {
       });
       const fileTiles = computed(() => data.files.map((it2) => {
         const encV = encVersionOf(it2), encrypted = encState.isEncrypted(it2.identifier, encV, it2.cloudSealed === true), encLocal = encState.isLocalEncrypted(it2.identifier, encV);
-        const tile = tileFor(it2, { signedIn: d3.host.signedIn(), activeIdentifier: d3.host.activeIdentifier(), encrypted, lockable: caps.lock, unlocked: _unlocked.has(it2.identifier) });
+        const tile = tileFor(it2, { signedIn: d3.host.signedIn(), activeIdentifier: d3.host.activeIdentifier(), encrypted, lockable: caps2.lock, unlocked: _unlocked.has(it2.identifier) });
         const asVersion = parseVersionStem(it2.stem);
         const info2 = fileInfo(it2), facts = encrypted ? null : factsOf2(it2.identifier);
         const encMenu = encryptionMenu({ hasEncryption: !!enc3, hasLocal: tile.hasLocal, encrypted, localEncrypted: encLocal });
@@ -35228,7 +35371,7 @@ function mountGalleryScreen(el2, d3) {
         setAttentionOnly,
         toggleAttentionOnly: () => setAttentionOnly(!attentionWanted.value),
         // 0.8.8
-        caps,
+        caps: caps2,
         toggleFold,
         expandAll,
         foldedN,
@@ -35825,15 +35968,15 @@ function toLabScore(tokens, hum, lang2, tempoMap, sing, range2, tokenEntry) {
   function one0(t10, i10) {
     const len = (t10.dur + (dwOf.get(i10) ?? 0)) / eighth * (base2 / bpmOf.get(i10));
     if (t10.kind === "rest") {
-      const last2 = out[out.length - 1];
-      if (last2) last2.rest = (last2.rest ?? 0) + len;
+      const last3 = out[out.length - 1];
+      if (last3) last3.rest = (last3.rest ?? 0) + len;
       return;
     }
     if (t10.kind !== "note") return;
     const midi2 = midiOf(effectivePitch(tokens, i10));
-    const last = out[out.length - 1];
-    if ((t10.lyric === MELISMA_MARK || t10.tie) && last && !last.rest) {
-      last.notes.push([midi2, len]);
+    const last2 = out[out.length - 1];
+    if ((t10.lyric === MELISMA_MARK || t10.tie) && last2 && !last2.rest) {
+      last2.notes.push([midi2, len]);
       return;
     }
     const lyric = t10.lyric && t10.lyric !== MELISMA_MARK ? lyricCore(t10.lyric) || null : null;
@@ -35843,16 +35986,16 @@ function toLabScore(tokens, hum, lang2, tempoMap, sing, range2, tokenEntry) {
       return;
     }
     if (isSmallKana(lyric)) {
-      if (!last) return;
+      if (!last2) return;
       if (isSokuon(lyric)) {
-        last.kana += lyric;
-        last.rest = (last.rest ?? 0) + len;
+        last2.kana += lyric;
+        last2.rest = (last2.rest ?? 0) + len;
         nextMark = nextMark === "v" || nextMark === "O" ? nextMark : "^";
         return;
       }
-      if (!last.rest) {
-        last.kana += lyric;
-        last.notes.push([midi2, len]);
+      if (!last2.rest) {
+        last2.kana += lyric;
+        last2.notes.push([midi2, len]);
         return;
       }
     }
@@ -36398,15 +36541,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-baf89c2af971.mjs");
+      return pick3(() => "singer-worker-436683b697e5.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-1819c250528d.mjs");
+      return pick3(() => "layout-worker-1e241a7c010a.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-abac23a687d4.mjs");
+      return pick3(() => "encode-worker-1fcd218f43e8.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -36450,30 +36593,30 @@ function reportThreadFail(name, why2) {
 }
 function startWorker(name) {
   const urls = threadUrls(name);
-  let last = new Error(_t("\u6CA1\u6709\u53EF\u7528\u7684\u8D77\u6CD5\uFF08\u6253\u5305\u65F6\u6CA1\u5E26\u8FD9\u4E2A\u7EBF\u7A0B\uFF09"));
+  let last2 = new Error(_t("\u6CA1\u6709\u53EF\u7528\u7684\u8D77\u6CD5\uFF08\u6253\u5305\u65F6\u6CA1\u5E26\u8FD9\u4E2A\u7EBF\u7A0B\uFF09"));
   for (const u2 of urls) {
     try {
       return new Worker(u2, workerOptions());
     } catch (e10) {
-      last = e10;
+      last2 = e10;
     }
   }
-  const why2 = _t("\u540E\u53F0\u7EBF\u7A0B\u300C{name}\u300D\u8D77\u4E0D\u6765\uFF1A{Error}", { name, Error: last?.message ?? last });
+  const why2 = _t("\u540E\u53F0\u7EBF\u7A0B\u300C{name}\u300D\u8D77\u4E0D\u6765\uFF1A{Error}", { name, Error: last2?.message ?? last2 });
   reportThreadFail(name, why2);
   throw new Error(why2);
 }
 async function addWorklet(ctx2, name) {
   const urls = threadUrls(name);
-  let last = new Error(_t("\u6CA1\u6709\u53EF\u7528\u7684\u8D77\u6CD5\uFF08\u6253\u5305\u65F6\u6CA1\u5E26\u8FD9\u4E2A\u7EBF\u7A0B\uFF09"));
+  let last2 = new Error(_t("\u6CA1\u6709\u53EF\u7528\u7684\u8D77\u6CD5\uFF08\u6253\u5305\u65F6\u6CA1\u5E26\u8FD9\u4E2A\u7EBF\u7A0B\uFF09"));
   for (const u2 of urls) {
     try {
       await ctx2.audioWorklet.addModule(u2);
       return;
     } catch (e10) {
-      last = e10;
+      last2 = e10;
     }
   }
-  const why2 = _t("\u51FA\u58F0\u7EBF\u7A0B\u300C{name}\u300D\u8D77\u4E0D\u6765\uFF1A{Error}", { name, Error: last?.message ?? last });
+  const why2 = _t("\u51FA\u58F0\u7EBF\u7A0B\u300C{name}\u300D\u8D77\u4E0D\u6765\uFF1A{Error}", { name, Error: last2?.message ?? last2 });
   reportThreadFail(name, why2);
   throw new Error(why2);
 }
@@ -36665,23 +36808,23 @@ function noteKeyAsleep(now2) {
   void reviveAudio("frozen-key");
 }
 function createQueueMeter() {
-  let pending = true, last = null, anchor = null, slack = 0, burstMs = null;
+  let pending = true, last2 = null, anchor = null, slack = 0, burstMs = null;
   const raw = (now2, ct2) => (ct2 - anchor.ct) * 1e3 - (now2 - anchor.at);
   return {
     arm() {
       pending = true;
       anchor = null;
-      last = null;
+      last2 = null;
       slack = 0;
       burstMs = null;
     },
     feed(now2, ct2) {
       if (pending) {
-        if (last && ct2 !== last.ct) {
-          anchor = last;
+        if (last2 && ct2 !== last2.ct) {
+          anchor = last2;
           pending = false;
         } else {
-          last = { at: now2, ct: ct2 };
+          last2 = { at: now2, ct: ct2 };
           return;
         }
       }
@@ -37190,7 +37333,7 @@ function createFeelProbe(host2, now2 = () => performance.now(), raf = (cb2) => {
   requestAnimationFrame(cb2);
 }) {
   let awake = false, lastTouchAt = 0, pending = null;
-  let last = null;
+  let last2 = null;
   const q2 = [], s10 = [];
   const gaps = [], steps = [], adv2 = [];
   let prevFrame = 0, prevAudio = null, prevAudioAt = 0;
@@ -37213,7 +37356,7 @@ function createFeelProbe(host2, now2 = () => performance.now(), raf = (cb2) => {
   let sess = { keys: 0, stall: 0, step: 0 };
   function judge(t10) {
     const r10 = read();
-    last = r10;
+    last2 = r10;
     sess.stall = Math.max(sess.stall, r10.stall);
     sess.step = Math.max(sess.step, r10.audioStep);
     if (!over(r10) && host2.always?.()) {
@@ -37316,7 +37459,7 @@ function createFeelProbe(host2, now2 = () => performance.now(), raf = (cb2) => {
         if (s10.length > 8) s10.shift();
       }
     },
-    reading: () => last,
+    reading: () => last2,
     flush() {
       if (!sess.keys) return;
       const r10 = read(), a10 = host2.audioNow();
@@ -38125,7 +38268,7 @@ function createSoundSources(o10) {
   async function fetchSound(e10, onProgress) {
     const hit2 = await cachedSound(e10.sha256);
     if (hit2) return hit2;
-    let last = "";
+    let last2 = "";
     const sameSite = bases()[0];
     for (const base2 of bases()) {
       try {
@@ -38159,10 +38302,10 @@ function createSoundSources(o10) {
         await rememberSound(e10.sha256, out, true);
         return out;
       } catch (err2) {
-        last = `${base2}\uFF1A${err2.message}`;
+        last2 = `${base2}\uFF1A${err2.message}`;
       }
     }
-    throw new Error(_t("\u300C{name}\u300D\u62FF\u4E0D\u5230\uFF08\u8BD5\u8FC7 {p}\uFF09\u3002\u6700\u540E\u4E00\u6B21\uFF1A{last}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u97F3\u6E90\u5E93\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A .sf2 \u6587\u4EF6\u9009\u3002", { name: e10.name, p: bases().join("\u3001"), last }));
+    throw new Error(_t("\u300C{name}\u300D\u62FF\u4E0D\u5230\uFF08\u8BD5\u8FC7 {p}\uFF09\u3002\u6700\u540E\u4E00\u6B21\uFF1A{last}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u97F3\u6E90\u5E93\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A .sf2 \u6587\u4EF6\u9009\u3002", { name: e10.name, p: bases().join("\u3001"), last: last2 }));
   }
   async function resolveGmBytes(g3) {
     if (g3.bytes) return g3.bytes;
@@ -38951,11 +39094,11 @@ function buildTimeline(inp) {
         if (!score.SCORE.length) continue;
         const entryOf = /* @__PURE__ */ new Map();
         for (const [i10, e10] of te3) entryOf.set(tokens[i10].id, e10);
-        const first = noteAt(a10), last = tl2.filter((x2) => x2.index >= a10 && x2.index < b3 && x2.tok.kind === "note").reduce((m2, x2) => Math.max(m2, x2.t1), first);
+        const first = noteAt(a10), last2 = tl2.filter((x2) => x2.index >= a10 && x2.index < b3 && x2.tok.kind === "note").reduce((m2, x2) => Math.max(m2, x2.t1), first);
         const opt2 = { ...inp.singOpt, ...info2.singOpt ?? {} };
-        const key = JSON.stringify(["tsukuyomi-chunk", score, opt2]), t02 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
-        clips.clips.push({ key, t0: t02, dur, gain: 10 ** (info2.outputGainDb / 20), end: last });
-        chunks2.push({ part: part2.id, key, score, lang: lang2, opt: opt2, t0: t02, dur, end: last, entryOf });
+        const key = JSON.stringify(["tsukuyomi-chunk", score, opt2]), t02 = first - LEAD_IN, dur = last2 - first + LEAD_IN + SUNG_TAIL;
+        clips.clips.push({ key, t0: t02, dur, gain: 10 ** (info2.outputGainDb / 20), end: last2 });
+        chunks2.push({ part: part2.id, key, score, lang: lang2, opt: opt2, t0: t02, dur, end: last2, entryOf });
         from = Math.min(from, t02);
         to2 = Math.max(to2, t02 + dur);
       }
@@ -40099,13 +40242,13 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1, sung) {
     let lyricDone = false;
     while (left > 0.5) {
       if (ticks >= len) close(false);
-      const piece = Math.min(left, len - ticks), firstPiece = k2 === 0, last = left - piece <= 0.5;
+      const piece = Math.min(left, len - ticks), firstPiece = k2 === 0, last2 = left - piece <= 0.5;
       const ty2 = noteType(piece);
       const id2 = `${t10.kind === "note" ? "n" : "r"}${t10.id}${firstPiece ? "" : `-${k2 + 1}`}`;
       let x2 = `<note id="${id2}">`;
       if (t10.kind === "rest") x2 += `<rest/><duration>${Math.round(piece)}</duration>`;
       else {
-        const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
+        const tieIn = firstPiece ? !!t10.tie : true, tieOn = last2 ? tieOut : true;
         x2 += pitchXml(effectivePitch(toks, i10)) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "");
       }
       x2 += `<voice>1</voice>`;
@@ -40116,8 +40259,8 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1, sung) {
       x2 += typeXml + headXml + staffXml;
       const chordXml = [];
       if (t10.kind === "note") {
-        const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
-        const arts = (t10.art ?? []).filter((a10) => !!ART_XML[a10] && (a10 === "breath" ? last : firstPiece)), noteDyn = arts.filter((a10) => NOTE_DYN.includes(a10)), artic = arts.filter((a10) => !NOTE_DYN.includes(a10));
+        const tieIn = firstPiece ? !!t10.tie : true, tieOn = last2 ? tieOut : true;
+        const arts = (t10.art ?? []).filter((a10) => !!ART_XML[a10] && (a10 === "breath" ? last2 : firstPiece)), noteDyn = arts.filter((a10) => NOTE_DYN.includes(a10)), artic = arts.filter((a10) => !NOTE_DYN.includes(a10));
         const inhaleXml = (a10) => a10 === "breath" && t10.inhale ? `<other-articulation>${t10.inhale === "big" ? "inhale-big" : "inhale"}</other-articulation>` : "";
         const artXml = (artic.length ? `<articulations>${artic.map((a10) => `<${ART_XML[a10]}/>` + inhaleXml(a10)).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a10) => `<${ART_XML[a10]}/>`).join("")}</dynamics>` : "");
         const slurXml = firstPiece ? slurs(i10, t10) : "";
@@ -40316,8 +40459,8 @@ function readMusicXml(xml, hints) {
         if (c10.name === "barline") {
           const loc = c10.attrs.location ?? "right", rp2 = kid(c10, "repeat"), en2 = kid(c10, "ending");
           if (loc === "left" && rp2?.attrs.direction === "forward") {
-            const last = body2[body2.length - 1];
-            if (last && last.kind === "bar") last.repeat = last.repeat === "end" || last.repeat === "both" ? "both" : "start";
+            const last2 = body2[body2.length - 1];
+            if (last2 && last2.kind === "bar") last2.repeat = last2.repeat === "end" || last2.repeat === "both" ? "both" : "start";
             else body2.push({ kind: "bar", id: 0, repeat: "start" });
           }
           if (loc === "left" && en2 && en2.attrs.type === "start") {
@@ -41773,15 +41916,15 @@ function withActiveKeys(extras, role, from, paths, hum) {
   const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
   if (!c10) return extras;
   for (const path of paths) {
-    const ks = path.split("."), last = ks.pop();
+    const ks = path.split("."), last2 = ks.pop();
     let o10 = c10;
     for (const k2 of ks) {
       if (!o10[k2] || typeof o10[k2] !== "object") o10[k2] = {};
       o10 = o10[k2];
     }
     const v = candPath(from, path);
-    if (v === void 0) delete o10[last];
-    else o10[last] = structuredClone(v);
+    if (v === void 0) delete o10[last2];
+    else o10[last2] = structuredClone(v);
   }
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
 }
@@ -44743,8 +44886,8 @@ var snapOf = (st2, extras, locus) => ({ song: st2.song, extras, at: st2.at, care
 var applySnap = (st2, s10) => ({ ...st2, song: s10.song, at: s10.at, caret: s10.caret, sel: s10.sel, log: [], multi: void 0 });
 function record3(h2, prev, prevExtras, gesture, now2, locus) {
   if (gesture && gesture === h2.lastKey && now2 - h2.lastAt < COALESCE_MS && h2.past.length) {
-    const last = h2.past[h2.past.length - 1];
-    return { ...h2, past: [...h2.past.slice(0, -1), { ...last, locus }], future: [], lastAt: now2 };
+    const last2 = h2.past[h2.past.length - 1];
+    return { ...h2, past: [...h2.past.slice(0, -1), { ...last2, locus }], future: [], lastAt: now2 };
   }
   const snap = snapOf(prev, prevExtras, locus);
   const past = h2.past.length >= LIMIT ? [...h2.past.slice(1), snap] : [...h2.past, snap];
@@ -46479,10 +46622,10 @@ function fillMissing(extras, role, catalog, hum) {
   if (!plan || !plan.fills.length) return null;
   const def = {};
   for (const f2 of plan.fills) {
-    const ks = f2.path.split("."), last = ks.pop();
+    const ks = f2.path.split("."), last2 = ks.pop();
     let o10 = def;
     for (const k2 of ks) o10 = o10[k2] ??= {};
-    o10[last] = f2.value;
+    o10[last2] = f2.value;
   }
   return withActiveKeys(extras, role, def, plan.fills.map((f2) => f2.path), hum);
 }
@@ -60835,9 +60978,9 @@ function checksum(b3) {
   const n10 = b3.length & ~3;
   for (let i10 = 0; i10 < n10; i10 += 4) sum = sum + u32(b3, i10) >>> 0;
   if (b3.length & 3) {
-    let last = 0;
-    for (let i10 = n10; i10 < b3.length; i10++) last |= b3[i10] << 24 - 8 * (i10 - n10);
-    sum = sum + (last >>> 0) >>> 0;
+    let last2 = 0;
+    for (let i10 = n10; i10 < b3.length; i10++) last2 |= b3[i10] << 24 - 8 * (i10 - n10);
+    sum = sum + (last2 >>> 0) >>> 0;
   }
   return sum;
 }
@@ -61618,7 +61761,7 @@ function createHome(init2, ports) {
 function createEditLock(d3) {
   let localUnlocked = null;
   let watched = null, unwatch = null;
-  let last = "none";
+  let last2 = "none";
   const changeFns = /* @__PURE__ */ new Set(), flashFns = /* @__PURE__ */ new Set();
   function state() {
     const h2 = d3.home();
@@ -61648,8 +61791,8 @@ function createEditLock(d3) {
     const h2 = d3.home();
     if (localUnlocked && !(h2.kind === "file" && h2.handle === localUnlocked)) localUnlocked = null;
     const now2 = state();
-    if (now2 === last) return;
-    last = now2;
+    if (now2 === last2) return;
+    last2 = now2;
     for (const f2 of changeFns) {
       try {
         f2(now2 === "locked", now2);
@@ -61827,6 +61970,30 @@ function idbRenderStore() {
       await done(tx2);
     }
   };
+}
+
+// src/ui/menu-place.ts
+function placeMenu(size, at3, avoid, view2, m2 = 8) {
+  const { w: w2, h: h2 } = size, gap = 8;
+  const cx2 = (x2) => Math.max(m2, Math.min(x2, view2.w - w2 - m2)), cy2 = (y3) => Math.max(m2, Math.min(y3, view2.h - h2 - m2));
+  const seen = avoid.filter((r10) => r10.right > 0 && r10.bottom > 0 && r10.left < view2.w && r10.top < view2.h && r10.right > r10.left && r10.bottom > r10.top);
+  if (!seen.length) {
+    let y3 = at3.y + gap;
+    if (y3 + h2 > view2.h - m2) y3 = at3.y - h2 - gap;
+    return { x: cx2(at3.x), y: cy2(y3), covers: false };
+  }
+  const u2 = seen.reduce((a10, r10) => ({ left: Math.min(a10.left, r10.left), top: Math.min(a10.top, r10.top), right: Math.max(a10.right, r10.right), bottom: Math.max(a10.bottom, r10.bottom) }));
+  const below = u2.bottom + gap;
+  if (below + h2 <= view2.h - m2) return { x: cx2(at3.x), y: below, covers: false };
+  const above = u2.top - gap - h2;
+  if (above >= m2) return { x: cx2(at3.x), y: above, covers: false };
+  const right = u2.right + gap;
+  if (right + w2 <= view2.w - m2) return { x: right, y: cy2(at3.y), covers: false };
+  const left = u2.left - gap - w2;
+  if (left >= m2) return { x: left, y: cy2(at3.y), covers: false };
+  let y2 = at3.y + gap;
+  if (y2 + h2 > view2.h - m2) y2 = at3.y - h2 - gap;
+  return { x: cx2(at3.x), y: cy2(y2), covers: true };
 }
 
 // src/app/input-gate.ts
@@ -62893,7 +63060,7 @@ function multiVerb(v) {
       return true;
   }
 }
-function openMultiMenu(at3) {
+function openMultiMenu(at3, avoid = view.selRects()) {
   ui2.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu sel-menu";
@@ -62901,11 +63068,9 @@ function openMultiMenu(at3) {
   const item = (v, label, title = "", cls = "") => `<button class="btn ctx-item ${cls}" data-v="${v}"${title ? ` title="${esc14(title)}"` : ""}>${label}</button>`;
   box.innerHTML = item("repeat", _t("\u518D\u6765\u4E00\u904D"), _t("\u8FD9\u4E00\u5757\u8D34\u5230\u5B83\u81EA\u5DF1\u540E\u9762\u3001\u540C\u6837\u7684\u51E0\u884C\uFF08Ctrl / \u2318+D\uFF1B\u8FDE\u6309 = \u4E00\u904D\u904D\u5F80\u540E\u5237\uFF09")) + `<div class="ctx-sep"></div>` + item("copy", _t("\u590D\u5236")) + item("cut", _t("\u526A\u5207"), _t("\u590D\u5236\uFF0C\u518D\u628A\u539F\u5904\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62")) + (block || clip ? item("paste", _t("\u7C98\u8D34")) : "") + item("delete", _t("\u53D8\u6210\u4F11\u6B62"), _t("\u6BCF\u4E00\u884C\u9009\u4E2D\u7684\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF0C\u4E0D\u5408\u62E2"), "danger");
   document.body.append(box);
-  const w2 = box.offsetWidth, h2 = box.offsetHeight, mg = 8;
-  let y2 = at3.y + 8;
-  if (y2 + h2 > innerHeight - mg) y2 = at3.y - h2 - 8;
-  box.style.left = `${Math.max(mg, Math.min(at3.x, innerWidth - w2 - mg))}px`;
-  box.style.top = `${Math.max(mg, Math.min(y2, innerHeight - h2 - mg))}px`;
+  const q2 = placeMenu({ w: box.offsetWidth, h: box.offsetHeight }, at3, avoid, { w: innerWidth, h: innerHeight });
+  box.style.left = `${q2.x}px`;
+  box.style.top = `${q2.y}px`;
   const close = () => {
     box.remove();
     ui2.closed(close);
@@ -63537,7 +63702,7 @@ var view = new ScoreView(scoreEl, {
     switch (e10.kind) {
       case "staff":
       case "text": {
-        const aside = touchLike && e10.kind === "text";
+        const aside = touchLike() && e10.kind === "text";
         if (ws.aside !== aside) {
           ws.aside = aside;
           applyWorkspace();
@@ -63556,8 +63721,10 @@ var view = new ScoreView(scoreEl, {
         openScoreMenu(e10.at, e10.row);
         return;
       case "selection":
-        openSelMenu(e10.at);
+        if (D3.st.multi) openMultiMenu(e10.at, e10.avoid);
+        else openSelMenu(e10.at, e10.avoid);
         return;
+      // 右键 / 选区旁的小钮（v0.17.55）
       case "mark":
         openMarkMenu(e10.index, e10.at);
         return;
@@ -64178,16 +64345,8 @@ function routeName(track) {
   return k2 >= 0 ? labelsNow()[k2] : studioTrack(D3.extras, track)?.name ?? track;
 }
 var ws = { mode: "notes", collapsed: false, tryout: false };
-var touchLike = (() => {
-  try {
-    return matchMedia("(pointer: coarse)").matches;
-  } catch {
-    return false;
-  }
-})();
-addEventListener("pointerdown", (e10) => {
-  touchLike = e10.pointerType !== "mouse";
-}, { capture: true, passive: true });
+watchPointers();
+var touchLike = () => caps(lastPointer()).softKeyboard;
 var lastEditMode = "notes";
 var listenOn = () => ws.mode === "listen";
 function applyWorkspace() {
@@ -64226,7 +64385,7 @@ function setMode(m2) {
   if (m2 !== "listen") lastEditMode = m2;
   ws.mode = m2;
   ws.aside = false;
-  if (hasKeys(m2) && touchLike) ws.collapsed = false;
+  if (hasKeys(m2) && touchLike()) ws.collapsed = false;
   applyWorkspace();
 }
 var setListen = (on2) => setMode(on2 ? "listen" : lastEditMode);
@@ -64422,16 +64581,16 @@ function installBuiltin(lib) {
   }, lib);
 }
 async function installVoicePacks(onPct) {
-  let last = null;
+  let last2 = null;
   for (const base2 of models.bases()) {
     try {
       await packStore.download(Object.keys(PACKS), base2, (p2) => onPct(Math.floor(p2.done / p2.total * 100)));
       return;
     } catch (e10) {
-      last = e10;
+      last2 = e10;
     }
   }
-  throw last ?? new Error("no source");
+  throw last2 ?? new Error("no source");
 }
 function goToPartInst(partId) {
   const paper = D3.st.song.papers.find((pp) => pp.id === D3.st.at.paper && pp.tracks[partId]) ?? D3.st.song.papers.find((pp) => pp.tracks[partId]);
@@ -65028,7 +65187,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "c959a6398fd2",
+  cssHash: "c038fc9659c3",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -66551,8 +66710,8 @@ function openAddPartMenu(paperId, at3) {
       return;
     }
     if (v === "new") {
-      const last = D3.st.song.parts.filter((p2) => paper.tracks[p2.id]).at(-1);
-      addNewPart(paperId, void 0, last ? { anchor: last.id, above: false } : void 0);
+      const last2 = D3.st.song.parts.filter((p2) => paper.tracks[p2.id]).at(-1);
+      addNewPart(paperId, void 0, last2 ? { anchor: last2.id, above: false } : void 0);
       return;
     }
     if (v === "parts") openPartsManager({ paper: paperId, part: D3.st.at.part });
@@ -67215,7 +67374,7 @@ function selBarAnchor() {
   const r10 = document.querySelector('.sel-bar [data-v="transpose"]')?.getBoundingClientRect();
   return r10 ? { x: r10.left, y: r10.bottom } : { x: innerWidth / 2 - 100, y: 120 };
 }
-function openSelMenu(at3) {
+function openSelMenu(at3, avoid = view.selRects()) {
   const perc = isPercPart(D3.st.at.part);
   if (!D3.st.sel) return;
   ui2.close();
@@ -67236,11 +67395,9 @@ function openSelMenu(at3) {
   draw("main");
   document.body.append(box);
   const place = () => {
-    const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
-    let y2 = at3.y + 8;
-    if (y2 + h2 > innerHeight - m2) y2 = at3.y - h2 - 8;
-    box.style.left = `${Math.max(m2, Math.min(at3.x, innerWidth - w2 - m2))}px`;
-    box.style.top = `${Math.max(m2, Math.min(y2, innerHeight - h2 - m2))}px`;
+    const q2 = placeMenu({ w: box.offsetWidth, h: box.offsetHeight }, at3, avoid, { w: innerWidth, h: innerHeight });
+    box.style.left = `${q2.x}px`;
+    box.style.top = `${q2.y}px`;
   };
   place();
   const outside = (e10) => {
@@ -67493,7 +67650,7 @@ function loadDocInner(song, o10) {
   ws.mode = d3.mode;
   if (d3.mode !== "listen") lastEditMode = d3.mode;
   if (!o10.keepPanels) {
-    if (touchLike) ws.collapsed = D3.st.song.papers.some((pp) => Object.values(pp.tracks).some((t10) => t10.some((x2) => x2.kind === "note")));
+    if (touchLike()) ws.collapsed = D3.st.song.papers.some((pp) => Object.values(pp.tracks).some((t10) => t10.some((x2) => x2.kind === "note")));
     ws.aside = false;
   }
   applyWorkspace();
@@ -69571,17 +69728,17 @@ if (bootFolder) {
   setFolderOnline(await folderPermission(bootFolder, { request: false }));
   ensureAttached({ kind: "folder", entry: bootFolder });
   diagNote("home", `boot folder "${bootFolder.label}" online=${String(folderOnline())}`);
-  const last = deviceKvGet(KV_LAST_DOC);
-  if (gallery.wasInGallery() || !last) await gallery.open();
-  else if (!await openStoreDoc(last)) await gallery.open();
+  const last2 = deviceKvGet(KV_LAST_DOC);
+  if (gallery.wasInGallery() || !last2) await gallery.open();
+  else if (!await openStoreDoc(last2)) await gallery.open();
   if (folderOnline()) void afterSignIn();
   void offerMove();
 } else if (currentPolicy().library && currentPolicy().cloud && (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash))) {
   ensureAttached();
   bootedOnStore = true;
-  const last = deviceKvGet(KV_LAST_DOC);
-  if (gallery.wasInGallery() || !last) await gallery.open();
-  else if (!await openStoreDoc(last)) await gallery.open();
+  const last2 = deviceKvGet(KV_LAST_DOC);
+  if (gallery.wasInGallery() || !last2) await gallery.open();
+  else if (!await openStoreDoc(last2)) await gallery.open();
   startAuth();
 }
 setTimeout(() => {
@@ -69615,4 +69772,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-15c6c3477977.mjs.map
+//# sourceMappingURL=moonsinger-d90644331aa2.mjs.map

@@ -2615,6 +2615,7 @@ export const S = {
   "粘轨设置": { en: "Paste track" },
   "拷的「{from}」是歌手轨，只能粘到歌手轨上": { en: "The copy from “{from}” is a singer track; it only pastes onto singer tracks" },
   "拷的「{from}」是混音轨，只能粘到混音轨上": { en: "The copy from “{from}” is a bus; it only pastes onto buses" },
+  "选区菜单": { en: "Selection menu" },
 } as const satisfies Record<string, Entry>;
 
 export type Key = keyof typeof S;
