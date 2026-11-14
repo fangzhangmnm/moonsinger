@@ -1048,6 +1048,17 @@ var S = {
   "{n} \u9996\u6CA1\u642C\u6210\uFF0C\u8FD8\u5728\u6D4F\u89C8\u5668\u91CC\uFF0C\u4E00\u4E2A\u5B57\u8282\u6CA1\u52A8\uFF1A{failed}": { en: "{n} {n|song wasn't|songs weren't} moved and {n|remains|remain} in the browser, not a byte changed: {failed}" },
   "\u6CA1\u6709\u8981\u642C\u7684\u6B4C": { en: "No songs to move" },
   "\u9009\u533A\u5199\u6EE1\u4E86\uFF1A\u5199\u4E0D\u51FA\u9009\u533A\u3002\u8981\u5F80\u540E\u5199\uFF0C\u5148\u70B9\u522B\u5904\u9000\u51FA\u9009\u533A": { en: "The selection is full: can't write past it. To keep writing, tap elsewhere to leave the selection" },
+  "\u5728\u9009\u4E50\u5668\uFF1A\u8C31\u88AB\u76D6\u4F4F\u4E86\uFF0C\u56DE\u5230\u8C31\u518D\u632A\u5149\u6807": { en: "Picking an instrument: the score is covered; go back to the score to move the cursor" },
+  "\u5728\u9009\u4E50\u5668\uFF1A\u952E\u76D8\u53EA\u5F39\u4E0D\u5199\uFF1B\u56DE\u5230\u8C31\u518D\u5199": { en: "Picking an instrument: the keyboard only plays, it doesn't write; go back to the score to write" },
+  "\u9501\u7740\uFF1A\u8981\u6539\u5148\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D": { en: "Locked: to edit, first tap \u201CKeep editing\u201D above the score" },
+  "\u300C\u5F39\u300D\u5F00\u7740\uFF1A\u7B26\u53F7\u683C\u5168\u662F\u5199\u8BB0\u53F7\u7684\uFF0C\u518D\u70B9\u300C\u5F39\u300D\u63A5\u56DE\u53BB\u624D\u80FD\u7528": { en: "\u201CPlay\u201D is on: the symbol keys all write marks; tap \u201CPlay\u201D again to plug back in" },
+  "\u300C\u5F39\u300D\u5F00\u7740\uFF1A\u53EA\u5F39\u4E0D\u5199\uFF1B\u518D\u70B9\u300C\u5F39\u300D\u63A5\u56DE\u53BB": { en: "\u201CPlay\u201D is on: it only plays, it doesn't write; tap \u201CPlay\u201D again to plug back in" },
+  "\u53F0\u4E0A\u8FD9\u4F4D\u662F\u5355\u58F0\u7684\uFF0C\u53E0\u4E0D\u4E86": { en: "The performer on stage plays one note at a time, so notes can't be stacked" },
+  "\u8FD9\u4E2A\u58F0\u90E8\u4E0D\u662F\u5927\u8C31\u8868\uFF0C\u53EA\u6709\u4E00\u5F20\u8C31": { en: "This part isn't a grand staff; there's only one staff" },
+  "\u5149\u6807\u524D\u9762\u6CA1\u6709\u97F3\u53EF\u4EE5\u62C9\u957F": { en: "There's no note before the cursor to lengthen" },
+  "\u5149\u6807\u524D\u9762\u6CA1\u6709\u53EF\u5220\u7684": { en: "There's nothing before the cursor to delete" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u8FD8\u6CA1\u6709\u97F3\uFF1A\u8BB0\u53F7\u8981\u6302\u5728\u97F3\u4E0A": { en: "There are no notes on this sheet yet: marks attach to notes" },
+  "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u662F\u5355\u97F3": { en: "Arpeggios only go on chords: the note before the cursor is a single note" },
   "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u662F\u5355\u97F3": { en: "Arpeggios only go on chords: the note before the cursor (or the selection) is a single note" },
   "{p}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "{p} must go on a note (before the cursor is a rest, or no note yet)" },
   "\u8FDE\u7EBF\u4ECE\u4E00\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A slur goes from one note to the next (before the cursor is a rest, or no note yet)" },
@@ -1769,6 +1780,7 @@ var S = {
   "\u4E8C\u5206": { en: "Half" },
   "\u5168\u97F3\u7B26": { en: "Whole" },
   "{n} \u8FDE\u97F3": { en: "{n}-tuplet" },
+  "\u7B26\u53F7\u683C\u5F00\u7740\uFF1A\u8FD9\u4E00\u9762\u53EA\u5199\u8BB0\u53F7\uFF1B\u70B9\u300C\u97F3\u300D\u6362\u56DE\u97F3\u952E\u5199\u97F3": { en: "The symbol keys are showing: this side only writes marks; tap \u201CNotes\u201D to switch back" },
   "\u5149\u6807\u5DE6\u79FB\uFF08{p}\uFF09": { en: "Cursor left ({p})" },
   "\u5149\u6807\u53F3\u79FB\uFF08{p}\uFF09": { en: "Cursor right ({p})" },
   "\u4F11\u6B62\uFF08{p}\uFF09": { en: "Rest ({p})" },
@@ -1820,6 +1832,10 @@ var S = {
   "\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09": { en: "Sliding your finger to the next key sounds that key (writes along the way while writing)" },
   "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09": { en: "Sliding up / down on a note key bends just this note up / down (sticky)" },
   "\u952E\u76D8\u5E03\u5C40": { en: "Keyboard layout" },
+  "\u4E0D\u753B": { en: "Not drawn" },
+  "\u65E0\u6548": { en: "No effect" },
+  "\uFF08\u8FD9\u79CD\u8C31\u4E0D\u753B\u5B83\uFF1A\u5199\u5728\u8C31\u4E0A\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u624D\u770B\u5F97\u89C1\uFF09": { en: "(this notation doesn't draw it: it's written in the score and shows when you switch back to the staff)" },
+  "\uFF08\u5199\u5728\u8FD9\u91CC\u4E0D\u8D77\u4F5C\u7528\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF09": { en: "(no effect here: it's written in the score and greyed)" },
   "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09": { en: " (the performer on stage ignores this: drawn gray on the score, sound unaffected)" },
   "\u7436\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u548C\u5F26\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u594F\u51FA\uFF08\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u6CE2\u6D6A\u7EBF\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Arpeggio: rolls the chord before the cursor (or the selection) low to high (a wavy line left of the chord); tap again to remove" },
   "\u6EDA\u594F\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u6574\u4E2A\u97F3\u6572\u6EE1\uFF08\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF\uFF09\uFF1B\u591A\u5BC6\u5728\u4E50\u5668\u9875\u8C03\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Roll: the note before the cursor (or the selection) is filled with rapid hits (three slashes on the stem); set how fast on the instrument page; tap again to remove" },
@@ -10860,4 +10876,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-6f5fcd28e5e9.mjs.map
+//# sourceMappingURL=singer-worker-fd448c61a6b8.mjs.map

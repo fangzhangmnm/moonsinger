@@ -10,6 +10,8 @@ export declare function homeTonic(fifths: number): number;
  *  · 移调辅助起作用（五线谱、不是打击乐的行）：大字 = 音按光标这里的调号拼写（落进谱时的写法 keySpell）再换到 C（toC，和排版、鬼音符同一个换法），
  *    小字 = 实际的音名。和键盘自己的「1=」无关（谱降 E、键盘手动 1=G：G4 那个键大字 E4、小字 G4）。
  *  · 别的时候（排版不换的地方）：大字 = 实际的音名，小字 = 级数（照旧）。
+ *  · 简谱（v0.17.43，统筹「简谱下键上的大字写纸上的数字、小字写实际的音名」）：大字 = 这个音落进谱时按光标这里的调号拼写、排版会画成的那个数字
+ *    （同 src/score/degree.ts toDegree：1 = 调号的大调主音；八度点 = 光标那一行的八度基准 jianpu），小字 = 实际的音名。键的位置不动。
  *  名字一律走音名那一个出口（noteName，八度照「中央 C 叫 C 几」）。升降滑出来的那个音（altered）同一条规矩，两行一起变。 */
 export declare function keyFaces(p: Pitch, degree: {
     deg: string;
@@ -19,6 +21,7 @@ export declare function keyFaces(p: Pitch, degree: {
     inC: boolean;
     fifths: number;
     middleC: number;
+    jianpu?: number | null;
 }): KeyFaces;
 /** pad 上有调号以外的音：手动拨的调 / 调式有音不在谱上这里的调号里（1=C 多利亚 / 小调 / 羽调式在 C 大调里 = 没有：同一个 1=、换个主音；1=G 在 C 大调里 = F♯ 不在；布鲁斯带 ♭3 ♭7 = 有）。 */
 export declare function outsideKey(sc: Scale, f: number, keySig: number): boolean;
@@ -32,4 +35,4 @@ export interface PadMusicHost extends PadMusic {
 }
 /** middleC = 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字、音域旋钮照它写。
  *  inC = 移调辅助在光标这个声部上起不起作用（五线谱、开着、不是打击乐的行；宿主判，第 19 条）：起作用 = 键上大字照谱上换到 C 调画成的名字写。 */
-export declare function createPadMusic(get: () => EditorState, middleC: () => number, inC?: () => boolean): PadMusicHost;
+export declare function createPadMusic(get: () => EditorState, middleC: () => number, inC?: () => boolean, jianpuBase?: () => number | null): PadMusicHost;

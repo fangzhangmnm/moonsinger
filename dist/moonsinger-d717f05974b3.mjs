@@ -4621,6 +4621,17 @@ var S = {
   "{n} \u9996\u6CA1\u642C\u6210\uFF0C\u8FD8\u5728\u6D4F\u89C8\u5668\u91CC\uFF0C\u4E00\u4E2A\u5B57\u8282\u6CA1\u52A8\uFF1A{failed}": { en: "{n} {n|song wasn't|songs weren't} moved and {n|remains|remain} in the browser, not a byte changed: {failed}" },
   "\u6CA1\u6709\u8981\u642C\u7684\u6B4C": { en: "No songs to move" },
   "\u9009\u533A\u5199\u6EE1\u4E86\uFF1A\u5199\u4E0D\u51FA\u9009\u533A\u3002\u8981\u5F80\u540E\u5199\uFF0C\u5148\u70B9\u522B\u5904\u9000\u51FA\u9009\u533A": { en: "The selection is full: can't write past it. To keep writing, tap elsewhere to leave the selection" },
+  "\u5728\u9009\u4E50\u5668\uFF1A\u8C31\u88AB\u76D6\u4F4F\u4E86\uFF0C\u56DE\u5230\u8C31\u518D\u632A\u5149\u6807": { en: "Picking an instrument: the score is covered; go back to the score to move the cursor" },
+  "\u5728\u9009\u4E50\u5668\uFF1A\u952E\u76D8\u53EA\u5F39\u4E0D\u5199\uFF1B\u56DE\u5230\u8C31\u518D\u5199": { en: "Picking an instrument: the keyboard only plays, it doesn't write; go back to the score to write" },
+  "\u9501\u7740\uFF1A\u8981\u6539\u5148\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D": { en: "Locked: to edit, first tap \u201CKeep editing\u201D above the score" },
+  "\u300C\u5F39\u300D\u5F00\u7740\uFF1A\u7B26\u53F7\u683C\u5168\u662F\u5199\u8BB0\u53F7\u7684\uFF0C\u518D\u70B9\u300C\u5F39\u300D\u63A5\u56DE\u53BB\u624D\u80FD\u7528": { en: "\u201CPlay\u201D is on: the symbol keys all write marks; tap \u201CPlay\u201D again to plug back in" },
+  "\u300C\u5F39\u300D\u5F00\u7740\uFF1A\u53EA\u5F39\u4E0D\u5199\uFF1B\u518D\u70B9\u300C\u5F39\u300D\u63A5\u56DE\u53BB": { en: "\u201CPlay\u201D is on: it only plays, it doesn't write; tap \u201CPlay\u201D again to plug back in" },
+  "\u53F0\u4E0A\u8FD9\u4F4D\u662F\u5355\u58F0\u7684\uFF0C\u53E0\u4E0D\u4E86": { en: "The performer on stage plays one note at a time, so notes can't be stacked" },
+  "\u8FD9\u4E2A\u58F0\u90E8\u4E0D\u662F\u5927\u8C31\u8868\uFF0C\u53EA\u6709\u4E00\u5F20\u8C31": { en: "This part isn't a grand staff; there's only one staff" },
+  "\u5149\u6807\u524D\u9762\u6CA1\u6709\u97F3\u53EF\u4EE5\u62C9\u957F": { en: "There's no note before the cursor to lengthen" },
+  "\u5149\u6807\u524D\u9762\u6CA1\u6709\u53EF\u5220\u7684": { en: "There's nothing before the cursor to delete" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u8FD8\u6CA1\u6709\u97F3\uFF1A\u8BB0\u53F7\u8981\u6302\u5728\u97F3\u4E0A": { en: "There are no notes on this sheet yet: marks attach to notes" },
+  "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u662F\u5355\u97F3": { en: "Arpeggios only go on chords: the note before the cursor is a single note" },
   "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u662F\u5355\u97F3": { en: "Arpeggios only go on chords: the note before the cursor (or the selection) is a single note" },
   "{p}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "{p} must go on a note (before the cursor is a rest, or no note yet)" },
   "\u8FDE\u7EBF\u4ECE\u4E00\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A slur goes from one note to the next (before the cursor is a rest, or no note yet)" },
@@ -5342,6 +5353,7 @@ var S = {
   "\u4E8C\u5206": { en: "Half" },
   "\u5168\u97F3\u7B26": { en: "Whole" },
   "{n} \u8FDE\u97F3": { en: "{n}-tuplet" },
+  "\u7B26\u53F7\u683C\u5F00\u7740\uFF1A\u8FD9\u4E00\u9762\u53EA\u5199\u8BB0\u53F7\uFF1B\u70B9\u300C\u97F3\u300D\u6362\u56DE\u97F3\u952E\u5199\u97F3": { en: "The symbol keys are showing: this side only writes marks; tap \u201CNotes\u201D to switch back" },
   "\u5149\u6807\u5DE6\u79FB\uFF08{p}\uFF09": { en: "Cursor left ({p})" },
   "\u5149\u6807\u53F3\u79FB\uFF08{p}\uFF09": { en: "Cursor right ({p})" },
   "\u4F11\u6B62\uFF08{p}\uFF09": { en: "Rest ({p})" },
@@ -5393,6 +5405,10 @@ var S = {
   "\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09": { en: "Sliding your finger to the next key sounds that key (writes along the way while writing)" },
   "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09": { en: "Sliding up / down on a note key bends just this note up / down (sticky)" },
   "\u952E\u76D8\u5E03\u5C40": { en: "Keyboard layout" },
+  "\u4E0D\u753B": { en: "Not drawn" },
+  "\u65E0\u6548": { en: "No effect" },
+  "\uFF08\u8FD9\u79CD\u8C31\u4E0D\u753B\u5B83\uFF1A\u5199\u5728\u8C31\u4E0A\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u624D\u770B\u5F97\u89C1\uFF09": { en: "(this notation doesn't draw it: it's written in the score and shows when you switch back to the staff)" },
+  "\uFF08\u5199\u5728\u8FD9\u91CC\u4E0D\u8D77\u4F5C\u7528\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF09": { en: "(no effect here: it's written in the score and greyed)" },
   "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09": { en: " (the performer on stage ignores this: drawn gray on the score, sound unaffected)" },
   "\u7436\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u548C\u5F26\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u594F\u51FA\uFF08\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u6CE2\u6D6A\u7EBF\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Arpeggio: rolls the chord before the cursor (or the selection) low to high (a wavy line left of the chord); tap again to remove" },
   "\u6EDA\u594F\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u6574\u4E2A\u97F3\u6572\u6EE1\uFF08\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF\uFF09\uFF1B\u591A\u5BC6\u5728\u4E50\u5668\u9875\u8C03\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Roll: the note before the cursor (or the selection) is filled with rapid hits (three slashes on the stem); set how fast on the instrument page; tap again to remove" },
@@ -20856,6 +20872,11 @@ var ACC_GLYPH2 = ["\uE264", "\uE260", "", "\uE262", "\uE263"];
 var faceHtml = (f2) => "name" in f2 ? `<span class="kf-nm">${escHtml(f2.name)}</span>` : `<span class="kf-dg">${octDots(Math.max(0, f2.oct))}<span class="num"><span class="acc">${escHtml(f2.acc ?? "")}</span>${escHtml(f2.deg)}</span>${octDots(Math.max(0, -f2.oct))}</span>`;
 var faceText = (f2) => "name" in f2 ? f2.name : `${f2.acc ?? ""}${f2.deg}`;
 var escHtml = (t10) => t10.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
+var keyIdOf = (b3) => {
+  const d3 = b3.dataset;
+  return d3.cmd ?? (d3.caret ? "caret" : d3.breath ? "breath" : d3.accshift ? "accshift" : d3.stack ? "stack" : d3.half ? "half" : d3.kbswitch ? "kbswitch" : d3.staff ? "staff" : d3.sym ? `sym:${d3.sym}` : d3.mark ? `mark:${d3.mark}` : null);
+};
+var WRITE_ONLY = /* @__PURE__ */ new Set(["rest", "bar", "extend", "accshift", "stack", "half"]);
 var facesHtml = (c10) => `<span class="kf kf-big">${faceHtml(c10.big)}</span><span class="kf kf-small">${faceHtml(c10.small)}</span>`;
 var STEP2 = 28;
 var MOVE = 6;
@@ -20882,6 +20903,19 @@ var Pad = class {
     this.host = host2;
     this.render();
     addEventListener("resize", () => this.render());
+    const gate2 = (e10) => {
+      const b3 = e10.target?.closest?.("button");
+      if (!b3 || !this.el.contains(b3)) return;
+      const id2 = keyIdOf(b3), why2 = id2 ? this.offOf(id2) : null;
+      if (!why2) return;
+      e10.stopImmediatePropagation();
+      if (e10.type === "click") {
+        e10.preventDefault();
+        this.host.onOff?.(why2);
+      }
+    };
+    this.el.addEventListener("pointerdown", gate2, true);
+    this.el.addEventListener("click", gate2, true);
   }
   rowShift = 0;
   // 音域窗口挪过几行
@@ -20929,6 +20963,11 @@ var Pad = class {
   keys = /* @__PURE__ */ new Map();
   /** 升降键选的是哪一种（滑着换；记住，下次按还是它）。 */
   accSel = 1;
+  /** 这颗键现在为什么没意义：符号格开着时写音那一层的键 = 键盘自己知道；别的问宿主。退格在符号格那一面 = 符号退格（只删记号），问的是另一个 id。 */
+  offOf(id2) {
+    if (this.symbols !== "off" && WRITE_ONLY.has(id2)) return _t("\u7B26\u53F7\u683C\u5F00\u7740\uFF1A\u8FD9\u4E00\u9762\u53EA\u5199\u8BB0\u53F7\uFF1B\u70B9\u300C\u97F3\u300D\u6362\u56DE\u97F3\u952E\u5199\u97F3");
+    return this.host.offWhy?.(this.symbols !== "off" && id2 === "backspace" ? "symBackspace" : id2) ?? null;
+  }
   rows() {
     if (this.rowsSetting !== "auto") return this.rowsSetting;
     const m2 = KEY_METRIC[padForm()], avail2 = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
@@ -21097,7 +21136,7 @@ var Pad = class {
   symStates() {
     return SYM_PAGES[this.symPage].map((id2) => {
       const ks = this.host.keyState?.(id2);
-      return ks ? `${ks.off ? "x" : ""}${ks.on ? "o" : ""}` : "";
+      return ks ? `${ks.off ? "x" : ""}${ks.on ? "o" : ""}${ks.tag ?? ""}${this.host.offWhy?.(`sym:${id2}`) ? "-" : ""}` : this.host.offWhy?.(`sym:${id2}`) ? "-" : "";
     }).join(",");
   }
   cands(rows) {
@@ -21108,7 +21147,8 @@ var Pad = class {
       // 按钮上写光标处正生效的那个（插进去的默认值），调号写「1=G」不写 ♯♭（user「+1=G才比较好懂吧，+#b只会让人觉得是加升降号」）；
       // 「+」在符号左边、小一号浅一色（user「不过加号和后面的东西也许需要分开来」→ 试过左上角角标 →「太不显眼了，能不能放在符号左边，只是字号和颜色拉开差距」）
       case "more": {
-        return c10(`data-autobars="1"`, _t("\u81EA\u52A8\u5C0F\u8282\u7EBF"), this.host.autoBars(), _t("\u6309\u62CD\u53F7\u81EA\u52A8\u753B\u5C0F\u8282\u7EBF\uFF08\u53EA\u753B\u3001\u4E0D\u8FDB\u6570\u636E\uFF09\uFF1B\u624B\u63D2\u7684\u300C|\u300D= \u4ECE\u90A3\u91CC\u91CD\u65B0\u6570\uFF0C\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\u300C|\u300D")) + (this.host.staves() === 2 ? c10(`data-staff="1"`, _t("\u6362\u8C31\u8868"), false, _t("\u5927\u8C31\u8868\uFF1A\u521A\u5199\u7684\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u632A\u5230\u53E6\u4E00\u5F20\u8C31\u8868\uFF1B\u518D\u6309\u4E00\u6B21\u56DE\u5230\u6309\u97F3\u9AD8\u81EA\u52A8\u5206")) : "") + c10(`data-open="layout"`, _t("\u5E03\u5C40\u2026"), false, _t("\u51E0\u884C\u51E0\u5217\u3001\u9996\u8C03 / \u7EDD\u5BF9")) + back;
+        return c10(`data-autobars="1"`, _t("\u81EA\u52A8\u5C0F\u8282\u7EBF"), this.host.autoBars(), _t("\u6309\u62CD\u53F7\u81EA\u52A8\u753B\u5C0F\u8282\u7EBF\uFF08\u53EA\u753B\u3001\u4E0D\u8FDB\u6570\u636E\uFF09\uFF1B\u624B\u63D2\u7684\u300C|\u300D= \u4ECE\u90A3\u91CC\u91CD\u65B0\u6570\uFF0C\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\u300C|\u300D")) + c10(`data-staff="1"`, _t("\u6362\u8C31\u8868"), false, _t("\u5927\u8C31\u8868\uFF1A\u521A\u5199\u7684\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u632A\u5230\u53E6\u4E00\u5F20\u8C31\u8868\uFF1B\u518D\u6309\u4E00\u6B21\u56DE\u5230\u6309\u97F3\u9AD8\u81EA\u52A8\u5206")) + // 不是大谱表也不藏：灰着、点了说为什么（A 类，v0.17.43）
+        c10(`data-open="layout"`, _t("\u5E03\u5C40\u2026"), false, _t("\u51E0\u884C\u51E0\u5217\u3001\u9996\u8C03 / \u7EDD\u5BF9")) + back;
       }
       default:
         return "";
@@ -21208,7 +21248,9 @@ var Pad = class {
     const grid = this.el.querySelector(".pad-grid");
     const cell2 = (id2, big, label, title, state = "") => {
       const ks = this.host.keyState?.(id2) ?? {}, art3 = /^(art:|inhale:|swell:)|^slur$/.test(id2), off2 = !!ks.off, on2 = !!ks.on;
-      return `<button class="pad-key sym${art3 ? " art" : ""}${off2 ? " ignored" : ""}${on2 ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id2}" title="${title}${off2 ? _t("\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09") : ""}">${big}<small>${label}${off2 ? `<span class="ign-tag">${_t("\u4E0D\u8BA4")}</span>` : ""}</small></button>`;
+      const tag2 = ks.tag === "noDraw" ? _t("\u4E0D\u753B") : ks.tag === "noEffect" ? _t("\u65E0\u6548") : _t("\u4E0D\u8BA4");
+      const tip = ks.tag === "noDraw" ? _t("\uFF08\u8FD9\u79CD\u8C31\u4E0D\u753B\u5B83\uFF1A\u5199\u5728\u8C31\u4E0A\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u624D\u770B\u5F97\u89C1\uFF09") : ks.tag === "noEffect" ? _t("\uFF08\u5199\u5728\u8FD9\u91CC\u4E0D\u8D77\u4F5C\u7528\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF09") : _t("\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09");
+      return `<button class="pad-key sym${art3 ? " art" : ""}${off2 ? " ignored" : ""}${on2 ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id2}" title="${title}${off2 ? tip : ""}">${big}<small>${label}${off2 ? `<span class="ign-tag">${tag2}</span>` : ""}</small></button>`;
     };
     const items = [
       cell2("art:arpeggio", `<span class="smufl">\uEAA9\uEAA9</span>`, _t("\u7436\u97F3"), _t("\u7436\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u548C\u5F26\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u594F\u51FA\uFF08\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u6CE2\u6D6A\u7EBF\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389")),
@@ -21241,7 +21283,8 @@ var Pad = class {
       cell2("groove", `<span class="big it">${_t("\u98CE\u683C")}</span>`, _t("\u62CD\u5B50\u8F7B\u91CD"), _t("\u98CE\u683C\u8BB0\u53F7\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u5728\u5C0F\u8282\u91CC\u7684\u4F4D\u7F6E\u8F7B\u4E00\u70B9 / \u91CD\u4E00\u70B9\uFF08\u53E4\u5178 / \u6D41\u884C / \u534E\u5C14\u5179 / \u8FDB\u884C\u66F2\u2026\u70B9\u5F00\u9009\uFF09\uFF1B\u6574\u5F20\u7EB8\u7684\u58F0\u90E8\u4E00\u8D77\u542C\uFF0C\u5404\u4EBA\u8DDF\u591A\u5C11\u6309\u4E50\u5668")),
       cell2("repeat", `<span class="big">:|</span>`, _t("\u53CD\u590D"), _t("\u8C31\u5185\u53CD\u590D / \u8DF3\u8F6C\uFF1A|: :|\u3001\u623F\u5B50 1. 2.\u3001Segno / Coda / D.C. / D.S. / Fine\u2026\uFF08\u70B9\u5F00\u9009\uFF1B\u63D2\u5728\u5149\u6807\u5904\uFF0C\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\uFF09\u3002\u4E0D\u8DE8\u7EB8\uFF1B\u653E\u7684\u65F6\u5019\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C")),
       cell2("pedal", `<span class="smufl">\uE650</span>`, _t("\u8E0F\u677F"), _t("\u8E0F\u677F\uFF08\u97F3\u63A5\u7740\u54CD\u8FD8\u662F\u6B62\u4F4F\uFF09\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u8E29\u4E0B / \u62AC\u8D77 / \u6362\u8E0F\u677F\uFF0C\u5B57\u8DDF\u7740\u90A3\u513F\u73B0\u5728\u8E29\u6CA1\u8E29\uFF1B\u6709\u9009\u533A = \u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\u3002\u70B9\u8C31\u4E0A\u7684\u8E0F\u677F\u8BB0\u53F7\u80FD\u6539\u3001\u5220\uFF0C\u957F\u6309\u62D6\u80FD\u632A")),
-      ...this.host.staves() === 2 ? [cell2("staff", `<span class="big">\u21C5</span>`, _t("\u6362\u8C31\u8868"), _t("\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868"))] : []
+      cell2("staff", `<span class="big">\u21C5</span>`, _t("\u6362\u8C31\u8868"), _t("\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868"))
+      // 不是大谱表也不藏（A 类，v0.17.43）
     ];
     const byId = new Map(items.map((h2) => [/data-sym="([^"]+)"/.exec(h2)[1], h2]));
     grid.innerHTML = SYM_PAGES[this.symPage].flatMap((id2) => byId.get(id2) ?? []).join("");
@@ -21463,8 +21506,9 @@ ${x2.title}`).join("");
     const stk = this.el.querySelector("[data-stack]");
     if (stk) stk.classList.toggle("off", !this.host.canStack());
     const symOn = this.symbols !== "off";
-    this.el.querySelectorAll('.writes [data-cmd="rest"], .writes [data-cmd="bar"], .writes [data-cmd="extend"], .writes [data-accshift], .writes [data-stack], .writes [data-half]').forEach((b3) => {
-      b3.disabled = symOn;
+    this.el.querySelectorAll(".pad-tools .btn, .pad-key.sym").forEach((b3) => {
+      const id2 = keyIdOf(b3);
+      b3.classList.toggle("is-off", !!id2 && !!this.offOf(id2));
     });
   }
   on(root, sel2, fn) {
@@ -21718,6 +21762,10 @@ function homeTonic(fifths) {
   return t10 + 7 * Math.floor((h2 - t10) / 7);
 }
 function keyFaces(p2, degree2, o10) {
+  if (o10.jianpu !== void 0 && o10.jianpu !== null) {
+    const d3 = toDegree(keySpell(p2, o10.fifths), o10.fifths);
+    return { big: { deg: String(d3.degree), oct: d3.shift - o10.jianpu, ...d3.acc ? { acc: ACC_TEXT[d3.acc + 2] } : {} }, small: { name: noteName(p2, o10.middleC) } };
+  }
   if (o10.inC) return { big: { name: noteName(drawnPitch(p2, o10.fifths), o10.middleC) }, small: { name: noteName(p2, o10.middleC) } };
   return { big: { name: noteName(p2, o10.middleC) }, small: { deg: degree2.deg, oct: degree2.oct, ...degree2.acc ? { acc: degree2.acc } : {} } };
 }
@@ -21731,15 +21779,18 @@ function outsideKey(sc2, f2, keySig) {
   const inKey = pcsOf(scaleById("major"), keySig);
   return [...pcsOf(sc2, f2)].some((pc2) => !inKey.has(pc2));
 }
-function createPadMusic(get, middleC, inC = () => false) {
+function createPadMusic(get, middleC, inC = () => false, jianpuBase = () => null) {
   const f2 = () => inputKey(get()), sc2 = () => scaleById(inputScaleOf(get()));
   const keySig = (st2) => keyAt(tr(st2), st2.sel ? st2.sel.from : st2.caret);
   const at3 = (k2) => ladderAt(sc2(), k2, homeTonic(f2()), f2());
   const pitchAt = (k2) => at3(k2).pitch;
-  const faceCtx = () => ({ inC: inC(), fifths: keySig(get()), middleC: middleC() });
+  const faceCtx = () => ({ inC: inC(), fifths: keySig(get()), middleC: middleC(), jianpu: jianpuBase() });
   return {
-    sig: () => `${f2()}|${inputScaleOf(get())}|${middleC()}|${inC() ? `C${keySig(get())}` : ""}`,
-    // 中央 C 的叫法变了 / 移调辅助开关 / 开着时光标走过转调 = 键上的字重写
+    sig: () => {
+      const jb = jianpuBase();
+      return `${f2()}|${inputScaleOf(get())}|${middleC()}|${inC() ? `C${keySig(get())}` : ""}|${jb === null ? "" : `J${keySig(get())}:${jb}`}`;
+    },
+    // 简谱：光标走过转调 / 换了八度基准的行 = 重写   // 中央 C 的叫法变了 / 移调辅助开关 / 开着时光标走过转调 = 键上的字重写
     cell: (k2) => {
       const r10 = at3(k2);
       return { ...keyFaces(r10.pitch, { deg: degLabel(r10.deg), oct: r10.oct }, faceCtx()), midi: midiOf(r10.pitch), ...r10.deg.deg === 1 && r10.deg.alt === 0 ? { tonic: true } : {} };
@@ -34489,7 +34540,28 @@ function createPadHost(padEl2, g3) {
     }
     chordRoots.delete(id2);
   }
-  const music = createPadMusic(st2, () => g3.middleC(), () => g3.inC());
+  let lastOff = "", lastOffAt = -1e9;
+  const ON_NOTE = /^sym:(art:|inhale:|slur$|dyn:|wedge:|pedal$|groove$)/;
+  function offWhy(id2) {
+    const s10 = st2(), w2 = g3.gate.why();
+    if (id2 === "accshift") return null;
+    if (id2 === "caret") return w2 === "picking" ? _t("\u5728\u9009\u4E50\u5668\uFF1A\u8C31\u88AB\u76D6\u4F4F\u4E86\uFF0C\u56DE\u5230\u8C31\u518D\u632A\u5149\u6807") : null;
+    if (w2 === "picking") return _t("\u5728\u9009\u4E50\u5668\uFF1A\u952E\u76D8\u53EA\u5F39\u4E0D\u5199\uFF1B\u56DE\u5230\u8C31\u518D\u5199");
+    if (w2 === "locked") return _t("\u9501\u7740\uFF1A\u8981\u6539\u5148\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D");
+    if (w2 === "unplugged") return id2 === "kbswitch" ? _t("\u300C\u5F39\u300D\u5F00\u7740\uFF1A\u7B26\u53F7\u683C\u5168\u662F\u5199\u8BB0\u53F7\u7684\uFF0C\u518D\u70B9\u300C\u5F39\u300D\u63A5\u56DE\u53BB\u624D\u80FD\u7528") : _t("\u300C\u5F39\u300D\u5F00\u7740\uFF1A\u53EA\u5F39\u4E0D\u5199\uFF1B\u518D\u70B9\u300C\u5F39\u300D\u63A5\u56DE\u53BB");
+    const t10 = tr(s10), i10 = s10.sel ? s10.sel.from : s10.caret, before = t10.slice(0, i10);
+    if (id2 === "stack" && !g3.canStack()) return _t("\u53F0\u4E0A\u8FD9\u4F4D\u662F\u5355\u58F0\u7684\uFF0C\u53E0\u4E0D\u4E86");
+    if ((id2 === "staff" || id2 === "sym:staff") && g3.staves() !== 2) return _t("\u8FD9\u4E2A\u58F0\u90E8\u4E0D\u662F\u5927\u8C31\u8868\uFF0C\u53EA\u6709\u4E00\u5F20\u8C31");
+    if (id2 === "extend" && !s10.sel && !before.some((x2) => x2.kind === "note" || x2.kind === "rest")) return _t("\u5149\u6807\u524D\u9762\u6CA1\u6709\u97F3\u53EF\u4EE5\u62C9\u957F");
+    if (id2 === "backspace" && !s10.sel && !s10.lead && !before.some((x2) => x2.kind === "note" || x2.kind === "rest" || x2.kind === "bar")) return _t("\u5149\u6807\u524D\u9762\u6CA1\u6709\u53EF\u5220\u7684");
+    if (ON_NOTE.test(id2) && !t10.some((x2) => x2.kind === "note")) return _t("\u8FD9\u5F20\u7EB8\u4E0A\u8FD8\u6CA1\u6709\u97F3\uFF1A\u8BB0\u53F7\u8981\u6302\u5728\u97F3\u4E0A");
+    if (id2 === "sym:art:arpeggio" && !s10.sel) {
+      const a10 = markAnchor(s10), n10 = a10 >= 0 ? t10[a10] : void 0;
+      if (!(n10 && n10.kind === "note" && n10.chord?.length)) return _t("\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u662F\u5355\u97F3");
+    }
+    return null;
+  }
+  const music = createPadMusic(st2, () => g3.middleC(), () => g3.inC(), () => g3.jianpuBase());
   const padImpro = () => g3.gate.why() !== null;
   const padAccept = (id2) => g3.canStack() ? (monoHeld.add(id2), { base: st2(), gesture: "" }) : monoAccept(id2);
   function padWrite(p2, id2, raw = false, turn) {
@@ -34670,9 +34742,23 @@ function createPadHost(padEl2, g3) {
     staves: () => g3.staves(),
     // 符号格的状态：这个格子写的记号台上这位不认 = 画灰（照样能写）；力度 = 光标处正生效的那个亮着（状态机）
     keyState: (id2) => {
-      const s10 = st2(), mk2 = markOfKey(id2), off2 = !!mk2 && g3.ignoredHere().includes(mk2);
+      const s10 = st2(), mk2 = markOfKey(id2), ign = !!mk2 && g3.ignoredHere().includes(mk2);
       const on2 = id2.startsWith("dyn:") && id2.slice(4) === dynMarkAt(tr(s10), s10.sel ? s10.sel.from : s10.caret);
-      return off2 || on2 ? { off: off2, on: on2 } : void 0;
+      const tag2 = (id2 === "clef" || id2 === "ottava") && g3.digitRows() ? "noDraw" : id2 === "ottava" && g3.staves() === 2 ? "noEffect" : (id2 === "tempo" || id2 === "repeat") && !g3.tempoOwnerHere() ? "noEffect" : id2 === "dyn:ramp" && (() => {
+        const a10 = markAnchor(s10);
+        return a10 >= 0 && dynMarkAt(tr(s10), a10) === null;
+      })() ? "noEffect" : void 0;
+      const off2 = ign || !!tag2;
+      return off2 || on2 ? { off: off2, on: on2, ...tag2 ? { tag: tag2 } : {} } : void 0;
+    },
+    // 没意义的键（A 类，v0.17.43）：现在为什么没意义；灰着、不执行、点了说这一句
+    offWhy: (id2) => offWhy(id2),
+    onOff: (why2) => {
+      const now2 = performance.now();
+      if (why2 === lastOff && now2 - lastOffAt < 4e3) return;
+      lastOff = why2;
+      lastOffAt = now2;
+      g3.info(why2);
     },
     hintRange: () => g3.hintRange(),
     onAutoBars: (on2) => {
@@ -35343,15 +35429,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-6f5fcd28e5e9.mjs");
+      return pick3(() => "singer-worker-fd448c61a6b8.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-4de98081b20f.mjs");
+      return pick3(() => "layout-worker-5e7cfe14782a.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-24331534c4f4.mjs");
+      return pick3(() => "encode-worker-12239489df9e.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -62150,6 +62236,12 @@ var padHost = createPadHost(padEl, {
   state: () => D3.st,
   middleC: () => lookOf(D3.st.song, lookCtx()).middleC,
   inC: () => inCAtCursor(),
+  jianpuBase: () => jianpuBaseAtCursor(),
+  digitRows: () => lookOf(D3.st.song, lookCtx()).notation !== "staff",
+  tempoOwnerHere: () => {
+    const pp = D3.st.song.papers.find((x2) => x2.id === D3.st.at.paper);
+    return !pp || tempoOwner(D3.st.song, pp) === D3.st.at.part;
+  },
   update: (n10, gesture) => {
     if (inputGate.may(D3.st, n10)) update(n10, gesture);
   },
@@ -62215,6 +62307,11 @@ var padHost = createPadHost(padEl, {
 var pad3 = padHost.pad;
 function inCAtCursor() {
   return lookOf(D3.st.song, lookCtx()).inCActive && !notationOfRole(curRole()).perc;
+}
+function jianpuBaseAtCursor() {
+  if (lookOf(D3.st.song, lookCtx()).notation !== "jianpu" || notationOfRole(curRole()).perc) return null;
+  const h2 = view.head(), s10 = h2 ? view.layoutNow().systems[h2.system] : null;
+  return s10 && typeof s10.octBase === "number" ? s10.octBase : null;
 }
 var shownInC = inCAtCursor();
 function syncSongLook() {
@@ -63372,7 +63469,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "418e51b301b7",
+  cssHash: "ecdb2197e16d",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -67919,4 +68016,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b399f665a0fe.mjs.map
+//# sourceMappingURL=moonsinger-d717f05974b3.mjs.map

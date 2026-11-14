@@ -35,9 +35,12 @@ check((await track()) === t1, "上面这些读的动作之后谱还是没变");
 // 键盘上的撤销：最后一步是谱上的（那个休止）= 停住，「弹」钮晃一下
 { await p.keyboard.press("Control+z"); const nudged = await p.evaluate(() => !!document.querySelector("#padPanel .impro-pad.nudge")); await p.waitForTimeout(80);
   check((await track()) === t1, "拔着按 Ctrl+Z：谱上的这一步不撤"); check(nudged, "被挡下 = 「弹」钮晃一下（不弹字）"); }
-// 触屏键盘上写的那一排：灰掉、点不动；硬点也不写
-{ const o = await p.evaluate(() => { const b = document.querySelector('#padPanel [data-cmd="rest"]'); if (!b) return null; const cs = getComputedStyle(b); return { pe: cs.pointerEvents, op: Number(cs.opacity) }; });
-  check(!!o && o.pe === "none" && o.op < 0.5, "拔着：键盘上「休止」那一排灰掉、点不动", JSON.stringify(o));
+// 触屏键盘上写的那一排：灰掉、点了不写、说一句为什么（v0.17.43 起 A 类键点得到：不留点了没反应的键）；硬点也不写
+{ const o = await p.evaluate(() => { const b = document.querySelector('#padPanel [data-cmd="rest"]'); if (!b) return null; const cs = getComputedStyle(b); return { off: b.classList.contains("is-off"), op: Number(cs.opacity) }; });
+  check(!!o && o.off && o.op < 0.5, "拔着：键盘上「休止」那一排灰掉（A 类）", JSON.stringify(o));
+  await p.click('#padPanel [data-cmd="rest"]'); await p.waitForTimeout(200);
+  const said = await p.evaluate(() => [...document.querySelectorAll(".notice-stack .toast")].map((t) => t.textContent ?? "").some((t) => t.includes("只弹不写")));
+  check((await track()) === t1 && said, "拔着点「休止」：谱没变、说一句为什么");
   await p.evaluate(() => { for (const sel of ['[data-cmd="rest"]', '[data-cmd="extend"]', '[data-cmd="bar"]', '[data-cmd="backspace"]']) { const b = document.querySelector("#padPanel " + sel); if (!b) continue; for (const t of ["pointerdown", "pointerup", "click"]) b.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 7, isPrimary: true })); } }); await p.waitForTimeout(150);
   check((await track()) === t1, "绕过样式硬点休止 / 延长 / 小节线 / 退格：谱也没变（总闸在后面兜着）"); }
 

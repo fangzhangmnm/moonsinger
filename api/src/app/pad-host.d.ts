@@ -12,6 +12,12 @@ export interface PadGlue {
     middleC(): number;
     /** 移调辅助在光标这个声部上起不起作用（第 19 条：起作用 = 键上大字照谱上换到 C 调画成的名字写；宿主判，键盘不知道）。 */
     inC(): boolean;
+    /** 简谱时光标那一行的八度基准（键上的大字写纸上的数字，v0.17.43）；不是简谱 = null。 */
+    jianpuBase(): number | null;
+    /** 这首歌现在画成数字行（简谱 / 字母谱）：谱号、八度线写了不画（B 类「不画」，v0.17.43）。 */
+    digitRows(): boolean;
+    /** 光标这一行是不是这张纸上管速度 / 反复结构的那一行（最上面在场的那位）：不是 = 速度、反复写了不起作用（B 类「无效」，v0.17.43）。 */
+    tempoOwnerHere(): boolean;
     /** gesture = 撤销并步的名字（同一个名字、挨得近的几下并成一步撤销；单声乐器「后按的算数」用）。 */
     update(next: EditorState, gesture?: string): void;
     /** 写一个音并回刚写的下标（-1 = 没写成）。 */

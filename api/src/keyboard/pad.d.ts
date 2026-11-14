@@ -88,7 +88,12 @@ export interface PadHost {
     keyState?(id: string): {
         off?: boolean;
         on?: boolean;
+        tag?: "noDraw" | "noEffect";
     } | undefined;
+    /** 没意义的键（A 类，v0.17.43，统筹审「哪些键没意义」的表）：这颗键现在为什么没意义（null = 有意义）。灰着、不执行、位置不动、不藏；点了 = onOff 说一句（宿主管去重）。
+     *  id = keyIdOf：写字键 = data-cmd / caret / breath / accshift / stack / half；顶上 = kbswitch、⋯ 里的 staff；符号格 = sym:<格子>；⋯ 里插记号 = mark:<记号>。 */
+    offWhy?(id: string): string | null;
+    onOff?(why: string): void;
     /** 键底部细条提示的音域 = 现在谁在弹（2026-10-08 by Claude Opus 5.5；user「试弹的时候键盘上的音域没有跟进」）：宿主说；不知道 / 不接 = null 不画（键盘不认识任何演奏者，ADR-0004）。 */
     hintRange?(): HintRange;
     /** 音键按下（第 k 级，id = 哪根手指）：写（不在「弹」时）+ 响都归宿主；回 false = 这一下不收（单音乐器几乎同时按下的第二根手指）：不亮、不记滑动。 */
@@ -152,6 +157,8 @@ export declare class Pad {
     /** 升降键选的是哪一种（滑着换；记住，下次按还是它）。 */
     private accSel;
     constructor(el: HTMLElement, host: PadHost);
+    /** 这颗键现在为什么没意义：符号格开着时写音那一层的键 = 键盘自己知道；别的问宿主。退格在符号格那一面 = 符号退格（只删记号），问的是另一个 id。 */
+    private offOf;
     private rows;
     /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
     private spanText;

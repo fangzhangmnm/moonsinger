@@ -3112,6 +3112,39 @@ export declare const S: {
     readonly "\u9009\u533A\u5199\u6EE1\u4E86\uFF1A\u5199\u4E0D\u51FA\u9009\u533A\u3002\u8981\u5F80\u540E\u5199\uFF0C\u5148\u70B9\u522B\u5904\u9000\u51FA\u9009\u533A": {
         readonly en: "The selection is full: can't write past it. To keep writing, tap elsewhere to leave the selection";
     };
+    readonly "\u5728\u9009\u4E50\u5668\uFF1A\u8C31\u88AB\u76D6\u4F4F\u4E86\uFF0C\u56DE\u5230\u8C31\u518D\u632A\u5149\u6807": {
+        readonly en: "Picking an instrument: the score is covered; go back to the score to move the cursor";
+    };
+    readonly "\u5728\u9009\u4E50\u5668\uFF1A\u952E\u76D8\u53EA\u5F39\u4E0D\u5199\uFF1B\u56DE\u5230\u8C31\u518D\u5199": {
+        readonly en: "Picking an instrument: the keyboard only plays, it doesn't write; go back to the score to write";
+    };
+    readonly "\u9501\u7740\uFF1A\u8981\u6539\u5148\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D": {
+        readonly en: "Locked: to edit, first tap “Keep editing” above the score";
+    };
+    readonly "\u300C\u5F39\u300D\u5F00\u7740\uFF1A\u7B26\u53F7\u683C\u5168\u662F\u5199\u8BB0\u53F7\u7684\uFF0C\u518D\u70B9\u300C\u5F39\u300D\u63A5\u56DE\u53BB\u624D\u80FD\u7528": {
+        readonly en: "“Play” is on: the symbol keys all write marks; tap “Play” again to plug back in";
+    };
+    readonly "\u300C\u5F39\u300D\u5F00\u7740\uFF1A\u53EA\u5F39\u4E0D\u5199\uFF1B\u518D\u70B9\u300C\u5F39\u300D\u63A5\u56DE\u53BB": {
+        readonly en: "“Play” is on: it only plays, it doesn't write; tap “Play” again to plug back in";
+    };
+    readonly "\u53F0\u4E0A\u8FD9\u4F4D\u662F\u5355\u58F0\u7684\uFF0C\u53E0\u4E0D\u4E86": {
+        readonly en: "The performer on stage plays one note at a time, so notes can't be stacked";
+    };
+    readonly "\u8FD9\u4E2A\u58F0\u90E8\u4E0D\u662F\u5927\u8C31\u8868\uFF0C\u53EA\u6709\u4E00\u5F20\u8C31": {
+        readonly en: "This part isn't a grand staff; there's only one staff";
+    };
+    readonly 光标前面没有音可以拉长: {
+        readonly en: "There's no note before the cursor to lengthen";
+    };
+    readonly 光标前面没有可删的: {
+        readonly en: "There's nothing before the cursor to delete";
+    };
+    readonly "\u8FD9\u5F20\u7EB8\u4E0A\u8FD8\u6CA1\u6709\u97F3\uFF1A\u8BB0\u53F7\u8981\u6302\u5728\u97F3\u4E0A": {
+        readonly en: "There are no notes on this sheet yet: marks attach to notes";
+    };
+    readonly "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u662F\u5355\u97F3": {
+        readonly en: "Arpeggios only go on chords: the note before the cursor is a single note";
+    };
     readonly "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u662F\u5355\u97F3": {
         readonly en: "Arpeggios only go on chords: the note before the cursor (or the selection) is a single note";
     };
@@ -5275,6 +5308,9 @@ export declare const S: {
     readonly "{n} \u8FDE\u97F3": {
         readonly en: "{n}-tuplet";
     };
+    readonly "\u7B26\u53F7\u683C\u5F00\u7740\uFF1A\u8FD9\u4E00\u9762\u53EA\u5199\u8BB0\u53F7\uFF1B\u70B9\u300C\u97F3\u300D\u6362\u56DE\u97F3\u952E\u5199\u97F3": {
+        readonly en: "The symbol keys are showing: this side only writes marks; tap “Notes” to switch back";
+    };
     readonly "\u5149\u6807\u5DE6\u79FB\uFF08{p}\uFF09": {
         readonly en: "Cursor left ({p})";
     };
@@ -5427,6 +5463,18 @@ export declare const S: {
     };
     readonly 键盘布局: {
         readonly en: "Keyboard layout";
+    };
+    readonly 不画: {
+        readonly en: "Not drawn";
+    };
+    readonly 无效: {
+        readonly en: "No effect";
+    };
+    readonly "\uFF08\u8FD9\u79CD\u8C31\u4E0D\u753B\u5B83\uFF1A\u5199\u5728\u8C31\u4E0A\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u624D\u770B\u5F97\u89C1\uFF09": {
+        readonly en: "(this notation doesn't draw it: it's written in the score and shows when you switch back to the staff)";
+    };
+    readonly "\uFF08\u5199\u5728\u8FD9\u91CC\u4E0D\u8D77\u4F5C\u7528\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF09": {
+        readonly en: "(no effect here: it's written in the score and greyed)";
     };
     readonly "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09": {
         readonly en: " (the performer on stage ignores this: drawn gray on the score, sound unaffected)";
