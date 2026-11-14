@@ -46,8 +46,8 @@ describe("同一件事各怎么做（press-rules，设计稿第四节 + 第二�
     // 长按不再拿起来拖（v0.17.57，设计稿第八节）：在能选中的东西上长按 = 和点一下一样；只有空白处是菜单（手指的右键）
     ["长按没亮的记号 = 亮框（同点一下）", "touch", () => onHold({ target: "mark", inSel: false, lit: false }), "light"],
     ["长按亮着的记号 = 它的小菜单（同点一下）", "touch", () => onHold({ target: "mark", inSel: false, lit: true }), "menu"],
-    ["长按没亮的字 = 亮框（同点一下）", "touch", () => onHold({ target: "lyric", inSel: false, lit: false }), "light"],
-    ["长按亮着的字 = 歌词框（同点一下）", "pen", () => onHold({ target: "lyric", inSel: false, lit: true }), "edit"],
+    ["长按没亮的字 = 选中（亮框 + 两颗钮，不开歌词框；v0.17.58）", "touch", () => onHold({ target: "lyric", inSel: false, lit: false }), "light"],
+    ["长按亮着的字 = 不变（还是亮着，不开歌词框）", "pen", () => onHold({ target: "lyric", inSel: false, lit: true }), "light"],
     ["长按空白 = 空白菜单", "touch", () => onHold({ target: "blank", inSel: false }), "blankMenu"],
     // 改音高、挪记号：鼠标、笔亮着框的直接拖；手指拖 = 滚动，拖框边的把手
     ["拖亮着的音", "mouse", () => onMove({ pointer: "mouse", target: "note", lit: true, canDrag: true }), "drag"],
@@ -73,6 +73,7 @@ describe("同一件事各怎么做（press-rules，设计稿第四节 + 第二�
     ["右键选区里的音", "mouse", () => onSecondary({ target: "note", inSel: true }), "menu"],
     ["右键记号", "mouse", () => onSecondary({ target: "mark", inSel: false }), "markMenu"],
     ["右键空白", "mouse", () => onSecondary({ target: "blank", inSel: false }), "blankMenu"],
+    ["右键「词」里的字 = 同长按：亮框 + 两颗钮（v0.17.58）", "mouse", () => onSecondary({ target: "lyric", inSel: false }), "light"],
     ["有选区：画小钮", "mouse", () => wantsSelButton({ pointer: "mouse", hasSel: true, edit: true }), false],
     ["有选区：画小钮", "pen", () => wantsSelButton({ pointer: "pen", hasSel: true, edit: true }), true],
     ["有选区：画小钮", "touch", () => wantsSelButton({ pointer: "touch", hasSel: true, edit: true }), true],
@@ -82,8 +83,8 @@ describe("同一件事各怎么做（press-rules，设计稿第四节 + 第二�
     ["点亮着的记号", "touch", () => onTap({ target: "mark", lit: true }), "menu"],
     ["点没亮的记号", "touch", () => onTap({ target: "mark", lit: false }), "light"],
     // 「词」里有字的字：点一下亮框，亮着再点 = 歌词框（三种指针一样；字没有悬浮）
-    ["点没亮的字", "mouse", () => onTap({ target: "lyric", lit: false }), "light"],
-    ["点亮着的字", "touch", () => onTap({ target: "lyric", lit: true }), "edit"],
+    ["点没亮的字 = 歌词框（一下就开，v0.17.58）", "mouse", () => onTap({ target: "lyric", lit: false }), "edit"],
+    ["点亮着的字 = 歌词框", "touch", () => onTap({ target: "lyric", lit: true }), "edit"],
     // 回到光标接着写：点空白
     ["点空白", "touch", () => onTap({ target: "blank", lit: false }), "caret"],
   ];
@@ -92,7 +93,7 @@ describe("同一件事各怎么做（press-rules，设计稿第四节 + 第二�
     for (const inSel of [true, false]) eq(["select", "keep"].includes(onHold({ target: "note" as Target, inSel })), true);
   });
   it("长按记号 / 演奏法 / 字 = 和点一下一样（v0.17.57：长按不再拿起来拖）", () => {
-    for (const target of ["mark", "art", "lyric"] as Target[]) for (const lit of [true, false]) eq(onHold({ target, inSel: false, lit }), onTap({ target, lit }), `${target} lit=${lit}`);
+    for (const target of ["mark", "art"] as Target[]) for (const lit of [true, false]) eq(onHold({ target, inSel: false, lit }), onTap({ target, lit }), `${target} lit=${lit}`);
   });
 });
 

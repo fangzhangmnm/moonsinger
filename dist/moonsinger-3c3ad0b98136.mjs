@@ -6487,7 +6487,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.57-2026-11-14";
+var APP_VERSION = "v0.17.58-2026-11-14";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -11804,7 +11804,7 @@ function onMove(o10) {
 function onTap(o10) {
   if (o10.target === "blank") return "caret";
   if (o10.target === "mark" && o10.lit) return "menu";
-  if (o10.target === "lyric" && o10.lit) return "edit";
+  if (o10.target === "lyric") return "edit";
   return "light";
 }
 var TAP_SELECTS = true;
@@ -11814,6 +11814,7 @@ function wantsGrip(o10) {
 function onHold(o10) {
   if (o10.target === "note") return o10.inSel ? "keep" : "select";
   if (o10.target === "blank") return "blankMenu";
+  if (o10.target === "lyric") return "light";
   const t10 = onTap({ target: o10.target, lit: !!o10.lit });
   return t10 === "caret" ? "blankMenu" : t10;
 }
@@ -11821,6 +11822,7 @@ function wantsSylButtons(o10) {
   return o10.target === "lyric" && o10.lit;
 }
 function onSecondary(o10) {
+  if (o10.target === "lyric") return onHold({ target: "lyric", inSel: false });
   if (o10.target === "note") return o10.inSel ? "menu" : "selectMenu";
   if (o10.target === "mark") return "markMenu";
   return "blankMenu";
@@ -19151,9 +19153,14 @@ var ScoreView = class {
       e10.preventDefault();
       const p2 = this.local(e10);
       this.cancelPress();
-      const dh = this.rules.symbols ? this.dynHitAt(p2.x, p2.y, false) : null, hit2 = dh ? null : this.noteAt(p2.x, p2.y);
+      const dh = this.rules.symbols ? this.dynHitAt(p2.x, p2.y, false) : null, g3 = dh ? null : this.grabAt(p2.x, p2.y, false), ly2 = g3?.kind === "lyric" ? g3 : null;
+      const hit2 = dh || ly2 ? null : this.noteAt(p2.x, p2.y);
       const st0 = this.host.get();
-      switch (onSecondary({ target: dh ? "mark" : hit2 ? "note" : "blank", inSel: !!hit2 && this.inSelection(hit2) })) {
+      switch (onSecondary({ target: dh ? "mark" : ly2 ? "lyric" : hit2 ? "note" : "blank", inSel: !!hit2 && this.inSelection(hit2) })) {
+        case "light":
+          this.tapLyric(ly2, false, ptr, p2.x, p2.y);
+          return;
+        // 右键字 = 同长按（v0.17.58）
         case "markMenu":
           this.lyrics.commitAndClose();
           this.marks.commitAndClose();
@@ -20556,7 +20563,7 @@ var ScoreView = class {
         this.box = null;
         this.boxEl.hidden = true;
         if (pr.grab?.kind === "mark") this.tapMark(pr.grab, !!pr.lit, pr.ptr);
-        else if (pr.grab) this.tapLyric(pr.grab, !!pr.lit, pr.ptr, pr.x, pr.y);
+        else if (pr.grab) this.tapLyric(pr.grab, false, pr.ptr, pr.x, pr.y);
         else if (pr.art) this.tapArt(pr.art, pr.ptr);
         return;
       case "select":
@@ -21059,10 +21066,11 @@ var ScoreView = class {
     this.tell({ kind: "staff" });
     this.lightAt(dh.system, dh.index, "mark", ptr);
   }
-  /** 轻点「词」里有字的字（v0.17.57，设计稿第八节第 2 条；user 2026-11-14「词的合并用拖动合并，其实相当难操作，我们还是改成小按钮，就选中之后改成小按钮」）：
-   *  没亮 = 亮框 + 字下面两颗小钮（合 / ← 和 →，drawLit 摆、sylStep 做）；亮着再点 = 歌词框改字。光标不动（只换到那条谱、取消选区）。
-   *  歌词框开着时点别的字 = 先收框、再让这个字亮框（不直接开）；收框可能改了谱（插句号）= 按原位置重新找一次。记号框开着 = 这一下只收框。 */
-  tapLyric(g0, lit, ptr, x2, y2) {
+  /** 「词」里有字的字（设计稿第八节第 2 条）：edit = 开歌词框（点一下）；不然 = 选中它 = 亮框 + 字下面两颗小钮（长按 / 右键；合 / ← 和 →，drawLit 摆、sylStep 做）。
+   *  结论由调的人问规则表（onTap / onHold / onSecondary）。v0.17.57 是「点一下亮框、亮着再点开框」，v0.17.58 照 user 改成「点一下 = 写词，长按 / 右键 = 选中」
+   *  （user 2026-11-14「你点字的时候到底是开歌词框还是选字？…如果要点两下才能进歌词框，我觉得是不对的」）。光标不动（只换到那条谱、取消选区）。
+   *  歌词框开着时：点别的字 = 先收框、再开那个字的框；长按别的字 = 收框、亮那个字。收框可能改了谱（插句号）= 按原位置重新找一次。记号框开着 = 这一下只收框。 */
+  tapLyric(g0, edit, ptr, x2, y2) {
     const wasMark = this.marks.open, wasLyric = this.lyrics.open;
     this.lyrics.commitAndClose();
     this.marks.commitAndClose();
@@ -21077,7 +21085,7 @@ var ScoreView = class {
       return;
     }
     const st0 = this.host.get(), st1 = this.onTrack(g3) ? st0 : this.focusRow(st0, g3.system, st0.caret);
-    if (onTap({ target: "lyric", lit: lit && !wasLyric }) === "edit") {
+    if (edit) {
       if (st1 !== st0) this.host.set(st1);
       this.openLyric(g3.index);
       this.tell({ kind: "text" });
@@ -21640,7 +21648,7 @@ var ScoreView = class {
       if (pr.grab && !pr.moved && !pr.fired) {
         this.finger = null;
         if (pr.grab.kind === "mark") this.tapMark(pr.grab, !!pr.lit, ptr);
-        else this.tapLyric(pr.grab, !!pr.lit, ptr, pr.x, pr.y);
+        else this.tapLyric(pr.grab, onTap({ target: "lyric", lit: !!pr.lit }) === "edit", ptr, pr.x, pr.y);
         return;
       }
       if (pr.grab && !caps(ptr).dragScrolls) return;
@@ -36656,7 +36664,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick3(() => "layout-worker-77f44b037ce0.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-3f44856306c5.mjs");
+      return pick3(() => "encode-worker-865c178866a9.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -69879,4 +69887,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-89190a5aa62b.mjs.map
+//# sourceMappingURL=moonsinger-3c3ad0b98136.mjs.map

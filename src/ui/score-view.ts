@@ -18,7 +18,7 @@
 //   力度记号 / 渐强渐弱：轻点 = 小菜单（改 / 删）；长按拖 = 挪到别的音上（从那个音起）；原地松手 = 小菜单。拖的时候谱上实时就是挪过去的样子（undo 一步）。
 // v0.17.57 起长按不再拖（设计稿 ai-docs/20261114-pointer-rules-design.md 第八节，取代上面三行的手势；user 2026-11-14「拖只有一种，点一下拖中同意」「词的合并用拖动合并，其实相当难操作，我们还是改成小按钮」）：
 //   拖只有一种 = 先点一下选中（亮框），再拖（鼠标、笔直接拖亮着的，手指拖把手）；长按只剩手指的右键（空白处的菜单），在字 / 记号上长按 = 和点一下一样。
-//   「词」里的字：点一下 = 亮框 + 字下面两颗小钮（合 / ← 往前一个音、→ 往后一个音，moveSyllable 同一套算法）；亮着再点 = 歌词框；字整个不能拖。「词」里长按音 = 选中它（不再接着拖扩选，扩选用两端的把手）。
+//   「词」里的字（v0.17.58 起「点一下 = 写词，长按 / 右键 = 选中」）：点一下 = 歌词框；长按 / 右键 = 亮框 + 字下面两颗小钮（合 / ← 往前一个音、→ 往后一个音，moveSyllable 同一套算法）；字整个不能拖。「词」里长按音 = 选中它（不再接着拖扩选，扩选用两端的把手）。
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
@@ -332,9 +332,11 @@ export class ScoreView {
       if (!this.layout || (e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
       e.preventDefault();
       const p = this.local(e); this.cancelPress();
-      const dh = this.rules.symbols ? this.dynHitAt(p.x, p.y, false) : null, hit = dh ? null : this.noteAt(p.x, p.y);
+      const dh = this.rules.symbols ? this.dynHitAt(p.x, p.y, false) : null, g = dh ? null : this.grabAt(p.x, p.y, false), ly = g?.kind === "lyric" ? g : null;
+      const hit = dh || ly ? null : this.noteAt(p.x, p.y);
       const st0 = this.host.get();
-      switch (onSecondary({ target: dh ? "mark" : hit ? "note" : "blank", inSel: !!hit && this.inSelection(hit) })) {
+      switch (onSecondary({ target: dh ? "mark" : ly ? "lyric" : hit ? "note" : "blank", inSel: !!hit && this.inSelection(hit) })) {
+        case "light": this.tapLyric(ly!, false, ptr, p.x, p.y); return;   // 右键字 = 同长按（v0.17.58）
         case "markMenu": this.lyrics.commitAndClose(); this.marks.commitAndClose(); this.markMenu(dh!); this.lightAt(dh!.system, dh!.index, "mark", ptr); return;   // + 亮框
         case "blankMenu": this.blankPress(p.x, p.y, e.clientX, e.clientY); return;
         case "selectMenu": { const st1 = this.onTrack(hit!) ? st0 : this.focusRow(st0, hit!.system); this.host.set(select(st1, hit!.index, hit!.index + 1)); break; }
@@ -1176,7 +1178,7 @@ export class ScoreView {
       }
       if (this.touches.size > 2) return;
       this.finger = { pid: e.pointerId, y0: e.clientY, top0: this.el.scrollTop, x: p.x, y: p.y, moved: false, shift: e.shiftKey, x0: e.clientX, left0: this.el.scrollLeft };
-      const grab = this.grabAt(p.x, p.y, true);   // 按在字 / 力度记号上：轻点 = 亮框（亮着再点 = 记号的小菜单 / 字的歌词框）；长按 = 同轻点；动了照旧是滚动
+      const grab = this.grabAt(p.x, p.y, true);   // 按在字 / 力度记号上：记号轻点 = 亮框（亮着再点 = 小菜单）、长按 = 同轻点；字轻点 = 歌词框、长按 = 亮框 + 两颗钮；动了照旧是滚动
       const art = grab ? null : this.artAt(p.x, p.y, true);   // 演奏法（跳音、重音…）：轻点 = 亮框 + 一句说明
       this.armPress(e, p, grab || art ? null : this.noteAt(p.x, p.y, true), grab);   // 手指：按指尖大小找音
       if (this.press) { if (art) this.press.art = art; if (grab) this.press.lit = this.litIs(grab.system, grab.index, grab.kind); }
@@ -1247,7 +1249,7 @@ export class ScoreView {
       case "light": case "menu": case "edit":
         this.finger = null; this.box = null; this.boxEl.hidden = true;
         if (pr.grab?.kind === "mark") this.tapMark(pr.grab, !!pr.lit, pr.ptr);
-        else if (pr.grab) this.tapLyric(pr.grab, !!pr.lit, pr.ptr, pr.x, pr.y);
+        else if (pr.grab) this.tapLyric(pr.grab, false, pr.ptr, pr.x, pr.y);   // 长按字 = 选中（亮框 + 两颗钮），不开歌词框（v0.17.58）
         else if (pr.art) this.tapArt(pr.art, pr.ptr);
         return;
       case "select": this.holdNote(pr.pid, pr.hit!, pr.ptr, false); return;
@@ -1587,10 +1589,11 @@ export class ScoreView {
     this.tell({ kind: "staff" });
     this.lightAt(dh.system, dh.index, "mark", ptr);
   }
-  /** 轻点「词」里有字的字（v0.17.57，设计稿第八节第 2 条；user 2026-11-14「词的合并用拖动合并，其实相当难操作，我们还是改成小按钮，就选中之后改成小按钮」）：
-   *  没亮 = 亮框 + 字下面两颗小钮（合 / ← 和 →，drawLit 摆、sylStep 做）；亮着再点 = 歌词框改字。光标不动（只换到那条谱、取消选区）。
-   *  歌词框开着时点别的字 = 先收框、再让这个字亮框（不直接开）；收框可能改了谱（插句号）= 按原位置重新找一次。记号框开着 = 这一下只收框。 */
-  private tapLyric(g0: Grab, lit: boolean, ptr: Pointer, x: number, y: number): void {
+  /** 「词」里有字的字（设计稿第八节第 2 条）：edit = 开歌词框（点一下）；不然 = 选中它 = 亮框 + 字下面两颗小钮（长按 / 右键；合 / ← 和 →，drawLit 摆、sylStep 做）。
+   *  结论由调的人问规则表（onTap / onHold / onSecondary）。v0.17.57 是「点一下亮框、亮着再点开框」，v0.17.58 照 user 改成「点一下 = 写词，长按 / 右键 = 选中」
+   *  （user 2026-11-14「你点字的时候到底是开歌词框还是选字？…如果要点两下才能进歌词框，我觉得是不对的」）。光标不动（只换到那条谱、取消选区）。
+   *  歌词框开着时：点别的字 = 先收框、再开那个字的框；长按别的字 = 收框、亮那个字。收框可能改了谱（插句号）= 按原位置重新找一次。记号框开着 = 这一下只收框。 */
+  private tapLyric(g0: Grab, edit: boolean, ptr: Pointer, x: number, y: number): void {
     const wasMark = this.marks.open, wasLyric = this.lyrics.open;
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     if (wasMark) { this.tell({ kind: "staff" }); return; }
@@ -1598,7 +1601,7 @@ export class ScoreView {
     const g = wasLyric ? this.grabAt(x, y, caps(ptr).coarse) : g0;
     if (!g || g.kind !== "lyric") { this.tell({ kind: "staff" }); return; }
     const st0 = this.host.get(), st1 = this.onTrack(g) ? st0 : this.focusRow(st0, g.system, st0.caret);
-    if (onTap({ target: "lyric", lit: lit && !wasLyric }) === "edit") {
+    if (edit) {
       if (st1 !== st0) this.host.set(st1);
       this.openLyric(g.index); this.tell({ kind: "text" });
       return;
@@ -1966,7 +1969,7 @@ export class ScoreView {
       const ptr = pr.ptr;
       if (pr.grab && !pr.moved && !pr.fired) {   // 轻点字 / 记号（手指 / 笔 / 鼠标同一条）：没亮 = 亮框；亮着 = 记号的小菜单 / 字的歌词框
         this.finger = null;
-        if (pr.grab.kind === "mark") this.tapMark(pr.grab, !!pr.lit, ptr); else this.tapLyric(pr.grab, !!pr.lit, ptr, pr.x, pr.y);
+        if (pr.grab.kind === "mark") this.tapMark(pr.grab, !!pr.lit, ptr); else this.tapLyric(pr.grab, onTap({ target: "lyric", lit: !!pr.lit }) === "edit", ptr, pr.x, pr.y);
         return;
       }
       if (pr.grab && !caps(ptr).dragScrolls) return;

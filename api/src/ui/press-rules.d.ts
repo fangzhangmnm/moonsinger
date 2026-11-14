@@ -21,7 +21,7 @@ export declare function onMove(o: {
 }): "drag" | "lift" | "box" | "scroll";
 /** 没动就松手（轻点）：light = 让它亮框（音 / 休止顺带把光标放到它后面）；menu = 开它的小菜单；edit = 开歌词框改字；caret = 点空白（取消选择、放光标）。
  *  记号点一下先亮框，亮着再点 = 小菜单（鼠标悬浮着就算亮着 = 一下就开，和原来一样）；演奏法点一下 = 亮框 + 一句说明（宿主说）；
- *  字点一下先亮框（字下面出两颗小钮），亮着再点 = 歌词框（v0.17.57）。 */
+ *  字点一下 = 歌词框，亮不亮都一样（v0.17.58；v0.17.57 是先亮框、亮着再点才开，user 否了）。 */
 export declare function onTap(o: {
     target: Target;
     lit: boolean;
@@ -37,7 +37,8 @@ export declare function wantsGrip(o: {
 }): boolean;
 /** 按住不动（长按到点）：
  *  select = 只选中它（音 / 休止，和点一下一样，三种指针都是；「词」里点一下是写歌词，长按是唯一的选中办法）；keep = 它已经在选区里 = 选区不变（还是听得见它）；
- *  记号 / 演奏法 / 字 = 和点一下一样（照 onTap：没亮 = 亮框，亮着 = 记号的小菜单 / 歌词框）；blankMenu = 空白：光标放过去 + 空白菜单（手指的右键：没有选区、没处挂小钮）。
+ *  记号 / 演奏法 = 和点一下一样（照 onTap：没亮 = 亮框，亮着 = 记号的小菜单）；字 = 选中它（亮框 + 两颗小钮，亮着 = 不变；v0.17.58：「词」里点一下是写词，长按是选中）；
+ *  blankMenu = 空白：光标放过去 + 空白菜单（手指的右键：没有选区、没处挂小钮）。
  *  v0.17.48–54 长按音 = 选中 + 开选区菜单；v0.17.55 起不开（设计稿第二节第 3 条）。v0.17.57 起长按不再拿起来拖（字、记号），「词」里长按音也不再接着拖扩选（设计稿第八节）。 */
 export declare function onHold(o: {
     target: Target;
@@ -50,11 +51,11 @@ export declare function wantsSylButtons(o: {
     lit: boolean;
 }): boolean;
 /** 第二个键（右键）：叫出菜单的明着的一下。音 / 休止 = 不在选区里先只选中它，再开选区菜单（selectMenu）；在选区里 = 直接开（menu）；
- *  记号 = 它的小菜单（markMenu，「符」里）；别的 = 空白菜单。只有有第二个键的指针会走到这里。 */
+ *  记号 = 它的小菜单（markMenu，「符」里）；「词」里有字的字 = 同长按：亮框 + 两颗小钮（light，v0.17.58）；别的 = 空白菜单。只有有第二个键的指针会走到这里。 */
 export declare function onSecondary(o: {
-    target: "note" | "mark" | "blank";
+    target: "note" | "mark" | "lyric" | "blank";
     inSel: boolean;
-}): "selectMenu" | "menu" | "markMenu" | "blankMenu";
+}): "selectMenu" | "menu" | "markMenu" | "light" | "blankMenu";
 /** 选区带子右端外面画不画那颗小钮（点了 = 选区菜单）：有选区、能写谱的模式里、最近一下的指针没有第二个键（手指、笔）。鼠标用右键和选区条的「操作…」。 */
 export declare function wantsSelButton(o: {
     pointer: Pointer;

@@ -6,7 +6,9 @@
 //   哪一种选法都不自己弹菜单（user 2026-11-14「我们选重音的时候不自动弹出窗口，鼠标选也不会弹出，然后右键之后弹出，或者在触屏模式下按弹出」，「重音」= 中音，语音）。
 //   v0.17.57 起长按不再拖（设计稿第八节；user 2026-11-14「长按是手指板的右键同义。然后拖只有一种，点一下拖中同意」，「拖中」= 选中，语音）：
 //   拖只有一种 = 先点一下选中、再拖；长按只剩手指的右键那个意思（空白处的菜单）；在能选中的东西上长按 = 和点一下一样。
-//   「词」里有字的字也进这张表（target "lyric"）：点一下亮框 + 字下面两颗小钮（合 / ← 和 →），亮着再点 = 歌词框；字整个不能拖（user 同日「词的合并用拖动合并，其实相当难操作，我们还是改成小按钮」）。
+//   「词」里有字的字也进这张表（target "lyric"）：字整个不能拖（user 同日「词的合并用拖动合并，其实相当难操作，我们还是改成小按钮」）。
+//   v0.17.58 起「词」里一句话：点一下 = 写词，长按 / 右键 = 选中（音和字都是）——点字 = 直接开歌词框；长按 / 右键字 = 亮框 + 字下面两颗小钮（合 / ← 和 →）
+//   （user 2026-11-14 看了 v0.17.57「点两下才进歌词框」之后：「你点字的时候到底是开歌词框还是选字？就我觉得他们这两个语义是有歧义的。如果要点两下才能进歌词框，我觉得是不对的。」）。
 import { caps, type Pointer } from "./pointer.ts";
 export type { Pointer } from "./pointer.ts";
 
@@ -31,11 +33,11 @@ export function onMove(o: { pointer: Pointer; target: Target; lit: boolean; canD
 
 /** 没动就松手（轻点）：light = 让它亮框（音 / 休止顺带把光标放到它后面）；menu = 开它的小菜单；edit = 开歌词框改字；caret = 点空白（取消选择、放光标）。
  *  记号点一下先亮框，亮着再点 = 小菜单（鼠标悬浮着就算亮着 = 一下就开，和原来一样）；演奏法点一下 = 亮框 + 一句说明（宿主说）；
- *  字点一下先亮框（字下面出两颗小钮），亮着再点 = 歌词框（v0.17.57）。 */
+ *  字点一下 = 歌词框，亮不亮都一样（v0.17.58；v0.17.57 是先亮框、亮着再点才开，user 否了）。 */
 export function onTap(o: { target: Target; lit: boolean }): "light" | "menu" | "edit" | "caret" {
   if (o.target === "blank") return "caret";
   if (o.target === "mark" && o.lit) return "menu";
-  if (o.target === "lyric" && o.lit) return "edit";
+  if (o.target === "lyric") return "edit";
   return "light";
 }
 
@@ -50,11 +52,13 @@ export function wantsGrip(o: { pointer: Pointer; target: Target; canDrag: boolea
 
 /** 按住不动（长按到点）：
  *  select = 只选中它（音 / 休止，和点一下一样，三种指针都是；「词」里点一下是写歌词，长按是唯一的选中办法）；keep = 它已经在选区里 = 选区不变（还是听得见它）；
- *  记号 / 演奏法 / 字 = 和点一下一样（照 onTap：没亮 = 亮框，亮着 = 记号的小菜单 / 歌词框）；blankMenu = 空白：光标放过去 + 空白菜单（手指的右键：没有选区、没处挂小钮）。
+ *  记号 / 演奏法 = 和点一下一样（照 onTap：没亮 = 亮框，亮着 = 记号的小菜单）；字 = 选中它（亮框 + 两颗小钮，亮着 = 不变；v0.17.58：「词」里点一下是写词，长按是选中）；
+ *  blankMenu = 空白：光标放过去 + 空白菜单（手指的右键：没有选区、没处挂小钮）。
  *  v0.17.48–54 长按音 = 选中 + 开选区菜单；v0.17.55 起不开（设计稿第二节第 3 条）。v0.17.57 起长按不再拿起来拖（字、记号），「词」里长按音也不再接着拖扩选（设计稿第八节）。 */
 export function onHold(o: { target: Target; inSel: boolean; lit?: boolean }): "select" | "keep" | "light" | "menu" | "edit" | "blankMenu" {
   if (o.target === "note") return o.inSel ? "keep" : "select";
   if (o.target === "blank") return "blankMenu";
+  if (o.target === "lyric") return "light";
   const t = onTap({ target: o.target, lit: !!o.lit });
   return t === "caret" ? "blankMenu" : t;
 }
@@ -65,8 +69,9 @@ export function wantsSylButtons(o: { target: Target; lit: boolean }): boolean {
 }
 
 /** 第二个键（右键）：叫出菜单的明着的一下。音 / 休止 = 不在选区里先只选中它，再开选区菜单（selectMenu）；在选区里 = 直接开（menu）；
- *  记号 = 它的小菜单（markMenu，「符」里）；别的 = 空白菜单。只有有第二个键的指针会走到这里。 */
-export function onSecondary(o: { target: "note" | "mark" | "blank"; inSel: boolean }): "selectMenu" | "menu" | "markMenu" | "blankMenu" {
+ *  记号 = 它的小菜单（markMenu，「符」里）；「词」里有字的字 = 同长按：亮框 + 两颗小钮（light，v0.17.58）；别的 = 空白菜单。只有有第二个键的指针会走到这里。 */
+export function onSecondary(o: { target: "note" | "mark" | "lyric" | "blank"; inSel: boolean }): "selectMenu" | "menu" | "markMenu" | "light" | "blankMenu" {
+  if (o.target === "lyric") return onHold({ target: "lyric", inSel: false }) as "light";
   if (o.target === "note") return o.inSel ? "menu" : "selectMenu";
   if (o.target === "mark") return "markMenu";
   return "blankMenu";
