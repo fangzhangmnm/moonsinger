@@ -177,6 +177,13 @@ export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Rec
   }
   return out;
 }
+/** 不起作用的渐强渐弱（下标）：它和终点（同一张纸里后面第一个力度记号 / 渐强渐弱）之间一个音、一个休止都没有——和 dynLevels 里「start 为空 = 不起作用」同一条判法。
+ *  常见 = 老歌里存成「渐强渐弱、力度、音」（开头自动补的力度插在了发夹后面；W-70）：不改文件（硬规则 #9），谱上画灰、点开说为什么、人自己把力度拖到前面。 */
+export function hairpinDead(tokens: Token[], bounds?: readonly number[]): Set<number> {
+  const out = new Set<number>();
+  tokens.forEach((t, i) => { if (t.kind !== "hairpin") return; const e = hairpinEnd(tokens, i, bounds); for (let k = i + 1; k < e.at; k++) if (isTimed(tokens[k]!)) return; out.add(i); });
+  return out;
+}
 /** 被强后即弱盖掉、不起作用的力度记号（下标）：紧跟着的那个音是 fp（音头按 f、随后落到 p，之后都是 p——不看前面的力度），
  *  而且它也不是渐强渐弱 / 渐到的起点或终点。判法 = 把它换成别的值，除了 fp 那个音以外每个音的力度水平都不变（和出声同一个函数 dynLevels，不另写规则）。
  *  谱上画灰、点开说为什么（纪律「做不到的一律画灰 + 明说」；2026-10-09 user「要不要按纪律把 mf 画灰、说一句？ 要」）。 */

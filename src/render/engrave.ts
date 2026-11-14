@@ -612,7 +612,12 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const staffEnd = Array.from({ length: nSys }, (_, s) => {
       const row = placedCols.filter((c) => c.system === s); if (!row.length) return right;
       const last = row.reduce((a, c) => (c.x > a.x || (c.x === a.x && (c.slot > a.slot || (c.slot === a.slot && c.n > a.n))) ? c : a));
-      return last.bar ? Math.min(right, last.x + 0.7) : right;
+      if (last.bar) return Math.min(right, last.x + 0.7);
+      if (s === nSys - 1) return right;   // 这张纸最后一行：接着写的地方，照旧画到右边（user 2026-10-08）
+      if (ar.rowFull[s] ?? true) return right;   // 这一行的目标是排到可用宽（框架报的 rowFull）= 照旧到最右
+      // 在小节中间折、又没排满的行（拉宽到上限也不够、或不到六成照自然宽摆）：画到这一行内容的结尾，不画到最右（W-70；user 2026-11-13「要做，最后做」）。
+      //   挂在行尾的（踏板、渐强渐弱、小节底色）都读 staffEnd，跟着走
+      return Math.min(right, Math.max(...row.map((c) => c.x + c.w)));
     });
     /** 第 s 组里行号 a 到 b（连着的）按在哪一页切成几段：[这一页上的第一行, 最后一行]。没跨页 = 一段（7-V：跨页的组每页那一截各画各的行首连线）。 */
     const pageRuns = (_s: number, a: number, b: number): [number, number][] => {

@@ -61,7 +61,7 @@ import { withCastAs, candidateJson, activeCalibrationDb, templateExtras, activeH
 import type { CandidateV2, Sf2Source } from "../format/contract.ts";
 import { contentFingerprintOf, moveBus, saveMxl, openBytes, emptyExtras, roleSound, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, perfSpecOf, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
-import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
+import { ignoredArts, whyIgnored, dynOverridden, hairpinDead, dynLevels, type Mark } from "../score/perform.ts";
 import { navWhy } from "../score/repeats.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted, cachedSoundLabel } from "../gm/sound-cache.ts";
 // ── 实时试听（2026-10-09 Claude Fable 5.1，刀 1；提案 ai-docs/20261009-realtime-preview-engine-proposal.md）：谱 → 时间线（秒）→ 录音房（音频线程）
@@ -3353,7 +3353,8 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
     : (["cresc", "dim"] as const).map((d) => `<button class="btn ctx-chip${t.dir === d ? " is-on" : ""}" data-v="dir:${d}" title="${d === "cresc" ? _t("渐强") : _t("渐弱")}">${WEDGE_MENU[d]}</button>`).join("");
   // 渐到（只给力度记号）：开关 + 做不到时说为什么（纪律：画灰 + 明说）
   const rampWhy = src === "none" ? _t("这张纸里前面没有力度记号，没有地方渐过来") : src === "hairpin" ? _t("中间有手写的渐强渐弱，按手写的走") : "";
-  const offWhy = t.kind === "dyn" && dynOverridden(toks).has(i) ? `<div class="ctx-hint">${_t("不起作用（画灰）：后面那个音是强后即弱（fp）——音头按 f、随后落到 p，之后也是 p，这个 {value} 管不到", { value: t.value })}</div>` : "";
+  const offWhy = t.kind === "dyn" && dynOverridden(toks).has(i) ? `<div class="ctx-hint">${_t("不起作用（画灰）：后面那个音是强后即弱（fp）——音头按 f、随后落到 p，之后也是 p，这个 {value} 管不到", { value: t.value })}</div>` :
+    t.kind === "hairpin" && hairpinDead(toks).has(i) ? `<div class="ctx-hint">${_t("不起作用（画灰）：它和终点（后面那个力度记号）之间一个音都没有。要它起作用：把那个力度记号拖到它前面")}</div>` : "";   // W-70：老歌里开头自动补的力度插在了发夹后面；不改文件，人自己拖
   const rampRow = t.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t.ramp ? " disabled" : ""} title="${_t("渐到：从这张纸里上一个力度记号那儿一路渐变到这里（谱上虚线发夹）；关 = 到这儿突变")}">${_t("{ramp}渐到（从上一个力度渐变过来）", { ramp: t.ramp ? "✓ " : "" })}</button>` +
     (rampWhy ? `<div class="ctx-hint">${t.ramp ? _t("不起作用：") : ""}${esc(rampWhy)}</div>` : "");
   // 顶上一行「这是什么」（谱面分家第五刀 5-4 ⑧，UX 稿：点一下就说明）：字从记号表来（src/render/signs.ts，和谱上画什么同一张表）；渐到开着 = 再说一句渐到

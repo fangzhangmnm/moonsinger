@@ -61,5 +61,7 @@ export interface Arranged {
     ws: number[];
     system: number[]; /** 最后一行很短、并进了上一行（7-F）。 */
     mergedLast?: true;
+    /** 每行一个：这一行的目标是不是排到可用宽（拉满的、压回来的 = true；自然宽 × maxStretch 不够、或不到六成照自然宽摆的 = false）。按框架当时定的目标报，不按摆完的结果反推（W-70：画的那一层按它决定五线画不画到最右；统筹 2026-11-13 批）。 */
+    rowFull: boolean[];
 }
 export declare function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonly ArrangeTrack<R>[], o: ArrangeOpts): Arranged;

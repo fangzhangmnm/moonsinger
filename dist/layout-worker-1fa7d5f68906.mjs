@@ -1085,6 +1085,7 @@ var S = {
   "\u8FD9\u5F20\u7EB8\u91CC\u524D\u9762\u6CA1\u6709\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u6709\u5730\u65B9\u6E10\u8FC7\u6765": { en: "No dynamic earlier on this sheet, so there's nothing to ramp from" },
   "\u4E2D\u95F4\u6709\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\uFF0C\u6309\u624B\u5199\u7684\u8D70": { en: "There's a handwritten crescendo / diminuendo in between; that wins" },
   "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A {value} \u7BA1\u4E0D\u5230": { en: "No effect (grayed out): the next note is forte-piano (fp) \u2014 it attacks at f, falls to p and stays p, out of reach of this {value}" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u5B83\u548C\u7EC8\u70B9\uFF08\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09\u4E4B\u95F4\u4E00\u4E2A\u97F3\u90FD\u6CA1\u6709\u3002\u8981\u5B83\u8D77\u4F5C\u7528\uFF1A\u628A\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u62D6\u5230\u5B83\u524D\u9762": { en: "No effect (greyed): there is no note between it and its end (the next dynamic). To make it work, drag that dynamic in front of it" },
   "\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8": { en: "Ramp: changes gradually from the previous dynamic on this sheet to here (dashed hairpin on the score); off = changes suddenly here" },
   "{ramp}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09": { en: "{ramp}Ramp (gradually from the previous dynamic)" },
   "\u4E0D\u8D77\u4F5C\u7528\uFF1A": { en: "No effect:" },
@@ -6817,6 +6818,16 @@ function dynLevels(tokens, map, table, def, step, bounds) {
   }
   return out;
 }
+function hairpinDead(tokens, bounds) {
+  const out = /* @__PURE__ */ new Set();
+  tokens.forEach((t, i) => {
+    if (t.kind !== "hairpin") return;
+    const e = hairpinEnd(tokens, i, bounds);
+    for (let k = i + 1; k < e.at; k++) if (isTimed(tokens[k])) return;
+    out.add(i);
+  });
+  return out;
+}
 function dynOverridden(tokens, bounds) {
   const out = /* @__PURE__ */ new Set();
   const T2 = { ppp: 0, pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6, fff: 7 };
@@ -6987,7 +6998,9 @@ function layDynamics(c) {
   const dynKey = (u) => `${c.row(u.system)}|d${units.indexOf(u)}`;
   const wedgeKey = (index, sy) => `${c.row(sy)}|w${index}:${sy}`;
   const inkOf = (u) => dynOf(u.value).ink;
+  const pinOff = hairpinDead(tokens);
   const wedgeItems = (index, dir, s0, startX, s1, endX, ramp, k0, k1, tail, late2) => {
+    const mute = tokens[index]?.kind === "hairpin" && pinOff.has(index) ? "art-mute" : "";
     const leftOf2 = (sy) => Math.max(Math.min(...units.filter((u) => u.kind === "chunk" && u.system === sy).map((ch) => c.noteX(ch)), P(right)) - P(1), c.left(sy));
     const segs = [];
     for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf2(sy), sy === s1 ? endX : P(right) - P(0.3)]);
@@ -7016,10 +7029,10 @@ function layDynamics(c) {
           const midY = base - P(0.5);
           let a = a0;
           if (writeWord) {
-            prims.push({ t: "text", x: a, y: midY + P(0.5), s: word, tok: tokens[index].id, cls: ["dyn-word", ramp ? "ramp" : ""].filter(Boolean).join(" "), size: tx("dyn-word"), anchor: "start" });
+            prims.push({ t: "text", x: a, y: midY + P(0.5), s: word, tok: tokens[index].id, cls: ["dyn-word", ramp ? "ramp" : "", mute].filter(Boolean).join(" "), size: tx("dyn-word"), anchor: "start" });
             a += ww + P(0.6);
           }
-          for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY, x2: x + P(DASH.len), y2: midY, w: P(0.12), cls: "dyn-dash" });
+          for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY, x2: x + P(DASH.len), y2: midY, w: P(0.12), cls: mute ? "dyn-dash art-mute" : "dyn-dash" });
           dyns.push({ index, kind: "hairpin", system: row, x: a0, y: midY - P(1.4), w: b - a0, h: P(2.8) });
           if (last && tail) tail(base);
         } });
@@ -7039,7 +7052,7 @@ function layDynamics(c) {
             d += `M${x},${y - hAt(x)}L${x2},${y - hAt(x2)}M${x},${y + hAt(x)}L${x2},${y + hAt(x2)}`;
           }
         }
-        prims.push({ tok: tokens[index].id, t: "path", d, cls: ["hairpin", ramp ? "ramp" : ""].filter(Boolean).join(" ") });
+        prims.push({ tok: tokens[index].id, t: "path", d, cls: ["hairpin", ramp ? "ramp" : "", mute].filter(Boolean).join(" ") });
         dyns.push({ index, kind: "hairpin", system: row, x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
         if (last && tail) tail(base);
       } });
@@ -9008,7 +9021,7 @@ function arrangeColumns(cols, tracks, o) {
     }
   }
   for (const k of lineFrom) sysStarts.push(o.lineStart(k, k === 0));
-  const nSys = lineFrom.length, xs = new Array(n2).fill(0), ws = new Array(n2).fill(0), system = new Array(n2).fill(0);
+  const nSys = lineFrom.length, xs = new Array(n2).fill(0), ws = new Array(n2).fill(0), system = new Array(n2).fill(0), rowFull = new Array(nSys).fill(true);
   let prevStretch = 0;
   for (let s2 = 0; s2 < nSys; s2++) {
     const from = lineFrom[s2], to = s2 + 1 < nSys ? lineFrom[s2 + 1] : n2;
@@ -9016,6 +9029,7 @@ function arrangeColumns(cols, tracks, o) {
     const te = effTo(from, to);
     const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, te, 0, even);
     const reach = nat.end > avail + 1e-6 ? avail : Math.min(avail, nat.end * o.maxStretch);
+    rowFull[s2] = reach >= avail - 1e-6;
     const sq = mergedLast && s2 === nSys - 1 ? o.lastMerge.squeeze : o.squeeze;
     let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, te, reach, { squeeze: sq, justify: true, even }) : nat;
     if (s2 === nSys - 1 && s2 > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
@@ -9031,7 +9045,7 @@ function arrangeColumns(cols, tracks, o) {
       ws[k] = Math.max(0, x1 - x0);
     }
   }
-  return { lineFrom, sysStarts, xs, ws, system, ...mergedLast ? { mergedLast: true } : {} };
+  return { lineFrom, sysStarts, xs, ws, system, rowFull, ...mergedLast ? { mergedLast: true } : {} };
 }
 
 // src/render/engrave.ts
@@ -9511,7 +9525,10 @@ function engrave(song, o) {
       const row = placedCols.filter((c) => c.system === s2);
       if (!row.length) return right;
       const last = row.reduce((a, c) => c.x > a.x || c.x === a.x && (c.slot > a.slot || c.slot === a.slot && c.n > a.n) ? c : a);
-      return last.bar ? Math.min(right, last.x + 0.7) : right;
+      if (last.bar) return Math.min(right, last.x + 0.7);
+      if (s2 === nSys - 1) return right;
+      if (ar.rowFull[s2] ?? true) return right;
+      return Math.min(right, Math.max(...row.map((c) => c.x + c.w)));
     });
     const pageRuns = (_s, a, b) => {
       const out = [];
@@ -10004,4 +10021,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-613cab528a6e.mjs.map
+//# sourceMappingURL=layout-worker-1fa7d5f68906.mjs.map

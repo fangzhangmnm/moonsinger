@@ -4346,6 +4346,7 @@ var S = {
   "\u8FD9\u5F20\u7EB8\u91CC\u524D\u9762\u6CA1\u6709\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u6709\u5730\u65B9\u6E10\u8FC7\u6765": { en: "No dynamic earlier on this sheet, so there's nothing to ramp from" },
   "\u4E2D\u95F4\u6709\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\uFF0C\u6309\u624B\u5199\u7684\u8D70": { en: "There's a handwritten crescendo / diminuendo in between; that wins" },
   "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A {value} \u7BA1\u4E0D\u5230": { en: "No effect (grayed out): the next note is forte-piano (fp) \u2014 it attacks at f, falls to p and stays p, out of reach of this {value}" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u5B83\u548C\u7EC8\u70B9\uFF08\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09\u4E4B\u95F4\u4E00\u4E2A\u97F3\u90FD\u6CA1\u6709\u3002\u8981\u5B83\u8D77\u4F5C\u7528\uFF1A\u628A\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u62D6\u5230\u5B83\u524D\u9762": { en: "No effect (greyed): there is no note between it and its end (the next dynamic). To make it work, drag that dynamic in front of it" },
   "\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8": { en: "Ramp: changes gradually from the previous dynamic on this sheet to here (dashed hairpin on the score); off = changes suddenly here" },
   "{ramp}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09": { en: "{ramp}Ramp (gradually from the previous dynamic)" },
   "\u4E0D\u8D77\u4F5C\u7528\uFF1A": { en: "No effect:" },
@@ -6456,7 +6457,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.52-2026-11-13";
+var APP_VERSION = "v0.17.53-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -14586,6 +14587,16 @@ function dynLevels(tokens, map, table, def, step, bounds) {
   }
   return out;
 }
+function hairpinDead(tokens, bounds) {
+  const out = /* @__PURE__ */ new Set();
+  tokens.forEach((t10, i10) => {
+    if (t10.kind !== "hairpin") return;
+    const e10 = hairpinEnd(tokens, i10, bounds);
+    for (let k2 = i10 + 1; k2 < e10.at; k2++) if (isTimed(tokens[k2])) return;
+    out.add(i10);
+  });
+  return out;
+}
 function dynOverridden(tokens, bounds) {
   const out = /* @__PURE__ */ new Set();
   const T3 = { ppp: 0, pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6, fff: 7 };
@@ -14820,7 +14831,9 @@ function layDynamics(c10) {
   const dynKey = (u2) => `${c10.row(u2.system)}|d${units.indexOf(u2)}`;
   const wedgeKey = (index, sy2) => `${c10.row(sy2)}|w${index}:${sy2}`;
   const inkOf = (u2) => dynOf(u2.value).ink;
+  const pinOff = hairpinDead(tokens);
   const wedgeItems = (index, dir, s02, startX, s12, endX, ramp, k0, k1, tail, late2) => {
+    const mute = tokens[index]?.kind === "hairpin" && pinOff.has(index) ? "art-mute" : "";
     const leftOf2 = (sy2) => Math.max(Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((ch2) => c10.noteX(ch2)), P2(right)) - P2(1), c10.left(sy2));
     const segs = [];
     for (let sy2 = s02; sy2 <= s12; sy2++) segs.push([sy2, sy2 === s02 ? startX : leftOf2(sy2), sy2 === s12 ? endX : P2(right) - P2(0.3)]);
@@ -14849,10 +14862,10 @@ function layDynamics(c10) {
           const midY = base2 - P2(0.5);
           let a10 = a02;
           if (writeWord) {
-            prims.push({ t: "text", x: a10, y: midY + P2(0.5), s: word, tok: tokens[index].id, cls: ["dyn-word", ramp ? "ramp" : ""].filter(Boolean).join(" "), size: tx2("dyn-word"), anchor: "start" });
+            prims.push({ t: "text", x: a10, y: midY + P2(0.5), s: word, tok: tokens[index].id, cls: ["dyn-word", ramp ? "ramp" : "", mute].filter(Boolean).join(" "), size: tx2("dyn-word"), anchor: "start" });
             a10 += ww + P2(0.6);
           }
-          for (let x2 = a10; x2 + P2(DASH.len) <= b3; x2 += P2(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x2, y1: midY, x2: x2 + P2(DASH.len), y2: midY, w: P2(0.12), cls: "dyn-dash" });
+          for (let x2 = a10; x2 + P2(DASH.len) <= b3; x2 += P2(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x2, y1: midY, x2: x2 + P2(DASH.len), y2: midY, w: P2(0.12), cls: mute ? "dyn-dash art-mute" : "dyn-dash" });
           dyns.push({ index, kind: "hairpin", system: row2, x: a02, y: midY - P2(1.4), w: b3 - a02, h: P2(2.8) });
           if (last && tail) tail(base2);
         } });
@@ -14872,7 +14885,7 @@ function layDynamics(c10) {
             d3 += `M${x2},${y2 - hAt(x2)}L${x22},${y2 - hAt(x22)}M${x2},${y2 + hAt(x2)}L${x22},${y2 + hAt(x22)}`;
           }
         }
-        prims.push({ tok: tokens[index].id, t: "path", d: d3, cls: ["hairpin", ramp ? "ramp" : ""].filter(Boolean).join(" ") });
+        prims.push({ tok: tokens[index].id, t: "path", d: d3, cls: ["hairpin", ramp ? "ramp" : "", mute].filter(Boolean).join(" ") });
         dyns.push({ index, kind: "hairpin", system: row2, x: a10, y: y2 - P2(1.4), w: b3 - a10, h: P2(2.8) });
         if (last && tail) tail(base2);
       } });
@@ -16903,7 +16916,7 @@ function arrangeColumns(cols, tracks, o10) {
     }
   }
   for (const k2 of lineFrom) sysStarts.push(o10.lineStart(k2, k2 === 0));
-  const nSys = lineFrom.length, xs = new Array(n10).fill(0), ws2 = new Array(n10).fill(0), system = new Array(n10).fill(0);
+  const nSys = lineFrom.length, xs = new Array(n10).fill(0), ws2 = new Array(n10).fill(0), system = new Array(n10).fill(0), rowFull = new Array(nSys).fill(true);
   let prevStretch = 0;
   for (let s10 = 0; s10 < nSys; s10++) {
     const from = lineFrom[s10], to2 = s10 + 1 < nSys ? lineFrom[s10 + 1] : n10;
@@ -16911,6 +16924,7 @@ function arrangeColumns(cols, tracks, o10) {
     const te3 = effTo(from, to2);
     const avail2 = brk - sysStarts[s10], nat2 = placeLine(spCols, gaps, rodIx, from, te3, 0, even);
     const reach = nat2.end > avail2 + 1e-6 ? avail2 : Math.min(avail2, nat2.end * o10.maxStretch);
+    rowFull[s10] = reach >= avail2 - 1e-6;
     const sq2 = mergedLast && s10 === nSys - 1 ? o10.lastMerge.squeeze : o10.squeeze;
     let f2 = brk !== Infinity && (nat2.end > avail2 + 1e-6 || s10 !== nSys - 1 && nat2.end >= avail2 * 0.6) ? fitLine(spCols, gaps, rodIx, from, te3, reach, { squeeze: sq2, justify: true, even }) : nat2;
     if (s10 === nSys - 1 && s10 > 0 && f2 === nat2 && prevStretch > 0 && brk !== Infinity) {
@@ -16926,7 +16940,7 @@ function arrangeColumns(cols, tracks, o10) {
       ws2[k2] = Math.max(0, x1 - x0);
     }
   }
-  return { lineFrom, sysStarts, xs, ws: ws2, system, ...mergedLast ? { mergedLast: true } : {} };
+  return { lineFrom, sysStarts, xs, ws: ws2, system, rowFull, ...mergedLast ? { mergedLast: true } : {} };
 }
 
 // src/render/engrave.ts
@@ -17406,7 +17420,10 @@ function engrave(song, o10) {
       const row2 = placedCols.filter((c10) => c10.system === s10);
       if (!row2.length) return right;
       const last = row2.reduce((a10, c10) => c10.x > a10.x || c10.x === a10.x && (c10.slot > a10.slot || c10.slot === a10.slot && c10.n > a10.n) ? c10 : a10);
-      return last.bar ? Math.min(right, last.x + 0.7) : right;
+      if (last.bar) return Math.min(right, last.x + 0.7);
+      if (s10 === nSys - 1) return right;
+      if (ar2.rowFull[s10] ?? true) return right;
+      return Math.min(right, Math.max(...row2.map((c10) => c10.x + c10.w)));
     });
     const pageRuns = (_s, a10, b3) => {
       const out = [];
@@ -36342,15 +36359,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-d0e8ebafda44.mjs");
+      return pick3(() => "singer-worker-5fb6f8cd3c34.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-613cab528a6e.mjs");
+      return pick3(() => "layout-worker-1fa7d5f68906.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-bb3e9ba34be0.mjs");
+      return pick3(() => "encode-worker-df800d699f12.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -47987,7 +48004,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "280e5c790057baf0" : "dev";
+var CORE_HASH = true ? "eec80c89589b9d17" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -66953,7 +66970,7 @@ function openMarkMenu(i10, at3) {
   box.setAttribute("role", "menu");
   const row2 = t10.kind === "dyn" ? ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${t10.value === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="${_t("\u6539\u6210 {d}", { d: d3 })}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("") : ["cresc", "dim"].map((d3) => `<button class="btn ctx-chip${t10.dir === d3 ? " is-on" : ""}" data-v="dir:${d3}" title="${d3 === "cresc" ? _t("\u6E10\u5F3A") : _t("\u6E10\u5F31")}">${WEDGE_MENU[d3]}</button>`).join("");
   const rampWhy = src === "none" ? _t("\u8FD9\u5F20\u7EB8\u91CC\u524D\u9762\u6CA1\u6709\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u6709\u5730\u65B9\u6E10\u8FC7\u6765") : src === "hairpin" ? _t("\u4E2D\u95F4\u6709\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\uFF0C\u6309\u624B\u5199\u7684\u8D70") : "";
-  const offWhy = t10.kind === "dyn" && dynOverridden(toks).has(i10) ? `<div class="ctx-hint">${_t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A {value} \u7BA1\u4E0D\u5230", { value: t10.value })}</div>` : "";
+  const offWhy = t10.kind === "dyn" && dynOverridden(toks).has(i10) ? `<div class="ctx-hint">${_t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A {value} \u7BA1\u4E0D\u5230", { value: t10.value })}</div>` : t10.kind === "hairpin" && hairpinDead(toks).has(i10) ? `<div class="ctx-hint">${_t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u5B83\u548C\u7EC8\u70B9\uFF08\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09\u4E4B\u95F4\u4E00\u4E2A\u97F3\u90FD\u6CA1\u6709\u3002\u8981\u5B83\u8D77\u4F5C\u7528\uFF1A\u628A\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u62D6\u5230\u5B83\u524D\u9762")}</div>` : "";
   const rampRow = t10.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t10.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t10.ramp ? " disabled" : ""} title="${_t("\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8")}">${_t("{ramp}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09", { ramp: t10.ramp ? "\u2713 " : "" })}</button>` + (rampWhy ? `<div class="ctx-hint">${t10.ramp ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF1A") : ""}${esc14(rampWhy)}</div>` : "");
   const what = t10.kind === "dyn" ? SIGNS[`dyn:${t10.value}`].says(lang()) + (t10.ramp ? (lang() === "zh" ? "\uFF1B" : "; ") + SIGNS.ramp.says(lang()) : "") : SIGNS[`hairpin:${t10.dir}`].says(lang());
   const toRow = t10.kind !== "hairpin" ? "" : (() => {
@@ -69436,4 +69453,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c9ad496373e3.mjs.map
+//# sourceMappingURL=moonsinger-af012d15b262.mjs.map

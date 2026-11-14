@@ -37,6 +37,19 @@ describe("排版参数表", () => {
       assert(Math.abs(cap[s]! - nat[s]! * 1.3) < 0.05, `上限 1.3：第 ${s + 1} 行 ${cap[s]} = 自然 ${nat[s]} × 1.3`);
     }
   });
+  it("框架报每一行排满没有（rowFull，W-70，v0.17.53）：拉到上限也不够 = false、拉满了 = true、只要 1.2 倍就够 = true", () => {
+    const rows = (bars: number, width: number, maxStretch: number) => {
+      const tr = [track(bars)], cols = mergeColumns(tr);
+      return arrangeColumns(cols, tr, { paperLen: bars * 4 * TPQ, spacing: { curve: curveOf("normal"), ...SP_DEFAULTS }, width, squeeze: 0.15, maxStretch, endPad: 1.6, lineStart: () => 0 });
+    };
+    const w1 = lineEnds(1, 1000, 1)[0]!;
+    for (const [W, ms, want] of [[w1 / 0.7, 1.3, false], [w1 / 0.7, Infinity, true], [w1 / 0.85, 1.3, true]] as const) {
+      const a = rows(3, W, ms);
+      eq(a.rowFull.length, a.lineFrom.length, "每行一个");
+      for (let s = 0; s < a.lineFrom.length - 1; s++) eq(a.rowFull[s], want, `宽 ${W.toFixed(1)} 上限 ${ms}：第 ${s + 1} 行`);
+    }
+    // 摆法不变由版面快照守着（v0.17.53 重冻时只有五线右端变了，音的位置一个没动）
+  });
   it("两种谱的纸：一行最多拉宽 1.3 倍、让位时整小节一起放宽（第六刀，user 看了对照后定的；折行可以留孤行 = 没有那个开关）", () => {
     for (const n of ["jianpu", "staff"] as const) for (const d of ["cozy", "compact"] as const) {
       eq(PAPER_PARAMS[n][d].maxStretch, 1.3, `${n} ${d}`); eq(PAPER_PARAMS[n][d].evenBars, true, `${n} ${d}`);

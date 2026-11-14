@@ -2287,6 +2287,9 @@ export declare const S: {
     readonly "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A {value} \u7BA1\u4E0D\u5230": {
         readonly en: "No effect (grayed out): the next note is forte-piano (fp) — it attacks at f, falls to p and stays p, out of reach of this {value}";
     };
+    readonly "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u5B83\u548C\u7EC8\u70B9\uFF08\u540E\u9762\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09\u4E4B\u95F4\u4E00\u4E2A\u97F3\u90FD\u6CA1\u6709\u3002\u8981\u5B83\u8D77\u4F5C\u7528\uFF1A\u628A\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u62D6\u5230\u5B83\u524D\u9762": {
+        readonly en: "No effect (greyed): there is no note between it and its end (the next dynamic). To make it work, drag that dynamic in front of it";
+    };
     readonly "\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8": {
         readonly en: "Ramp: changes gradually from the previous dynamic on this sheet to here (dashed hairpin on the score); off = changes suddenly here";
     };

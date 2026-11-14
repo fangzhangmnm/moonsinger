@@ -12,6 +12,7 @@ import type { LaneKind } from "../frame/lanes.ts";
 import type { Prim, EngraveOpts, DynHit, MarkHit } from "../engrave.ts";
 import type { Unit, Chunk, DynU, NavU, PedalU } from "../frame/units.ts";
 import { dynDepiction, SIGNS } from "../signs.ts";
+import { hairpinDead } from "../../score/perform.ts";
 import { GLYPH_BOX } from "../glyph-box.gen.ts";
 import { PIN_GAP, PIN_MIN, PIN_WORD, DASH, RAMP_DASH, PEDAL } from "../../look/marks.ts";   // 记号摆法的数在 src/look/marks.ts（17-2）
 
@@ -193,7 +194,9 @@ export function layDynamics(c: OrnCtx): void {
   const inkOf = (u: DynU) => dynOf(u.value).ink;
   // 发夹（或太长时的「cresc. - - -」）从 (s0, startX) 到 (s1, endX)：跨行每行一段，每段是力度那一层的一块；index = 点它开哪个记号的小菜单；
   //   k0 = 第一段连着谁（前面紧挨着的力度字），k1 = 最后一段连着谁（终点的字 / 下一个发夹）；tail = 最后一段画完再画的（推定的灰字，注解）。ramp = 渐到画的（虚线）。
+  const pinOff = hairpinDead(tokens);   // 和终点之间一个音都没有的渐强渐弱：画灰（点开小菜单说为什么；W-70）
   const wedgeItems = (index: number, dir: "cresc" | "dim", s0: number, startX: number, s1: number, endX: number, ramp: boolean, k0?: string, k1?: string, tail?: (base: number) => void, late?: boolean) => {
+    const mute = tokens[index]?.kind === "hairpin" && pinOff.has(index) ? "art-mute" : "";
     const leftOf = (sy: number) => Math.max(Math.min(...units.filter((u): u is Chunk => u.kind === "chunk" && u.system === sy).map((ch) => c.noteX(ch)), P(right)) - P(1), c.left(sy));   // 不越过行首竖线（7-K ⑤）
     const segs: [number, number, number][] = [];
     for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf(sy), sy === s1 ? endX : P(right) - P(0.3)]);
@@ -215,8 +218,8 @@ export function layDynamics(c: OrnCtx): void {
         const writeWord = !said && b - a0 >= ww + P(1); if (writeWord) said = true;
         dynItems.push({ row, x0: a0, keys, ...(late ? { late } : {}), draw: (base) => {
           const midY = base - P(0.5); let a = a0;
-          if (writeWord) { prims.push({ t: "text", x: a, y: midY + P(0.5), s: word, tok: tokens[index]!.id, cls: ["dyn-word", ramp ? "ramp" : ""].filter(Boolean).join(" "), size: tx("dyn-word"), anchor: "start" }); a += ww + P(0.6); }
-          for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY, x2: x + P(DASH.len), y2: midY, w: P(0.12), cls: "dyn-dash" });
+          if (writeWord) { prims.push({ t: "text", x: a, y: midY + P(0.5), s: word, tok: tokens[index]!.id, cls: ["dyn-word", ramp ? "ramp" : "", mute].filter(Boolean).join(" "), size: tx("dyn-word"), anchor: "start" }); a += ww + P(0.6); }
+          for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY, x2: x + P(DASH.len), y2: midY, w: P(0.12), cls: mute ? "dyn-dash art-mute" : "dyn-dash" });
           dyns.push({ index, kind: "hairpin", system: row, x: a0, y: midY - P(1.4), w: b - a0, h: P(2.8) });
           if (last && tail) tail(base);
         } });
@@ -233,7 +236,7 @@ export function layDynamics(c: OrnCtx): void {
           d = "";
           for (let k = 0; k < n; k++) { const x = a + k * per, x2 = k === n - 1 ? b : x + on; d += `M${x},${y - hAt(x)}L${x2},${y - hAt(x2)}M${x},${y + hAt(x)}L${x2},${y + hAt(x2)}`; }
         }
-        prims.push({ tok: tokens[index]!.id, t: "path", d, cls: ["hairpin", ramp ? "ramp" : ""].filter(Boolean).join(" ") });
+        prims.push({ tok: tokens[index]!.id, t: "path", d, cls: ["hairpin", ramp ? "ramp" : "", mute].filter(Boolean).join(" ") });
         dyns.push({ index, kind: "hairpin", system: row, x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
         if (last && tail) tail(base);
       } });

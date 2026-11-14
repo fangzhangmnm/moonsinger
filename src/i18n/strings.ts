@@ -767,6 +767,7 @@ export const S = {
   "这张纸里前面没有力度记号，没有地方渐过来": { en: "No dynamic earlier on this sheet, so there's nothing to ramp from" },
   "中间有手写的渐强渐弱，按手写的走": { en: "There's a handwritten crescendo / diminuendo in between; that wins" },
   "不起作用（画灰）：后面那个音是强后即弱（fp）——音头按 f、随后落到 p，之后也是 p，这个 {value} 管不到": { en: "No effect (grayed out): the next note is forte-piano (fp) — it attacks at f, falls to p and stays p, out of reach of this {value}" },
+  "不起作用（画灰）：它和终点（后面那个力度记号）之间一个音都没有。要它起作用：把那个力度记号拖到它前面": { en: "No effect (greyed): there is no note between it and its end (the next dynamic). To make it work, drag that dynamic in front of it" },
   "渐到：从这张纸里上一个力度记号那儿一路渐变到这里（谱上虚线发夹）；关 = 到这儿突变": { en: "Ramp: changes gradually from the previous dynamic on this sheet to here (dashed hairpin on the score); off = changes suddenly here" },
   "{ramp}渐到（从上一个力度渐变过来）": { en: "{ramp}Ramp (gradually from the previous dynamic)" },
   "不起作用：": { en: "No effect:" },
