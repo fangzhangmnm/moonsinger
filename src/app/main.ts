@@ -969,7 +969,7 @@ function plugNudge(why: NoWrite): void {
 }
 const padHost = createPadHost(padEl, {
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
-  state: () => D.st, middleC: () => lookOf(D.st.song, lookCtx()).middleC, inC: () => inCAtCursor(), update: (n, gesture) => { if (inputGate.may(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
+  state: () => D.st, middleC: () => lookOf(D.st.song, lookCtx()).middleC, inC: () => inCAtCursor(), jianpuBase: () => jianpuBaseAtCursor(), update: (n, gesture) => { if (inputGate.may(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
   monoRejected: () => { if (monoHinted) return; monoHinted = true; info(_t("「{who}」一次只出一个音：几乎同时按下的第二个键没写。要写和弦，给这个声部换钢琴这类乐器", { who: activeCandidateName(D.extras, curRole()) ?? roleLabel(curRole()) })); },   // 同一次打开只说一次（v0.16.35）   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
   sound: { down: (p, id) => sound.down(p, id), up: (id) => sound.up(id) }, soundTok, soundAfterWrite,
   onTouch: (ts) => feel.touch(ts),
@@ -992,6 +992,12 @@ const padHost = createPadHost(padEl, {
 const pad = padHost.pad;
 /** 移调辅助在光标这个声部上起不起作用（第 19 条）：这首歌按 C 调看（五线谱、开着）而且光标那个声部不是打击乐的行（打击乐的行排版不换，键上也不换）。 */
 function inCAtCursor(): boolean { return lookOf(D.st.song, lookCtx()).inCActive && !notationOfRole(curRole()).perc; }
+/** 简谱时键上的大字写纸上的数字（v0.17.43）：光标那一行的八度基准（排版算的，键上的点和纸上一样）；不是简谱（五线谱 / 字母谱）、打击乐的行 = null。 */
+function jianpuBaseAtCursor(): number | null {
+  if (lookOf(D.st.song, lookCtx()).notation !== "jianpu" || notationOfRole(curRole()).perc) return null;
+  const h = view.head(), s = h ? view.layoutNow().systems[h.system] : null;
+  return s && typeof s.octBase === "number" ? s.octBase : null;
+}
 /** 键上的字跟着这首歌怎么看走（换歌 / 切 / 撤销 / 光标走过转调都在 paintNow 里对一次）：「这个键写什么」在 pad-music keyFaces，键盘的 sig 变了就重写；鬼音符跟着换。 */
 let shownInC = inCAtCursor();
 function syncSongLook(): void { const inC = inCAtCursor(); if (inC === shownInC) return; shownInC = inC; pad.render(); ghostSync(); }

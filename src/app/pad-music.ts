@@ -2,7 +2,8 @@
 // created 2026-10-15 by Claude Fable 5.1（键盘模块刀 2；原来长在 pad.ts 里的 scales / pitch / song 调用原样搬来，算法不变）。
 //   user 2026-10-14「键盘确实是前端，音乐知识比如和弦有几个是外部注入的，所以一个键盘的前端库，一个是负责生成音乐知识的深模块。以后我们马上要做和弦键盘，也是一样的」
 //   键盘只认「第 k 级」；k 是什么音、叫什么、MIDI 几号，都从这里拿。以后的和弦键盘 = 另一个 PadMusic（cell(k) = 第 k 个和弦）。
-import { HOME, diatonicIndex, tonicStepIndex, noteName, alterBy, midiOf, KEY_LABEL, type Pitch } from "../score/pitch.ts";
+import { HOME, diatonicIndex, tonicStepIndex, noteName, alterBy, midiOf, KEY_LABEL, keySpell, type Pitch } from "../score/pitch.ts";
+import { toDegree } from "../score/degree.ts";
 import { drawnPitch } from "../score/view-in-c.ts";
 import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
 import { type EditorState, inputKey, inputScaleOf, keyAt, timeAt, tempoAt, tr } from "../score/song.ts";
@@ -21,8 +22,11 @@ export function homeTonic(fifths: number): number {
  *  · 移调辅助起作用（五线谱、不是打击乐的行）：大字 = 音按光标这里的调号拼写（落进谱时的写法 keySpell）再换到 C（toC，和排版、鬼音符同一个换法），
  *    小字 = 实际的音名。和键盘自己的「1=」无关（谱降 E、键盘手动 1=G：G4 那个键大字 E4、小字 G4）。
  *  · 别的时候（排版不换的地方）：大字 = 实际的音名，小字 = 级数（照旧）。
+ *  · 简谱（v0.17.43，统筹「简谱下键上的大字写纸上的数字、小字写实际的音名」）：大字 = 这个音落进谱时按光标这里的调号拼写、排版会画成的那个数字
+ *    （同 src/score/degree.ts toDegree：1 = 调号的大调主音；八度点 = 光标那一行的八度基准 jianpu），小字 = 实际的音名。键的位置不动。
  *  名字一律走音名那一个出口（noteName，八度照「中央 C 叫 C 几」）。升降滑出来的那个音（altered）同一条规矩，两行一起变。 */
-export function keyFaces(p: Pitch, degree: { deg: string; oct: number; acc?: string }, o: { inC: boolean; fifths: number; middleC: number }): KeyFaces {
+export function keyFaces(p: Pitch, degree: { deg: string; oct: number; acc?: string }, o: { inC: boolean; fifths: number; middleC: number; jianpu?: number | null }): KeyFaces {
+  if (o.jianpu !== undefined && o.jianpu !== null) { const d = toDegree(keySpell(p, o.fifths), o.fifths); return { big: { deg: String(d.degree), oct: d.shift - o.jianpu, ...(d.acc ? { acc: ACC_TEXT[d.acc + 2] } : {}) }, small: { name: noteName(p, o.middleC) } }; }
   if (o.inC) return { big: { name: noteName(drawnPitch(p, o.fifths), o.middleC) }, small: { name: noteName(p, o.middleC) } };
   return { big: { name: noteName(p, o.middleC) }, small: { deg: degree.deg, oct: degree.oct, ...(degree.acc ? { acc: degree.acc } : {}) } };
 }
@@ -54,14 +58,14 @@ export interface PadMusicHost extends PadMusic {
 
 /** middleC = 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字、音域旋钮照它写。
  *  inC = 移调辅助在光标这个声部上起不起作用（五线谱、开着、不是打击乐的行；宿主判，第 19 条）：起作用 = 键上大字照谱上换到 C 调画成的名字写。 */
-export function createPadMusic(get: () => EditorState, middleC: () => number, inC: () => boolean = () => false): PadMusicHost {
+export function createPadMusic(get: () => EditorState, middleC: () => number, inC: () => boolean = () => false, jianpuBase: () => number | null = () => null): PadMusicHost {
   const f = (): number => inputKey(get()), sc = (): Scale => scaleById(inputScaleOf(get()));
   const keySig = (st: EditorState): number => keyAt(tr(st), st.sel ? st.sel.from : st.caret);
   const at = (k: number) => ladderAt(sc(), k, homeTonic(f()), f());
   const pitchAt = (k: number): Pitch => at(k).pitch;
-  const faceCtx = () => ({ inC: inC(), fifths: keySig(get()), middleC: middleC() });
+  const faceCtx = () => ({ inC: inC(), fifths: keySig(get()), middleC: middleC(), jianpu: jianpuBase() });
   return {
-    sig: () => `${f()}|${inputScaleOf(get())}|${middleC()}|${inC() ? `C${keySig(get())}` : ""}`,   // 中央 C 的叫法变了 / 移调辅助开关 / 开着时光标走过转调 = 键上的字重写
+    sig: () => { const jb = jianpuBase(); return `${f()}|${inputScaleOf(get())}|${middleC()}|${inC() ? `C${keySig(get())}` : ""}|${jb === null ? "" : `J${keySig(get())}:${jb}`}`; },   // 简谱：光标走过转调 / 换了八度基准的行 = 重写   // 中央 C 的叫法变了 / 移调辅助开关 / 开着时光标走过转调 = 键上的字重写
     cell: (k): PadCell => { const r = at(k); return { ...keyFaces(r.pitch, { deg: degLabel(r.deg), oct: r.oct }, faceCtx()), midi: midiOf(r.pitch), ...(r.deg.deg === 1 && r.deg.alt === 0 ? { tonic: true } : {}) }; },
     altered: (k, a) => { const r = at(k); return keyFaces(alterBy(r.pitch, a), { deg: degLabel(r.deg), oct: r.oct, acc: ACC_TEXT[a + 2] }, faceCtx()); },
     anchor: (layout) => (layout === "absolute" ? ladderFirstAtOrAbove(sc(), 60, homeTonic(f()), f()) : ladderHome(sc(), homeTonic(f()), f())),
