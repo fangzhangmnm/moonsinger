@@ -50,9 +50,9 @@ check((await keyTags()) === "键上按 C 调写", "「1=」角上挂「键上按
 check((await p.$$eval("#score text.clef", (t) => t.map((x) => x.textContent).join(""))) === clefPro, "谱号照实际的调挑（换个看法谱号不跳）");
 check((await p.evaluate(() => document.querySelector('.pad-key[data-k="0"]')?.classList.contains("tonic"))) === true, "「1」那颗键顶上有短横");
 
-// ③ 按 C 调看时拖音高一格（鼠标长按再拖）= 实际也挪一格（F4 → G4）
+// ③ 按 C 调看时拖音高一格（鼠标按住直接拖；v0.17.48（选中规则单行这一版）：长按只开菜单）= 实际也挪一格（F4 → G4）
 const nb = await p.evaluate(() => { const L = window.__moonsinger.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), n = L.notes[0]; return { x: sc.left + L.pageX.left + n.x + n.w / 2, y: sc.top + n.y, step: L.sp / 2 }; });
-await p.mouse.move(nb.x, nb.y); await p.mouse.down(); await p.waitForTimeout(550); const dy = Math.max(6.3, nb.step * 1.2);   // 拖动先要挪过 6 px 才算开始；又不到一格半（= 只挪一格）
+await p.mouse.move(nb.x, nb.y); await p.mouse.down(); const dy = Math.max(6.3, nb.step * 1.2);   // 拖动先要挪过 6 px 才算开始；又不到一格半（= 只挪一格）
 await p.mouse.move(nb.x, nb.y - dy, { steps: 4 }); await p.mouse.up(); await p.waitForTimeout(200);
 const n2 = await firstNote();
 check(n2.real === "G3" && n2.d === 22, "往上拖一格：谱里 F3 → G3，画在 D3（d = 22）", JSON.stringify(n2));

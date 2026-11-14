@@ -30,21 +30,23 @@ if (await p.$eval(".pad-panel", (e) => e.hidden)) { await p.click("#padTab"); aw
   check(!!s1.sel && s1.sel.from === restIdx && s1.sel.to === restIdx + 1, `${tag}：长按休止 = 选中它`, JSON.stringify(s1.sel));
   check(await p.$$eval("#score text.rest.sel", (e) => e.length) === 1, `${tag}：选中的休止是蓝的`);
   check(await p.$$eval(".sel-handle:not([hidden])", (e) => e.length) === 2, `${tag}：选区两头有把手`);
-  await p.keyboard.press("Escape"); await p.waitForTimeout(100);
+  await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu, .sel-menu")?.remove());
+  await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, sel: null }); }); await p.waitForTimeout(150);   // 长按 = 菜单（v0.17.48（选中规则单行这一版）），菜单要选区：收掉
   if (!touch) {
-    // 横拖改时值；竖拖不改音高
+    // 横拖改时值；竖拖不改音高（v0.17.48（选中规则单行这一版）：鼠标悬浮就亮 = 按住直接拖；长按只开菜单）
     r = await rest();
     const before = (await st()).toks;
-    await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(r.x, r.y - 60, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+    await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.mouse.move(r.x, r.y - 60, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
     check((await st()).toks === before, "鼠标：竖着拖休止 = 什么都不变（没有音高）", (await st()).toks);
     r = await rest();
     { const before = await p.evaluate(() => { const s = window.__moonsinger.state(); return JSON.stringify(s.song.papers[0].tracks[s.at.part].map((t) => t.dur ?? 0)); });
-      await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.mouse.move(r.x + 50, r.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
-      check((await p.evaluate(() => { const s = window.__moonsinger.state(); return JSON.stringify(s.song.papers[0].tracks[s.at.part].map((t) => t.dur ?? 0)); })) === before, "鼠标没长按就横拖 = 不改时值（v0.9.39：鼠标也要先长按）");
-      await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.mouse.move(r.x - 120, r.y - 40, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
-      check(!!(await st()).sel, "鼠标从休止上短按就往左上拖 = 框选（框住前面的音；user「框选是普通短按拖动，这样才能有差别」）", JSON.stringify((await st()).sel)); await p.keyboard.press("Escape"); await p.waitForTimeout(100); }
-    await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(r.x + 50, r.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
-    check((await st()).toks !== before && /r\d+/.test((await st()).toks), "鼠标：横着拖休止 = 改时值", `${before} → ${(await st()).toks}`);
+      await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(r.x + 50, r.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+      check((await p.evaluate(() => { const s = window.__moonsinger.state(); return JSON.stringify(s.song.papers[0].tracks[s.at.part].map((t) => t.dur ?? 0)); })) === before && !!(await p.$(".sel-menu, .ctx-menu")), "鼠标长按 = 只开菜单，接着横拖不改时值");
+      await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu, .sel-menu")?.remove());
+      await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, sel: null }); }); await p.waitForTimeout(150); }
+    await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.mouse.move(r.x + 50, r.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+    check((await st()).toks !== before && /r\d+/.test((await st()).toks), "鼠标：按住休止直接横拖 = 改时值", `${before} → ${(await st()).toks}`);
+    check(!(await st()).sel, "按在休止上拖 = 拖它自己，不框选");
     await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
     // 框选从第一个音框到休止
     // 起点 = 第一个谱上的音的左上方、五线谱上面一点（v0.10.23：原来取第一个 text.note = 速度记号里的 ♩，歌名那一条一加高，「上面 30px」就落进歌名的点击区、点成改歌名了）
@@ -57,7 +59,8 @@ if (await p.$eval(".pad-panel", (e) => e.hidden)) { await p.click("#padTab"); aw
     // 选中休止删掉（先收掉框选：长按已经选中的 = 开选区菜单，是设计）
     await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu")?.remove()); await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, sel: null }); }); await p.waitForTimeout(150);
     r = await rest();
-    await hold(r.x, r.y, 650);
+    await hold(r.x, r.y, 40);   // 轻点 = 亮、光标到它后面；v0.17.48（选中规则单行这一版）：长按只开菜单，「只选一个」= 叠 / Shift+←。这首歌没人上场 = 单声、「叠」是灰的，用 Shift+←
+    await p.keyboard.press("Shift+ArrowLeft"); await p.waitForTimeout(150);
     // v0.10.5：只选一个（音或休止，一样）= 改它，⌫ = 短一步（空出来的还是休止，后面不挪）；删掉 = Delete 键 / 选区条「删」
     const was = (await st()).toks;   // 一步 = 长短旋钮的默认档（八分 = 840）
     await p.keyboard.press("Backspace"); await p.waitForTimeout(150);

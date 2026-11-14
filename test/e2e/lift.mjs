@@ -1,5 +1,6 @@
 // test/e2e/lift.mjs —— 真浏览器 E2E：长按拖歌词（往左 = 合 / 早一个音起，往右 = 晚一个音起、空出来的变拖腔）、力度记号 / 渐强渐弱（点 = 小菜单、拖 = 挪）。
 // created 2026-10-08 by Claude Opus 5.5（user「歌词的合能不能也改成长按拖动。不然每次点文本框是超级麻烦的」；鼠标按住直接拖，手指长按再拖，手指直接拖 = 滚动）
+// v0.17.48（选中规则单行这一版，设计稿第五节）：记号 = 亮着框的才拖得动——鼠标悬浮就亮 = 按住直接拖；手指第一下点亮、亮着再点 = 小菜单，拖框下面的把手挪；长按只开菜单。歌词在「词」里照旧（edited by Claude Opus 5.5 2026-11-13）。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/lift.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
@@ -76,11 +77,11 @@ const undo = (p) => p.keyboard.press("Control+z");
   // 6. 拖 p 到第三个音
   h = await heads(p);
   const d0 = (await p.$$eval("#score text.dyn", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, l: r.x }; })))[0];
-  await p.mouse.move(d0.x, d0.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(d0.x + (h[2].l - h[0].l), d0.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
-  check(await marks(p) === "mf n < n p n f n n n n n", "鼠标拖 p 到第三个音", await marks(p));
+  await p.mouse.move(d0.x, d0.y); await p.mouse.down(); await p.mouse.move(d0.x + (h[2].l - h[0].l), d0.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+  check(await marks(p) === "mf n < n p n f n n n n n", "鼠标拖 p 到第三个音（悬浮就亮 = 按住直接拖）", await marks(p));
   await undo(p); await p.waitForTimeout(150);
   // 7. 拖 p 到 f 那个音 = 顶掉 f（湮灭 + 说一声）
-  await p.mouse.move(d0.x, d0.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(d0.x + (h[3].l - h[0].l), d0.y, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(200);
+  await p.mouse.move(d0.x, d0.y); await p.mouse.down(); await p.mouse.move(d0.x + (h[3].l - h[0].l), d0.y, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(200);
   check(await marks(p) === "mf n < n n p n n n n n", "拖 p 到 f 那个音 = p 算数、f 去掉（渐强走一档）", await marks(p));
   const note = await p.$eval(".wb-notice, .notice, [class*=notice]", (e) => e.textContent).catch(() => "");
   check(/顺手去掉了 1 个/.test(note ?? ""), "说一声", note ?? "");
@@ -137,15 +138,25 @@ const undo = (p) => p.keyboard.press("Control+z");
   await touch(path(a, h[1].x), 600);
   check(await lyr(p) === "我 爱 ー 你 _ _ _ _", "往左拖回拖腔那个音 = 早一个音起，原来的变成它的拖腔", await lyr(p));
   await p.evaluate(() => window.__moonsinger.setMode("symbols"));   // v0.9.19：记号只在「符」里点得到 / 拿得起
-  // 12. 轻点力度字 = 小菜单
+  // 12. 轻点力度字：第一下 = 亮框 + 把手（不开菜单）；亮着再点 = 小菜单（v0.17.48）
   const d0 = await center(p, "#score text.dyn", 0);
   await touch([d0], 40);
-  check(await p.$$eval(".ctx-menu [data-v^='dyn:']", (e) => e.length) === 8, "手指轻点力度字 = 小菜单");
+  check(!(await p.$(".ctx-menu [data-v^='dyn:']")), "手指第一下点力度字 = 不开菜单");
+  check(await p.$$eval("#score .lit-box", (e) => e.length) >= 1, "手指第一下点力度字 = 亮框");
+  check(await p.$eval("#score .lit-grip", (e) => !e.hidden), "亮着的力度字下面有把手");
+  await touch([d0], 40);
+  check(await p.$$eval(".ctx-menu [data-v^='dyn:']", (e) => e.length) === 8, "亮着再点 = 小菜单");
   await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu")?.remove());
-  // 13. 手指长按力度字拖到第二个音
-  const hd = await heads(p), dl = await p.$$eval("#score text.dyn", (es) => { const r = es[0].getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
-  await touch(path(dl, dl.x + (hd[1].l - hd[0].l)), 600);
-  check(await marks(p) === "mf n p < n n f n n n n n", "手指长按 p 拖到第二个音（排在渐强前面）", await marks(p));
+  // 12½. 手指直接在亮着的力度字上拖 = 滚动，不挪
+  { const before = await marks(p), hd0 = await heads(p);
+    await touch(path(d0, d0.x + (hd0[1].l - hd0[0].l)), 30);
+    check(await marks(p) === before, "手指直接拖力度字 = 不挪（拖把手才挪）", await marks(p)); }
+  // 13. 手指拖把手 = 把 p 挪到第二个音
+  if (await p.$eval("#score .lit-grip", (e) => e.hidden)) await touch([await center(p, "#score text.dyn", 0)], 40);
+  const hd = await heads(p), g = await center(p, "#score .lit-grip", 0);
+  await touch(path(g, g.x + (hd[1].l - hd[0].l)), 30);
+  check(await marks(p) === "mf n p < n n f n n n n n", "手指拖把手：p 挪到第二个音（排在渐强前面）", await marks(p));
+  check(await p.$eval("#score .lit-grip", (e) => !e.hidden), "挪完还亮着、把手跟着");
   check(p.errs.length === 0, "手指：没有页面错误", p.errs.join(" | "));
 }
 // ── 力度记号拖到休止上 + 拖的时候强调色（2026-10-08 Opus 5.5；user「力度符号应该能拖动到休止符上」「然后拖动能不能给一点视觉反馈」）──
@@ -164,17 +175,18 @@ const undo = (p) => p.keyboard.press("Control+z");
   const d = await p.$eval("#score text.dyn", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, l: r.x }; });
   const rest = await p.$eval("#score text.rest", (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y }; });
   const head0 = await p.$eval("#score text.note", (e) => e.getBoundingClientRect().x);
-  await p.mouse.move(d.x, d.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(d.x + 8, d.y, { steps: 2 }); await p.waitForTimeout(100);
+  await p.mouse.move(d.x, d.y); await p.mouse.down(); await p.mouse.move(d.x + 8, d.y, { steps: 2 }); await p.waitForTimeout(100);
   check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "拿起来就亮（强调色）");
   await p.mouse.move(d.x + (rest.x - head0), d.y, { steps: 8 }); await p.waitForTimeout(100);
   check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "拖着的时候一直亮");
   await p.mouse.up(); await p.waitForTimeout(200);
   check(await seq() === "clef mf n n p r n", "拖到休止上 = 从休止起", await seq());
   check(await p.$$eval("#score .hot", (e) => e.length) === 0, "松手就不亮了");
-  // 长按原地（不动）也亮
+  // 长按原地（不动）= 只开菜单 + 亮框，不拿起来（v0.17.48：长按只出菜单）
   const d2 = await p.$eval("#score text.dyn", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
   await p.mouse.move(d2.x, d2.y); await p.mouse.down(); await p.waitForTimeout(600);
-  check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "长按到点就亮");
+  check(await p.$$eval(".ctx-menu [data-v^='dyn:']", (e) => e.length) === 8, "长按到点 = 小菜单");
+  check(await p.$$eval("#score .lit-box", (e) => e.length) >= 1 && await p.$$eval("#score text.dyn.hot", (e) => e.length) === 0, "长按 = 亮框，不拿起来");
   await p.mouse.up(); await p.waitForTimeout(200);
   await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu")?.remove());
   await p.evaluate(() => window.__moonsinger.setMode("lyrics")); await p.waitForTimeout(250);   // v0.9.19：字只在「词」里拿得起（切完等重排 / 滚完再量）

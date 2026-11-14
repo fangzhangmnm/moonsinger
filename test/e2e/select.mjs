@@ -20,15 +20,17 @@ try {
   await p.mouse.click(ns[1].x, ns[1].y); await p.waitForTimeout(100);
   let s = await S(); check(s.sel === null && s.caret === 3 + 1 + 2, "轻点音符：光标到它后面、不选中", JSON.stringify(s));
   check(await p.evaluate(() => document.getElementById("stage").querySelector(".sel-bar").hidden), "没选区：选区条藏着");
-  // 长按第二个音 = 选中它
+  // 长按第二个音 = 选区菜单，菜单要选区 = 选中它（v0.17.48（选中规则单行这一版）：长按只出菜单）
   await p.mouse.move(ns[1].x, ns[1].y); await p.mouse.down(); await p.waitForTimeout(600); await p.mouse.up(); await p.waitForTimeout(150);
-  s = await S(); check(!!s.sel && s.sel.from === 5 && s.sel.to === 6, "长按音符：选中它", JSON.stringify(s.sel));
+  s = await S(); check(!!s.sel && s.sel.from === 5 && s.sel.to === 6, "长按音符：选区菜单 + 选中它", JSON.stringify(s.sel));
   check(!(await p.evaluate(() => document.getElementById("stage").querySelector(".sel-bar").hidden)), "有选区：选区条露出来");
   check(await p.evaluate(() => !document.querySelector(".sel-handle.start").hidden && !document.querySelector(".sel-handle.end").hidden), "两个把手露出来");
   check(await p.$("svg .note.sel") == null || (await p.$eval("svg .note.sel", (e) => getComputedStyle(e).fill)) !== "rgb(29, 95, 168)", "音不涂蓝（只有带子）");
-  // 长按不抬手接着拖到第四个音 = 扩选
-  await p.mouse.move(ns[1].x, ns[1].y); await p.mouse.down(); await p.waitForTimeout(600); await p.mouse.move(ns[3].x, ns[3].y, { steps: 5 }); await p.waitForTimeout(100); await p.mouse.up(); await p.waitForTimeout(150);
-  s = await S(); check(!!s.sel && s.sel.from === 5 && s.sel.to === 8, "长按后拖：扩选到第四个音", JSON.stringify(s.sel));
+  // 从空白拉框 = 框住第二到第四个音（v0.17.48（选中规则单行这一版）：框选只从空白起、只框一行；长按之后接着拖不再扩选）
+  await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu, .sel-menu")?.remove()); await p.waitForTimeout(100);
+  { const top = Math.min(...ns.map((n) => n.y)) - 30, bot = Math.max(...ns.map((n) => n.y)) + 30;
+    await p.mouse.move(ns[1].x - 9, bot); await p.mouse.down(); await p.mouse.move(ns[3].x + 9, top, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150); }
+  s = await S(); check(!!s.sel && s.sel.from === 5 && s.sel.to === 8, "从空白拉框：选中第二到第四个音", JSON.stringify(s.sel));
   // 拖右把手到第五个音
   const hb = await p.$eval(".sel-handle.end", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height * 0.7 }; });
   await p.mouse.move(hb.x, hb.y); await p.mouse.down(); await p.mouse.move(ns[4].x, hb.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);

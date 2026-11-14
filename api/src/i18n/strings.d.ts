@@ -7225,6 +7225,18 @@ export declare const S: {
     readonly "\u8FD9\u4E00\u5BB6\u5C55\u5F00\u7740\uFF1A\u70B9 = \u53E0\u56DE\u53BB\uFF08\u5149\u6807\u632A\u5230\u4E0B\u4E00\u4F4D\uFF09": {
         readonly en: "This family is spread out: tap = fold it back (the cursor moves to the next part)";
     };
+    readonly "{name}\uFF1A{what}": {
+        readonly en: "{name}: {what}";
+    };
+    readonly "\u6539 / \u53BB\u6389\uFF1A\u7B26\u53F7\u952E\u76D8\u7684\u300C\u6F14\u594F\u6CD5\u300D\u9875": {
+        readonly en: "To change or remove it: the “Articulation” page of the symbol keyboard";
+    };
+    readonly "\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\u5B83\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD": {
+        readonly en: "The performer on stage ignores it (drawn grey); the sound is not affected";
+    };
+    readonly "\u3002##\u53E5\u53F7\u8FDE\u63A5": {
+        readonly en: ". ";
+    };
     readonly "\u73B0\u5728\u7684\u7F29\u653E\uFF08100% = \u7EB8\u7684\u5B9E\u9645\u5C3A\u5BF8\uFF09\uFF1B\u70B9 = \u56DE\u5230\u81EA\u52A8\u5927\u5C0F\uFF08Ctrl / \u2318 + 0\uFF09\u3002Ctrl / \u2318 + \u6EDA\u8F6E\u3001\u634F\u5408 = \u7F29\u653E\uFF1BCtrl / \u2318 + = / \u2212 = \u4E00\u6863\u4E00\u6863": {
         readonly en: "Current zoom (100% = the paper's real size); tap = back to auto size (Ctrl / ⌘ + 0). Ctrl / ⌘ + wheel or pinch = zoom; Ctrl / ⌘ + = / − = step by step";
     };

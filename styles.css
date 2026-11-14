@@ -861,6 +861,16 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .sel-handle::before { content: ""; position: absolute; left: 13px; top: 0; width: 2px; height: 16px; background: var(--accent); }
 .sel-handle::after { content: ""; position: absolute; left: 5px; top: 14px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
 .sel-handle.start::before { left: 13px; }
+/* 亮框（选中规则单行这一版，v0.17.48）：框 = 碰撞箱本身（点得中的范围）。点亮的 = 实线；鼠标悬浮的 = 淡一点。不接点击（点击归谱面）。 */
+.lit-box { position: absolute; z-index: 5; border: 1.5px solid var(--accent); border-radius: 4px; pointer-events: none; box-sizing: border-box; }
+.lit-box.hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+body.listen-mode .lit-box { display: none; }
+body.listen-mode .lit-grip, body.doc-locked .lit-grip { display: none; }
+/* 手指点亮的音 / 记号旁边的把手：拖它 = 上下改音高（音）/ 左右挪（记号）。直接在谱上拖照旧是滚动 */
+.lit-grip { position: absolute; z-index: 6; width: 30px; height: 30px; margin: -15px 0 0 -15px; touch-action: none; cursor: grab; }
+.lit-grip::after { content: ""; position: absolute; left: 6px; top: 6px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+.lit-grip.note::before { content: ""; position: absolute; left: 14px; top: -2px; width: 2px; height: 34px; background: var(--accent); }
+.lit-grip.mark::before { content: ""; position: absolute; left: -2px; top: 14px; width: 34px; height: 2px; background: var(--accent); }
 .sel-bar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0, 0, 0, .08); white-space: nowrap; max-width: calc(100% - 16px); overflow-x: auto; }
 .sel-bar .btn { height: 30px; min-width: 30px; padding: 0 8px; font-size: 13px; }
 .sel-bar .sel-n { color: var(--muted); font-size: 12px; padding: 0 4px; }

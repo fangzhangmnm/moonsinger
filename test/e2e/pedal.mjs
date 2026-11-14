@@ -53,12 +53,12 @@ vs = await openMenu();
 check(vs.join(",") === "sustain:span,sostenuto:span,soft:span", "有选区：每一行是「把这一段踩住」", vs.join(","));
 await pick("sustain:span");
 check((await shape()) === "C v D E ^ F", "选区开头踩下、结尾抬起", await shape());
-// 长按拖「Ped.」= 挪到别的音起（E 上）
+// 拖「Ped.」= 挪到别的音起（E 上）；v0.17.48（选中规则单行这一版）：鼠标悬浮就亮 = 按住直接拖，不用先长按
 {
   const d = await p.$$eval("#score .pedal", (es) => { const e = es.find((x) => x.tagName.toLowerCase() === "text"); const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
   const ex = await p.evaluate(() => { const L = window.__moonsinger.layout(), s = window.__moonsinger.state(), t = s.song.papers[0].tracks[s.at.part], i = t.findIndex((x) => x.kind === "note" && x.pitch.step === "E"), dI = t.findIndex((x) => x.kind === "note" && x.pitch.step === "D"); const nE = L.notes.find((n) => n.index === i), nD = L.notes.find((n) => n.index === dI); return nE.x - nD.x; });
-  await p.mouse.move(d.x, d.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(d.x + ex, d.y, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(200);
-  check((await shape()) === "C D v E ^ F", "长按拖：踩下挪到 E 起", await shape());
+  await p.mouse.move(d.x, d.y); await p.mouse.down(); await p.mouse.move(d.x + ex, d.y, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(200);
+  check((await shape()) === "C D v E ^ F", "鼠标按住拖：踩下挪到 E 起", await shape());
 }
 // 11-2：持音、弱音各写一个（光标在 C 后面）；持音 / 弱音踩着时那一行只有「抬起」，没有「换踏板」
 await caretAfter("C"); await openMenu(); await pick("sostenuto:act:down"); await openMenu(); await pick("soft:act:down");

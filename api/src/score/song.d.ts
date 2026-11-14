@@ -716,6 +716,8 @@ export declare function selectToEdge(st: EditorState, d: -1 | 1): EditorState;
 /** Esc：写 → 选中光标前那个 token（改）。 */
 export declare function escape(st: EditorState): EditorState;
 export declare function setNote(st: EditorState, i: number, patch: Partial<Pick<NoteTok, "pitch" | "dur" | "lyric" | "hyph">>): EditorState;
+/** 换掉一个音的全部音高（拖和弦里某一个符头 = 只换那一个，别的不动；按高低重排、去重同 withPitches；v0.17.48）。 */
+export declare function setPitches(st: EditorState, i: number, ps: Pitch[]): EditorState;
 export declare function setDur(st: EditorState, i: number, dur: number): EditorState;
 /** 换纸（整首歌一个；17-1）：选了 = 写具体的那一种（选的正好是跟着软件时用的那一张也一样写，「跟着软件」走 src/look withLook）。
  *  **换纸只换纸**：舒适 / 紧凑和谱高原样带着走（统筹 2026-11-12 裁定，施工单 7-C）；边距跟着纸（别家的谱带来的边距换了纸就不算数了 = 回到 "default"）。 */

@@ -187,6 +187,14 @@ export declare class ScoreView {
     private lift;
     private selDrag;
     private handles;
+    private lit;
+    private hover;
+    private litEls;
+    private gripEl;
+    /** 演奏法（跳音、重音…）各自的点击框：从画出来的 SVG 量（换过组就重量）。 */
+    private artCache;
+    private hoverPt;
+    private hoverRaf;
     private handleDrag;
     private touches;
     /** 捏合（2026-10-10 v0.9.27 重做；user「ipad可以放的很大，就和pdf浏览器一样，懂了吗。可以横着滚」+ 查案「iPad 捏合缩放卡」）：
@@ -421,6 +429,8 @@ export declare class ScoreView {
     private cancelPress;
     /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 光标放到那里 + 小菜单（粘贴 / 插记号 / 全选…；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」）。 */
     private longPress;
+    /** 长按音 / 休止（v0.17.48）：亮它 = 不在选区里就只选中它；然后开选区菜单（菜单要一个选区）；按着的时候听见它，抬手停。 */
+    private noteMenu;
     /** 长按选中按着的那个音（不抬手接着拖 = 扩选）。 */
     private selectHeld;
     /** 点在叠起来的那一行上：光标去这一家在这一行的那位（主人 / 在场打头的那位），落在点的那个时刻（点在音上 = 它后面，同平常点音）→ 整家拆开。 */
@@ -476,6 +486,31 @@ export declare class ScoreView {
     private tap;
     /** 轻点在音上（手指 / 笔 / 鼠标）：光标放到它后面（Shift = 把选中扩到它）。 */
     private tapNote;
+    /** 轻点力度记号 / 渐强渐弱（v0.17.48）：没亮 = 亮框（光标不动，只换到那条谱）；亮着（鼠标悬浮着也算）= 它的小菜单。 */
+    private tapMark;
+    /** 轻点演奏法（v0.17.48，设计稿第五节第 7 条）：光标到它那个音后面、它亮框、说一句它是什么 / 怎么改。 */
+    private tapArt;
+    /** 这个演奏法挂在哪个音上（点击区那一条）。 */
+    private hitOfArt;
+    /** 某样东西现在是不是「点亮的」那一个（留住的亮框；选区 / 鼠标悬浮另算）。 */
+    private litIs;
+    /** 让第 system 行第 index 个东西亮框（留住）：光标 / 焦点已经放好之后调；手指点亮能拖的 = 旁边出把手。合租叠起来的行不亮。 */
+    private lightAt;
+    /** 鼠标悬浮（v0.17.48）：指着的音 / 记号 / 演奏法亮一个淡框（临时，移开就灭）；按下去 = 它是亮着的。「词」/「听」/ 叠起来的行不亮。 */
+    private hoverAt;
+    /** 一个 SMuFL 字形（glyph 图元 = Bravura、起点对齐、基线在 y）的墨迹框：画布按同样的字号量 actualBoundingBox。
+     *  不用 getBBox：它给的是整个字体的上下伸（Bravura 很高），跳音一个点的框会从谱上面拉到谱下面、盖住底下的符头（v0.17.48 截图查出来的）。量不出来（字体还没到）才退回 getBBox。 */
+    private inkBox;
+    /** 演奏法各自的点击框：从画出来的 SVG 量（字形的墨迹框，inkBox）；换过组才重量。只量能写的行（叠起来的行不算）。 */
+    private artBoxes;
+    /** 点中的演奏法（笔 / 鼠标放宽 0.15 个间距，手指 6 px）。「词」里不认。 */
+    private artAt;
+    /** 亮框画的就是碰撞箱：音 = 主音和和弦符头的框并起来（左右 0.5、上下 0.9 个间距）；记号 = 它的框；演奏法 = 字形的框。每行一个。 */
+    private litBoxes;
+    /** 画亮框（ink 层的 div；不进排版）+ 手指的把手。点亮的那个在光标一挪 / 有了选区时灭。 */
+    private drawLit;
+    /** 手指按在把手上：音 = 上下拖改音高（同笔拖音，出声）；记号 = 拿起来左右挪（同长按拖）。之后的 move / up 冒泡到谱面，走原来那几条。 */
+    private gripDown;
     /** 这一行（谱行）上有没有「行末」落点给这个光标位置（= 它本来画在下一行开头）。 */
     private endSlotOn;
     /** 放光标 + 记住画在行末还是行首。状态没变（光标本来就在这儿）但画法变了 = 自己重画。 */

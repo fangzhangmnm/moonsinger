@@ -1632,6 +1632,13 @@ export function setNote(st: EditorState, i: number, patch: Partial<Pick<NoteTok,
   nt[i] = patch.pitch !== undefined && merged.pitch ? withPitches(merged, [merged.pitch, ...(t.chord ?? [])]) : merged;   // 拖旋律音越过叠音里的音：重新排高低
   return next(st, nt);
 }
+/** 换掉一个音的全部音高（拖和弦里某一个符头 = 只换那一个，别的不动；按高低重排、去重同 withPitches；v0.17.48）。 */
+export function setPitches(st: EditorState, i: number, ps: Pitch[]): EditorState {
+  const t = tr(st)[i];
+  if (!t || t.kind !== "note" || !ps.length) return st;
+  const nt = tr(st).slice(); nt[i] = withPitches(t, ps);
+  return next(st, nt);
+}
 export function setDur(st: EditorState, i: number, dur: number): EditorState {
   const t = tr(st)[i];
   if (!t || !isTimed(t) || !validDur(dur)) return st;
