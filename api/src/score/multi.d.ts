@@ -31,7 +31,8 @@ export declare function rowRange(tokens: readonly Token[], t0: number, t1: numbe
 export declare function normalize(song: Song, paper: string, parts: string[], t0: number, t1: number): MultiSel | null;
 /** 复制：每一行原样切下来（只留音、休止、曲级记号；第一个音和前面连着的连音线断开），记下离开头多远。 */
 export declare function copyBlock(song: Song, m: MultiSel, kindOf: (part: string) => RowKind): Block;
-/** 退格 / Delete / 剪切：每一行里起点在这段时间里的音变成一样长的休止（不合拢，各行不错位）；挂在这些音上的曲级记号一起去掉，人插的「|」和别的记号留着。 */
+/** 退格 / Delete / 剪切：每一行里起点在这段时间里的音变成一样长的休止（不合拢，各行不错位）；不占时值的一律留在原地——
+ *  人插的「|」、别的记号、挂在这些音上的曲级记号（力度 / 渐强渐弱 / 风格 / 踏板）都在（同单行的「变休止」fillSel：力度是状态，拿掉它会改选区外面的音的响度）。 */
 export declare function clearBlock(song: Song, m: MultiSel): Song;
 export type SpanFail = "cut" | "dur";
 /** 歌里的写入口「把一行里一段时间换掉」：tokens 这一行从 t0 起、长 len 的那段时间换成 src（src 只留音、休止和曲级记号，从 t0 起排；短了后面补休止到 len）。

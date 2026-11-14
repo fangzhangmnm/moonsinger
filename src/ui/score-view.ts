@@ -142,6 +142,8 @@ type Grab = { kind: "lyric" | "mark"; index: number; system: number };
 type ArtBox = { index: number; system: number; x: number; y: number; w: number; h: number; arts: Art[]; mute: boolean };
 /** 碰撞箱 = 点中的范围（笔 / 鼠标那一档）：音 = 符头左右各 0.5、上下各 0.9 个间距。 */
 const NOTE_PAD_X = 0.5, NOTE_PAD_Y = 0.9;
+/** 手指把手的中心离亮框的边多远（ink 坐标的 px）：把手 30 px（styles.css .lit-grip）的一半 + 3 px 缝 = 整个把手在框外面。 */
+const GRIP_OUT = 18;
 /** 字形 → 可能是哪几种演奏法（SVG 上只有字；按记号表每种谱的那一栏建，不认是哪一种谱；简谱里次重音借了重音的字形 = 一个字两种，用这个音身上写着的取交集；v0.17.48）。 */
 const ART_OF_CH = new Map<string, Art[]>();
 for (const sg of Object.values(SIGNS)) {
@@ -1309,8 +1311,11 @@ export class ScoreView {
   /** 点中的力度记号 / 渐强渐弱（手指放宽几个像素）。 */
   private dynHitAt(x: number, y: number, finger: boolean): DynHit | null {
     const L = this.layout; if (!L) return null;
-    const pad = finger ? 6 / this.zoom : 0;
-    return L.dyns.find((b) => x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad) ?? null;
+    const pad = finger ? 6 / this.zoom : 0, inside = (b: DynHit, q: number) => x >= b.x - q && x <= b.x + b.w + q && y >= b.y - q && y <= b.y + b.h + q;
+    const hit = L.dyns.find((b) => inside(b, pad)) ?? null;
+    // 手指放宽的那一圈让给正好按在上面的音（v0.17.50「一次只亮一样」）：力度记号贴着最高的音时，按在符头上 = 那个音，不是力度
+    if (hit && pad > 0 && !inside(hit, 0) && this.noteAt(x, y)) return null;
+    return hit;
   }
   /** 力度记号 / 渐强渐弱的小菜单：先把光标换到那条 track，再告诉宿主（开在记号下面）。 */
   private markMenu(h: DynHit): void {
@@ -1632,7 +1637,10 @@ export class ScoreView {
       if (this.hover && !(this.lit && same(this.lit, this.hover))) paint(this.hover, "lit-box hover");
       if (this.lit) {
         const bs = paint(this.lit, "lit-box"), b = bs[bs.length - 1];
-        if (this.lit.grip && b) grip = this.lit.target === "note" ? { x: b.x + b.w + L.sp * 1.6, y: b.y + b.h / 2 } : { x: b.x + b.w / 2, y: b.y + b.h + L.sp * 1.6 };   // 音 = 框右边（上下拖）；记号 = 框下面（左右拖）
+        // 把手整个在框外面、放在那个方向上本来就没有符头的地方（v0.17.50「不压符头」；把手 30 px、中心离框边 GRIP_OUT）：
+        //   音 = 框正下方（上下拖；框已经包住这个音在这一行的所有符头，正下方是它自己那一列——只有它的符干 / 和弦名；原来放框右边，音挨得紧时压到下一个音）；
+        //   记号 = 框右边（左右拖；力度那几道都在谱上面、那一道里没有符头；原来放框下面 = 正好压在谱上最高的音上）
+        if (this.lit.grip && b) grip = this.lit.target === "note" ? { x: b.x + b.w / 2, y: b.y + b.h + GRIP_OUT } : { x: b.x + b.w + GRIP_OUT, y: b.y + b.h / 2 };
       }
     }
     if (grip && this.lit) { Object.assign(this.gripEl.style, { left: `${grip.x}px`, top: `${grip.y}px` }); this.gripEl.className = `lit-grip ${this.lit.target}`; this.gripEl.hidden = false; }

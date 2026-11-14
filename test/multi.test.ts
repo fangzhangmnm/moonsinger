@@ -5,6 +5,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { songOf, TPQ, trackOf, headLen, type Song, type Token, type NoteTok } from "../src/score/song.ts";
 import { rowRange, normalize, copyBlock, clearBlock, replaceSpan, pasteBlock, repeatBlock, caretTick, trackLen, type MultiSel, type RowKind } from "../src/score/multi.ts";
 import { pitchName } from "../src/score/pitch.ts";
+import { dynLevels } from "../src/score/perform.ts";
 
 const E = TPQ / 2;   // 八分
 type It = [string, number, string?] | "|" | "f" | "p";
@@ -61,15 +62,25 @@ describe("复制 / 退格 / 剪切", () => {
     eq(b.rows[1].off, 0); eq(b.rows[1].toks.map((t) => t.kind).join(","), "note,note", "「|」不带");
     eq((b.rows[1].toks[0] as NoteTok).tie, undefined, "连着块外面的连音线断开");
   });
-  it("退格：每行选中的变成一样长的休止，不合拢、各行一样长；挂着的力度去掉、「|」留着；后面连着的连音线断开", () => {
+  it("退格：每行选中的变成一样长的休止，不合拢、各行一样长；挂着的力度和「|」都留在原地；后面连着的连音线断开", () => {
     const t1 = row([["C4", 2], "f", ["D4", 2], "|", ["E4", 2], ["E4", 2]]);
     (t1[t1.length - 1] as NoteTok).tie = true;
     const s = song(t1, row([["G4", 1], ["A4", 3], ["B4", 4]]));
     const before = [trackLen(trackOf(s, "p1", "P1")), trackLen(trackOf(s, "p1", "P2"))];
     const c = clearBlock(s, m(["P1", "P2"], 2, 6));
-    eq(show(c, "P1"), "C4/2 r/2 | r/2 E4/2");
+    eq(show(c, "P1"), "C4/2 f r/2 | r/2 E4/2");
     eq(show(c, "P2"), "G4/1 A4/3 r/4", "A 起点 1 不算；B 起点 4 算");
     eq([trackLen(trackOf(c, "p1", "P1")), trackLen(trackOf(c, "p1", "P2"))].join(","), before.join(","), "不合拢");
+  });
+  it("退格（v0.17.50）：变休止前后，选区外面每个音的力度水平都不变（力度是状态，挂在选中的音上的也照样管后面的音）", () => {
+    const T = { ppp: 1, pp: 2, p: 3, mp: 4, mf: 5, f: 6, ff: 7, fff: 8 } as const;
+    const s = song(row([["C4", 2], "f", ["D4", 2], ["E4", 2], "p", ["F4", 2], ["G4", 2]]), row([["A4", 2], "p", ["B4", 2], ["C5", 4]]));
+    const sel = m(["P1", "P2"], 2, 4), inSel = new Set<number>();
+    for (const part of sel.parts) { const tk = trackOf(s, "p1", part), r = rowRange(tk, sel.t0, sel.t1)!; for (let i = r.a; i < r.b; i++) if (tk[i].kind === "note") inSel.add(tk[i].id); }
+    const outside = (x: Song, part: string) => { const tk = trackOf(x, "p1", part); return [...dynLevels(tk, undefined, T, T.mf, 1)].filter(([i]) => tk[i].kind === "note" && !inSel.has(tk[i].id)).map(([i, l]) => `${tk[i].id}:${l.at0}`).join(" "); };
+    const c = clearBlock(s, sel);
+    for (const part of sel.parts) eq(outside(c, part), outside(s, part), `${part} 选区外的音力度不变`);
+    assert(outside(s, "P1").split(" ").length === 4 && outside(s, "P2").split(" ").length === 2, "选区外确实有音");
   });
 });
 
@@ -91,6 +102,13 @@ describe("把一行里一段时间换掉（replaceSpan）", () => {
     const tk = row([["C4", 2]]);
     const r = ok(replaceSpan(tk, 4 * E, src([["E4", 1]]), 2 * E, 900));
     eq(show(song(r.tokens), "P1"), "C4/2 r/2 E4/1 r/1");
+  });
+  it("段尾的东西一律留着（v0.17.50）：最后一个音后面是「力度、小节线、后面的音」= 那个力度是后面那个音的，不丢", () => {
+    const tk = row([["C4", 2], ["D4", 2], "f", "|", ["E4", 2], ["F4", 2]]);
+    const r = ok(replaceSpan(tk, 0, src([["G4", 2], ["A4", 2]]), 4 * E, 900));
+    eq(show(song(r.tokens), "P1"), "G4/2 A4/2 f | E4/2 F4/2");
+    const r2 = ok(replaceSpan(row([["C4", 2], ["D4", 2], "|", "p", "f", ["E4", 2]]), 0, src([["G4", 4]]), 4 * E, 900));
+    eq(show(song(r2.tokens), "P1"), "G4/4 | p f E4/2", "顺序反过来、两个记号也一样");
   });
   it("目标行在这段时间里有人插的「|」、落在贴进来的音中间 = 在那儿切开、连音线连上；歌词只留在前一截", () => {
     const tk = row([["C4", 2], "|", ["D4", 2]]);

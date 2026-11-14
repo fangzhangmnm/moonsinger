@@ -56,13 +56,14 @@ export function copyBlock(song: Song, m: MultiSel, kindOf: (part: string) => Row
   };
 }
 
-/** 退格 / Delete / 剪切：每一行里起点在这段时间里的音变成一样长的休止（不合拢，各行不错位）；挂在这些音上的曲级记号一起去掉，人插的「|」和别的记号留着。 */
+/** 退格 / Delete / 剪切：每一行里起点在这段时间里的音变成一样长的休止（不合拢，各行不错位）；不占时值的一律留在原地——
+ *  人插的「|」、别的记号、挂在这些音上的曲级记号（力度 / 渐强渐弱 / 风格 / 踏板）都在（同单行的「变休止」fillSel：力度是状态，拿掉它会改选区外面的音的响度）。 */
 export function clearBlock(song: Song, m: MultiSel): Song {
   let out = song;
   for (const part of m.parts) {
     const tk = trackOf(out, m.paper, part), r = rowRange(tk, m.t0, m.t1); if (!r) continue;
     const nt: Token[] = [...tk.slice(0, r.a)];
-    for (let i = r.a; i < r.b; i++) { const t = tk[i]; if (isTimed(t)) nt.push({ kind: "rest", id: t.id, dur: t.dur, ...(t.staff ? { staff: t.staff } : {}) } as Token); else if (!isPhraseMark(t)) nt.push(t); }
+    for (let i = r.a; i < r.b; i++) { const t = tk[i]; nt.push(isTimed(t) ? { kind: "rest", id: t.id, dur: t.dur, ...(t.staff ? { staff: t.staff } : {}) } as Token : t); }
     const end = nt.length; nt.push(...tk.slice(r.b)); untieAt(nt, end);
     out = withTrack(out, m.paper, part, nt);
   }
@@ -119,12 +120,12 @@ export function replaceSpan(tokens0: readonly Token[], t0: number, src0: readonl
   for (const x of [t0, t1]) { const r = splitAt(tokens, x, id); if (typeof r === "string") return { fail: r }; ({ tokens, id } = r); }
   // 切成 前 / 中 / 后：中 = 起点在 [t0, t1) 的音 + 它们之间的记号（前面挂着的曲级记号也算中）
   const ticks = tickOf(tokens), h = headLen(tokens);
-  let first = -1, endI = tokens.length;
-  for (let i = h; i < tokens.length; i++) { const t = tokens[i]; if (!isTimed(t)) continue; if (ticks[i] >= t1) { endI = i; break; } if (first < 0 && ticks[i] >= t0) first = i; }
+  let first = -1, last = -1, endI = tokens.length;
+  for (let i = h; i < tokens.length; i++) { const t = tokens[i]; if (!isTimed(t)) continue; if (ticks[i] >= t1) { endI = i; break; } if (ticks[i] >= t0) { if (first < 0) first = i; last = i; } }
   if (first < 0) first = endI;
   let a = first; while (a > h && isPhraseMark(tokens[a - 1])) a--;
-  // 「后」从 endI 前面挂着的曲级记号开始（它们是后面那个音的）；中间夹着的骨架记号按时刻记下来
-  let b = endI; while (b > first && isPhraseMark(tokens[b - 1])) b--;
+  // 「后」从这段时间里最后一个音后面开始：时刻 = 段尾的一律留着（后面那个音的力度、段尾的「|」…，不管先后怎么排）；中间夹着的骨架记号按时刻记下来
+  const b = last >= 0 ? last + 1 : a;
   const bones: { tick: number; tok: Token }[] = [];
   for (let i = a; i < b; i++) { const t = tokens[i]; if (!isTimed(t) && !isPhraseMark(t)) bones.push({ tick: ticks[i], tok: t }); }
   // 贴进来的：骨架落在它的音中间 = 切开

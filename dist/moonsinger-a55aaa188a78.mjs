@@ -6445,7 +6445,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.49-2026-11-13";
+var APP_VERSION = "v0.17.50-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -11703,8 +11703,7 @@ function clearBlock(song, m2) {
     const nt2 = [...tk2.slice(0, r10.a)];
     for (let i10 = r10.a; i10 < r10.b; i10++) {
       const t10 = tk2[i10];
-      if (isTimed(t10)) nt2.push({ kind: "rest", id: t10.id, dur: t10.dur, ...t10.staff ? { staff: t10.staff } : {} });
-      else if (!isPhraseMark(t10)) nt2.push(t10);
+      nt2.push(isTimed(t10) ? { kind: "rest", id: t10.id, dur: t10.dur, ...t10.staff ? { staff: t10.staff } : {} } : t10);
     }
     const end = nt2.length;
     nt2.push(...tk2.slice(r10.b));
@@ -11783,7 +11782,7 @@ function replaceSpan(tokens0, t02, src0, len, id0) {
     ({ tokens, id: id2 } = r10);
   }
   const ticks = tickOf(tokens), h2 = headLen(tokens);
-  let first = -1, endI = tokens.length;
+  let first = -1, last = -1, endI = tokens.length;
   for (let i10 = h2; i10 < tokens.length; i10++) {
     const t10 = tokens[i10];
     if (!isTimed(t10)) continue;
@@ -11791,13 +11790,15 @@ function replaceSpan(tokens0, t02, src0, len, id0) {
       endI = i10;
       break;
     }
-    if (first < 0 && ticks[i10] >= t02) first = i10;
+    if (ticks[i10] >= t02) {
+      if (first < 0) first = i10;
+      last = i10;
+    }
   }
   if (first < 0) first = endI;
   let a10 = first;
   while (a10 > h2 && isPhraseMark(tokens[a10 - 1])) a10--;
-  let b3 = endI;
-  while (b3 > first && isPhraseMark(tokens[b3 - 1])) b3--;
+  const b3 = last >= 0 ? last + 1 : a10;
   const bones = [];
   for (let i10 = a10; i10 < b3; i10++) {
     const t10 = tokens[i10];
@@ -18699,6 +18700,7 @@ var caretKey = (st2) => `${st2.at.paper}|${st2.at.part}|${st2.caret}`;
 var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
 var NOTE_PAD_X = 0.5;
 var NOTE_PAD_Y = 0.9;
+var GRIP_OUT = 18;
 var ART_OF_CH = /* @__PURE__ */ new Map();
 for (const sg2 of Object.values(SIGNS)) {
   if (!sg2.id.startsWith("art:")) continue;
@@ -20426,8 +20428,10 @@ var ScoreView = class {
   dynHitAt(x2, y2, finger) {
     const L2 = this.layout;
     if (!L2) return null;
-    const pad4 = finger ? 6 / this.zoom : 0;
-    return L2.dyns.find((b3) => x2 >= b3.x - pad4 && x2 <= b3.x + b3.w + pad4 && y2 >= b3.y - pad4 && y2 <= b3.y + b3.h + pad4) ?? null;
+    const pad4 = finger ? 6 / this.zoom : 0, inside = (b3, q2) => x2 >= b3.x - q2 && x2 <= b3.x + b3.w + q2 && y2 >= b3.y - q2 && y2 <= b3.y + b3.h + q2;
+    const hit2 = L2.dyns.find((b3) => inside(b3, pad4)) ?? null;
+    if (hit2 && pad4 > 0 && !inside(hit2, 0) && this.noteAt(x2, y2)) return null;
+    return hit2;
   }
   /** 力度记号 / 渐强渐弱的小菜单：先把光标换到那条 track，再告诉宿主（开在记号下面）。 */
   markMenu(h2) {
@@ -20917,7 +20921,7 @@ var ScoreView = class {
       if (this.hover && !(this.lit && same(this.lit, this.hover))) paint(this.hover, "lit-box hover");
       if (this.lit) {
         const bs = paint(this.lit, "lit-box"), b3 = bs[bs.length - 1];
-        if (this.lit.grip && b3) grip = this.lit.target === "note" ? { x: b3.x + b3.w + L2.sp * 1.6, y: b3.y + b3.h / 2 } : { x: b3.x + b3.w / 2, y: b3.y + b3.h + L2.sp * 1.6 };
+        if (this.lit.grip && b3) grip = this.lit.target === "note" ? { x: b3.x + b3.w / 2, y: b3.y + b3.h + GRIP_OUT } : { x: b3.x + b3.w + GRIP_OUT, y: b3.y + b3.h / 2 };
       }
     }
     if (grip && this.lit) {
@@ -36181,7 +36185,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick3(() => "layout-worker-dfd09a77c6ab.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-1a9ca012ccaf.mjs");
+      return pick3(() => "encode-worker-19659b35e67b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -47819,7 +47823,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "a140fa53a771413d" : "dev";
+var CORE_HASH = true ? "55d321a3ea7538bb" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -69219,4 +69223,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-61505a54a093.mjs.map
+//# sourceMappingURL=moonsinger-a55aaa188a78.mjs.map
