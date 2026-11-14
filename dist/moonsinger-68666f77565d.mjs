@@ -21788,7 +21788,7 @@ function createPadMusic(get, middleC, inC = () => false, jianpuBase = () => null
   return {
     sig: () => {
       const jb = jianpuBase();
-      return `${f2()}|${inputScaleOf(get())}|${middleC()}|${inC() ? `C${keySig(get())}` : ""}|${jb === null ? "" : `J${keySig(get())}:${jb}`}`;
+      return `${f2()}|${inputScaleOf(get())}|${middleC()}|${inC() ? `C${keySig(get())}` : ""}${jb === null ? "" : `|J${keySig(get())}:${jb}`}`;
     },
     // 简谱：光标走过转调 / 换了八度基准的行 = 重写   // 中央 C 的叫法变了 / 移调辅助开关 / 开着时光标走过转调 = 键上的字重写
     cell: (k2) => {
@@ -68016,4 +68016,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-d717f05974b3.mjs.map
+//# sourceMappingURL=moonsinger-68666f77565d.mjs.map

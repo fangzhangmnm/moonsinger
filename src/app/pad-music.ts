@@ -65,7 +65,7 @@ export function createPadMusic(get: () => EditorState, middleC: () => number, in
   const pitchAt = (k: number): Pitch => at(k).pitch;
   const faceCtx = () => ({ inC: inC(), fifths: keySig(get()), middleC: middleC(), jianpu: jianpuBase() });
   return {
-    sig: () => { const jb = jianpuBase(); return `${f()}|${inputScaleOf(get())}|${middleC()}|${inC() ? `C${keySig(get())}` : ""}|${jb === null ? "" : `J${keySig(get())}:${jb}`}`; },   // 简谱：光标走过转调 / 换了八度基准的行 = 重写   // 中央 C 的叫法变了 / 移调辅助开关 / 开着时光标走过转调 = 键上的字重写
+    sig: () => { const jb = jianpuBase(); return `${f()}|${inputScaleOf(get())}|${middleC()}|${inC() ? `C${keySig(get())}` : ""}${jb === null ? "" : `|J${keySig(get())}:${jb}`}`; },   // 简谱：光标走过转调 / 换了八度基准的行 = 重写   // 中央 C 的叫法变了 / 移调辅助开关 / 开着时光标走过转调 = 键上的字重写
     cell: (k): PadCell => { const r = at(k); return { ...keyFaces(r.pitch, { deg: degLabel(r.deg), oct: r.oct }, faceCtx()), midi: midiOf(r.pitch), ...(r.deg.deg === 1 && r.deg.alt === 0 ? { tonic: true } : {}) }; },
     altered: (k, a) => { const r = at(k); return keyFaces(alterBy(r.pitch, a), { deg: degLabel(r.deg), oct: r.oct, acc: ACC_TEXT[a + 2] }, faceCtx()); },
     anchor: (layout) => (layout === "absolute" ? ladderFirstAtOrAbove(sc(), 60, homeTonic(f()), f()) : ladderHome(sc(), homeTonic(f()), f())),
