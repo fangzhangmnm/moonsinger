@@ -5473,3 +5473,5 @@ user 逐条回的（原话）：
   - **设置每行「跟着谁」的小图标**（20-4，设计 `ai-docs/20261113-settings-follow-whom-design.md` 第四节）：新文件 `src/app/follow-badge.ts`（`followBadge(f)` / `wireFollowBadges(root, say)`；悬停 = 那句话，点 / 回车 = 提示条说出来）。界面页语言、初始设置、四样习惯 = 歌库（唱片箱）；MIDI、按键手感的数字、声音的起法、音源页三栏、维护页小月相 / 乐器音色库 / 渲染好的声音 / 诊断日志 = 这台设备（屏幕）；声音设备、软件（不记东西）不标；页面设置标题旁一枚音符 = 这首歌。图标库取了 `device`（sprite 87 个）。初始设置卡开头那句：连着歌库 =「存在你的歌库里…」，没连 =「记在这台设备上，登录后跟着你；…」。习惯那一段开头「这台设备的习惯」→「你的习惯」。守卫跟着改：键盘总闸白名单登记 follow-badge（只认这一枚身上的回车 / 空格，不写谱）；设置两页的 import 小名单加 follow-badge（只拼 HTML）。截图 J/set-ui.png、set-input.png、set-sound.png、set-upkeep.png、page-title.png。
   - 推前：check 1961 绿；无头截图脚本走了一遍、没有页面错误。
   - **攒着的**（不修）：开文件那一道门（`project.ts` completeCandidate）对演奏法里不是数的值照模板盖掉，看上去像替人修（硬规则 #9 的自愈）；那块不是这一版的，没动，记一笔给统筹看。
+  - 整套 E2E（5f832ee3，后台）：5 分 26 秒，**127 过 0 红**。
+- 2026-11-13 · 只读核对（没改代码）：选中、点、拖现在代码里怎么做的 = `ai-docs/20261113-selection-gestures-current-rules.md`（59b114c0），给统筹对照选中规则设计稿；四件事的答案在它第五节。
