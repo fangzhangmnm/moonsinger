@@ -1,4 +1,4 @@
-// 生成物：node scripts/gen-instruments.mjs（目录 v15 的 Q7390）。勿手改。
+// 生成物：node scripts/gen-instruments.mjs（目录 v16 的 Q7390）。勿手改。
 // 新歌默认那一位（主唱）的乐器概念，按值（施工单 12-4）：排谱 / 新建声部时就要，不等目录加载。
 import type { LoungeRoleV2 } from "../format/contract.ts";
 export const DEFAULT_CONCEPT: Readonly<NonNullable<LoungeRoleV2["concept"]>> = {

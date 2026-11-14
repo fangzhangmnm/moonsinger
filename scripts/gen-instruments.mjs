@@ -18,14 +18,14 @@ export const PERC_OUT = join(ROOT, "src", "gm", "percussion.gen.ts");
 export const DEFAULT_OUT = join(ROOT, "src", "gm", "default-concept.gen.ts");   // 新歌默认那一位的概念（12-4）
 export const LABELS_OUT = join(ROOT, "src", "gm", "concept-labels.gen.ts");     // 每个概念现行的谱上叫法 + 简写（12-4 改口）
 export const RING_OUT = join(ROOT, "src", "gm", "ring.gen.ts");                 // 踏板 11-3：哪些音色的乐器「不去管它就一直响」（概念上的 ring 栏）
-export const VERSION = 15;   // v15 = 2026-11-07（仓鼠 adc0249：概念加 scoreName = 谱上名（Western concert flute → Flute、型号 → 功能名），13 个简写改正；user 11-07「为什么我从era里面选的flute在sheet上面显示western concept flute」「不只是长笛，而是系统的看一下」）
+export const VERSION = 16;   // v16 = 2026-11-13（仓鼠仓 eaeb08c：概念加 ring = 没写踏板记号时这件乐器的音怎么收，47 个概念 = 自然衰减；gm-map 的行不变；user 11-13「看人类的意图」）。v15 = 2026-11-07（概念加 scoreName）
 //   v14 = 2026-11-07（仓鼠 eec835f：GM 122 Breath Noise 改挂长笛、奏法 = 气声、年份 ≈前 51,000，「呼吸」不再有 GM 号；user 11-07「midi breath不是呼吸是演奏技巧」，家族周账 F-212）
 //   v13 = 2026-10-10（仓鼠 7447213：不分音高的鼓谱写法 percussion / pitched:false / 着力点 hitSec / GS 扩展鼓键 extraDrumKeys；纯增量。工单 ai-docs/20261010-hamster-workorder-percussion-notation.md）
 //   v12 = 2026-10-10（仓鼠 ffd9a23：概念加 abbr（出版谱简写，MuseScore instruments.xml）/ notation（记谱谱号、按实际音高的谱号、sounds / octave），gm-map 铃类加 octaveCheck；纯增量。工单 ai-docs/20261010-hamster-workorder-abbr-octave.md）
 export const FILES = {
   concepts: `instruments-v${VERSION}.json`,
   gmMap: `gm-map-v${VERSION}.json`,
-  icons: `instrument-icons-20261107-v${VERSION}.svg`,   // sprite 文件名里的日期 = 那一版出图的日子（v2 / v3 = 20261007，…v13 = 20261010，v14 = 20261107；图形和 v13 一样，只差头注释里的日期和版本号）
+  icons: `instrument-icons-20261113-v${VERSION}.svg`,   // sprite 文件名里的日期 = 那一版出图的日子（v2 / v3 = 20261007，…v13 = 20261010，v14 = 20261107；图形和 v13 一样，只差头注释里的日期和版本号）
   iconCredits: `icon-credits-v${VERSION}.json`,
   licenses: `LICENSES-chosen-v${VERSION}.md`,
 };
