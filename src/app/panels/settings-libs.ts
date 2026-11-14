@@ -9,6 +9,7 @@ import { _t, lang } from "../../i18n/index.ts";
 import { CREDIT_TRANSLATIONS } from "../../singer/credit-translations.ts";
 import { escapeHtml as esc } from "../../ui/md-lite.ts";
 import { sizeText } from "../../ui/size-text.ts";
+import { followBadge } from "../follow-badge.ts";   // 每一栏名字后面「跟这台设备走」那枚（20-4）：这两页记着的东西都只在这台设备上
 
 export type LibId = "voice" | "gs";
 
@@ -69,7 +70,7 @@ export function voiceColumnHtml(v: VoiceView): string {
     : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入")}<input id="impIn" type="file" multiple hidden /></label>` +
       (all ? "" : btn("lib:add:voice", v.removed ? _t("装回来") : _t("现在下载"))) + (none ? "" : btn("lib:del:voice", _t("删")));
   return settingRowHtml({
-    labelHtml: esc(_t("小月相")),
+    labelHtml: esc(_t("小月相")) + followBadge("device"),
     notes: [{ mark: "?", label: _t("这是什么"), html: what }, { mark: "©", label: _t("版权和使用规则"), html: rules }],
     controlHtml: actions,
     belowHtml: line(esc(status)) + line(parts) + (v.folder ? note(esc(v.folder)) : "") +
@@ -87,7 +88,7 @@ export function gsColumnHtml(v: GsView): string {
   const rules = `<b>${_t("版权和使用规则")}</b><br>${esc(v.license.name)}${v.license.summary ? `<br>${esc(v.license.summary)}` : ""}<br>${esc(v.attribution)}${v.homepage ? `<br><a href="${esc(v.homepage)}" target="_blank" rel="noopener">${esc(v.homepage)}</a>` : ""}`;
   const actions = v.folder ? "" : v.cached ? btn("lib:del:gs", _t("删")) : btn("lib:add:gs", v.removed ? _t("装回来") : _t("现在下载"));
   return settingRowHtml({
-    labelHtml: esc(v.name),
+    labelHtml: esc(v.name) + followBadge("device"),
     notes: [{ mark: "?", label: _t("这是什么"), html: what }, { mark: "©", label: _t("版权和使用规则"), html: rules }],
     controlHtml: actions,
     belowHtml: line(esc(status)) + (v.folder ? note(esc(v.folder)) : "") +
@@ -111,7 +112,7 @@ export function ownColumnHtml(rows: readonly OwnView[], folder: string | null): 
     (o.users.length ? `<small class="set-note"> ${esc(_t("这首歌里：{names}（{how}）", { names: o.users.join("、"), how: o.packed ? _t("也打包着") : _t("引用着") }))}</small>` : "") +
     `</span>${btn(`lib:del:own:${o.sha256}`, _t("删"))}</div>`).join("");
   return settingRowHtml({
-    labelHtml: esc(_t("你自己加的音色文件")),
+    labelHtml: esc(_t("你自己加的音色文件")) + followBadge("device"),
     notes: [{ mark: "?", label: _t("这是什么"), html: _t("从自己的 .sf2 选乐器时、或者「全部解包」时留在这台设备上的小块（名字是从这块文件里读的）。不是自带的：删了就没了，没有原来的 .sf2 就找不回来。") }],
     belowHtml: list,
     attrs: { "data-lib": "own" },
@@ -127,8 +128,8 @@ export interface UpkeepView {
   gsMemBytes: number;
   renders: { rows: readonly RenderRow[]; bytes: number; oldCount: number; oldBytes: number; coreNow: string } | null;
 }
-const group = (lib: LibId | null, title: string, what: string, body: string, attr: string) => settingRowHtml({
-  labelHtml: lib ? `<button class="lib-jump lib-group-title" type="button" data-v="goto:sound:${lib}">${esc(title)}</button>` : esc(title),
+const group = (lib: LibId | null, title: string, what: string, body: string, attr: string, device = true) => settingRowHtml({
+  labelHtml: (lib ? `<button class="lib-jump lib-group-title" type="button" data-v="goto:sound:${lib}">${esc(title)}</button>` : esc(title)) + (device ? followBadge("device") : ""),
   ...(what ? { notes: [{ mark: "?", label: _t("这是什么"), html: what }] } : {}),
   belowHtml: body, attrs: { "data-group": attr },
 });
@@ -158,9 +159,9 @@ export function upkeepRendersHtml(r: UpkeepView["renders"], keep: number): strin
 /** 声音设备、软件、诊断日志三组（钮的 data-v 和原来一样）。「检查更新」不在这里：它和版本号一起在每一页底下（「13 再补」第 6 条）。 */
 export function upkeepRestHtml(o: { canShare: boolean; diagText: string }): string {
   return group(null, _t("声音设备"), _t("声音不对劲的时候按一下（按键有延迟、没有声音）：把通向扬声器的那一段换成新的，排着没播完的声音一起丢掉。正在响的声音会断一下"),
-      `<div class="set-row">${btn("audio:revive", _t("重启声音"))}</div>`, "audio") +
+      `<div class="set-row">${btn("audio:revive", _t("重启声音"))}</div>`, "audio", false) +
     group(null, _t("软件"), _t("「清缓存重启」= 卡在旧版本时用：清掉这个 app 自己的离线缓存再重开；歌、模型包、音源都不动。"),
-      `<div class="set-row">${btn("reset", _t("清缓存重启"))}</div>`, "shell") +
+      `<div class="set-row">${btn("reset", _t("清缓存重启"))}</div>`, "shell", false) +
     group(null, _t("诊断日志"), _t("黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备"),
       `<pre id="diagTxt" hidden>${esc(o.diagText)}</pre><div class="set-row">${btn("diag:view", _t("看…"))}${btn("diag:copy", _t("复制"))}${btn("diag:download", _t("下载 .txt"))}${o.canShare ? btn("diag:share", _t("分享…")) : ""}${btn("diag:clear", _t("清"))}</div>`, "diag");
 }

@@ -21,6 +21,7 @@ describe("键盘总闸守卫", () => {
       "src/app/reference-host.ts": 1,    // 参考窗的 Esc = 焦点回谱
       "src/keyboard/pad.ts": 1,          // 键盘候选排开着时的 Esc = 收起
       "src/widgets/drum.ts": 1,          // 滚轮（drum = 竖直滚轮小控件，不是鼓）的 Esc = 收起
+      "src/app/follow-badge.ts": 1,      // 设置行后面「跟着谁」那枚（20-4）：焦点在它上面按回车 / 空格 = 说出那句话；只认这一枚自己身上的键，不写谱
       "src/ui/dropdown.ts": 1,           // 只做记号：这一下按下时有下拉列表开着（捕获阶段、库的弹层监听之前），全局监听据此交给 keyOwner 的 list——自己不处理键、不写谱（7-T）
     };
     const found = {};

@@ -64,6 +64,7 @@ import "./look.test.ts";   // 「现在怎么画」只在 src/look：边界 + �
 import "./look-rules.test.ts";   // 排版规则的数只在 src/look；src/render 留着的数每个都登记了类别（第 17 条 17-2）
 import "./look-habits.test.ts";   // 这台设备的习惯：三层各管各的、不从一样推另一样、存文件碰不到（第 18 条）
 import "./account-prefs.test.ts";   // 跟着歌库走的设置：没库只写设备 / 规则甲 / 离线不往里存 / 换库 / 登出 / 别处改了（施工单 20-2 / 20-3）
+import "./fill-missing.test.ts";   // 乐器页「补成现在的默认」：只补缺的、值 = 现在新上场带的、别的不动、一步撤销（v0.17.47）
 import "./panel-shell.test.ts";   // 面板外壳是唯一的面板外壳：.settings-card 只剩名单上的五处；设置、页面设置在壳上
 import "./strip-layout.test.ts";   // 「初始设置」卡第一行：放不下时露出来的永远是整数格 + 半格
 import "./habits-preview.test.ts";   // 「初始设置」卡的预览图：开标签换上了（data-k、k ≤ 1、150 : 92）

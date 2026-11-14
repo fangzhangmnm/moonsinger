@@ -274,6 +274,11 @@ body.listen-mode .ink-caret { display: none; }
 .settings-card { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; }
 /* 设置分五页（v0.16.80）：页签一排五格（窄屏也不折行）；不是这一页的收起；下拉框占一整行宽、最多 320px */
 .set-page[hidden] { display: none; }
+/* 设置每一行名字后面「跟着谁」那枚（20-4）：这首歌 / 你的歌库 / 这台设备。小、淡、不抢名字；悬停 = title，iPad 点一下 = 说出那句话 */
+.set-follow { display: inline-flex; align-items: center; vertical-align: -2px; margin-left: 5px; color: var(--muted); opacity: .65; cursor: pointer; border-radius: 4px; }
+.set-follow .ico { width: 14px; height: 14px; }
+.set-follow:hover, .set-follow:focus-visible { opacity: 1; color: var(--accent); outline: none; }
+.wbe-panel-title .set-follow { margin-left: 8px; vertical-align: -1px; }
 /* 设置一项一行（v0.16.90，user 11-10「主要还是做一个问号机制…避免大段文字或者大段折叠文字放在settings里面」）：名字 + 「?」在左、控件在右，说明点「?」才展开；
    照 WeebPaint 设置那种一列整宽的行，行间一条细线 */
 /* 一项一行 = 界面零件库的 .wbe-row（13-1；行、头、名字、控件区、小标记的样子在 vendor/internal-css/workbench-elements.css）；这里只放本仓多出来的 */
@@ -1129,6 +1134,7 @@ body:not(.print-look) .staff-svg .nav-mark.sel, body:not(.print-look) .staff-svg
 .ip-diff-sum .btn.link { height: auto; padding: 0 2px; border: 0; background: none; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font-size: inherit; }
 .ip-faint { color: var(--muted); }
 .ip-bad { color: var(--danger); }   /* 乐手规格缺数（v0.17.42）：缺的那几个键名 */
+.ip-fill { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }   /* 「补成现在的默认」旁边：各补成多少（v0.17.47） */
 .ip-flash { animation: ip-flash 1.2s ease-out; }
 @keyframes ip-flash { from { background: color-mix(in srgb, var(--accent) 22%, transparent); } to { background: transparent; } }
 /* 修改锁锁着：点、灰字、顶上那一句、混音台那一颗照样显示；顶上那一句和混音台那两颗只是跳过去，照样能点；「默认」钮灰着（统筹 16-6 补的第四条） */

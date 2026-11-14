@@ -6,7 +6,7 @@
 //   不改这位声音的键不比、不露（统筹四问第 4 条）。守卫 test/performer-defaults.test.ts 按「这位的声音变不变」核（统筹补的第一条）。
 // 出声的代码不 import 这里（它问模板；守卫 test/template.test.ts 管 src/score、src/engine、src/core）。
 import { _t } from "../i18n/index.ts";
-import { activeCandidate, candPath, withActiveKeys, type Extras } from "../format/project.ts";
+import { activeCandidate, candPath, perfSpecOf, withActiveKeys, type Extras } from "../format/project.ts";
 import type { Hum } from "../format/contract.ts";
 import type { Catalog } from "../gm/catalog.ts";
 import { performerOf, type DefaultRowDef, type PerformerPlugin } from "./registry.ts";
@@ -89,4 +89,30 @@ export function defaultExtras(extras: Extras, role: string, def: Json, hum: Hum)
   const cur = activeCandidate(extras, role), p = performerOf((cur?.instrument as Json | undefined)?.engine as string | undefined);
   if (!cur || !p) return extras;
   return withActiveKeys(extras, role, def, rowsFor(p, cur).flatMap((r) => r.keys), hum);
+}
+
+/** 「缺的数」那一行的「补成现在的默认」（统筹 2026-11-13 第三样）：缺了 / 不是数的那几个键（perfSpecOf 报的问题清单）各补成什么。
+ *  值 = 现在新上场会带着的那一位（castNow，同「默认」钮）；只碰问题清单里的键，别的数一个不动。要的目录没载 = 先不补、列在 waiting（宿主去载）。
+ *  没人上场 / 规格没毛病 = null。key = 问题清单里的写法（accentDb / dynamicsVel.pp / defaults.velocity），path = 乐手身上的路径。 */
+export interface MissingFill { fills: { key: string; path: string; value: unknown }[]; waiting: string[] }
+const pathOfProblem = (k: string) => (k.includes(".") ? k : art(k));
+export function missingFillPlan(extras: Extras, role: string, catalog: Catalog | null): MissingFill | null {
+  const chk = perfSpecOf(extras, role); if (!chk || chk.ok) return null;
+  const cur = activeCandidate(extras, role), p = performerOf((cur?.instrument as Json | undefined)?.engine as string | undefined);
+  if (!cur || !p) return null;
+  const { cand: def, pending } = p.castNow(cur, catalog), out: MissingFill = { fills: [], waiting: [] };
+  for (const key of chk.problems) {
+    const path = pathOfProblem(key);
+    if (pending.includes(path)) { out.waiting.push(key); continue; }
+    const value = candPath(def, path); if (value === undefined) { out.waiting.push(key); continue; }   // 现在的默认里也没有（不该有）= 补不了，照实列出来
+    out.fills.push({ key, path, value });
+  }
+  return out;
+}
+/** 照着补（按值抄进文件，宿主一步撤销）。没有能补的 = null。 */
+export function fillMissing(extras: Extras, role: string, catalog: Catalog | null, hum: Hum): Extras | null {
+  const plan = missingFillPlan(extras, role, catalog); if (!plan || !plan.fills.length) return null;
+  const def: Json = {};
+  for (const f of plan.fills) { const ks = f.path.split("."), last = ks.pop()!; let o = def; for (const k of ks) o = (o[k] ??= {}) as Json; o[last] = f.value; }
+  return withActiveKeys(extras, role, def, plan.fills.map((f) => f.path), hum);
 }

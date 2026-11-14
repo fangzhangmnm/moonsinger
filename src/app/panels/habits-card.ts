@@ -44,6 +44,8 @@ export interface HabitsCardDeps {
   /** 第一行「语言」（v0.17.37，统筹 42d5f807；user「初始设置第一个是语言，放在看谱前面…加一个图标方便人识别」）：宿主出的那一行 + 装好它。
    *  它不是看谱的习惯（不进 HABIT_KEYS、「好」不写它）；选了 = 宿主马上换界面语言。draft = 卡上现在点着的（换语言要整页重载，宿主带过去、重载完照这个再开）。 */
   lang: { html: string; mount(root: HTMLElement, draft: () => Habits): void };
+  /** 连着歌库吗（施工单 20-4）：连着 = 「存在你的歌库里」；没连 = 「记在这台设备上，登录后跟着你」。 */
+  synced?: boolean;
 }
 export interface HabitsCard { close(): void; readonly el: HTMLElement }
 
@@ -61,7 +63,7 @@ export function openHabitsCard(d: HabitsCardDeps): HabitsCard {
   const chosen: { notation?: NotationId; viewInC?: boolean } = { ...(d.current.notation !== undefined ? { notation: d.current.notation } : {}), ...(d.current.viewInC !== undefined ? { viewInC: d.current.viewInC } : {}) };
   const content = document.createElement("div"); content.className = "habits-card";
   content.innerHTML =
-    `<div class="hab-lead">${esc(_t("记在这台设备上，都可以不选，以后在设置里改。"))}</div>` +
+    `<div class="hab-lead">${esc(d.synced ? _t("存在你的歌库里，都可以不选，以后在设置里改。") : _t("记在这台设备上，登录后跟着你；都可以不选，以后在设置里改。"))}</div>` +
     `<section class="hab-small hab-lang" data-q="${CARD_HABITS.lead}">${d.lang.html}</section>` +
     `<section class="hab-q" data-q="notation"><div class="hab-title">${esc(_t("习惯看的谱"))}</div>` +
       `<div class="hab-strip">${NOTATIONS.map((id) => `<button type="button" class="hab-tile" data-h="${CARD_HABITS.tiles}" data-v="${id}" aria-pressed="false"><span class="hab-prev">${previewSvg(id, d.measure)}</span><span class="hab-name">${esc(notationName(id))}</span></button>`).join("")}</div>` +

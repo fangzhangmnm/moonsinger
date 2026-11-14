@@ -205,6 +205,15 @@ export declare const S: {
     readonly "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \u00B7 \u5230\u51FA\u58F0 {s} ms \u00B7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \u00B7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": {
         readonly en: "Key feel: main-thread wait {q} ms · to sound {s} ms · longest main-thread stall {st} ms · audio block usual {t} ms / longest {a} ms (tap to hide this time)";
     };
+    readonly "\u8DDF\u8FD9\u9996\u6B4C\u8D70\uFF0C\u5B58\u5728\u6B4C\u7684\u6587\u4EF6\u91CC": {
+        readonly en: "Follows this song — saved in the song file";
+    };
+    readonly "\u8DDF\u4F60\u7684\u6B4C\u5E93\u8D70\uFF0C\u54EA\u53F0\u8BBE\u5907\u6253\u5F00\u90FD\u4E00\u6837\uFF08\u8FD8\u6CA1\u8FDE\u6B4C\u5E93\u65F6\u5148\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09": {
+        readonly en: "Follows your library — the same on every device you open it on (kept on this device until you connect a library)";
+    };
+    readonly "\u8DDF\u8FD9\u53F0\u8BBE\u5907\u8D70\uFF0C\u4E0D\u540C\u6B65": {
+        readonly en: "Follows this device — not synced";
+    };
     readonly 没有升降号: {
         readonly en: "no sharps or flats";
     };
@@ -910,8 +919,8 @@ export declare const S: {
     readonly "\u6253\u5F00\u2026": {
         readonly en: "Open…";
     };
-    readonly "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\uFF1B\u8FDE\u7740\u6B4C\u5E93\u65F6\u8DDF\u7740\u6B4C\u5E93\u8D70\uFF08\u8FDB\u540C\u4E00\u4E2A\u6B4C\u5E93\u7684\u8BBE\u5907\u7528\u540C\u4E00\u4EFD\uFF09\u3002": {
-        readonly en: "This device's habits: new songs are written with them (and then the song stays that way); songs whose page settings say \"follow my habits\" change with them. Habits are not stored in songs; when connected to a song library, they follow the library (every device using the same library shares one set).";
+    readonly "\u4F60\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\uFF1B\u8FDE\u7740\u6B4C\u5E93\u65F6\u8DDF\u7740\u6B4C\u5E93\u8D70\uFF08\u8FDB\u540C\u4E00\u4E2A\u6B4C\u5E93\u7684\u8BBE\u5907\u7528\u540C\u4E00\u4EFD\uFF09\u3002": {
+        readonly en: "Your habits: new songs are written down with them (after that the song keeps that look); songs whose page settings say “follow my habits” change along with them. Habits themselves don’t go into songs; while connected to a library they follow the library (every device in the same library uses the same set).";
     };
     readonly "MIDI \u952E\u76D8": {
         readonly en: "MIDI keyboard";
@@ -3205,8 +3214,11 @@ export declare const S: {
     readonly "{name}\uFF08\u624B\u52A8\uFF09": {
         readonly en: "{name} (manual)";
     };
-    readonly "\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": {
-        readonly en: "Kept on this device; you can leave any of these unpicked and change them later in Settings.";
+    readonly "\u5B58\u5728\u4F60\u7684\u6B4C\u5E93\u91CC\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": {
+        readonly en: "Saved in your library. You can leave any of these unpicked and change them later in Settings.";
+    };
+    readonly "\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u767B\u5F55\u540E\u8DDF\u7740\u4F60\uFF1B\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": {
+        readonly en: "Kept on this device; follows you once you sign in. You can leave any of these unpicked and change them later in Settings.";
     };
     readonly 不用: {
         readonly en: "Off";
@@ -3595,8 +3607,17 @@ export declare const S: {
     readonly 缺的数: {
         readonly en: "Missing values";
     };
-    readonly "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A\u3002\u8981\u8BA9\u5B83\u51FA\u58F0\uFF1A\u70B9\u4E0A\u9762\u300C\u6362\u4E50\u5668\u2026\u300D\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u65B0\u4E0A\u573A\u7684\u90A3\u4E00\u4F4D\u6309\u73B0\u5728\u7684\u9ED8\u8BA4\u5199\u5168": {
-        readonly en: "These values on this performer are missing or not numbers: it makes no sound (it is on the “not sounding” list) and key audition is silent too; gaps between notes, dynamic marks and how marks are played are not computed from it and are hidden for now. To make it sound: tap “Change instrument…” above and put another performer on stage; the new one is written in full from the current defaults";
+    readonly "\u53EA\u8865\u8FD9\u51E0\u4E2A\uFF0C\u522B\u7684\u6570\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500": {
+        readonly en: "Fills only these; other numbers stay as they are; can be undone";
+    };
+    readonly 补成现在的默认: {
+        readonly en: "Fill with current defaults";
+    };
+    readonly "\u97F3\u4E50\u76EE\u5F55\u8F7D\u597D\u540E\u624D\u77E5\u9053\u8865\u6210\u591A\u5C11\uFF1A{keys}": {
+        readonly en: "The value to fill is known once the instrument catalog has loaded: {keys}";
+    };
+    readonly "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A\u3002\u8981\u8BA9\u5B83\u51FA\u58F0\uFF1A\u70B9\u300C\u8865\u6210\u73B0\u5728\u7684\u9ED8\u8BA4\u300D\u53EA\u8865\u8FD9\u51E0\u4E2A\uFF08\u94AE\u65C1\u8FB9\u5199\u7740\u5404\u8865\u6210\u591A\u5C11\uFF0C\u6309\u8FD9\u4F4D\u73B0\u5728\u65B0\u4E0A\u573A\u4F1A\u5E26\u7740\u7684\uFF1B\u522B\u7684\u6570\u4E0D\u52A8\uFF0C\u80FD\u64A4\u9500\uFF09\uFF0C\u6216\u8005\u70B9\u4E0A\u9762\u300C\u6362\u4E50\u5668\u2026\u300D\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u65B0\u4E0A\u573A\u7684\u90A3\u4E00\u4F4D\u6309\u73B0\u5728\u7684\u9ED8\u8BA4\u5199\u5168": {
+        readonly en: "Some numbers on this performer are missing or are not numbers: it makes no sound (it is on the “silent” list) and key previews are silent too; the gap between notes, dynamics and the how-to-play-marks rows don’t use them and are hidden for now. To make it play: tap “Fill with current defaults” to fill just these (the values are shown next to the button, taken from what this performer would carry if cast now; other numbers stay as they are; can be undone), or tap “Change instrument…” above to cast another performer, who comes with every number written out at the current defaults";
     };
     readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": {
         readonly en: "Dynamic markings → loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers — only loudness changes: {table}";
@@ -3672,6 +3693,9 @@ export declare const S: {
     };
     readonly "\u300C{rn}\u300D\u529B\u5EA6\u8BB0\u53F7 {d} \u2192 {v}": {
         readonly en: "“{rn}” dynamic {d} → {v}";
+    };
+    readonly "\u300C{rn}\u300D\u7F3A\u7684 {n} \u4E2A\u6570\u8865\u6210\u73B0\u5728\u7684\u9ED8\u8BA4": {
+        readonly en: "“{rn}”: filled {n} missing numbers with current defaults";
     };
     readonly "\u300C{rn}\u300D{what}\u6539\u56DE\u73B0\u5728\u7684\u9ED8\u8BA4": {
         readonly en: "“{rn}”: {what} changed back to the current default";

@@ -8,7 +8,7 @@ import { ROLL_HZ_MIN, ROLL_HZ_MAX } from "../../format/performance.ts";
 import { FX_KINDS } from "../../engine/fx.ts";
 import { CALIBRATION_DEFAULT_DB } from "../../format/template.ts";   // 没人上场时「响度」那一句写的默认；别的「现在的默认」问 performers/defaults.ts（16-6）
 import { performerOf } from "../../performers/index.ts";
-import { defaultsReport, resetRow, defaultExtras, type DefaultDiff } from "../../performers/defaults.ts";   // 和现在的默认比（16-6）只问这一处
+import { defaultsReport, resetRow, defaultExtras, missingFillPlan, fillMissing, type DefaultDiff } from "../../performers/defaults.ts";   // 和现在的默认比（16-6）只问这一处
 import type { InspectorCtx, InspectorRow } from "../../performers/registry.ts";
 import type { PerfSpec } from "../../score/perform.ts";
 import { ignoredArts, velocityForDb, type Mark } from "../../score/perform.ts";
@@ -226,6 +226,9 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     const ownMain = own.filter((x) => !x.place), ownAdv = own.filter((x) => x.place === "adv"), ownTail = own.filter((x) => x.place === "tail");
     const rowOf = (x: InspectorRow) => row(x.label, x.control, x.note ?? "", x.id ?? "", x.id && ownDef.has(x.id) ? () => ownDef.get(x.id!)! : undefined);
     const chk = perfSpecOf(h.extras(), role), sp = chk?.ok ? chk.spec : null, bad = chk && !chk.ok ? chk.problems : null;
+    // 「补成现在的默认」（统筹 2026-11-13 第三样）：补哪几个、各补成多少，点之前就写在钮旁边；要的目录没载 = 先去载
+    const fill = bad ? missingFillPlan(h.extras(), role, h.catalog()) : null; if (fill?.waiting.length && !h.catalog()) h.needCatalog();
+    const showV = (v: unknown) => (typeof v === "number" || typeof v === "boolean" || typeof v === "string" ? String(v) : JSON.stringify(v));
     /** 「现在的默认」那一句在默认那一位上算（模板抄出来的，查过）；万一也缺数 = 「?」，不拿 NaN 写字。 */
     const spX = (x: Extras, f: (s: PerfSpec) => string): string => { const s2 = specIn(x, role); return s2 ? f(s2) : "?"; };
     const chainText = (x: Extras) => activeChain(x, role).map((f) => (FX_KINDS[f.kind]?.name ?? _t("这一版不认识的「{k}」", { k: f.kind })) + (f.on === false ? _t("（关着）") : "")).join(_t("、")) || _t("（没有）");
@@ -256,7 +259,11 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
         _t("音内渐强 / 渐弱 / 鼓起的深浅：写的力度是最高点，< 从低 {d} dB 长到写的力度、> 收到低 {d} dB、<> 两头低 {d} dB。{vel}", { d: D, vel: swellVelNote(role, D) }), "swell", (x) => spX(x, (s2) => `${s2.swellDb} dB`)))(sp.swellDb) : "") +
       ownMain.map(rowOf).join("") +
       // 规格缺数（更新版本写的怪值、手改坏的文件；v0.17.42）：依赖规格的几行不画，这一行标出来缺哪几个
-      (bad ? row(_t("缺的数"), `<b class="ip-val ip-bad">${esc(bad.join(_t("、")))}</b>`, _t("这位乐手身上这几个数缺了或者不是数：没有出声（在「不出声」清单里），按键试听也不响；音和音之间、力度记号、记号怎么演这几样不拿它算，先不显示。要让它出声：点上面「换乐器…」换一位上场，新上场的那一位按现在的默认写全")) : "") +
+      (bad ? row(_t("缺的数"), `<b class="ip-val ip-bad">${esc(bad.join(_t("、")))}</b>` +
+        (fill?.fills.length ? `<button class="btn" data-v="fillmissing" title="${_t("只补这几个，别的数不动；能撤销")}">${_t("补成现在的默认")}</button>` +
+          `<span class="ip-fill">${esc(fill.fills.map((f) => `${f.key} → ${showV(f.value)}`).join(_t("、")))}</span>` : "") +
+        (fill?.waiting.length ? `<span class="ip-faint">${esc(_t("音乐目录载好后才知道补成多少：{keys}", { keys: fill.waiting.join(_t("、")) }))}</span>` : ""),
+        _t("这位乐手身上这几个数缺了或者不是数：没有出声（在「不出声」清单里），按键试听也不响；音和音之间、力度记号、记号怎么演这几样不拿它算，先不显示。要让它出声：点「补成现在的默认」只补这几个（钮旁边写着各补成多少，按这位现在新上场会带着的；别的数不动，能撤销），或者点上面「换乐器…」换一位上场，新上场的那一位按现在的默认写全")) : "") +
       // 力度记号那张表（16-6：两条路同一行；表类的行 = 现在的默认那一排摆在当前那一排下面、格子对齐，统筹补的第三条）
       //   按音量走的（小月相 / 元音版）= 她身上的八个 dB（v0.9.23，方便和乐器的那张对比）；按力度敲的 = 八个 MIDI 力度 + 这件乐器在那个键上的响度 + 第几份录音
       (sp?.path === "gain" ? row(_t("力度记号"), dynCtl(sp.dynamicsDb, 0.5, (x) => `${x > 0 ? "+" : ""}${x} dB`), _t("力度记号 → 响度：这位身上带着一张表，每个力度记号乘多少 dB。渐强渐弱在 dB 上平均地变；后面没写力度记号的，走到表里的下一档。没有录音层，只变响度：{table}",
@@ -316,6 +323,11 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       const gain = sp.path === "gain", cur = gain ? sp.dynamicsDb[d] : sp.dynamicsVel[d], next = cur + Number(v.slice(4)) * (gain ? 0.5 : 1);
       const x = withDynLevel(h.extras(), role, d, next, hum), sp2 = specIn(x, role), got = !sp2 ? next : sp2.path === "gain" ? sp2.dynamicsDb[d] : sp2.dynamicsVel[d];
       h.commit(x, _t("「{rn}」力度记号 {d} → {v}", { rn, d, v: gain ? `${got} dB` : String(got) }), `dyn:${d}`); draw(); return;
+    }
+    if (v === "fillmissing") {   // 「补成现在的默认」：只补缺的那几个（一步撤销）
+      const n = missingFillPlan(h.extras(), role, h.catalog())?.fills.length ?? 0, next = fillMissing(h.extras(), role, h.catalog(), hum);
+      if (next) { h.commit(next, _t("「{rn}」缺的 {n} 个数补成现在的默认", { rn, n })); h.silence(); }
+      draw(); return;
     }
     if (v.startsWith("def:")) {   // 16-6「默认」：这一行改回现在的默认（按值抄进歌；一步撤销）
       const id = v.slice(4), lab = defaultsReport(h.extras(), role, h.catalog()).rows.find((r) => r.id === id)?.label ?? id, next = resetRow(h.extras(), role, id, h.catalog(), hum);

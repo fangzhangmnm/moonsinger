@@ -27,6 +27,8 @@ export interface HabitsCardDeps {
         html: string;
         mount(root: HTMLElement, draft: () => Habits): void;
     };
+    /** 连着歌库吗（施工单 20-4）：连着 = 「存在你的歌库里」；没连 = 「记在这台设备上，登录后跟着你」。 */
+    synced?: boolean;
 }
 export interface HabitsCard {
     close(): void;

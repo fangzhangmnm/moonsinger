@@ -97,6 +97,7 @@ import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：@internal/store（接缝 src/app-store.ts）+ @internal/gallery（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ──
 import { isCached, attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, disposeStore, cloudAvailable, hasHome, hasCloudHome, folderHome, folderOnline, setFolderOnline, homeOnline, noteCloudAccount, cloudAccountKnown, forgetLegacyAttach, legacyLibraryExists, openLegacyLibrary, readFromFolder, withStemTail, cloudReachable, onStoreLifecycle, type Store, type StoreHome, type Collection } from "../app-store.ts";
+import { followBadge, wireFollowBadges, type Follow } from "./follow-badge.ts";
 import { createAccountPrefs, ACCOUNT_SHELF, type ConnectReport } from "./account-prefs.ts";
 import { planReturn, neverUploadedIds, isOpenDocAutosaveOnly, stillLocalIds, type ReturnPlan } from "./cloud-return.ts";
 import { canPickFolder, pickFolderHome, folderPermission, lastFolderHome, touchFolderHome, clearFolderHome, type GalleryEntry } from "../library-home.ts";
@@ -732,7 +733,7 @@ function openHabitsCardNow(from: "boot" | "settings" = "boot", current?: Habits)
   const gone = () => { habitsCard = null; ui.closed(close); };
   const back = () => { if (from === "settings") openSettings(); };
   ui.open({ k: "sheet", close });
-  habitsCard = openHabitsCard({ measure: view.rawMeasure, current: current ?? habitCtx.habits ?? {}, rows: cardRows, lang: cardLangRow(from),
+  habitsCard = openHabitsCard({ measure: view.rawMeasure, current: current ?? habitCtx.habits ?? {}, rows: cardRows, lang: cardLangRow(from), synced: acct.bound(),
     // 「好」只写卡上摆着的那几样（cardHabitKeys；v0.17.30 收跟进第 1 条：不在卡上的那一样不被清成没选）
     done: (c) => { gone(); for (const k of cardHabitKeys()) writeHabit(k, c[k]); acct.write(HABITS_ASKED_KEY, "1"); diagNote("habits", `ok (${from})`); habitsChanged(); back(); },
     later: () => { gone(); if (from === "boot") acct.write(HABITS_ASKED_KEY, "1"); diagNote("habits", `later (${from})`); back(); },
@@ -1553,8 +1554,10 @@ const SET_PAGES = (): TabSpec<SetPage>[] => [
 // 设置那一套「一项一行」（v0.16.90，user 11-10「主要还是做一个问号机制…避免大段文字或者大段折叠文字放在settings里面」）：短名字 + 控件，长说明进「?」（点了这一行下面展开）。
 //   设置面板和页面设置（7-C）共用这一套：页签 + 一页一页 + 一项一行。13-1 起一行 = 界面零件库的 settingRowHtml（.wbe-row；「?」= 它的一个小标记），点小标记由 wireSettingRows 接。
 //   label / ctl / help / body 都是本仓自己拼的 HTML（照旧不转义）；attrs 的值由库转义。
-const setItem = (label: string, ctl: string, help = "", body = "", attrs?: Readonly<Record<string, string>>) =>
-  settingRowHtml({ labelHtml: label, ...(ctl ? { controlHtml: ctl } : {}), notes: help ? [{ mark: "?", label: _t("这是什么"), html: help }] : [], ...(body ? { belowHtml: body } : {}), ...(attrs ? { attrs } : {}) });
+/** 「跟着谁」那枚被点了：说出那句话（iPad 没有悬停）。 */
+function sayFollow(text: string): void { showNotice({ id: "set-follow", level: "info", text, autoHideMs: 3500 }); }
+const setItem = (label: string, ctl: string, help = "", body = "", attrs?: Readonly<Record<string, string>>, follow?: Follow) =>
+  settingRowHtml({ labelHtml: label + (follow ? followBadge(follow) : ""), ...(ctl ? { controlHtml: ctl } : {}), notes: help ? [{ mark: "?", label: _t("这是什么"), html: help }] : [], ...(body ? { belowHtml: body } : {}), ...(attrs ? { attrs } : {}) });
 /** 面板外壳上的分页（设置、页面设置；2026-11-13 搬到壳上，原来的 setTabsHtml / wireSetPages 退场）：页签条是壳自己的（opts.tabs），这里只管露哪一页、亮哪一格、「?」点了在这一行下面展开说明（iPad 没有悬停）。回 showPage。 */
 function wireShellPages<P extends string>(panel: PanelShell<P>, box: HTMLElement, onPage: (pg: P) => void): (pg: P) => void {
   const showPage = (pg: P): void => {
@@ -1591,15 +1594,15 @@ function askOver(host: HTMLElement, title: string, msg: string, okLabel: string,
  *  「?」里只留这一样自己的那一句（统筹 b7a48b84）。下拉的 data-set = habit:<哪一样>：设置里改了马上写（openSettings 的 change），卡里的到「好」才读（readHabitRows）。 */
 function habitRowHtml(k: HabitKey, h: Habits): string {
   const NONE = "none", none: [string, string] = [NONE, _t("没选（照软件的默认：{x}）", { x: defaultText(k, {}) })];
-  if (k === "notation") return setItem(_t("习惯看的谱"), setSel("habit:notation", [none, ...NOTATIONS.map((id): [string, string] => [id, notationName(id)])], h.notation ?? NONE), _t("新建的歌照它写下来；页面设置里写着「跟着我的习惯」的歌跟着它变。每首歌在页面设置里能单独换。"));
-  if (k === "viewInC") return setItem(_t("移调辅助"), setSel("habit:viewInC", [none, ["off", _t("不用（照写的调）")], ["on", _t("按 C 调看")]], h.viewInC === undefined ? NONE : h.viewInC ? "on" : "off"), TRANSPOSE_AID_NOTE().map((p) => `<p>${esc(p)}</p>`).join(""));
-  if (k === "chordTagStyle") return setItem(_t("和弦写法"), setSel("habit:chordTagStyle", [none, ...CHORD_TAG_STYLES.map((v): [string, string] => [v, CHORD_TAG_STYLE_LABEL[v]()])], h.chordTagStyle ?? NONE), CHORD_TAG_STYLE_NOTE());
-  return setItem(_t("中央 C 叫"), setSel("habit:middleC", [none, ...MIDDLE_C_NAMES.map((n): [string, string] => [String(n), middleCLabel(n)])], h.middleC === undefined ? NONE : String(h.middleC)), MIDDLE_C_NOTE());
+  if (k === "notation") return setItem(_t("习惯看的谱"), setSel("habit:notation", [none, ...NOTATIONS.map((id): [string, string] => [id, notationName(id)])], h.notation ?? NONE), _t("新建的歌照它写下来；页面设置里写着「跟着我的习惯」的歌跟着它变。每首歌在页面设置里能单独换。"), "", undefined, "account");
+  if (k === "viewInC") return setItem(_t("移调辅助"), setSel("habit:viewInC", [none, ["off", _t("不用（照写的调）")], ["on", _t("按 C 调看")]], h.viewInC === undefined ? NONE : h.viewInC ? "on" : "off"), TRANSPOSE_AID_NOTE().map((p) => `<p>${esc(p)}</p>`).join(""), "", undefined, "account");
+  if (k === "chordTagStyle") return setItem(_t("和弦写法"), setSel("habit:chordTagStyle", [none, ...CHORD_TAG_STYLES.map((v): [string, string] => [v, CHORD_TAG_STYLE_LABEL[v]()])], h.chordTagStyle ?? NONE), CHORD_TAG_STYLE_NOTE(), "", undefined, "account");
+  return setItem(_t("中央 C 叫"), setSel("habit:middleC", [none, ...MIDDLE_C_NAMES.map((n): [string, string] => [String(n), middleCLabel(n)])], h.middleC === undefined ? NONE : String(h.middleC)), MIDDLE_C_NOTE(), "", undefined, "account");
 }
 /** 设置「界面」页：「初始设置」那一行（打开那张卡）+ 每样习惯一行。 */
 function habitRowsHtml(): string {
   const h = habitCtx.habits ?? {};
-  return setItem(_t("初始设置"), `<button class="btn" data-v="habits:card">${_t("打开…")}</button>`, _t("这台设备的习惯：新建的歌照它写下来（之后这首歌就一直是这个样）；页面设置里写着「跟着我的习惯」的歌跟着它变。习惯本身不进歌；连着歌库时跟着歌库走（进同一个歌库的设备用同一份）。")) +
+  return setItem(_t("初始设置"), `<button class="btn" data-v="habits:card">${_t("打开…")}</button>`, _t("你的习惯：新建的歌照它写下来（之后这首歌就一直是这个样）；页面设置里写着「跟着我的习惯」的歌跟着它变。习惯本身不进歌；连着歌库时跟着歌库走（进同一个歌库的设备用同一份）。"), "", undefined, "account") +
     HABIT_KEYS.map((k) => habitRowHtml(k, h)).join("");
 }
 /** 读几行习惯下拉现在选着的（「没选」/ 认不出 = 不在里面）。 */
@@ -1634,13 +1637,13 @@ function openSettings(): void {
   const look = (v: string, label: string) => `<button class="btn" data-v="${v}">${label}</button>`;
   box.innerHTML =
     `<div class="set-page" data-page="ui">` +
-      item(LANG_LABEL, setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }) +
+      item(LANG_LABEL, setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }, "account") +
       habitRowsHtml() +
     `</div>` +
     // 音源（13-2）：每个库一栏——小月相 / 乐器音色库 / 你自己加的音色文件；格局和字在 panels/settings-libs.ts
     `<div class="set-page" data-page="sound"><div id="libVoice">…</div><div id="libGs">…</div><div id="libOwn">…</div></div>` +
     `<div class="set-page" data-page="input">` +
-      item(_t("MIDI 键盘"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("连接")}</button>` : ""}`) +
+      item(_t("MIDI 键盘"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("连接")}</button>` : ""}`, "", "", undefined, "device") +
     `</div>` +
     // 维护（13-2）：按对象分组；这一页上的每颗钮按下去都不会让任何一首歌少东西（「13 补」，守卫 test/settings-libs.test.ts）
     `<div class="set-page" data-page="upkeep"><div id="upVoice">…</div><div id="upGs">…</div><div id="upRc">…</div>` +
@@ -1653,8 +1656,8 @@ function openSettings(): void {
     `</div>` +
     // 开发者页（家族规矩 2½：「还原出厂设置…」住这里）
     `<div class="set-page" data-page="dev">` +
-      item(_t("按键手感的数字"), setSel("feel", [["off", _t("关")], ["on", _t("开")]], feelAlways ? "on" : "off"), _t("查延迟用：打开 = 按键时在键盘上面露一行数字；关着 = 不显示（晚了也不弹，只记进诊断日志）")) +
-      (IS_IOS ? item(_t("声音的起法（试验）"), setSel("primer", [["off", _t("关")], ["on", _t("开")]], primerOn() ? "on" : "off"), _t("开 = 第一次点屏幕先起一个不出声的垫脚把声音硬件叫醒，再起真正出声的那一个；关 = 以前的起法。改了要重开 app 才看得出")) : "") +
+      item(_t("按键手感的数字"), setSel("feel", [["off", _t("关")], ["on", _t("开")]], feelAlways ? "on" : "off"), _t("查延迟用：打开 = 按键时在键盘上面露一行数字；关着 = 不显示（晚了也不弹，只记进诊断日志）"), "", undefined, "device") +
+      (IS_IOS ? item(_t("声音的起法（试验）"), setSel("primer", [["off", _t("关")], ["on", _t("开")]], primerOn() ? "on" : "off"), _t("开 = 第一次点屏幕先起一个不出声的垫脚把声音硬件叫醒，再起真正出声的那一个；关 = 以前的起法。改了要重开 app 才看得出"), "", undefined, "device") : "") +
       // 给开发者看的数字（「13 再补」第 4 条：维护页和音源页只留「占多少、能不能清」）：站点配额、录音房几块、小月相几条道和设备预算、输出延迟、音频线程忙多少
       item(_t("引擎负载与内存"), "", _t("能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在状态条明说"), `<div id="engRes" class="set-packs">…</div><div id="siteQuota" class="set-packs"></div>`) +
       item(_t("还原出厂设置"), `<button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button>`, _t("这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相和乐器音色库不动——要删在「音源」页各自那一栏删")) +
@@ -1668,6 +1671,7 @@ function openSettings(): void {
   panel.el.classList.add("set-panel", "settings-panel");   // set-panel = 搬到壳上的设置 / 页面设置（E2E 认它）
   // 六页：点页签换页（这次运行里记住）；下拉框改了马上生效（语言 = 存 + 重载）
   mountDropdowns(box);   // 设置里的下拉（setSel）
+  wireFollowBadges(box, sayFollow);   // 每行后面「跟着谁」那枚：点一下说出那句话（20-4）
   showPage = wireShellPages(panel, box, (pg) => { settingsPage = pg; });
   showPage(settingsPage);
   box.addEventListener("change", (e) => {
@@ -2406,6 +2410,8 @@ function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = �
     onButton: (id) => { if (id === "alldef") { setPageLook({ ...D.st, song: stampLooks(D.st.song, lookCtx(), lang(), "apply") }, { kind: "allLooks", label: _t("套用我的习惯") }); draw(); } },
     onClose: () => cleanup() });
   panel.el.classList.add("set-panel", "paper-panel");
+  panel.el.querySelector(".wbe-panel-title")?.insertAdjacentHTML("beforeend", followBadge("song"));   // 页面设置整页都跟这首歌走：标题旁标一次（20-4）
+  wireFollowBadges(panel.el, sayFollow);
   showPage = wireShellPages(panel, box, (pg) => { page = pg; });
   draw();
   if (focus === "expr") {   // 落在那一项：高亮一下、滚到它、焦点放在它的下拉上（「演奏法和表情：不显示」的淡提示点进来的）

@@ -3652,6 +3652,9 @@ var S = {
   "\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u81F3\u5C11 {qd} ms\uFF08\u91CF\u4E0D\u5230\u5DF2\u7ECF\u4EA4\u51FA\u53BB\u7684\u90A3\u4E00\u622A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms": { en: "Audio is backed up: at least {qd} ms (it cannot see what was already handed to the device) \xB7 tap here to clear it | main-thread wait {q} ms \xB7 to sound {s} ms \xB7 audio block usual {t} ms / longest {a} ms" },
   "\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Keys are late: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 slowest step {slow} (tap to hide this time)" },
   "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Key feel: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms (tap to hide this time)" },
+  "\u8DDF\u8FD9\u9996\u6B4C\u8D70\uFF0C\u5B58\u5728\u6B4C\u7684\u6587\u4EF6\u91CC": { en: "Follows this song \u2014 saved in the song file" },
+  "\u8DDF\u4F60\u7684\u6B4C\u5E93\u8D70\uFF0C\u54EA\u53F0\u8BBE\u5907\u6253\u5F00\u90FD\u4E00\u6837\uFF08\u8FD8\u6CA1\u8FDE\u6B4C\u5E93\u65F6\u5148\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09": { en: "Follows your library \u2014 the same on every device you open it on (kept on this device until you connect a library)" },
+  "\u8DDF\u8FD9\u53F0\u8BBE\u5907\u8D70\uFF0C\u4E0D\u540C\u6B65": { en: "Follows this device \u2014 not synced" },
   "\u6CA1\u6709\u5347\u964D\u53F7": { en: "no sharps or flats" },
   "{n} \u4E2A\u5347\u53F7": { en: "{n} {n|sharp|sharps}" },
   "{n} \u4E2A\u964D\u53F7": { en: "{n} {n|flat|flats}" },
@@ -3887,7 +3890,7 @@ var S = {
   "\u4E2D\u592E C \u53EB": { en: "Middle C is" },
   "\u521D\u59CB\u8BBE\u7F6E": { en: "Initial setup" },
   "\u6253\u5F00\u2026": { en: "Open\u2026" },
-  "\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\uFF1B\u8FDE\u7740\u6B4C\u5E93\u65F6\u8DDF\u7740\u6B4C\u5E93\u8D70\uFF08\u8FDB\u540C\u4E00\u4E2A\u6B4C\u5E93\u7684\u8BBE\u5907\u7528\u540C\u4E00\u4EFD\uFF09\u3002": { en: "This device's habits: new songs are written with them (and then the song stays that way); songs whose page settings say \u201Cfollow my habits\u201D change with them. Habits are not stored in songs; when connected to a song library, they follow the library (every device using the same library shares one set)." },
+  "\u4F60\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\uFF1B\u8FDE\u7740\u6B4C\u5E93\u65F6\u8DDF\u7740\u6B4C\u5E93\u8D70\uFF08\u8FDB\u540C\u4E00\u4E2A\u6B4C\u5E93\u7684\u8BBE\u5907\u7528\u540C\u4E00\u4EFD\uFF09\u3002": { en: "Your habits: new songs are written down with them (after that the song keeps that look); songs whose page settings say \u201Cfollow my habits\u201D change along with them. Habits themselves don\u2019t go into songs; while connected to a library they follow the library (every device in the same library uses the same set)." },
   "MIDI \u952E\u76D8": { en: "MIDI keyboard" },
   "\u8FDE\u63A5": { en: "Connect" },
   "\u7248\u672C": { en: "Version" },
@@ -4652,7 +4655,8 @@ var S = {
   "\u624B\u52A8\uFF1A\u952E\u76D8\u6309 {pad} \u6392\uFF0C\u548C\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF081={k}\uFF09\u4E0D\u4E00\u6837\u3002\u70B9\u5F00\u300C1=\u300D\uFF0C\u8C03\u5F0F\u90A3\u4E00\u5217\u6700\u4E0A\u9762\u7684\u300C\u8DDF\u8C31\u300D= \u56DE\u5230\u8DDF\u7740\u8C31\u8D70": { en: "Manual: the keyboard is laid out in {pad}, which differs from the key signature here (1={k}). Open \u201C1=\u201D and pick \u201CFollow score\u201D at the top of the mode column to follow the score again" },
   "{name}\uFF08\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF09": { en: "{name} (follows the key signature here)" },
   "{name}\uFF08\u624B\u52A8\uFF09": { en: "{name} (manual)" },
-  "\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": { en: "Kept on this device; you can leave any of these unpicked and change them later in Settings." },
+  "\u5B58\u5728\u4F60\u7684\u6B4C\u5E93\u91CC\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": { en: "Saved in your library. You can leave any of these unpicked and change them later in Settings." },
+  "\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u767B\u5F55\u540E\u8DDF\u7740\u4F60\uFF1B\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002": { en: "Kept on this device; follows you once you sign in. You can leave any of these unpicked and change them later in Settings." },
   "\u4E0D\u7528": { en: "Off" },
   "\u5566": { en: "la" },
   "\u3093 / \u55EF": { en: "\u3093 (hum)" },
@@ -4782,7 +4786,10 @@ var S = {
   "\u6DF1\u4E00\u70B9\uFF08+3 dB\uFF09": { en: "Deeper (+3 dB)" },
   "\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}": { en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}" },
   "\u7F3A\u7684\u6570": { en: "Missing values" },
-  "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A\u3002\u8981\u8BA9\u5B83\u51FA\u58F0\uFF1A\u70B9\u4E0A\u9762\u300C\u6362\u4E50\u5668\u2026\u300D\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u65B0\u4E0A\u573A\u7684\u90A3\u4E00\u4F4D\u6309\u73B0\u5728\u7684\u9ED8\u8BA4\u5199\u5168": { en: "These values on this performer are missing or not numbers: it makes no sound (it is on the \u201Cnot sounding\u201D list) and key audition is silent too; gaps between notes, dynamic marks and how marks are played are not computed from it and are hidden for now. To make it sound: tap \u201CChange instrument\u2026\u201D above and put another performer on stage; the new one is written in full from the current defaults" },
+  "\u53EA\u8865\u8FD9\u51E0\u4E2A\uFF0C\u522B\u7684\u6570\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500": { en: "Fills only these; other numbers stay as they are; can be undone" },
+  "\u8865\u6210\u73B0\u5728\u7684\u9ED8\u8BA4": { en: "Fill with current defaults" },
+  "\u97F3\u4E50\u76EE\u5F55\u8F7D\u597D\u540E\u624D\u77E5\u9053\u8865\u6210\u591A\u5C11\uFF1A{keys}": { en: "The value to fill is known once the instrument catalog has loaded: {keys}" },
+  "\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A\u3002\u8981\u8BA9\u5B83\u51FA\u58F0\uFF1A\u70B9\u300C\u8865\u6210\u73B0\u5728\u7684\u9ED8\u8BA4\u300D\u53EA\u8865\u8FD9\u51E0\u4E2A\uFF08\u94AE\u65C1\u8FB9\u5199\u7740\u5404\u8865\u6210\u591A\u5C11\uFF0C\u6309\u8FD9\u4F4D\u73B0\u5728\u65B0\u4E0A\u573A\u4F1A\u5E26\u7740\u7684\uFF1B\u522B\u7684\u6570\u4E0D\u52A8\uFF0C\u80FD\u64A4\u9500\uFF09\uFF0C\u6216\u8005\u70B9\u4E0A\u9762\u300C\u6362\u4E50\u5668\u2026\u300D\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u65B0\u4E0A\u573A\u7684\u90A3\u4E00\u4F4D\u6309\u73B0\u5728\u7684\u9ED8\u8BA4\u5199\u5168": { en: "Some numbers on this performer are missing or are not numbers: it makes no sound (it is on the \u201Csilent\u201D list) and key previews are silent too; the gap between notes, dynamics and the how-to-play-marks rows don\u2019t use them and are hidden for now. To make it play: tap \u201CFill with current defaults\u201D to fill just these (the values are shown next to the button, taken from what this performer would carry if cast now; other numbers stay as they are; can be undone), or tap \u201CChange instrument\u2026\u201D above to cast another performer, who comes with every number written out at the current defaults" },
   "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}": { en: "Dynamic markings \u2192 loudness: this performer carries a table of how many dB each marking applies. Hairpins change evenly in dB; with no marking after them, they go to the next step in the table. No recorded layers \u2014 only loudness changes: {table}" },
   "\u529B\u5EA6\u8BB0\u53F7 \u2192 MIDI \u529B\u5EA6\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{table}": { en: "Dynamics \u2192 MIDI velocity (accent +{accentVel}, marcato +{marcatoVel}; other marks under \u201CHow marks are played\u201D below): {table}" },
   "\u8BB0\u53F7\u600E\u4E48\u5531": { en: "How marks are sung" },
@@ -4808,6 +4815,7 @@ var S = {
   "MusicXML \u7684\u4E50\u5668\u4EE3\u53F7\uFF1A\u6B4C\u91CC\u6CA1\u5199": { en: "MusicXML instrument code: not written in the song" },
   "\u6539\u540D\u5728\u58F0\u90E8\u7BA1\u7406": { en: "rename it under Parts" },
   "\u300C{rn}\u300D\u529B\u5EA6\u8BB0\u53F7 {d} \u2192 {v}": { en: "\u201C{rn}\u201D dynamic {d} \u2192 {v}" },
+  "\u300C{rn}\u300D\u7F3A\u7684 {n} \u4E2A\u6570\u8865\u6210\u73B0\u5728\u7684\u9ED8\u8BA4": { en: "\u201C{rn}\u201D: filled {n} missing numbers with current defaults" },
   "\u300C{rn}\u300D{what}\u6539\u56DE\u73B0\u5728\u7684\u9ED8\u8BA4": { en: "\u201C{rn}\u201D: {what} changed back to the current default" },
   "\u300C{rn}\u300D\u97F3\u548C\u97F3\u4E4B\u95F4 {p} ms": { en: "\u201C{rn}\u201D between notes {p} ms" },
   "\u300C{rn}\u300D\u97F3\u5185\u8D77\u4F0F {d} dB": { en: "\u201C{rn}\u201D in-note swell {d} dB" },
@@ -6410,7 +6418,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.46-2026-11-13";
+var APP_VERSION = "v0.17.47-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -17860,7 +17868,7 @@ function openDrum(anchor, cols, o10) {
     closed = true;
     box.remove();
     document.removeEventListener("pointerdown", outside, true);
-    removeEventListener("keydown", esc14, true);
+    removeEventListener("keydown", esc15, true);
     if (current === handle) current = null;
     o10.onClose?.();
   };
@@ -17872,7 +17880,7 @@ function openDrum(anchor, cols, o10) {
     }
     close();
   };
-  const esc14 = (e10) => {
+  const esc15 = (e10) => {
     if (e10.key === "Escape") {
       e10.preventDefault();
       e10.stopPropagation();
@@ -17880,7 +17888,7 @@ function openDrum(anchor, cols, o10) {
     }
   };
   setTimeout(() => document.addEventListener("pointerdown", outside, true), 0);
-  addEventListener("keydown", esc14, true);
+  addEventListener("keydown", esc15, true);
   const wheels = cols.map((c10, ci2) => {
     const col = document.createElement("div");
     col.className = "drum-col";
@@ -21210,7 +21218,7 @@ var Pad = class {
     box.innerHTML = `<div class="offer-card pad-layout-card"><div class="offer-title">${_t("\u952E\u76D8\u5E03\u5C40")}</div><div class="lay-body">${body2()}</div><div class="offer-btns"><button type="button" class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
     document.body.append(box);
     const lay = box.querySelector(".lay-body");
-    const esc14 = (e10) => {
+    const esc15 = (e10) => {
       if (e10.key === "Escape") {
         e10.preventDefault();
         e10.stopPropagation();
@@ -21218,10 +21226,10 @@ var Pad = class {
       }
     };
     const close = () => {
-      window.removeEventListener("keydown", esc14, true);
+      window.removeEventListener("keydown", esc15, true);
       box.remove();
     };
-    window.addEventListener("keydown", esc14, true);
+    window.addEventListener("keydown", esc15, true);
     box.addEventListener("pointerdown", (e10) => {
       if (e10.target === box) {
         e10.preventDefault();
@@ -27646,12 +27654,12 @@ function createStore(config) {
       async open() {
         await migrationReady;
         if (await local.exists(name)) {
-          const esc14 = isOnline() ? ui3.offlineEscape?.() : void 0;
+          const esc15 = isOnline() ? ui3.offlineEscape?.() : void 0;
           let healSettled = () => false;
           try {
             await fresh.open(name, {
               isOnline,
-              probe: esc14?.probe,
+              probe: esc15?.probe,
               onNewer: onConflictFor("open"),
               localDirty: () => sub.edits.localDirty(),
               localBytes: async () => {
@@ -27664,20 +27672,20 @@ function createStore(config) {
               // 2.3.2 审稿补：认领之前对号（那份字节之后盘上换过 / 有保存在路上 → 不认领，照旧问人）
             }).catch((e10) => ui3.reportError(e10));
           } finally {
-            esc14?.settle();
+            esc15?.settle();
           }
           return readLocal();
         }
         if (autoCacheOpenedFile && tierOf(name) !== "resource") {
-          const esc14 = isOnline() ? ui3.offlineEscape?.() : void 0;
+          const esc15 = isOnline() ? ui3.offlineEscape?.() : void 0;
           const pulling = identity.acquire(name, { localName: name }).catch((e10) => {
             ui3.reportError(e10);
             return null;
           });
           try {
-            await (esc14 ? Promise.race([pulling, esc14.probe]) : pulling);
+            await (esc15 ? Promise.race([pulling, esc15.probe]) : pulling);
           } finally {
-            esc14?.settle();
+            esc15?.settle();
           }
           return readLocal();
         }
@@ -27735,10 +27743,10 @@ function createStore(config) {
         if (cloudState === "changed") {
           const mine = await readForHeal(name);
           if (mine.bytes) {
-            const esc14 = ui3.offlineEscape?.();
+            const esc15 = ui3.offlineEscape?.();
             try {
               const healing = safeResolve.tryHeal(name, mine.bytes, { settled: mine.settled });
-              const outcome = esc14 ? await Promise.race([healing.then((h2) => ({ k: "heal", h: h2 })), Promise.resolve(esc14.probe).then(() => ({ k: "skip" }))]) : { k: "heal", h: await healing };
+              const outcome = esc15 ? await Promise.race([healing.then((h2) => ({ k: "heal", h: h2 })), Promise.resolve(esc15.probe).then(() => ({ k: "skip" }))]) : { k: "heal", h: await healing };
               if (outcome.k === "skip")
                 return { status: "offline" };
               if (outcome.h) {
@@ -27746,7 +27754,7 @@ function createStore(config) {
                 return { status: "pushed" };
               }
             } finally {
-              esc14?.settle();
+              esc15?.settle();
             }
           }
         }
@@ -33375,7 +33383,7 @@ function mountGalleryScreen(el2, d3) {
   const asideInfo = (it2) => ({ identifier: it2.identifier, stem: it2.stem, kind: it2.kind, lastModified: it2.at || void 0, aside: it2.box });
   const thumbKinds = new Set(d3.thumbKinds ?? []);
   const hasThumb = (kind) => kind != null && thumbKinds.has(kind);
-  const ICON = {
+  const ICON2 = {
     localOnly: icon("database"),
     cloudOnly: icon("cloud"),
     syncedBoth: icon("cloud-synced"),
@@ -33578,7 +33586,7 @@ function mountGalleryScreen(el2, d3) {
       const onThumbLoad = (e10) => {
         pixelated.value = thumbLoadPixelated(e10);
       };
-      return { url, showCloud, locked, root, ICON, lockedTitle: t("gal.lockedThumb"), pixelated, onThumbLoad, blurb };
+      return { url, showCloud, locked, root, ICON: ICON2, lockedTitle: t("gal.lockedThumb"), pixelated, onThumbLoad, blurb };
     },
     ...tpl("thumbCell", THUMB_CELL_TEMPLATE)
   });
@@ -34038,7 +34046,7 @@ function mountGalleryScreen(el2, d3) {
       const crumbs = computed(() => breadcrumb(folder.value));
       const isEmpty = computed(() => view2.value !== "files" ? asideTiles.value.length === 0 : folderTiles.value.length === 0 && fileTiles.value.length === 0 && imageTiles.value.length === 0 && otherTiles.value.length === 0);
       const emptyText = computed(() => view2.value !== "files" ? t(ASIDE[view2.value].text.none) : folder.value ? t("gal.empty.folder", { f: folder.value }) : t("gal.empty.none"));
-      const badgeIcon = (k2) => ICON[k2] || "";
+      const badgeIcon = (k2) => ICON2[k2] || "";
       const badgeIcon2 = (k2) => {
         try {
           return icon(k2);
@@ -34311,7 +34319,7 @@ function mountGalleryScreen(el2, d3) {
         fmtMeta,
         humanTime,
         fullTime,
-        ICON,
+        ICON: ICON2,
         toggleMenu,
         menuMount: el2,
         invalidateEncrypted,
@@ -35433,15 +35441,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-f6e87b39d4ac.mjs");
+      return pick3(() => "singer-worker-5e4ddab37825.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-a125e0d30e56.mjs");
+      return pick3(() => "layout-worker-d4b021849007.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-55dc49b68bd7.mjs");
+      return pick3(() => "encode-worker-f7f692760e87.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -43368,7 +43376,7 @@ var soundfont = registerPerformer({
     return { inst: { kind: "sf", sha: g3.subsetSha256, preset: engine2.presetIndex(g3.subsetSha256, g3.bank, g3.program) }, key: (m2) => sfKey(m2, g3, activeTranspose(extras, role)), vel: dyn.vel, gainDb: 0 };
   },
   /** 乐器页「怎么演」里这位自己的行（原 main.ts drawInst 里按引擎能力 gate 的那几段，原样搬来；2026-10-15 刀 5 之一）。 */
-  inspector: ({ extras, role, catalog, esc: esc14, chip: chip2, bankBytes }) => {
+  inspector: ({ extras, role, catalog, esc: esc15, chip: chip2, bankBytes }) => {
     const active = activeGm(extras, role), tr3 = activeTranspose(extras, role), rows = [];
     {
       const midi2 = Math.round(activeVelocity(extras, role) * 127);
@@ -43411,14 +43419,14 @@ var soundfont = registerPerformer({
       id: "hit",
       value: hitSummary(active.hitSecByKey),
       label: _t("\u7740\u529B\u70B9"),
-      control: `<b class="ip-val">${esc14(hitSummary(active.hitSecByKey))}</b>`,
+      control: `<b class="ip-val">${esc15(hitSummary(active.hitSecByKey))}</b>`,
       note: _t("\u91C7\u6837\u5F00\u5934\u5230\u300C\u7838\u4E0B\u53BB\u90A3\u4E00\u4E0B\u300D\u6709\u591A\u8FDC\uFF1A\u653E\u7684\u65F6\u5019\u63D0\u524D\u8FD9\u4E48\u591A\u5F00\u59CB\uFF0C\u8BA9\u7838\u4E0B\u53BB\u90A3\u4E00\u4E0B\u843D\u5728\u5199\u7684\u90A3\u4E00\u62CD\u4E0A\uFF08\u53CD\u5411\u9572\u8FD9\u7C7B\u6700\u660E\u663E\uFF09\u3002\u6309\u6BCF\u4E2A\u6572\u7684\u952E\u6309\u503C\u8BB0\u5728\u8FD9\u4F4D\u8EAB\u4E0A\uFF0C\u6570\u662F\u6253\u51FB\u4E50\u8868\u91CC\u5B9E\u6D4B\u7684")
     });
     if (active) {
       const cpt = catalog ? conceptOfIds(catalog, extras.lounge[role]?.concept?.ids) : void 0;
       const oc2 = catalog && active.origin.library === GS_LIBRARY_ID ? octaveCheckOf(catalog, active.bank, active.program, active.note) : null;
       const text2 = octaveDisclosure(cpt?.notation, oc2, (c10) => CLEF_LABEL[c10] ?? c10);
-      if (text2) rows.push({ label: _t("\u516B\u5EA6"), control: "", note: esc14(text2) });
+      if (text2) rows.push({ label: _t("\u516B\u5EA6"), control: "", note: esc15(text2) });
     }
     {
       const cur = activePedalDefault(extras, role);
@@ -43432,7 +43440,7 @@ var soundfont = registerPerformer({
           label: _t("\u4F59\u97F3"),
           // 行名在那一栏里放得下（统筹审 11-3：「没写踏板记号时」折成两行，挪进说明开头）
           control: chip2("pedal:down", _t("\u81EA\u7136\u8870\u51CF"), cur === "down", _t("\u5199\u7684\u65F6\u503C\u5230\u4E86\u4E0D\u677E\u952E\uFF08= \u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u5C31\u8E29\u7740\uFF09\uFF1A\u97F3\u987A\u7740\u5305\u7EDC\u7684\u8870\u51CF\u6BB5\u54CD\u5230\u505C\uFF1B\u540C\u4E00\u4E2A\u97F3\u518D\u5F39\u3001\u5199\u4E86\u62AC\u8D77\u6216\u8FD9\u4E00\u6BB5\u7ED3\u675F\u624D\u6536\u3002\u8DF3\u97F3\u7167\u5199\u7684\u677E")) + chip2("pedal:up", _t("\u5230\u70B9\u91CA\u653E"), cur === "up", _t("\u5199\u7684\u65F6\u503C\u5230\u4E86\u5C31\u677E\u952E\uFF08= \u6BCF\u4E00\u6BB5\u5F00\u5934\u5EF6\u97F3\u8E0F\u677F\u62AC\u7740\uFF09\uFF1A\u8FDB\u5165\u5305\u7EDC\u7684\u91CA\u653E\u6BB5\uFF0C\u4E50\u5668\u81EA\u5DF1\u7684\u6536\u5C3E\u7167\u6837\u6709")),
-          note: esc14(_t("\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u5B83\u5B9A\u7684\u662F\u4EC0\u4E48\u65F6\u5019\u677E\u952E\uFF1B\u5305\u7EDC\uFF08\u8D77\u97F3\u3001\u8870\u51CF\u3001\u91CA\u653E\uFF09\u662F\u97F3\u8272\u5E93\u5199\u7684\uFF0C\u8FD9\u91CC\u4E0D\u6539\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}", { side, why: why2 }))
+          note: esc15(_t("\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u7528\u8FD9\u4E00\u683C\u3002\u5B83\u5B9A\u7684\u662F\u4EC0\u4E48\u65F6\u5019\u677E\u952E\uFF1B\u5305\u7EDC\uFF08\u8D77\u97F3\u3001\u8870\u51CF\u3001\u91CA\u653E\uFF09\u662F\u97F3\u8272\u5E93\u5199\u7684\uFF0C\u8FD9\u91CC\u4E0D\u6539\u3002\u51FA\u5382\uFF1A{side}\u2014\u2014{why}", { side, why: why2 }))
         });
       }
     }
@@ -45421,6 +45429,40 @@ function defaultExtras(extras, role, def, hum) {
   if (!cur || !p2) return extras;
   return withActiveKeys(extras, role, def, rowsFor(p2, cur).flatMap((r10) => r10.keys), hum);
 }
+var pathOfProblem = (k2) => k2.includes(".") ? k2 : art2(k2);
+function missingFillPlan(extras, role, catalog) {
+  const chk = perfSpecOf(extras, role);
+  if (!chk || chk.ok) return null;
+  const cur = activeCandidate(extras, role), p2 = performerOf(cur?.instrument?.engine);
+  if (!cur || !p2) return null;
+  const { cand: def, pending } = p2.castNow(cur, catalog), out = { fills: [], waiting: [] };
+  for (const key of chk.problems) {
+    const path = pathOfProblem(key);
+    if (pending.includes(path)) {
+      out.waiting.push(key);
+      continue;
+    }
+    const value = candPath(def, path);
+    if (value === void 0) {
+      out.waiting.push(key);
+      continue;
+    }
+    out.fills.push({ key, path, value });
+  }
+  return out;
+}
+function fillMissing(extras, role, catalog, hum) {
+  const plan = missingFillPlan(extras, role, catalog);
+  if (!plan || !plan.fills.length) return null;
+  const def = {};
+  for (const f2 of plan.fills) {
+    const ks = f2.path.split("."), last = ks.pop();
+    let o10 = def;
+    for (const k2 of ks) o10 = o10[k2] ??= {};
+    o10[last] = f2.value;
+  }
+  return withActiveKeys(extras, role, def, plan.fills.map((f2) => f2.path), hum);
+}
 
 // src/ui/size-text.ts
 var sizeText2 = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -45628,6 +45670,9 @@ function createInstSettings(el2, h2) {
     const ownMain = own.filter((x2) => !x2.place), ownAdv = own.filter((x2) => x2.place === "adv"), ownTail = own.filter((x2) => x2.place === "tail");
     const rowOf = (x2) => row2(x2.label, x2.control, x2.note ?? "", x2.id ?? "", x2.id && ownDef.has(x2.id) ? () => ownDef.get(x2.id) : void 0);
     const chk = perfSpecOf(h2.extras(), role), sp2 = chk?.ok ? chk.spec : null, bad = chk && !chk.ok ? chk.problems : null;
+    const fill2 = bad ? missingFillPlan(h2.extras(), role, h2.catalog()) : null;
+    if (fill2?.waiting.length && !h2.catalog()) h2.needCatalog();
+    const showV = (v) => typeof v === "number" || typeof v === "boolean" || typeof v === "string" ? String(v) : JSON.stringify(v);
     const spX = (x2, f2) => {
       const s23 = specIn(x2, role);
       return s23 ? f2(s23) : "?";
@@ -45674,7 +45719,11 @@ function createInstSettings(el2, h2) {
       "swell",
       (x2) => spX(x2, (s23) => `${s23.swellDb} dB`)
     ))(sp2.swellDb) : "") + ownMain.map(rowOf).join("") + // 规格缺数（更新版本写的怪值、手改坏的文件；v0.17.42）：依赖规格的几行不画，这一行标出来缺哪几个
-    (bad ? row2(_t("\u7F3A\u7684\u6570"), `<b class="ip-val ip-bad">${esc8(bad.join(_t("\u3001")))}</b>`, _t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A\u3002\u8981\u8BA9\u5B83\u51FA\u58F0\uFF1A\u70B9\u4E0A\u9762\u300C\u6362\u4E50\u5668\u2026\u300D\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u65B0\u4E0A\u573A\u7684\u90A3\u4E00\u4F4D\u6309\u73B0\u5728\u7684\u9ED8\u8BA4\u5199\u5168")) : "") + // 力度记号那张表（16-6：两条路同一行；表类的行 = 现在的默认那一排摆在当前那一排下面、格子对齐，统筹补的第三条）
+    (bad ? row2(
+      _t("\u7F3A\u7684\u6570"),
+      `<b class="ip-val ip-bad">${esc8(bad.join(_t("\u3001")))}</b>` + (fill2?.fills.length ? `<button class="btn" data-v="fillmissing" title="${_t("\u53EA\u8865\u8FD9\u51E0\u4E2A\uFF0C\u522B\u7684\u6570\u4E0D\u52A8\uFF1B\u80FD\u64A4\u9500")}">${_t("\u8865\u6210\u73B0\u5728\u7684\u9ED8\u8BA4")}</button><span class="ip-fill">${esc8(fill2.fills.map((f2) => `${f2.key} \u2192 ${showV(f2.value)}`).join(_t("\u3001")))}</span>` : "") + (fill2?.waiting.length ? `<span class="ip-faint">${esc8(_t("\u97F3\u4E50\u76EE\u5F55\u8F7D\u597D\u540E\u624D\u77E5\u9053\u8865\u6210\u591A\u5C11\uFF1A{keys}", { keys: fill2.waiting.join(_t("\u3001")) }))}</span>` : ""),
+      _t("\u8FD9\u4F4D\u4E50\u624B\u8EAB\u4E0A\u8FD9\u51E0\u4E2A\u6570\u7F3A\u4E86\u6216\u8005\u4E0D\u662F\u6570\uFF1A\u6CA1\u6709\u51FA\u58F0\uFF08\u5728\u300C\u4E0D\u51FA\u58F0\u300D\u6E05\u5355\u91CC\uFF09\uFF0C\u6309\u952E\u8BD5\u542C\u4E5F\u4E0D\u54CD\uFF1B\u97F3\u548C\u97F3\u4E4B\u95F4\u3001\u529B\u5EA6\u8BB0\u53F7\u3001\u8BB0\u53F7\u600E\u4E48\u6F14\u8FD9\u51E0\u6837\u4E0D\u62FF\u5B83\u7B97\uFF0C\u5148\u4E0D\u663E\u793A\u3002\u8981\u8BA9\u5B83\u51FA\u58F0\uFF1A\u70B9\u300C\u8865\u6210\u73B0\u5728\u7684\u9ED8\u8BA4\u300D\u53EA\u8865\u8FD9\u51E0\u4E2A\uFF08\u94AE\u65C1\u8FB9\u5199\u7740\u5404\u8865\u6210\u591A\u5C11\uFF0C\u6309\u8FD9\u4F4D\u73B0\u5728\u65B0\u4E0A\u573A\u4F1A\u5E26\u7740\u7684\uFF1B\u522B\u7684\u6570\u4E0D\u52A8\uFF0C\u80FD\u64A4\u9500\uFF09\uFF0C\u6216\u8005\u70B9\u4E0A\u9762\u300C\u6362\u4E50\u5668\u2026\u300D\u6362\u4E00\u4F4D\u4E0A\u573A\uFF0C\u65B0\u4E0A\u573A\u7684\u90A3\u4E00\u4F4D\u6309\u73B0\u5728\u7684\u9ED8\u8BA4\u5199\u5168")
+    ) : "") + // 力度记号那张表（16-6：两条路同一行；表类的行 = 现在的默认那一排摆在当前那一排下面、格子对齐，统筹补的第三条）
     //   按音量走的（小月相 / 元音版）= 她身上的八个 dB（v0.9.23，方便和乐器的那张对比）；按力度敲的 = 八个 MIDI 力度 + 这件乐器在那个键上的响度 + 第几份录音
     (sp2?.path === "gain" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), dynCtl(sp2.dynamicsDb, 0.5, (x2) => `${x2 > 0 ? "+" : ""}${x2} dB`), _t(
       "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u54CD\u5EA6\uFF1A\u8FD9\u4F4D\u8EAB\u4E0A\u5E26\u7740\u4E00\u5F20\u8868\uFF0C\u6BCF\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E58\u591A\u5C11 dB\u3002\u6E10\u5F3A\u6E10\u5F31\u5728 dB \u4E0A\u5E73\u5747\u5730\u53D8\uFF1B\u540E\u9762\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\uFF0C\u8D70\u5230\u8868\u91CC\u7684\u4E0B\u4E00\u6863\u3002\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{table}",
@@ -45749,6 +45798,15 @@ function createInstSettings(el2, h2) {
       const gain = sp2.path === "gain", cur = gain ? sp2.dynamicsDb[d3] : sp2.dynamicsVel[d3], next2 = cur + Number(v.slice(4)) * (gain ? 0.5 : 1);
       const x2 = withDynLevel(h2.extras(), role, d3, next2, hum), sp22 = specIn(x2, role), got2 = !sp22 ? next2 : sp22.path === "gain" ? sp22.dynamicsDb[d3] : sp22.dynamicsVel[d3];
       h2.commit(x2, _t("\u300C{rn}\u300D\u529B\u5EA6\u8BB0\u53F7 {d} \u2192 {v}", { rn: rn2, d: d3, v: gain ? `${got2} dB` : String(got2) }), `dyn:${d3}`);
+      draw();
+      return;
+    }
+    if (v === "fillmissing") {
+      const n10 = missingFillPlan(h2.extras(), role, h2.catalog())?.fills.length ?? 0, next2 = fillMissing(h2.extras(), role, h2.catalog(), hum);
+      if (next2) {
+        h2.commit(next2, _t("\u300C{rn}\u300D\u7F3A\u7684 {n} \u4E2A\u6570\u8865\u6210\u73B0\u5728\u7684\u9ED8\u8BA4", { rn: rn2, n: n10 }));
+        h2.silence();
+      }
       draw();
       return;
     }
@@ -47029,7 +47087,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "3650ef79c18f6bc6" : "dev";
+var CORE_HASH = true ? "bb9c444a45f2d56b" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -47152,7 +47210,7 @@ function openHabitsCard(d3) {
   const chosen = { ...d3.current.notation !== void 0 ? { notation: d3.current.notation } : {}, ...d3.current.viewInC !== void 0 ? { viewInC: d3.current.viewInC } : {} };
   const content = document.createElement("div");
   content.className = "habits-card";
-  content.innerHTML = `<div class="hab-lead">${escapeHtml2(_t("\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002"))}</div><section class="hab-small hab-lang" data-q="${CARD_HABITS.lead}">${d3.lang.html}</section><section class="hab-q" data-q="notation"><div class="hab-title">${escapeHtml2(_t("\u4E60\u60EF\u770B\u7684\u8C31"))}</div><div class="hab-strip">${NOTATIONS.map((id2) => `<button type="button" class="hab-tile" data-h="${CARD_HABITS.tiles}" data-v="${id2}" aria-pressed="false"><span class="hab-prev">${previewSvg(id2, d3.measure)}</span><span class="hab-name">${escapeHtml2(notationName(id2))}</span></button>`).join("")}</div></section><section class="hab-q hab-aid" data-q="viewInC">` + settingRowHtml({
+  content.innerHTML = `<div class="hab-lead">${escapeHtml2(d3.synced ? _t("\u5B58\u5728\u4F60\u7684\u6B4C\u5E93\u91CC\uFF0C\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002") : _t("\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u767B\u5F55\u540E\u8DDF\u7740\u4F60\uFF1B\u90FD\u53EF\u4EE5\u4E0D\u9009\uFF0C\u4EE5\u540E\u5728\u8BBE\u7F6E\u91CC\u6539\u3002"))}</div><section class="hab-small hab-lang" data-q="${CARD_HABITS.lead}">${d3.lang.html}</section><section class="hab-q" data-q="notation"><div class="hab-title">${escapeHtml2(_t("\u4E60\u60EF\u770B\u7684\u8C31"))}</div><div class="hab-strip">${NOTATIONS.map((id2) => `<button type="button" class="hab-tile" data-h="${CARD_HABITS.tiles}" data-v="${id2}" aria-pressed="false"><span class="hab-prev">${previewSvg(id2, d3.measure)}</span><span class="hab-name">${escapeHtml2(notationName(id2))}</span></button>`).join("")}</div></section><section class="hab-q hab-aid" data-q="viewInC">` + settingRowHtml({
     labelHtml: `<span class="hab-title">${escapeHtml2(_t("\u79FB\u8C03\u8F85\u52A9"))}</span>`,
     notes: [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: TRANSPOSE_AID_NOTE().map((p2) => `<p>${escapeHtml2(p2)}</p>`).join("") }],
     belowHtml: `<div class="hab-pair"><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="off" aria-pressed="false">${escapeHtml2(_t("\u4E0D\u7528"))}</button><button type="button" class="btn hab-btn" data-h="${CARD_HABITS.pair}" data-v="on" aria-pressed="false">${escapeHtml2(_t("\u6309 C \u8C03\u770B"))}</button></div>`
@@ -47730,7 +47788,7 @@ function createCloudGate(d3) {
       block("offline", trigger);
       return;
     }
-    const esc14 = armEscape();
+    const esc15 = armEscape();
     if (lock2) {
       phase = "checking";
       d3.ui.checking(() => chooseOffline("escape"));
@@ -47744,7 +47802,7 @@ function createCloudGate(d3) {
     const timedOut = new Promise((res) => {
       timer = setTimeout(() => res("timeout"), timeoutMs);
     });
-    const r10 = await Promise.race([work, timedOut, esc14.then(() => "escaped")]);
+    const r10 = await Promise.race([work, timedOut, esc15.then(() => "escaped")]);
     clearTimeout(timer);
     if (!lock2) quietInFlight = false;
     if (id2 !== runId || r10 === "escaped") return;
@@ -48271,6 +48329,36 @@ async function disposeStore() {
 async function detachStore() {
   await disposeStore();
   deviceKvSet(KV_ATTACHED, null);
+}
+
+// src/app/follow-badge.ts
+var ICON = { song: "music-note", account: "music-library", device: "device" };
+var FOLLOW_TEXT = {
+  song: () => _t("\u8DDF\u8FD9\u9996\u6B4C\u8D70\uFF0C\u5B58\u5728\u6B4C\u7684\u6587\u4EF6\u91CC"),
+  account: () => _t("\u8DDF\u4F60\u7684\u6B4C\u5E93\u8D70\uFF0C\u54EA\u53F0\u8BBE\u5907\u6253\u5F00\u90FD\u4E00\u6837\uFF08\u8FD8\u6CA1\u8FDE\u6B4C\u5E93\u65F6\u5148\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09"),
+  device: () => _t("\u8DDF\u8FD9\u53F0\u8BBE\u5907\u8D70\uFF0C\u4E0D\u540C\u6B65")
+};
+var esc12 = (s10) => s10.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
+function followBadge(f2) {
+  const t10 = esc12(FOLLOW_TEXT[f2]());
+  return `<span class="set-follow" data-follow="${f2}" role="img" tabindex="0" aria-label="${t10}" title="${t10}"><svg class="ico" aria-hidden="true"><use href="#${ICON[f2]}"/></svg></span>`;
+}
+function wireFollowBadges(root, say) {
+  const hit2 = (e10) => {
+    const b3 = e10.target.closest(".set-follow");
+    if (!b3 || !root.contains(b3)) return;
+    if (e10 instanceof KeyboardEvent && e10.key !== "Enter" && e10.key !== " ") return;
+    e10.preventDefault();
+    e10.stopPropagation();
+    const f2 = b3.dataset.follow;
+    if (f2 && FOLLOW_TEXT[f2]) say(FOLLOW_TEXT[f2]());
+  };
+  root.addEventListener("click", hit2, true);
+  root.addEventListener("keydown", hit2, true);
+  return () => {
+    root.removeEventListener("click", hit2, true);
+    root.removeEventListener("keydown", hit2, true);
+  };
 }
 
 // src/app/account-prefs.ts
@@ -54660,7 +54748,7 @@ lA(ul);
 
 // src/ui/song-cover.ts
 var CJK2 = /[぀-ヿ㐀-鿿가-힯豈-﫿]/;
-var esc12 = (x2) => x2.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
+var esc13 = (x2) => x2.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
 function splitDatedStem(stem) {
   const m2 = /^(\d{8})(?:[\s_\-－—–]+)?(.*)$/.exec(stem.trim());
   if (!m2) return { date: null, title: stem.trim() };
@@ -54679,7 +54767,7 @@ function planCover(stem) {
   return { date, title, vertical, size, coded: date != null && isCodeTitle(title), hue: h2 % 8 };
 }
 function verticalRuns(title) {
-  return title.split(/([A-Za-z0-9]+)/).map((run2, i10) => i10 % 2 === 1 && run2.length <= 2 ? `<span class="tcy">${esc12(run2)}</span>` : esc12(run2)).join("");
+  return title.split(/([A-Za-z0-9]+)/).map((run2, i10) => i10 % 2 === 1 && run2.length <= 2 ? `<span class="tcy">${esc13(run2)}</span>` : esc13(run2)).join("");
 }
 function placeholderHtml(stem) {
   return `<span class="ms-cover-bg hue-${planCover(stem).hue}"></span>`;
@@ -54687,12 +54775,12 @@ function placeholderHtml(stem) {
 function coverHtml(stem, extra = {}) {
   const p2 = planCover(stem);
   const cls = `ms-cover ${p2.vertical ? "v" : "h"} sz-${p2.size}${p2.coded ? " coded" : ""}`;
-  const title = p2.vertical ? verticalRuns(p2.title) : esc12(p2.title);
-  const artist = extra.artist ? `<span class="ms-cover-artist">${esc12(extra.artist)}</span>` : "";
-  const tag2 = extra.tag ? `<span class="ms-cover-tag"${extra.tagTitle ? ` title="${esc12(extra.tagTitle)}"` : ""}>${esc12(extra.tag)}</span>` : "";
-  const left = p2.date || tag2 ? `<span class="ms-cover-left">${p2.date ? `<span class="ms-cover-date">${esc12(p2.date)}</span>` : ""}${tag2}</span>` : "<span></span>";
-  const bar2 = `<span class="ms-cover-bar">${left}${extra.sizeText ? `<span class="ms-cover-size">${esc12(extra.sizeText)}</span>` : ""}</span>`;
-  return `<span class="${cls}"${extra.editedText ? ` title="${esc12(extra.editedText)}"` : ""}><span class="ms-cover-title"${p2.vertical ? "" : ' lang="en"'}>${title}</span>${artist}${bar2}</span>`;
+  const title = p2.vertical ? verticalRuns(p2.title) : esc13(p2.title);
+  const artist = extra.artist ? `<span class="ms-cover-artist">${esc13(extra.artist)}</span>` : "";
+  const tag2 = extra.tag ? `<span class="ms-cover-tag"${extra.tagTitle ? ` title="${esc13(extra.tagTitle)}"` : ""}>${esc13(extra.tag)}</span>` : "";
+  const left = p2.date || tag2 ? `<span class="ms-cover-left">${p2.date ? `<span class="ms-cover-date">${esc13(p2.date)}</span>` : ""}${tag2}</span>` : "<span></span>";
+  const bar2 = `<span class="ms-cover-bar">${left}${extra.sizeText ? `<span class="ms-cover-size">${esc13(extra.sizeText)}</span>` : ""}</span>`;
+  return `<span class="${cls}"${extra.editedText ? ` title="${esc13(extra.editedText)}"` : ""}><span class="ms-cover-title"${p2.vertical ? "" : ' lang="en"'}>${title}</span>${artist}${bar2}</span>`;
 }
 
 // src/app/song-player.ts
@@ -60918,7 +61006,7 @@ function voiceColumnHtml(v) {
   const rules = `<b>${_t("\u7248\u6743\u548C\u4F7F\u7528\u89C4\u5219")}</b><br>${escapeHtml2(tr3.credit).replace(/\n/g, "<br>")}<br>${escapeHtml2(tr3.terms).replace(/\n/g, "<br>")}<br>${btn("lib:doc:voice", _t("\u5168\u6587\u2026"))}`;
   const actions = v.folder ? off(_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165"), v.folder) : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165")}<input id="impIn" type="file" multiple hidden /></label>` + (all ? "" : btn("lib:add:voice", v.removed ? _t("\u88C5\u56DE\u6765") : _t("\u73B0\u5728\u4E0B\u8F7D"))) + (none ? "" : btn("lib:del:voice", _t("\u5220")));
   return settingRowHtml({
-    labelHtml: escapeHtml2(_t("\u5C0F\u6708\u76F8")),
+    labelHtml: escapeHtml2(_t("\u5C0F\u6708\u76F8")) + followBadge("device"),
     notes: [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: what }, { mark: "\xA9", label: _t("\u7248\u6743\u548C\u4F7F\u7528\u89C4\u5219"), html: rules }],
     controlHtml: actions,
     belowHtml: line(escapeHtml2(status)) + line(parts) + (v.folder ? note2(escapeHtml2(v.folder)) : "") + `<div class="set-row lib-line"><span>${_t("\u6765\u6E90")}</span>${btn("src:default:voice", _t("\u6062\u590D\u9ED8\u8BA4"))}</div>` + (v.folder ? `<input id="srcIn" type="url" disabled value="${escapeHtml2(v.source)}" />` : `<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${escapeHtml2(v.source)}" />`) + `<pre id="packSt" class="set-packs" hidden></pre><div class="set-row">${toUpkeep("voice")}</div>`,
@@ -60931,7 +61019,7 @@ function gsColumnHtml(v) {
   const rules = `<b>${_t("\u7248\u6743\u548C\u4F7F\u7528\u89C4\u5219")}</b><br>${escapeHtml2(v.license.name)}${v.license.summary ? `<br>${escapeHtml2(v.license.summary)}` : ""}<br>${escapeHtml2(v.attribution)}${v.homepage ? `<br><a href="${escapeHtml2(v.homepage)}" target="_blank" rel="noopener">${escapeHtml2(v.homepage)}</a>` : ""}`;
   const actions = v.folder ? "" : v.cached ? btn("lib:del:gs", _t("\u5220")) : btn("lib:add:gs", v.removed ? _t("\u88C5\u56DE\u6765") : _t("\u73B0\u5728\u4E0B\u8F7D"));
   return settingRowHtml({
-    labelHtml: escapeHtml2(v.name),
+    labelHtml: escapeHtml2(v.name) + followBadge("device"),
     notes: [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: what }, { mark: "\xA9", label: _t("\u7248\u6743\u548C\u4F7F\u7528\u89C4\u5219"), html: rules }],
     controlHtml: actions,
     belowHtml: line(escapeHtml2(status)) + (v.folder ? note2(escapeHtml2(v.folder)) : "") + `<div class="set-row lib-line"><span>${_t("\u6765\u6E90")}</span>${btn("src:default:gs", _t("\u6062\u590D\u9ED8\u8BA4"))}</div><input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${escapeHtml2(v.source)}" /><div class="set-row">${toUpkeep("gs")}</div>`,
@@ -60947,14 +61035,14 @@ function ownLabel(o10) {
 function ownColumnHtml(rows, folder) {
   const list2 = folder ? note2(escapeHtml2(folder)) : !rows.length ? note2(escapeHtml2(_t("\u6CA1\u6709"))) : rows.map((o10) => `<div class="set-row lib-own" data-sha="${escapeHtml2(o10.sha256)}"><span><span class="lib-own-name">${escapeHtml2(ownLabel(o10))}</span> \xB7 ${sizeText2(o10.bytes)}` + (o10.users.length ? `<small class="set-note"> ${escapeHtml2(_t("\u8FD9\u9996\u6B4C\u91CC\uFF1A{names}\uFF08{how}\uFF09", { names: o10.users.join("\u3001"), how: o10.packed ? _t("\u4E5F\u6253\u5305\u7740") : _t("\u5F15\u7528\u7740") }))}</small>` : "") + `</span>${btn(`lib:del:own:${o10.sha256}`, _t("\u5220"))}</div>`).join("");
   return settingRowHtml({
-    labelHtml: escapeHtml2(_t("\u4F60\u81EA\u5DF1\u52A0\u7684\u97F3\u8272\u6587\u4EF6")),
+    labelHtml: escapeHtml2(_t("\u4F60\u81EA\u5DF1\u52A0\u7684\u97F3\u8272\u6587\u4EF6")) + followBadge("device"),
     notes: [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: _t("\u4ECE\u81EA\u5DF1\u7684 .sf2 \u9009\u4E50\u5668\u65F6\u3001\u6216\u8005\u300C\u5168\u90E8\u89E3\u5305\u300D\u65F6\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u5C0F\u5757\uFF08\u540D\u5B57\u662F\u4ECE\u8FD9\u5757\u6587\u4EF6\u91CC\u8BFB\u7684\uFF09\u3002\u4E0D\u662F\u81EA\u5E26\u7684\uFF1A\u5220\u4E86\u5C31\u6CA1\u4E86\uFF0C\u6CA1\u6709\u539F\u6765\u7684 .sf2 \u5C31\u627E\u4E0D\u56DE\u6765\u3002") }],
     belowHtml: list2,
     attrs: { "data-lib": "own" }
   });
 }
-var group2 = (lib, title, what, body2, attr2) => settingRowHtml({
-  labelHtml: lib ? `<button class="lib-jump lib-group-title" type="button" data-v="goto:sound:${lib}">${escapeHtml2(title)}</button>` : escapeHtml2(title),
+var group2 = (lib, title, what, body2, attr2, device = true) => settingRowHtml({
+  labelHtml: (lib ? `<button class="lib-jump lib-group-title" type="button" data-v="goto:sound:${lib}">${escapeHtml2(title)}</button>` : escapeHtml2(title)) + (device ? followBadge("device") : ""),
   ...what ? { notes: [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: what }] } : {},
   belowHtml: body2,
   attrs: { "data-group": attr2 }
@@ -60989,13 +61077,15 @@ function upkeepRestHtml(o10) {
     _t("\u58F0\u97F3\u8BBE\u5907"),
     _t("\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B"),
     `<div class="set-row">${btn("audio:revive", _t("\u91CD\u542F\u58F0\u97F3"))}</div>`,
-    "audio"
+    "audio",
+    false
   ) + group2(
     null,
     _t("\u8F6F\u4EF6"),
     _t("\u300C\u6E05\u7F13\u5B58\u91CD\u542F\u300D= \u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6E05\u6389\u8FD9\u4E2A app \u81EA\u5DF1\u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\uFF1B\u6B4C\u3001\u6A21\u578B\u5305\u3001\u97F3\u6E90\u90FD\u4E0D\u52A8\u3002"),
     `<div class="set-row">${btn("reset", _t("\u6E05\u7F13\u5B58\u91CD\u542F"))}</div>`,
-    "shell"
+    "shell",
+    false
   ) + group2(
     null,
     _t("\u8BCA\u65AD\u65E5\u5FD7"),
@@ -61205,7 +61295,7 @@ var H2 = createHome({ home: { kind: "none", pendingFolder: null }, stem: default
   ask: { discard: (what) => confirmDiscard(what), overwriteStale: (name) => askSheet(_t("\u300C{name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7", { name }), _t("\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002"), _t("\u8986\u76D6")) },
   offerDownload: (bytes, name, onSaved) => {
     const file = new File([bytes], name, { type: "application/vnd.recordare.musicxml" });
-    offerFile(file, _t("\u5B58\u6210 .mxl"), _t("{name} \xB7 {size}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002", { name: esc13(file.name), size: sizeText2(file.size) }), onSaved);
+    offerFile(file, _t("\u5B58\u6210 .mxl"), _t("{name} \xB7 {size}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002", { name: esc14(file.name), size: sizeText2(file.size) }), onSaved);
   },
   markSaved: () => {
     D3.markSaved();
@@ -61945,6 +62035,7 @@ function openHabitsCardNow(from = "boot", current2) {
     current: current2 ?? habitCtx.habits ?? {},
     rows: cardRows,
     lang: cardLangRow(from),
+    synced: acct.bound(),
     // 「好」只写卡上摆着的那几样（cardHabitKeys；v0.17.30 收跟进第 1 条：不在卡上的那一样不被清成没选）
     done: (c10) => {
       gone();
@@ -62251,7 +62342,7 @@ var overlayHost = {
     const labels2 = labelsNow(), looks = partLooks();
     const rows = ids.map((id2) => {
       const k2 = D3.st.song.parts.findIndex((p2) => p2.id === id2);
-      return k2 < 0 ? "" : `<button class="btn ctx-item hid-row" data-v="${esc13(id2)}"><span class="pm-dot" style="background:${TAB20[looks.colors[k2] ?? 0]}"></span>${esc13(labels2[k2] ?? id2)}</button>`;
+      return k2 < 0 ? "" : `<button class="btn ctx-item hid-row" data-v="${esc14(id2)}"><span class="pm-dot" style="background:${TAB20[looks.colors[k2] ?? 0]}"></span>${esc14(labels2[k2] ?? id2)}</button>`;
     }).join("");
     ctxMenu("hidden-list", `<div class="tc-sec">${_t("\u9690\u85CF\u7740\u7684\uFF08\u70B9 = \u653E\u51FA\u6765\uFF09")}</div>${rows}`, at3, (v) => {
       showPart(v);
@@ -62261,7 +62352,7 @@ var overlayHost = {
   onTallGroup: () => openPaperSheet("layout"),
   // 「有一组比一页高，接到了下一页」（7-V）：开页面设置「版面」页   // 「演奏法和表情：不显示」的淡提示（7-G 重做）：开页面设置「看谱」页、落在那一项
   onHiddenPapers: (ids, at3) => {
-    const rows = ids.map((id2) => `<div class="hidp-row"><span class="hidp-name">${esc13(paperLabel(id2))}</span><button class="btn ctx-item" data-v="go:${esc13(id2)}">${_t("\u53BB\u770B")}</button><button class="btn ctx-item" data-v="show:${esc13(id2)}">${_t("\u653E\u51FA\u6765")}</button></div>`).join("");
+    const rows = ids.map((id2) => `<div class="hidp-row"><span class="hidp-name">${esc14(paperLabel(id2))}</span><button class="btn ctx-item" data-v="go:${esc14(id2)}">${_t("\u53BB\u770B")}</button><button class="btn ctx-item" data-v="show:${esc14(id2)}">${_t("\u653E\u51FA\u6765")}</button></div>`).join("");
     ctxMenu("hidden-papers", `<div class="tc-sec">${_t("\u9690\u85CF\u7740\u7684\u66F2\u6BB5\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\uFF09")}</div>${rows}`, at3, (v) => {
       const id2 = v.slice(v.indexOf(":") + 1);
       if (!D3.st.song.papers.some((p2) => p2.id === id2)) return;
@@ -62851,7 +62942,7 @@ function openListenMenu(at3, a10) {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
-  const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc13(title)}">${label}</button>`;
+  const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc14(title)}">${label}</button>`;
   box.innerHTML = item("here", _t("\u4ECE\u8FD9\u513F\u653E"), _t("\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E")) + (perfApi.paused && !engine.playing ? item("resume", _t("\u63A5\u7740\u653E"), _t("\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E")) : "") + item("head", _t("\u4ECE\u5934\u653E"), _t("\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09"));
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -62885,7 +62976,7 @@ function openTransportMenu(btn2 = $2("playBtn")) {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
-  const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc13(title)}">${label}</button>`;
+  const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc14(title)}">${label}</button>`;
   box.innerHTML = (perfApi.paused && !engine.playing ? item("resume", _t("\u63A5\u7740\u653E"), _t("\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09")) : "") + (engine.playing || perfApi.paused ? item("reveal", _t("\u8DF3\u5230\u6B63\u5728\u653E\u7684\u5730\u65B9"), _t("\u8C31\u6EDA\u5230\u6B63\u5728\u653E\uFF08\u505C\u7740 = \u505C\u4E0B\uFF09\u7684\u90A3\u4E00\u884C\uFF1B\u521A\u624D\u81EA\u5DF1\u6EDA\u8FC7\u4E5F\u7167\u6837\u8FC7\u53BB\u3001\u63A5\u7740\u8DDF")) : "") + `<div class="ctx-row" title="${_t("\u7FFB\u8C31\u63D0\u524D\u591A\u5C11\uFF1A\u5FEB\u5230\u884C\u5C3E\uFF08\u6216\u7F16\u6392\u8DF3\u56DE\u53BB\u4E4B\u524D\uFF09\u8FD9\u4E48\u4E45\u5C31\u5148\u7FFB\u8FC7\u53BB\uFF0C\u6700\u540E\u4E00\u5C0F\u622A\u9760\u8BB0\u2014\u2014\u50CF\u94A2\u7434\u5BB6\u7FFB\u8C31\u30020 = \u6362\u4E86\u884C\u624D\u7FFB")}"><span class="ctx-lab">${_t("\u63D0\u524D\u7FFB")}</span>${TURN_LEADS.map((v) => `<button class="btn ctx-seg${v === perfApi.turnLead ? " is-on" : ""}" data-v="lead:${v}">${v ? `${v} s` : _t("\u4E0D")}</button>`).join("")}</div>` + item("follow", _t("{autoFollow}\u81EA\u52A8\u7FFB", { autoFollow: view.autoFollow ? "\u2713 " : "" }), _t("\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09")) + item("loop", _t("{loopOn}\u5FAA\u73AF", { loopOn: perfApi.loopOn ? "\u2713 " : "" }), _t("\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF")) + item("head", _t("\u4ECE\u5934\u653E"), _t("\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09")) + (perfApi.loopOn ? item("seam", _t("\u542C\u63A5\u7F1D"), _t("\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C")) : "");
   document.body.append(box);
   const b3 = btn2.getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -62998,7 +63089,7 @@ function openIssuesSheet() {
   }
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u4E0D\u51FA\u58F0\u7684\u58F0\u90E8")}</div>` + list2.map((i10) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc13(i10.label)}</b><small>${esc13(i10.why)}</small></div>${i10.kind === "removed" && i10.lib ? `<button class="btn" data-v="libadd:${i10.lib}">${_t("\u88C5\u56DE\u6765")}</button>` : ""}<button class="btn primary" data-v="inst:${esc13(i10.part)}">${_t("\u6362\u4EBA / \u627E\u58F0\u97F3\u2026")}</button></div>`).join("") + `<div class="offer-msg">${_t("\u653E\u548C\u5BFC\u51FA\u7684 mp3 \u91CC\u90FD\u6CA1\u6709\u8FD9{p}\u7684\u58F0\u97F3\uFF0C\u5176\u4F59\u7167\u653E\u3002\u6362\u8C01\u7531\u4F60\u5B9A\uFF0C\u4E0D\u66FF\u8865\u3002", { p: list2.length > 1 ? _t("{n} \u6761\u8F68", { n: list2.length }) : _t("\u6761\u8F68") })}</div><div class="offer-btns"><button class="btn" data-v="close">${_t("\u77E5\u9053\u4E86")}</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u4E0D\u51FA\u58F0\u7684\u58F0\u90E8")}</div>` + list2.map((i10) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc14(i10.label)}</b><small>${esc14(i10.why)}</small></div>${i10.kind === "removed" && i10.lib ? `<button class="btn" data-v="libadd:${i10.lib}">${_t("\u88C5\u56DE\u6765")}</button>` : ""}<button class="btn primary" data-v="inst:${esc14(i10.part)}">${_t("\u6362\u4EBA / \u627E\u58F0\u97F3\u2026")}</button></div>`).join("") + `<div class="offer-msg">${_t("\u653E\u548C\u5BFC\u51FA\u7684 mp3 \u91CC\u90FD\u6CA1\u6709\u8FD9{p}\u7684\u58F0\u97F3\uFF0C\u5176\u4F59\u7167\u653E\u3002\u6362\u8C01\u7531\u4F60\u5B9A\uFF0C\u4E0D\u66FF\u8865\u3002", { p: list2.length > 1 ? _t("{n} \u6761\u8F68", { n: list2.length }) : _t("\u6761\u8F68") })}</div><div class="offer-btns"><button class="btn" data-v="close">${_t("\u77E5\u9053\u4E86")}</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -63057,7 +63148,7 @@ function goToPartInst(partId) {
 function renderBusy(label) {
   const box = document.createElement("div");
   box.className = "offer render-busy";
-  box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc13(label)}</div><div class="offer-msg rb-text">${_t("\u51C6\u5907\u2026")}</div><div class="offer-btns"><button class="btn" data-v="cancel">${_t("\u53D6\u6D88")}</button></div></div>`;
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc14(label)}</div><div class="offer-msg rb-text">${_t("\u51C6\u5907\u2026")}</div><div class="offer-btns"><button class="btn" data-v="cancel">${_t("\u53D6\u6D88")}</button></div></div>`;
   document.body.append(box);
   const txt = box.querySelector(".rb-text");
   renderBusyText = (s10) => {
@@ -63111,10 +63202,10 @@ function openMp3Panel() {
   box.className = "offer";
   const paper = D3.st.song.papers.find((p2) => p2.id === D3.st.at.paper), k2 = D3.st.song.papers.indexOf(paper);
   const draw = () => {
-    const chip2 = (v, label, note3, on2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}">${esc13(label)}<small>${esc13(note3)}</small></button>`;
+    const chip2 = (v, label, note3, on2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}">${esc14(label)}<small>${esc14(note3)}</small></button>`;
     const er2 = D3.st.song.rights ? exportRights(soundingRoles()) : null;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09")}</div><div class="part-sec">${_t("\u97F3\u8D28")}</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>` + (D3.st.song.papers.length > 1 ? `<div class="part-sec">${_t("\u8303\u56F4")}</div><div class="set-row">${chip2("s:all", _t("\u6574\u9996"), _t("\u9690\u85CF\u7684\u7EB8\u4E0D\u653E"), mp3Scope === "all")}${chip2("s:segment", _t("\u8FD9\u4E00\u5F20\u7EB8"), paper?.name || _t("\u7B2C {p} \u5F20", { p: k2 + 1 }), mp3Scope === "segment")}</div>` : "") + (mp3Scope === "all" ? `<div class="part-sec">${_t("\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58")}</div><div class="set-row">${chip2("k:on", _t("\u653E\u8FDB\u53BB"), _t("\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u8BBE\u7F6E\u91CC\u80FD\u5220"), mp3Keep)}${chip2("k:off", _t("\u4E0D\u653E"), _t("\u53EA\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u4E0D\u7559"), !mp3Keep)}</div>` : "") + (mp3Scope === "all" && renderHit(mp3Quality) ? `<div class="offer-msg">${_t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002")}</div>` : "") + (er2 ? `<div class="offer-msg">${_t("\u8BB8\u53EF\uFF1A{fellBack}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002", { fellBack: er2.fellBack ? _t("\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09") : esc13(er2.rights) })}</div>` : "") + // 静着 / 被独奏挡住的声部不进这一份（第 17 条四问第 3 条：导出的就是听到的，要看得见）
-    ((t10) => t10 ? `<div class="offer-msg issue-warn">${esc13(t10)}</div>` : "")(perfApi.silencedText()) + ((is2) => is2.length ? `<div class="offer-msg issue-warn">${_t("{n} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A{is}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002", { n: is2.length, is: esc13(perfApi.issuesText(is2)) })}</div>` : "")(perfApi.issues()) + // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09")}</div><div class="part-sec">${_t("\u97F3\u8D28")}</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>` + (D3.st.song.papers.length > 1 ? `<div class="part-sec">${_t("\u8303\u56F4")}</div><div class="set-row">${chip2("s:all", _t("\u6574\u9996"), _t("\u9690\u85CF\u7684\u7EB8\u4E0D\u653E"), mp3Scope === "all")}${chip2("s:segment", _t("\u8FD9\u4E00\u5F20\u7EB8"), paper?.name || _t("\u7B2C {p} \u5F20", { p: k2 + 1 }), mp3Scope === "segment")}</div>` : "") + (mp3Scope === "all" ? `<div class="part-sec">${_t("\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58")}</div><div class="set-row">${chip2("k:on", _t("\u653E\u8FDB\u53BB"), _t("\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u8BBE\u7F6E\u91CC\u80FD\u5220"), mp3Keep)}${chip2("k:off", _t("\u4E0D\u653E"), _t("\u53EA\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u4E0D\u7559"), !mp3Keep)}</div>` : "") + (mp3Scope === "all" && renderHit(mp3Quality) ? `<div class="offer-msg">${_t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002")}</div>` : "") + (er2 ? `<div class="offer-msg">${_t("\u8BB8\u53EF\uFF1A{fellBack}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002", { fellBack: er2.fellBack ? _t("\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09") : esc14(er2.rights) })}</div>` : "") + // 静着 / 被独奏挡住的声部不进这一份（第 17 条四问第 3 条：导出的就是听到的，要看得见）
+    ((t10) => t10 ? `<div class="offer-msg issue-warn">${esc14(t10)}</div>` : "")(perfApi.silencedText()) + ((is2) => is2.length ? `<div class="offer-msg issue-warn">${_t("{n} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A{is}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002", { n: is2.length, is: esc14(perfApi.issuesText(is2)) })}</div>` : "")(perfApi.issues()) + // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
     `<div class="offer-btns"><button class="btn primary" data-v="go">${perfApi.issues().length ? _t("\u7167\u6837\u5BFC\u51FA") : _t("\u5BFC\u51FA")}</button><button class="btn" data-v="close">${_t("\u7B97\u4E86")}</button></div></div>`;
   };
   draw();
@@ -63149,15 +63240,15 @@ function openMp3Panel() {
 }
 var models = createModelSources();
 var packStore = createPackStore({ packs: PACKS });
-var esc13 = (s10) => s10.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
+var esc14 = (s10) => s10.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
 var LANG_LABEL = "\u8BED\u8A00 \xB7 Language";
 function openChordInfo(r10, at3, where) {
   const th2 = harmonyTheory(r10.theory), canPick = !!where && view.rules.edit && !lock.locked();
   const row2 = (g3, i10) => {
-    const on2 = i10 === 0 && r10.pinned, inner = `<b>${esc13(g3.label)}</b><span>${esc13(g3.name)}</span><small>${th2.explain(g3).map(esc13).join(" \xB7 ")}</small>`;
+    const on2 = i10 === 0 && r10.pinned, inner = `<b>${esc14(g3.label)}</b><span>${esc14(g3.name)}</span><small>${th2.explain(g3).map(esc14).join(" \xB7 ")}</small>`;
     return canPick ? `<button class="chord-cand${i10 === 0 ? " is-best" : ""}${on2 ? " is-on" : ""}" data-v="pick:${i10}">${inner}</button>` : `<div class="chord-cand${i10 === 0 ? " is-best" : ""}">${inner}</div>`;
   };
-  const head = r10.pinned ? `<div class="ctx-hint ctx-what">${esc13(r10.stale ? _t("\u4F60\u6311\u7684\u300C{name}\u300D\u4E0D\u5728\u73B0\u5728\u8FD9\u51E0\u4E2A\u97F3\u7684\u8BFB\u6CD5\u91CC\uFF08\u97F3\u6539\u8FC7\u4E86\uFF09\uFF1A\u6362\u4E00\u4E2A\uFF0C\u6216\u8005\u6539\u56DE\u81EA\u52A8", { name: r10.best.name }) : _t("\u8FD9\u662F\u4F60\u6311\u7684\u300C{name}\u300D", { name: r10.best.name }))}</div>` + (canPick ? `<button class="btn ctx-item" data-v="auto">${esc13(r10.auto ? _t("\u6539\u56DE\u81EA\u52A8\uFF08{label}\uFF09", { label: th2.label(r10.auto) }) : _t("\u6539\u56DE\u81EA\u52A8\uFF08\u8FD9\u51E0\u4E2A\u97F3\u8BA4\u4E0D\u51FA\u548C\u5F26 = \u4E0D\u6807\uFF09"))}</button>` : "") : `<div class="ctx-hint ctx-what">${esc13(th2.howTo(r10))}${canPick ? esc13(_t("\u70B9\u4E00\u4E2A = \u7528\u5B83\uFF08\u8BB0\u8FDB\u8FD9\u4E2A\u97F3\uFF0C\u80FD\u64A4\u9500\uFF09")) : ""}</div>`;
+  const head = r10.pinned ? `<div class="ctx-hint ctx-what">${esc14(r10.stale ? _t("\u4F60\u6311\u7684\u300C{name}\u300D\u4E0D\u5728\u73B0\u5728\u8FD9\u51E0\u4E2A\u97F3\u7684\u8BFB\u6CD5\u91CC\uFF08\u97F3\u6539\u8FC7\u4E86\uFF09\uFF1A\u6362\u4E00\u4E2A\uFF0C\u6216\u8005\u6539\u56DE\u81EA\u52A8", { name: r10.best.name }) : _t("\u8FD9\u662F\u4F60\u6311\u7684\u300C{name}\u300D", { name: r10.best.name }))}</div>` + (canPick ? `<button class="btn ctx-item" data-v="auto">${esc14(r10.auto ? _t("\u6539\u56DE\u81EA\u52A8\uFF08{label}\uFF09", { label: th2.label(r10.auto) }) : _t("\u6539\u56DE\u81EA\u52A8\uFF08\u8FD9\u51E0\u4E2A\u97F3\u8BA4\u4E0D\u51FA\u548C\u5F26 = \u4E0D\u6807\uFF09"))}</button>` : "") : `<div class="ctx-hint ctx-what">${esc14(th2.howTo(r10))}${canPick ? esc14(_t("\u70B9\u4E00\u4E2A = \u7528\u5B83\uFF08\u8BB0\u8FDB\u8FD9\u4E2A\u97F3\uFF0C\u80FD\u64A4\u9500\uFF09")) : ""}</div>`;
   ctxMenu("chord-info", head + r10.all.slice(0, 6).map(row2).join(""), at3, (v) => {
     if (!where || !canPick) return true;
     if (v === "auto") {
@@ -63187,7 +63278,10 @@ var SET_PAGES = () => [
   { id: "about", label: _t("\u5173\u4E8E##\u9875\u7B7E"), icon: "info", title: _t("\u5173\u4E8E\uFF1A\u7248\u672C\u3001\u8F6F\u4EF6\u81EA\u5DF1\u7528\u5230\u7684\u522B\u4EBA\u7684\u4E1C\u897F") },
   { id: "dev", label: _t("\u5F00\u53D1\u8005##\u9875\u7B7E"), icon: "chip", title: _t("\u5F00\u53D1\u8005\uFF1A\u8BD5\u9A8C\u5F00\u5173\u3001\u8FD8\u539F\u51FA\u5382") }
 ];
-var setItem = (label, ctl, help = "", body2 = "", attrs) => settingRowHtml({ labelHtml: label, ...ctl ? { controlHtml: ctl } : {}, notes: help ? [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: help }] : [], ...body2 ? { belowHtml: body2 } : {}, ...attrs ? { attrs } : {} });
+function sayFollow(text2) {
+  showNotice({ id: "set-follow", level: "info", text: text2, autoHideMs: 3500 });
+}
+var setItem = (label, ctl, help = "", body2 = "", attrs, follow) => settingRowHtml({ labelHtml: label + (follow ? followBadge(follow) : ""), ...ctl ? { controlHtml: ctl } : {}, notes: help ? [{ mark: "?", label: _t("\u8FD9\u662F\u4EC0\u4E48"), html: help }] : [], ...body2 ? { belowHtml: body2 } : {}, ...attrs ? { attrs } : {} });
 function wireShellPages(panel, box, onPage) {
   const showPage = (pg) => {
     box.querySelectorAll(".set-page").forEach((el2) => {
@@ -63204,7 +63298,7 @@ var setSel = (k2, opts, cur) => dropdownHtml(opts.map(([value, label]) => ({ val
 function openDocLayer(host2, title, html, jump) {
   const layer = document.createElement("div");
   layer.className = "doc-layer";
-  layer.innerHTML = `<div class="offer-card doc-card"><div class="offer-title">${esc13(title)}</div><div class="doc-body">${html}</div><div class="offer-btns"><button class="btn primary" data-doc-close>${_t("\u597D")}</button></div></div>`;
+  layer.innerHTML = `<div class="offer-card doc-card"><div class="offer-title">${esc14(title)}</div><div class="doc-body">${html}</div><div class="offer-btns"><button class="btn primary" data-doc-close>${_t("\u597D")}</button></div></div>`;
   host2.append(layer);
   layer.addEventListener("click", (e10) => {
     e10.stopPropagation();
@@ -63216,7 +63310,7 @@ function askOver(host2, title, msg, okLabel, danger = false) {
   return new Promise((resolve) => {
     const layer = document.createElement("div");
     layer.className = "doc-layer ask-layer";
-    layer.innerHTML = `<div class="offer-card"><div class="offer-title">${esc13(title)}</div><div class="offer-msg">${esc13(msg)}</div><div class="offer-btns"><button class="btn${danger ? " danger" : ""}" data-ask="ok">${esc13(okLabel)}</button><button class="btn primary" data-ask="no">${_t("\u7B97\u4E86")}</button></div></div>`;
+    layer.innerHTML = `<div class="offer-card"><div class="offer-title">${esc14(title)}</div><div class="offer-msg">${esc14(msg)}</div><div class="offer-btns"><button class="btn${danger ? " danger" : ""}" data-ask="ok">${esc14(okLabel)}</button><button class="btn primary" data-ask="no">${_t("\u7B97\u4E86")}</button></div></div>`;
     host2.append(layer);
     const done2 = (ok2) => {
       layer.remove();
@@ -63232,14 +63326,14 @@ function askOver(host2, title, msg, okLabel, danger = false) {
 }
 function habitRowHtml(k2, h2) {
   const NONE2 = "none", none = [NONE2, _t("\u6CA1\u9009\uFF08\u7167\u8F6F\u4EF6\u7684\u9ED8\u8BA4\uFF1A{x}\uFF09", { x: defaultText(k2, {}) })];
-  if (k2 === "notation") return setItem(_t("\u4E60\u60EF\u770B\u7684\u8C31"), setSel("habit:notation", [none, ...NOTATIONS.map((id2) => [id2, notationName(id2)])], h2.notation ?? NONE2), _t("\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002"));
-  if (k2 === "viewInC") return setItem(_t("\u79FB\u8C03\u8F85\u52A9"), setSel("habit:viewInC", [none, ["off", _t("\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09")], ["on", _t("\u6309 C \u8C03\u770B")]], h2.viewInC === void 0 ? NONE2 : h2.viewInC ? "on" : "off"), TRANSPOSE_AID_NOTE().map((p2) => `<p>${esc13(p2)}</p>`).join(""));
-  if (k2 === "chordTagStyle") return setItem(_t("\u548C\u5F26\u5199\u6CD5"), setSel("habit:chordTagStyle", [none, ...CHORD_TAG_STYLES.map((v) => [v, CHORD_TAG_STYLE_LABEL[v]()])], h2.chordTagStyle ?? NONE2), CHORD_TAG_STYLE_NOTE());
-  return setItem(_t("\u4E2D\u592E C \u53EB"), setSel("habit:middleC", [none, ...MIDDLE_C_NAMES.map((n10) => [String(n10), middleCLabel(n10)])], h2.middleC === void 0 ? NONE2 : String(h2.middleC)), MIDDLE_C_NOTE());
+  if (k2 === "notation") return setItem(_t("\u4E60\u60EF\u770B\u7684\u8C31"), setSel("habit:notation", [none, ...NOTATIONS.map((id2) => [id2, notationName(id2)])], h2.notation ?? NONE2), _t("\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u6BCF\u9996\u6B4C\u5728\u9875\u9762\u8BBE\u7F6E\u91CC\u80FD\u5355\u72EC\u6362\u3002"), "", void 0, "account");
+  if (k2 === "viewInC") return setItem(_t("\u79FB\u8C03\u8F85\u52A9"), setSel("habit:viewInC", [none, ["off", _t("\u4E0D\u7528\uFF08\u7167\u5199\u7684\u8C03\uFF09")], ["on", _t("\u6309 C \u8C03\u770B")]], h2.viewInC === void 0 ? NONE2 : h2.viewInC ? "on" : "off"), TRANSPOSE_AID_NOTE().map((p2) => `<p>${esc14(p2)}</p>`).join(""), "", void 0, "account");
+  if (k2 === "chordTagStyle") return setItem(_t("\u548C\u5F26\u5199\u6CD5"), setSel("habit:chordTagStyle", [none, ...CHORD_TAG_STYLES.map((v) => [v, CHORD_TAG_STYLE_LABEL[v]()])], h2.chordTagStyle ?? NONE2), CHORD_TAG_STYLE_NOTE(), "", void 0, "account");
+  return setItem(_t("\u4E2D\u592E C \u53EB"), setSel("habit:middleC", [none, ...MIDDLE_C_NAMES.map((n10) => [String(n10), middleCLabel(n10)])], h2.middleC === void 0 ? NONE2 : String(h2.middleC)), MIDDLE_C_NOTE(), "", void 0, "account");
 }
 function habitRowsHtml() {
   const h2 = habitCtx.habits ?? {};
-  return setItem(_t("\u521D\u59CB\u8BBE\u7F6E"), `<button class="btn" data-v="habits:card">${_t("\u6253\u5F00\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\uFF1B\u8FDE\u7740\u6B4C\u5E93\u65F6\u8DDF\u7740\u6B4C\u5E93\u8D70\uFF08\u8FDB\u540C\u4E00\u4E2A\u6B4C\u5E93\u7684\u8BBE\u5907\u7528\u540C\u4E00\u4EFD\uFF09\u3002")) + HABIT_KEYS.map((k2) => habitRowHtml(k2, h2)).join("");
+  return setItem(_t("\u521D\u59CB\u8BBE\u7F6E"), `<button class="btn" data-v="habits:card">${_t("\u6253\u5F00\u2026")}</button>`, _t("\u4F60\u7684\u4E60\u60EF\uFF1A\u65B0\u5EFA\u7684\u6B4C\u7167\u5B83\u5199\u4E0B\u6765\uFF08\u4E4B\u540E\u8FD9\u9996\u6B4C\u5C31\u4E00\u76F4\u662F\u8FD9\u4E2A\u6837\uFF09\uFF1B\u9875\u9762\u8BBE\u7F6E\u91CC\u5199\u7740\u300C\u8DDF\u7740\u6211\u7684\u4E60\u60EF\u300D\u7684\u6B4C\u8DDF\u7740\u5B83\u53D8\u3002\u4E60\u60EF\u672C\u8EAB\u4E0D\u8FDB\u6B4C\uFF1B\u8FDE\u7740\u6B4C\u5E93\u65F6\u8DDF\u7740\u6B4C\u5E93\u8D70\uFF08\u8FDB\u540C\u4E00\u4E2A\u6B4C\u5E93\u7684\u8BBE\u5907\u7528\u540C\u4E00\u4EFD\uFF09\u3002"), "", void 0, "account") + HABIT_KEYS.map((k2) => habitRowHtml(k2, h2)).join("");
 }
 function readHabitRows(root, keys) {
   const out = {};
@@ -63273,7 +63367,7 @@ function openSettings() {
   box.className = "settings-body";
   const item = setItem;
   const look = (v, label) => `<button class="btn" data-v="${v}">${label}</button>`;
-  box.innerHTML = `<div class="set-page" data-page="ui">` + item(LANG_LABEL, setSel("lang", [["auto", _t("\u8DDF\u7CFB\u7EDF")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }) + habitRowsHtml() + `</div><div class="set-page" data-page="sound"><div id="libVoice">\u2026</div><div id="libGs">\u2026</div><div id="libOwn">\u2026</div></div><div class="set-page" data-page="input">` + item(_t("MIDI \u952E\u76D8"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}`) + `</div><div class="set-page" data-page="upkeep"><div id="upVoice">\u2026</div><div id="upGs">\u2026</div><div id="upRc">\u2026</div>` + upkeepRestHtml({ canShare: canShareDiag(), diagText: diagText() }) + `</div><div class="set-page" data-page="about">` + item(_t("\u7248\u672C"), `<span class="set-ver">${APP_VERSION}</span>`) + item(_t("\u7B2C\u4E09\u65B9\u7684\u4F5C\u8005\u548C\u8BB8\u53EF"), look("doc:top", _t("\u770B\u2026")), _t("\u8F6F\u4EF6\u81EA\u5DF1\u7528\u5230\u7684\u522B\u4EBA\u7684\u4E1C\u897F\uFF08\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\u2026\uFF09\uFF1B\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u5728\u300C\u97F3\u6E90\u300D\u9875\u5B83\u90A3\u4E00\u680F\u7684 \xA9")) + `</div><div class="set-page" data-page="dev">` + item(_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57"), setSel("feel", [["off", _t("\u5173")], ["on", _t("\u5F00")]], feelAlways ? "on" : "off"), _t("\u67E5\u5EF6\u8FDF\u7528\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")) + (IS_IOS ? item(_t("\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09"), setSel("primer", [["off", _t("\u5173")], ["on", _t("\u5F00")]], primerOn() ? "on" : "off"), _t("\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA")) : "") + // 给开发者看的数字（「13 再补」第 4 条：维护页和音源页只留「占多少、能不能清」）：站点配额、录音房几块、小月相几条道和设备预算、输出延迟、音频线程忙多少
+  box.innerHTML = `<div class="set-page" data-page="ui">` + item(LANG_LABEL, setSel("lang", [["auto", _t("\u8DDF\u7CFB\u7EDF")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", { "data-i18n-skip": "" }, "account") + habitRowsHtml() + `</div><div class="set-page" data-page="sound"><div id="libVoice">\u2026</div><div id="libGs">\u2026</div><div id="libOwn">\u2026</div></div><div class="set-page" data-page="input">` + item(_t("MIDI \u952E\u76D8"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}`, "", "", void 0, "device") + `</div><div class="set-page" data-page="upkeep"><div id="upVoice">\u2026</div><div id="upGs">\u2026</div><div id="upRc">\u2026</div>` + upkeepRestHtml({ canShare: canShareDiag(), diagText: diagText() }) + `</div><div class="set-page" data-page="about">` + item(_t("\u7248\u672C"), `<span class="set-ver">${APP_VERSION}</span>`) + item(_t("\u7B2C\u4E09\u65B9\u7684\u4F5C\u8005\u548C\u8BB8\u53EF"), look("doc:top", _t("\u770B\u2026")), _t("\u8F6F\u4EF6\u81EA\u5DF1\u7528\u5230\u7684\u522B\u4EBA\u7684\u4E1C\u897F\uFF08\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\u2026\uFF09\uFF1B\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u5728\u300C\u97F3\u6E90\u300D\u9875\u5B83\u90A3\u4E00\u680F\u7684 \xA9")) + `</div><div class="set-page" data-page="dev">` + item(_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57"), setSel("feel", [["off", _t("\u5173")], ["on", _t("\u5F00")]], feelAlways ? "on" : "off"), _t("\u67E5\u5EF6\u8FDF\u7528\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09"), "", void 0, "device") + (IS_IOS ? item(_t("\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09"), setSel("primer", [["off", _t("\u5173")], ["on", _t("\u5F00")]], primerOn() ? "on" : "off"), _t("\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA"), "", void 0, "device") : "") + // 给开发者看的数字（「13 再补」第 4 条：维护页和音源页只留「占多少、能不能清」）：站点配额、录音房几块、小月相几条道和设备预算、输出延迟、音频线程忙多少
   item(_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58"), "", _t("\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u72B6\u6001\u6761\u660E\u8BF4"), `<div id="engRes" class="set-packs">\u2026</div><div id="siteQuota" class="set-packs"></div>`) + item(_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E"), `<button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u548C\u4E50\u5668\u97F3\u8272\u5E93\u4E0D\u52A8\u2014\u2014\u8981\u5220\u5728\u300C\u97F3\u6E90\u300D\u9875\u5404\u81EA\u90A3\u4E00\u680F\u5220")) + `</div><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}</div>`;
   let showPage = () => void 0;
   const panel = openPanelShell({
@@ -63287,6 +63381,7 @@ function openSettings() {
   });
   panel.el.classList.add("set-panel", "settings-panel");
   mountDropdowns(box);
+  wireFollowBadges(box, sayFollow);
   showPage = wireShellPages(panel, box, (pg) => {
     settingsPage = pg;
   });
@@ -63455,7 +63550,7 @@ function openSettings() {
       } else info(r10 === "latest" ? _t("\u5DF2\u7ECF\u662F\u6700\u65B0\u7248") : _t("\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0"));
     }), reset: () => shell.forceReset() },
     diag: {
-      view: () => openDocLayer(panel.el, _t("\u8BCA\u65AD\u65E5\u5FD7"), `<pre class="diag-log">${esc13(diagText())}</pre>`),
+      view: () => openDocLayer(panel.el, _t("\u8BCA\u65AD\u65E5\u5FD7"), `<pre class="diag-log">${esc14(diagText())}</pre>`),
       copy: () => void copyDiag(box.querySelector("#diagTxt"), info),
       download: () => downloadDiag(info),
       share: () => void shareDiag(info),
@@ -63640,7 +63735,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "42d9aa52022e",
+  cssHash: "afff9b26a320",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -64361,25 +64456,25 @@ function openSongPanel(focus) {
     const locked = drawnLocked = lock.locked();
     const song = D3.st.song, thumb = D3.extras.thumbnail;
     coverUrl = thumb ? URL.createObjectURL(new Blob([thumb], { type: "image/png" })) : null;
-    const file = H2.home.kind === "file" ? `<div class="set-row"><span class="set-note">${esc13(_t("\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F {name}\uFF09", { name: H2.home.handle.name }))}</span></div>` : `<div class="set-row lib-line"><span>${_t("\u6587\u4EF6\u540D")}\uFF1A${esc13(docName())}${SONG_SUFFIX}</span><button class="btn" data-v="rename">${_t("\u6539\u2026")}</button></div>`;
+    const file = H2.home.kind === "file" ? `<div class="set-row"><span class="set-note">${esc14(_t("\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F {name}\uFF09", { name: H2.home.handle.name }))}</span></div>` : `<div class="set-row lib-line"><span>${_t("\u6587\u4EF6\u540D")}\uFF1A${esc14(docName())}${SONG_SUFFIX}</span><button class="btn" data-v="rename">${_t("\u6539\u2026")}</button></div>`;
     const sounds = soundsSection(), used = libsUsed(), missing = perfApi.issues();
     content.innerHTML = (locked ? `<div class="set-row lock-line"><span class="lock-line-what">${iconHtml2("lock")}<span>${_t("\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u53EA\u80FD\u770B")}</span></span><button class="btn primary" data-v="unlock">${_t("\u89E3\u9501")}</button></div>` : "") + settingRowHtml({
-      labelHtml: esc13(_t("\u540D\u5B57")),
+      labelHtml: esc14(_t("\u540D\u5B57")),
       attrs: { "data-sec": "name" },
-      belowHtml: `<label class="set-field">${_t("\u6B4C\u540D")}<input id="songTitleIn" type="text" spellcheck="false" autocomplete="off" value="${esc13(song.title ?? "")}" /></label>` + file
+      belowHtml: `<label class="set-field">${_t("\u6B4C\u540D")}<input id="songTitleIn" type="text" spellcheck="false" autocomplete="off" value="${esc14(song.title ?? "")}" /></label>` + file
     }) + settingRowHtml({
-      labelHtml: esc13(_t("\u4F5C\u8005\u548C\u8BB8\u53EF")),
+      labelHtml: esc14(_t("\u4F5C\u8005\u548C\u8BB8\u53EF")),
       attrs: { "data-sec": "credits" },
-      belowHtml: `<textarea id="crIn" class="credits-in" rows="4" spellcheck="false" placeholder="${_t("\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09")}">${esc13(song.credits ?? "")}</textarea><div class="offer-msg">${_t("\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002")}</div><details class="rights-sec"${song.rights ? " open" : ""}><summary class="part-sec">${_t("\u8BB8\u53EF\uFF08\u53EF\u9009\uFF1B\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09")}</summary><div class="set-row"><button class="btn cand" data-r="-1" title="${_t("\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09")}">${_t("\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09")}</button>` + RIGHTS_PRESETS.map((p2, k2) => `<button class="btn cand" data-r="${k2}" title="${esc13(p2.note)}">${esc13(p2.label)}</button>`).join("") + `</div><input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="${_t("\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199")}" value="${esc13(song.rights ?? "")}" /><div class="offer-msg">${_t("\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002")}</div></details>`
+      belowHtml: `<textarea id="crIn" class="credits-in" rows="4" spellcheck="false" placeholder="${_t("\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09")}">${esc14(song.credits ?? "")}</textarea><div class="offer-msg">${_t("\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002")}</div><details class="rights-sec"${song.rights ? " open" : ""}><summary class="part-sec">${_t("\u8BB8\u53EF\uFF08\u53EF\u9009\uFF1B\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09")}</summary><div class="set-row"><button class="btn cand" data-r="-1" title="${_t("\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09")}">${_t("\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09")}</button>` + RIGHTS_PRESETS.map((p2, k2) => `<button class="btn cand" data-r="${k2}" title="${esc14(p2.note)}">${esc14(p2.label)}</button>`).join("") + `</div><input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="${_t("\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199")}" value="${esc14(song.rights ?? "")}" /><div class="offer-msg">${_t("\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002")}</div></details>`
     }) + settingRowHtml({
-      labelHtml: esc13(_t("\u5C01\u9762")),
+      labelHtml: esc14(_t("\u5C01\u9762")),
       attrs: { "data-sec": "cover" },
       belowHtml: `<div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="${_t("\u5C01\u9762")}" />` : `<span class="cover-none">${_t("\u6CA1\u6709\u5C01\u9762\u56FE")}</span>`}</span><label class="btn" title="${_t("\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09")}"><svg class="ico"><use href="#image"/></svg>${thumb ? _t("\u6362\u4E00\u5F20\u2026") : _t("\u9009\u4E00\u5F20\u56FE\u2026")}<input id="coverIn" type="file" accept="image/*" hidden /></label>` + (thumb ? `<button class="btn" data-v="coverOff">${_t("\u53BB\u6389\u5C01\u9762\u56FE")}</button>` : "") + `</div><div class="offer-msg">${_t("\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE\uFF1B\u6B4C\u540D\u548C\u65E5\u671F\u7167\u6837\u5370\u5728\u4E0A\u9762\u3002\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\u3002")}</div>`
     }) + settingRowHtml({
-      labelHtml: esc13(_t("\u58F0\u97F3")),
+      labelHtml: esc14(_t("\u58F0\u97F3")),
       attrs: { "data-sec": "sounds" },
-      belowHtml: (used ? `<div class="offer-msg">${esc13(_t("\u7528\u5230\u7684\uFF1A{libs}", { libs: used }))}</div>` : "") + (missing.length ? `<div class="set-row lib-line"><span class="set-note">${esc13(_t("\u7F3A\uFF1A{list}", { list: missing.map((i10) => `${i10.label}\uFF08${i10.why}\uFF09`).join("\uFF1B") }))}</span><button class="btn" data-v="issues">${_t("\u770B\u6E05\u5355\u2026")}</button></div>` : "") + (sounds || `<div class="offer-msg">${_t("\u8FD9\u9996\u6B4C\u6CA1\u7528\u4E50\u5668\u7684\u58F0\u97F3\u6587\u4EF6\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248\u7684\u58F0\u97F3\u968F app \u8D70\uFF0C\u4E0D\u8FDB\u6B4C\uFF09\u3002")}</div>`)
-    }) + settingRowHtml({ labelHtml: esc13(_t("\u7F72\u540D")), attrs: { "data-sec": "credit-lines" }, belowHtml: performersBlock(soundingRoles(), _t("\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3")) || `<div class="offer-msg">${_t("\u8FD8\u6CA1\u6709\u53EF\u7F72\u7684\u540D")}</div>` });
+      belowHtml: (used ? `<div class="offer-msg">${esc14(_t("\u7528\u5230\u7684\uFF1A{libs}", { libs: used }))}</div>` : "") + (missing.length ? `<div class="set-row lib-line"><span class="set-note">${esc14(_t("\u7F3A\uFF1A{list}", { list: missing.map((i10) => `${i10.label}\uFF08${i10.why}\uFF09`).join("\uFF1B") }))}</span><button class="btn" data-v="issues">${_t("\u770B\u6E05\u5355\u2026")}</button></div>` : "") + (sounds || `<div class="offer-msg">${_t("\u8FD9\u9996\u6B4C\u6CA1\u7528\u4E50\u5668\u7684\u58F0\u97F3\u6587\u4EF6\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248\u7684\u58F0\u97F3\u968F app \u8D70\uFF0C\u4E0D\u8FDB\u6B4C\uFF09\u3002")}</div>`)
+    }) + settingRowHtml({ labelHtml: esc14(_t("\u7F72\u540D")), attrs: { "data-sec": "credit-lines" }, belowHtml: performersBlock(soundingRoles(), _t("\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3")) || `<div class="offer-msg">${_t("\u8FD8\u6CA1\u6709\u53EF\u7F72\u7684\u540D")}</div>` });
     content.querySelector("#coverIn").addEventListener("change", (e10) => {
       const f2 = e10.target.files?.[0];
       if (f2) {
@@ -64565,6 +64660,8 @@ function openPaperSheet(focus) {
     onClose: () => cleanup()
   });
   panel.el.classList.add("set-panel", "paper-panel");
+  panel.el.querySelector(".wbe-panel-title")?.insertAdjacentHTML("beforeend", followBadge("song"));
+  wireFollowBadges(panel.el, sayFollow);
   showPage = wireShellPages(panel, box, (pg) => {
     page = pg;
   });
@@ -64867,27 +64964,27 @@ function openPartsManager(ctx2) {
   const chipLabel = (id2, k2) => D3.st.song.papers[k2]?.name || String(k2 + 1);
   const draw = () => {
     const song = D3.st.song, labels2 = labelsNow(song), cols = partColorIndices(song.parts.map((p2) => roleSound(D3.extras, p2.role)));
-    const sec = secId(), secName = esc13(paperLabel(sec)), here = song.papers.find((pp) => pp.id === sec).tracks;
-    const lab = (id2) => esc13(labels2[song.parts.findIndex((p2) => p2.id === id2)] ?? id2);
+    const sec = secId(), secName = esc14(paperLabel(sec)), here = song.papers.find((pp) => pp.id === sec).tracks;
+    const lab = (id2) => esc14(labels2[song.parts.findIndex((p2) => p2.id === id2)] ?? id2);
     if (page !== "main") {
       const me = song.parts.find((p2) => p2.id === subject);
       if (!me || !here[me.id]) page = "main";
     }
     if (page !== "main") {
       const label = lab(subject), list2 = page === "give" ? song.parts.filter((p2) => p2.id !== subject) : song.parts.filter((p2) => !here[p2.id]);
-      box.innerHTML = `<div class="offer-card pm-card"><div class="pm-here"><button class="btn pm-back" data-v="back">\u2039 ${page === "give" ? _t("\u300C{p}\u300D\u6BB5\u7684\u300C{label}\u300D\u4EA4\u7ED9\u2026", { p: secName, label }) : above ? _t("\u5728\u300C{label}\u300D\u4E0A\u9762\u52A0", { label }) : _t("\u5728\u300C{label}\u300D\u4E0B\u9762\u52A0", { label })}</button><div class="tc-list">${list2.map((p2) => `<button class="btn cand" data-v="${page}:${esc13(p2.id)}">${lab(p2.id)}${page === "give" && here[p2.id] ? `<small>${_t("\uFF08\u5BF9\u8C03\uFF09")}</small>` : ""}</button>`).join("")}<button class="btn cand" data-v="${page}new">${_t("\uFF0B \u65B0\u58F0\u90E8\u2026")}</button></div><div class="tc-hint">${page === "give" ? _t("\u53EA\u6539\u8FD9\u4E00\u6BB5\uFF1A\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u90FD\u4E0D\u52A8\uFF0C\u6362\u4E00\u4E2A\u58F0\u90E8\u5531\uFF1B\u8DE8\u6BB5\u6309\u58F0\u90E8\u63A5\u8D77\u6765\u3002\u5BF9\u65B9\u5728\u8FD9\u4E00\u6BB5\u5DF2\u7ECF\u6709\u4E00\u884C = \u4E24\u884C\u5BF9\u8C03\u3002") : _t("\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09\u3002")}</div></div></div>`;
+      box.innerHTML = `<div class="offer-card pm-card"><div class="pm-here"><button class="btn pm-back" data-v="back">\u2039 ${page === "give" ? _t("\u300C{p}\u300D\u6BB5\u7684\u300C{label}\u300D\u4EA4\u7ED9\u2026", { p: secName, label }) : above ? _t("\u5728\u300C{label}\u300D\u4E0A\u9762\u52A0", { label }) : _t("\u5728\u300C{label}\u300D\u4E0B\u9762\u52A0", { label })}</button><div class="tc-list">${list2.map((p2) => `<button class="btn cand" data-v="${page}:${esc14(p2.id)}">${lab(p2.id)}${page === "give" && here[p2.id] ? `<small>${_t("\uFF08\u5BF9\u8C03\uFF09")}</small>` : ""}</button>`).join("")}<button class="btn cand" data-v="${page}new">${_t("\uFF0B \u65B0\u58F0\u90E8\u2026")}</button></div><div class="tc-hint">${page === "give" ? _t("\u53EA\u6539\u8FD9\u4E00\u6BB5\uFF1A\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u90FD\u4E0D\u52A8\uFF0C\u6362\u4E00\u4E2A\u58F0\u90E8\u5531\uFF1B\u8DE8\u6BB5\u6309\u58F0\u90E8\u63A5\u8D77\u6765\u3002\u5BF9\u65B9\u5728\u8FD9\u4E00\u6BB5\u5DF2\u7ECF\u6709\u4E00\u884C = \u4E24\u884C\u5BF9\u8C03\u3002") : _t("\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09\u3002")}</div></div></div>`;
       return;
     }
     const row2 = (p2, k2) => {
       const who = activeCandidateName(D3.extras, p2.role), isOpen = openRow === p2.id, inSec = !!here[p2.id];
       const chips = song.papers.map((pp, j2) => {
-        const on2 = !!pp.tracks[p2.id], full = esc13(paperLabel(pp.id));
-        return `<button class="btn chip${on2 ? " is-on" : ""}${pp.id === sec ? " is-cur" : ""}" data-v="pp:${esc13(pp.id)}:${esc13(p2.id)}" title="${on2 ? _t("\u4ECE\u300C{p}\u300D\u5220\u6389\uFF08\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684\u4E00\u8D77\u5220\uFF0C\u5148\u95EE\uFF09", { p: full }) : _t("\u653E\u8FDB\u300C{p}\u300D\uFF08\u4E00\u884C\u7A7A\u7684\uFF09", { p: full })}">${esc13(chipLabel(pp.id, j2))}</button>`;
+        const on2 = !!pp.tracks[p2.id], full = esc14(paperLabel(pp.id));
+        return `<button class="btn chip${on2 ? " is-on" : ""}${pp.id === sec ? " is-cur" : ""}" data-v="pp:${esc14(pp.id)}:${esc14(p2.id)}" title="${on2 ? _t("\u4ECE\u300C{p}\u300D\u5220\u6389\uFF08\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684\u4E00\u8D77\u5220\uFF0C\u5148\u95EE\uFF09", { p: full }) : _t("\u653E\u8FDB\u300C{p}\u300D\uFF08\u4E00\u884C\u7A7A\u7684\uFF09", { p: full })}">${esc14(chipLabel(pp.id, j2))}</button>`;
       }).join("");
-      const main = `<div class="pm-row${(ctx2?.part ?? D3.st.at.part) === p2.id ? " is-here" : ""}${p2.host ? " is-tenant" : ""}${isOpen ? " is-open" : ""}" data-pid="${esc13(p2.id)}"><span class="pm-dot" style="background:${TAB20[cols[k2]]}"></span><input class="pm-name" data-pid="${esc13(p2.id)}" value="${esc13(roleGivenName(D3.extras.lounge, p2.role) ?? "")}" placeholder="${esc13(roleInstrumentLabel(D3.extras.lounge, p2.role, scoreTextLang()))}" spellcheck="false" autocomplete="off" title="${_t("\u8D77\u4E2A\u540D\u5B57\uFF08\u8C31\u4E0A\u539F\u6837\u5199\u3001\u4E0D\u7FFB\u8BD1\uFF09\uFF1B\u7A7A\u7740 = \u5199\u8FD9\u4EF6\u4E50\u5668\u7684\u53EB\u6CD5")}" /><button class="btn pm-inst" data-v="swap:${esc13(p2.id)}" title="${_t("\u6362\u4E50\u5668\uFF08\u8FDB\u4E50\u5668\u76EE\u5F55\uFF09")}"><span>${esc13(who ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</span></button><div class="pm-chips">${chips}</div><button class="btn pm-more${isOpen ? " is-on" : ""}" data-v="more:${esc13(p2.id)}" title="${_t("\u8FD9\u4E00\u884C\u7684\u66F4\u591A\uFF1A\u4E0A\u4E0B\u632A\u3001\u52A0\u3001\u4EA4\u7ED9\u3001\u4E50\u5668\u8BBE\u7F6E\u3001\u5220\u9664")}" aria-label="${_t("\u66F4\u591A")}">\u22EF</button></div>`;
+      const main = `<div class="pm-row${(ctx2?.part ?? D3.st.at.part) === p2.id ? " is-here" : ""}${p2.host ? " is-tenant" : ""}${isOpen ? " is-open" : ""}" data-pid="${esc14(p2.id)}"><span class="pm-dot" style="background:${TAB20[cols[k2]]}"></span><input class="pm-name" data-pid="${esc14(p2.id)}" value="${esc14(roleGivenName(D3.extras.lounge, p2.role) ?? "")}" placeholder="${esc14(roleInstrumentLabel(D3.extras.lounge, p2.role, scoreTextLang()))}" spellcheck="false" autocomplete="off" title="${_t("\u8D77\u4E2A\u540D\u5B57\uFF08\u8C31\u4E0A\u539F\u6837\u5199\u3001\u4E0D\u7FFB\u8BD1\uFF09\uFF1B\u7A7A\u7740 = \u5199\u8FD9\u4EF6\u4E50\u5668\u7684\u53EB\u6CD5")}" /><button class="btn pm-inst" data-v="swap:${esc14(p2.id)}" title="${_t("\u6362\u4E50\u5668\uFF08\u8FDB\u4E50\u5668\u76EE\u5F55\uFF09")}"><span>${esc14(who ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</span></button><div class="pm-chips">${chips}</div><button class="btn pm-more${isOpen ? " is-on" : ""}" data-v="more:${esc14(p2.id)}" title="${_t("\u8FD9\u4E00\u884C\u7684\u66F4\u591A\uFF1A\u4E0A\u4E0B\u632A\u3001\u52A0\u3001\u4EA4\u7ED9\u3001\u4E50\u5668\u8BBE\u7F6E\u3001\u5220\u9664")}" aria-label="${_t("\u66F4\u591A")}">\u22EF</button></div>`;
       if (!isOpen) return main;
-      const id2 = esc13(p2.id);
-      const acts = `<button class="btn" data-v="up:${id2}"${k2 === 0 ? " disabled" : ""}>${_t("\u4E0A\u79FB")}</button><button class="btn" data-v="down:${id2}"${k2 === song.parts.length - 1 ? " disabled" : ""}>${_t("\u4E0B\u79FB")}</button>` + (inSec ? `<button class="btn" data-v="addabove:${id2}" title="${_t("\u5728\u8FD9\u4E00\u884C\u4E0A\u9762\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF09")}">${_t("\u5728\u4E0A\u9762\u52A0\u2026")}</button><button class="btn" data-v="addbelow:${id2}" title="${_t("\u5728\u8FD9\u4E00\u884C\u4E0B\u9762\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF09")}">${_t("\u5728\u4E0B\u9762\u52A0\u2026")}</button><button class="btn" data-v="giveof:${id2}" title="${_t("\u53EA\u6709\u8FD9\u4E00\u6BB5\uFF1A\u8FD9\u4E00\u884C\u7684\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u539F\u6837\u4EA4\u7ED9\u53E6\u4E00\u4E2A\u58F0\u90E8\u6F14\uFF08\u7528\u5B83\u7684\u4E50\u5668\u548C\u6DF7\u97F3\u53F0\u90A3\u4E00\u6761\uFF09")}">${_t("\u300C{p}\u300D\u6BB5\u4EA4\u7ED9\u2026", { p: secName })}</button>` : `<button class="btn" data-v="pp:${esc13(sec)}:${id2}">${_t("\u653E\u8FDB\u300C{p}\u300D", { p: secName })}</button>`) + `<button class="btn" data-v="inst:${id2}">${_t("\u4E50\u5668\u8BBE\u7F6E\u2026")}</button>` + (inSec ? `<button class="btn danger" data-v="pp:${esc13(sec)}:${id2}" title="${_t("\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684\u4E00\u8D77\u5220\u6389\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09\u3002\u522B\u7684\u6BB5\u7167\u65E7")}">${_t("\u4ECE\u300C{p}\u300D\u5220\u6389", { p: secName })}</button>` : "") + `<button class="btn danger" data-v="delpart:${id2}" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u58F0\u90E8\u2026")}</button>`;
+      const id2 = esc14(p2.id);
+      const acts = `<button class="btn" data-v="up:${id2}"${k2 === 0 ? " disabled" : ""}>${_t("\u4E0A\u79FB")}</button><button class="btn" data-v="down:${id2}"${k2 === song.parts.length - 1 ? " disabled" : ""}>${_t("\u4E0B\u79FB")}</button>` + (inSec ? `<button class="btn" data-v="addabove:${id2}" title="${_t("\u5728\u8FD9\u4E00\u884C\u4E0A\u9762\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF09")}">${_t("\u5728\u4E0A\u9762\u52A0\u2026")}</button><button class="btn" data-v="addbelow:${id2}" title="${_t("\u5728\u8FD9\u4E00\u884C\u4E0B\u9762\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF09")}">${_t("\u5728\u4E0B\u9762\u52A0\u2026")}</button><button class="btn" data-v="giveof:${id2}" title="${_t("\u53EA\u6709\u8FD9\u4E00\u6BB5\uFF1A\u8FD9\u4E00\u884C\u7684\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u539F\u6837\u4EA4\u7ED9\u53E6\u4E00\u4E2A\u58F0\u90E8\u6F14\uFF08\u7528\u5B83\u7684\u4E50\u5668\u548C\u6DF7\u97F3\u53F0\u90A3\u4E00\u6761\uFF09")}">${_t("\u300C{p}\u300D\u6BB5\u4EA4\u7ED9\u2026", { p: secName })}</button>` : `<button class="btn" data-v="pp:${esc14(sec)}:${id2}">${_t("\u653E\u8FDB\u300C{p}\u300D", { p: secName })}</button>`) + `<button class="btn" data-v="inst:${id2}">${_t("\u4E50\u5668\u8BBE\u7F6E\u2026")}</button>` + (inSec ? `<button class="btn danger" data-v="pp:${esc14(sec)}:${id2}" title="${_t("\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684\u4E00\u8D77\u5220\u6389\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09\u3002\u522B\u7684\u6BB5\u7167\u65E7")}">${_t("\u4ECE\u300C{p}\u300D\u5220\u6389", { p: secName })}</button>` : "") + `<button class="btn danger" data-v="delpart:${id2}" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u58F0\u90E8\u2026")}</button>`;
       return main + `<div class="pm-acts">${acts}</div>`;
     };
     const order = [];
@@ -65046,7 +65143,7 @@ function openPaperMenu(id2) {
   const k2 = D3.st.song.papers.indexOf(paper), n10 = D3.st.song.papers.length;
   const box = document.createElement("div");
   box.className = "offer paper-menu";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc13(paperLabel(id2))}</div><div class="part-sec">${_t("\u8FD9\u4E00\u6BB5")}</div><div class="set-row"><button class="btn" data-v="name">${_t("\u6539\u66F2\u6BB5\u540D\u2026")}</button><button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="${_t("\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB")}">${paper.hidden ? _t("\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09") : _t("\u9690\u85CF\uFF08\u4E0D\u653E\uFF09")}</button>` + (n10 > 1 ? `<button class="btn cand danger" data-v="del">${_t("\u5220\u8FD9\u4E00\u6BB5\u2026")}</button>` : "") + `</div><div class="part-sec">${_t("\u63D2\u5165")}</div><div class="set-row"><button class="btn" data-v="above" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63D2\u5728\u5B83\u524D\u9762\uFF08\u8C31\u5934\u7167\u6284\u524D\u4E00\u6BB5\u7ED3\u5C3E\u7684\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\uFF09")}">${_t("\u5728\u4E0A\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="below" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u5728\u4E0B\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="dup" title="${_t("\u6574\u6BB5\uFF08\u6240\u6709\u58F0\u90E8\u7684\u97F3\u3001\u8BB0\u53F7\u3001\u6B4C\u8BCD\uFF09\u7167\u6284\u4E00\u4EFD\uFF0C\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u590D\u5236\u8FD9\u4E00\u6BB5")}</button></div><div class="part-sec">${_t("\u7F16\u8F91")}</div><div class="set-row"><button class="btn" data-v="up"${k2 === 0 ? " disabled" : ""}>${_t("\u4E0A\u79FB")}</button><button class="btn" data-v="down"${k2 === n10 - 1 ? " disabled" : ""}>${_t("\u4E0B\u79FB")}</button><button class="btn" data-v="transpose" title="${_t("\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u79FB\u8C03\u3001\u8F6C\u8C03\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09")}">${_t("\u79FB\u8C03 / \u8F6C\u8C03\u2026")}</button></div><div class="offer-msg">${_t("\u66F2\u6BB5 = \u4E00\u5F20\u7EB8\uFF1A\u6BCF\u4E00\u6BB5\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u6BB5\u91CC\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\uFF08\u6BCF\u6BB5\u5E95\u4E0B\u300C\uFF0B \u58F0\u90E8\u300D\uFF09\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc14(paperLabel(id2))}</div><div class="part-sec">${_t("\u8FD9\u4E00\u6BB5")}</div><div class="set-row"><button class="btn" data-v="name">${_t("\u6539\u66F2\u6BB5\u540D\u2026")}</button><button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="${_t("\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB")}">${paper.hidden ? _t("\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09") : _t("\u9690\u85CF\uFF08\u4E0D\u653E\uFF09")}</button>` + (n10 > 1 ? `<button class="btn cand danger" data-v="del">${_t("\u5220\u8FD9\u4E00\u6BB5\u2026")}</button>` : "") + `</div><div class="part-sec">${_t("\u63D2\u5165")}</div><div class="set-row"><button class="btn" data-v="above" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63D2\u5728\u5B83\u524D\u9762\uFF08\u8C31\u5934\u7167\u6284\u524D\u4E00\u6BB5\u7ED3\u5C3E\u7684\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\uFF09")}">${_t("\u5728\u4E0A\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="below" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u5728\u4E0B\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="dup" title="${_t("\u6574\u6BB5\uFF08\u6240\u6709\u58F0\u90E8\u7684\u97F3\u3001\u8BB0\u53F7\u3001\u6B4C\u8BCD\uFF09\u7167\u6284\u4E00\u4EFD\uFF0C\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u590D\u5236\u8FD9\u4E00\u6BB5")}</button></div><div class="part-sec">${_t("\u7F16\u8F91")}</div><div class="set-row"><button class="btn" data-v="up"${k2 === 0 ? " disabled" : ""}>${_t("\u4E0A\u79FB")}</button><button class="btn" data-v="down"${k2 === n10 - 1 ? " disabled" : ""}>${_t("\u4E0B\u79FB")}</button><button class="btn" data-v="transpose" title="${_t("\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u79FB\u8C03\u3001\u8F6C\u8C03\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09")}">${_t("\u79FB\u8C03 / \u8F6C\u8C03\u2026")}</button></div><div class="offer-msg">${_t("\u66F2\u6BB5 = \u4E00\u5F20\u7EB8\uFF1A\u6BCF\u4E00\u6BB5\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u6BB5\u91CC\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\uFF08\u6BCF\u6BB5\u5E95\u4E0B\u300C\uFF0B \u58F0\u90E8\u300D\uFF09\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -65111,8 +65208,8 @@ function openAddPartMenu(paperId, at3) {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu add-part-menu";
   box.setAttribute("role", "menu");
-  const item = (v, label, title = "") => `<button class="btn ctx-item" data-v="${esc13(v)}"${title ? ` title="${esc13(title)}"` : ""}>${label}</button>`;
-  box.innerHTML = `<div class="tc-sec">${_t("\u52A0\u8FDB\u300C{p}\u300D", { p: esc13(paperLabel(paperId)) })}</div>` + absent.map((p2) => item(`add:${p2.id}`, esc13(labels2[D3.st.song.parts.indexOf(p2)] ?? p2.id), _t("\u5DF2\u6709\u7684\u58F0\u90E8\uFF0C\u53EA\u52A0\u8FDB\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09"))).join("") + item("new", _t("\uFF0B \u65B0\u58F0\u90E8\u2026"), _t("\u65B0\u7684\u4E00\u4E2A\u58F0\u90E8\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u4E00\u6BB5\uFF1B\u52A0\u5B8C\u6311\u4E50\u5668")) + `<div class="ctx-sep"></div>` + item("parts", _t("\u58F0\u90E8\u7BA1\u7406\u2026"));
+  const item = (v, label, title = "") => `<button class="btn ctx-item" data-v="${esc14(v)}"${title ? ` title="${esc14(title)}"` : ""}>${label}</button>`;
+  box.innerHTML = `<div class="tc-sec">${_t("\u52A0\u8FDB\u300C{p}\u300D", { p: esc14(paperLabel(paperId)) })}</div>` + absent.map((p2) => item(`add:${p2.id}`, esc14(labels2[D3.st.song.parts.indexOf(p2)] ?? p2.id), _t("\u5DF2\u6709\u7684\u58F0\u90E8\uFF0C\u53EA\u52A0\u8FDB\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09"))).join("") + item("new", _t("\uFF0B \u65B0\u58F0\u90E8\u2026"), _t("\u65B0\u7684\u4E00\u4E2A\u58F0\u90E8\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u4E00\u6BB5\uFF1B\u52A0\u5B8C\u6311\u4E50\u5668")) + `<div class="ctx-sep"></div>` + item("parts", _t("\u58F0\u90E8\u7BA1\u7406\u2026"));
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   box.style.left = `${Math.max(m2, Math.min(at3.x - w2 / 2, innerWidth - w2 - m2))}px`;
@@ -65174,16 +65271,16 @@ function openTrackCard(at3) {
     }
     const k2 = D3.st.song.parts.indexOf(me), label = labelsNow()[k2] ?? "";
     const v = pv(me.id), who = activeCandidateName(D3.extras, me.role);
-    const tg2 = (kind, ic2, label2, title) => `<button class="btn tc-tg${v[kind] ? " on" : ""}" data-v="tg:${kind}" aria-pressed="${v[kind] ? "true" : "false"}" title="${esc13(title)}"><svg class="ico" aria-hidden="true"><use href="#${ic2}"/></svg><span>${esc13(label2)}</span></button>`;
+    const tg2 = (kind, ic2, label2, title) => `<button class="btn tc-tg${v[kind] ? " on" : ""}" data-v="tg:${kind}" aria-pressed="${v[kind] ? "true" : "false"}" title="${esc14(title)}"><svg class="ico" aria-hidden="true"><use href="#${ic2}"/></svg><span>${esc14(label2)}</span></button>`;
     const ico = (id2) => `<svg class="ico tc-ico" aria-hidden="true"><use href="#${id2}"/></svg>`;
-    const tile = (val, icon, head, sub, title) => `<button class="tc-inst" data-v="${val}" title="${esc13(title)}">${ico(icon)}<span class="tc-l"><b>${esc13(head)}</b><small>${esc13(sub)}</small></span><span class="tc-go">\u203A</span></button>`;
+    const tile = (val, icon, head, sub, title) => `<button class="tc-inst" data-v="${val}" title="${esc14(title)}">${ico(icon)}<span class="tc-l"><b>${esc14(head)}</b><small>${esc14(sub)}</small></span><span class="tc-go">\u203A</span></button>`;
     box.innerHTML = // 12-2（2026-11-12，user「声部上面的两个钮还是难看…这些钮找个聪明的地方放」）：原来在谱上名字上面的眼睛 / 喇叭搬到这张卡最上面。
     // 12-2 补（同日，user 看了图「如果收进去的话，那么可以变回四个按钮的情况，这样好懂」）：四颗明摆着的开关，开着的亮着；没有长按 / 右键（同一件事只留一种做法）。
     //   两组 = 显示（隐藏、只看它）/ 出声（静音、独奏）：放不下时整组换行（fitTiles）。意思照旧：每根轴一个「关掉」一个「只要」，有「只要」时「关掉」不看。
-    `<div class="tc-head"><b>${esc13(label)}</b><small>${who ? _t("{who} \u5728\u6F14", { who: esc13(who) }) : _t("\u6CA1\u4EBA\u4E0A\u573A")}</small></div><div class="tc-tgs"><div class="tc-grp" role="group" aria-label="${esc13(_t("\u663E\u793A"))}">${tg2("hidden", "visibility-hide", _t("\u9690\u85CF"), _t("\u9690\u85CF\uFF1A\u8FD9\u4E00\u4F4D\u7F29\u6210\u7EC6\u884C\u3001\u4E0D\u5360\u5730\u65B9\uFF0C\u7167\u6837\u51FA\u58F0\uFF1B\u518D\u70B9 = \u663E\u793A"))}${tg2("only", "visibility-only", _t("\u53EA\u770B\u5B83"), _t("\u53EA\u770B\u5B83\uFF1A\u522B\u7684\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u53EA\u770B\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B"))}</div><div class="tc-grp" role="group" aria-label="${esc13(_t("\u51FA\u58F0"))}">${tg2("muted", "volume-mute", _t("\u9759\u97F3##\u5F00\u5173"), _t("\u9759\u97F3\uFF1A\u8FD9\u4E00\u4F4D\u4E0D\u51FA\u58F0\uFF0C\u8C31\u4E0A\u7167\u6837\u753B\uFF1B\u518D\u70B9 = \u51FA\u58F0"))}${tg2("solo", "volume-solo", _t("\u72EC\u594F"), _t("\u72EC\u594F\uFF1A\u53EA\u542C\u5B83\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u72EC\u594F\uFF09\uFF1B\u518D\u70B9 = \u5173\u6389"))}</div></div><div class="btn-row tc-big">${tile("swap", "instrument-swap", _t("\u6362\u4E50\u5668"), _t("\u8FDB\u4E50\u5668\u76EE\u5F55"), _t("\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765"))}${tile("inst", "sliders", _t("\u4E50\u5668\u8BBE\u7F6E"), _t("\u600E\u4E48\u6F14\u3001\u54CD\u5EA6"), _t("\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5"))}</div><div class="tc-row"><button class="btn" data-v="parts" title="${_t("\u6240\u6709\u58F0\u90E8\u6392\u4E00\u5217\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\uFF1B\u8FD9\u4E00\u6BB5\u4E0A\u9762 / \u4E0B\u9762\u52A0\u3001\u4EA4\u7ED9\u522B\u7684\u58F0\u90E8\u3001\u4ECE\u8FD9\u4E00\u6BB5\u5220\u6389")}">${ico("layers-stack")}<span>${_t("\u58F0\u90E8\u7BA1\u7406\u2026")}</span></button><button class="btn danger" data-v="delpart" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${ico("trash-can")}<span>${_t("\u5220\u6389\u58F0\u90E8\u2026")}</span></button></div>` + ((m3) => {
+    `<div class="tc-head"><b>${esc14(label)}</b><small>${who ? _t("{who} \u5728\u6F14", { who: esc14(who) }) : _t("\u6CA1\u4EBA\u4E0A\u573A")}</small></div><div class="tc-tgs"><div class="tc-grp" role="group" aria-label="${esc14(_t("\u663E\u793A"))}">${tg2("hidden", "visibility-hide", _t("\u9690\u85CF"), _t("\u9690\u85CF\uFF1A\u8FD9\u4E00\u4F4D\u7F29\u6210\u7EC6\u884C\u3001\u4E0D\u5360\u5730\u65B9\uFF0C\u7167\u6837\u51FA\u58F0\uFF1B\u518D\u70B9 = \u663E\u793A"))}${tg2("only", "visibility-only", _t("\u53EA\u770B\u5B83"), _t("\u53EA\u770B\u5B83\uFF1A\u522B\u7684\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u53EA\u770B\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B"))}</div><div class="tc-grp" role="group" aria-label="${esc14(_t("\u51FA\u58F0"))}">${tg2("muted", "volume-mute", _t("\u9759\u97F3##\u5F00\u5173"), _t("\u9759\u97F3\uFF1A\u8FD9\u4E00\u4F4D\u4E0D\u51FA\u58F0\uFF0C\u8C31\u4E0A\u7167\u6837\u753B\uFF1B\u518D\u70B9 = \u51FA\u58F0"))}${tg2("solo", "volume-solo", _t("\u72EC\u594F"), _t("\u72EC\u594F\uFF1A\u53EA\u542C\u5B83\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u72EC\u594F\uFF09\uFF1B\u518D\u70B9 = \u5173\u6389"))}</div></div><div class="btn-row tc-big">${tile("swap", "instrument-swap", _t("\u6362\u4E50\u5668"), _t("\u8FDB\u4E50\u5668\u76EE\u5F55"), _t("\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765"))}${tile("inst", "sliders", _t("\u4E50\u5668\u8BBE\u7F6E"), _t("\u600E\u4E48\u6F14\u3001\u54CD\u5EA6"), _t("\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5"))}</div><div class="tc-row"><button class="btn" data-v="parts" title="${_t("\u6240\u6709\u58F0\u90E8\u6392\u4E00\u5217\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\uFF1B\u8FD9\u4E00\u6BB5\u4E0A\u9762 / \u4E0B\u9762\u52A0\u3001\u4EA4\u7ED9\u522B\u7684\u58F0\u90E8\u3001\u4ECE\u8FD9\u4E00\u6BB5\u5220\u6389")}">${ico("layers-stack")}<span>${_t("\u58F0\u90E8\u7BA1\u7406\u2026")}</span></button><button class="btn danger" data-v="delpart" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${ico("trash-can")}<span>${_t("\u5220\u6389\u58F0\u90E8\u2026")}</span></button></div>` + ((m3) => {
       if (!m3 || !m3.size) return "";
       const xs = [...m3.values()], first = xs[0];
-      return `<div class="tc-warn">${first.why === "notSung" ? esc13(lyricWhyText(first, roleLabel(me.role))) : _t("\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}", { n: xs.length, first: esc13(lyricWhyText(first, roleLabel(me.role))), x: xs.some((x3) => x3.why !== first.why) ? _t(" \u7B49") : "" })}</div>`;
+      return `<div class="tc-warn">${first.why === "notSung" ? esc14(lyricWhyText(first, roleLabel(me.role))) : _t("\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}", { n: xs.length, first: esc14(lyricWhyText(first, roleLabel(me.role))), x: xs.some((x3) => x3.why !== first.why) ? _t(" \u7B49") : "" })}</div>`;
     })(lyricMutes().get(me.id));
     if (box.isConnected) fitTiles();
   };
@@ -65262,7 +65359,7 @@ function openScoreMenu(at3, _row) {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
-  const item = (v, label, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc13(title)}"` : ""}>${label}</button>`;
+  const item = (v, label, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc14(title)}"` : ""}>${label}</button>`;
   box.innerHTML = item("play", _t("\u4ECE\u8FD9\u513F\u653E"), _t("\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09")) + `<div class="ctx-sep"></div>` + item("paste", _t("\u7C98\u8D34"), _t("\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09")) + `<div class="ctx-sep"></div>` + item("bar", _t("\u5C0F\u8282\u7EBF |"), _t("\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09")) + item("header", _t("\u8C31\u53F7 \xB7 \u8C03\u53F7 \xB7 \u62CD\u53F7 \xB7 \u901F\u5EA6\u2026"), _t("\u4ECE\u8FD9\u513F\u8D77\u6362\uFF08\u540C\u4E00\u4E2A\u9762\u677F\uFF09")) + item("ottava", _t("\u516B\u5EA6\u7EBF\u2026"), _t("8va / 15ma / 8vb\uFF08\u53EA\u7BA1\u753B\uFF09")) + item("transpose", _t("\u79FB\u8C03 / \u8F6C\u8C03\u2026"), _t("\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09\uFF1B\u53EA\u632A\u4E00\u6BB5 = \u9009\u4E2D\u5B83\uFF0C\u7528\u9009\u533A\u83DC\u5355")) + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
   `<div class="ctx-row ctx-dyn">${["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(D3.st), D3.st.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="${_t("\u529B\u5EA6 {d}\uFF1A\u4ECE\u8FD9\u513F\u524D\u9762\u90A3\u4E2A\u97F3\u8D77", { d: d3 })}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("all", _t("\u5168\u9009"));
   document.body.append(box);
@@ -65374,10 +65471,10 @@ function openTransposeMenu(paperId, at3) {
     return D3.st.song.papers[k2]?.name || _t("\u7B2C {p} \u5F20\u7EB8", { p: k2 + 1 });
   };
   const ids = () => whole ? D3.st.song.papers.map((p2) => p2.id) : [paperId];
-  const chip2 = (v, label, on2 = false, title = "") => `<button class="btn ctx-chip${on2 ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc13(title)}"` : ""}>${label}</button>`;
+  const chip2 = (v, label, on2 = false, title = "") => `<button class="btn ctx-chip${on2 ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc14(title)}"` : ""}>${label}</button>`;
   const html = () => {
     const now2 = scopeKey(D3.st.song, ids());
-    return (many ? `<div class="ctx-row"><span class="ctx-k">${_t("\u8303\u56F4")}</span>${chip2("scope:paper", _t("\u8FD9\u4E00\u6BB5\u300C{paperId}\u300D", { paperId: esc13(nameOf2(paperId)) }), !whole)}${chip2("scope:song", _t("\u6574\u9996"), whole)}</div>` : "") + `<div class="ctx-row"><span class="ctx-k">${_t("\u79FB\u8C03")}</span>${chip2("tr:1", _t("\u2191 \u534A\u97F3"))}${chip2("tr:-1", _t("\u2193 \u534A\u97F3"))}${chip2("tr:2", _t("\u2191 \u5168\u97F3"))}${chip2("tr:-2", _t("\u2193 \u5168\u97F3"))}</div><div class="ctx-row"><span class="ctx-k">${_t("\u516B\u5EA6")}</span>${chip2("tr:12", _t("\u2191 \u516B\u5EA6"))}${chip2("tr:-12", _t("\u2193 \u516B\u5EA6"))}</div><div class="ctx-hint ctx-what">${_t("\u8F6C\u8C03\u5230\uFF08\u73B0\u5728 1={now}\uFF09\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A", { now: KEY_LABEL[now2] ?? now2 })}</div><div class="ctx-grid">${KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now2)).join("")}</div><div class="ctx-hint">${_t("{whole}\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u632A\uFF08\u53D6\u5347\u964D\u53F7\u5C11\u7684\u5199\u6CD5\uFF1B\u632A\u516B\u5EA6\u8C03\u53F7\u4E0D\u53D8\uFF09\u3002\u6B4C\u8BCD\u3001\u8BB0\u53F7\u3001\u8C31\u53F7\u4E0D\u52A8\uFF1B\u9F13 / \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\u7684\u58F0\u90E8\uFF08\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\uFF09\u4E0D\u52A8\uFF1Bpad \u7684\u300C1=\u300D\u4E0D\u8DDF\u3002", { whole: whole ? _t("\u6574\u9996") : _t("\u8FD9\u5F20\u7EB8\u4E0A") })}</div>`;
+    return (many ? `<div class="ctx-row"><span class="ctx-k">${_t("\u8303\u56F4")}</span>${chip2("scope:paper", _t("\u8FD9\u4E00\u6BB5\u300C{paperId}\u300D", { paperId: esc14(nameOf2(paperId)) }), !whole)}${chip2("scope:song", _t("\u6574\u9996"), whole)}</div>` : "") + `<div class="ctx-row"><span class="ctx-k">${_t("\u79FB\u8C03")}</span>${chip2("tr:1", _t("\u2191 \u534A\u97F3"))}${chip2("tr:-1", _t("\u2193 \u534A\u97F3"))}${chip2("tr:2", _t("\u2191 \u5168\u97F3"))}${chip2("tr:-2", _t("\u2193 \u5168\u97F3"))}</div><div class="ctx-row"><span class="ctx-k">${_t("\u516B\u5EA6")}</span>${chip2("tr:12", _t("\u2191 \u516B\u5EA6"))}${chip2("tr:-12", _t("\u2193 \u516B\u5EA6"))}</div><div class="ctx-hint ctx-what">${_t("\u8F6C\u8C03\u5230\uFF08\u73B0\u5728 1={now}\uFF09\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A", { now: KEY_LABEL[now2] ?? now2 })}</div><div class="ctx-grid">${KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now2)).join("")}</div><div class="ctx-hint">${_t("{whole}\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u632A\uFF08\u53D6\u5347\u964D\u53F7\u5C11\u7684\u5199\u6CD5\uFF1B\u632A\u516B\u5EA6\u8C03\u53F7\u4E0D\u53D8\uFF09\u3002\u6B4C\u8BCD\u3001\u8BB0\u53F7\u3001\u8C31\u53F7\u4E0D\u52A8\uFF1B\u9F13 / \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\u7684\u58F0\u90E8\uFF08\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\uFF09\u4E0D\u52A8\uFF1Bpad \u7684\u300C1=\u300D\u4E0D\u8DDF\u3002", { whole: whole ? _t("\u6574\u9996") : _t("\u8FD9\u5F20\u7EB8\u4E0A") })}</div>`;
   };
   ctxMenu("transpose-menu", html(), at3, (v) => {
     if (v.startsWith("scope:")) whole = v === "scope:song";
@@ -65402,7 +65499,7 @@ function openTransposeMenu(paperId, at3) {
 }
 function openRepeatMenu() {
   const r10 = padEl.getBoundingClientRect();
-  const chip2 = (v, label, title) => `<button class="btn ctx-chip" data-v="${v}" title="${esc13(title)}">${esc13(label)}</button>`;
+  const chip2 = (v, label, title) => `<button class="btn ctx-chip" data-v="${v}" title="${esc14(title)}">${esc14(label)}</button>`;
   ctxMenu(
     "repeat-menu",
     `<div class="ctx-hint ctx-what">${_t("\u8C31\u5185\u53CD\u590D\uFF1A\u63D2\u5728\u5149\u6807\u5904\uFF1B\u5149\u6807\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\u3002\u653E\u7684\u65F6\u5019\u6309\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C\u5C55\u5F00\uFF0C\u522B\u7684\u58F0\u90E8\u8DDF\u7740\uFF1B\u4E0D\u8DE8\u7EB8\u3002\u8DF3\u56DE\u6765\uFF08D.C. / D.S.\uFF09\u4E4B\u540E\u53CD\u590D\u4E0D\u518D\u53CD\u590D\u3002")}</div><div class="ctx-row">${chip2("bar:start", "|:", _t("\u53CD\u590D\u5F00\u59CB"))}${chip2("bar:end", ":|", _t("\u53CD\u590D\u7ED3\u675F\uFF1A\u56DE\u5230 |:\uFF08\u6CA1\u6709 = \u8FD9\u5F20\u7EB8\u5F00\u5934\uFF09\u518D\u653E\u4E00\u904D"))}${chip2("bar:both", ":|:", _t("\u524D\u4E00\u6BB5\u53CD\u590D\u7ED3\u675F\u3001\u540E\u4E00\u6BB5\u53CD\u590D\u5F00\u59CB"))}${chip2("bar:end:3", ":| \xD73", _t("\u4E00\u5171\u653E\u4E09\u904D"))}${chip2("bar:end:4", ":| \xD74", _t("\u4E00\u5171\u653E\u56DB\u904D"))}${chip2("bar:plain", "|", _t("\u6539\u56DE\u666E\u901A\u5C0F\u8282\u7EBF"))}</div><div class="ctx-row">${chip2("bs:double", _t("\u2016 \u6BB5\u843D\u7EBF"), _t("\u6BB5\u843D\u7EBF\uFF08\u4E24\u6839\u7EC6\u7EBF\uFF09\uFF1A\u5206\u6BB5\u7684\u8BB0\u53F7\uFF0C\u4E0D\u662F\u4E24\u6839\u5C0F\u8282\u7EBF\uFF1B\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u6BB5\u843D\u7EBF"))}${chip2("bs:final", _t("\u7EC8\u6B62\u7EBF"), _t("\u7EC8\u6B62\u7EBF\uFF08\u7EC6 + \u7C97\uFF09\uFF1A\u66F2\u5B50 / \u8FD9\u4E00\u6BB5\u5230\u8FD9\u513F\u7ED3\u675F"))}</div><div class="ctx-row">${ENDINGS.map((n10) => chip2(`end:${n10.join(",")}`, endingLabel(n10), _t("\u623F\u5B50\uFF1A\u7B2C {p} \u904D\u8D70\u8FD9\u91CC", { p: n10.join("\u3001") }))).join("")}</div><div class="ctx-row">${JUMPS.slice(0, 4).map((w2) => chip2(`nav:${w2}`, NAV_LABEL[w2], NAV_HELP[w2])).join("")}</div><div class="ctx-row">${JUMPS.slice(4).map((w2) => chip2(`nav:${w2}`, NAV_LABEL[w2], NAV_HELP[w2])).join("")}</div>`,
@@ -65446,18 +65543,18 @@ function openPedalMenu() {
     info(_t("\u8E0F\u677F\u8BB0\u53F7\u6302\u5728\u97F3\u4E0A\uFF1A\u8FD9\u5F20\u7EB8\u4E0A\u5149\u6807\u9644\u8FD1\u8FD8\u6CA1\u6709\u97F3"));
     return;
   }
-  const item = (v, label, on2 = false, title = "") => `<button class="btn ctx-item${on2 ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc13(title)}"` : ""}>${esc13(label)}</button>`;
+  const item = (v, label, on2 = false, title = "") => `<button class="btn ctx-item${on2 ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc14(title)}"` : ""}>${esc14(label)}</button>`;
   const rows = KINDS2.map((which) => {
     const here = pedalHere(D3.st, which, pedalStart(which)), why2 = pedalIgnoredWhy(which);
     const acts = here.down ? PEDAL_ACTS[which].filter((a10) => a10 !== "down") : ["down"];
     if (here.down && pedalStart(which)) acts.reverse();
     if (here.mark && !acts.includes(here.mark.act)) acts.unshift(here.mark.act);
     const body2 = D3.st.sel ? item(`${which}:span`, _t("\u628A\u8FD9\u4E00\u6BB5\u8E29\u4F4F\uFF08\u9009\u533A\u5F00\u5934\u8E29\u4E0B\u3001\u7ED3\u5C3E\u62AC\u8D77\uFF09")) : acts.map((a10) => item(`${which}:act:${a10}`, PEDAL_ACT_LABEL[which][a10], here.mark?.act === a10, here.mark?.act === a10 ? _t("\u8FD9\u4E2A\u97F3\u4E0A\u5DF2\u7ECF\u6709\u4E86\uFF1A\u518D\u70B9 = \u53BB\u6389") : "")).join("");
-    return `<div class="ctx-hint ctx-what">${esc13(PEDAL_NAME[which])}\uFF1A${esc13(SIGNS[`pedal:${which}`].says(lang()))}</div>` + (why2 ? `<div class="ctx-hint">${esc13(why2)}</div>` : "") + body2;
+    return `<div class="ctx-hint ctx-what">${esc14(PEDAL_NAME[which])}\uFF1A${esc14(SIGNS[`pedal:${which}`].says(lang()))}</div>` + (why2 ? `<div class="ctx-hint">${esc14(why2)}</div>` : "") + body2;
   });
   ctxMenu(
     "pedal-menu",
-    (D3.st.sel ? "" : `<div class="ctx-hint">${esc13(_t("\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09"))}</div>`) + rows.join(`<div class="ctx-sep"></div>`),
+    (D3.st.sel ? "" : `<div class="ctx-hint">${esc14(_t("\uFF08\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF09"))}</div>`) + rows.join(`<div class="ctx-sep"></div>`),
     { x: r10.left + r10.width / 2, y: r10.top - 4 },
     (v) => {
       const [which, kind, act] = v.split(":");
@@ -65475,7 +65572,7 @@ function openPedalMarkMenu(i10, at3) {
   const idle = t10.act === "down" && before ? pedalStart(t10.which) && !toks.slice(0, i10).some((x2) => x2.kind === "pedal" && x2.which === t10.which) ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u4F4D\u6CA1\u5199\u8E0F\u677F\u8BB0\u53F7\u65F6\u662F\u81EA\u7136\u8870\u51CF\uFF0C\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740") : _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u5C31\u8E29\u7740") : t10.act === "up" && !before ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u8FD9\u91CC\u672C\u6765\u6CA1\u8E29\u7740") : t10.act === "change" && !before ? _t("\u8FD9\u91CC\u4E4B\u524D\u6CA1\u8E29\u7740\uFF0C\u6362\u8E0F\u677F = \u8E29\u4E0B") : "";
   ctxMenu(
     "pedal-menu",
-    `<div class="ctx-hint ctx-what">${esc13(PEDAL_NAME[t10.which])}\uFF1A${esc13(SIGNS[`pedal:${t10.which}`].says(lang()))}</div>` + (idle ? `<div class="ctx-hint">${esc13(idle)}</div>` : "") + (why2 ? `<div class="ctx-hint">${esc13(why2)}</div>` : "") + [...PEDAL_ACTS[t10.which], ...PEDAL_ACTS[t10.which].includes(t10.act) ? [] : [t10.act]].map((a10) => `<button class="btn ctx-item${t10.act === a10 ? " is-on" : ""}" data-v="act:${a10}">${esc13(PEDAL_ACT_LABEL[t10.which][a10])}</button>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u4E2A\u8E0F\u677F\u8BB0\u53F7")}</button>`,
+    `<div class="ctx-hint ctx-what">${esc14(PEDAL_NAME[t10.which])}\uFF1A${esc14(SIGNS[`pedal:${t10.which}`].says(lang()))}</div>` + (idle ? `<div class="ctx-hint">${esc14(idle)}</div>` : "") + (why2 ? `<div class="ctx-hint">${esc14(why2)}</div>` : "") + [...PEDAL_ACTS[t10.which], ...PEDAL_ACTS[t10.which].includes(t10.act) ? [] : [t10.act]].map((a10) => `<button class="btn ctx-item${t10.act === a10 ? " is-on" : ""}" data-v="act:${a10}">${esc14(PEDAL_ACT_LABEL[t10.which][a10])}</button>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u4E2A\u8E0F\u677F\u8BB0\u53F7")}</button>`,
     at3,
     (v) => {
       if (v === "del") {
@@ -65498,7 +65595,7 @@ function openInsertClefMenu(at3) {
 function openInsertOttavaMenu(at3) {
   ctxMenu(
     "ottava-menu",
-    `<div class="ctx-hint ctx-what">${_t("\u516B\u5EA6\u7EBF\uFF1A\u4ECE\u5149\u6807\u5904\u8D77{sel}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002", { sel: D3.st.sel ? _t("\uFF08\u6709\u9009\u533A = \u53EA\u753B\u8FD9\u4E00\u6BB5\uFF09") : _t("\uFF0C\u5230\u4E0B\u4E00\u4E2A\u516B\u5EA6\u7EBF\u8BB0\u53F7\u4E3A\u6B62") })}</div><div class="ctx-row">${[...OTTAVAS, 0].map((v) => `<button class="btn ctx-chip" data-v="o:${v}" title="${esc13(OTT_HELP[v])}">${esc13(OTTAVA_LABEL[v])}</button>`).join("")}</div>`,
+    `<div class="ctx-hint ctx-what">${_t("\u516B\u5EA6\u7EBF\uFF1A\u4ECE\u5149\u6807\u5904\u8D77{sel}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002", { sel: D3.st.sel ? _t("\uFF08\u6709\u9009\u533A = \u53EA\u753B\u8FD9\u4E00\u6BB5\uFF09") : _t("\uFF0C\u5230\u4E0B\u4E00\u4E2A\u516B\u5EA6\u7EBF\u8BB0\u53F7\u4E3A\u6B62") })}</div><div class="ctx-row">${[...OTTAVAS, 0].map((v) => `<button class="btn ctx-chip" data-v="o:${v}" title="${esc14(OTT_HELP[v])}">${esc14(OTTAVA_LABEL[v])}</button>`).join("")}</div>`,
     at3,
     (v) => {
       if (v.startsWith("o:")) update(insertOttava(D3.st, Number(v.slice(2))));
@@ -65534,7 +65631,7 @@ function openClefMenu(hit2, at3) {
     const r10 = hit2.run, lab = OTTAVA_LABEL[r10.shift];
     ctxMenu(
       "ottava-menu",
-      `<div class="ctx-hint ctx-what">${_t("\u81EA\u52A8\u516B\u5EA6\u7EBF\uFF1A\u8FD9\u4E00\u4E32\u97F3\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF0C\u81EA\u52A8\u753B\u4E86 {lab}\u3002\u53EA\u7BA1\u753B\u3001\u4E0D\u5B58\u8FDB\u8C31\uFF0C\u97F3\u9AD8\u4E0D\u53D8\uFF1B\u6539\u4E86\u97F3\u4F1A\u8DDF\u7740\u91CD\u7B97\u3002\u624B\u5199\u7684\u516B\u5EA6\u7EBF\u8BF4\u4E86\u7B97\u3002", { lab: esc13(lab) })}</div><button class="btn ctx-item" data-v="pin">${_t("\u56FA\u5B9A\u6210\u624B\u5199\u7684 {lab}\uFF08\u4E4B\u540E\u81EA\u5DF1\u6539\uFF09", { lab: esc13(lab) })}</button><button class="btn ctx-item" data-v="off">${_t("\u8FD9\u4E00\u6BB5\u4E0D\u8981\u81EA\u52A8\u516B\u5EA6\u7EBF")}</button>`,
+      `<div class="ctx-hint ctx-what">${_t("\u81EA\u52A8\u516B\u5EA6\u7EBF\uFF1A\u8FD9\u4E00\u4E32\u97F3\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF0C\u81EA\u52A8\u753B\u4E86 {lab}\u3002\u53EA\u7BA1\u753B\u3001\u4E0D\u5B58\u8FDB\u8C31\uFF0C\u97F3\u9AD8\u4E0D\u53D8\uFF1B\u6539\u4E86\u97F3\u4F1A\u8DDF\u7740\u91CD\u7B97\u3002\u624B\u5199\u7684\u516B\u5EA6\u7EBF\u8BF4\u4E86\u7B97\u3002", { lab: esc14(lab) })}</div><button class="btn ctx-item" data-v="pin">${_t("\u56FA\u5B9A\u6210\u624B\u5199\u7684 {lab}\uFF08\u4E4B\u540E\u81EA\u5DF1\u6539\uFF09", { lab: esc14(lab) })}</button><button class="btn ctx-item" data-v="off">${_t("\u8FD9\u4E00\u6BB5\u4E0D\u8981\u81EA\u52A8\u516B\u5EA6\u7EBF")}</button>`,
       at3,
       (v) => {
         if (v === "pin") update(insertOttava({ ...setFocus(D3.st, hit2.paper, hit2.part, r10.from), sel: { from: r10.from, to: r10.to + 1 } }, r10.shift));
@@ -65552,7 +65649,7 @@ function openClefMenu(hit2, at3) {
     const off2 = lookNow(hit2.paper, hit2.part)?.staves === 2;
     ctxMenu(
       "ottava-menu",
-      (off2 ? `<div class="ctx-hint">${_t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A{why}", { why: esc13(_t("\u5927\u8C31\u8868\u4E0A\u516B\u5EA6\u7EBF\u73B0\u5728\u4E0D\u8D77\u4F5C\u7528\uFF08\u97F3\u4E0D\u632A\uFF0C\u4E5F\u4E0D\u5370\uFF09")) })}</div>` : "") + `<div class="ctx-hint ctx-what">${_t("\u516B\u5EA6\u7EBF\uFF1A{p}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002", { p: esc13(OTT_HELP[t10.shift]) })}</div><div class="ctx-row">${OTTAVAS.map((v) => `<button class="btn ctx-chip${t10.shift === v ? " is-on" : ""}" data-v="o:${v}" title="${esc13(OTT_HELP[v])}">${esc13(OTTAVA_LABEL[v])}</button>`).join("")}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u6761\u516B\u5EA6\u7EBF")}</button>`,
+      (off2 ? `<div class="ctx-hint">${_t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A{why}", { why: esc14(_t("\u5927\u8C31\u8868\u4E0A\u516B\u5EA6\u7EBF\u73B0\u5728\u4E0D\u8D77\u4F5C\u7528\uFF08\u97F3\u4E0D\u632A\uFF0C\u4E5F\u4E0D\u5370\uFF09")) })}</div>` : "") + `<div class="ctx-hint ctx-what">${_t("\u516B\u5EA6\u7EBF\uFF1A{p}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002", { p: esc14(OTT_HELP[t10.shift]) })}</div><div class="ctx-row">${OTTAVAS.map((v) => `<button class="btn ctx-chip${t10.shift === v ? " is-on" : ""}" data-v="o:${v}" title="${esc14(OTT_HELP[v])}">${esc14(OTTAVA_LABEL[v])}</button>`).join("")}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u6761\u516B\u5EA6\u7EBF")}</button>`,
       at3,
       (v) => {
         if (v === "del") update(setDisplayMark(D3.st, hit2.paper, hit2.part, hit2.index, null));
@@ -65578,10 +65675,10 @@ function openNavMenu(i10, at3) {
   const t10 = tr(D3.st)[i10];
   if (!t10 || t10.kind !== "nav") return;
   const paper = D3.st.song.papers.find((p2) => p2.id === D3.st.at.paper), why2 = paper ? navWhy(D3.st.song, paper, D3.st.at.part, t10) : null;
-  const chips = t10.what === "ending" ? ENDINGS.map((n10) => `<button class="btn ctx-chip${n10.join() === (t10.nums ?? [1]).join() ? " is-on" : ""}" data-v="nums:${n10.join(",")}">${esc13(endingLabel(n10))}</button>`).join("") : JUMPS.map((w2) => `<button class="btn ctx-chip${t10.what === w2 ? " is-on" : ""}" data-v="nav:${w2}" title="${esc13(NAV_HELP[w2])}">${esc13(NAV_LABEL[w2])}</button>`).join("");
+  const chips = t10.what === "ending" ? ENDINGS.map((n10) => `<button class="btn ctx-chip${n10.join() === (t10.nums ?? [1]).join() ? " is-on" : ""}" data-v="nums:${n10.join(",")}">${esc14(endingLabel(n10))}</button>`).join("") : JUMPS.map((w2) => `<button class="btn ctx-chip${t10.what === w2 ? " is-on" : ""}" data-v="nav:${w2}" title="${esc14(NAV_HELP[w2])}">${esc14(NAV_LABEL[w2])}</button>`).join("");
   ctxMenu(
     "nav-menu",
-    (why2 ? `<div class="ctx-hint">${_t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A{why}", { why: esc13(why2) })}</div>` : "") + `<div class="ctx-hint ctx-what">${esc13(t10.what === "ending" ? _t("\u623F\u5B50\uFF1A\u7B2C {nums} \u904D\u8D70\u8FD9\u4E2A\u62EC\u53F7\uFF0C\u522B\u7684\u904D\u8DF3\u8FC7", { nums: (t10.nums ?? [1]).join("\u3001") }) : NAV_HELP[t10.what])}</div><div class="ctx-row">${chips}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u9664")}</button>`,
+    (why2 ? `<div class="ctx-hint">${_t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A{why}", { why: esc14(why2) })}</div>` : "") + `<div class="ctx-hint ctx-what">${esc14(t10.what === "ending" ? _t("\u623F\u5B50\uFF1A\u7B2C {nums} \u904D\u8D70\u8FD9\u4E2A\u62EC\u53F7\uFF0C\u522B\u7684\u904D\u8DF3\u8FC7", { nums: (t10.nums ?? [1]).join("\u3001") }) : NAV_HELP[t10.what])}</div><div class="ctx-row">${chips}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u9664")}</button>`,
     at3,
     (v) => {
       if (v === "del") {
@@ -65643,13 +65740,13 @@ function openGrooveMenu(i10, at3) {
     });
     if (who.length) hints.push(_t("\u8FD9\u5F20\u7EB8\u4E0A\uFF1A{p}\uFF08\u6309\u4E50\u5668\u7C7B\u522B\uFF0C\u9884\u8BBE\u7ED9\u7684\uFF09", { p: who.join(" \xB7 ") }));
   }
-  const chips = GROOVE_STYLES.filter((x2) => x2.id !== "none").map((x2) => `<button class="btn ctx-chip${t10.style === x2.id ? " is-on" : ""}" data-v="style:${x2.id}" title="${esc13(x2.aliases.length ? _t("\u4E5F\u53EB {p}", { p: x2.aliases.join(" / ") }) : grooveName(x2.id))}">${esc13(x2.name.en)}${lang() === "zh" ? `<small> \xB7 ${esc13(x2.name.zh)}</small>` : ""}</button>`).join("") + // 谱上写英文（user「风格名用英文」），按钮带中文
+  const chips = GROOVE_STYLES.filter((x2) => x2.id !== "none").map((x2) => `<button class="btn ctx-chip${t10.style === x2.id ? " is-on" : ""}" data-v="style:${x2.id}" title="${esc14(x2.aliases.length ? _t("\u4E5F\u53EB {p}", { p: x2.aliases.join(" / ") }) : grooveName(x2.id))}">${esc14(x2.name.en)}${lang() === "zh" ? `<small> \xB7 ${esc14(x2.name.zh)}</small>` : ""}</button>`).join("") + // 谱上写英文（user「风格名用英文」），按钮带中文
   `<button class="btn ctx-chip${t10.style === "none" ? " is-on" : ""}" data-v="style:none" title="${_t("\u4ECE\u8FD9\u513F\u8D77\u4E0D\u52A0\u62CD\u5B50\u8F7B\u91CD")}">${_t("\u4E0D\u52A0\u8F7B\u91CD")}</button>`;
   const amounts = [0.5, 1, 1.5, 2].map((a10) => `<button class="btn ctx-chip${Math.abs(amount - a10) < 1e-9 ? " is-on" : ""}" data-v="amount:${a10}" title="${_t("\u5E45\u5EA6\uFF1A\u9884\u8BBE\u7684 {a} \u500D", { a: a10 })}">\xD7${a10}</button>`).join("");
   const box = document.createElement("div");
   box.className = "track-card ctx-menu groove-menu";
   box.setAttribute("role", "menu");
-  box.innerHTML = `<div class="ctx-hint ctx-what">${_t("\u98CE\u683C = \u62CD\u5B50\u8F7B\u91CD\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u843D\u5728\u5C0F\u8282\u91CC\u7684\u54EA\u4E00\u62CD\u8F7B\u4E00\u70B9\u6216\u91CD\u4E00\u70B9\uFF08\u50CF\u9F13\u624B\u7684\u5F8B\u52A8\uFF09\uFF1B\u5199\u4E86\u91CD\u97F3 / \u5F31\u5316\u7684\u97F3\u7167\u5199\u7684\u6765\u3002")}</div><div class="ctx-row ctx-groove">${chips}</div>` + (t10.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") + (grooveHasPhase(style) ? `<div class="ctx-row ctx-phase"><button class="btn ctx-chip${t10.shift ? "" : " is-on"}" data-v="shift:0" title="${_t("\u4E00\u8F6E\u7684\u7B2C\u4E00\u5C0F\u8282\u662F\u4E09\u51FB\u90A3\u8FB9\uFF08\u524D\u53E5\uFF09\uFF0C\u4ECE\u8FD9\u4E2A\u8BB0\u53F7\u90A3\u4E00\u5C0F\u8282\u8D77\u6570")}">3-2</button><button class="btn ctx-chip${t10.shift ? " is-on" : ""}" data-v="shift:1" title="${_t("\u9519\u5F00\u4E00\u5C0F\u8282\uFF1A\u4E24\u5C0F\u8282\u5BF9\u8C03\uFF0C\u7B2C\u4E00\u5C0F\u8282\u662F\u4E24\u51FB\u90A3\u8FB9")}">${_t("2-3\uFF08\u9519\u5F00\u4E00\u5C0F\u8282\uFF09")}</button></div>` : "") + hints.map((h3) => `<div class="ctx-hint">${esc13(h3)}</div>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${_t("\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09")}">${_t("\u5220\u9664")}</button><div class="ctx-hint">${_t("\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A")}</div>`;
+  box.innerHTML = `<div class="ctx-hint ctx-what">${_t("\u98CE\u683C = \u62CD\u5B50\u8F7B\u91CD\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u843D\u5728\u5C0F\u8282\u91CC\u7684\u54EA\u4E00\u62CD\u8F7B\u4E00\u70B9\u6216\u91CD\u4E00\u70B9\uFF08\u50CF\u9F13\u624B\u7684\u5F8B\u52A8\uFF09\uFF1B\u5199\u4E86\u91CD\u97F3 / \u5F31\u5316\u7684\u97F3\u7167\u5199\u7684\u6765\u3002")}</div><div class="ctx-row ctx-groove">${chips}</div>` + (t10.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") + (grooveHasPhase(style) ? `<div class="ctx-row ctx-phase"><button class="btn ctx-chip${t10.shift ? "" : " is-on"}" data-v="shift:0" title="${_t("\u4E00\u8F6E\u7684\u7B2C\u4E00\u5C0F\u8282\u662F\u4E09\u51FB\u90A3\u8FB9\uFF08\u524D\u53E5\uFF09\uFF0C\u4ECE\u8FD9\u4E2A\u8BB0\u53F7\u90A3\u4E00\u5C0F\u8282\u8D77\u6570")}">3-2</button><button class="btn ctx-chip${t10.shift ? " is-on" : ""}" data-v="shift:1" title="${_t("\u9519\u5F00\u4E00\u5C0F\u8282\uFF1A\u4E24\u5C0F\u8282\u5BF9\u8C03\uFF0C\u7B2C\u4E00\u5C0F\u8282\u662F\u4E24\u51FB\u90A3\u8FB9")}">${_t("2-3\uFF08\u9519\u5F00\u4E00\u5C0F\u8282\uFF09")}</button></div>` : "") + hints.map((h3) => `<div class="ctx-hint">${esc14(h3)}</div>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${_t("\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09")}">${_t("\u5220\u9664")}</button><div class="ctx-hint">${_t("\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A")}</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at3.y + 6;
@@ -65720,7 +65817,7 @@ function openMarkMenu(i10, at3) {
   const row2 = t10.kind === "dyn" ? ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${t10.value === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="${_t("\u6539\u6210 {d}", { d: d3 })}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("") : ["cresc", "dim"].map((d3) => `<button class="btn ctx-chip${t10.dir === d3 ? " is-on" : ""}" data-v="dir:${d3}" title="${d3 === "cresc" ? _t("\u6E10\u5F3A") : _t("\u6E10\u5F31")}">${WEDGE_MENU[d3]}</button>`).join("");
   const rampWhy = src === "none" ? _t("\u8FD9\u5F20\u7EB8\u91CC\u524D\u9762\u6CA1\u6709\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u6709\u5730\u65B9\u6E10\u8FC7\u6765") : src === "hairpin" ? _t("\u4E2D\u95F4\u6709\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\uFF0C\u6309\u624B\u5199\u7684\u8D70") : "";
   const offWhy = t10.kind === "dyn" && dynOverridden(toks).has(i10) ? `<div class="ctx-hint">${_t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A {value} \u7BA1\u4E0D\u5230", { value: t10.value })}</div>` : "";
-  const rampRow = t10.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t10.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t10.ramp ? " disabled" : ""} title="${_t("\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8")}">${_t("{ramp}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09", { ramp: t10.ramp ? "\u2713 " : "" })}</button>` + (rampWhy ? `<div class="ctx-hint">${t10.ramp ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF1A") : ""}${esc13(rampWhy)}</div>` : "");
+  const rampRow = t10.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t10.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t10.ramp ? " disabled" : ""} title="${_t("\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8")}">${_t("{ramp}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09", { ramp: t10.ramp ? "\u2713 " : "" })}</button>` + (rampWhy ? `<div class="ctx-hint">${t10.ramp ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF1A") : ""}${esc14(rampWhy)}</div>` : "");
   const what = t10.kind === "dyn" ? SIGNS[`dyn:${t10.value}`].says(lang()) + (t10.ramp ? (lang() === "zh" ? "\uFF1B" : "; ") + SIGNS.ramp.says(lang()) : "") : SIGNS[`hairpin:${t10.dir}`].says(lang());
   const toRow = t10.kind !== "hairpin" ? "" : (() => {
     let j2 = i10 + 1;
@@ -65737,10 +65834,10 @@ function openMarkMenu(i10, at3) {
     const LV = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"], ci2 = LV.indexOf(cur);
     const against = (d3) => t10.dir === "cresc" ? LV.indexOf(d3) <= ci2 : LV.indexOf(d3) >= ci2;
     const blocked = !!endDyn && !markAtEnd(toks, j2);
-    const chips = LV.map((d3) => `<button class="btn ctx-chip${endDyn?.value === d3 ? " is-on" : ""}${against(d3) ? " is-against" : ""}" data-v="to:${d3}" title="${against(d3) ? esc13(_t("\u548C\u65B9\u5411\u53CD\u7740\uFF1A\u7167\u65B9\u5411\u5148\u8D70\u4E00\u6863\uFF0C\u5230\u8FD9\u513F\u7A81\u53D8\u6210 {d}\uFF08\u8C31\u4E0A\u7070\u5B57\u8BF4\u660E\uFF09", { d: d3 })) : esc13(_t("\u7EC8\u70B9 = {d}", { d: d3 }))}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("");
-    return `<div class="ctx-sep"></div><div class="ctx-k ctx-to">${_t("\u53D8\u5230")}</div><div class="ctx-row ctx-dyn"><button class="btn ctx-chip${endDyn ? "" : " is-on"}" data-v="to:step"${blocked ? " disabled" : ""} title="${esc13(_t("\u6CA1\u5199\u7EC8\u70B9\uFF1A\u7167\u65B9\u5411\u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\uFF09"))}">${_t("\u8D70\u4E00\u6863")}</button>${chips}</div>` + (blocked ? `<div class="ctx-hint">${_t("\u7EC8\u70B9\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u7BA1\u7740\u540E\u9762\u7684\u97F3\uFF1A\u8FD9\u91CC\u4E0D\u53BB\u6389\u5B83\uFF08\u8981\u6539\u5B83\u5C31\u70B9\u5B83\uFF09")}</div>` : "");
+    const chips = LV.map((d3) => `<button class="btn ctx-chip${endDyn?.value === d3 ? " is-on" : ""}${against(d3) ? " is-against" : ""}" data-v="to:${d3}" title="${against(d3) ? esc14(_t("\u548C\u65B9\u5411\u53CD\u7740\uFF1A\u7167\u65B9\u5411\u5148\u8D70\u4E00\u6863\uFF0C\u5230\u8FD9\u513F\u7A81\u53D8\u6210 {d}\uFF08\u8C31\u4E0A\u7070\u5B57\u8BF4\u660E\uFF09", { d: d3 })) : esc14(_t("\u7EC8\u70B9 = {d}", { d: d3 }))}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("");
+    return `<div class="ctx-sep"></div><div class="ctx-k ctx-to">${_t("\u53D8\u5230")}</div><div class="ctx-row ctx-dyn"><button class="btn ctx-chip${endDyn ? "" : " is-on"}" data-v="to:step"${blocked ? " disabled" : ""} title="${esc14(_t("\u6CA1\u5199\u7EC8\u70B9\uFF1A\u7167\u65B9\u5411\u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\uFF09"))}">${_t("\u8D70\u4E00\u6863")}</button>${chips}</div>` + (blocked ? `<div class="ctx-hint">${_t("\u7EC8\u70B9\u90A3\u4E2A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u7BA1\u7740\u540E\u9762\u7684\u97F3\uFF1A\u8FD9\u91CC\u4E0D\u53BB\u6389\u5B83\uFF08\u8981\u6539\u5B83\u5C31\u70B9\u5B83\uFF09")}</div>` : "");
   })();
-  box.innerHTML = `<div class="ctx-hint ctx-what">${esc13(what)}</div>${offWhy}<div class="ctx-row ctx-dyn">${row2}</div>${rampRow}${toRow}<div class="ctx-sep"></div>` + // 挪到这一段结尾（7-N）：「到这里为止变到这个力度」——一直滚 / 渐强到这张纸结束、后面没有音可以挂的时候用；已经在结尾 = 不给
+  box.innerHTML = `<div class="ctx-hint ctx-what">${esc14(what)}</div>${offWhy}<div class="ctx-row ctx-dyn">${row2}</div>${rampRow}${toRow}<div class="ctx-sep"></div>` + // 挪到这一段结尾（7-N）：「到这里为止变到这个力度」——一直滚 / 渐强到这张纸结束、后面没有音可以挂的时候用；已经在结尾 = 不给
   (t10.kind === "dyn" && !markAtEnd(toks, i10) ? `<button class="btn ctx-item" data-v="toEnd" title="${_t("\u632A\u5230\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\uFF1A\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u4E00\u76F4\u8D70\u5230\u8FD9\u4E00\u6BB5\u7ED3\u675F")}">${_t("\u632A\u5230\u8FD9\u4E00\u6BB5\u7ED3\u5C3E")}</button>` : "") + `<button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? _t("\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09") : _t("\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31")}">${_t("\u5220\u9664")}</button><div class="ctx-hint">${t10.kind === "dyn" ? _t("\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF09") : _t("\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A")}</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -65802,8 +65899,8 @@ function openSelMenu(at3) {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu sel-menu";
   box.setAttribute("role", "menu");
-  const item = (v, label, title = "", cls = "") => `<button class="btn ctx-item ${cls}" data-v="${v}"${title ? ` title="${esc13(title)}"` : ""}>${label}</button>`;
-  const chip2 = (v, label, title = "") => `<button class="btn ctx-chip" data-v="${v}"${title ? ` title="${esc13(title)}"` : ""}>${label}</button>`;
+  const item = (v, label, title = "", cls = "") => `<button class="btn ctx-item ${cls}" data-v="${v}"${title ? ` title="${esc14(title)}"` : ""}>${label}</button>`;
+  const chip2 = (v, label, title = "") => `<button class="btn ctx-chip" data-v="${v}"${title ? ` title="${esc14(title)}"` : ""}>${label}</button>`;
   const draw = (page) => {
     if (page === "keys") {
       const now2 = keyAt(tr(D3.st), D3.st.sel?.from ?? 0);
@@ -66096,7 +66193,7 @@ function confirmDiscard(what) {
     ui2.close();
     const box = document.createElement("div");
     box.className = "offer";
-    box.innerHTML = `<div class="offer-card"><div class="offer-title">${_t("\u300C{p}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58", { p: esc13(docName()) })}</div><div class="offer-msg">${_t("{what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002", { what })}</div><div class="offer-btns"><button class="btn" data-v="save">${_t("\u5148\u5B58")}</button><button class="btn" data-v="go">${_t("\u4E22\u6389\uFF0C\u7EE7\u7EED")}</button><button class="btn primary" data-v="no">${_t("\u7B97\u4E86")}</button></div></div>`;
+    box.innerHTML = `<div class="offer-card"><div class="offer-title">${_t("\u300C{p}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58", { p: esc14(docName()) })}</div><div class="offer-msg">${_t("{what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002", { what })}</div><div class="offer-btns"><button class="btn" data-v="save">${_t("\u5148\u5B58")}</button><button class="btn" data-v="go">${_t("\u4E22\u6389\uFF0C\u7EE7\u7EED")}</button><button class="btn primary" data-v="no">${_t("\u7B97\u4E86")}</button></div></div>`;
     document.body.append(box);
     const dismiss = () => close(false), close = (ok2) => {
       box.remove();
@@ -66242,7 +66339,7 @@ async function exportCopyMxl(packed = false) {
       return;
     }
     const file = mxlFile(name, extras, song);
-    offerFile(file, packed ? _t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09") : _t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C"), _t("{name} \xB7 {size}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002{credits}", { name: esc13(file.name), size: sizeText2(file.size), credits }));
+    offerFile(file, packed ? _t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09") : _t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C"), _t("{name} \xB7 {size}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002{credits}", { name: esc14(file.name), size: sizeText2(file.size), credits }));
   } catch (e10) {
     showError(_t("\u6CA1\u5B58\u4E0A\uFF1A{Error}", { Error: e10.message }));
   }
@@ -66296,7 +66393,7 @@ async function unpackAll() {
 }
 function creditsBlock(lines, title) {
   if (!lines.length) return "";
-  return `<details class="credits-box"><summary class="part-sec">${esc13(title)}</summary><pre class="credits-pre">${esc13(creditsText(lines))}</pre><button class="btn" data-copy-credits title="${_t("\u590D\u5236\u4E0B\u6765\u8D34\u8FDB\u4F5C\u54C1\u8BF4\u660E")}">${_t("\u590D\u5236\u7F72\u540D")}</button></details>`;
+  return `<details class="credits-box"><summary class="part-sec">${esc14(title)}</summary><pre class="credits-pre">${esc14(creditsText(lines))}</pre><button class="btn" data-copy-credits title="${_t("\u590D\u5236\u4E0B\u6765\u8D34\u8FDB\u4F5C\u54C1\u8BF4\u660E")}">${_t("\u590D\u5236\u7F72\u540D")}</button></details>`;
 }
 document.addEventListener("click", (e10) => {
   const b3 = e10.target.closest("[data-copy-credits]");
@@ -66339,9 +66436,9 @@ function openPdfPanel() {
   let paperPick = viewScope === "segment" && D3.st.song.papers.length > 1 ? "one" : "all", partPick = "view";
   const someHidden = D3.st.song.parts.some((p2) => !isShown(p2.id)), shownNames = labelsNow().filter((_2, k2) => isShown(D3.st.song.parts[k2].id));
   const draw = () => {
-    const pick3 = (v, on2, label, note3) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}" title="${esc13(note3)}">${esc13(label)}</button>`;
+    const pick3 = (v, on2, label, note3) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}" title="${esc14(note3)}">${esc14(label)}</button>`;
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u4E50\u8C31\uFF08PDF\uFF09")}</div>` + (D3.st.song.papers.length > 1 ? `<div class="part-sec">${_t("\u5370\u54EA\u4E9B")}</div><div class="set-row">${pick3("paper:all", paperPick === "all", _t("\u6574\u9996"), _t("\u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u63A5\u7740\u6392\uFF08= \u5206\u9875 + \u300C\u5168\u90E8\u300D\uFF09"))}${pick3("paper:one", paperPick === "one", _t("\u8FD9\u4E00\u6BB5\u300C{p}\u300D", { p: curPaper.name || _t("\u8FD9\u5F20\u7EB8") }), _t("\u53EA\u5370\u5149\u6807\u6240\u5728\u7684\u8FD9\u5F20\u7EB8\uFF08= \u5206\u9875 + \u300C\u672C\u6BB5\u300D\uFF09"))}</div>` : "") + (someHidden ? `<div class="part-sec">${_t("\u58F0\u90E8")}</div><div class="set-row">${pick3("parts:view", partPick === "view", _t("\u7167\u5206\u9875\u9884\u89C8"), _t("\u9690\u85CF\u7684\u58F0\u90E8\u4E0D\u5370\uFF0C\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF08\u548C\u9884\u89C8\u4E00\u6837\uFF09"))}${pick3("parts:shown", partPick === "shown", _t("\u53EA\u6392\u770B\u5F97\u89C1\u7684\uFF1A{p}", { p: shownNames.join("\u3001") }), _t("\u9690\u85CF\u7684\u58F0\u90E8\u6574\u4E2A\u62FF\u6389\u3001\u91CD\u65B0\u6392\uFF0C\u4E0D\u7559\u7A7A\u4F4D\uFF08\u50CF\u62BD\u51FA\u6765\u7684\u5206\u8C31\uFF1B\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\uFF09"))}</div>` : "") + // 用哪种语言印（12-4：「导出乐谱的面板写明会用哪种语言印，旁边能直接改」；改的是歌里「谱上的字」那一项，和页面设置「版面」页同一个）
-    `<div class="set-row pdf-lang"><span>${_t("\u8C31\u4E0A\u7684\u5B57\u7528")}</span>${dropdownHtml(textLangItems().map(([value, label]) => ({ value, label })), lookOf(D3.st.song, lookCtx()).textLang, { cls: "hp-sel set-sel", attrs: `data-pd="tl" title="${esc13(TEXT_LANG_HELP())}"` })}</div><div class="offer-msg">${_t("\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u601D\u6E90\u9ED1\u4F53\uFF0C\u7EA6 {p} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u9875\u9762\u8BBE\u7F6E\u91CC\u6539\uFF09\u3002", { p: PDF_FONT_MB })}</div><div class="offer-msg">${partPick === "shown" ? _t("\u53EA\u6392\u770B\u5F97\u89C1\u7684\u58F0\u90E8\uFF08{p}\uFF09\uFF1A\u91CD\u65B0\u6392\u3001\u4E0D\u7559\u7A7A\u4F4D\u2014\u2014\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\u3002", { p: esc13(shownNames.join("\u3001")) }) : _t("\u5370\u51FA\u6765\u7684 = \u9875\u9762\u8BBE\u7F6E\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C{p}\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684{p2}\u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002", { p: paperPick === "one" ? _t("\u672C\u6BB5") : _t("\u5168\u90E8"), p2: paperPick === "one" ? "" : _t("\u7EB8 / ") })}</div>` + ((lk2) => lk2.viewInC || lk2.chordTags || !lk2.expressions ? `<div class="offer-msg">${_t("\u7167\u8FD9\u9996\u6B4C\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u9875\u7684\u8BBE\u7F6E\u5370\uFF1A{w}\uFF08\u5728\u90A3\u513F\u6539\uFF09\u3002", { w: [lk2.viewInC ? _t("\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09") : "", lk2.chordTags ? _t("\u548C\u5F26\u7EA7\u6570") : "", !lk2.expressions ? _t("\u4E0D\u5370\u6F14\u594F\u6CD5\u548C\u8868\u60C5") : ""].filter(Boolean).join(_t("\u3001")) })}</div>` : "")(lookOf(D3.st.song, lookCtx())) + // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
+    `<div class="set-row pdf-lang"><span>${_t("\u8C31\u4E0A\u7684\u5B57\u7528")}</span>${dropdownHtml(textLangItems().map(([value, label]) => ({ value, label })), lookOf(D3.st.song, lookCtx()).textLang, { cls: "hp-sel set-sel", attrs: `data-pd="tl" title="${esc14(TEXT_LANG_HELP())}"` })}</div><div class="offer-msg">${_t("\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u601D\u6E90\u9ED1\u4F53\uFF0C\u7EA6 {p} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u9875\u9762\u8BBE\u7F6E\u91CC\u6539\uFF09\u3002", { p: PDF_FONT_MB })}</div><div class="offer-msg">${partPick === "shown" ? _t("\u53EA\u6392\u770B\u5F97\u89C1\u7684\u58F0\u90E8\uFF08{p}\uFF09\uFF1A\u91CD\u65B0\u6392\u3001\u4E0D\u7559\u7A7A\u4F4D\u2014\u2014\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\u3002", { p: esc14(shownNames.join("\u3001")) }) : _t("\u5370\u51FA\u6765\u7684 = \u9875\u9762\u8BBE\u7F6E\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C{p}\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684{p2}\u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002", { p: paperPick === "one" ? _t("\u672C\u6BB5") : _t("\u5168\u90E8"), p2: paperPick === "one" ? "" : _t("\u7EB8 / ") })}</div>` + ((lk2) => lk2.viewInC || lk2.chordTags || !lk2.expressions ? `<div class="offer-msg">${_t("\u7167\u8FD9\u9996\u6B4C\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u9875\u7684\u8BBE\u7F6E\u5370\uFF1A{w}\uFF08\u5728\u90A3\u513F\u6539\uFF09\u3002", { w: [lk2.viewInC ? _t("\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09") : "", lk2.chordTags ? _t("\u548C\u5F26\u7EA7\u6570") : "", !lk2.expressions ? _t("\u4E0D\u5370\u6F14\u594F\u6CD5\u548C\u8868\u60C5") : ""].filter(Boolean).join(_t("\u3001")) })}</div>` : "")(lookOf(D3.st.song, lookCtx())) + // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
     `<div class="offer-btns"><button class="btn" data-v="close">${_t("\u7B97\u4E86")}</button><button class="btn primary" data-v="go">${_t("\u751F\u6210 PDF")}</button></div></div>`;
     mountDropdowns(box);
   };
@@ -66405,8 +66502,8 @@ async function exportPdf(pick3 = {}) {
   try {
     const { file, r: r10 } = await makePdf(pick3);
     progress("");
-    const miss = r10.stats.missing.length ? `<div class="offer-msg">${_t("\u8FD9\u4E9B\u5B57\u8FD9\u6B3E\u5B57\u4F53\u91CC\u6CA1\u6709\uFF0CPDF \u91CC\u662F\u7A7A\u767D\uFF1A{p}{p2}", { p: esc13(r10.stats.missing.slice(0, 20).join(" ")), p2: r10.stats.missing.length > 20 ? " \u2026" : "" })}</div>` : "";
-    const missM = r10.stats.missingMusic.length ? `<div class="offer-msg">${_t("\u6709 {n} \u79CD\u8BB0\u8C31\u7B26\u53F7\u6CA1\u753B\u51FA\u6765\uFF08{p}\uFF09\u2014\u2014\u8FD9\u662F app \u7684\u6BDB\u75C5\uFF0C\u8BF7\u544A\u8BC9\u6211\u4EEC\u3002", { n: r10.stats.missingMusic.length, p: esc13(r10.stats.missingMusic.join(" ")) })}</div>` : "";
+    const miss = r10.stats.missing.length ? `<div class="offer-msg">${_t("\u8FD9\u4E9B\u5B57\u8FD9\u6B3E\u5B57\u4F53\u91CC\u6CA1\u6709\uFF0CPDF \u91CC\u662F\u7A7A\u767D\uFF1A{p}{p2}", { p: esc14(r10.stats.missing.slice(0, 20).join(" ")), p2: r10.stats.missing.length > 20 ? " \u2026" : "" })}</div>` : "";
+    const missM = r10.stats.missingMusic.length ? `<div class="offer-msg">${_t("\u6709 {n} \u79CD\u8BB0\u8C31\u7B26\u53F7\u6CA1\u753B\u51FA\u6765\uFF08{p}\uFF09\u2014\u2014\u8FD9\u662F app \u7684\u6BDB\u75C5\uFF0C\u8BF7\u544A\u8BC9\u6211\u4EEC\u3002", { n: r10.stats.missingMusic.length, p: esc14(r10.stats.missingMusic.join(" ")) })}</div>` : "";
     offerFile(file, _t("\u4E50\u8C31 PDF \u597D\u4E86"), _t("{pages} \u9875 \xB7 {p} \xB7 {e6}{miss}{missM}", { pages: r10.pages, p: _t("\u9ED1\u4F53"), e6: file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`, miss, missM }));
   } catch (e10) {
     progress("");
@@ -66430,7 +66527,7 @@ function creditsOf(roles, rights = D3.st.song.rights) {
 }
 var performersBlock = (roles, title = _t("\u7F72\u540D")) => {
   const { lines, hints } = creditsOf(roles);
-  return creditsBlock(lines, title) + hints.map((h2) => `<div class="offer-msg credits-hint">${esc13(h2)}</div>`).join("");
+  return creditsBlock(lines, title) + hints.map((h2) => `<div class="offer-msg credits-hint">${esc14(h2)}</div>`).join("");
 };
 function fileWhere() {
   const h2 = H2.home;
@@ -66463,9 +66560,9 @@ function openMainMenu() {
   box.className = "track-card ctx-menu main-menu";
   box.setAttribute("role", "menu");
   const inStore = H2.home.kind === "gallery";
-  const item = (v, icon, label, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc13(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
-  box.innerHTML = `<div class="ctx-head"><b>${esc13(H2.fileName())}</b><span>${esc13(fileWhere())}</span></div>` + item("new", "new", _t("\u65B0\u5EFA")) + item("open", "folder-open", _t("\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026"), _t("\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09")) + item("export", "export", _t("\u5BFC\u51FA\u2026"), _t("mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09")) + (inStore ? item("renderHere", "play", _t("\u6E32\u67D3\u5230\u7F13\u5B58"), _t("\u6E32\u4E00\u904D\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF08\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u4E0D\u5BFC\u51FA\u6587\u4EF6")) : "") + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", _t("\u5B58\u8FDB\u6B4C\u5E93"), cloudAvailable() ? _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09")) : "") + `<div class="ctx-sep"></div>` + (lock.canLockNow() ? item("lockEdit", "lock", _t("\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09"), _t("\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00")) : "") + // 修改锁：解着才有；解锁在谱上面那一条
-  item("ref", "picture-in-picture", refHost.isOpen() ? _t("\u6536\u8D77\u53C2\u8003\u7A97") : _t("\u53C2\u8003\u7A97{p}", { p: refHost.count() ? _t("\uFF08{p} \u5F20\uFF09", { p: refHost.count() }) : "" }), _t("\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58")) + `<div class="ctx-sep"></div><div class="ctx-ver">${esc13(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
+  const item = (v, icon, label, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc14(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
+  box.innerHTML = `<div class="ctx-head"><b>${esc14(H2.fileName())}</b><span>${esc14(fileWhere())}</span></div>` + item("new", "new", _t("\u65B0\u5EFA")) + item("open", "folder-open", _t("\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026"), _t("\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09")) + item("export", "export", _t("\u5BFC\u51FA\u2026"), _t("mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09")) + (inStore ? item("renderHere", "play", _t("\u6E32\u67D3\u5230\u7F13\u5B58"), _t("\u6E32\u4E00\u904D\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF08\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u4E0D\u5BFC\u51FA\u6587\u4EF6")) : "") + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", _t("\u5B58\u8FDB\u6B4C\u5E93"), cloudAvailable() ? _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09")) : "") + `<div class="ctx-sep"></div>` + (lock.canLockNow() ? item("lockEdit", "lock", _t("\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09"), _t("\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00")) : "") + // 修改锁：解着才有；解锁在谱上面那一条
+  item("ref", "picture-in-picture", refHost.isOpen() ? _t("\u6536\u8D77\u53C2\u8003\u7A97") : _t("\u53C2\u8003\u7A97{p}", { p: refHost.count() ? _t("\uFF08{p} \u5F20\uFF09", { p: refHost.count() }) : "" }), _t("\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58")) + `<div class="ctx-sep"></div><div class="ctx-ver">${esc14(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
   item("settings", "settings", _t("\u8BBE\u7F6E\u2026"), _t("\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"));
   document.body.append(box);
   const r10 = $2("setBtn").getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -66534,7 +66631,7 @@ function renameFile() {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card"><div class="offer-title">${_t("\u6539\u6587\u4EF6\u540D")}</div><label class="set-field">${_t("\u6587\u4EF6\u540D")}<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc13(docName())}" /></label><div class="offer-msg">${_t("\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002\u4E0B\u6B21\u5B58\u7684\u65F6\u5019\u7528\u8FD9\u4E2A\u540D\u5B57\u3002")}</div><div class="offer-btns"><button class="btn" data-v="cancel">${_t("\u7B97\u4E86")}</button><button class="btn primary" data-v="ok">${_t("\u6539")}</button></div></div>`;
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">${_t("\u6539\u6587\u4EF6\u540D")}</div><label class="set-field">${_t("\u6587\u4EF6\u540D")}<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc14(docName())}" /></label><div class="offer-msg">${_t("\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002\u4E0B\u6B21\u5B58\u7684\u65F6\u5019\u7528\u8FD9\u4E2A\u540D\u5B57\u3002")}</div><div class="offer-btns"><button class="btn" data-v="cancel">${_t("\u7B97\u4E86")}</button><button class="btn primary" data-v="ok">${_t("\u6539")}</button></div></div>`;
   document.body.append(box);
   const inp = box.querySelector("#fnIn");
   const close = () => {
@@ -66575,7 +66672,7 @@ function askSheet(title, msg, okLabel, danger = false) {
     ui2.close();
     const box = document.createElement("div");
     box.className = "offer";
-    box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc13(title)}</div><div class="offer-msg">${esc13(msg)}</div><div class="offer-btns"><button class="btn${danger ? " danger" : ""}" data-v="ok">${esc13(okLabel)}</button><button class="btn primary" data-v="no">${_t("\u7B97\u4E86")}</button></div></div>`;
+    box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc14(title)}</div><div class="offer-msg">${esc14(msg)}</div><div class="offer-btns"><button class="btn${danger ? " danger" : ""}" data-v="ok">${esc14(okLabel)}</button><button class="btn primary" data-v="no">${_t("\u7B97\u4E86")}</button></div></div>`;
     document.body.append(box);
     const dismiss = () => close(false), close = (ok2) => {
       box.remove();
@@ -67813,7 +67910,7 @@ function finderKey(e10) {
 }
 window.addEventListener("keydown", (e10) => {
   keyTs = e10.timeStamp;
-  const t10 = e10.target, mod = e10.ctrlKey || e10.metaKey, esc14 = e10.key === "Escape";
+  const t10 = e10.target, mod = e10.ctrlKey || e10.metaKey, esc15 = e10.key === "Escape";
   const galleryOpen = !!gallery?.isOpen(), ownField = !!t10?.closest?.(".lyric-input, .mark-ed"), typing = typingIn(t10);
   const fileAct = !galleryOpen && mod && !e10.altKey && /^[so]$/i.test(e10.key) ? route(e10, whereNow(), "write") : null;
   const owner = keyOwner({
@@ -67823,7 +67920,7 @@ window.addEventListener("keydown", (e10) => {
     fileCombo: fileAct?.k === "file",
     composing: e10.isComposing || e10.keyCode === 229,
     listOpen: keyForList(e10),
-    escape: esc14,
+    escape: esc15,
     mod,
     typing,
     ownField,
@@ -67839,7 +67936,7 @@ window.addEventListener("keydown", (e10) => {
   switch (owner) {
     case "galleryFinder":
     case "finder":
-      if (esc14) {
+      if (esc15) {
         e10.preventDefault();
         closeFinder();
       } else finderKey(e10);
@@ -67859,7 +67956,7 @@ window.addEventListener("keydown", (e10) => {
       return;
     case "inst": {
       const inField = t10?.closest("input, textarea, .dd");
-      if (esc14) {
+      if (esc15) {
         e10.preventDefault();
         closeInstPage();
       } else if (!inField && mod && e10.key.toLowerCase() === "z") {
@@ -67878,7 +67975,7 @@ window.addEventListener("keydown", (e10) => {
       return;
     // 混音台 = 听：谱上没别的可退 = Esc 回到写
     case "studio":
-      if (esc14) {
+      if (esc15) {
         e10.preventDefault();
         setMode(lastEditMode);
       } else if (e10.key === " " && !typing) {
@@ -67890,7 +67987,7 @@ window.addEventListener("keydown", (e10) => {
       if (e10.key === " ") {
         e10.preventDefault();
         playPause(e10.timeStamp);
-      } else if (esc14) {
+      } else if (esc15) {
         e10.preventDefault();
         setListen(false);
       } else if (mod && e10.key.toLowerCase() === "s") {
@@ -68002,7 +68099,7 @@ function openMidiMenu() {
   const s10 = midi.status, box = document.createElement("div");
   box.className = "track-card ctx-menu midi-menu";
   box.setAttribute("role", "menu");
-  const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc13(title)}">${label}</button>`;
+  const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc14(title)}">${label}</button>`;
   box.innerHTML = `<div class="ctx-msg">${midiStatusHtml(s10)}</div>` + (s10.k === "off" || s10.k === "denied" ? item("connect", _t("\u8FDE\u63A5"), _t("\u95EE\u6D4F\u89C8\u5668\u8981 MIDI \u7684\u8BB8\u53EF\uFF08\u6D4F\u89C8\u5668\u4F1A\u5F39\u5B83\u81EA\u5DF1\u7684\u6846\uFF09\uFF1B\u7ED9\u8FC7\u4E00\u6B21\u4EE5\u540E\u5F00 app \u81EA\u5DF1\u63A5\u4E0A")) : "") + (s10.k === "off" ? item("hide", _t("\u6211\u6CA1\u6709 MIDI \u952E\u76D8"), _t("\u9876\u680F\u4E0D\u518D\u9732\u300CMIDI\u300D\uFF1B\u4EE5\u540E\u8981\u8FDE\uFF1A\u83DC\u5355 \u2192 \u8BBE\u7F6E \u2192 MIDI \u952E\u76D8")) : "");
   document.body.append(box);
   const b3 = midiBtn.getBoundingClientRect(), w2 = box.offsetWidth, m2 = 8;
@@ -68039,9 +68136,9 @@ syncMidiChip(midi.status);
 function midiStatusHtml(s10) {
   if (s10.k === "unsupported") return _t("\u8FD9\u4E2A\u6D4F\u89C8\u5668\u8BFB\u4E0D\u4E86 MIDI \u952E\u76D8\uFF08iPad / iPhone \u4E0A\u7684\u6D4F\u89C8\u5668\u90FD\u6CA1\u6709 Web MIDI\uFF09\uFF1B\u7535\u8111\u4E0A\u7684 Chrome / Edge / Firefox \u53EF\u4EE5");
   if (s10.k === "asking") return _t("\u7B49\u6D4F\u89C8\u5668\u7684\u8BB8\u53EF\u2026");
-  if (s10.k === "denied") return _t("\u6D4F\u89C8\u5668\u6CA1\u7ED9\uFF08{why}\uFF09\u3002\u5728\u5730\u5740\u680F\u5DE6\u8FB9\u7684\u7AD9\u70B9\u8BBE\u7F6E\u91CC\u5141\u8BB8 MIDI\uFF0C\u518D\u70B9\u8FDE\u63A5", { why: esc13(s10.why) });
+  if (s10.k === "denied") return _t("\u6D4F\u89C8\u5668\u6CA1\u7ED9\uFF08{why}\uFF09\u3002\u5728\u5730\u5740\u680F\u5DE6\u8FB9\u7684\u7AD9\u70B9\u8BBE\u7F6E\u91CC\u5141\u8BB8 MIDI\uFF0C\u518D\u70B9\u8FDE\u63A5", { why: esc14(s10.why) });
   if (s10.k === "off") return _t("\u7434\u7528 USB \u63D2\u4E0A\u7535\u8111\uFF0C\u70B9\u300C\u8FDE\u63A5\u300D\uFF08\u6D4F\u89C8\u5668\u4F1A\u95EE\u4E00\u6B21\uFF0C\u4EE5\u540E\u5F00 app \u81EA\u5DF1\u63A5\u4E0A\uFF09");
-  return s10.inputs.length ? _t("\u63A5\u7740\uFF1A{p}\u3002\u5F39\u7684\u97F3\u6309\u5149\u6807\u5904\u7684\u957F\u77ED\u5199\u8FDB\u8C31\uFF1B\u300C\u5F39\u300D\u5F00\u7740 / \u8BCD / \u542C\u91CC\u53EA\u51FA\u58F0", { p: esc13(s10.inputs.join("\u3001")) }) : _t("\u5F00\u7740\uFF0C\u8FD8\u6CA1\u63D2\u7434\uFF08\u63D2\u4E0A\u5C31\u8BA4\uFF09");
+  return s10.inputs.length ? _t("\u63A5\u7740\uFF1A{p}\u3002\u5F39\u7684\u97F3\u6309\u5149\u6807\u5904\u7684\u957F\u77ED\u5199\u8FDB\u8C31\uFF1B\u300C\u5F39\u300D\u5F00\u7740 / \u8BCD / \u542C\u91CC\u53EA\u51FA\u58F0", { p: esc14(s10.inputs.join("\u3001")) }) : _t("\u5F00\u7740\uFF0C\u8FD8\u6CA1\u63D2\u7434\uFF08\u63D2\u4E0A\u5C31\u8BA4\uFF09");
 }
 onAudioNote((m2) => diagNote("audio", m2));
 {
@@ -68188,4 +68285,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1670094424c3.mjs.map
+//# sourceMappingURL=moonsinger-4f5cf042732b.mjs.map

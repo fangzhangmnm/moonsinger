@@ -72,7 +72,7 @@ describe("设置的音源 / 维护两页（13-2）", () => {
     const src = fs.readFileSync(new URL("src/app/panels/settings-libs.ts", ROOT), "utf8");
     const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");   // 注释里提到的路径不算
     const specs = [...code.matchAll(/^\s*(?:import|export)\b[^;"'`]*?\bfrom\s+["']([^"']+)["']/gm), ...code.matchAll(/^\s*import\s+["']([^"']+)["']/gm), ...code.matchAll(/\bimport\(\s*["']([^"']+)["']\s*\)/g)].map((m) => m[1]!);   // import / export … from、裸 import、import()
-    const OK = new Set(["@internal/workbench-elements", "../../i18n/index.ts", "../../singer/credit-translations.ts", "../../ui/md-lite.ts", "../../ui/size-text.ts"]);
+    const OK = new Set(["@internal/workbench-elements", "../../i18n/index.ts", "../../singer/credit-translations.ts", "../../ui/md-lite.ts", "../../ui/size-text.ts", "../follow-badge.ts"]);   // follow-badge = 只拼一枚小图标的 HTML（20-4），不碰存储
     eq(specs.filter((s) => !OK.has(s)).join("、"), "");
   });
   it("⑤ 两页上画出来的钮都有人接（libAction 认得，或者是宿主自己接的那两颗）", async () => {
