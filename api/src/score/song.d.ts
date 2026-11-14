@@ -331,6 +331,9 @@ export interface EditorState {
     /** 点的是声部末尾后面补齐的淡色小节（v0.10.6；user「点小节写这里好」「新轨在显示的时候自动补齐小节号。然后自动补的休止也是自动的淡色」）：
      *  光标在 track 尾巴，下一次写音 / 休止之前先补这么长的休止（tick；按小节切开）。点一下不改谱，写的那一刻才落进去；挪光标 / 选中 / 任何编辑都清掉。 */
     lead?: number;
+    /** 选了好几行（v0.17.49，src/score/multi.ts；设计稿第六节）：几行 × 一段时间。只在运行时，不进文件、不进撤销；有它时 sel = null、光标在最上面那行这段时间的开头。
+     *  只活一步：提交时新状态带的还是上一个状态那一个 = 收掉（document.ts commit）——只有整块的操作现做一个新的才留下来，别的任何改动（挪光标、点、写）自动退出。 */
+    multi?: import("./multi.ts").MultiSel;
 }
 /** 一条 track 开头的三个谱头记号（id 从 id0 起连着编）：m 里没给的 = 新建的谱头（NEW_SONG_HEAD）。 */
 export declare function headTokens(m?: {

@@ -28,16 +28,19 @@ export class SelBar {
   }
   /** 画：sel = 有没有选区（几个 token）；clip = 剪贴板里有没有东西；over = 别的全屏视图盖着（藏）；fix = 「修」开着（那一排开关的状态）。 */
   /** noKey = 这一行没有调（打击乐的行，7-R）：「调内一级」↑ ↓ 灰着、提示里说为什么（点了宿主说一句，不改谱）。 */
-  update(sel: number, clip: boolean, over: boolean, noKey: string | null = null): void {
+  /** multi = 选了好几行（sel = 几行）：只露整块的动词（复制 / 剪切 / 粘贴 / 操作… / 变成休止 / ✕），第二排只留 ↑ ↓ ♯ ♭ 八度（时值那几个整块不做）。 */
+  update(sel: number, clip: boolean, over: boolean, noKey: string | null = null, multi = false): void {
     if (over || (!sel && !clip)) { this.el.hidden = true; return; }
     const b = (v: SelVerb, label: string, icon?: string, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml(icon) : ""}<span>${label}</span></button>`;
     // 第二排：微调（点了不收、选区留着、可以连着点；每一下一步撤销）——触屏上不拖也能改高低长短（user「既然拖动超级容易误触…选中一个或者几个音的时候出小控件」→「选区多微调同意」）
     const t = (v: SelVerb, label: string, title: string, off = false) => `<button type="button" class="btn sel-tw${off ? " is-off" : ""}" data-v="${v}" title="${title}">${label}</button>`;
     const tweak = `<div class="sel-row sel-tweak">${t("up", "↑", noKey ?? _t("往上一级（调内）"), !!noKey)}${t("down", "↓", noKey ?? _t("往下一级（调内）"), !!noKey)}${t("sharp", "♯", _t("升半音"))}${t("flat", "♭", _t("降半音"))}` +
-      `${t("octUp", "↑8", _t("高八度"))}${t("octDown", "↓8", _t("低八度"))}<span class="sel-gap"></span>${t("half", "÷2", _t("时值减半"))}${t("double", "×2", _t("时值加倍"))}${t("dot", _t("附点"), _t("加附点（都有附点 = 去掉）"))}</div>`;
+      `${t("octUp", "↑8", _t("高八度"))}${t("octDown", "↓8", _t("低八度"))}` + (multi ? "" : `<span class="sel-gap"></span>${t("half", "÷2", _t("时值减半"))}${t("double", "×2", _t("时值加倍"))}${t("dot", _t("附点"), _t("加附点（都有附点 = 去掉）"))}`) + `</div>`;
     this.el.classList.toggle("has-tweak", !!sel);
     const ib = (v: SelVerb, label: string, icon: string, cls = "") => `<button type="button" class="btn sel-ico ${cls}" data-v="${v}" title="${label}" aria-label="${label}">${iconHtml(icon)}</button>`;
-    const row1 = `<span class="sel-n">${_t("{sel} 个", { sel })}</span>` + ib("all", _t("全选"), "select-all") + ib("copy", _t("复制"), "copy") + ib("cut", _t("剪切"), "cut") + (clip ? ib("paste", _t("粘贴"), "paste") : "") + b("transpose", _t("操作…")) + ib("delete", _t("删"), "trash-can", "danger") + b("clear", "", "x");
+    const row1 = multi
+      ? `<span class="sel-n">${_t("{sel} 行", { sel })}</span>` + ib("copy", _t("复制"), "copy") + ib("cut", _t("剪切"), "cut") + (clip ? ib("paste", _t("粘贴"), "paste") : "") + b("transpose", _t("操作…")) + ib("delete", _t("变成休止"), "trash-can", "danger") + b("clear", "", "x")
+      : `<span class="sel-n">${_t("{sel} 个", { sel })}</span>` + ib("all", _t("全选"), "select-all") + ib("copy", _t("复制"), "copy") + ib("cut", _t("剪切"), "cut") + (clip ? ib("paste", _t("粘贴"), "paste") : "") + b("transpose", _t("操作…")) + ib("delete", _t("删"), "trash-can", "danger") + b("clear", "", "x");
     this.el.innerHTML = sel ? `<div class="sel-row">${row1}</div>${tweak}` : b("paste", _t("粘贴到光标处")) + b("forget", "", "x");
     this.el.hidden = false;
   }

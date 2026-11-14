@@ -30,6 +30,8 @@ import type { InputGate } from "./input-gate.ts";
 /** main.ts 给的那一组访问器：谱的状态与写、出声、页 / 模式、鬼音符、锁、披露、符号格要看的、菜单。 */
 export interface PadGlue {
   state(): EditorState;
+  /** 选了好几行（v0.17.49）：pad 的编辑命令先交给宿主的整块那一路（退格 = 变休止、上下移 = 有音高的行一起移、别的 = 说一句）；true = 吃掉了。 */
+  multiCmd(c: Command): boolean;
   /** 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字照它写。 */
   middleC(): number;
   /** 移调辅助在光标这个声部上起不起作用（第 19 条：起作用 = 键上大字照谱上换到 C 调画成的名字写；宿主判，键盘不知道）。 */
@@ -261,6 +263,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
   /** pad 的编辑命令：锁（/2 的凑满一份）× 命令 → apply；做不成的说一句；写了的披露（不认的记号 / 被盖掉的力度）。 */
   function runPadCommand(c: Command): void {
     if (c.k === "caret") g.half.caretMoved();   // 挪光标 = 取消「凑满一份」（锁住的不动）
+    if (st().multi && g.multiCmd(c)) return;   // 选了好几行：整块那一路（会写的那几样在宿主那边各自问总闸）
     const prev = st(), nx = apply(prev, g.half.wrap(c), performance.now());
     if (!g.gate.may(prev, nx)) return;   // 总闸：这一下会改谱而键盘拔着 = 安静不做（挪光标 / 选中照常）；下面的提示和披露也不说
     if (c.k === "art" && nx === prev) { g.info(c.a === "arpeggio" ? _t("琶音只挂在和弦上：光标前那个音（或选中的）是单音") : _t("{p}要挂在一个音上（光标前面是休止或者还没有音）", { p: ART_NAME[c.a] })); return; }

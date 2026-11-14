@@ -520,6 +520,72 @@ export declare const S: {
     readonly "\u70B9 = \u6253\u5F00": {
         readonly en: "Tap = open";
     };
+    readonly "\u9009\u4E86\u597D\u51E0\u884C\u65F6\u53EA\u80FD\u6574\u5757\u64CD\u4F5C\uFF08\u590D\u5236\u3001\u526A\u5207\u3001\u7C98\u8D34\u3001\u9000\u683C\u3001\u4E0A\u4E0B\u79FB\u3001\u518D\u6765\u4E00\u904D\uFF09": {
+        readonly en: "With several rows selected, only whole-block actions work (copy, cut, paste, backspace, move up/down, repeat)";
+    };
+    readonly "\u9009\u4E2D\u7684\u90FD\u662F\u6253\u51FB\u4E50\u7684\u884C\uFF1A\u6CA1\u6709\u97F3\u9AD8\u53EF\u79FB": {
+        readonly en: "All selected rows are percussion: no pitch to move";
+    };
+    readonly 选中的里面没有能移的音: {
+        readonly en: "Nothing in the selection can be moved";
+    };
+    readonly "\u526A\u5207\u4E86 {n} \u884C\uFF08\u539F\u5904\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF09": {
+        readonly en: "Cut {n} rows (left equal-length rests in place)";
+    };
+    readonly "\u590D\u5236\u4E86 {n} \u884C": {
+        readonly en: "Copied {n} rows";
+    };
+    readonly "\u8D34\u4E0D\u4E0B\uFF1A\u8FD9\u4E00\u5757\u6709 {n} \u884C\uFF0C\u5149\u6807\u90A3\u4E00\u884C\u5F80\u4E0B\u53EA\u6709 {k} \u884C\u80FD\u6539\u7684": {
+        readonly en: "Can’t paste: this block has {n} rows, but only {k} editable rows from the cursor row down";
+    };
+    readonly "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D{what}": {
+        readonly en: "Can’t paste: row {k} “{who}” {what}";
+    };
+    readonly "\u662F\u6253\u51FB\u4E50\u7684\u884C\uFF0C\u8D34\u8FDB\u6765\u7684\u8FD9\u4E00\u884C\u6709\u97F3\u9AD8": {
+        readonly en: "is a percussion row, but the pasted row has pitches";
+    };
+    readonly "\u6709\u97F3\u9AD8\uFF0C\u8D34\u8FDB\u6765\u7684\u8FD9\u4E00\u884C\u662F\u6253\u51FB\u4E50": {
+        readonly en: "has pitches, but the pasted row is percussion";
+    };
+    readonly "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u843D\u70B9\u5207\u5230\u4E86\u4E00\u4E2A\u97F3\u7684\u4E2D\u95F4\uFF08\u8FD9\u4E00\u7248\u4E0D\u66FF\u4F60\u628A\u97F3\u5207\u5F00\uFF09": {
+        readonly en: "Can’t paste: on row {k} “{who}” the landing point cuts into the middle of a note (this version won’t split notes for you)";
+    };
+    readonly "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u5207\u51FA\u6765\u7684\u65F6\u503C\u592A\u77ED\u6216\u592A\u957F": {
+        readonly en: "Can’t paste: on row {k} “{who}” a piece would come out too short or too long";
+    };
+    readonly "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u53EA\u8BFB": {
+        readonly en: "Can’t paste: row {k} “{who}” is read-only";
+    };
+    readonly "\u8D34\u4E0D\u4E0B\uFF1A\u5149\u6807\u90A3\u4E00\u884C\u4E0D\u80FD\u6539": {
+        readonly en: "Can’t paste: the cursor row can’t be edited";
+    };
+    readonly "\u8D34\u4E86 {n} \u884C": {
+        readonly en: "Pasted {n} rows";
+    };
+    readonly 再来一遍: {
+        readonly en: "Repeat";
+    };
+    readonly "\u8FD9\u4E00\u5757\u8D34\u5230\u5B83\u81EA\u5DF1\u540E\u9762\u3001\u540C\u6837\u7684\u51E0\u884C\uFF08Ctrl / \u2318+D\uFF1B\u8FDE\u6309 = \u4E00\u904D\u904D\u5F80\u540E\u5237\uFF09": {
+        readonly en: "Paste this block right after itself on the same rows (Ctrl / ⌘+D; press again to keep going)";
+    };
+    readonly 复制: {
+        readonly en: "Copy";
+    };
+    readonly 剪切: {
+        readonly en: "Cut";
+    };
+    readonly "\u590D\u5236\uFF0C\u518D\u628A\u539F\u5904\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62": {
+        readonly en: "Copy, then turn the original into equal-length rests";
+    };
+    readonly 粘贴: {
+        readonly en: "Paste";
+    };
+    readonly 变成休止: {
+        readonly en: "Turn into rests";
+    };
+    readonly "\u6BCF\u4E00\u884C\u9009\u4E2D\u7684\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF0C\u4E0D\u5408\u62E2": {
+        readonly en: "Each selected row becomes equal-length rests, without closing up";
+    };
     readonly "\u526A\u8D34\u677F\u91CC\u7684\u4E0D\u662F\u7B80\u8C31\uFF08\u50CF 1 2 3 | 5 - - \u8FD9\u6837\u7684\u624D\u8BA4\uFF09": {
         readonly en: "The clipboard isn't jianpu (only things like 1 2 3 | 5 - - are recognized)";
     };
@@ -1876,9 +1942,6 @@ export declare const S: {
     readonly "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09": {
         readonly en: "Moves the start point to the head of this bar and plays from here (later |▶ replays from here; editing or moving the cursor doesn't move it)";
     };
-    readonly 粘贴: {
-        readonly en: "Paste";
-    };
     readonly "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09": {
         readonly en: "Paste here: copied in the app, or jianpu text on the system clipboard (1 2 3 | 5 - -)";
     };
@@ -2331,12 +2394,6 @@ export declare const S: {
     };
     readonly "\u66F2\u7EA7 + \u97F3\u7EA7\uFF1B\u97F3\u3001\u6B4C\u8BCD\u3001\u8C03\u53F7\u62CD\u53F7\u901F\u5EA6\u3001\u53CD\u590D\u4E0D\u52A8": {
         readonly en: "Passage + note level; notes, lyrics, key / time / tempo and repeats stay";
-    };
-    readonly 复制: {
-        readonly en: "Copy";
-    };
-    readonly 剪切: {
-        readonly en: "Cut";
     };
     readonly "\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09": {
         readonly en: "Paste (replaces selection)";
@@ -3042,6 +3099,9 @@ export declare const S: {
     };
     readonly "\u8FD9\u6761\u58F0\u90E8\u53F0\u4E0A\u662F\u5355\u58F0\u7684\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248 / \u6CA1\u4EBA\uFF09\uFF1A\u53E0\u4E0D\u4E86\u3002\u6362\u6210\u80FD\u53E0\u97F3\u7684\u4E50\u5668\u518D\u53E0": {
         readonly en: "This part's performer is monophonic (Tsukuyomi-chan / vowel version / nobody): it can't stack. Switch to an instrument that can";
+    };
+    readonly "\u518D\u6765\u4E00\u904D\uFF1A\u5148\u6846\u9009\u597D\u51E0\u884C\uFF08\u8DE8\u51E0\u4F4D\u6B4C\u624B\u6846\u4E00\u5757\uFF09": {
+        readonly en: "Repeat: first box-select several rows (drag a box across singers)";
     };
     readonly "MIDI \u952E\u76D8\u63A5\u4E0A\u4E86\uFF1A{name}": {
         readonly en: "MIDI keyboard connected: {name}";
@@ -5260,6 +5320,12 @@ export declare const S: {
     readonly "\u8D34 = \u66FF\u6362\u9009\u4E2D": {
         readonly en: "Paste = replace selection";
     };
+    readonly "\u518D\u6765\u4E00\u904D\uFF08\u9009\u4E86\u597D\u51E0\u884C\u65F6\uFF1A\u8FD9\u4E00\u5757\u8D34\u5230\u5B83\u81EA\u5DF1\u540E\u9762\u3001\u540C\u6837\u7684\u51E0\u884C\uFF1B\u8FDE\u6309 = \u4E00\u904D\u904D\u5F80\u540E\u5237\uFF09": {
+        readonly en: "Repeat (with several rows selected: paste the block right after itself on the same rows; press again to keep going)";
+    };
+    readonly "\u518D\u6765\u4E00\u904D\uFF08\u9009\u4E86\u597D\u51E0\u884C\u65F6\uFF09": {
+        readonly en: "Repeat (with several rows selected)";
+    };
     readonly "\u5168\u9009\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E2A\u58F0\u90E8\uFF09": {
         readonly en: "Select all (this part on this sheet)";
     };
@@ -7285,11 +7351,14 @@ export declare const S: {
     readonly "\u52A0\u9644\u70B9\uFF08\u90FD\u6709\u9644\u70B9 = \u53BB\u6389\uFF09": {
         readonly en: "Add a dot (all dotted = removes them)";
     };
-    readonly "{sel} \u4E2A": {
-        readonly en: "{sel} selected";
+    readonly "{sel} \u884C": {
+        readonly en: "{sel} rows";
     };
     readonly "\u64CD\u4F5C\u2026": {
         readonly en: "Actions…";
+    };
+    readonly "{sel} \u4E2A": {
+        readonly en: "{sel} selected";
     };
     readonly 粘贴到光标处: {
         readonly en: "Paste at the cursor";

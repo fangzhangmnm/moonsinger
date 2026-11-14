@@ -422,6 +422,8 @@ export declare class ScoreView {
     private rowAt;
     /** 光标到这条谱行的 track（点哪条谱写哪条）。 */
     private focusRow;
+    /** 这张纸上看得见、能改的行（声部 id），谱上从上到下的顺序：叠起来的合租一家（只读）不算（选了好几行、整块贴数行用）。 */
+    paperRows(paper: string): string[];
     private down;
     /** 按下：开长按计时（0.42 s 不动 = 长按）。 */
     private armPress;

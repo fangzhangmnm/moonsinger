@@ -103,6 +103,7 @@ file.open|file:open|file:open
 clip.copy|clip:copy|clip:copy
 clip.cut|clip:cut|clip:cut
 clip.paste|clip:paste|clip:paste
+clip.repeat|clip:repeat|clip:repeat
 clip.all|clip:all|clip:all
 undo|undo|undo
 redo|redo|redo

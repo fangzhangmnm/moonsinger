@@ -52,14 +52,14 @@ describe("键盘总闸守卫", () => {
     eq(bad.join(" ‖ "), "", "run() 里有没问总闸就往谱上写的地方");
     const body = lines.join("\n");
     assert(!/updateExtras\(|updateBoth\(|D\.commit\(/.test(body), "run() 里不许绕过 update() 直接写文档");
-    assert(/case "clip": if \(\(a\.a === "cut" \|\| a\.a === "paste"\) && !inputGate\.mayWrite\(\)\) return true;/.test(body), "剪切 / 粘贴是写，先问总闸");
+    assert(/case "clip": if \(\(a\.a === "cut" \|\| a\.a === "paste" \|\| a\.a === "repeat"\) && !inputGate\.mayWrite\(\)\) return true;/.test(body), "剪切 / 粘贴是写，先问总闸");
     assert(/case "undo": if \(inputGate\.mayStep\(D\.history, "undo"\)\) undoNow\(\);/.test(body) && /case "redo": if \(inputGate\.mayStep\(D\.history, "redo"\)\) redoNow\(\);/.test(body), "键盘上的撤销 / 重做先问总闸");
-    assert(/return inputGate\.why\(\) \? "impro" : D\.st\.sel \? "edit" : "write";/.test(code(s)), "键盘不往谱上写的时候按「弹」路由（音键只响）");
+    assert(/return inputGate\.why\(\) \? "impro" : D\.st\.sel \|\| D\.st\.multi \? "edit" : "write";/.test(code(s)), "键盘不往谱上写的时候按「弹」路由（音键只响）");
   });
   it("④ 触屏键盘 / MIDI：两条出口各带一道总闸；pad-host 里「只响不写」、会写的键、符号格的命令都问它", () => {
     const m = code(read("src/app/main.ts"));
-    assert(/update: \(n, gesture\) => \{ if \(inputGate\.may\(D\.st, n\)\) update\(n, gesture\); \}/.test(m), "pad 的 update 出口");
-    assert(/writeAndLocate: \(w, gesture\) => writeAndLocate\(\(s\) => \{ const n = w\(s\); return inputGate\.may\(s, n\) \? n : s; \}, gesture\)/.test(m), "pad 的 writeAndLocate 出口");
+    assert(/update: \(n, gesture\) => \{ if \(inputGate\.may\(D\.st, n\)( && multiMay\(D\.st, n\))?\) update\(n, gesture\); \}/.test(m), "pad 的 update 出口");
+    assert(/writeAndLocate: \(w, gesture\) => writeAndLocate\(\(s\) => \{ const n = w\(s\); return inputGate\.may\(s, n\)( && multiMay\(s, n\))? \? n : s; \}, gesture\)/.test(m), "pad 的 writeAndLocate 出口");
     assert(/gate: inputGate, finderOpen:/.test(m), "总闸交给 pad 宿主");
     const h = code(read("src/app/pad-host.ts"));
     assert(/const padImpro = \(\): boolean => g\.gate\.why\(\) !== null;/.test(h), "「音键只响不写」看总闸");

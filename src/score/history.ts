@@ -25,7 +25,7 @@ export const LIMIT = 200, COALESCE_MS = 1500;
 
 export const emptyHistory = (): History => ({ past: [], future: [], lastKey: null, lastAt: 0 });
 export const snapOf = (st: EditorState, extras: Extras, locus: Locus): Snap => ({ song: st.song, extras, at: st.at, caret: st.caret, sel: st.sel, locus });
-const applySnap = (st: EditorState, s: Snap): EditorState => ({ ...st, song: s.song, at: s.at, caret: s.caret, sel: s.sel, log: [] });
+const applySnap = (st: EditorState, s: Snap): EditorState => ({ ...st, song: s.song, at: s.at, caret: s.caret, sel: s.sel, log: [], multi: undefined });   // 选了好几行不进栈：撤销 / 重做 = 收掉（v0.17.49）
 
 /** 记一步：prev / prevExtras = 改之前的状态；locus = 这一步改了什么。gesture 相同且 COALESCE_MS 内 = 同一个连续动作，不另记（future 照样清掉；locus 换成最新的那句话）。 */
 export function record(h: History, prev: EditorState, prevExtras: Extras, gesture: string | null, now: number, locus: Locus): History {

@@ -101,7 +101,8 @@ export function createDocument(init: { st: EditorState; extras: Extras }, hooks:
   /** 真要改的那一下问宿主的修改锁。 */
   const gate = (kind: LocusKind): string | null => hooks.writeGate?.(kind) ?? null;
   function commit(next: { st?: EditorState; extras?: Extras }, o: CommitOpts = {}): CommitResult {
-    const nextSt0 = next.st ?? st, nextEx = next.extras ?? extras;
+    let nextSt0 = next.st ?? st; const nextEx = next.extras ?? extras;
+    if (nextSt0 !== st && nextSt0.multi && nextSt0.multi === st.multi) nextSt0 = { ...nextSt0, multi: undefined };   // 选了好几行只活一步：照抄过来的 = 收掉（song.ts EditorState.multi）
     const songChanged = nextSt0.song !== st.song, exChanged = nextEx !== extras, stChanged = nextSt0 !== st;
     if (!stChanged && !exChanged) return { ok: true, changed: false };
     const asked = nextSt0;   // 撤销提示按你做的那一下说（规整补的不算「写了几个」）

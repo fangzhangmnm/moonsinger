@@ -16,7 +16,7 @@ import { SIGNS } from "../render/signs.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
-import { PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type PedalTok, setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setPaper, setCredits, setTitle, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
+import { trackOf, PEDAL_KINDS, pedalHere, pedalDownAt, insertPedal, type PedalKind, type PedalTok, setHairpinTarget, singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setPaper, setCredits, setTitle, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
 import { textLangIn, setTextLang, TEXT_LANGS, type TextLang, setViewInC, setChordTags, setNotation, setMiddleC, setExpressions, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, NOTATIONS, CHORD_TAG_STYLES, setChordTagStyle, type ChordTagStyle, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { foldedMarks, type FoldedMark } from "../render/expressions.ts";   // 演奏法和表情不显示时改到 / 写上了它们：轻轻说一句（7-G）
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
@@ -128,6 +128,7 @@ import { copyDiag, shareDiag, downloadDiag, clearDiag, canShareDiag } from "./di
 import { deviceKvGet, deviceKvSet, deviceKvGetJson, deviceKvSetJson } from "../device-kv.ts";
 import { makeCoverPng, coverWithBlurb } from "../image/cover.ts";
 import { copyTokens, cutTokens, pasteTokens, selectAll, toJianpu, fromJianpu, fifthsAtSel } from "../score/clipboard.ts";
+import { type Block, type MultiSel, type RowKind, type PasteFail, copyBlock, clearBlock, pasteBlock, repeatBlock, enterMulti, rowRange, caretTick } from "../score/multi.ts";   // 选了好几行（v0.17.49，设计稿第六节）
 import { type Locus, type Restored } from "../score/history.ts";
 import { createDocument, type SavedMark } from "./document.ts";
 import { LOOK_KEY_OP } from "./edit-lock-table.ts";   // 页面设置「跟着软件」：每一样显示设置走哪一类看法（v0.17.33）
@@ -495,12 +496,125 @@ function updateChrome(): void {
   viewTab.hidden = over || ($("paperSel").hidden && $("partSel").hidden);   // 挂签只剩看哪一段 / 哪位：都不用选 = 不挂
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
-  const n = D.st.sel ? D.st.sel.to - D.st.sel.from : 0;
-  const noKey = n > 0 && isPercPart(D.st.at.part) ? NO_KEY_WHY() : null;   // 打击乐的行：「调内一级」灰着（7-R）
-  const sig = `${n}|${!!clip}|${over || studio.isOpen}|${!!noKey}`;
-  if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen, noKey); }
+  const mm = D.st.multi, n = mm ? mm.parts.length : D.st.sel ? D.st.sel.to - D.st.sel.from : 0;   // 选了好几行：选区条照样露（整块的动词；数 = 几行）
+  const noKey = n > 0 && !mm && isPercPart(D.st.at.part) ? NO_KEY_WHY() : null;   // 打击乐的行：「调内一级」灰着（7-R）
+  const sig = `${n}|${!!clip || !!block}|${over || studio.isOpen}|${!!noKey}|${!!mm}`;
+  if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip || !!block, over || studio.isOpen, noKey, !!mm); }
+}
+// ── 选了好几行（v0.17.49；设计稿 ai-docs/20261113-selection-rules-design.md 第六节，纯函数在 src/score/multi.ts）──────────────
+//   选区 = 几行 × 一段时间（EditorState.multi，只在运行时）；只能整块操作：复制 / 剪切 / 粘贴 / 退格·Delete（变一样长的休止）/ 上下移 / 再来一遍。
+//   剪贴板第二种：一块（block）。和单行的那份互斥（复制了一块 = 单行那份清掉，反过来也是）；系统剪贴板那一层 = 一行一份简谱文字、换行隔开。
+let block: Block | null = null, blockText = "";
+const rowKind = (part: string): RowKind => (isPercPart(part) ? "perc" : "pitched");
+const MULTI_ONLY = (): string => _t("选了好几行时只能整块操作（复制、剪切、粘贴、退格、上下移、再来一遍）");
+/** 选了好几行时，键盘 / pad 零碎写谱的那一下拦下、说一句（整块的操作自己现做新的选区，不走这里）。 */
+function multiMay(prev: EditorState, next: EditorState): boolean {
+  if (!prev.multi || next.song === prev.song) return true;
+  info(MULTI_ONLY()); return false;
+}
+/** 键盘命令落在「选了好几行」上（run 里最先问）：退格 / Delete = 每行变一样长的休止；上下移 / 升降 / 八度 = 有音高的行一起移、打击乐的行不动；
+ *  Esc = 收掉；别的：会改谱的 = 说一句、不做，只挪光标 / 选中的 = 照常（多行的选区收掉）。总是吃掉。 */
+function multiCmd(c: Command): boolean {
+  if (c.k === "backspace" || c.k === "delete") { multiClear(); return true; }
+  if (c.k === "step" || c.k === "alter" || c.k === "octave") { multiEach(c); return true; }
+  if (c.k === "escape") { update({ ...D.st, multi: undefined }); return true; }
+  const n = apply(D.st, withHalf(c), performance.now());
+  if (n.song !== D.st.song) { info(MULTI_ONLY()); return true; }
+  update(n === D.st ? { ...n, multi: undefined } : n); return true;
+}
+/** 选区的那几行各自原样走一遍单行的命令（临时把那一行那一截当成单行选区）；回新的歌（没变 = 原来那份）。perc = 打击乐的行跳不跳过。 */
+function multiRows(f: (rowSt: EditorState) => EditorState, skipPerc: boolean): Song {
+  const m = D.st.multi!; let song = D.st.song;
+  for (const part of m.parts) {
+    if (skipPerc && rowKind(part) === "perc") continue;
+    const tk = trackOf(song, m.paper, part), r = rowRange(tk, m.t0, m.t1); if (!r) continue;
+    song = f({ ...D.st, song, at: { paper: m.paper, part }, sel: { from: r.a, to: r.b }, caret: r.b, multi: undefined, log: [] }).song;
+  }
+  return song;
+}
+function multiEach(c: Command): void {
+  if (!inputGate.mayWrite()) return;   // 总闸（选了好几行的写，入口有键盘 / pad / 选区条三处，在这儿问一次）
+  const m = D.st.multi!, song = multiRows((x) => apply(x, c, performance.now()), true);
+  if (song === D.st.song) { info(m.parts.every((p) => rowKind(p) === "perc") ? _t("选中的都是打击乐的行：没有音高可移") : _t("选中的里面没有能移的音")); return; }
+  update({ ...D.st, song, multi: { ...m } });
+}
+function multiClear(): void {
+  if (!inputGate.mayWrite()) return;   // 总闸
+  const m = D.st.multi!; update({ ...D.st, song: clearBlock(D.st.song, m), multi: { ...m } });
+}
+function multiCopy(cut: boolean): void {
+  const m = D.st.multi!, b = copyBlock(D.st.song, m, rowKind);
+  block = b; clip = null; clipText = "";
+  blockText = m.parts.map((part, k) => { const tk = trackOf(D.st.song, m.paper, part), r = rowRange(tk, m.t0, m.t1); return toJianpu(b.rows[k].toks, keyAt(tk, r ? r.a : tk.length)); }).join("\n");
+  void navigator.clipboard?.writeText?.(blockText).catch(() => undefined);
+  if (cut) multiClear();
+  info(cut ? _t("剪切了 {n} 行（原处变成一样长的休止）", { n: m.parts.length }) : _t("复制了 {n} 行", { n: m.parts.length }));
+  updateChrome();
+}
+/** 贴不下：哪一行、为什么（整块不贴）。 */
+function pasteWhy(f: PasteFail, rows: number): string {
+  const who = f.part ? partNameNow(f.part) : "";
+  switch (f.why) {
+    case "rows": return _t("贴不下：这一块有 {n} 行，光标那一行往下只有 {k} 行能改的", { n: rows, k: f.row });
+    case "kind": return _t("贴不下：第 {k} 行「{who}」{what}", { k: f.row + 1, who, what: rowKind(f.part!) === "perc" ? _t("是打击乐的行，贴进来的这一行有音高") : _t("有音高，贴进来的这一行是打击乐") });
+    case "cut": return _t("贴不下：第 {k} 行「{who}」落点切到了一个音的中间（这一版不替你把音切开）", { k: f.row + 1, who });
+    case "dur": return _t("贴不下：第 {k} 行「{who}」切出来的时值太短或太长", { k: f.row + 1, who });
+    case "locked": return _t("贴不下：第 {k} 行「{who}」只读", { k: f.row + 1, who });
+  }
+}
+/** 整块贴：落点 = 光标的时刻和光标那一行；块最上面那行对光标那一行，其余按谱上的顺序往下（只数看得见、能改的行）。贴完选中贴上去的那一块；一步撤销。 */
+function pasteBlockNow(b: Block): void {
+  if (!inputGate.mayWrite()) return;   // 总闸
+  const st = D.st, paper = st.at.paper, rows = view.paperRows(paper), k = rows.indexOf(st.at.part);
+  if (k < 0) { info(_t("贴不下：光标那一行不能改")); return; }
+  const at = st.multi ? st.multi.t0 : st.sel ? caretTick(tr(st), st.sel.from) : caretTick(tr(st), st.caret, st.lead);
+  const r = pasteBlock(st.song, paper, rows.slice(k).map((part) => ({ part, kind: rowKind(part) })), at, b, st.nextId);
+  if ("fail" in r) { info(pasteWhy(r.fail, b.rows.length)); return; }
+  update(enterMulti({ ...st, song: r.song, nextId: r.id }, r.sel));
+  info(_t("贴了 {n} 行", { n: b.rows.length }));
+}
+/** 再来一遍：选中的这一块贴到它自己的结尾、同样的几行；贴完选区跟过去（连按 = 刷 pattern）。 */
+function multiRepeat(): void {
+  const m = D.st.multi; if (!m || !inputGate.mayWrite()) return;   // 总闸
+  const r = repeatBlock(D.st.song, m, rowKind, D.st.nextId);
+  if ("fail" in r) { info(pasteWhy(r.fail, m.parts.length)); return; }
+  update(enterMulti({ ...D.st, song: r.song, nextId: r.id }, r.sel));
+}
+/** 选区条 / 选区菜单的动词落在「选了好几行」上。true = 吃掉了。 */
+function multiVerb(v: SelVerb | "repeat"): boolean {
+  if (!D.st.multi) return false;
+  switch (v) {
+    case "copy": multiCopy(false); return true;
+    case "cut": if (inputGate.mayWrite()) multiCopy(true); return true;   // 剪切 = 复制（读）+ 变休止（写，multiClear 里再问一次不弹第二句：前面已经拦了）
+    case "paste": void pasteNow(); return true;
+    case "delete": multiClear(); return true;
+    case "clear": update({ ...D.st, multi: undefined }); return true;
+    case "repeat": multiRepeat(); return true;
+    case "up": case "down": multiEach({ k: "step", d: v === "up" ? 1 : -1 }); return true;
+    case "sharp": case "flat": multiEach({ k: "alter", d: v === "sharp" ? 1 : -1 }); return true;
+    case "octUp": case "octDown": multiEach({ k: "octave", d: v === "octUp" ? 1 : -1 }); return true;
+    case "transpose": openMultiMenu(selBarAnchor()); return true;
+    case "all": case "forget": return false;
+    default: info(MULTI_ONLY()); return true;
+  }
+}
+/** 选了好几行的选区菜单：整块的几样 + 再来一遍。 */
+function openMultiMenu(at: { x: number; y: number }): void {
+  ui.close();
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu sel-menu"; box.setAttribute("role", "menu");
+  const item = (v: string, label: string, title = "", cls = "") => `<button class="btn ctx-item ${cls}" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
+  box.innerHTML = item("repeat", _t("再来一遍"), _t("这一块贴到它自己后面、同样的几行（Ctrl / ⌘+D；连按 = 一遍遍往后刷）")) +
+    `<div class="ctx-sep"></div>` + item("copy", _t("复制")) + item("cut", _t("剪切"), _t("复制，再把原处变成一样长的休止")) + (block || clip ? item("paste", _t("粘贴")) : "") + item("delete", _t("变成休止"), _t("每一行选中的变成一样长的休止，不合拢"), "danger");
+  document.body.append(box);
+  const w = box.offsetWidth, h = box.offsetHeight, mg = 8; let y = at.y + 8; if (y + h > innerHeight - mg) y = at.y - h - 8;
+  box.style.left = `${Math.max(mg, Math.min(at.x, innerWidth - w - mg))}px`; box.style.top = `${Math.max(mg, Math.min(y, innerHeight - h - mg))}px`;
+  const close = () => { box.remove(); ui.closed(close); };
+  box.addEventListener("click", (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>("[data-v]"); if (!b) return; const v = b.dataset.v as SelVerb | "repeat"; if (v !== "repeat") close(); multiVerb(v); scoreEl.focus(); });
+  ui.open({ k: "menu", close });
 }
 function setClip(t: Token[]): void {
+  block = null; blockText = "";
   clip = t; clipText = toJianpu(t, fifthsAtSel(D.st));
   void navigator.clipboard?.writeText?.(clipText).catch(() => undefined);   // 系统剪贴板那一层：能贴进聊天；不给写就只有 app 内那层
   updateChrome();
@@ -508,12 +622,14 @@ function setClip(t: Token[]): void {
 /** 贴：系统剪贴板里有别处来的简谱文字就用它（和自己刚写的一样 = app 内那份原 token，连歌词 / 连音都在）；读不到 / 读不懂 = app 内的。 */
 async function pasteNow(): Promise<void> {
   let sys = ""; try { sys = (await navigator.clipboard?.readText?.()) ?? ""; } catch { /* 浏览器不给读：用 app 内的 */ }
+  if (block && (!sys || sys.trim() === blockText.trim())) { pasteBlockNow(block); return; }   // 一块：系统剪贴板里还是自己复制的那份（或者读不到）= 整块贴
   let toks: Token[] | null = sys && sys.trim() !== clipText.trim() ? fromJianpu(sys, fifthsAtSel(D.st)) : null;
   if (!toks) toks = clip;
   if (!toks) { info(sys ? _t("剪贴板里的不是简谱（像 1 2 3 | 5 - - 这样的才认）") : _t("剪贴板里没有东西")); return; }
   update(pasteTokens(D.st, toks)); info(_t("贴了 {n} 个", { n: toks.length }));
 }
 async function selVerb(v: SelVerb): Promise<void> {
+  if (multiVerb(v)) { if (v !== "transpose") scoreEl.focus(); return; }
   switch (v) {
     case "all": update(selectAll(D.st)); break;
     case "copy": { const t = copyTokens(D.st); if (t) { setClip(t); info(_t("复制了 {n} 个", { n: t.length })); } break; }
@@ -1019,7 +1135,7 @@ function plugNudge(why: NoWrite): void {
 let bootReady = false;
 const padHost = createPadHost(padEl, {
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
-  state: () => D.st, middleC: () => lookOf(D.st.song, lookCtx()).middleC, inC: () => inCAtCursor(), jianpuBase: () => jianpuBaseAtCursor(), digitRows: () => lookOf(D.st.song, lookCtx()).notation !== "staff", tempoOwnerHere: () => { const pp = D.st.song.papers.find((x) => x.id === D.st.at.paper); return !pp || tempoOwner(D.st.song, pp) === D.st.at.part; }, update: (n, gesture) => { if (inputGate.may(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
+  state: () => D.st, multiCmd: (c) => multiCmd(c), middleC: () => lookOf(D.st.song, lookCtx()).middleC, inC: () => inCAtCursor(), jianpuBase: () => jianpuBaseAtCursor(), digitRows: () => lookOf(D.st.song, lookCtx()).notation !== "staff", tempoOwnerHere: () => { const pp = D.st.song.papers.find((x) => x.id === D.st.at.paper); return !pp || tempoOwner(D.st.song, pp) === D.st.at.part; }, update: (n, gesture) => { if (inputGate.may(D.st, n) && multiMay(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) && multiMay(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
   monoRejected: () => { if (monoHinted) return; monoHinted = true; info(_t("「{who}」一次只出一个音：几乎同时按下的第二个键没写。要写和弦，给这个声部换钢琴这类乐器", { who: activeCandidateName(D.extras, curRole()) ?? roleLabel(curRole()) })); },   // 同一次打开只说一次（v0.16.35）   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
   sound: { down: (p, id) => sound.down(p, id), up: (id) => sound.up(id) }, soundTok, soundAfterWrite,
   onTouch: (ts) => feel.touch(ts),
@@ -4569,7 +4685,7 @@ function whereNow(): Where {
   if (ui.overlay || isSheetOpen() || isGateOpen()) return "sheet";
   if (view.marks.open) return "mark";
   if (view.lyrics.open) return "lyric";
-  return inputGate.why() ? "impro" : D.st.sel ? "edit" : "write";   // 键盘现在不往谱上写（拔着 / 在选乐器 / 锁着）= 按「弹」路由：音键只响
+  return inputGate.why() ? "impro" : D.st.sel || D.st.multi ? "edit" : "write";   // 选了好几行 = 也算有选区（复制 / 剪切 / 贴 = 整块）   // 键盘现在不往谱上写（拔着 / 在选乐器 / 锁着）= 按「弹」路由：音键只响
 }
 /** 照做；返回 false = 这一下其实不归我们管（例如歌词框里「-」不跟在字母后面），让浏览器照常打字。 */
 /** 写音的那些命令：只在「音」里（「词 / 符」里键盘不写音——这一层不是音；user「模式！音，歌词，强度和articulation！」）。 */
@@ -4588,6 +4704,7 @@ function lyricBackspace(): void {
 function run(a: Action, repeat: boolean, code: string): boolean {
   switch (a.k) {
     case "cmd":
+      if (D.st.multi && multiCmd(a.cmd)) return true;   // 选了好几行：只能整块操作（退格 / Delete / 上下移；别的写谱键说一句）
       if (ws.mode === "lyrics" && NOTE_EDIT.has(a.cmd.k)) { if (modeHintShown !== ws.mode) { modeHintShown = ws.mode; info(_t("「{p}」里键盘不写音（切到「音」再写）", { p: MODE_LABEL[ws.mode] })); } return true; }   // 「符」里电脑键盘照样写音（v0.10.36 音符一起编辑）；只有「词」不写
       if (a.cmd.k === "backspace" && ws.mode === "symbols") { const n = apply(D.st, { k: "symBackspace" }, performance.now()); if (inputGate.may(D.st, n)) update(n); return true; }   // 符：退格删记号（user「我早就想用退格删强度曲线了」）
       if (a.cmd.k === "backspace" && ws.mode === "lyrics") { lyricBackspace(); return true; }
@@ -4632,7 +4749,9 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "mark": view.marks.act(a.a); return true;
     case "sheet": ui.close(); closeSheet(); return true;
     case "file": if (a.a === "open") void fileOpen(); else if (a.a === "save") void fileSave(); else openExportHub(); return true;
-    case "clip": if ((a.a === "cut" || a.a === "paste") && !inputGate.mayWrite()) return true; void selVerb(a.a); return true;   // 复制 / 全选是读，不问
+    case "clip": if ((a.a === "cut" || a.a === "paste" || a.a === "repeat") && !inputGate.mayWrite()) return true;
+      if (a.a === "repeat") { if (D.st.multi) multiRepeat(); else info(_t("再来一遍：先框选好几行（跨几位歌手框一块）")); return true; }
+      void selVerb(a.a); return true;   // 复制 / 全选是读，不问
     case "undo": if (inputGate.mayStep(D.history, "undo")) undoNow(); return true;   // 拔着时键盘上的撤销：轮到谱上的那一步就停（乐器 / 混音那几块照常）
     case "redo": if (inputGate.mayStep(D.history, "redo")) redoNow(); return true;
   }
@@ -4663,7 +4782,7 @@ window.addEventListener("keydown", (e) => {
     formControl: !!t && (isDropdown(t) || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !ownField)),   // 下拉 = 界面零件库的标准件（一颗按钮，7-T）
     instShown: instShown(), inRef: !!t?.closest?.("wp-reference-window"),
     studioOpen: studio.isOpen, inStudio: !!t?.closest?.(".studio"),
-    escFree: !D.st.sel && !view.lyrics.open && !view.marks.open && !ui.overlay, listen: listenOn(),
+    escFree: !D.st.sel && !D.st.multi && !view.lyrics.open && !view.marks.open && !ui.overlay, listen: listenOn(),
   });
   switch (owner) {
     case "galleryFinder": case "finder": if (esc) { e.preventDefault(); closeFinder(); } else finderKey(e); return;   // 乐器目录（歌库上面的 / 歌里的）：Esc 收起；音键只弹不写（pad 的触屏键照常）
@@ -4685,7 +4804,7 @@ window.addEventListener("keydown", (e) => {
       else if (esc) { e.preventDefault(); setListen(false); }
       else if (mod && e.key.toLowerCase() === "s") { const a = route(e, whereNow(), "write"); if (a && run(a, e.repeat, e.code)) e.preventDefault(); }
       return;
-    case "score": { const a = route(e, whereNow(), D.st.sel ? "edit" : "write"); if (a && run(a, e.repeat, e.code)) e.preventDefault(); return; }   // 谱：照键表路由；会写谱的在 run() 里问总闸
+    case "score": { const a: Action | null = esc && D.st.multi && whereNow() === "edit" ? { k: "cmd", cmd: { k: "escape" } } : route(e, whereNow(), D.st.sel || D.st.multi ? "edit" : "write"); if (a && run(a, e.repeat, e.code)) e.preventDefault(); return; }   // 谱：照键表路由；会写谱的在 run() 里问总闸   // 选了好几行：Esc = 收掉（键表「有选区」那一列没有 Esc）
     default: return assertNever(owner);
   }
 });

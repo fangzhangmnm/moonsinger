@@ -1,7 +1,7 @@
 {
- "source": "e39fd2f48f0d1a03ae858177f66062ae46470c64c9a9020d55dc27c1fb78aaaa",
- "version": "v0.17.48-2026-11-13",
- "main": "moonsinger-a2d4a14e029e.mjs",
+ "source": "365fa7a604dc0cb58d9b71847f4d1417f0e84049512f875d9b9a0c2befd4be39",
+ "version": "v0.17.49-2026-11-13",
+ "main": "moonsinger-61505a54a093.mjs",
  "paths": [
   "src",
   "vendor-pkgs",

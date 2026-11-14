@@ -23,7 +23,9 @@ import { _t, workerOptions, lang } from "../i18n/index.ts";
 import { lineSp, spMm, STAFF_MM, pageGeoOf, textScaleOf } from "../look/paper.ts";   // 纸的数（第 17 条 17-2）
 import { CONT_MARGIN, REFLOW_MARGIN } from "../look/frame.ts";   // 连续 / 按屏宽折行的边距（第 17 条 17-2）
 import { type EditorState, type NoteTok, type Song, type Art, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setPitches, setDur, keyAt, tr, TPQ, moveMark, moveMarkToEnd, trackOf, isTimed, shownAccAt, ART_NAME } from "../score/song.ts";
-import { isLit, onMove, onTap, wantsGrip, type Pointer, type Target } from "./press-rules.ts";   // 谁亮框、谁能拖（选中规则单行这一版，v0.17.48）
+import { isLit, onMove, onTap, wantsGrip, type Pointer, type Target } from "./press-rules.ts";
+import { tickOf } from "../score/repeats.ts";
+import { enterMulti, normalize as normalizeMulti } from "../score/multi.ts";   // 选了好几行（v0.17.49，设计稿第六节）   // 谁亮框、谁能拖（选中规则单行这一版，v0.17.48）
 import { SIGNS } from "../render/signs.ts";   // 记号表（两种谱共用）：演奏法的字形 → 是哪一种、它是什么意思
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, keySpell, diatonicIndex, type Pitch } from "../score/pitch.ts";
@@ -502,7 +504,8 @@ export class ScoreView {
       const moved = this.followKey.slice(0, this.followKey.lastIndexOf("|")) !== base;
       this.followKey = fk;
       const scrolledAway = moved && this.userScrollAt > this.askAt;
-      if (base !== this.heldBase && (moved || this.caretSeen) && !scrolledAway) { this.heldBase = null; span("follow", () => this.follow()); }
+      // 正在拉框 = 不跟（v0.17.49：框住的东西本来就在眼前；跟了 = 谱在指针底下滚走，跨行框选往上拉永远够不到上面那行）
+      if (base !== this.heldBase && (moved || this.caretSeen) && !scrolledAway && !this.box) { this.heldBase = null; span("follow", () => this.follow()); }
     }
     this.caretSeen = this.caretVisible();
     span("overlay", () => this.host.onAnchors?.(this.layout!));   // 谱面上面那一层照着这份排版摆（同一帧；先读完锚点再写 DOM，见 score-overlay.ts）；单独记账（探针 scripts/probe-input-latency.mjs 的「overlay」）
@@ -851,19 +854,26 @@ export class ScoreView {
    *  高 = 第五线上面两格到歌词行下面一点（同原来排版画的 selbox）；ink 层的 div，乘底（mix-blend-mode）压在谱上不盖墨。 */
   private drawSel(): void {
     for (const e of this.selEls) e.remove(); this.selEls = [];
-    const L = this.layout, st = this.host.get(); if (!L || !st.sel) return;
-    const { from, to } = st.sel, sp = L.sp;
+    const L = this.layout, st = this.host.get(); if (!L || (!st.sel && !st.multi)) return;
+    const sp = L.sp, m = st.multi;
     const rowsOf = (r: SystemBox): number[] => { const idx: number[] = []; L.systems.forEach((q, i) => { if (q.paper === r.paper && q.part === r.part && q.sys === r.sys) idx.push(i); }); return idx; };
-    const acc = new Map<number, { a: number; b: number; rows: number[] }>();
-    const take = (h: { index: number; system: number; x: number; w: number }) => {
-      if (h.index < from || h.index >= to || !this.onTrack(h)) return;
+    // 选了好几行（v0.17.49）：每一行各画自己的框——行里起点在这段时间里的音 / 休止（只看起点，设计稿第六节）；记号跟着单行的老规矩（落在框里的音中间才算）
+    const ticks = new Map<string, number[]>();
+    const inMulti = (h: { index: number; system: number }): boolean => {
+      const r = L.systems[h.system]; if (!m || !r || r.paper !== m.paper || !m.parts.includes(r.part) || L.virtual[`${r.paper}:${r.part}`]) return false;
+      const key = `${r.paper}:${r.part}`; let tk = ticks.get(key); if (!tk) { tk = tickOf(trackOf(st.song, r.paper, r.part)); ticks.set(key, tk); }
+      const t = tk[h.index]; return t !== undefined && t >= m.t0 && t < m.t1;
+    };
+    const acc = new Map<string, { a: number; b: number; rows: number[] }>();
+    const take = (h: { index: number; system: number; x: number; w: number }, timed = true) => {
+      if (m ? !(timed && inMulti(h)) : (h.index < st.sel!.from || h.index >= st.sel!.to || !this.onTrack(h))) return;
       const r = L.systems[h.system]; if (!r) return;
-      const a = h.x - 0.35 * sp, b = h.x + h.w + 0.35 * sp, e = acc.get(r.sys);
-      if (!e) acc.set(r.sys, { a, b, rows: rowsOf(r) }); else { e.a = Math.min(e.a, a); e.b = Math.max(e.b, b); }
+      const a = h.x - 0.35 * sp, b = h.x + h.w + 0.35 * sp, k = `${r.sys}:${r.part}`, e = acc.get(k);
+      if (!e) acc.set(k, { a, b, rows: rowsOf(r) }); else { e.a = Math.min(e.a, a); e.b = Math.max(e.b, b); }
     };
     for (const h of this.hits) take(h);
-    for (const h of L.dyns) take(h);
-    for (const h of L.marks) take(h);
+    for (const h of L.dyns) take(h, false);
+    for (const h of L.marks) take(h, false);
     for (const { a, b, rows } of acc.values()) {
       const top = GEOMETRY[L.systems[rows[0]!]!.kind].bandTop(L.systems[rows[0]!]!, sp * 0.5), bottom = L.lyricYs[rows[rows.length - 1]!]! + 0.8 * sp;   // 选区带：上沿 = 行的几何，下沿 = 歌词基线
       const d = document.createElement("div"); d.className = "selbox";
@@ -1033,6 +1043,12 @@ export class ScoreView {
   private focusRow(st: EditorState, row: number, caret?: number): EditorState {
     const r = this.layout!.systems[row]; if (!r) return st;
     return setFocus(st, r.paper, r.part, caret);
+  }
+  /** 这张纸上看得见、能改的行（声部 id），谱上从上到下的顺序：叠起来的合租一家（只读）不算（选了好几行、整块贴数行用）。 */
+  paperRows(paper: string): string[] {
+    const L = this.layout, out: string[] = []; if (!L) return out;
+    for (const r of L.systems) if (r.paper === paper && !L.virtual[`${r.paper}:${r.part}`] && !out.includes(r.part)) out.push(r.part);   // 隐藏的声部不排、不在 systems 里
+    return out;
   }
 
   private down(e: PointerEvent): void {
@@ -1674,12 +1690,26 @@ export class ScoreView {
   private boxSelect(x1: number, y1: number): void {
     const b = this.box!, L = this.layout!, xa = Math.min(b.x0, x1), xb = Math.max(b.x0, x1), ya = Math.min(b.y0, y1), yb = Math.max(b.y0, y1);
     Object.assign(this.boxEl.style, { left: `${xa}px`, top: `${ya}px`, width: `${xb - xa}px`, height: `${yb - ya}px` });
-    const inside = this.hits.filter((n) => { const cx = n.x + n.w / 2; return n.system === b.row && cx >= xa && cx <= xb && n.y >= ya && n.y <= yb; }).map((n) => n.index);
-    const key = inside.length ? `${Math.min(...inside)}-${Math.max(...inside)}` : "caret";
+    // 框碰到哪几行的符头 / 休止就是哪几行（设计稿第六节；跨了折行 = 两边碰到的行合起来；合租叠起来的那一行只读、不进）
+    const paper = L.systems[b.row]?.paper, inBox = (n: HitNote) => { const cx = n.x + n.w / 2; return cx >= xa && cx <= xb && n.y >= ya && n.y <= yb; };
+    const touched = this.hits.filter((n) => { const r = L.systems[n.system]; return !!r && r.paper === paper && !L.virtual[`${r.paper}:${r.part}`] && inBox(n); });
+    const parts = new Set(touched.map((n) => L.systems[n.system]!.part));
+    if (parts.size >= 2 && paper) {
+      const st0 = b.st0, order = this.paperRows(paper), idx = [...parts].map((p) => order.indexOf(p)).filter((i) => i >= 0);
+      const rows = order.slice(Math.min(...idx), Math.max(...idx) + 1);   // 中间夹着的行一起（不做挑着选）
+      let t0 = Infinity, t1 = -Infinity;
+      for (const n of touched) { const r = L.systems[n.system]!, tk = trackOf(st0.song, r.paper, r.part), t = tickOf(tk)[n.index] ?? 0, d = (tk[n.index] as { dur?: number })?.dur ?? 0; t0 = Math.min(t0, t); t1 = Math.max(t1, t + d); }
+      const m = normalizeMulti(st0.song, paper, rows, t0, t1), key = m ? `m:${rows.join(",")}:${m.t0}-${m.t1}` : "caret";
+      if (key === b.last) return; b.last = key;
+      if (m) { this.host.set(enterMulti(st0, m)); return; }
+    }
+    const inside = touched.filter((n) => n.system === b.row || (parts.size === 1 && L.systems[n.system]!.part === [...parts][0])).map((n) => n.index);
+    const one = touched.find((n) => inside.includes(n.index));
+    const key = inside.length ? `${one ? L.systems[one.system]!.part : ""}:${Math.min(...inside)}-${Math.max(...inside)}` : "caret";
     if (key === b.last) return;   // 框住的没变 = 不重设（原来每动一下都重排整张谱 = 卡）
     b.last = key;
     if (!inside.length) { this.placeCaretAt(b.x0, b.y0, b.st0); return; }
-    const st = this.focusRow(b.st0, b.row, b.st0.caret);
+    const st = this.focusRow(b.st0, one && one.system !== b.row ? one.system : b.row, b.st0.caret);
     this.host.set(select(st, Math.min(...inside), Math.max(...inside) + 1));
   }
 

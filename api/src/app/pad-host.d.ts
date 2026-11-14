@@ -8,6 +8,8 @@ import type { InputGate } from "./input-gate.ts";
 /** main.ts 给的那一组访问器：谱的状态与写、出声、页 / 模式、鬼音符、锁、披露、符号格要看的、菜单。 */
 export interface PadGlue {
     state(): EditorState;
+    /** 选了好几行（v0.17.49）：pad 的编辑命令先交给宿主的整块那一路（退格 = 变休止、上下移 = 有音高的行一起移、别的 = 说一句）；true = 吃掉了。 */
+    multiCmd(c: Command): boolean;
     /** 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字照它写。 */
     middleC(): number;
     /** 移调辅助在光标这个声部上起不起作用（第 19 条：起作用 = 键上大字照谱上换到 C 调画成的名字写；宿主判，键盘不知道）。 */

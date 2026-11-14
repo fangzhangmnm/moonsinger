@@ -29,7 +29,7 @@ export type Action = {
     a: "open" | "save" | "export";
 } | {
     k: "clip";
-    a: "copy" | "cut" | "paste" | "all";
+    a: "copy" | "cut" | "paste" | "all" | "repeat";
 } | {
     k: "undo";
 } | {

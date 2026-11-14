@@ -29,7 +29,7 @@ export type Action =
   | { k: "stack"; degree: number }                  // Shift+1–7：这一级叠到光标前那个音上（和弦；宿主管单声护栏）
   | { k: "play" } | { k: "impro" }
   | { k: "file"; a: "open" | "save" | "export" }   // 无地逃生口（打开 / 存 .mxl / 导出 hub；另存为住导出里，user 2026-08-20「另存为也变成导出」）
-  | { k: "clip"; a: "copy" | "cut" | "paste" | "all" }   // 选区条的键盘入口（2026-10-08；user「快捷键其实现在我都没用过」，触屏优先）
+  | { k: "clip"; a: "copy" | "cut" | "paste" | "all" | "repeat" }   // 选区条的键盘入口（2026-10-08；user「快捷键其实现在我都没用过」，触屏优先）
   | { k: "undo" } | { k: "redo" }
   | { k: "lyric"; a: "commit" | "cancel" | "next" | "prev" | "hyphen" | "back" }
   | { k: "mark"; a: "commit" | "cancel" }
@@ -118,6 +118,7 @@ export const BINDINGS: Binding[] = [
   { id: "clip.copy", group: _t("选区"), keys: [{ code: "KeyC", mod: true }], show: "Ctrl / ⌘+C", act: () => ({ k: "clip", a: "copy" }), does: { edit: _t("复制选中（app 内原样 + 系统剪贴板一行简谱）") } },
   { id: "clip.cut", group: _t("选区"), keys: [{ code: "KeyX", mod: true }], show: "Ctrl / ⌘+X", act: () => ({ k: "clip", a: "cut" }), does: { edit: _t("剪切选中") } },
   { id: "clip.paste", group: _t("选区"), keys: [{ code: "KeyV", mod: true }], show: "Ctrl / ⌘+V", act: () => ({ k: "clip", a: "paste" }), does: { write: _t("贴在光标处（app 内复制过的；没有就试着读系统剪贴板里的简谱文字）"), edit: _t("贴 = 替换选中") } },
+  { id: "clip.repeat", group: _t("选区"), keys: [{ code: "KeyD", mod: true }], show: "Ctrl / ⌘+D", act: () => ({ k: "clip", a: "repeat" }), does: { write: _t("再来一遍（选了好几行时：这一块贴到它自己后面、同样的几行；连按 = 一遍遍往后刷）"), edit: _t("再来一遍（选了好几行时）") } },
   { id: "clip.all", group: _t("选区"), keys: [{ code: "KeyA", mod: true }], show: "Ctrl / ⌘+A", act: () => ({ k: "clip", a: "all" }), does: { write: _t("全选（这张纸上这个声部）"), edit: _t("全选") } },
   // ── 撤销 / 重做（2026-10-08；顶栏 ↶ ↷ 同一入口） ──
   { id: "undo", group: _t("撤销"), keys: [{ code: "KeyZ", mod: true }], show: "Ctrl / ⌘+Z", act: () => ({ k: "undo" }), does: { write: _t("撤销上一步（拖 / 连打歌词算一步）"), edit: _t("撤销"), impro: _t("撤销") } },

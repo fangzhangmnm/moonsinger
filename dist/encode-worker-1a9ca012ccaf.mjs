@@ -172,6 +172,28 @@ var S = {
   "\u6DF7\u97F3\u53F0": { en: "Mixer" },
   "\u70B9 = \u6536\u8D77": { en: "Tap = hide" },
   "\u70B9 = \u6253\u5F00": { en: "Tap = open" },
+  "\u9009\u4E86\u597D\u51E0\u884C\u65F6\u53EA\u80FD\u6574\u5757\u64CD\u4F5C\uFF08\u590D\u5236\u3001\u526A\u5207\u3001\u7C98\u8D34\u3001\u9000\u683C\u3001\u4E0A\u4E0B\u79FB\u3001\u518D\u6765\u4E00\u904D\uFF09": { en: "With several rows selected, only whole-block actions work (copy, cut, paste, backspace, move up/down, repeat)" },
+  "\u9009\u4E2D\u7684\u90FD\u662F\u6253\u51FB\u4E50\u7684\u884C\uFF1A\u6CA1\u6709\u97F3\u9AD8\u53EF\u79FB": { en: "All selected rows are percussion: no pitch to move" },
+  "\u9009\u4E2D\u7684\u91CC\u9762\u6CA1\u6709\u80FD\u79FB\u7684\u97F3": { en: "Nothing in the selection can be moved" },
+  "\u526A\u5207\u4E86 {n} \u884C\uFF08\u539F\u5904\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF09": { en: "Cut {n} rows (left equal-length rests in place)" },
+  "\u590D\u5236\u4E86 {n} \u884C": { en: "Copied {n} rows" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u8FD9\u4E00\u5757\u6709 {n} \u884C\uFF0C\u5149\u6807\u90A3\u4E00\u884C\u5F80\u4E0B\u53EA\u6709 {k} \u884C\u80FD\u6539\u7684": { en: "Can\u2019t paste: this block has {n} rows, but only {k} editable rows from the cursor row down" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D{what}": { en: "Can\u2019t paste: row {k} \u201C{who}\u201D {what}" },
+  "\u662F\u6253\u51FB\u4E50\u7684\u884C\uFF0C\u8D34\u8FDB\u6765\u7684\u8FD9\u4E00\u884C\u6709\u97F3\u9AD8": { en: "is a percussion row, but the pasted row has pitches" },
+  "\u6709\u97F3\u9AD8\uFF0C\u8D34\u8FDB\u6765\u7684\u8FD9\u4E00\u884C\u662F\u6253\u51FB\u4E50": { en: "has pitches, but the pasted row is percussion" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u843D\u70B9\u5207\u5230\u4E86\u4E00\u4E2A\u97F3\u7684\u4E2D\u95F4\uFF08\u8FD9\u4E00\u7248\u4E0D\u66FF\u4F60\u628A\u97F3\u5207\u5F00\uFF09": { en: "Can\u2019t paste: on row {k} \u201C{who}\u201D the landing point cuts into the middle of a note (this version won\u2019t split notes for you)" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u5207\u51FA\u6765\u7684\u65F6\u503C\u592A\u77ED\u6216\u592A\u957F": { en: "Can\u2019t paste: on row {k} \u201C{who}\u201D a piece would come out too short or too long" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u53EA\u8BFB": { en: "Can\u2019t paste: row {k} \u201C{who}\u201D is read-only" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u5149\u6807\u90A3\u4E00\u884C\u4E0D\u80FD\u6539": { en: "Can\u2019t paste: the cursor row can\u2019t be edited" },
+  "\u8D34\u4E86 {n} \u884C": { en: "Pasted {n} rows" },
+  "\u518D\u6765\u4E00\u904D": { en: "Repeat" },
+  "\u8FD9\u4E00\u5757\u8D34\u5230\u5B83\u81EA\u5DF1\u540E\u9762\u3001\u540C\u6837\u7684\u51E0\u884C\uFF08Ctrl / \u2318+D\uFF1B\u8FDE\u6309 = \u4E00\u904D\u904D\u5F80\u540E\u5237\uFF09": { en: "Paste this block right after itself on the same rows (Ctrl / \u2318+D; press again to keep going)" },
+  "\u590D\u5236": { en: "Copy" },
+  "\u526A\u5207": { en: "Cut" },
+  "\u590D\u5236\uFF0C\u518D\u628A\u539F\u5904\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62": { en: "Copy, then turn the original into equal-length rests" },
+  "\u7C98\u8D34": { en: "Paste" },
+  "\u53D8\u6210\u4F11\u6B62": { en: "Turn into rests" },
+  "\u6BCF\u4E00\u884C\u9009\u4E2D\u7684\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF0C\u4E0D\u5408\u62E2": { en: "Each selected row becomes equal-length rests, without closing up" },
   "\u526A\u8D34\u677F\u91CC\u7684\u4E0D\u662F\u7B80\u8C31\uFF08\u50CF 1 2 3 | 5 - - \u8FD9\u6837\u7684\u624D\u8BA4\uFF09": { en: "The clipboard isn't jianpu (only things like 1 2 3 | 5 - - are recognized)" },
   "\u526A\u8D34\u677F\u91CC\u6CA1\u6709\u4E1C\u897F": { en: "The clipboard is empty" },
   "\u8D34\u4E86 {n} \u4E2A": { en: "Pasted {n}" },
@@ -624,7 +646,6 @@ var S = {
   "\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}": { en: "{n} {n|syllable|syllables} can't be sung (grayed out on the score): {first}{x}" },
   " \u7B49": { en: " etc." },
   "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09": { en: "Moves the start point to the head of this bar and plays from here (later |\u25B6 replays from here; editing or moving the cursor doesn't move it)" },
-  "\u7C98\u8D34": { en: "Paste" },
   "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09": { en: "Paste here: copied in the app, or jianpu text on the system clipboard (1 2 3 | 5 - -)" },
   "\u5C0F\u8282\u7EBF |": { en: "Barline |" },
   "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09": { en: "Recount bars from here (pickup)" },
@@ -776,8 +797,6 @@ var S = {
   "\u6F14\u594F\u6CD5\u3001\u97F3\u5934\uFF08\u91CD\u97F3 / \u7A81\u5F3A\u2026\uFF09\u3001\u97F3\u5185\u8D77\u4F0F\u3001\u8FDE\u7EBF\u3001\u547C\u5438\u3001\u6C14\u58F0": { en: "Articulations, attacks (accent / sforzando\u2026), swells, slurs, breaths, whispers" },
   "\u90FD\u6E05": { en: "Clear all" },
   "\u66F2\u7EA7 + \u97F3\u7EA7\uFF1B\u97F3\u3001\u6B4C\u8BCD\u3001\u8C03\u53F7\u62CD\u53F7\u901F\u5EA6\u3001\u53CD\u590D\u4E0D\u52A8": { en: "Passage + note level; notes, lyrics, key / time / tempo and repeats stay" },
-  "\u590D\u5236": { en: "Copy" },
-  "\u526A\u5207": { en: "Cut" },
   "\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09": { en: "Paste (replaces selection)" },
   "\u9009\u4E2D\u7684\u8FD9\u4E00\u6BB5\u6CA1\u6709\u8FD9\u7C7B\u8BB0\u53F7": { en: "This selection has no marks of that kind" },
   "{why}\uFF1A\u300C{what}\u300D\u7528\u4E0D\u4E86": { en: "{why}: \u201C{what}\u201D doesn't apply" },
@@ -1013,6 +1032,7 @@ var S = {
   "\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\u3002MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF08\u8981\u7684\u8BDD\u544A\u8BC9\u5F00\u53D1\u8005\uFF1A\u7167 WXHW \u63A5 zip.js + 7z \u5C31\u80FD\u5F00\uFF09\u3002": { en: "This song isn't encrypted. This version of MoonSinger doesn't encrypt yet." },
   "\u300C{p}\u300D\u91CC\u952E\u76D8\u4E0D\u5199\u97F3\uFF08\u5207\u5230\u300C\u97F3\u300D\u518D\u5199\uFF09": { en: "In \u201C{p}\u201D the keys don't write notes (switch to \u201CNotes\u201D to write)" },
   "\u8FD9\u6761\u58F0\u90E8\u53F0\u4E0A\u662F\u5355\u58F0\u7684\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248 / \u6CA1\u4EBA\uFF09\uFF1A\u53E0\u4E0D\u4E86\u3002\u6362\u6210\u80FD\u53E0\u97F3\u7684\u4E50\u5668\u518D\u53E0": { en: "This part's performer is monophonic (Tsukuyomi-chan / vowel version / nobody): it can't stack. Switch to an instrument that can" },
+  "\u518D\u6765\u4E00\u904D\uFF1A\u5148\u6846\u9009\u597D\u51E0\u884C\uFF08\u8DE8\u51E0\u4F4D\u6B4C\u624B\u6846\u4E00\u5757\uFF09": { en: "Repeat: first box-select several rows (drag a box across singers)" },
   "MIDI \u952E\u76D8\u63A5\u4E0A\u4E86\uFF1A{name}": { en: "MIDI keyboard connected: {name}" },
   "MIDI \u952E\u76D8\u62D4\u6389\u4E86\uFF1A{name}": { en: "MIDI keyboard unplugged: {name}" },
   "MIDI \u952E\u76D8\uFF1A\u8FD8\u6CA1\u8FDE\uFF08\u70B9\u4E00\u4E0B\u770B\u600E\u4E48\u8FDE\uFF09": { en: "MIDI keyboard: not connected (tap to see how)" },
@@ -1752,6 +1772,8 @@ var S = {
   "\u526A\u5207\u9009\u4E2D": { en: "Cut selection" },
   "\u8D34\u5728\u5149\u6807\u5904\uFF08app \u5185\u590D\u5236\u8FC7\u7684\uFF1B\u6CA1\u6709\u5C31\u8BD5\u7740\u8BFB\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF09": { en: "Paste at the cursor (copied in the app; otherwise tries jianpu text on the system clipboard)" },
   "\u8D34 = \u66FF\u6362\u9009\u4E2D": { en: "Paste = replace selection" },
+  "\u518D\u6765\u4E00\u904D\uFF08\u9009\u4E86\u597D\u51E0\u884C\u65F6\uFF1A\u8FD9\u4E00\u5757\u8D34\u5230\u5B83\u81EA\u5DF1\u540E\u9762\u3001\u540C\u6837\u7684\u51E0\u884C\uFF1B\u8FDE\u6309 = \u4E00\u904D\u904D\u5F80\u540E\u5237\uFF09": { en: "Repeat (with several rows selected: paste the block right after itself on the same rows; press again to keep going)" },
+  "\u518D\u6765\u4E00\u904D\uFF08\u9009\u4E86\u597D\u51E0\u884C\u65F6\uFF09": { en: "Repeat (with several rows selected)" },
   "\u5168\u9009\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E2A\u58F0\u90E8\uFF09": { en: "Select all (this part on this sheet)" },
   "\u64A4\u9500\u4E0A\u4E00\u6B65\uFF08\u62D6 / \u8FDE\u6253\u6B4C\u8BCD\u7B97\u4E00\u6B65\uFF09": { en: "Undo the last step (a drag / a run of lyric typing counts as one)" },
   "\u6B4C\u8BCD\u6846": { en: "Lyric box" },
@@ -2427,8 +2449,9 @@ var S = {
   "\u65F6\u503C\u52A0\u500D": { en: "Double durations" },
   "\u9644\u70B9": { en: "Dot" },
   "\u52A0\u9644\u70B9\uFF08\u90FD\u6709\u9644\u70B9 = \u53BB\u6389\uFF09": { en: "Add a dot (all dotted = removes them)" },
-  "{sel} \u4E2A": { en: "{sel} selected" },
+  "{sel} \u884C": { en: "{sel} rows" },
   "\u64CD\u4F5C\u2026": { en: "Actions\u2026" },
+  "{sel} \u4E2A": { en: "{sel} selected" },
   "\u7C98\u8D34\u5230\u5149\u6807\u5904": { en: "Paste at the cursor" },
   "\u57FA\u7840": { en: "Basics" },
   "\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\uFF1A\u5148\u628A\u51E0\u6761\u8F68\u7684\u97F3\u91CF\u6446\u5E73\u3001\u5DE6\u53F3\u6446\u5F00\uFF08\u6DF7\u97F3\u7684\u7B2C\u4E00\u6B65\uFF09": { en: "Gain, pan, mute / solo: first balance the tracks' levels and spread them left and right (step one of mixing)" },
@@ -4534,7 +4557,7 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/version.ts
-var APP_VERSION = "v0.17.48-2026-11-13";
+var APP_VERSION = "v0.17.49-2026-11-13";
 
 // src/format/performance.ts
 var REPO = "https://github.com/fangzhangmnm/moonsinger";
@@ -7722,4 +7745,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-91e22613dd0c.mjs.map
+//# sourceMappingURL=encode-worker-1a9ca012ccaf.mjs.map

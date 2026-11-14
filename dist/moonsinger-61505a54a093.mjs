@@ -3757,6 +3757,28 @@ var S = {
   "\u6DF7\u97F3\u53F0": { en: "Mixer" },
   "\u70B9 = \u6536\u8D77": { en: "Tap = hide" },
   "\u70B9 = \u6253\u5F00": { en: "Tap = open" },
+  "\u9009\u4E86\u597D\u51E0\u884C\u65F6\u53EA\u80FD\u6574\u5757\u64CD\u4F5C\uFF08\u590D\u5236\u3001\u526A\u5207\u3001\u7C98\u8D34\u3001\u9000\u683C\u3001\u4E0A\u4E0B\u79FB\u3001\u518D\u6765\u4E00\u904D\uFF09": { en: "With several rows selected, only whole-block actions work (copy, cut, paste, backspace, move up/down, repeat)" },
+  "\u9009\u4E2D\u7684\u90FD\u662F\u6253\u51FB\u4E50\u7684\u884C\uFF1A\u6CA1\u6709\u97F3\u9AD8\u53EF\u79FB": { en: "All selected rows are percussion: no pitch to move" },
+  "\u9009\u4E2D\u7684\u91CC\u9762\u6CA1\u6709\u80FD\u79FB\u7684\u97F3": { en: "Nothing in the selection can be moved" },
+  "\u526A\u5207\u4E86 {n} \u884C\uFF08\u539F\u5904\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF09": { en: "Cut {n} rows (left equal-length rests in place)" },
+  "\u590D\u5236\u4E86 {n} \u884C": { en: "Copied {n} rows" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u8FD9\u4E00\u5757\u6709 {n} \u884C\uFF0C\u5149\u6807\u90A3\u4E00\u884C\u5F80\u4E0B\u53EA\u6709 {k} \u884C\u80FD\u6539\u7684": { en: "Can\u2019t paste: this block has {n} rows, but only {k} editable rows from the cursor row down" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D{what}": { en: "Can\u2019t paste: row {k} \u201C{who}\u201D {what}" },
+  "\u662F\u6253\u51FB\u4E50\u7684\u884C\uFF0C\u8D34\u8FDB\u6765\u7684\u8FD9\u4E00\u884C\u6709\u97F3\u9AD8": { en: "is a percussion row, but the pasted row has pitches" },
+  "\u6709\u97F3\u9AD8\uFF0C\u8D34\u8FDB\u6765\u7684\u8FD9\u4E00\u884C\u662F\u6253\u51FB\u4E50": { en: "has pitches, but the pasted row is percussion" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u843D\u70B9\u5207\u5230\u4E86\u4E00\u4E2A\u97F3\u7684\u4E2D\u95F4\uFF08\u8FD9\u4E00\u7248\u4E0D\u66FF\u4F60\u628A\u97F3\u5207\u5F00\uFF09": { en: "Can\u2019t paste: on row {k} \u201C{who}\u201D the landing point cuts into the middle of a note (this version won\u2019t split notes for you)" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u5207\u51FA\u6765\u7684\u65F6\u503C\u592A\u77ED\u6216\u592A\u957F": { en: "Can\u2019t paste: on row {k} \u201C{who}\u201D a piece would come out too short or too long" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u53EA\u8BFB": { en: "Can\u2019t paste: row {k} \u201C{who}\u201D is read-only" },
+  "\u8D34\u4E0D\u4E0B\uFF1A\u5149\u6807\u90A3\u4E00\u884C\u4E0D\u80FD\u6539": { en: "Can\u2019t paste: the cursor row can\u2019t be edited" },
+  "\u8D34\u4E86 {n} \u884C": { en: "Pasted {n} rows" },
+  "\u518D\u6765\u4E00\u904D": { en: "Repeat" },
+  "\u8FD9\u4E00\u5757\u8D34\u5230\u5B83\u81EA\u5DF1\u540E\u9762\u3001\u540C\u6837\u7684\u51E0\u884C\uFF08Ctrl / \u2318+D\uFF1B\u8FDE\u6309 = \u4E00\u904D\u904D\u5F80\u540E\u5237\uFF09": { en: "Paste this block right after itself on the same rows (Ctrl / \u2318+D; press again to keep going)" },
+  "\u590D\u5236": { en: "Copy" },
+  "\u526A\u5207": { en: "Cut" },
+  "\u590D\u5236\uFF0C\u518D\u628A\u539F\u5904\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62": { en: "Copy, then turn the original into equal-length rests" },
+  "\u7C98\u8D34": { en: "Paste" },
+  "\u53D8\u6210\u4F11\u6B62": { en: "Turn into rests" },
+  "\u6BCF\u4E00\u884C\u9009\u4E2D\u7684\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF0C\u4E0D\u5408\u62E2": { en: "Each selected row becomes equal-length rests, without closing up" },
   "\u526A\u8D34\u677F\u91CC\u7684\u4E0D\u662F\u7B80\u8C31\uFF08\u50CF 1 2 3 | 5 - - \u8FD9\u6837\u7684\u624D\u8BA4\uFF09": { en: "The clipboard isn't jianpu (only things like 1 2 3 | 5 - - are recognized)" },
   "\u526A\u8D34\u677F\u91CC\u6CA1\u6709\u4E1C\u897F": { en: "The clipboard is empty" },
   "\u8D34\u4E86 {n} \u4E2A": { en: "Pasted {n}" },
@@ -4209,7 +4231,6 @@ var S = {
   "\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}": { en: "{n} {n|syllable|syllables} can't be sung (grayed out on the score): {first}{x}" },
   " \u7B49": { en: " etc." },
   "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09": { en: "Moves the start point to the head of this bar and plays from here (later |\u25B6 replays from here; editing or moving the cursor doesn't move it)" },
-  "\u7C98\u8D34": { en: "Paste" },
   "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09": { en: "Paste here: copied in the app, or jianpu text on the system clipboard (1 2 3 | 5 - -)" },
   "\u5C0F\u8282\u7EBF |": { en: "Barline |" },
   "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09": { en: "Recount bars from here (pickup)" },
@@ -4361,8 +4382,6 @@ var S = {
   "\u6F14\u594F\u6CD5\u3001\u97F3\u5934\uFF08\u91CD\u97F3 / \u7A81\u5F3A\u2026\uFF09\u3001\u97F3\u5185\u8D77\u4F0F\u3001\u8FDE\u7EBF\u3001\u547C\u5438\u3001\u6C14\u58F0": { en: "Articulations, attacks (accent / sforzando\u2026), swells, slurs, breaths, whispers" },
   "\u90FD\u6E05": { en: "Clear all" },
   "\u66F2\u7EA7 + \u97F3\u7EA7\uFF1B\u97F3\u3001\u6B4C\u8BCD\u3001\u8C03\u53F7\u62CD\u53F7\u901F\u5EA6\u3001\u53CD\u590D\u4E0D\u52A8": { en: "Passage + note level; notes, lyrics, key / time / tempo and repeats stay" },
-  "\u590D\u5236": { en: "Copy" },
-  "\u526A\u5207": { en: "Cut" },
   "\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09": { en: "Paste (replaces selection)" },
   "\u9009\u4E2D\u7684\u8FD9\u4E00\u6BB5\u6CA1\u6709\u8FD9\u7C7B\u8BB0\u53F7": { en: "This selection has no marks of that kind" },
   "{why}\uFF1A\u300C{what}\u300D\u7528\u4E0D\u4E86": { en: "{why}: \u201C{what}\u201D doesn't apply" },
@@ -4598,6 +4617,7 @@ var S = {
   "\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\u3002MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF08\u8981\u7684\u8BDD\u544A\u8BC9\u5F00\u53D1\u8005\uFF1A\u7167 WXHW \u63A5 zip.js + 7z \u5C31\u80FD\u5F00\uFF09\u3002": { en: "This song isn't encrypted. This version of MoonSinger doesn't encrypt yet." },
   "\u300C{p}\u300D\u91CC\u952E\u76D8\u4E0D\u5199\u97F3\uFF08\u5207\u5230\u300C\u97F3\u300D\u518D\u5199\uFF09": { en: "In \u201C{p}\u201D the keys don't write notes (switch to \u201CNotes\u201D to write)" },
   "\u8FD9\u6761\u58F0\u90E8\u53F0\u4E0A\u662F\u5355\u58F0\u7684\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248 / \u6CA1\u4EBA\uFF09\uFF1A\u53E0\u4E0D\u4E86\u3002\u6362\u6210\u80FD\u53E0\u97F3\u7684\u4E50\u5668\u518D\u53E0": { en: "This part's performer is monophonic (Tsukuyomi-chan / vowel version / nobody): it can't stack. Switch to an instrument that can" },
+  "\u518D\u6765\u4E00\u904D\uFF1A\u5148\u6846\u9009\u597D\u51E0\u884C\uFF08\u8DE8\u51E0\u4F4D\u6B4C\u624B\u6846\u4E00\u5757\uFF09": { en: "Repeat: first box-select several rows (drag a box across singers)" },
   "MIDI \u952E\u76D8\u63A5\u4E0A\u4E86\uFF1A{name}": { en: "MIDI keyboard connected: {name}" },
   "MIDI \u952E\u76D8\u62D4\u6389\u4E86\uFF1A{name}": { en: "MIDI keyboard unplugged: {name}" },
   "MIDI \u952E\u76D8\uFF1A\u8FD8\u6CA1\u8FDE\uFF08\u70B9\u4E00\u4E0B\u770B\u600E\u4E48\u8FDE\uFF09": { en: "MIDI keyboard: not connected (tap to see how)" },
@@ -5337,6 +5357,8 @@ var S = {
   "\u526A\u5207\u9009\u4E2D": { en: "Cut selection" },
   "\u8D34\u5728\u5149\u6807\u5904\uFF08app \u5185\u590D\u5236\u8FC7\u7684\uFF1B\u6CA1\u6709\u5C31\u8BD5\u7740\u8BFB\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF09": { en: "Paste at the cursor (copied in the app; otherwise tries jianpu text on the system clipboard)" },
   "\u8D34 = \u66FF\u6362\u9009\u4E2D": { en: "Paste = replace selection" },
+  "\u518D\u6765\u4E00\u904D\uFF08\u9009\u4E86\u597D\u51E0\u884C\u65F6\uFF1A\u8FD9\u4E00\u5757\u8D34\u5230\u5B83\u81EA\u5DF1\u540E\u9762\u3001\u540C\u6837\u7684\u51E0\u884C\uFF1B\u8FDE\u6309 = \u4E00\u904D\u904D\u5F80\u540E\u5237\uFF09": { en: "Repeat (with several rows selected: paste the block right after itself on the same rows; press again to keep going)" },
+  "\u518D\u6765\u4E00\u904D\uFF08\u9009\u4E86\u597D\u51E0\u884C\u65F6\uFF09": { en: "Repeat (with several rows selected)" },
   "\u5168\u9009\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E2A\u58F0\u90E8\uFF09": { en: "Select all (this part on this sheet)" },
   "\u64A4\u9500\u4E0A\u4E00\u6B65\uFF08\u62D6 / \u8FDE\u6253\u6B4C\u8BCD\u7B97\u4E00\u6B65\uFF09": { en: "Undo the last step (a drag / a run of lyric typing counts as one)" },
   "\u6B4C\u8BCD\u6846": { en: "Lyric box" },
@@ -6012,8 +6034,9 @@ var S = {
   "\u65F6\u503C\u52A0\u500D": { en: "Double durations" },
   "\u9644\u70B9": { en: "Dot" },
   "\u52A0\u9644\u70B9\uFF08\u90FD\u6709\u9644\u70B9 = \u53BB\u6389\uFF09": { en: "Add a dot (all dotted = removes them)" },
-  "{sel} \u4E2A": { en: "{sel} selected" },
+  "{sel} \u884C": { en: "{sel} rows" },
   "\u64CD\u4F5C\u2026": { en: "Actions\u2026" },
+  "{sel} \u4E2A": { en: "{sel} selected" },
   "\u7C98\u8D34\u5230\u5149\u6807\u5904": { en: "Paste at the cursor" },
   "\u57FA\u7840": { en: "Basics" },
   "\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\uFF1A\u5148\u628A\u51E0\u6761\u8F68\u7684\u97F3\u91CF\u6446\u5E73\u3001\u5DE6\u53F3\u6446\u5F00\uFF08\u6DF7\u97F3\u7684\u7B2C\u4E00\u6B65\uFF09": { en: "Gain, pan, mute / solo: first balance the tracks' levels and spread them left and right (step one of mixing)" },
@@ -6422,7 +6445,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.48-2026-11-13";
+var APP_VERSION = "v0.17.49-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -11048,6 +11071,7 @@ var BINDINGS = [
   { id: "clip.copy", group: _t("\u9009\u533A"), keys: [{ code: "KeyC", mod: true }], show: "Ctrl / \u2318+C", act: () => ({ k: "clip", a: "copy" }), does: { edit: _t("\u590D\u5236\u9009\u4E2D\uFF08app \u5185\u539F\u6837 + \u7CFB\u7EDF\u526A\u8D34\u677F\u4E00\u884C\u7B80\u8C31\uFF09") } },
   { id: "clip.cut", group: _t("\u9009\u533A"), keys: [{ code: "KeyX", mod: true }], show: "Ctrl / \u2318+X", act: () => ({ k: "clip", a: "cut" }), does: { edit: _t("\u526A\u5207\u9009\u4E2D") } },
   { id: "clip.paste", group: _t("\u9009\u533A"), keys: [{ code: "KeyV", mod: true }], show: "Ctrl / \u2318+V", act: () => ({ k: "clip", a: "paste" }), does: { write: _t("\u8D34\u5728\u5149\u6807\u5904\uFF08app \u5185\u590D\u5236\u8FC7\u7684\uFF1B\u6CA1\u6709\u5C31\u8BD5\u7740\u8BFB\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF09"), edit: _t("\u8D34 = \u66FF\u6362\u9009\u4E2D") } },
+  { id: "clip.repeat", group: _t("\u9009\u533A"), keys: [{ code: "KeyD", mod: true }], show: "Ctrl / \u2318+D", act: () => ({ k: "clip", a: "repeat" }), does: { write: _t("\u518D\u6765\u4E00\u904D\uFF08\u9009\u4E86\u597D\u51E0\u884C\u65F6\uFF1A\u8FD9\u4E00\u5757\u8D34\u5230\u5B83\u81EA\u5DF1\u540E\u9762\u3001\u540C\u6837\u7684\u51E0\u884C\uFF1B\u8FDE\u6309 = \u4E00\u904D\u904D\u5F80\u540E\u5237\uFF09"), edit: _t("\u518D\u6765\u4E00\u904D\uFF08\u9009\u4E86\u597D\u51E0\u884C\u65F6\uFF09") } },
   { id: "clip.all", group: _t("\u9009\u533A"), keys: [{ code: "KeyA", mod: true }], show: "Ctrl / \u2318+A", act: () => ({ k: "clip", a: "all" }), does: { write: _t("\u5168\u9009\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E2A\u58F0\u90E8\uFF09"), edit: _t("\u5168\u9009") } },
   // ── 撤销 / 重做（2026-10-08；顶栏 ↶ ↷ 同一入口） ──
   { id: "undo", group: _t("\u64A4\u9500"), keys: [{ code: "KeyZ", mod: true }], show: "Ctrl / \u2318+Z", act: () => ({ k: "undo" }), does: { write: _t("\u64A4\u9500\u4E0A\u4E00\u6B65\uFF08\u62D6 / \u8FDE\u6253\u6B4C\u8BCD\u7B97\u4E00\u6B65\uFF09"), edit: _t("\u64A4\u9500"), impro: _t("\u64A4\u9500") } },
@@ -11622,6 +11646,248 @@ function onTap(o10) {
 }
 function wantsGrip(o10) {
   return o10.pointer === "touch" && o10.canDrag && (o10.target === "note" || o10.target === "mark");
+}
+
+// src/score/multi.ts
+var validDur2 = (d3) => Number.isInteger(d3) && d3 >= MIN_DUR && d3 <= MAX_DUR;
+var trackLen = (tokens) => tokens.reduce((s10, t10) => s10 + (isTimed(t10) ? t10.dur : 0), 0);
+function rowRange(tokens, t02, t12) {
+  const ticks = tickOf(tokens), h2 = headLen(tokens);
+  let first = -1, last = -1;
+  for (let i10 = h2; i10 < tokens.length; i10++) {
+    const t10 = tokens[i10];
+    if (!isTimed(t10)) continue;
+    if (ticks[i10] >= t02 && ticks[i10] < t12) {
+      if (first < 0) first = i10;
+      last = i10;
+    } else if (ticks[i10] >= t12) break;
+  }
+  if (first < 0) return null;
+  let a10 = first;
+  while (a10 > h2 && isPhraseMark(tokens[a10 - 1])) a10--;
+  const lt2 = tokens[last];
+  return { a: a10, b: last + 1, s0: ticks[first], s1: ticks[last] + lt2.dur };
+}
+function normalize(song, paper, parts, t02, t12) {
+  let a10 = Infinity, b3 = -Infinity;
+  for (const p2 of parts) {
+    const r10 = rowRange(trackOf(song, paper, p2), t02, t12);
+    if (r10) {
+      a10 = Math.min(a10, r10.s0);
+      b3 = Math.max(b3, r10.s1);
+    }
+  }
+  return a10 < b3 ? { paper, parts: parts.slice(), t0: a10, t1: b3 } : null;
+}
+function copyBlock(song, m2, kindOf) {
+  return {
+    len: m2.t1 - m2.t0,
+    rows: m2.parts.map((part2) => {
+      const tk2 = trackOf(song, m2.paper, part2), r10 = rowRange(tk2, m2.t0, m2.t1), kind = kindOf(part2);
+      if (!r10) return { kind, off: 0, len: 0, toks: [] };
+      const toks = tk2.slice(r10.a, r10.b).filter((t10) => isTimed(t10) || isPhraseMark(t10)).map((t10) => ({ ...t10 }));
+      const f2 = toks.findIndex(isTimed);
+      if (f2 >= 0 && toks[f2].kind === "note" && toks[f2].tie) {
+        const { tie: _t4, ...rest } = toks[f2];
+        toks[f2] = rest;
+      }
+      return { kind, off: r10.s0 - m2.t0, len: r10.s1 - r10.s0, toks };
+    })
+  };
+}
+function clearBlock(song, m2) {
+  let out = song;
+  for (const part2 of m2.parts) {
+    const tk2 = trackOf(out, m2.paper, part2), r10 = rowRange(tk2, m2.t0, m2.t1);
+    if (!r10) continue;
+    const nt2 = [...tk2.slice(0, r10.a)];
+    for (let i10 = r10.a; i10 < r10.b; i10++) {
+      const t10 = tk2[i10];
+      if (isTimed(t10)) nt2.push({ kind: "rest", id: t10.id, dur: t10.dur, ...t10.staff ? { staff: t10.staff } : {} });
+      else if (!isPhraseMark(t10)) nt2.push(t10);
+    }
+    const end = nt2.length;
+    nt2.push(...tk2.slice(r10.b));
+    untieAt(nt2, end);
+    out = withTrack(out, m2.paper, part2, nt2);
+  }
+  return out;
+}
+function untieAt(nt2, i10) {
+  for (let j2 = i10; j2 < nt2.length; j2++) {
+    const t10 = nt2[j2];
+    if (!isTimed(t10)) continue;
+    if (t10.kind === "note" && t10.tie) {
+      const { tie: _t4, ...rest } = t10;
+      nt2[j2] = rest;
+    }
+    return;
+  }
+}
+function padTo(tokens, upTo, id2) {
+  let left = upTo - trackLen(tokens);
+  if (left <= 0) return { tokens, id: id2 };
+  let len = DEFAULT_TIME.beats * WHOLE / DEFAULT_TIME.beatType, inBar = 0;
+  for (const t10 of tokens) {
+    if (t10.kind === "time") {
+      inBar = 0;
+      len = t10.beats * WHOLE / t10.beatType;
+    } else if (t10.kind === "bar") inBar = 0;
+    else if (isTimed(t10)) {
+      inBar += t10.dur;
+      while (inBar >= len - 1e-6) inBar -= len;
+      if (inBar < 1e-6) inBar = 0;
+    }
+  }
+  const out = tokens.slice();
+  let piece = inBar > 0 ? Math.min(left, len - inBar) : Math.min(left, len);
+  while (left > 0) {
+    out.push({ kind: "rest", id: id2++, dur: piece });
+    left -= piece;
+    piece = Math.min(left, len);
+  }
+  return { tokens: out, id: id2 };
+}
+function splitAt(tokens, x2, id2) {
+  const ticks = tickOf(tokens);
+  for (let i10 = 0; i10 < tokens.length; i10++) {
+    const t10 = tokens[i10];
+    if (!isTimed(t10)) continue;
+    const s10 = ticks[i10], e10 = s10 + t10.dur;
+    if (x2 <= s10 || x2 >= e10) continue;
+    if (t10.kind === "note") return "cut";
+    const d1 = x2 - s10, d22 = e10 - x2;
+    if (!validDur2(d1) || !validDur2(d22)) return "dur";
+    const out = tokens.slice();
+    out.splice(i10, 1, { ...t10, dur: d1 }, { kind: "rest", id: id2++, dur: d22, ...t10.staff ? { staff: t10.staff } : {} });
+    return { tokens: out, id: id2 };
+  }
+  return { tokens, id: id2 };
+}
+function replaceSpan(tokens0, t02, src0, len, id0) {
+  let id2 = id0;
+  const src = src0.filter((t10) => isTimed(t10) || isPhraseMark(t10)).map((t10) => ({ ...t10, id: id2++ }));
+  const have = trackLen(src);
+  if (have > len) return { fail: "dur" };
+  if (have < len) {
+    const pad4 = padRestsFlat(len - have, id2);
+    src.push(...pad4.toks);
+    id2 = pad4.id;
+  }
+  const t12 = t02 + len;
+  let tokens = tokens0.slice();
+  ({ tokens, id: id2 } = padTo(tokens, t12, id2));
+  for (const x2 of [t02, t12]) {
+    const r10 = splitAt(tokens, x2, id2);
+    if (typeof r10 === "string") return { fail: r10 };
+    ({ tokens, id: id2 } = r10);
+  }
+  const ticks = tickOf(tokens), h2 = headLen(tokens);
+  let first = -1, endI = tokens.length;
+  for (let i10 = h2; i10 < tokens.length; i10++) {
+    const t10 = tokens[i10];
+    if (!isTimed(t10)) continue;
+    if (ticks[i10] >= t12) {
+      endI = i10;
+      break;
+    }
+    if (first < 0 && ticks[i10] >= t02) first = i10;
+  }
+  if (first < 0) first = endI;
+  let a10 = first;
+  while (a10 > h2 && isPhraseMark(tokens[a10 - 1])) a10--;
+  let b3 = endI;
+  while (b3 > first && isPhraseMark(tokens[b3 - 1])) b3--;
+  const bones = [];
+  for (let i10 = a10; i10 < b3; i10++) {
+    const t10 = tokens[i10];
+    if (!isTimed(t10) && !isPhraseMark(t10)) bones.push({ tick: ticks[i10], tok: t10 });
+  }
+  const mid = [];
+  let at3 = t02, bi = 0;
+  const flushBones = (upTo, strict) => {
+    while (bi < bones.length && (strict ? bones[bi].tick < upTo : bones[bi].tick <= upTo)) mid.push(bones[bi++].tok);
+  };
+  for (const t10 of src) {
+    if (!isTimed(t10)) {
+      flushBones(at3, false);
+      mid.push(t10);
+      continue;
+    }
+    flushBones(at3, false);
+    let piece = t10, s10 = at3;
+    const e10 = at3 + t10.dur;
+    while (bi < bones.length && bones[bi].tick > s10 && bones[bi].tick < e10) {
+      const x2 = bones[bi].tick, d1 = x2 - s10, d22 = e10 - x2;
+      if (!validDur2(d1) || !validDur2(d22)) return { fail: "dur" };
+      const head = { ...piece, dur: d1 };
+      const tail = piece.kind === "note" ? { ...piece, id: id2++, dur: d22, lyric: null, hyph: void 0, art: void 0, tie: true } : { ...piece, id: id2++, dur: d22 };
+      if (tail.kind === "note") {
+        delete tail.hyph;
+        delete tail.art;
+      }
+      mid.push(head);
+      while (bi < bones.length && bones[bi].tick === x2) mid.push(bones[bi++].tok);
+      piece = tail;
+      s10 = x2;
+    }
+    mid.push(piece);
+    at3 = e10;
+  }
+  flushBones(t12, true);
+  while (bi < bones.length) mid.push(bones[bi++].tok);
+  const out = [...tokens.slice(0, a10), ...mid, ...tokens.slice(b3)];
+  untieAt(out, a10 + mid.length);
+  return { tokens: out, id: id2, a: a10, b: a10 + mid.length };
+}
+function padRestsFlat(left, id2) {
+  const toks = [];
+  while (left > 0) {
+    const d3 = Math.min(left, WHOLE);
+    toks.push({ kind: "rest", id: id2++, dur: d3 });
+    left -= d3;
+  }
+  return { toks, id: id2 };
+}
+function pasteBlock(song, paper, targets, at3, block2, id0) {
+  if (targets.length < block2.rows.length) return { fail: { row: targets.length, part: null, why: "rows" } };
+  let out = song, id2 = id0;
+  for (let k2 = 0; k2 < block2.rows.length; k2++) {
+    const row2 = block2.rows[k2], tg2 = targets[k2];
+    if (tg2.readOnly) return { fail: { row: k2, part: tg2.part, why: "locked" } };
+    if (!row2.toks.length) continue;
+    if (row2.kind !== tg2.kind) return { fail: { row: k2, part: tg2.part, why: "kind" } };
+    const r10 = replaceSpan(trackOf(out, paper, tg2.part), at3 + row2.off, row2.toks, row2.len, id2);
+    if ("fail" in r10) return { fail: { row: k2, part: tg2.part, why: r10.fail } };
+    out = withTrack(out, paper, tg2.part, r10.tokens);
+    id2 = r10.id;
+  }
+  return { song: out, id: id2, sel: { paper, parts: targets.slice(0, block2.rows.length).map((t10) => t10.part), t0: at3, t1: at3 + block2.len } };
+}
+function repeatBlock(song, m2, kindOf, id0) {
+  const block2 = copyBlock(song, m2, kindOf);
+  return pasteBlock(song, m2.paper, m2.parts.map((part2) => ({ part: part2, kind: kindOf(part2) })), m2.t1, block2, id0);
+}
+function caretTick(tokens, caret, lead = 0) {
+  let t10 = 0;
+  for (let i10 = 0; i10 < Math.min(caret, tokens.length); i10++) {
+    const x2 = tokens[i10];
+    if (isTimed(x2)) t10 += x2.dur;
+  }
+  return t10 + (lead > 0 ? lead : 0);
+}
+function enterMulti(st2, m2) {
+  const tk2 = trackOf(st2.song, m2.paper, m2.parts[0]), r10 = rowRange(tk2, m2.t0, m2.t1);
+  let caret = r10 ? r10.a : tk2.length;
+  if (!r10) {
+    const ticks = tickOf(tk2);
+    caret = tk2.length;
+    for (let i10 = headLen(tk2); i10 < tk2.length; i10++) if (isTimed(tk2[i10]) && ticks[i10] >= m2.t0) {
+      caret = i10;
+      break;
+    }
+  }
+  return { ...setFocus(st2, m2.paper, m2.parts[0], caret), sel: null, lead: void 0, log: [], multi: { ...m2, parts: m2.parts.slice() } };
 }
 
 // src/score/view-in-c.ts
@@ -18963,7 +19229,7 @@ var ScoreView = class {
       const moved2 = this.followKey.slice(0, this.followKey.lastIndexOf("|")) !== base2;
       this.followKey = fk;
       const scrolledAway = moved2 && this.userScrollAt > this.askAt;
-      if (base2 !== this.heldBase && (moved2 || this.caretSeen) && !scrolledAway) {
+      if (base2 !== this.heldBase && (moved2 || this.caretSeen) && !scrolledAway && !this.box) {
         this.heldBase = null;
         span("follow", () => this.follow());
       }
@@ -19509,8 +19775,8 @@ var ScoreView = class {
     for (const e10 of this.selEls) e10.remove();
     this.selEls = [];
     const L2 = this.layout, st2 = this.host.get();
-    if (!L2 || !st2.sel) return;
-    const { from, to: to2 } = st2.sel, sp2 = L2.sp;
+    if (!L2 || !st2.sel && !st2.multi) return;
+    const sp2 = L2.sp, m2 = st2.multi;
     const rowsOf = (r10) => {
       const idx = [];
       L2.systems.forEach((q2, i10) => {
@@ -19518,21 +19784,34 @@ var ScoreView = class {
       });
       return idx;
     };
+    const ticks = /* @__PURE__ */ new Map();
+    const inMulti = (h2) => {
+      const r10 = L2.systems[h2.system];
+      if (!m2 || !r10 || r10.paper !== m2.paper || !m2.parts.includes(r10.part) || L2.virtual[`${r10.paper}:${r10.part}`]) return false;
+      const key = `${r10.paper}:${r10.part}`;
+      let tk2 = ticks.get(key);
+      if (!tk2) {
+        tk2 = tickOf(trackOf(st2.song, r10.paper, r10.part));
+        ticks.set(key, tk2);
+      }
+      const t10 = tk2[h2.index];
+      return t10 !== void 0 && t10 >= m2.t0 && t10 < m2.t1;
+    };
     const acc = /* @__PURE__ */ new Map();
-    const take = (h2) => {
-      if (h2.index < from || h2.index >= to2 || !this.onTrack(h2)) return;
+    const take = (h2, timed2 = true) => {
+      if (m2 ? !(timed2 && inMulti(h2)) : h2.index < st2.sel.from || h2.index >= st2.sel.to || !this.onTrack(h2)) return;
       const r10 = L2.systems[h2.system];
       if (!r10) return;
-      const a10 = h2.x - 0.35 * sp2, b3 = h2.x + h2.w + 0.35 * sp2, e10 = acc.get(r10.sys);
-      if (!e10) acc.set(r10.sys, { a: a10, b: b3, rows: rowsOf(r10) });
+      const a10 = h2.x - 0.35 * sp2, b3 = h2.x + h2.w + 0.35 * sp2, k2 = `${r10.sys}:${r10.part}`, e10 = acc.get(k2);
+      if (!e10) acc.set(k2, { a: a10, b: b3, rows: rowsOf(r10) });
       else {
         e10.a = Math.min(e10.a, a10);
         e10.b = Math.max(e10.b, b3);
       }
     };
     for (const h2 of this.hits) take(h2);
-    for (const h2 of L2.dyns) take(h2);
-    for (const h2 of L2.marks) take(h2);
+    for (const h2 of L2.dyns) take(h2, false);
+    for (const h2 of L2.marks) take(h2, false);
     for (const { a: a10, b: b3, rows } of acc.values()) {
       const top = GEOMETRY[L2.systems[rows[0]].kind].bandTop(L2.systems[rows[0]], sp2 * 0.5), bottom = L2.lyricYs[rows[rows.length - 1]] + 0.8 * sp2;
       const d3 = document.createElement("div");
@@ -19765,6 +20044,13 @@ var ScoreView = class {
     const r10 = this.layout.systems[row2];
     if (!r10) return st2;
     return setFocus(st2, r10.paper, r10.part, caret);
+  }
+  /** 这张纸上看得见、能改的行（声部 id），谱上从上到下的顺序：叠起来的合租一家（只读）不算（选了好几行、整块贴数行用）。 */
+  paperRows(paper) {
+    const L2 = this.layout, out = [];
+    if (!L2) return out;
+    for (const r10 of L2.systems) if (r10.paper === paper && !L2.virtual[`${r10.paper}:${r10.part}`] && !out.includes(r10.part)) out.push(r10.part);
+    return out;
   }
   down(e10) {
     if (e10.target.closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle, .lit-grip")) return;
@@ -20700,18 +20986,42 @@ var ScoreView = class {
   boxSelect(x1, y1) {
     const b3 = this.box, L2 = this.layout, xa = Math.min(b3.x0, x1), xb = Math.max(b3.x0, x1), ya = Math.min(b3.y0, y1), yb = Math.max(b3.y0, y1);
     Object.assign(this.boxEl.style, { left: `${xa}px`, top: `${ya}px`, width: `${xb - xa}px`, height: `${yb - ya}px` });
-    const inside = this.hits.filter((n10) => {
+    const paper = L2.systems[b3.row]?.paper, inBox = (n10) => {
       const cx2 = n10.x + n10.w / 2;
-      return n10.system === b3.row && cx2 >= xa && cx2 <= xb && n10.y >= ya && n10.y <= yb;
-    }).map((n10) => n10.index);
-    const key = inside.length ? `${Math.min(...inside)}-${Math.max(...inside)}` : "caret";
+      return cx2 >= xa && cx2 <= xb && n10.y >= ya && n10.y <= yb;
+    };
+    const touched = this.hits.filter((n10) => {
+      const r10 = L2.systems[n10.system];
+      return !!r10 && r10.paper === paper && !L2.virtual[`${r10.paper}:${r10.part}`] && inBox(n10);
+    });
+    const parts = new Set(touched.map((n10) => L2.systems[n10.system].part));
+    if (parts.size >= 2 && paper) {
+      const st0 = b3.st0, order = this.paperRows(paper), idx = [...parts].map((p2) => order.indexOf(p2)).filter((i10) => i10 >= 0);
+      const rows = order.slice(Math.min(...idx), Math.max(...idx) + 1);
+      let t02 = Infinity, t12 = -Infinity;
+      for (const n10 of touched) {
+        const r10 = L2.systems[n10.system], tk2 = trackOf(st0.song, r10.paper, r10.part), t10 = tickOf(tk2)[n10.index] ?? 0, d3 = tk2[n10.index]?.dur ?? 0;
+        t02 = Math.min(t02, t10);
+        t12 = Math.max(t12, t10 + d3);
+      }
+      const m2 = normalize(st0.song, paper, rows, t02, t12), key2 = m2 ? `m:${rows.join(",")}:${m2.t0}-${m2.t1}` : "caret";
+      if (key2 === b3.last) return;
+      b3.last = key2;
+      if (m2) {
+        this.host.set(enterMulti(st0, m2));
+        return;
+      }
+    }
+    const inside = touched.filter((n10) => n10.system === b3.row || parts.size === 1 && L2.systems[n10.system].part === [...parts][0]).map((n10) => n10.index);
+    const one = touched.find((n10) => inside.includes(n10.index));
+    const key = inside.length ? `${one ? L2.systems[one.system].part : ""}:${Math.min(...inside)}-${Math.max(...inside)}` : "caret";
     if (key === b3.last) return;
     b3.last = key;
     if (!inside.length) {
       this.placeCaretAt(b3.x0, b3.y0, b3.st0);
       return;
     }
-    const st2 = this.focusRow(b3.st0, b3.row, b3.st0.caret);
+    const st2 = this.focusRow(b3.st0, one && one.system !== b3.row ? one.system : b3.row, b3.st0.caret);
     this.host.set(select(st2, Math.min(...inside), Math.max(...inside) + 1));
   }
   move(e10) {
@@ -35104,6 +35414,7 @@ function createPadHost(padEl2, g3) {
   }
   function runPadCommand(c10) {
     if (c10.k === "caret") g3.half.caretMoved();
+    if (st2().multi && g3.multiCmd(c10)) return;
     const prev = st2(), nx2 = apply(prev, g3.half.wrap(c10), performance.now());
     if (!g3.gate.may(prev, nx2)) return;
     if (c10.k === "art" && nx2 === prev) {
@@ -35862,15 +36173,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-71cfce4505a2.mjs");
+      return pick3(() => "singer-worker-56cf3b541600.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-2de184a31b02.mjs");
+      return pick3(() => "layout-worker-dfd09a77c6ab.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-91e22613dd0c.mjs");
+      return pick3(() => "encode-worker-1a9ca012ccaf.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -44138,7 +44449,7 @@ var LIMIT = 200;
 var COALESCE_MS = 1500;
 var emptyHistory = () => ({ past: [], future: [], lastKey: null, lastAt: 0 });
 var snapOf = (st2, extras, locus) => ({ song: st2.song, extras, at: st2.at, caret: st2.caret, sel: st2.sel, locus });
-var applySnap = (st2, s10) => ({ ...st2, song: s10.song, at: s10.at, caret: s10.caret, sel: s10.sel, log: [] });
+var applySnap = (st2, s10) => ({ ...st2, song: s10.song, at: s10.at, caret: s10.caret, sel: s10.sel, log: [], multi: void 0 });
 function record3(h2, prev, prevExtras, gesture, now2, locus) {
   if (gesture && gesture === h2.lastKey && now2 - h2.lastAt < COALESCE_MS && h2.past.length) {
     const last = h2.past[h2.past.length - 1];
@@ -47508,7 +47819,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "8ec9f224e3e0d1ad" : "dev";
+var CORE_HASH = true ? "a140fa53a771413d" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -48123,7 +48434,7 @@ function createCloudGate(d3) {
     d3.note(`cloud check (${trigger}): ${String(status ?? "skipped")}`);
     return status === "cloud-error" ? rawOnline() ? "noResponse" : "offline" : "ok";
   }
-  function block(r10, why2) {
+  function block2(r10, why2) {
     if (d3.ui.foreignFaceUp()) {
       phase = "open";
       d3.note(`gate: ${why2} \u2192 ${r10}, but another face is up (cloud answered) \u2192 stay out of the way`);
@@ -48206,7 +48517,7 @@ function createCloudGate(d3) {
     const wasBlocked = phase === "blocked";
     const id2 = ++runId;
     if (!rawOnline()) {
-      block("offline", trigger);
+      block2("offline", trigger);
       return;
     }
     const esc15 = armEscape();
@@ -48235,7 +48546,7 @@ function createCloudGate(d3) {
       else d3.afterPass?.();
       return;
     }
-    block(r10 === "timeout" ? "noResponse" : r10, r10 === "timeout" ? `${trigger}: no answer in ${timeoutMs}ms` : trigger);
+    block2(r10 === "timeout" ? "noResponse" : r10, r10 === "timeout" ? `${trigger}: no answer in ${timeoutMs}ms` : trigger);
     if (r10 === "timeout") {
       void work.then((late) => {
         if (id2 === runId && late === "ok" && phase === "blocked") {
@@ -48308,7 +48619,7 @@ function createCloudGate(d3) {
     netLost: () => {
       if (phase === "checking") {
         runId++;
-        block("offline", "went offline while checking");
+        block2("offline", "went offline while checking");
       }
     },
     authChanged: (signedIn, why2) => {
@@ -60691,7 +61002,9 @@ function createDocument(init2, hooks) {
   let born = true;
   const gate2 = (kind) => hooks.writeGate?.(kind) ?? null;
   function commit(next2, o10 = {}) {
-    const nextSt0 = next2.st ?? st2, nextEx = next2.extras ?? extras;
+    let nextSt0 = next2.st ?? st2;
+    const nextEx = next2.extras ?? extras;
+    if (nextSt0 !== st2 && nextSt0.multi && nextSt0.multi === st2.multi) nextSt0 = { ...nextSt0, multi: void 0 };
     const songChanged = nextSt0.song !== st2.song, exChanged = nextEx !== extras, stChanged = nextSt0 !== st2;
     if (!stChanged && !exChanged) return { ok: true, changed: false };
     const asked = nextSt0;
@@ -61353,17 +61666,18 @@ var SelBar = class {
   }
   /** 画：sel = 有没有选区（几个 token）；clip = 剪贴板里有没有东西；over = 别的全屏视图盖着（藏）；fix = 「修」开着（那一排开关的状态）。 */
   /** noKey = 这一行没有调（打击乐的行，7-R）：「调内一级」↑ ↓ 灰着、提示里说为什么（点了宿主说一句，不改谱）。 */
-  update(sel2, clip2, over, noKey = null) {
+  /** multi = 选了好几行（sel = 几行）：只露整块的动词（复制 / 剪切 / 粘贴 / 操作… / 变成休止 / ✕），第二排只留 ↑ ↓ ♯ ♭ 八度（时值那几个整块不做）。 */
+  update(sel2, clip2, over, noKey = null, multi = false) {
     if (over || !sel2 && !clip2) {
       this.el.hidden = true;
       return;
     }
     const b3 = (v, label, icon, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml2(icon) : ""}<span>${label}</span></button>`;
     const t10 = (v, label, title, off2 = false) => `<button type="button" class="btn sel-tw${off2 ? " is-off" : ""}" data-v="${v}" title="${title}">${label}</button>`;
-    const tweak = `<div class="sel-row sel-tweak">${t10("up", "\u2191", noKey ?? _t("\u5F80\u4E0A\u4E00\u7EA7\uFF08\u8C03\u5185\uFF09"), !!noKey)}${t10("down", "\u2193", noKey ?? _t("\u5F80\u4E0B\u4E00\u7EA7\uFF08\u8C03\u5185\uFF09"), !!noKey)}${t10("sharp", "\u266F", _t("\u5347\u534A\u97F3"))}${t10("flat", "\u266D", _t("\u964D\u534A\u97F3"))}${t10("octUp", "\u21918", _t("\u9AD8\u516B\u5EA6"))}${t10("octDown", "\u21938", _t("\u4F4E\u516B\u5EA6"))}<span class="sel-gap"></span>${t10("half", "\xF72", _t("\u65F6\u503C\u51CF\u534A"))}${t10("double", "\xD72", _t("\u65F6\u503C\u52A0\u500D"))}${t10("dot", _t("\u9644\u70B9"), _t("\u52A0\u9644\u70B9\uFF08\u90FD\u6709\u9644\u70B9 = \u53BB\u6389\uFF09"))}</div>`;
+    const tweak = `<div class="sel-row sel-tweak">${t10("up", "\u2191", noKey ?? _t("\u5F80\u4E0A\u4E00\u7EA7\uFF08\u8C03\u5185\uFF09"), !!noKey)}${t10("down", "\u2193", noKey ?? _t("\u5F80\u4E0B\u4E00\u7EA7\uFF08\u8C03\u5185\uFF09"), !!noKey)}${t10("sharp", "\u266F", _t("\u5347\u534A\u97F3"))}${t10("flat", "\u266D", _t("\u964D\u534A\u97F3"))}${t10("octUp", "\u21918", _t("\u9AD8\u516B\u5EA6"))}${t10("octDown", "\u21938", _t("\u4F4E\u516B\u5EA6"))}` + (multi ? "" : `<span class="sel-gap"></span>${t10("half", "\xF72", _t("\u65F6\u503C\u51CF\u534A"))}${t10("double", "\xD72", _t("\u65F6\u503C\u52A0\u500D"))}${t10("dot", _t("\u9644\u70B9"), _t("\u52A0\u9644\u70B9\uFF08\u90FD\u6709\u9644\u70B9 = \u53BB\u6389\uFF09"))}`) + `</div>`;
     this.el.classList.toggle("has-tweak", !!sel2);
     const ib2 = (v, label, icon, cls = "") => `<button type="button" class="btn sel-ico ${cls}" data-v="${v}" title="${label}" aria-label="${label}">${iconHtml2(icon)}</button>`;
-    const row1 = `<span class="sel-n">${_t("{sel} \u4E2A", { sel: sel2 })}</span>` + ib2("all", _t("\u5168\u9009"), "select-all") + ib2("copy", _t("\u590D\u5236"), "copy") + ib2("cut", _t("\u526A\u5207"), "cut") + (clip2 ? ib2("paste", _t("\u7C98\u8D34"), "paste") : "") + b3("transpose", _t("\u64CD\u4F5C\u2026")) + ib2("delete", _t("\u5220"), "trash-can", "danger") + b3("clear", "", "x");
+    const row1 = multi ? `<span class="sel-n">${_t("{sel} \u884C", { sel: sel2 })}</span>` + ib2("copy", _t("\u590D\u5236"), "copy") + ib2("cut", _t("\u526A\u5207"), "cut") + (clip2 ? ib2("paste", _t("\u7C98\u8D34"), "paste") : "") + b3("transpose", _t("\u64CD\u4F5C\u2026")) + ib2("delete", _t("\u53D8\u6210\u4F11\u6B62"), "trash-can", "danger") + b3("clear", "", "x") : `<span class="sel-n">${_t("{sel} \u4E2A", { sel: sel2 })}</span>` + ib2("all", _t("\u5168\u9009"), "select-all") + ib2("copy", _t("\u590D\u5236"), "copy") + ib2("cut", _t("\u526A\u5207"), "cut") + (clip2 ? ib2("paste", _t("\u7C98\u8D34"), "paste") : "") + b3("transpose", _t("\u64CD\u4F5C\u2026")) + ib2("delete", _t("\u5220"), "trash-can", "danger") + b3("clear", "", "x");
     this.el.innerHTML = sel2 ? `<div class="sel-row">${row1}</div>${tweak}` : b3("paste", _t("\u7C98\u8D34\u5230\u5149\u6807\u5904")) + b3("forget", "", "x");
     this.el.hidden = false;
   }
@@ -62064,15 +62378,199 @@ function updateChrome() {
   viewTab.hidden = over || $2("paperSel").hidden && $2("partSel").hidden;
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
-  const n10 = D3.st.sel ? D3.st.sel.to - D3.st.sel.from : 0;
-  const noKey = n10 > 0 && isPercPart(D3.st.at.part) ? NO_KEY_WHY() : null;
-  const sig = `${n10}|${!!clip}|${over || studio.isOpen}|${!!noKey}`;
+  const mm = D3.st.multi, n10 = mm ? mm.parts.length : D3.st.sel ? D3.st.sel.to - D3.st.sel.from : 0;
+  const noKey = n10 > 0 && !mm && isPercPart(D3.st.at.part) ? NO_KEY_WHY() : null;
+  const sig = `${n10}|${!!clip || !!block}|${over || studio.isOpen}|${!!noKey}|${!!mm}`;
   if (sig !== selSig) {
     selSig = sig;
-    selBar.update(n10, !!clip, over || studio.isOpen, noKey);
+    selBar.update(n10, !!clip || !!block, over || studio.isOpen, noKey, !!mm);
   }
 }
+var block = null;
+var blockText = "";
+var rowKind = (part2) => isPercPart(part2) ? "perc" : "pitched";
+var MULTI_ONLY = () => _t("\u9009\u4E86\u597D\u51E0\u884C\u65F6\u53EA\u80FD\u6574\u5757\u64CD\u4F5C\uFF08\u590D\u5236\u3001\u526A\u5207\u3001\u7C98\u8D34\u3001\u9000\u683C\u3001\u4E0A\u4E0B\u79FB\u3001\u518D\u6765\u4E00\u904D\uFF09");
+function multiMay(prev, next2) {
+  if (!prev.multi || next2.song === prev.song) return true;
+  info(MULTI_ONLY());
+  return false;
+}
+function multiCmd(c10) {
+  if (c10.k === "backspace" || c10.k === "delete") {
+    multiClear();
+    return true;
+  }
+  if (c10.k === "step" || c10.k === "alter" || c10.k === "octave") {
+    multiEach(c10);
+    return true;
+  }
+  if (c10.k === "escape") {
+    update({ ...D3.st, multi: void 0 });
+    return true;
+  }
+  const n10 = apply(D3.st, withHalf(c10), performance.now());
+  if (n10.song !== D3.st.song) {
+    info(MULTI_ONLY());
+    return true;
+  }
+  update(n10 === D3.st ? { ...n10, multi: void 0 } : n10);
+  return true;
+}
+function multiRows(f2, skipPerc) {
+  const m2 = D3.st.multi;
+  let song = D3.st.song;
+  for (const part2 of m2.parts) {
+    if (skipPerc && rowKind(part2) === "perc") continue;
+    const tk2 = trackOf(song, m2.paper, part2), r10 = rowRange(tk2, m2.t0, m2.t1);
+    if (!r10) continue;
+    song = f2({ ...D3.st, song, at: { paper: m2.paper, part: part2 }, sel: { from: r10.a, to: r10.b }, caret: r10.b, multi: void 0, log: [] }).song;
+  }
+  return song;
+}
+function multiEach(c10) {
+  if (!inputGate.mayWrite()) return;
+  const m2 = D3.st.multi, song = multiRows((x2) => apply(x2, c10, performance.now()), true);
+  if (song === D3.st.song) {
+    info(m2.parts.every((p2) => rowKind(p2) === "perc") ? _t("\u9009\u4E2D\u7684\u90FD\u662F\u6253\u51FB\u4E50\u7684\u884C\uFF1A\u6CA1\u6709\u97F3\u9AD8\u53EF\u79FB") : _t("\u9009\u4E2D\u7684\u91CC\u9762\u6CA1\u6709\u80FD\u79FB\u7684\u97F3"));
+    return;
+  }
+  update({ ...D3.st, song, multi: { ...m2 } });
+}
+function multiClear() {
+  if (!inputGate.mayWrite()) return;
+  const m2 = D3.st.multi;
+  update({ ...D3.st, song: clearBlock(D3.st.song, m2), multi: { ...m2 } });
+}
+function multiCopy(cut) {
+  const m2 = D3.st.multi, b3 = copyBlock(D3.st.song, m2, rowKind);
+  block = b3;
+  clip = null;
+  clipText = "";
+  blockText = m2.parts.map((part2, k2) => {
+    const tk2 = trackOf(D3.st.song, m2.paper, part2), r10 = rowRange(tk2, m2.t0, m2.t1);
+    return toJianpu(b3.rows[k2].toks, keyAt(tk2, r10 ? r10.a : tk2.length));
+  }).join("\n");
+  void navigator.clipboard?.writeText?.(blockText).catch(() => void 0);
+  if (cut) multiClear();
+  info(cut ? _t("\u526A\u5207\u4E86 {n} \u884C\uFF08\u539F\u5904\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF09", { n: m2.parts.length }) : _t("\u590D\u5236\u4E86 {n} \u884C", { n: m2.parts.length }));
+  updateChrome();
+}
+function pasteWhy(f2, rows) {
+  const who = f2.part ? partNameNow(f2.part) : "";
+  switch (f2.why) {
+    case "rows":
+      return _t("\u8D34\u4E0D\u4E0B\uFF1A\u8FD9\u4E00\u5757\u6709 {n} \u884C\uFF0C\u5149\u6807\u90A3\u4E00\u884C\u5F80\u4E0B\u53EA\u6709 {k} \u884C\u80FD\u6539\u7684", { n: rows, k: f2.row });
+    case "kind":
+      return _t("\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D{what}", { k: f2.row + 1, who, what: rowKind(f2.part) === "perc" ? _t("\u662F\u6253\u51FB\u4E50\u7684\u884C\uFF0C\u8D34\u8FDB\u6765\u7684\u8FD9\u4E00\u884C\u6709\u97F3\u9AD8") : _t("\u6709\u97F3\u9AD8\uFF0C\u8D34\u8FDB\u6765\u7684\u8FD9\u4E00\u884C\u662F\u6253\u51FB\u4E50") });
+    case "cut":
+      return _t("\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u843D\u70B9\u5207\u5230\u4E86\u4E00\u4E2A\u97F3\u7684\u4E2D\u95F4\uFF08\u8FD9\u4E00\u7248\u4E0D\u66FF\u4F60\u628A\u97F3\u5207\u5F00\uFF09", { k: f2.row + 1, who });
+    case "dur":
+      return _t("\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u5207\u51FA\u6765\u7684\u65F6\u503C\u592A\u77ED\u6216\u592A\u957F", { k: f2.row + 1, who });
+    case "locked":
+      return _t("\u8D34\u4E0D\u4E0B\uFF1A\u7B2C {k} \u884C\u300C{who}\u300D\u53EA\u8BFB", { k: f2.row + 1, who });
+  }
+}
+function pasteBlockNow(b3) {
+  if (!inputGate.mayWrite()) return;
+  const st2 = D3.st, paper = st2.at.paper, rows = view.paperRows(paper), k2 = rows.indexOf(st2.at.part);
+  if (k2 < 0) {
+    info(_t("\u8D34\u4E0D\u4E0B\uFF1A\u5149\u6807\u90A3\u4E00\u884C\u4E0D\u80FD\u6539"));
+    return;
+  }
+  const at3 = st2.multi ? st2.multi.t0 : st2.sel ? caretTick(tr(st2), st2.sel.from) : caretTick(tr(st2), st2.caret, st2.lead);
+  const r10 = pasteBlock(st2.song, paper, rows.slice(k2).map((part2) => ({ part: part2, kind: rowKind(part2) })), at3, b3, st2.nextId);
+  if ("fail" in r10) {
+    info(pasteWhy(r10.fail, b3.rows.length));
+    return;
+  }
+  update(enterMulti({ ...st2, song: r10.song, nextId: r10.id }, r10.sel));
+  info(_t("\u8D34\u4E86 {n} \u884C", { n: b3.rows.length }));
+}
+function multiRepeat() {
+  const m2 = D3.st.multi;
+  if (!m2 || !inputGate.mayWrite()) return;
+  const r10 = repeatBlock(D3.st.song, m2, rowKind, D3.st.nextId);
+  if ("fail" in r10) {
+    info(pasteWhy(r10.fail, m2.parts.length));
+    return;
+  }
+  update(enterMulti({ ...D3.st, song: r10.song, nextId: r10.id }, r10.sel));
+}
+function multiVerb(v) {
+  if (!D3.st.multi) return false;
+  switch (v) {
+    case "copy":
+      multiCopy(false);
+      return true;
+    case "cut":
+      if (inputGate.mayWrite()) multiCopy(true);
+      return true;
+    // 剪切 = 复制（读）+ 变休止（写，multiClear 里再问一次不弹第二句：前面已经拦了）
+    case "paste":
+      void pasteNow();
+      return true;
+    case "delete":
+      multiClear();
+      return true;
+    case "clear":
+      update({ ...D3.st, multi: void 0 });
+      return true;
+    case "repeat":
+      multiRepeat();
+      return true;
+    case "up":
+    case "down":
+      multiEach({ k: "step", d: v === "up" ? 1 : -1 });
+      return true;
+    case "sharp":
+    case "flat":
+      multiEach({ k: "alter", d: v === "sharp" ? 1 : -1 });
+      return true;
+    case "octUp":
+    case "octDown":
+      multiEach({ k: "octave", d: v === "octUp" ? 1 : -1 });
+      return true;
+    case "transpose":
+      openMultiMenu(selBarAnchor());
+      return true;
+    case "all":
+    case "forget":
+      return false;
+    default:
+      info(MULTI_ONLY());
+      return true;
+  }
+}
+function openMultiMenu(at3) {
+  ui2.close();
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu sel-menu";
+  box.setAttribute("role", "menu");
+  const item = (v, label, title = "", cls = "") => `<button class="btn ctx-item ${cls}" data-v="${v}"${title ? ` title="${esc14(title)}"` : ""}>${label}</button>`;
+  box.innerHTML = item("repeat", _t("\u518D\u6765\u4E00\u904D"), _t("\u8FD9\u4E00\u5757\u8D34\u5230\u5B83\u81EA\u5DF1\u540E\u9762\u3001\u540C\u6837\u7684\u51E0\u884C\uFF08Ctrl / \u2318+D\uFF1B\u8FDE\u6309 = \u4E00\u904D\u904D\u5F80\u540E\u5237\uFF09")) + `<div class="ctx-sep"></div>` + item("copy", _t("\u590D\u5236")) + item("cut", _t("\u526A\u5207"), _t("\u590D\u5236\uFF0C\u518D\u628A\u539F\u5904\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62")) + (block || clip ? item("paste", _t("\u7C98\u8D34")) : "") + item("delete", _t("\u53D8\u6210\u4F11\u6B62"), _t("\u6BCF\u4E00\u884C\u9009\u4E2D\u7684\u53D8\u6210\u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF0C\u4E0D\u5408\u62E2"), "danger");
+  document.body.append(box);
+  const w2 = box.offsetWidth, h2 = box.offsetHeight, mg = 8;
+  let y2 = at3.y + 8;
+  if (y2 + h2 > innerHeight - mg) y2 = at3.y - h2 - 8;
+  box.style.left = `${Math.max(mg, Math.min(at3.x, innerWidth - w2 - mg))}px`;
+  box.style.top = `${Math.max(mg, Math.min(y2, innerHeight - h2 - mg))}px`;
+  const close = () => {
+    box.remove();
+    ui2.closed(close);
+  };
+  box.addEventListener("click", (e10) => {
+    const b3 = e10.target.closest("[data-v]");
+    if (!b3) return;
+    const v = b3.dataset.v;
+    if (v !== "repeat") close();
+    multiVerb(v);
+    scoreEl.focus();
+  });
+  ui2.open({ k: "menu", close });
+}
 function setClip(t10) {
+  block = null;
+  blockText = "";
   clip = t10;
   clipText = toJianpu(t10, fifthsAtSel(D3.st));
   void navigator.clipboard?.writeText?.(clipText).catch(() => void 0);
@@ -62084,6 +62582,10 @@ async function pasteNow() {
     sys = await navigator.clipboard?.readText?.() ?? "";
   } catch {
   }
+  if (block && (!sys || sys.trim() === blockText.trim())) {
+    pasteBlockNow(block);
+    return;
+  }
   let toks = sys && sys.trim() !== clipText.trim() ? fromJianpu(sys, fifthsAtSel(D3.st)) : null;
   if (!toks) toks = clip;
   if (!toks) {
@@ -62094,6 +62596,10 @@ async function pasteNow() {
   info(_t("\u8D34\u4E86 {n} \u4E2A", { n: toks.length }));
 }
 async function selVerb(v) {
+  if (multiVerb(v)) {
+    if (v !== "transpose") scoreEl.focus();
+    return;
+  }
   switch (v) {
     case "all":
       update(selectAll(D3.st));
@@ -62917,6 +63423,7 @@ var bootReady = false;
 var padHost = createPadHost(padEl, {
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
   state: () => D3.st,
+  multiCmd: (c10) => multiCmd(c10),
   middleC: () => lookOf(D3.st.song, lookCtx()).middleC,
   inC: () => inCAtCursor(),
   jianpuBase: () => jianpuBaseAtCursor(),
@@ -62926,11 +63433,11 @@ var padHost = createPadHost(padEl, {
     return !pp || tempoOwner(D3.st.song, pp) === D3.st.at.part;
   },
   update: (n10, gesture) => {
-    if (inputGate.may(D3.st, n10)) update(n10, gesture);
+    if (inputGate.may(D3.st, n10) && multiMay(D3.st, n10)) update(n10, gesture);
   },
   writeAndLocate: (w2, gesture) => writeAndLocate((s10) => {
     const n10 = w2(s10);
-    return inputGate.may(s10, n10) ? n10 : s10;
+    return inputGate.may(s10, n10) && multiMay(s10, n10) ? n10 : s10;
   }, gesture),
   afterWrite,
   previewEdited,
@@ -68187,7 +68694,7 @@ function whereNow() {
   if (ui2.overlay || isSheetOpen() || isGateOpen()) return "sheet";
   if (view.marks.open) return "mark";
   if (view.lyrics.open) return "lyric";
-  return inputGate.why() ? "impro" : D3.st.sel ? "edit" : "write";
+  return inputGate.why() ? "impro" : D3.st.sel || D3.st.multi ? "edit" : "write";
 }
 var NOTE_EDIT = /* @__PURE__ */ new Set(["degree", "rest", "bar", "shorter", "longer", "tuplet", "extend", "acc", "octave", "step", "alter", "delete", "transpose", "respell", "seldur", "selscale", "modulate", "staff"]);
 var modeHintShown = null;
@@ -68204,6 +68711,7 @@ function lyricBackspace() {
 function run(a10, repeat, code) {
   switch (a10.k) {
     case "cmd":
+      if (D3.st.multi && multiCmd(a10.cmd)) return true;
       if (ws.mode === "lyrics" && NOTE_EDIT.has(a10.cmd.k)) {
         if (modeHintShown !== ws.mode) {
           modeHintShown = ws.mode;
@@ -68306,7 +68814,12 @@ function run(a10, repeat, code) {
       else openExportHub();
       return true;
     case "clip":
-      if ((a10.a === "cut" || a10.a === "paste") && !inputGate.mayWrite()) return true;
+      if ((a10.a === "cut" || a10.a === "paste" || a10.a === "repeat") && !inputGate.mayWrite()) return true;
+      if (a10.a === "repeat") {
+        if (D3.st.multi) multiRepeat();
+        else info(_t("\u518D\u6765\u4E00\u904D\uFF1A\u5148\u6846\u9009\u597D\u51E0\u884C\uFF08\u8DE8\u51E0\u4F4D\u6B4C\u624B\u6846\u4E00\u5757\uFF09"));
+        return true;
+      }
       void selVerb(a10.a);
       return true;
     // 复制 / 全选是读，不问
@@ -68351,7 +68864,7 @@ window.addEventListener("keydown", (e10) => {
     inRef: !!t10?.closest?.("wp-reference-window"),
     studioOpen: studio.isOpen,
     inStudio: !!t10?.closest?.(".studio"),
-    escFree: !D3.st.sel && !view.lyrics.open && !view.marks.open && !ui2.overlay,
+    escFree: !D3.st.sel && !D3.st.multi && !view.lyrics.open && !view.marks.open && !ui2.overlay,
     listen: listenOn()
   });
   switch (owner) {
@@ -68417,11 +68930,11 @@ window.addEventListener("keydown", (e10) => {
       }
       return;
     case "score": {
-      const a10 = route(e10, whereNow(), D3.st.sel ? "edit" : "write");
+      const a10 = esc15 && D3.st.multi && whereNow() === "edit" ? { k: "cmd", cmd: { k: "escape" } } : route(e10, whereNow(), D3.st.sel || D3.st.multi ? "edit" : "write");
       if (a10 && run(a10, e10.repeat, e10.code)) e10.preventDefault();
       return;
     }
-    // 谱：照键表路由；会写谱的在 run() 里问总闸
+    // 谱：照键表路由；会写谱的在 run() 里问总闸   // 选了好几行：Esc = 收掉（键表「有选区」那一列没有 Esc）
     default:
       return assertNever(owner);
   }
@@ -68706,4 +69219,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a2d4a14e029e.mjs.map
+//# sourceMappingURL=moonsinger-61505a54a093.mjs.map

@@ -19,5 +19,6 @@ export declare class SelBar {
     constructor(parent: HTMLElement, host: SelBarHost);
     /** 画：sel = 有没有选区（几个 token）；clip = 剪贴板里有没有东西；over = 别的全屏视图盖着（藏）；fix = 「修」开着（那一排开关的状态）。 */
     /** noKey = 这一行没有调（打击乐的行，7-R）：「调内一级」↑ ↓ 灰着、提示里说为什么（点了宿主说一句，不改谱）。 */
-    update(sel: number, clip: boolean, over: boolean, noKey?: string | null): void;
+    /** multi = 选了好几行（sel = 几行）：只露整块的动词（复制 / 剪切 / 粘贴 / 操作… / 变成休止 / ✕），第二排只留 ↑ ↓ ♯ ♭ 八度（时值那几个整块不做）。 */
+    update(sel: number, clip: boolean, over: boolean, noKey?: string | null, multi?: boolean): void;
 }
