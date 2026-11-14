@@ -120,6 +120,11 @@ export interface ScoreLook {
     lyricHint?(i: number): string | null;
     /** 歌词框下面的小字：光标所在那条下标 i 那个字所在这一句月读念成什么（v0.9.34）；不是月读 / 引擎还没起来 = null。 */
     lyricReading?(i: number): import("./lyric-editor.ts").LyricReading | null;
+    /** 浮着的键盘盖住的那一块（屏幕坐标；右下角浮窗 = 从 left 到右边、从 top 到底；没浮 = null）：跟随光标时光标那一行被它盖住 = 往上滚到露出来（v0.17.52）。 */
+    covered?(): {
+        left: number;
+        top: number;
+    } | null;
 }
 /** 试听（谱面上按住 / 拖的那个音）。 */
 export interface ScoreSound {

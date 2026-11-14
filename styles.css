@@ -223,6 +223,17 @@ body.listen-mode .ink-caret { display: none; }
 #stage[data-side="right"] .pad-panel { border-top: 0; border-left: 1px solid var(--line); padding: 10px; gap: 8px; }
 #stage[data-side="right"] .studio { max-height: none; border-top: 0; border-left: 1px solid var(--line); }
 #stage[data-side="right"] .pad-tools .btn { height: 36px; font-size: 15px; }
+/* 浮着那一档（v0.17.52，键盘设计稿第四节：谱那一块宽过 1600 / 「布局…」里选了右下角；main.ts syncDock 按 workspace.ts dockPlace 写 data-side="float"）：
+   键盘钉在谱那一块的右下角（不能拖、不能拉宽），谱占满整块、照「没有底座」排。用具名线放：main 盖满整块，pad 落在右下那一格——小条照旧 grid-area: pad、贴在它上沿。
+   只管键盘那两面（音键 / 符号格）：混音台要宽、照旧贴底（data-dock="studio" 不进这一档）；收起 / 词 = 小条回屏幕左下角（data-dock="none" 的老规则）。 */
+#stage[data-side="float"][data-dock="keys"], #stage[data-side="float"][data-dock="symbols"] {
+  grid-template-areas: none;
+  grid-template-columns: [main-start] minmax(0, 1fr) [pad-start] min(560px, calc(100% - 24px)) [pad-end] 12px [main-end];
+  grid-template-rows: [main-start] minmax(0, 1fr) [pad-start] auto [pad-end] 12px [main-end];
+}
+#stage[data-side="float"][data-dock="keys"] > .pad-panel, #stage[data-side="float"][data-dock="symbols"] > .pad-panel {
+  position: relative; z-index: var(--z-float); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 24px rgba(0, 0, 0, .14);
+}
 
 /* 「好了」面板（导出歌声后：分享 / 下载 / 关；应用内，不用系统弹窗） */
 .offer { position: fixed; inset: 0; z-index: var(--z-sheet); display: flex; align-items: center; justify-content: center; background: rgba(40, 38, 34, .28); padding: 16px; }

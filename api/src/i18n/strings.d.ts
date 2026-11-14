@@ -5563,6 +5563,27 @@ export declare const S: {
     readonly "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09": {
         readonly en: "Sliding up / down on a note key bends just this note up / down (sticky)";
     };
+    readonly 位置: {
+        readonly en: "Position";
+    };
+    readonly "\u5C4F\u5E55\u5F88\u5BBD\uFF08\u8C31\u90A3\u4E00\u5757\u5BBD\u8FC7 1600\uFF09\u65F6\u9489\u5728\u53F3\u4E0B\u89D2\uFF0C\u522B\u7684\u65F6\u5019\u8D34\u5E95": {
+        readonly en: "Pinned to the bottom-right corner when the screen is very wide (score area wider than 1600), otherwise docked at the bottom";
+    };
+    readonly 贴底: {
+        readonly en: "Bottom";
+    };
+    readonly 一直贴底: {
+        readonly en: "Always docked at the bottom";
+    };
+    readonly 右下角: {
+        readonly en: "Bottom-right";
+    };
+    readonly "\u4E00\u76F4\u9489\u5728\u53F3\u4E0B\u89D2\uFF08\u4E0D\u80FD\u62D6\uFF09": {
+        readonly en: "Always pinned to the bottom-right corner (not draggable)";
+    };
+    readonly "\u952E\u76D8\u653E\u5728\u54EA\uFF08\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09": {
+        readonly en: "Where the keyboard sits (remembered on this device)";
+    };
     readonly 键盘布局: {
         readonly en: "Keyboard layout";
     };
@@ -6835,8 +6856,8 @@ export declare const S: {
     readonly 置顶到常用: {
         readonly en: "Pin to favorites";
     };
-    readonly 这首歌的乐器预设: {
-        readonly en: "Instrument presets in this song";
+    readonly 这首歌里已有的乐器: {
+        readonly en: "Instruments already in this song";
     };
     readonly "\u6B63\u5728\u53F0\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD": {
         readonly en: "On stage now; long-press (right-click) = duplicate";
@@ -6847,8 +6868,8 @@ export declare const S: {
     readonly "\u70B9 = \u62F7\u4E00\u4EFD\u5230\u8FD9\u4E2A\u58F0\u90E8\u3001\u6362\u4E0A\uFF08\u300C{from}\u300D\u90A3\u8FB9\u4E0D\u52A8\uFF09": {
         readonly en: "Tap = copy it to this part and use it (the one on “{from}” stays as it is)";
     };
-    readonly "\u5728 {from} \u4E0A": {
-        readonly en: "on {from}";
+    readonly "\u590D\u5236\u300C{from}\u300D\u7684": {
+        readonly en: "Copy from “{from}”";
     };
     readonly "\u5F00\u7740\uFF1A\u76EE\u5F55\u91CC\u6CA1\u6709\u8C01\u80FD\u6F14\uFF08\u8FDE\u5E73\u66FF\u4E5F\u6CA1\u6709\uFF09\u7684\u4E50\u5668\u4E0D\u5217\u51FA\u6765\uFF08\u8FD9\u4E00\u9875\u85CF\u4E86 {n} \u4EF6\uFF09\u3002\u70B9\u4E00\u4E0B = \u5168\u5217\u51FA\u6765": {
         readonly en: "On: instruments nobody in the catalog can perform (not even a stand-in) are hidden ({n} hidden here). Tap to list everything";

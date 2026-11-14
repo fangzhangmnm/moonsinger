@@ -1853,6 +1853,13 @@ var S = {
   "\u6EDA\u952E\u76D8": { en: "Glide" },
   "\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09": { en: "Sliding your finger to the next key sounds that key (writes along the way while writing)" },
   "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09": { en: "Sliding up / down on a note key bends just this note up / down (sticky)" },
+  "\u4F4D\u7F6E": { en: "Position" },
+  "\u5C4F\u5E55\u5F88\u5BBD\uFF08\u8C31\u90A3\u4E00\u5757\u5BBD\u8FC7 1600\uFF09\u65F6\u9489\u5728\u53F3\u4E0B\u89D2\uFF0C\u522B\u7684\u65F6\u5019\u8D34\u5E95": { en: "Pinned to the bottom-right corner when the screen is very wide (score area wider than 1600), otherwise docked at the bottom" },
+  "\u8D34\u5E95": { en: "Bottom" },
+  "\u4E00\u76F4\u8D34\u5E95": { en: "Always docked at the bottom" },
+  "\u53F3\u4E0B\u89D2": { en: "Bottom-right" },
+  "\u4E00\u76F4\u9489\u5728\u53F3\u4E0B\u89D2\uFF08\u4E0D\u80FD\u62D6\uFF09": { en: "Always pinned to the bottom-right corner (not draggable)" },
+  "\u952E\u76D8\u653E\u5728\u54EA\uFF08\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09": { en: "Where the keyboard sits (remembered on this device)" },
   "\u952E\u76D8\u5E03\u5C40": { en: "Keyboard layout" },
   "\u4E0D\u753B": { en: "Not drawn" },
   "\u65E0\u6548": { en: "No effect" },
@@ -2277,11 +2284,11 @@ var S = {
   "\u62FF\u6389": { en: "Remove" },
   "\u53D6\u6D88\u7F6E\u9876": { en: "Unpin" },
   "\u7F6E\u9876\u5230\u5E38\u7528": { en: "Pin to favorites" },
-  "\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE": { en: "Instrument presets in this song" },
+  "\u8FD9\u9996\u6B4C\u91CC\u5DF2\u6709\u7684\u4E50\u5668": { en: "Instruments already in this song" },
   "\u6B63\u5728\u53F0\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD": { en: "On stage now; long-press (right-click) = duplicate" },
   "\u70B9 = \u6362\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD / \u5220\u6389": { en: "Tap = use it; long-press (right-click) = duplicate / delete" },
   "\u70B9 = \u62F7\u4E00\u4EFD\u5230\u8FD9\u4E2A\u58F0\u90E8\u3001\u6362\u4E0A\uFF08\u300C{from}\u300D\u90A3\u8FB9\u4E0D\u52A8\uFF09": { en: "Tap = copy it to this part and use it (the one on \u201C{from}\u201D stays as it is)" },
-  "\u5728 {from} \u4E0A": { en: "on {from}" },
+  "\u590D\u5236\u300C{from}\u300D\u7684": { en: "Copy from \u201C{from}\u201D" },
   "\u5F00\u7740\uFF1A\u76EE\u5F55\u91CC\u6CA1\u6709\u8C01\u80FD\u6F14\uFF08\u8FDE\u5E73\u66FF\u4E5F\u6CA1\u6709\uFF09\u7684\u4E50\u5668\u4E0D\u5217\u51FA\u6765\uFF08\u8FD9\u4E00\u9875\u85CF\u4E86 {n} \u4EF6\uFF09\u3002\u70B9\u4E00\u4E0B = \u5168\u5217\u51FA\u6765": { en: "On: instruments nobody in the catalog can perform (not even a stand-in) are hidden ({n} hidden here). Tap to list everything" },
   "\u5173\u7740\uFF1A\u6240\u6709\u4E50\u5668\u90FD\u5217\u51FA\u6765\uFF0C\u6CA1\u6709\u8C01\u80FD\u6F14\u7684\u4E5F\u5728\u3002\u70B9\u4E00\u4E0B = \u85CF\u8D77\u6765": { en: "Off: every instrument is listed, including ones nobody can perform. Tap to hide them" },
   "{label} \xB7 {n} \u4EF6": { en: "{label} \xB7 {n}" },
@@ -4573,7 +4580,7 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/version.ts
-var APP_VERSION = "v0.17.51-2026-11-13";
+var APP_VERSION = "v0.17.52-2026-11-13";
 
 // src/format/performance.ts
 var REPO = "https://github.com/fangzhangmnm/moonsinger";
@@ -7761,4 +7768,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-d622905db6e2.mjs.map
+//# sourceMappingURL=encode-worker-bb3e9ba34be0.mjs.map

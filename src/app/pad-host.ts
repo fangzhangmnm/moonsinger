@@ -20,7 +20,7 @@ import { type Pitch, alterBy, keySpell, midiOf } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type EditorState, type Token, type NoteTok, ART_NAME, allPitches, singleSel, writePitch, soundingPitch, setNote, setLen, setTuplet, setInputKey, setInputScale, tr, keyAt, toggleChordPitch, dynMarkAt, markAnchor } from "../score/song.ts";
 import type { Mark } from "../score/perform.ts";
-import { Pad, type HintRange } from "../keyboard/pad.ts";
+import { Pad, type HintRange, type PadLayout } from "../keyboard/pad.ts";
 import { chordHead, chordBothAfterMs, chordVerdict, monoClash, type ChordWhy } from "../keyboard/chords.ts";
 import { createPadMusic, type PadMusicHost } from "./pad-music.ts";
 import { padKeyAction, markOfKey } from "./pad-keys.ts";
@@ -30,6 +30,10 @@ import type { InputGate } from "./input-gate.ts";
 /** main.ts 给的那一组访问器：谱的状态与写、出声、页 / 模式、鬼音符、锁、披露、符号格要看的、菜单。 */
 export interface PadGlue {
   state(): EditorState;
+  /** 键盘能用多大地方 / 记着的布局 / 布局改了（v0.17.52 浮窗；直通给键盘，见 src/keyboard/pad.ts PadHost）。 */
+  room(): { w: number; h: number };
+  layout(): Partial<PadLayout> | null;
+  onLayout(l: PadLayout): void;
   /** 选了好几行（v0.17.49）：pad 的编辑命令先交给宿主的整块那一路（退格 = 变休止、上下移 = 有音高的行一起移、别的 = 说一句）；true = 吃掉了。 */
   multiCmd(c: Command): boolean;
   /** 中央 C 叫 C 几（这首歌的，跟着设备的习惯；第 18 条）：键上的字照它写。 */
@@ -292,7 +296,8 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     music,
     isImpro: padImpro,
     onImpro: () => g.toggleImpro(),
-    onKbSwitch: () => g.kbSwitch(),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
+    onKbSwitch: () => g.kbSwitch(),
+    room: () => g.room(), layout: () => g.layout(), onLayout: (l) => g.onLayout(l),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
     // 音键按下：第 k 级是什么音问 music；写（不在「弹」时；宿主不收 = false，pad 不亮）+ 响
     onNoteDown: (k, id) => noteDown(music.pitchAt(k), id),
     onNoteUp: (id) => noteUp(id),

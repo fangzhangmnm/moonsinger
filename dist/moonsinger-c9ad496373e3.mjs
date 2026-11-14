@@ -5438,6 +5438,13 @@ var S = {
   "\u6EDA\u952E\u76D8": { en: "Glide" },
   "\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09": { en: "Sliding your finger to the next key sounds that key (writes along the way while writing)" },
   "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09": { en: "Sliding up / down on a note key bends just this note up / down (sticky)" },
+  "\u4F4D\u7F6E": { en: "Position" },
+  "\u5C4F\u5E55\u5F88\u5BBD\uFF08\u8C31\u90A3\u4E00\u5757\u5BBD\u8FC7 1600\uFF09\u65F6\u9489\u5728\u53F3\u4E0B\u89D2\uFF0C\u522B\u7684\u65F6\u5019\u8D34\u5E95": { en: "Pinned to the bottom-right corner when the screen is very wide (score area wider than 1600), otherwise docked at the bottom" },
+  "\u8D34\u5E95": { en: "Bottom" },
+  "\u4E00\u76F4\u8D34\u5E95": { en: "Always docked at the bottom" },
+  "\u53F3\u4E0B\u89D2": { en: "Bottom-right" },
+  "\u4E00\u76F4\u9489\u5728\u53F3\u4E0B\u89D2\uFF08\u4E0D\u80FD\u62D6\uFF09": { en: "Always pinned to the bottom-right corner (not draggable)" },
+  "\u952E\u76D8\u653E\u5728\u54EA\uFF08\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09": { en: "Where the keyboard sits (remembered on this device)" },
   "\u952E\u76D8\u5E03\u5C40": { en: "Keyboard layout" },
   "\u4E0D\u753B": { en: "Not drawn" },
   "\u65E0\u6548": { en: "No effect" },
@@ -5862,11 +5869,11 @@ var S = {
   "\u62FF\u6389": { en: "Remove" },
   "\u53D6\u6D88\u7F6E\u9876": { en: "Unpin" },
   "\u7F6E\u9876\u5230\u5E38\u7528": { en: "Pin to favorites" },
-  "\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE": { en: "Instrument presets in this song" },
+  "\u8FD9\u9996\u6B4C\u91CC\u5DF2\u6709\u7684\u4E50\u5668": { en: "Instruments already in this song" },
   "\u6B63\u5728\u53F0\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD": { en: "On stage now; long-press (right-click) = duplicate" },
   "\u70B9 = \u6362\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD / \u5220\u6389": { en: "Tap = use it; long-press (right-click) = duplicate / delete" },
   "\u70B9 = \u62F7\u4E00\u4EFD\u5230\u8FD9\u4E2A\u58F0\u90E8\u3001\u6362\u4E0A\uFF08\u300C{from}\u300D\u90A3\u8FB9\u4E0D\u52A8\uFF09": { en: "Tap = copy it to this part and use it (the one on \u201C{from}\u201D stays as it is)" },
-  "\u5728 {from} \u4E0A": { en: "on {from}" },
+  "\u590D\u5236\u300C{from}\u300D\u7684": { en: "Copy from \u201C{from}\u201D" },
   "\u5F00\u7740\uFF1A\u76EE\u5F55\u91CC\u6CA1\u6709\u8C01\u80FD\u6F14\uFF08\u8FDE\u5E73\u66FF\u4E5F\u6CA1\u6709\uFF09\u7684\u4E50\u5668\u4E0D\u5217\u51FA\u6765\uFF08\u8FD9\u4E00\u9875\u85CF\u4E86 {n} \u4EF6\uFF09\u3002\u70B9\u4E00\u4E0B = \u5168\u5217\u51FA\u6765": { en: "On: instruments nobody in the catalog can perform (not even a stand-in) are hidden ({n} hidden here). Tap to list everything" },
   "\u5173\u7740\uFF1A\u6240\u6709\u4E50\u5668\u90FD\u5217\u51FA\u6765\uFF0C\u6CA1\u6709\u8C01\u80FD\u6F14\u7684\u4E5F\u5728\u3002\u70B9\u4E00\u4E0B = \u85CF\u8D77\u6765": { en: "Off: every instrument is listed, including ones nobody can perform. Tap to hide them" },
   "{label} \xB7 {n} \u4EF6": { en: "{label} \xB7 {n}" },
@@ -6449,7 +6456,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.51-2026-11-13";
+var APP_VERSION = "v0.17.52-2026-11-13";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -18727,6 +18734,11 @@ function sideDock(stageW, stageH, dockH, spPx) {
   if (stageW - SIDE_DOCK_W < SIDE_DOCK_MIN_SCORE_W) return false;
   return stageH - dockH < SIDE_DOCK_LINES * LINE_SP * spPx;
 }
+var FLOAT_MIN_W = 1600;
+function dockPlace(stageW, stageH, dockH, spPx, pref) {
+  if (pref === "corner" || pref === "auto" && stageW > FLOAT_MIN_W) return "float";
+  return sideDock(stageW, stageH, dockH, spPx) ? "right" : "bottom";
+}
 var sideDocked = (stage) => stage?.dataset.side === "right";
 
 // src/ui/part-colors.ts
@@ -19970,8 +19982,14 @@ var ScoreView = class {
     if (!box) return;
     const top = this.el.scrollTop, h2 = this.el.clientHeight, z2 = this.zoom, off2 = this.sheet.offsetTop;
     const a10 = off2 + box.top * z2, bt = off2 + box.bottom * z2, rowH = bt - a10, below = Math.min(rowH, h2 * 0.3), above = Math.min(rowH * 0.25, h2 * 0.1);
+    const cov = this.host.look.covered?.() ?? null;
+    let vh = h2;
+    if (cov) {
+      const hd = this.head(), cx2 = hd ? this.sheet.offsetLeft - this.el.scrollLeft + (L2.pageX.left + hd.x) * z2 : Infinity;
+      if (cx2 >= cov.left - 8) vh = Math.max(rowH, Math.min(h2, cov.top));
+    }
     if (a10 - above < top) this.el.scrollTop = Math.max(0, a10 - above);
-    else if (bt + below > top + h2) this.el.scrollTop = Math.min(bt + below - h2, a10 - above);
+    else if (bt + below > top + vh) this.el.scrollTop = Math.min(bt + below - vh, a10 - above);
     if (this.hscroll) {
       const hx = this.head()?.x ?? (st2.sel ? this.hits.find((n10) => this.onTrack(n10) && n10.index === st2.sel.from)?.x : void 0);
       if (hx === void 0) return;
@@ -21700,7 +21718,7 @@ function wheelSteps(e10, acc) {
 }
 
 // src/keyboard/pad.ts
-var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
+var padForm = (r10) => Math.min(r10.w, r10.h) >= 600 && r10.w >= 700 ? "tablet" : "phone";
 var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var RAMP_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -21737,6 +21755,14 @@ var Pad = class {
   constructor(el2, host2) {
     this.el = el2;
     this.host = host2;
+    const l10 = host2.layout?.() ?? null;
+    if (l10) {
+      if (l10.rows === "auto" || typeof l10.rows === "number" && Number.isInteger(l10.rows) && l10.rows >= ROWS_MIN && l10.rows <= ROWS_MAX) this.rowsSetting = l10.rows;
+      if (typeof l10.cols === "number" && Number.isInteger(l10.cols) && l10.cols >= COLS_MIN && l10.cols <= COLS_MAX) this.cols = l10.cols;
+      if (l10.keys === "movable" || l10.keys === "absolute") this.layoutMode = l10.keys;
+      if (l10.slide === "glide" || l10.slide === "alter") this.swipeMode = l10.slide;
+      if (l10.place === "auto" || l10.place === "bottom" || l10.place === "corner") this.place = l10.place;
+    }
     this.render();
     addEventListener("resize", () => this.render());
     const gate2 = (e10) => {
@@ -21799,6 +21825,7 @@ var Pad = class {
   keys = /* @__PURE__ */ new Map();
   /** 升降键选的是哪一种（滑着换；记住，下次按还是它）。 */
   accSel = 1;
+  place = "auto";
   /** 这颗键现在为什么没意义：符号格开着时写音那一层的键 = 键盘自己知道；别的问宿主。退格在符号格那一面 = 符号退格（只删记号），问的是另一个 id。 */
   offOf(id2) {
     if (this.symbols !== "off" && WRITE_ONLY.has(id2)) return _t("\u7B26\u53F7\u683C\u5F00\u7740\uFF1A\u8FD9\u4E00\u9762\u53EA\u5199\u8BB0\u53F7\uFF1B\u70B9\u300C\u97F3\u300D\u6362\u56DE\u97F3\u952E\u5199\u97F3");
@@ -21806,7 +21833,7 @@ var Pad = class {
   }
   rows() {
     if (this.rowsSetting !== "auto") return this.rowsSetting;
-    const m2 = KEY_METRIC[padForm()], avail2 = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
+    const r10 = this.host.room(), m2 = KEY_METRIC[padForm(r10)], avail2 = r10.h >= r10.w ? r10.h * 0.45 - 110 : r10.h - 160;
     return Math.max(4, Math.min(6, Math.floor((avail2 + m2.gap) / (m2.h + m2.gap))));
   }
   /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
@@ -21838,7 +21865,7 @@ var Pad = class {
    *  三块各管各的：最上面一排旋钮或候选（模式 / 有没有选中变了才重建）、写字键一排（只建一次）、音键网格（调 / 音域 / 布局变了才重建）——
    *  旋钮上滑着的时候值一直在变、网格跟着重建，旋钮那个元素不动，手指不会丢。 */
   render() {
-    const v = this.host.view(), rows = this.rows(), form = padForm();
+    const v = this.host.view(), rows = this.rows(), form = padForm(this.host.room());
     {
       const h2 = this.hint();
       if (h2?.key && h2.key !== this.hintKey) {
@@ -22038,7 +22065,7 @@ var Pad = class {
     const c10 = (attrs, label, on2 = false, title = "") => `<button type="button" class="btn cand${on2 ? " is-on" : ""}" ${attrs}${title ? ` title="${title}"` : ""}>${label}</button>`;
     const step = (k2, name, v, lo2, hi) => `<button type="button" class="btn cand lay-step" data-${k2}step="-1"${v <= lo2 ? " disabled" : ""} title="${_t("\u5C11\u4E00{name}", { name })}">\u2212</button><span class="lay-v">${v}</span><button type="button" class="btn cand lay-step" data-${k2}step="1"${v >= hi ? " disabled" : ""} title="${_t("\u591A\u4E00{name}", { name })}">+</button>`;
     const grp = (label, inner, title = "") => `<div class="lay-line"><span class="lay-k">${label}</span><span class="lay-grp"${title ? ` title="${title}"` : ""}>${inner}</span></div>`;
-    const body2 = () => grp(_t("\u884C"), step("r", _t("\u884C"), this.rows(), ROWS_MIN, ROWS_MAX) + c10(`data-rows="auto"`, _t("\u81EA\u52A8"), this.rowsSetting === "auto", _t("\u6309\u5C4F\u5E55\u9AD8\u5EA6\u81EA\u52A8\u5B9A\u51E0\u884C")), _t("\u952E\u76D8\u51E0\u884C\uFF08\u9AD8\u5EA6\uFF09")) + grp(_t("\u5217"), step("c", _t("\u5217"), this.cols, COLS_MIN, COLS_MAX), _t("\u952E\u76D8\u51E0\u5217")) + grp(_t("\u952E\u4F4D"), c10(`data-pl="movable"`, _t("\u9996\u8C03"), this.layoutMode === "movable", _t("\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70")) + c10(`data-pl="absolute"`, _t("\u7EDD\u5BF9"), this.layoutMode === "absolute", _t("\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09"))) + grp(_t("\u6ED1"), c10(`data-swipe="glide"`, _t("\u6EDA\u952E\u76D8"), this.swipeMode === "glide", _t("\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09")) + c10(`data-swipe="alter"`, _t("\u5347\u964D"), this.swipeMode === "alter", _t("\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09")));
+    const body2 = () => grp(_t("\u884C"), step("r", _t("\u884C"), this.rows(), ROWS_MIN, ROWS_MAX) + c10(`data-rows="auto"`, _t("\u81EA\u52A8"), this.rowsSetting === "auto", _t("\u6309\u5C4F\u5E55\u9AD8\u5EA6\u81EA\u52A8\u5B9A\u51E0\u884C")), _t("\u952E\u76D8\u51E0\u884C\uFF08\u9AD8\u5EA6\uFF09")) + grp(_t("\u5217"), step("c", _t("\u5217"), this.cols, COLS_MIN, COLS_MAX), _t("\u952E\u76D8\u51E0\u5217")) + grp(_t("\u952E\u4F4D"), c10(`data-pl="movable"`, _t("\u9996\u8C03"), this.layoutMode === "movable", _t("\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70")) + c10(`data-pl="absolute"`, _t("\u7EDD\u5BF9"), this.layoutMode === "absolute", _t("\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09"))) + grp(_t("\u6ED1"), c10(`data-swipe="glide"`, _t("\u6EDA\u952E\u76D8"), this.swipeMode === "glide", _t("\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09")) + c10(`data-swipe="alter"`, _t("\u5347\u964D"), this.swipeMode === "alter", _t("\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09"))) + grp(_t("\u4F4D\u7F6E"), c10(`data-place="auto"`, _t("\u81EA\u52A8"), this.place === "auto", _t("\u5C4F\u5E55\u5F88\u5BBD\uFF08\u8C31\u90A3\u4E00\u5757\u5BBD\u8FC7 1600\uFF09\u65F6\u9489\u5728\u53F3\u4E0B\u89D2\uFF0C\u522B\u7684\u65F6\u5019\u8D34\u5E95")) + c10(`data-place="bottom"`, _t("\u8D34\u5E95"), this.place === "bottom", _t("\u4E00\u76F4\u8D34\u5E95")) + c10(`data-place="corner"`, _t("\u53F3\u4E0B\u89D2"), this.place === "corner", _t("\u4E00\u76F4\u9489\u5728\u53F3\u4E0B\u89D2\uFF08\u4E0D\u80FD\u62D6\uFF09")), _t("\u952E\u76D8\u653E\u5728\u54EA\uFF08\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09"));
     box.innerHTML = `<div class="offer-card pad-layout-card"><div class="offer-title">${_t("\u952E\u76D8\u5E03\u5C40")}</div><div class="lay-body">${body2()}</div><div class="offer-btns"><button type="button" class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
     document.body.append(box);
     const lay = box.querySelector(".lay-body");
@@ -22073,7 +22100,9 @@ var Pad = class {
       else if (d3.rows) this.rowsSetting = "auto";
       else if (d3.pl) this.layoutMode = d3.pl === "absolute" ? "absolute" : "movable";
       else if (d3.swipe) this.swipeMode = d3.swipe === "alter" ? "alter" : "glide";
+      else if (d3.place) this.place = d3.place === "corner" ? "corner" : d3.place === "bottom" ? "bottom" : "auto";
       else return;
+      this.host.onLayout?.({ rows: this.rowsSetting, cols: this.cols, keys: this.layoutMode, slide: this.swipeMode, place: this.place });
       this.render();
       lay.innerHTML = body2();
     });
@@ -35595,6 +35624,9 @@ function createPadHost(padEl2, g3) {
     isImpro: padImpro,
     onImpro: () => g3.toggleImpro(),
     onKbSwitch: () => g3.kbSwitch(),
+    room: () => g3.room(),
+    layout: () => g3.layout(),
+    onLayout: (l10) => g3.onLayout(l10),
     // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
     // 音键按下：第 k 级是什么音问 music；写（不在「弹」时；宿主不收 = false，pad 不亮）+ 响
     onNoteDown: (k2, id2) => noteDown(music.pitchAt(k2), id2),
@@ -36310,15 +36342,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick3(() => "singer-worker-02b0a728f88d.mjs");
+      return pick3(() => "singer-worker-d0e8ebafda44.mjs");
     case "mp3-worker":
       return pick3(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick3(() => "studio-worklet-3c8e50977d99.mjs");
     case "layout-worker":
-      return pick3(() => "layout-worker-92d5255f1639.mjs");
+      return pick3(() => "layout-worker-613cab528a6e.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-d622905db6e2.mjs");
+      return pick3(() => "encode-worker-bb3e9ba34be0.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -45950,9 +45982,9 @@ var Finder = class {
       return;
     }
     const used = this.presets = this.host.used?.() ?? [];
-    box.innerHTML = `<div class="fu-k">${_t("\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE")}</div><div class="fp-row">${used.map((u2, k2) => {
+    box.innerHTML = `<div class="fu-k">${_t("\u8FD9\u9996\u6B4C\u91CC\u5DF2\u6709\u7684\u4E50\u5668")}</div><div class="fp-row">${used.map((u2, k2) => {
       const tip = u2.on ? _t("\u6B63\u5728\u53F0\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD") : u2.here ? _t("\u70B9 = \u6362\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD / \u5220\u6389") : _t("\u70B9 = \u62F7\u4E00\u4EFD\u5230\u8FD9\u4E2A\u58F0\u90E8\u3001\u6362\u4E0A\uFF08\u300C{from}\u300D\u90A3\u8FB9\u4E0D\u52A8\uFF09", { from: u2.from });
-      return `<button class="fp-tile${u2.on ? " is-on" : ""}${u2.here ? "" : " is-other"}" data-v="use" data-preset="${k2}" title="${esc6(tip)}">` + (u2.icon ? `<svg class="fp-ico" aria-hidden="true"><use href="#${esc6(u2.icon)}"/></svg>` : `<span class="fp-ico none">${esc6(u2.name.slice(0, 1))}</span>`) + `<span class="fp-name">${esc6(u2.name)}</span>${u2.here ? "" : `<span class="fp-job">${esc6(_t("\u5728 {from} \u4E0A", { from: u2.from }))}</span>`}</button>`;
+      return `<button class="fp-tile${u2.on ? " is-on" : ""}${u2.here ? "" : " is-other"}" data-v="use" data-preset="${k2}" title="${esc6(tip)}">` + (u2.icon ? `<svg class="fp-ico" aria-hidden="true"><use href="#${esc6(u2.icon)}"/></svg>` : `<span class="fp-ico none">${esc6(u2.name.slice(0, 1))}</span>`) + `<span class="fp-name">${esc6(u2.name)}</span>${u2.here ? "" : `<span class="fp-job">${esc6(_t("\u590D\u5236\u300C{from}\u300D\u7684", { from: u2.from }))}</span>`}</button>`;
     }).join("")}</div>`;
   }
   render() {
@@ -62442,16 +62474,50 @@ function padBottomH() {
   if (h2 > 0) padBottomCache = h2;
   return h2 || padBottomCache || PAD_BOTTOM_FALLBACK;
 }
-function syncDock() {
-  const side = sideDock(stageEl.clientWidth, stageEl.clientHeight, padBottomH(), view.spaceAt(stageEl.clientWidth));
-  if (side === sideDocked(stageEl)) return;
-  if (side) stageEl.dataset.side = "right";
-  else delete stageEl.dataset.side;
-  studio.relayout();
-  view.render();
-  refHost.relayout();
+var KV_PAD_LAYOUT = "pad-layout";
+var KV_PAD_PLACE = "pad-place";
+var padPlacePref = () => {
+  const v = deviceKvGet(KV_PAD_PLACE);
+  return v === "bottom" || v === "corner" ? v : "auto";
+};
+function padLayoutSaved() {
+  const j2 = deviceKvGetJson(KV_PAD_LAYOUT, null);
+  return { ...j2 && typeof j2 === "object" ? j2 : {}, place: padPlacePref() };
 }
-addEventListener("resize", () => syncDock());
+function savePadLayout(l10) {
+  deviceKvSetJson(KV_PAD_LAYOUT, { rows: l10.rows, cols: l10.cols, keys: l10.keys, slide: l10.slide });
+  deviceKvSet(KV_PAD_PLACE, l10.place === "auto" ? null : l10.place);
+  syncDock();
+}
+var padCov = null;
+function padCovered() {
+  if (stageEl.dataset.side !== "float" || padEl.hidden || stageEl.dataset.dock !== "keys" && stageEl.dataset.dock !== "symbols") return null;
+  return padCov;
+}
+function measurePadCov() {
+  if (stageEl.dataset.side !== "float" || padEl.hidden) {
+    padCov = null;
+    return;
+  }
+  const r10 = padEl.getBoundingClientRect(), sr2 = scoreEl.getBoundingClientRect();
+  padCov = r10.width > 0 ? { left: r10.left - sr2.left, top: r10.top - sr2.top } : null;
+}
+var roomNow = { w: innerWidth, h: innerHeight };
+function syncDock() {
+  const side = dockPlace(stageEl.clientWidth, stageEl.clientHeight, padBottomH(), view.spaceAt(stageEl.clientWidth), padPlacePref());
+  if ((stageEl.dataset.side ?? "bottom") !== side) {
+    if (side !== "bottom") stageEl.dataset.side = side;
+    else delete stageEl.dataset.side;
+    studio.relayout();
+    view.render();
+    refHost.relayout();
+  }
+  measurePadCov();
+}
+addEventListener("resize", () => {
+  roomNow = { w: innerWidth, h: innerHeight };
+  syncDock();
+});
 var attr = (s10) => s10.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 var padTab = document.createElement("button");
 padTab.id = "padTab";
@@ -63295,7 +63361,8 @@ var view = new ScoreView(scoreEl, {
     // 电脑宽屏默认 100%（user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）；平板 / 窄窗口照旧自动   // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
     rememberZoom: (phys) => deviceKvSet(KV_ZOOM, phys === null ? null : phys.toFixed(3)),
     lyricHint: (i10) => lyricHintAt(i10),
-    lyricReading: (i10) => lyricReadingAt(i10)
+    lyricReading: (i10) => lyricReadingAt(i10),
+    covered: () => padCovered()
   },
   worker: { url: () => threadUrls("layout-worker")[0] ?? null, failed: (why2) => diagNote("layout", why2) },
   // 在哪儿排：排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
@@ -63559,6 +63626,10 @@ function plugNudge(why2) {
 }
 var bootReady = false;
 var padHost = createPadHost(padEl, {
+  room: () => roomNow,
+  layout: () => padLayoutSaved(),
+  onLayout: (l10) => savePadLayout(l10),
+  // 键盘的地方：贴底 / 贴右 / 浮着都按窗口算设备形态（宿主量，键盘不量窗口）
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
   state: () => D3.st,
   multiCmd: (c10) => multiCmd(c10),
@@ -64801,7 +64872,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "900d4e666231",
+  cssHash: "b4e070aabba9",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -69365,4 +69436,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-010043d41dd5.mjs.map
+//# sourceMappingURL=moonsinger-c9ad496373e3.mjs.map

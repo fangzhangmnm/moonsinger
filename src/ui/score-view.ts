@@ -106,6 +106,8 @@ export interface ScoreLook {
   lyricHint?(i: number): string | null;
   /** 歌词框下面的小字：光标所在那条下标 i 那个字所在这一句月读念成什么（v0.9.34）；不是月读 / 引擎还没起来 = null。 */
   lyricReading?(i: number): import("./lyric-editor.ts").LyricReading | null;
+  /** 浮着的键盘盖住的那一块（屏幕坐标；右下角浮窗 = 从 left 到右边、从 top 到底；没浮 = null）：跟随光标时光标那一行被它盖住 = 往上滚到露出来（v0.17.52）。 */
+  covered?(): { left: number; top: number } | null;
 }
 
 /** 试听（谱面上按住 / 拖的那个音）。 */
@@ -918,8 +920,12 @@ export class ScoreView {
     // 不贴着最下面：下面留出大约一行（user 2026-10-08「打字的自动对齐也不要靠着最下面，而是倒数第二排之类的，打音符也是」）——最多三成屏高
     //   （矮屏 + 软键盘时别把这一行推出上沿）；往上跟的时候上面也留一点。放不下两头 = 这一行的上沿优先看得见
     const a = off + box.top * z, bt = off + box.bottom * z, rowH = bt - a, below = Math.min(rowH, h * 0.3), above = Math.min(rowH * 0.25, h * 0.1);
+    // 浮着的键盘（右下角）：光标在它左沿右边 = 这一行的下面能看到的只到键盘上沿（只管光标那一行；光标在左边、键盘没盖着它 = 照旧）
+    //   盖住的那块是宿主记住的数（谱面板自己的坐标）；没浮 = 这里一样东西都不多读
+    const cov = this.host.look.covered?.() ?? null; let vh = h;
+    if (cov) { const hd = this.head(), cx = hd ? this.sheet.offsetLeft - this.el.scrollLeft + (L.pageX.left + hd.x) * z : Infinity; if (cx >= cov.left - 8) vh = Math.max(rowH, Math.min(h, cov.top)); }
     if (a - above < top) this.el.scrollTop = Math.max(0, a - above);
-    else if (bt + below > top + h) this.el.scrollTop = Math.min(bt + below - h, a - above);
+    else if (bt + below > top + vh) this.el.scrollTop = Math.min(bt + below - vh, a - above);
     // 横卷：光标（选中 = 它的第一个音）横着也保持在视野里——左边留一成、右边留两成，出了就把它放到左边三成处（往右写的时候前面能看见几小节）
     if (this.hscroll) {
       const hx = this.head()?.x ?? (st.sel ? this.hits.find((n) => this.onTrack(n) && n.index === st.sel!.from)?.x : undefined); if (hx === undefined) return;

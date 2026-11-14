@@ -78,8 +78,11 @@ export interface PadView {
 }
 /** 升降键选的是哪一种：𝄪 ♯ ♭ 𝄫。 */
 export type AccSel = -2 | -1 | 1 | 2;
-/** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
-const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone");
+/** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。量的是宿主给的地方（room），键盘自己不量窗口（v0.17.52：浮窗）。 */
+const padForm = (r: { w: number; h: number }): "tablet" | "phone" => (Math.min(r.w, r.h) >= 600 && r.w >= 700 ? "tablet" : "phone");
+/** 键盘布局（「⋯ → 布局…」那几样）：宿主记在这台设备上，开机递回来（v0.17.52，键盘设计稿第四节「顺手」）。place = 键盘放哪（自动 / 贴底 / 右下角）：键盘只显示、只报，摆归宿主。 */
+export type PadPlace = "auto" | "bottom" | "corner";
+export interface PadLayout { rows: number | "auto"; cols: number; keys: "movable" | "absolute"; slide: "glide" | "alter"; place: PadPlace }
 /** 布局里行 / 列能调的范围（加减号到头就灰）。 */
 /** 符号层「连线」格子：一道弧（SMuFL 没有单个连线字形）。 */
 const SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
@@ -158,6 +161,12 @@ export interface PadHost {
   onImpro(): void;                         // 「弹」开关（第一排「收起」左边）：只响不写
   /** 音键 ↔ 符号格（第一排「弹」左边，两面同一个位置；v0.10.37：「符」不再是模式条上的一个模式）。 */
   onKbSwitch?(): void;
+  /** 键盘能用多大地方（px，宿主量）：设备形态（平板 / 手机的键高）和「自动」几行按它算。 */
+  room(): { w: number; h: number };
+  /** 记着的布局（开机读一次；不认识的项 = 默认）。不给 = 默认。 */
+  layout?(): Partial<PadLayout> | null;
+  /** 人在「布局…」里改了：宿主记下、按 place 重摆。 */
+  onLayout?(l: PadLayout): void;
 }
 
 type Mode = "normal" | "more";   // 有选区时的移调 / 转调 / 时值不在 pad 上（2026-10-08 user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单，键盘只做纯粹的打谱」→ 选区菜单）   // 选调 / 长短 / 音域 = 旋钮（原地滚 / 点开滚轮），不在这里
@@ -197,7 +206,16 @@ export class Pad {
   /** 升降键选的是哪一种（滑着换；记住，下次按还是它）。 */
   private accSel: AccSel = 1;
 
+  private place: PadPlace = "auto";
   constructor(private el: HTMLElement, private host: PadHost) {
+    const l = host.layout?.() ?? null;   // 记着的布局：一项一项认，不认识的 = 默认（不猜）
+    if (l) {
+      if (l.rows === "auto" || (typeof l.rows === "number" && Number.isInteger(l.rows) && l.rows >= ROWS_MIN && l.rows <= ROWS_MAX)) this.rowsSetting = l.rows;
+      if (typeof l.cols === "number" && Number.isInteger(l.cols) && l.cols >= COLS_MIN && l.cols <= COLS_MAX) this.cols = l.cols;
+      if (l.keys === "movable" || l.keys === "absolute") this.layoutMode = l.keys;
+      if (l.slide === "glide" || l.slide === "alter") this.swipeMode = l.slide;
+      if (l.place === "auto" || l.place === "bottom" || l.place === "corner") this.place = l.place;
+    }
     this.render(); addEventListener("resize", () => this.render());
     // 没意义的键（A 类，v0.17.43）：在最外层先拦（捕获阶段，比每颗键自己的处理先到）——没意义 = 不交给它原来的处理；抬手那一下（click）说一句为什么。
     //   原来 disabled / pointer-events: none 的「点了什么都不发生」都改走这里（统筹「不留点了什么都不发生的键」）。按下不 preventDefault：符号格照样能滚。
@@ -213,7 +231,7 @@ export class Pad {
 
   private rows(): number {
     if (this.rowsSetting !== "auto") return this.rowsSetting;
-    const m = KEY_METRIC[padForm()], avail = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
+    const r = this.host.room(), m = KEY_METRIC[padForm(r)], avail = r.h >= r.w ? r.h * 0.45 - 110 : r.h - 160;
     return Math.max(4, Math.min(6, Math.floor((avail + m.gap) / (m.h + m.gap))));   // 封顶 6：再多就大半在她的音域外了
   }
   /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
@@ -241,7 +259,7 @@ export class Pad {
    *  三块各管各的：最上面一排旋钮或候选（模式 / 有没有选中变了才重建）、写字键一排（只建一次）、音键网格（调 / 音域 / 布局变了才重建）——
    *  旋钮上滑着的时候值一直在变、网格跟着重建，旋钮那个元素不动，手指不会丢。 */
   render(): void {
-    const v = this.host.view(), rows = this.rows(), form = padForm();
+    const v = this.host.view(), rows = this.rows(), form = padForm(this.host.room());
     { const h = this.hint(); if (h?.key && h.key !== this.hintKey) { const first = this.hintKey === null; this.hintKey = h.key; if (!first) this.rowShift = this.shiftFor(h.lo, h.hi); } }   // 谁在弹换了 = 窗口挪过去盖住它的音域（一次；人自己拨过照旧）
     const base = this.baseAt(this.rowShift, rows);
     this.el.dataset.form = form; this.el.style.setProperty("--cols", String(this.cols)); this.el.style.setProperty("--rows", String(rows));   // --rows：符号层的高 = 音键那几排（几何不变，多了滚）
@@ -398,7 +416,8 @@ export class Pad {
     const body = () => grp(_t("行"), step("r", _t("行"), this.rows(), ROWS_MIN, ROWS_MAX) + c(`data-rows="auto"`, _t("自动"), this.rowsSetting === "auto", _t("按屏幕高度自动定几行")), _t("键盘几行（高度）")) +
       grp(_t("列"), step("c", _t("列"), this.cols, COLS_MIN, COLS_MAX), _t("键盘几列")) +
       grp(_t("键位"), c(`data-pl="movable"`, _t("首调"), this.layoutMode === "movable", _t("每行从 1 起，跟着「1=」走")) + c(`data-pl="absolute"`, _t("绝对"), this.layoutMode === "absolute", _t("每行从 C 起（不跟着「1=」挪）"))) +
-      grp(_t("滑"), c(`data-swipe="glide"`, _t("滚键盘"), this.swipeMode === "glide", _t("手指按着滑到下一个键 = 响下一个（写的时候一路写）")) + c(`data-swipe="alter"`, _t("升降"), this.swipeMode === "alter", _t("在音键上上下滑 = 这一个音升 / 降（黏着）")));
+      grp(_t("滑"), c(`data-swipe="glide"`, _t("滚键盘"), this.swipeMode === "glide", _t("手指按着滑到下一个键 = 响下一个（写的时候一路写）")) + c(`data-swipe="alter"`, _t("升降"), this.swipeMode === "alter", _t("在音键上上下滑 = 这一个音升 / 降（黏着）"))) +
+      grp(_t("位置"), c(`data-place="auto"`, _t("自动"), this.place === "auto", _t("屏幕很宽（谱那一块宽过 1600）时钉在右下角，别的时候贴底")) + c(`data-place="bottom"`, _t("贴底"), this.place === "bottom", _t("一直贴底")) + c(`data-place="corner"`, _t("右下角"), this.place === "corner", _t("一直钉在右下角（不能拖）")), _t("键盘放在哪（记在这台设备上）"));
     box.innerHTML = `<div class="offer-card pad-layout-card"><div class="offer-title">${_t("键盘布局")}</div><div class="lay-body">${body()}</div>` +
       `<div class="offer-btns"><button type="button" class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
     document.body.append(box);
@@ -416,7 +435,9 @@ export class Pad {
       else if (d.rows) this.rowsSetting = "auto";
       else if (d.pl) this.layoutMode = d.pl === "absolute" ? "absolute" : "movable";
       else if (d.swipe) this.swipeMode = d.swipe === "alter" ? "alter" : "glide";
+      else if (d.place) this.place = d.place === "corner" ? "corner" : d.place === "bottom" ? "bottom" : "auto";
       else return;
+      this.host.onLayout?.({ rows: this.rowsSetting, cols: this.cols, keys: this.layoutMode, slide: this.swipeMode, place: this.place });
       this.render(); lay.innerHTML = body();
     });
   }

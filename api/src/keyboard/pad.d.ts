@@ -89,6 +89,15 @@ export interface PadView {
 }
 /** 升降键选的是哪一种：𝄪 ♯ ♭ 𝄫。 */
 export type AccSel = -2 | -1 | 1 | 2;
+/** 键盘布局（「⋯ → 布局…」那几样）：宿主记在这台设备上，开机递回来（v0.17.52，键盘设计稿第四节「顺手」）。place = 键盘放哪（自动 / 贴底 / 右下角）：键盘只显示、只报，摆归宿主。 */
+export type PadPlace = "auto" | "bottom" | "corner";
+export interface PadLayout {
+    rows: number | "auto";
+    cols: number;
+    keys: "movable" | "absolute";
+    slide: "glide" | "alter";
+    place: PadPlace;
+}
 export interface PadHost {
     view(): PadView;
     music: PadMusic;
@@ -131,6 +140,15 @@ export interface PadHost {
     onImpro(): void;
     /** 音键 ↔ 符号格（第一排「弹」左边，两面同一个位置；v0.10.37：「符」不再是模式条上的一个模式）。 */
     onKbSwitch?(): void;
+    /** 键盘能用多大地方（px，宿主量）：设备形态（平板 / 手机的键高）和「自动」几行按它算。 */
+    room(): {
+        w: number;
+        h: number;
+    };
+    /** 记着的布局（开机读一次；不认识的项 = 默认）。不给 = 默认。 */
+    layout?(): Partial<PadLayout> | null;
+    /** 人在「布局…」里改了：宿主记下、按 place 重摆。 */
+    onLayout?(l: PadLayout): void;
 }
 export declare class Pad {
     private el;
@@ -169,6 +187,7 @@ export declare class Pad {
     private keys;
     /** 升降键选的是哪一种（滑着换；记住，下次按还是它）。 */
     private accSel;
+    private place;
     constructor(el: HTMLElement, host: PadHost);
     /** 这颗键现在为什么没意义：符号格开着时写音那一层的键 = 键盘自己知道；别的问宿主。退格在符号格那一面 = 符号退格（只删记号），问的是另一个 id。 */
     private offOf;

@@ -290,11 +290,11 @@ export class Finder {
     box.hidden = this.playOnly || !this.host.used;
     if (box.hidden) { this.presets = []; return; }
     const used = (this.presets = this.host.used?.() ?? []);
-    box.innerHTML = `<div class="fu-k">${_t("这首歌的乐器预设")}</div><div class="fp-row">${used.map((u, k) => {
+    box.innerHTML = `<div class="fu-k">${_t("这首歌里已有的乐器")}</div><div class="fp-row">${used.map((u, k) => {
       const tip = u.on ? _t("正在台上；长按（右键）= 复制一份") : u.here ? _t("点 = 换上；长按（右键）= 复制一份 / 删掉") : _t("点 = 拷一份到这个声部、换上（「{from}」那边不动）", { from: u.from });
       return `<button class="fp-tile${u.on ? " is-on" : ""}${u.here ? "" : " is-other"}" data-v="use" data-preset="${k}" title="${esc(tip)}">` +
         (u.icon ? `<svg class="fp-ico" aria-hidden="true"><use href="#${esc(u.icon)}"/></svg>` : `<span class="fp-ico none">${esc(u.name.slice(0, 1))}</span>`) +
-        `<span class="fp-name">${esc(u.name)}</span>${u.here ? "" : `<span class="fp-job">${esc(_t("在 {from} 上", { from: u.from }))}</span>`}</button>`;
+        `<span class="fp-name">${esc(u.name)}</span>${u.here ? "" : `<span class="fp-job">${esc(_t("复制「{from}」的", { from: u.from }))}</span>`}</button>`;
     }).join("")}</div>`;
   }
   render(): void {

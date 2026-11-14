@@ -37,7 +37,8 @@ import { createPadHost } from "./pad-host.ts";   // pad 的宿主 = 翻译层（
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
-import { RULES, lockedRules, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, MODE_ICON, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
+import { RULES, lockedRules, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, MODE_ICON, dockOf, hasKeys, dockPlace, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
+import type { PadLayout, PadPlace } from "../keyboard/pad.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio, audioCtxIfAny, warmAudio, onAudioNote, noteKeyAsleep, audioQueuedMs, flushAudio, idleFlushAudio, audioShown, reviveAudio, setPrimer, primerOn, audioStartBurst } from "../singer/audio.ts";
@@ -433,13 +434,37 @@ function padBottomH(): number {
   if (h > 0) padBottomCache = h;
   return h || padBottomCache || PAD_BOTTOM_FALLBACK;
 }
-function syncDock(): void {
-  const side = sideDock(stageEl.clientWidth, stageEl.clientHeight, padBottomH(), view.spaceAt(stageEl.clientWidth));
-  if (side === sideDocked(stageEl)) return;
-  if (side) stageEl.dataset.side = "right"; else delete stageEl.dataset.side;
-  studio.relayout(); view.render(); refHost.relayout();
+// 键盘的布局 + 放哪（v0.17.52，键盘设计稿第四节）：记在这台设备上（换设备不跟）——pad-layout = 几行几列 / 首调绝对 / 滑法（JSON），pad-place = 自动 / 贴底 / 右下角（没有 = 自动）。
+const KV_PAD_LAYOUT = "pad-layout", KV_PAD_PLACE = "pad-place";
+const padPlacePref = (): PadPlace => { const v = deviceKvGet(KV_PAD_PLACE); return v === "bottom" || v === "corner" ? v : "auto"; };
+function padLayoutSaved(): Partial<PadLayout> | null { const j = deviceKvGetJson<Partial<PadLayout> | null>(KV_PAD_LAYOUT, null); return { ...(j && typeof j === "object" ? j : {}), place: padPlacePref() }; }
+function savePadLayout(l: PadLayout): void {
+  deviceKvSetJson(KV_PAD_LAYOUT, { rows: l.rows, cols: l.cols, keys: l.keys, slide: l.slide });
+  deviceKvSet(KV_PAD_PLACE, l.place === "auto" ? null : l.place);
+  syncDock();
 }
-addEventListener("resize", () => syncDock());   // 横屏底座在的时候，舞台里谱面以外占的宽（px；排谱宽度不跟着底座开合跳，见 view 的 layoutWidth；v0.10.33）   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
+/** 浮着的键盘盖住的那一块（谱跟随光标时让路；谱面板自己的坐标）：只有键盘那两面浮着、露着才算。
+ *  量只在窗口 / 键盘大小 / 摆法变了时（syncDock）做一次、记住；跟随光标时只读记住的数——按下 → 出声 → 写谱那条路上不量尺寸（统筹 2026-11-13 转 user「键盘真正的斩杀线是…毫秒」）。 */
+let padCov: { left: number; top: number } | null = null;
+function padCovered(): { left: number; top: number } | null {
+  if (stageEl.dataset.side !== "float" || padEl.hidden || (stageEl.dataset.dock !== "keys" && stageEl.dataset.dock !== "symbols")) return null;
+  return padCov;
+}
+function measurePadCov(): void {
+  if (stageEl.dataset.side !== "float" || padEl.hidden) { padCov = null; return; }
+  const r = padEl.getBoundingClientRect(), sr = scoreEl.getBoundingClientRect(); padCov = r.width > 0 ? { left: r.left - sr.left, top: r.top - sr.top } : null;
+}
+/** 窗口多大（键盘按它定形态）：窗口变了才量，键盘每次重画只读这个数。 */
+let roomNow = { w: innerWidth, h: innerHeight };
+function syncDock(): void {
+  const side = dockPlace(stageEl.clientWidth, stageEl.clientHeight, padBottomH(), view.spaceAt(stageEl.clientWidth), padPlacePref());
+  if ((stageEl.dataset.side ?? "bottom") !== side) {
+    if (side !== "bottom") stageEl.dataset.side = side; else delete stageEl.dataset.side;
+    studio.relayout(); view.render(); refHost.relayout();
+  }
+  measurePadCov();
+}
+addEventListener("resize", () => { roomNow = { w: innerWidth, h: innerHeight }; syncDock(); });   // 横屏底座在的时候，舞台里谱面以外占的宽（px；排谱宽度不跟着底座开合跳，见 view 的 layoutWidth；v0.10.33）   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
 const attr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = _t("键盘（pad）");
 padTab.innerHTML = `<svg class="ico"><use href="#piano-keys"/></svg>`; padTab.setAttribute("aria-label", _t("键盘"));   // 只留图标（v0.16.13，user「键盘旁边不要文字」）：平时钢琴、「听」里推子（= 混音台）；字在提示里
@@ -961,6 +986,7 @@ const view = new ScoreView(scoreEl, {
     rememberZoom: (phys) => deviceKvSet(KV_ZOOM, phys === null ? null : phys.toFixed(3)),
     lyricHint: (i) => lyricHintAt(i),
     lyricReading: (i) => lyricReadingAt(i),
+    covered: () => padCovered(),
   },
   worker: { url: () => threadUrls("layout-worker")[0] ?? null, failed: (why) => diagNote("layout", why) },   // 在哪儿排：排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
   sound: {
@@ -1136,6 +1162,7 @@ function plugNudge(why: NoWrite): void {
 /** 开机就位（v0.17.43 补）：模块顶层全部声明完、开机末尾第一次画谱之前置真。之前键盘画第一遍时不去排版（排版用到的东西在文件后面才声明 = 简谱习惯的设备开机就崩过）；只有开机末尾那一次 pad.render() 之后才按排版写键上的数字。 */
 let bootReady = false;
 const padHost = createPadHost(padEl, {
+  room: () => roomNow, layout: () => padLayoutSaved(), onLayout: (l) => savePadLayout(l),   // 键盘的地方：贴底 / 贴右 / 浮着都按窗口算设备形态（宿主量，键盘不量窗口）
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
   state: () => D.st, multiCmd: (c) => multiCmd(c), middleC: () => lookOf(D.st.song, lookCtx()).middleC, inC: () => inCAtCursor(), jianpuBase: () => jianpuBaseAtCursor(), digitRows: () => lookOf(D.st.song, lookCtx()).notation !== "staff", tempoOwnerHere: () => { const pp = D.st.song.papers.find((x) => x.id === D.st.at.paper); return !pp || tempoOwner(D.st.song, pp) === D.st.at.part; }, update: (n, gesture) => { if (inputGate.may(D.st, n) && multiMay(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) && multiMay(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
   monoRejected: () => { if (monoHinted) return; monoHinted = true; info(_t("「{who}」一次只出一个音：几乎同时按下的第二个键没写。要写和弦，给这个声部换钢琴这类乐器", { who: activeCandidateName(D.extras, curRole()) ?? roleLabel(curRole()) })); },   // 同一次打开只说一次（v0.16.35）   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值

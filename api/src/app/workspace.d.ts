@@ -51,5 +51,12 @@ export declare const hasKeys: (m: Mode) => boolean;
  *  styles.css 那一档的规则全挂在 #stage[data-side="right"] 上（main.ts syncDock 写；test/dock-layout.test.ts 守着 CSS 里不再有按长宽比 / 高度分的底座 @media）。added 2026-10-21 by Claude Fable 5.1 */
 export declare const SIDE_DOCK_W = 340, SIDE_DOCK_LINES = 2, LINE_SP = 14, SIDE_DOCK_MIN_SCORE_W = 360;
 export declare function sideDock(stageW: number, stageH: number, dockH: number, spPx: number): boolean;
+/** 键盘浮起来（钉在谱那一块的右下角）的判断（v0.17.52，键盘设计稿 ai-docs/20261113-keyboard-round-design.md 第四节；user 2026-11-12「超级大屏的时候medo真的很难看，能不能变成一个类似右下角浮窗的东西」、
+ *  11-13 深夜「写死在右下角，不做成能拖的 可以」）：pref = 键盘「布局…」里的「位置」（这台设备）——自动 = 谱那一块宽过 FLOAT_MIN_W 才浮（最大的 iPad 横过来 1376，永远不自己浮）；
+ *  贴底 = 不浮（照旧贴底，贴底后只剩约一行时照旧贴右边）；右下角 = 一直浮。浮不浮只管键盘那两面（音键 / 符号格）：混音台要宽、照旧贴底，CSS 只在 data-dock = keys / symbols 时按浮着摆。 */
+export type DockPlace = "bottom" | "right" | "float";
+export type PadPlace = "auto" | "bottom" | "corner";
+export declare const FLOAT_MIN_W = 1600, FLOAT_W = 560;
+export declare function dockPlace(stageW: number, stageH: number, dockH: number, spPx: number, pref: PadPlace): DockPlace;
 /** 现在底座在右边一栏吗（main.ts syncDock 算好写在 #stage 的 data-side 上；studio.ts / layoutWidth 读这里，不自己算）。 */
 export declare const sideDocked: (stage: HTMLElement | null | undefined) => boolean;

@@ -2,7 +2,7 @@
 //   CSS 那一档全挂在 #stage[data-side="right"] 上，不许再有按长宽比 / 高度分的底座 @media（不然 CSS 和 JS 各算各的）。created 2026-10-21 by Claude Fable 5.1
 //   user 2026-10-21「ui默认键盘在下面，就是很长很宽的屏幕，键盘，混音台，都在下面」→ 同日下午「实在做不到再贴右边。比如只能看到一行谱子」（取代上午的固定阈值「横屏且 ≤ 720 高放左边」）
 import { describe, it, eq, assert } from "./runner.mjs";
-import { sideDock, SIDE_DOCK_LINES, LINE_SP, SIDE_DOCK_W } from "../src/app/workspace.ts";
+import { sideDock, dockPlace, FLOAT_MIN_W, SIDE_DOCK_LINES, LINE_SP, SIDE_DOCK_W } from "../src/app/workspace.ts";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL, enc: "utf8"): string; readdirSync(u: URL): string[]; statSync(u: URL): { isDirectory(): boolean } };
 const css = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 function* walk(dir: URL): Generator<URL> { for (const f of fs.readdirSync(dir)) { const u = new URL(f + (fs.statSync(new URL(f, dir)).isDirectory() ? "/" : ""), dir); if (u.pathname.endsWith("/")) yield* walk(u); else if (/\.ts$/.test(f)) yield u; } }
@@ -42,5 +42,17 @@ describe("底座在哪：贴底是默认，贴右边只在贴底后只剩约一�
     assert(!sideDock(SIDE_DOCK_W + 359, 500, pad, sp), "右边放不下一栏（谱会窄于 360）→ 贴底");
     assert(sideDock(844, 390 - 47, pad, sp), "手机横着 844×390：剩不到一行 → 贴右边");
     assert(!sideDock(1100, 600 - 47, pad, sp * 0.6), "谱放不下屏宽时自动缩到 0.6 = 一行矮了：剩 189 ≥ 168 → 贴底");
+  });
+  it("dockPlace（v0.17.52 浮窗）：自动 = 谱那一块宽过 1600 才浮、最大的 iPad 横屏永远不自己浮；贴底 = 不浮（剩一行照旧贴右）；右下角 = 一直浮", () => {
+    const sp = 10, pad = 364;
+    eq(FLOAT_MIN_W, 1600);
+    eq(dockPlace(1920, 1080 - 47, pad, sp, "auto"), "float", "1080p 全屏");
+    eq(dockPlace(3840, 2160 - 47, pad, sp, "auto"), "float", "4K");
+    eq(dockPlace(1600, 900, pad, sp, "auto"), "bottom", "正好 1600 = 不浮");
+    eq(dockPlace(1376, 1032 - 47, pad, sp, "auto"), "bottom", "最大的 iPad 横屏");
+    eq(dockPlace(1100, 600 - 47, pad, sp, "auto"), "right", "矮屏照旧贴右");
+    eq(dockPlace(1920, 1080 - 47, pad, sp, "bottom"), "bottom", "选了贴底");
+    eq(dockPlace(1100, 600 - 47, pad, sp, "bottom"), "right", "贴底 = 不浮；剩一行的那一档照旧贴右");
+    eq(dockPlace(820, 1180 - 47, pad, sp, "corner"), "float", "iPad 竖屏选了右下角");
   });
 });
