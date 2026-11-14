@@ -6487,7 +6487,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.58-2026-11-14";
+var APP_VERSION = "v0.17.59-2026-11-14";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -36664,7 +36664,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick3(() => "layout-worker-77f44b037ce0.mjs");
     case "encode-worker":
-      return pick3(() => "encode-worker-865c178866a9.mjs");
+      return pick3(() => "encode-worker-3711fc9e964c.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -65302,7 +65302,7 @@ window.__moonsinger = {
     return toLabScore(tokens, activeHum(D3.extras, curRole()), songLangOf(tokens, activeHum(D3.extras, curRole())), map, ((c10) => c10?.ok ? c10.spec.sing : {})(perfSpecOf(D3.extras, curRole())));
   },
   state: () => D3.st,
-  cssHash: "00598387310d",
+  cssHash: "af97ffef25ae",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -69887,4 +69887,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3c3ad0b98136.mjs.map
+//# sourceMappingURL=moonsinger-6ac992b37f8e.mjs.map
